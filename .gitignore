@@ -1,0 +1,7 @@
+/config.php
+/data/*
+!/data/.htaccess
+!/data/.gitkeep
+/tests/output/
+.DS_Store
+node_modules/

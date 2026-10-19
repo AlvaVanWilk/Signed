@@ -1,0 +1,8 @@
+# Während der Entwicklung: Browser fragen bei jedem Laden nach neuen Versionen von JS/CSS.
+<IfModule mod_headers.c>
+  <FilesMatch "\.(js|css|html)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+</IfModule>
+
+AddType text/javascript .js

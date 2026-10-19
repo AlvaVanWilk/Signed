@@ -1,0 +1,296 @@
+<?php
+declare(strict_types=1);
+
+namespace Signed\Game;
+
+use Signed\ApiError;
+use Signed\Clock;
+use Signed\Db;
+
+/** Datenzugriff für ein angemeldetes Label. Prüft bei jedem Zugriff, dass die Karte dem Label gehört. */
+final class Repo
+{
+    public function __construct(public readonly Db $db, public readonly int $labelId)
+    {
+    }
+
+    public function label(): array
+    {
+        $row = $this->db->one('SELECT id, username, name, money FROM labels WHERE id = ?', [$this->labelId]);
+        if ($row === null) {
+            throw new ApiError('Bitte melde dich an.', 401);
+        }
+        return ['id' => (int) $row['id'], 'username' => $row['username'], 'name' => $row['name'], 'money' => (int) $row['money']];
+    }
+
+    public function spend(int $amount): void
+    {
+        if ($amount <= 0) {
+            return;
+        }
+        $changed = $this->db->exec('UPDATE labels SET money = money - ? WHERE id = ? AND money >= ?', [$amount, $this->labelId, $amount]);
+        if ($changed === 0) {
+            throw new ApiError('Dafür reicht das Geld nicht.');
+        }
+    }
+
+    public function earn(int $amount): void
+    {
+        if ($amount > 0) {
+            $this->db->exec('UPDATE labels SET money = money + ? WHERE id = ?', [$amount, $this->labelId]);
+        }
+    }
+
+    public function log(string $kind, string $text, ?int $bandId = null, ?int $musicianId = null): void
+    {
+        $this->db->insert('history', [
+            'label_id' => $this->labelId, 'band_id' => $bandId, 'musician_id' => $musicianId,
+            'kind' => $kind, 'text' => mb_substr($text, 0, 255), 'created_at' => Clock::now(),
+        ]);
+    }
+
+    // ---------- Musiker ----------
+
+    /** @return array<int, array> */
+    public function musicians(): array
+    {
+        $out = [];
+        foreach ($this->db->all('SELECT * FROM musicians WHERE label_id = ? ORDER BY id', [$this->labelId]) as $row) {
+            $m = self::hydrateMusician($row);
+            $out[$m['id']] = $m;
+        }
+        return $out;
+    }
+
+    public function musician(int $id): array
+    {
+        $row = $this->db->one('SELECT * FROM musicians WHERE id = ? AND label_id = ?', [$id, $this->labelId]);
+        if ($row === null) {
+            throw new ApiError('Diesen Musiker gibt es in deinem Katalog nicht.', 404);
+        }
+        return self::hydrateMusician($row);
+    }
+
+    /** @return list<array> */
+    public function members(int $bandId): array
+    {
+        $rows = $this->db->all('SELECT * FROM musicians WHERE band_id = ? AND label_id = ? ORDER BY id', [$bandId, $this->labelId]);
+        return array_map([self::class, 'hydrateMusician'], $rows);
+    }
+
+    public function insertMusician(array $m, string $origin): int
+    {
+        return $this->db->insert('musicians', [
+            'label_id' => $this->labelId,
+            'first_name' => $m['first_name'],
+            'last_name' => $m['last_name'],
+            'rarity' => $m['rarity'],
+            'instr1' => $m['instr1'],
+            'skill1' => $m['skill1'],
+            'instr2' => $m['instr2'],
+            'skill2' => $m['skill2'],
+            'presence' => $m['presence'],
+            'fame' => $m['fame'],
+            'genres' => json_encode($m['genres']),
+            'traits' => json_encode($m['traits']),
+            'techniques' => json_encode($m['techniques']),
+            'personality' => json_encode($m['personality']),
+            'unusual' => $m['unusual'] ? 1 : 0,
+            'look' => json_encode($m['look']),
+            'band_id' => null,
+            'band_slot' => 1,
+            'busy_until' => 0,
+            'origin' => $origin,
+            'created_at' => Clock::now(),
+        ]);
+    }
+
+    public static function hydrateMusician(array $r): array
+    {
+        return [
+            'id' => (int) $r['id'],
+            'label_id' => $r['label_id'] === null ? null : (int) $r['label_id'],
+            'first_name' => $r['first_name'],
+            'last_name' => $r['last_name'],
+            'rarity' => $r['rarity'],
+            'instr1' => $r['instr1'],
+            'skill1' => (float) $r['skill1'],
+            'instr2' => $r['instr2'] ?: null,
+            'skill2' => $r['skill2'] === null ? null : (float) $r['skill2'],
+            'presence' => (float) $r['presence'],
+            'fame' => (float) $r['fame'],
+            'genres' => json_decode($r['genres'], true) ?: [],
+            'traits' => json_decode($r['traits'], true) ?: [],
+            'techniques' => json_decode($r['techniques'], true) ?: [],
+            'personality' => json_decode($r['personality'], true) ?: [],
+            'unusual' => (bool) $r['unusual'],
+            'look' => json_decode($r['look'], true) ?: [],
+            'band_id' => $r['band_id'] === null ? null : (int) $r['band_id'],
+            'band_slot' => (int) $r['band_slot'],
+            'busy_until' => (int) $r['busy_until'],
+            'origin' => $r['origin'],
+            'created_at' => (int) $r['created_at'],
+        ];
+    }
+
+    // ---------- Instrumente ----------
+
+    /** @return array<int, array{id: int, model: string, musician_id: ?int}> */
+    public function gear(): array
+    {
+        $out = [];
+        foreach ($this->db->all('SELECT id, model, musician_id FROM gear WHERE label_id = ? ORDER BY id', [$this->labelId]) as $row) {
+            $out[(int) $row['id']] = [
+                'id' => (int) $row['id'],
+                'model' => $row['model'],
+                'musician_id' => $row['musician_id'] === null ? null : (int) $row['musician_id'],
+            ];
+        }
+        return $out;
+    }
+
+    /** @return array<int, array<string, array>> Musiker-ID => [Typ => Modell] */
+    public function gearByMusician(?array $gear = null): array
+    {
+        $map = [];
+        foreach ($gear ?? $this->gear() as $item) {
+            $model = Catalog::GEAR[$item['model']] ?? null;
+            if ($item['musician_id'] !== null && $model !== null) {
+                $map[$item['musician_id']][$model['type']] = $model + ['key' => $item['model'], 'gearId' => $item['id']];
+            }
+        }
+        return $map;
+    }
+
+    public function insertGear(string $model): int
+    {
+        return $this->db->insert('gear', ['label_id' => $this->labelId, 'model' => $model, 'musician_id' => null, 'created_at' => Clock::now()]);
+    }
+
+    // ---------- Manager ----------
+
+    /** @return array<int, array> */
+    public function managers(): array
+    {
+        $out = [];
+        foreach ($this->db->all('SELECT * FROM managers WHERE label_id = ? ORDER BY id', [$this->labelId]) as $row) {
+            $m = self::hydrateManager($row);
+            $out[$m['id']] = $m;
+        }
+        return $out;
+    }
+
+    public function manager(int $id): array
+    {
+        $row = $this->db->one('SELECT * FROM managers WHERE id = ? AND label_id = ?', [$id, $this->labelId]);
+        if ($row === null) {
+            throw new ApiError('Diesen Manager gibt es nicht.', 404);
+        }
+        return self::hydrateManager($row);
+    }
+
+    public function managerBandCount(int $managerId): int
+    {
+        return (int) $this->db->value('SELECT COUNT(*) FROM bands WHERE manager_id = ? AND label_id = ?', [$managerId, $this->labelId]);
+    }
+
+    public function insertManager(array $m): int
+    {
+        return $this->db->insert('managers', [
+            'label_id' => $this->labelId,
+            'first_name' => $m['first_name'],
+            'last_name' => $m['last_name'],
+            'rarity' => $m['rarity'],
+            'level' => $m['level'],
+            'skills' => json_encode($m['skills']),
+            'look' => json_encode($m['look']),
+            'created_at' => Clock::now(),
+        ]);
+    }
+
+    public static function hydrateManager(array $r): array
+    {
+        return [
+            'id' => (int) $r['id'],
+            'first_name' => $r['first_name'],
+            'last_name' => $r['last_name'],
+            'rarity' => $r['rarity'],
+            'level' => (int) $r['level'],
+            'skills' => json_decode($r['skills'], true) ?: [],
+            'look' => json_decode($r['look'], true) ?: [],
+        ];
+    }
+
+    // ---------- Bands ----------
+
+    /** @return array<int, array> */
+    public function bands(): array
+    {
+        $out = [];
+        foreach ($this->db->all('SELECT * FROM bands WHERE label_id = ? ORDER BY id', [$this->labelId]) as $row) {
+            $b = self::hydrateBand($row);
+            $out[$b['id']] = $b;
+        }
+        return $out;
+    }
+
+    public function band(int $id): array
+    {
+        $row = $this->db->one('SELECT * FROM bands WHERE id = ? AND label_id = ?', [$id, $this->labelId]);
+        if ($row === null) {
+            throw new ApiError('Diese Band gibt es nicht.', 404);
+        }
+        return self::hydrateBand($row);
+    }
+
+    public static function hydrateBand(array $r): array
+    {
+        return [
+            'id' => (int) $r['id'],
+            'name' => $r['name'],
+            'genre' => $r['genre'],
+            'manager_id' => $r['manager_id'] === null ? null : (int) $r['manager_id'],
+            'cohesion' => (float) $r['cohesion'],
+            'sound' => (float) $r['sound'],
+            'songs_recorded' => (int) $r['songs_recorded'],
+            'records' => (int) $r['records'],
+            'perfect_records' => (int) $r['perfect_records'],
+            'gigs_played' => (int) $r['gigs_played'],
+            'gigs_since_record' => (int) $r['gigs_since_record'],
+            'released' => (bool) $r['released'],
+            'busy_until' => (int) $r['busy_until'],
+            'created_at' => (int) $r['created_at'],
+        ];
+    }
+
+    /** Manager-Stufe einer Band nach Aufteilung auf alle Bands des Managers. */
+    public function bandManager(array $band): array
+    {
+        if ($band['manager_id'] === null) {
+            return [null, 0.0];
+        }
+        $manager = $this->manager($band['manager_id']);
+        return [$manager, BandCalc::managerLevel($manager, $this->managerBandCount($manager['id']))];
+    }
+
+    // ---------- Platten ----------
+
+    public function openRecord(int $bandId): ?array
+    {
+        $row = $this->db->one("SELECT * FROM records WHERE band_id = ? AND label_id = ? AND status = 'open'", [$bandId, $this->labelId]);
+        return $row === null ? null : self::hydrateRecord($row);
+    }
+
+    public static function hydrateRecord(array $r): array
+    {
+        return [
+            'id' => (int) $r['id'],
+            'band_id' => (int) $r['band_id'],
+            'title' => $r['title'],
+            'songs_total' => (int) $r['songs_total'],
+            'songs_done' => (int) $r['songs_done'],
+            'song_results' => json_decode($r['song_results'], true) ?: [],
+            'status' => $r['status'],
+        ];
+    }
+}

@@ -1,0 +1,135 @@
+<?php
+declare(strict_types=1);
+
+namespace Signed\Game;
+
+use Signed\Clock;
+
+/** Der komplette Spielstand eines Labels für den Browser. */
+final class State
+{
+    public static function build(Repo $repo): array
+    {
+        $db = $repo->db;
+        $now = Clock::now();
+        $label = $repo->label();
+        $musicians = $repo->musicians();
+        $gear = $repo->gear();
+        $gearMap = $repo->gearByMusician($gear);
+        $managers = $repo->managers();
+        $bands = $repo->bands();
+
+        $gearIds = [];
+        foreach ($gear as $item) {
+            if ($item['musician_id'] !== null) {
+                $gearIds[$item['musician_id']][] = $item['id'];
+            }
+        }
+        $members = [];
+        foreach ($musicians as $m) {
+            if ($m['band_id'] !== null) {
+                $members[$m['band_id']][] = $m;
+            }
+        }
+        $managerBands = [];
+        foreach ($bands as $band) {
+            if ($band['manager_id'] !== null) {
+                $managerBands[$band['manager_id']][] = $band['id'];
+            }
+        }
+        $openRecords = [];
+        foreach ($db->all("SELECT * FROM records WHERE label_id = ? AND status = 'open'", [$repo->labelId]) as $row) {
+            $record = Repo::hydrateRecord($row);
+            $openRecords[$record['band_id']] = $record;
+        }
+
+        $bandsOut = [];
+        foreach ($bands as $band) {
+            $list = $members[$band['id']] ?? [];
+            $sound = BandCalc::sound($list, $band['genre'], $band['cohesion'], $gearMap);
+            if (abs($sound - $band['sound']) >= 0.05) {
+                // Zwischenspeicher für die Charts (Kritikerwertung).
+                $db->update('bands', ['sound' => $sound], ['id' => $band['id']]);
+            }
+            $fame = BandCalc::fame($list);
+            $chemistry = BandCalc::chemistry($list);
+            $manager = $band['manager_id'] !== null ? ($managers[$band['manager_id']] ?? null) : null;
+            $level = BandCalc::managerLevel($manager, count($managerBands[$band['manager_id']] ?? []));
+            $venue = BandCalc::venue($fame);
+            $open = $openRecords[$band['id']] ?? null;
+
+            $bandsOut[] = [
+                'id' => $band['id'],
+                'name' => $band['name'],
+                'genre' => $band['genre'],
+                'managerId' => $band['manager_id'],
+                'managerLevel' => $level,
+                'memberIds' => array_map(static fn ($m) => $m['id'], $list),
+                'sound' => $sound,
+                'fame' => $fame,
+                'cohesion' => round($band['cohesion'], 1),
+                'maxCohesion' => BandCalc::maxCohesion($chemistry),
+                'chemistry' => $chemistry,
+                'songsRecorded' => $band['songs_recorded'],
+                'records' => $band['records'],
+                'perfectRecords' => $band['perfect_records'],
+                'gigsPlayed' => $band['gigs_played'],
+                'gigsSinceRecord' => $band['gigs_since_record'],
+                'released' => $band['released'],
+                'busyUntil' => $band['busy_until'],
+                'options' => [
+                    'busking' => [
+                        'songs' => Balance::BUSKING['songs'],
+                        'gage' => (int) round(Balance::BUSKING['gage'] * Balance::BUSKING['songs']
+                            * BandCalc::falloff($fame, Balance::BUSKING['falloff'], Balance::BUSKING['minFactor'])),
+                    ],
+                    'openstage' => [
+                        'songs' => Balance::OPENSTAGE['songs'],
+                        'worthIt' => BandCalc::falloff($fame, Balance::OPENSTAGE['falloff']) > 0,
+                    ],
+                    'gig' => [
+                        'available' => $band['records'] > 0,
+                        'venue' => $venue['name'],
+                        'venueKey' => $venue['key'],
+                        'progress' => round($venue['progress'], 3),
+                        'nextVenue' => $venue['next'],
+                        'nextFame' => $venue['nextFame'],
+                        'maxSongs' => BandCalc::maxGigSongs($band['songs_recorded'], $level),
+                        'songCap' => BandCalc::gigSongCap($level),
+                        'gagePerSong' => BandCalc::gagePerSong($venue, BandCalc::managerBonus($manager, $level, 'verhandler', Balance::NEGOTIATOR_BONUS)),
+                    ],
+                ],
+                'record' => [
+                    'open' => Present::record($open),
+                    'blocker' => Studio::blocker($band, count($list), $open),
+                ],
+            ];
+        }
+
+        $running = $db->all('SELECT * FROM activities WHERE label_id = ? AND settled = 0 ORDER BY ends_at', [$repo->labelId]);
+        $results = $db->all('SELECT * FROM activities WHERE label_id = ? AND settled = 1 AND seen = 0 ORDER BY ends_at', [$repo->labelId]);
+        $history = $db->all('SELECT id, band_id, kind, text, created_at FROM history WHERE label_id = ? ORDER BY id DESC LIMIT 40', [$repo->labelId]);
+        $items = $db->all('SELECT id, kind, value FROM items WHERE label_id = ? ORDER BY id', [$repo->labelId]);
+
+        $db->update('labels', ['last_seen' => $now], ['id' => $repo->labelId]);
+
+        return [
+            'now' => $now,
+            'label' => $label,
+            'musicians' => array_values(array_map(static fn ($m) => Present::musician($m, $gearIds[$m['id']] ?? []), $musicians)),
+            'gear' => array_values(array_map([Present::class, 'gear'], $gear)),
+            'managers' => array_values(array_map(static fn ($m) => Present::manager($m, $managerBands[$m['id']] ?? []), $managers)),
+            'items' => array_map(static fn ($i) => ['id' => (int) $i['id'], 'kind' => $i['kind'], 'value' => (float) $i['value']], $items),
+            'bands' => $bandsOut,
+            'running' => array_map([Present::class, 'activity'], $running),
+            'results' => array_map([Present::class, 'result'], $results),
+            'history' => array_map(static fn ($h) => [
+                'id' => (int) $h['id'],
+                'bandId' => $h['band_id'] === null ? null : (int) $h['band_id'],
+                'kind' => $h['kind'],
+                'text' => $h['text'],
+                'createdAt' => (int) $h['created_at'],
+            ], $history),
+        ];
+    }
+}

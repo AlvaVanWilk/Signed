@@ -690,10 +690,6 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .band-link:hover { border-color: var(--accent); text-decoration: none; }
 .small-b { font-size: 1rem !important; }
 
-.lineup-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
-.lineup-tile { display: flex; flex-direction: column; gap: 8px; }
-.lineup-pair { display: grid; grid-template-columns: 1.5fr 1fr; gap: 8px; align-items: end; }
-.manager-tile { max-width: 150px; }
 
 .action-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
 .action-tile { display: flex; align-items: center; gap: 14px; padding: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
@@ -738,11 +734,8 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
   .topbar { padding: 10px 16px 8px; }
   .topbar-row { flex-wrap: wrap; gap: 8px 12px; }
   .action-grid { grid-template-columns: 1fr; }
-  .lineup-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
 }
 .tile .btn { align-self: flex-start; margin-top: 6px; }
-.lineup-tile > .tcg-slot { width: calc(60% - 3px); }
-.manager-tile > .tcg-slot, .manager-tile > .tcg { width: 100%; }
 .side.enter { animation: side-in 0.25s ease-out; }
 
 /* Als App vom Home-Bildschirm: Platz für Statusleiste und Notch lassen. */
@@ -766,7 +759,7 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .jam-plus { align-self: center; font-size: 2rem; font-weight: 800; color: var(--muted); }
 .jam-match { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; font-size: 0.82rem; color: var(--muted); }
 .jam-match .good { color: var(--ok); }
-.result-modal .jam-board { grid-template-columns: 120px auto minmax(0, 1fr); }
+.result-modal .jam-board { grid-template-columns: 150px auto minmax(0, 1fr); }
 .result-modal .jam-offers { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 @media (max-width: 640px) {
   .jam-board, .result-modal .jam-board { grid-template-columns: 1fr; }
@@ -775,3 +768,20 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 }
 .jam-offers { grid-template-columns: repeat(auto-fill, 178px); }
 @media (max-width: 640px) { .jam-offers { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); } }
+
+/* ---------- Besetzung als Raster: jeder Platz eine gleich große Kachel ---------- */
+.lineup-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); grid-auto-rows: 1fr; gap: 14px; }
+.lineup-tile { display: flex; flex-direction: column; gap: 10px; padding: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); min-height: 100%; }
+.lineup-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.lineup-head .slot-label { margin: 0; }
+.lineup-pair { display: grid; grid-template-columns: 1.5fr 1fr; gap: 8px; align-items: end; }
+.lineup-tile.free { font: inherit; color: var(--muted); background: rgba(255, 255, 255, 0.02); border: 2px dashed var(--line); cursor: pointer; text-align: left; transition: border-color 0.15s, color 0.15s; }
+.lineup-tile.free:hover { border-color: var(--accent); color: var(--text); }
+.lineup-free { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-size: 0.9rem; }
+.lineup-manager { flex: 1; display: flex; align-items: flex-end; justify-content: center; }
+.lineup-manager { align-items: center; }
+.lineup-manager > .tcg, .lineup-manager > .tcg-slot { width: 40%; }
+@media (max-width: 640px) {
+  .lineup-grid { grid-template-columns: 1fr; grid-auto-rows: auto; }
+  .lineup-tile.free, .manager-tile { min-height: 120px; }
+}

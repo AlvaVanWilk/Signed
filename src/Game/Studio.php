@@ -152,9 +152,6 @@ final class Studio
         if ($firstRecord) {
             Scout::grant($this->repo, 'die erste Platte deines Labels.');
         }
-        if ($perfect) {
-            Scout::grant($this->repo, sprintf('„%s“ ist eine perfekte Platte.', $record['title']));
-        }
 
         return [
             'title' => $record['title'],

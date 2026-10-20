@@ -66,8 +66,9 @@ final class Charts
         }
         usort($albums, static fn ($a, $b) => $b['points'] <=> $a['points']);
 
-        // Platz 1 gibt einmalig einen Scout-Gutschein.
-        if ($albums && !$albums[0]['topped']) {
+        // Platz 1 gibt einmalig einen Scout-Gutschein – aber nur, wenn es Konkurrenz gibt.
+        $competitors = count(array_unique(array_column($albums, 'labelId')));
+        if ($albums && !$albums[0]['topped'] && $competitors >= Balance::CHART_TOP_MIN_LABELS) {
             $top = $albums[0];
             if ($db->exec('UPDATE records SET topped = 1 WHERE id = ? AND topped = 0', [$top['recordId']]) > 0) {
                 Scout::grant(new Repo($db, $top['labelId']), sprintf('„%s“ steht auf Platz 1 der Charts!', $top['title']));

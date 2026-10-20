@@ -86,9 +86,16 @@ function overview(b, members) {
       <div class="tile"><span>Platten</span><b>${fmt0(b.records)}</b><small>${fmt0(b.songsRecorded)} Lieder</small></div>
     </div>
     <div class="lineup-grid">
-      ${members.map((m) => memberTile(b, m)).join('')}
-      ${members.length < cat().rules.maxMembers ? `<div class="lineup-tile">${emptySlot('Musiker aufnehmen', { act: 'addMember', data: { id: b.id } })}<span></span></div>` : ''}
-      <div class="lineup-tile manager-tile">${managerSlot(b)}<span class="slot-label">Manager${b.managerId ? ` · Stufe ${fmt1(b.managerLevel)}` : ''}</span></div>
+      ${members.map((m, i) => memberTile(b, m, i + 1)).join('')}
+      ${Array.from({ length: cat().rules.maxMembers - members.length }, (_, i) => `
+        <button class="lineup-tile free" data-act="addMember" data-id="${b.id}">
+          <span class="lineup-head"><span class="slot-label">Platz ${members.length + i + 1}</span></span>
+          <span class="lineup-free"><span class="tcg-slot-icon">+</span>Musiker aufnehmen</span>
+        </button>`).join('')}
+      <div class="lineup-tile manager-tile">
+        <div class="lineup-head"><span class="slot-label">Manager</span>${b.managerId ? `<span class="small">Stufe ${fmt1(b.managerLevel)}</span>` : ''}</div>
+        <div class="lineup-manager">${managerSlot(b)}</div>
+      </div>
     </div>
     <div class="danger-zone"><button class="btn danger ghost small" data-act="bandDisband" data-id="${b.id}">Band auflösen</button></div>`;
 }
@@ -100,13 +107,14 @@ export function chemistryLabel(chemistry) {
   return 'Zoff';
 }
 
-function memberTile(b, m) {
+function memberTile(b, m, place) {
   const slotIndex = m.instruments.length > 1 ? m.bandSlot - 1 : 0;
   const played = m.instruments[slotIndex];
   const gear = app.state.gear.find((g) => g.musicianId === m.id && gearModel(g.model).type === played.type);
   const gearData = { musician: m.id, type: played.type };
   return `
     <div class="lineup-tile">
+      <div class="lineup-head"><span class="slot-label">Platz ${place}</span><span class="small">${instrumentIcon(played.type)} ${esc(instrumentName(played.type))}</span></div>
       <div class="lineup-pair">
         ${musicianCard(m, { size: 'sm' })}
         ${gear ? gearCard(gear, { act: 'pickGear', data: gearData, size: 'sm' }) : emptySlot(instrumentName(played.type), { act: 'pickGear', data: gearData, icon: instrumentIcon(played.type) })}
@@ -115,7 +123,7 @@ function memberTile(b, m) {
         ${m.instruments.length > 1 ? `
           <select data-change="bandSetSlot" data-band="${b.id}" data-musician="${m.id}">
             ${m.instruments.map((i, idx) => `<option value="${idx + 1}" ${idx === slotIndex ? 'selected' : ''}>${instrumentIcon(i.type)} ${esc(instrumentName(i.type))}</option>`).join('')}
-          </select>` : `<span>${instrumentIcon(played.type)} ${esc(instrumentName(played.type))}</span>`}
+          </select>` : '<span></span>'}
         ${m.genres.includes(b.genre) ? '' : '<span class="warn small">fremdes Genre</span>'}
         <button class="icon-btn" data-act="removeMember" data-band="${b.id}" data-musician="${m.id}" title="Aus der Band nehmen">✕</button>
       </div>

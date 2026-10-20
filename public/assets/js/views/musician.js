@@ -2,7 +2,7 @@ import { abilityInfo, emptySlot, fullName, gearCard, gearModel, genreName, instr
 import { app, bandById, cat, defineActions, isBusy, musicianById, mutate, navigate } from '../core.js';
 import { openLive } from '../live.js';
 import { chip } from '../cards.js';
-import { duration, esc, money, openModal, timeAgo, toast } from '../ui.js';
+import { closeAllModals, duration, esc, money, openModal, timeAgo, toast } from '../ui.js';
 import { chemistryLabel, practiceTile, promoTile, suggestName } from './bands.js';
 
 /** Untermenü eines Musikers. solo = nur ohne Band. */
@@ -172,7 +172,7 @@ function openJamBand(offerId, index) {
     e.preventDefault();
     const res = await mutate('jamPick', { offerId: offer.id, index: Number(index), name: form.name.value, genre: form.genre.value });
     if (!res) return;
-    modal.close();
+    closeAllModals();
     toast('Die Band ist gegründet!', 'ok');
     navigate(`#/band/${res.bandId}`);
   });
@@ -233,8 +233,8 @@ defineActions({
   jamChoose({ offer, index }) {
     openJamBand(offer, index);
   },
-  async jamDecline({ offer }) {
-    await mutate('jamDecline', { offerId: Number(offer) });
+  async jamDecline({ offer }, el) {
+    if (await mutate('jamDecline', { offerId: Number(offer) }) && el.closest('.modal')) closeAllModals();
   },
   async solo({ id, type }) {
     const res = await mutate('soloStart', { musicianId: Number(id), type });

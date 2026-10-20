@@ -104,7 +104,8 @@ Das Stadion bleibt der Tournee vorbehalten.
 
 - 5 Musiker (70 % episch, 30 % legendär), alle mit Können-Stufe 1. Einer unterschreibt, die anderen verfallen.
   Der erste Musiker eines Labels wird automatisch Favorit.
-- Gutscheine: 1 zum Label-Start, je 1 für die erste Platte des Labels, für jede perfekte Platte und für Platz 1 der Album-Charts.
+- Gutscheine: 1 zum Label-Start, 1 für die erste Platte des Labels und 1 für Platz 1 der Album-Charts –
+  Letzteres erst, wenn mindestens 3 Labels Platten in den Charts haben (sonst wäre Platz 1 geschenkt).
 - Ohne Gutschein: 3.000 ₲, höchstens einmal pro Woche.
 
 ### Minispiele
@@ -125,7 +126,7 @@ Ein Lied dauert 30 Sekunden. Bewertet wird in Perfekt / Gut / Daneben; Trefferqu
 
 - 3 (EP) bis 12 Lieder (LP), Pauschalpreis 500 ₲. Pro Lied ein Minispiel, in Etappen spielbar.
 - Jedes Lied: etwas Können für alle Mitglieder, Eingespieltheit.
-- Fertig: Geld = Lieder × 150 ₲ × (0,3 + Qualität²) × LP-Bonus × Perfekt-Bonus × Verkäufe,
+- Fertig: Erstverkauf = Lieder × 60 ₲ × (0,3 + Qualität²) × LP-Bonus × Perfekt-Bonus × Verkäufe,
   Ruhm = Lieder × 5 × Soundfaktor × (0,3 + Qualität^1,5) × LP-Bonus × Perfekt-Bonus.
   - LP-Bonus: +4 % pro Lied über 3. Perfekt (kein einziger Fehler): × 1,5. Verkäufe: 1 + Bandruhm/400, höchstens × 5.
 - Danach braucht die Band 3 Gigs, bevor sie die nächste Platte beginnen darf.

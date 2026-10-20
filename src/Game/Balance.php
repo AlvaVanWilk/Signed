@@ -187,7 +187,8 @@ final class Balance
     public const GIGS_BETWEEN_RECORDS = 3;
     public const RECORD_SONG_SKILL = 0.6;
     public const RECORD_SONG_COHESION = 2.0;
-    public const RECORD_MONEY_PER_SONG = 150;
+    /** Erstverkauf beim Erscheinen; das eigentliche Einkommen sind die Tantiemen, solange die Platte chartet. */
+    public const RECORD_MONEY_PER_SONG = 60;
     public const RECORD_FAME_PER_SONG = 5.0;
     /** Pro Lied über 3 bringt jedes Lied 4 % mehr, damit sich das Fehlerrisiko einer LP lohnt. */
     public const RECORD_LP_BONUS = 0.04;
@@ -228,6 +229,8 @@ final class Balance
     /** Unter dieser Punktzahl fällt eine Platte aus den Charts. */
     public const CHART_MIN_POINTS = 1.0;
     public const CHART_SIZE = 50;
+    /** Platz 1 bringt einen Scout-Gutschein erst, wenn so viele Labels Platten in den Charts haben. */
+    public const CHART_TOP_MIN_LABELS = 3;
     /** Tantiemen pro Chartpunkt und Tag. */
     public const ROYALTY_MONEY = 2.0;
     public const ROYALTY_FAME = 0.05;

@@ -167,7 +167,7 @@ function resultHtml(r) {
       ${res.meter ? `<p class="muted">${moodText(res.meter)}</p>` : ''}
       <div class="reward-grid">${reward('Ruhm', `+${fmt1(res.fame)}`)}${res.presence ? reward('Präsenz', `+${fmt1(res.presence)}`) : ''}${res.meter ? reward('Publikum', percent(res.meter / 100)) : ''}</div>
       ${jamOffer ? `<p>${jamOffer.cards.length} Musiker würden mit ${esc(m?.firstName ?? '')} eine Band gründen.</p>
-        ${musician.jamOfferHtml(jamOffer, false)}` : ''}`;
+        ${musician.jamOfferHtml(jamOffer, true)}` : ''}`;
   }
   const band = bandById(r.bandId);
   const drops = (res.drops || []).map((d) => d.kind === 'manager'
@@ -204,10 +204,12 @@ function showResults() {
   // Nicht über ein laufendes Minispiel legen.
   if (topModal() && !topModal().dismissable) return;
   const r = app.state.results[0];
+  const jamOffer = r.result.jamOffer && app.state.jamOffers.find((o) => o.id === r.result.jamOffer.id);
   resultModal = openModal({
     className: 'result-modal',
-    html: `${safeResultHtml(r)}<div class="dialog-actions">${r.result.jamOffer && app.state.jamOffers.some((o) => o.id === r.result.jamOffer.id)
-      ? `<button class="btn ghost" data-close>Später</button><button class="btn primary" data-act="closeModalAndGo" data-href="#/musician/${r.musicianId}/jam">Auswählen</button>`
+    wide: !!jamOffer,
+    html: `${safeResultHtml(r)}<div class="dialog-actions">${jamOffer
+      ? `<button class="btn ghost" data-act="jamDecline" data-offer="${jamOffer.id}">Alle ablehnen</button><button class="btn" data-close>Später</button>`
       : '<button class="btn primary" data-close>Weiter</button>'}</div>`,
     onClose: () => {
       resultModal = null;

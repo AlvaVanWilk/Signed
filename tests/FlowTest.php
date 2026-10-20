@@ -453,7 +453,7 @@ test('Album-Charts: Platten aller Labels, Platz 1 gibt einen Gutschein, Tantieme
     for ($i = 0; $i < 3; $i++) {
         $done = playSong($a, ['kind' => 'record', 'bandId' => $bandA['id']]);
     }
-    checkEquals(Balance::SCOUT_START_VOUCHERS + 2, $done['state']['scout']['vouchers'], 'Gutschein für die erste und für die perfekte Platte');
+    checkEquals(Balance::SCOUT_START_VOUCHERS + 1, $done['state']['scout']['vouchers'], 'Gutschein nur für die erste Platte, nicht fürs Perfekte');
     $b->post('recordStart', ['bandId' => $bandB['id'], 'title' => 'Beta EP', 'songs' => 3]);
     for ($i = 0; $i < 3; $i++) {
         playSong($b, ['kind' => 'record', 'bandId' => $bandB['id']], 0.5);
@@ -465,9 +465,18 @@ test('Album-Charts: Platten aller Labels, Platz 1 gibt einen Gutschein, Tantieme
     checkEquals('EP', $charts['albums'][0]['format']);
     check(!$charts['albums'][0]['own'] && $charts['albums'][1]['own']);
     checkEquals(2, count($charts['labels']));
-    checkEquals(Balance::SCOUT_START_VOUCHERS + 3, $a->get('state')['scout']['vouchers'], 'Platz 1 bringt einen weiteren Gutschein');
+    checkEquals(Balance::SCOUT_START_VOUCHERS + 1, $a->get('state')['scout']['vouchers'], 'Ohne genug Konkurrenz kein Gutschein für Platz 1');
+
+    $c = registerPlayer($db, 'Gamma');
+    $bandC = foundBand($c, 'Gamma Band');
+    $c->post('recordStart', ['bandId' => $bandC['id'], 'title' => 'Gamma EP', 'songs' => 3]);
+    for ($i = 0; $i < 3; $i++) {
+        playSong($c, ['kind' => 'record', 'bandId' => $bandC['id']], 0.5);
+    }
+    $c->get('charts');
+    checkEquals(Balance::SCOUT_START_VOUCHERS + 2, $a->get('state')['scout']['vouchers'], 'Platz 1 bringt einen weiteren Gutschein');
     $b->get('charts');
-    checkEquals(Balance::SCOUT_START_VOUCHERS + 3, $a->get('state')['scout']['vouchers'], 'Nur einmal pro Platte');
+    checkEquals(Balance::SCOUT_START_VOUCHERS + 2, $a->get('state')['scout']['vouchers'], 'Nur einmal pro Platte');
 
     $money = $a->get('state')['label']['money'];
     Clock::advance(2 * 86400 + 60);

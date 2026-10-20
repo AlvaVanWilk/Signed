@@ -14,14 +14,14 @@ final class Generator
     }
 
     /**
-     * @param array{instrument?: string, genre?: string, single?: bool, minSkill?: float} $opts
+     * @param array{instrument?: string, genre?: string, single?: bool, minSkill?: float, avoid?: string[]} $opts
      * @return array Musiker im Datenbankformat (JSON-Felder noch als Arrays)
      */
     public static function musician(string $rarity, array $opts = []): array
     {
         $cfg = Balance::MUSICIAN[$rarity];
         $look = self::look();
-        [$first, $last] = self::name($look['gender']);
+        [$first, $last] = self::name($look['gender'], $opts['avoid'] ?? []);
 
         $instr1 = $opts['instrument'] ?? (string) Rng::weighted(array_map(static fn ($i) => $i['weight'], Catalog::INSTRUMENTS));
         $typical = Catalog::INSTRUMENTS[$instr1]['genres'];
@@ -102,10 +102,11 @@ final class Generator
         return $stats;
     }
 
-    public static function manager(string $rarity): array
+    /** @param string[] $avoid Nachnamen, die im Label schon vorkommen */
+    public static function manager(string $rarity, array $avoid = []): array
     {
         $look = self::look();
-        [$first, $last] = self::name($look['gender']);
+        [$first, $last] = self::name($look['gender'], $avoid);
         $skillCount = Rng::chance(Balance::MANAGER_SECOND_SKILL) ? 2 : 1;
         return [
             'first_name' => $first,
@@ -145,10 +146,15 @@ final class Generator
         ];
     }
 
-    /** @return array{0: string, 1: string} */
-    private static function name(string $gender): array
+    /**
+     * Nachnamen aus $avoid werden gemieden, solange noch andere frei sind.
+     * @param string[] $avoid
+     * @return array{0: string, 1: string}
+     */
+    private static function name(string $gender, array $avoid = []): array
     {
-        return [Rng::pick(Catalog::FIRST_NAMES[$gender]), Rng::pick(Catalog::LAST_NAMES)];
+        $free = array_values(array_diff(Catalog::LAST_NAMES, $avoid));
+        return [Rng::pick(Catalog::FIRST_NAMES[$gender]), Rng::pick($free ?: Catalog::LAST_NAMES)];
     }
 
     private static function secondInstrument(string $first): string

@@ -45,10 +45,10 @@ final class Packs
             return ['kind' => 'gear', 'gear' => Present::gear($this->repo->gear()[$id])];
         }
         if ($kind === 'manager') {
-            $id = $this->repo->insertManager(Generator::manager($rarity));
+            $id = $this->repo->insertManager(Generator::manager($rarity, $this->repo->lastNames()));
             return ['kind' => 'manager', 'manager' => Present::manager($this->repo->manager($id))];
         }
-        $id = $this->repo->insertMusician(Generator::musician($rarity), $origin);
+        $id = $this->repo->insertMusician(Generator::musician($rarity, ['avoid' => $this->repo->lastNames()]), $origin);
         return ['kind' => 'musician', 'musician' => Present::musician($this->repo->musician($id))];
     }
 

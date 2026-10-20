@@ -348,7 +348,7 @@ final class Activities
 
         foreach ($reward['drops'] ?? [] as $drop) {
             if ($drop['kind'] === 'manager') {
-                $manager = $repo->manager($repo->insertManager(Generator::manager('common')));
+                $manager = $repo->manager($repo->insertManager(Generator::manager('common', $repo->lastNames())));
                 $result['drops'][] = ['kind' => 'manager', 'name' => $manager['first_name'] . ' ' . $manager['last_name'], 'level' => $manager['level'], 'skills' => $manager['skills']];
                 $repo->log('card', sprintf('Nach der Open Stage bietet sich %s %s als Manager an.', $manager['first_name'], $manager['last_name']), $bandId);
             } elseif ($drop['kind'] === 'fan') {
@@ -396,7 +396,7 @@ final class Activities
         for ($i = 0; $i < $cfg['cards']; $i++) {
             $instrument = (string) Rng::weighted($weights);
             unset($weights[$instrument]);
-            $opts = ['instrument' => $instrument];
+            $opts = ['instrument' => $instrument, 'avoid' => $repo->lastNames()];
             if (Rng::chance($cfg['sameGenre']) && in_array($host['genres'][0], Catalog::INSTRUMENTS[$instrument]['genres'], true)) {
                 $opts['genre'] = $host['genres'][0];
             }

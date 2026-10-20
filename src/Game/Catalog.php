@@ -194,21 +194,62 @@ final class Catalog
     ];
 
     public const FIRST_NAMES = [
-        'f' => ['Lena', 'Mia', 'Zoe', 'Nora', 'Ida', 'Lou', 'Maja', 'Elif', 'Aylin', 'Jana', 'Kira', 'Romy', 'Tessa', 'Nina',
-            'Paula', 'Greta', 'Yara', 'Selin', 'Amara', 'Ronja', 'Frieda', 'Leni', 'Mara', 'Ella', 'Juna', 'Svea', 'Malin',
-            'Nele', 'Ivy', 'Rosa', 'Carla', 'Hanna', 'Leyla', 'Ines', 'Alma', 'Mila', 'Thea', 'Esra', 'Sanna', 'Fenja'],
-        'm' => ['Finn', 'Jonas', 'Emil', 'Mats', 'Ole', 'Ben', 'Luca', 'Noah', 'Arda', 'Milan', 'Theo', 'Jannik', 'Bo', 'Can',
-            'Malik', 'Tarek', 'Levi', 'Henri', 'Matteo', 'Kian', 'Elias', 'Anton', 'Jasper', 'Rafael', 'Linus', 'Juri', 'Nils',
-            'Oskar', 'Yusuf', 'Pablo', 'Kofi', 'Sami', 'Joscha', 'Ruben', 'Vince', 'Lasse', 'Timo', 'Aaron', 'Enzo', 'Moritz'],
-        'd' => ['Kim', 'Robin', 'Charlie', 'Alex', 'Sascha', 'Noa', 'Sky', 'Jo', 'Toni', 'Kai', 'Mika', 'Sam', 'Ari', 'Rio',
-            'Quinn', 'Luan'],
+        'f' => [
+            'Lena', 'Mia', 'Zoe', 'Nora', 'Ida', 'Lou', 'Maja', 'Elif', 'Aylin', 'Jana', 'Kira', 'Romy', 'Tessa',
+            'Nina', 'Paula', 'Greta', 'Yara', 'Selin', 'Amara', 'Ronja', 'Frieda', 'Leni', 'Mara', 'Ella', 'Juna',
+            'Svea', 'Malin', 'Nele', 'Ivy', 'Rosa', 'Carla', 'Hanna', 'Leyla', 'Ines', 'Alma', 'Mila', 'Thea',
+            'Esra', 'Sanna', 'Fenja', 'Lotta', 'Merle', 'Clara', 'Emma', 'Luisa', 'Marlene', 'Pia', 'Sophie', 'Zara',
+            'Ayla', 'Dilara', 'Nika', 'Kaja', 'Lia', 'Liv', 'Smilla', 'Wanda', 'Hedda', 'Elina', 'Fiona', 'Julia',
+            'Laura', 'Nadia', 'Olivia', 'Priya', 'Amira', 'Noemi', 'Imani', 'Chiara', 'Bianca', 'Valentina', 'Sofia',
+            'Marta', 'Agnes', 'Vera', 'Tilda', 'Ylva', 'Elsa', 'Saga', 'Ingrid', 'Mira', 'Hira', 'Nour', 'Leila',
+            'Asha', 'Keira', 'Maeve', 'Siobhan', 'Niamh', 'Aiko', 'Yuna', 'Mei', 'Linh', 'Hana', 'Ada', 'Ebba',
+            'Juli', 'Edda', 'Lilly', 'Mona',
+        ],
+        'm' => [
+            'Finn', 'Jonas', 'Emil', 'Mats', 'Ole', 'Ben', 'Luca', 'Noah', 'Arda', 'Milan', 'Theo', 'Jannik', 'Bo',
+            'Can', 'Malik', 'Tarek', 'Levi', 'Henri', 'Matteo', 'Kian', 'Elias', 'Anton', 'Jasper', 'Rafael',
+            'Linus', 'Juri', 'Nils', 'Oskar', 'Yusuf', 'Pablo', 'Kofi', 'Sami', 'Joscha', 'Ruben', 'Vince', 'Lasse',
+            'Timo', 'Aaron', 'Enzo', 'Moritz', 'Felix', 'Paul', 'Leon', 'Max', 'Jakob', 'Karl', 'Fritz', 'Hugo',
+            'Johann', 'Konstantin', 'Lennart', 'Mads', 'Sören', 'Torben', 'Hannes', 'Bastian', 'Fabian', 'Dario',
+            'Marco', 'Nico', 'Diego', 'Mateo', 'Tiago', 'Rui', 'Omar', 'Karim', 'Emre', 'Deniz', 'Baran', 'Kerem',
+            'Ilias', 'Nikolai', 'Dmitri', 'Pavel', 'Marek', 'Tomasz', 'Jakub', 'Ivo', 'Goran', 'Luka', 'Kenji',
+            'Haruto', 'Minh', 'Jae', 'Arjun', 'Ravi', 'Kwame', 'Tunde', 'Desmond', 'Jamal', 'Silas', 'Elio',
+            'Mattis', 'Piet', 'Jarno', 'Aksel', 'Erik', 'Gustav', 'Viktor', 'Ezra',
+        ],
+        'd' => [
+            'Kim', 'Robin', 'Charlie', 'Alex', 'Sascha', 'Noa', 'Sky', 'Jo', 'Toni', 'Kai', 'Mika', 'Sam', 'Ari',
+            'Rio', 'Quinn', 'Luan', 'Eden', 'River', 'Jules', 'Andy', 'Nico', 'Lumi', 'Sasha', 'Ash', 'Remy', 'Jona',
+            'Fynn', 'Elia', 'Nova', 'Wren', 'Indigo', 'Phoenix', 'Rune', 'Sunny', 'Yuki', 'Ren',
+        ],
     ];
 
-    public const LAST_NAMES = ['Berger', 'Kowalski', 'Yılmaz', 'Novak', 'Lindqvist', 'Okafor', 'Moreau', 'Petrov', 'Schulz',
-        'Haas', 'Brandt', 'Falk', 'Vogel', 'Engel', 'Stern', 'Winter', 'Sommer', 'Krüger', 'Rossi', 'Silva', 'Nakamura',
-        'Larsen', 'Dumont', 'Kaya', 'Demir', 'Andersen', 'Hoffmann', 'Wolff', 'Fuchs', 'Lorenz', 'Kraft', 'Blum', 'Roth',
-        'Adler', 'Seidel', 'Voss', 'Graf', 'Costa', 'Santos', 'Nguyen', 'Tran', 'Park', 'Ortega', 'Mendes', 'Eriksen',
-        'Funke', 'Donner', 'Hertz', 'Kling', 'Marlow', 'Quast', 'Reyes', 'Asante', 'Hayashi', 'Oyelaran', 'Brenner'];
+    public const LAST_NAMES = [
+        'Berger', 'Kowalski', 'Yılmaz', 'Novak', 'Lindqvist', 'Okafor', 'Moreau', 'Petrov', 'Schulz', 'Haas',
+        'Brandt', 'Falk', 'Vogel', 'Engel', 'Stern', 'Winter', 'Sommer', 'Krüger', 'Rossi', 'Silva', 'Nakamura',
+        'Larsen', 'Dumont', 'Kaya', 'Demir', 'Andersen', 'Hoffmann', 'Wolff', 'Fuchs', 'Lorenz', 'Kraft', 'Blum',
+        'Roth', 'Adler', 'Seidel', 'Voss', 'Graf', 'Costa', 'Santos', 'Nguyen', 'Tran', 'Park', 'Ortega', 'Mendes',
+        'Eriksen', 'Funke', 'Donner', 'Hertz', 'Kling', 'Marlow', 'Quast', 'Reyes', 'Asante', 'Hayashi', 'Oyelaran',
+        'Brenner', 'Albrecht', 'Arnold', 'Bauer', 'Beck', 'Behrens', 'Böhm', 'Busch', 'Dietrich', 'Ebert', 'Ernst',
+        'Fischer', 'Frank', 'Friedrich', 'Gärtner', 'Günther', 'Hahn', 'Hartmann', 'Heinrich', 'Herrmann', 'Huber',
+        'Jäger', 'Jung', 'Kaiser', 'Keller', 'Klein', 'Koch', 'Köhler', 'König', 'Krause', 'Kuhn', 'Lang', 'Lehmann',
+        'Lindner', 'Ludwig', 'Maier', 'Martin', 'Meyer', 'Möller', 'Morgenstern', 'Neumann', 'Otto', 'Peters',
+        'Pohl', 'Richter', 'Ritter', 'Sauer', 'Schäfer', 'Scholz', 'Schreiber', 'Schwarz', 'Simon', 'Stark', 'Thiel',
+        'Ulrich', 'Walter', 'Weber', 'Weiß', 'Werner', 'Winkler', 'Ziegler', 'Zimmermann', 'Abara', 'Achterberg',
+        'Aguilar', 'Ahmadi', 'Alvarez', 'Amari', 'Arslan', 'Aydın', 'Barros', 'Bianchi', 'Bjørnstad', 'Blanc',
+        'Bondarenko', 'Brooks', 'Byrne', 'Calloway', 'Carvalho', 'Castillo', 'Chen', 'Contreras', 'Dahl', 'Dalton',
+        'De Luca', 'Delacroix', 'Diallo', 'Dos Santos', 'Dubois', 'Duarte', 'Ekström', 'Esposito', 'Fabre',
+        'Ferreira', 'Fontaine', 'Gallagher', 'García', 'Gomes', 'Greco', 'Halvorsen', 'Hansen', 'Hendricks', 'Holm',
+        'Horvat', 'Ibrahim', 'Ivanova', 'Jansen', 'Jensen', 'Johansson', 'Kapoor', 'Karlsson', 'Kawasaki', 'Kelly',
+        'Kim', 'Kovač', 'Kristiansen', 'Lambert', 'Laurent', 'Lee', 'Lund', 'Mahler', 'Marino', 'Mbeki', 'Mercier',
+        'Moretti', 'Murphy', 'Mwangi', 'Nascimento', 'Nielsen', 'O’Brien', 'Okonkwo', 'Olsen',
+        'Osei', 'Özdemir', 'Pereira', 'Popescu', 'Quinn', 'Ramos', 'Rasmussen', 'Ricci', 'Rivera', 'Romano',
+        'Rousseau', 'Russo', 'Saito', 'Sánchez', 'Schmitt', 'Sato', 'Shah', 'Singh', 'Sørensen', 'Suzuki',
+        'Takahashi', 'Tanaka', 'Torres', 'Toure', 'Valdez', 'Van Dijk', 'Varga', 'Vega', 'Wagner', 'Watanabe',
+        'Wiśniewski', 'Yamamoto', 'Zhang', 'Zielinski', 'Abendroth', 'Bergmann', 'Blau', 'Brückner', 'Dornbusch',
+        'Eisenberg', 'Feldmann', 'Finkenzeller', 'Flieder', 'Glanz', 'Hagedorn', 'Heller', 'Himmel', 'Holler',
+        'Kirchner', 'Klang', 'Lerche', 'Lichtenberg', 'Mondschein', 'Nachtigall', 'Regen', 'Rosenthal', 'Sänger',
+        'Silberstein', 'Sonntag', 'Steinmann', 'Sturm', 'Tanner', 'Taube', 'Wiesner', 'Wildner', 'Wunder',
+    ];
 
     public const SKIN_TONES = ['#f6d7c3', '#eac0a2', '#d9a27e', '#c58c63', '#a86f4b', '#8a5536', '#6b3f27', '#4b2c1c'];
     public const HAIR_COLORS = ['#1d1612', '#3b2a20', '#5a3b26', '#8a5a33', '#c9a15b', '#e3c88a', '#a8442a', '#9a9a9a', '#e8e4dc'];

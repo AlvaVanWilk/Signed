@@ -140,6 +140,22 @@ test('Packs kosten Geld und landen im Katalog', function () {
     checkApiError(fn () => $p->post('buyPack', ['pack' => 'gibtsnicht']), 'Pack');
 });
 
+test('Nachnamen wiederholen sich im eigenen Label nicht', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Namen');
+    $db->exec('UPDATE labels SET money = 100000');
+    $names = [];
+    for ($i = 0; $i < 12; $i++) {
+        foreach ($p->post('buyPack', ['pack' => 'studio'])['cards'] as $card) {
+            if ($card['kind'] !== 'gear') {
+                $names[] = $card[$card['kind']]['lastName'];
+            }
+        }
+    }
+    check(count($names) > 40, 'genug Karten gezogen');
+    checkEquals(count($names), count(array_unique($names)));
+});
+
 test('Jam-Café: ein Musiker ohne Band findet neue Musiker, einmal am Tag', function () {
     $db = freshDb();
     $p = player($db);

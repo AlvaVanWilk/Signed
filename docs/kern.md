@@ -101,7 +101,7 @@ Orte nach Bandruhm: Kneipe (ab 0), Club (30), Konzertsaal (150), Halle (600), Ar
 Das Stadion bleibt der Tournee vorbehalten.
 
 - Ein Gig hat mindestens 3 Lieder, höchstens so viele, wie die Band produziert hat, und ohne Manager höchstens 3.
-  Ein Manager erlaubt 3 + ⌈Stufe × 1,4⌉ Lieder (Stufe 5: 10 Lieder = 5 Minuten).
+  Ein Manager erlaubt 3 + ⌈Stufe × 1,4⌉ Lieder (Stufe 5: 10 Lieder = 4 Minuten).
 - Verhandler: +8 % Gage pro Stufe. PR-Profi: +8 % Ruhm pro Stufe. Scout: weniger gewöhnliche Karten in Läden.
   Managt einer mehrere Bands, wird seine Stufe durch die Zahl der Bands geteilt.
 - Publikumsleiste: startet bei 0 – das Publikum muss erst überzeugt werden. Im ersten Lied rückt sie pro Abschnitt
@@ -122,7 +122,7 @@ Das Stadion bleibt der Tournee vorbehalten.
 
 ### Minispiele
 
-Ein Lied dauert 30 Sekunden. Bewertet wird in Perfekt / Gut / Daneben; Trefferquote = (Perfekt + 0,6 × Gut) / Anzahl.
+Ein Lied dauert 24 Sekunden: 12 Takte 4/4 (oder 16 Takte 3/4) bei 120 BPM – alle Genres im selben Tempo und derselben Tonart, damit sich alle Spuren mischen lassen. Bewertet wird in Perfekt / Gut / Daneben; Trefferquote = (Perfekt + 0,6 × Gut) / Anzahl.
 
 - **Rhythmus** (Solo-Probe für alle außer Gesang und Geige): vier Spuren, Tasten D F J K oder Tippen.
   Dichte 0,25–0,55 je nach Können. Zeitfenster Perfekt 60–75 ms, Gut 135–185 ms, Absolutes Gehör +20 ms.
@@ -132,7 +132,7 @@ Ein Lied dauert 30 Sekunden. Bewertet wird in Perfekt / Gut / Daneben; Trefferqu
 - **Mischpult** (Studio): Die Band spielt, die Pegel gleiten ständig – ein Zufallspfad, der zur Mitte zurückstrebt.
   Neuer Zielpunkt alle 0,7–1,4 Sekunden, Schritt 0,05–0,18; je schwächer der Musiker, desto öfter und weiter.
   Bis zu 4 Musiker haben eigene Spuren; größere Bands werden zu Gruppen (Rhythmus, Harmonie, Melodie) mit
-  dem durchschnittlichen Können zusammengefasst. Jede Spur hat 6 Abschnitte à 5 Sekunden, bewertet wie oben.
+  dem durchschnittlichen Können zusammengefasst. Jede Spur hat 6 Abschnitte à 4 Sekunden (2 Takte), bewertet wie oben.
   Der grüne Bereich ist ±11–19 %, je nach Sound der Band.
 - Solo-Probe: Können + 4 × Trefferquote^1,5 × Talent × max(0,08; 1 − Können/110).
 

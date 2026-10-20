@@ -12,8 +12,9 @@ final class Balance
     // ---------- Label ----------
     public const START_MONEY = 2000;
 
-    /** Ein Lied dauert überall 30 Sekunden: im Minispiel und bei Auftritten. */
-    public const SONG_SECONDS = 30;
+    /** Ein Lied dauert überall 24 Sekunden: 12 Takte 4/4 (oder 16 Takte 3/4) bei 120 BPM – im Minispiel und bei Auftritten. */
+    public const SONG_SECONDS = 24;
+    public const BPM = 120;
 
     // ---------- Musiker ----------
     /**

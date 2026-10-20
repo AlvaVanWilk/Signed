@@ -13,15 +13,16 @@ final class Catalog
         'legendary' => ['name' => 'Legendär'],
     ];
 
+    /** Alle Spuren haben dasselbe Tempo und dieselbe Tonart, damit sich jedes Genre mit jedem mischen lässt. */
     public const GENRES = [
-        'pop' => ['name' => 'Pop', 'bpm' => 112],
-        'rock' => ['name' => 'Rock', 'bpm' => 126],
-        'metal' => ['name' => 'Metal', 'bpm' => 160],
-        'punk' => ['name' => 'Punk', 'bpm' => 172],
-        'jazz' => ['name' => 'Jazz', 'bpm' => 132],
-        'elektro' => ['name' => 'Elektro', 'bpm' => 126],
-        'hiphop' => ['name' => 'Hip-Hop', 'bpm' => 92],
-        'folk' => ['name' => 'Folk', 'bpm' => 104],
+        'pop' => ['name' => 'Pop', 'bpm' => Balance::BPM],
+        'rock' => ['name' => 'Rock', 'bpm' => Balance::BPM],
+        'metal' => ['name' => 'Metal', 'bpm' => Balance::BPM],
+        'punk' => ['name' => 'Punk', 'bpm' => Balance::BPM],
+        'jazz' => ['name' => 'Jazz', 'bpm' => Balance::BPM],
+        'elektro' => ['name' => 'Elektro', 'bpm' => Balance::BPM],
+        'hiphop' => ['name' => 'Hip-Hop', 'bpm' => Balance::BPM],
+        'folk' => ['name' => 'Folk', 'bpm' => Balance::BPM],
     ];
 
     /** genres = typische Genres (Klischee). Ein Musiker außerhalb davon ist „ungewöhnlich“. */

@@ -162,10 +162,10 @@ function resultHtml(r) {
     return `
       <div class="eyebrow">${esc(m ? `${m.firstName} ${m.lastName}` : '')}</div>
       <h2>${esc(r.title)}</h2>
-      <div class="reward-grid">${reward('Ruhm', `+${fmt1(res.fame)}`)}${res.presence ? reward('Präsenz', `+${fmt1(res.presence)}`) : ''}</div>
+      ${res.meter ? `<p class="muted">${moodText(res.meter)}</p>` : ''}
+      <div class="reward-grid">${reward('Ruhm', `+${fmt1(res.fame)}`)}${res.presence ? reward('Präsenz', `+${fmt1(res.presence)}`) : ''}${res.meter ? reward('Publikum', percent(res.meter / 100)) : ''}</div>
       ${res.jamOffer ? `<p>${res.jamOffer.cards.length} Musiker würden mit ${esc(m?.firstName ?? '')} eine Band gründen.</p>
-        <div class="tcg-grid small-cards">${res.jamOffer.cards.map((c) => musicianCard(c, { act: null, showStatus: false })).join('')}</div>
-        <div class="dialog-actions"><button class="btn primary" data-act="closeModalAndGo" data-href="#/musician/${r.musicianId}/jam">Auswählen</button></div>` : ''}`;
+        ${musician.jamOfferHtml(res.jamOffer, false)}` : ''}`;
   }
   const band = bandById(r.bandId);
   const drops = (res.drops || []).map((d) => d.kind === 'manager'
@@ -194,7 +194,9 @@ function showResults() {
   const r = app.state.results[0];
   resultModal = openModal({
     className: 'result-modal',
-    html: `${resultHtml(r)}<div class="dialog-actions"><button class="btn primary" data-close>Weiter</button></div>`,
+    html: `${resultHtml(r)}<div class="dialog-actions">${r.result.jamOffer
+      ? `<button class="btn ghost" data-close>Später</button><button class="btn primary" data-act="closeModalAndGo" data-href="#/musician/${r.musicianId}/jam">Auswählen</button>`
+      : '<button class="btn primary" data-close>Weiter</button>'}</div>`,
     onClose: () => {
       resultModal = null;
       app.state.results = app.state.results.filter((x) => x.id !== r.id);

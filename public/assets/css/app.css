@@ -759,3 +759,19 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .market-info .chip { align-self: flex-start; }
 .market-bid { display: flex; gap: 6px; }
 .market-bid input { flex: 1; min-width: 0; padding: 6px 8px; }
+
+/* ---------- Jam-Café: Gastgeber und Angebote ---------- */
+.jam-board { display: grid; grid-template-columns: 178px auto minmax(0, 1fr); gap: 14px; align-items: start; }
+.jam-host { display: flex; flex-direction: column; }
+.jam-plus { align-self: center; font-size: 2rem; font-weight: 800; color: var(--muted); }
+.jam-match { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; font-size: 0.82rem; color: var(--muted); }
+.jam-match .good { color: var(--ok); }
+.result-modal .jam-board { grid-template-columns: 120px auto minmax(0, 1fr); }
+.result-modal .jam-offers { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 640px) {
+  .jam-board, .result-modal .jam-board { grid-template-columns: 1fr; }
+  .jam-host { max-width: 150px; }
+  .jam-plus { display: none; }
+}
+.jam-offers { grid-template-columns: repeat(auto-fill, 178px); }
+@media (max-width: 640px) { .jam-offers { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); } }

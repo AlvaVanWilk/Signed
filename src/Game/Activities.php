@@ -166,7 +166,7 @@ final class Activities
             if ($type === 'jam') {
                 $songs = Balance::JAM['songs'];
                 $fameTotal = Balance::JAM['fame'] * $songs;
-                $expect = Balance::OPENSTAGE['expect'];
+                $expect = Balance::JAM['expect'];
                 $title = 'Jam-Café: ' . Rng::pick(Catalog::JAM_CAFES);
                 $presence = [];
             } else {
@@ -364,7 +364,7 @@ final class Activities
             'meter' => $reward['meter'] ?? null,
         ];
         if (!empty($reward['jam'])) {
-            $result['jamOffer'] = Jam::createOffer($repo, (int) $row['musician_id']);
+            $result['jamOffer'] = Jam::createOffer($repo, (int) $row['musician_id'], (float) ($reward['meter'] ?? 50));
         }
         return $result;
     }

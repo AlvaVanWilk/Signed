@@ -80,7 +80,7 @@ Ein schwacher Musiker zieht den Sound runter, und vier Musiker sind höchstens 2
 
 | | Lieder | Geld | Ruhm pro Lied | Besonderheit |
 |---|---|---|---|---|
-| Straßenmusik | 3 | – | 0,3 × (1 − Ruhm/150), mindestens 10 % | Präsenz +0,3–0,8; auch einzeln ohne Band |
+| Straßenmusik | 3 | – | 0,3 × (1 − Ruhm/150), mindestens 10 %; Erwartung 25 | Präsenz +0,3–0,8; auch einzeln ohne Band |
 | Bandprobe | 2 | – | – | Eingespieltheit × 2,5, etwas Können für alle |
 | Open Stage | 2 | – | 1,4 × (1 − Ruhm/120) | 7 % Manager-Karte, sonst 15 % Fan-Karte (+3–10 Ruhm) |
 | Gig | 1 bis Maximum | Gage des Ortes pro Lied, vorher bekannt | je nach Ort | erst mit Platte |
@@ -144,8 +144,10 @@ Ein Lied dauert 30 Sekunden. Bewertet wird in Perfekt / Gut / Daneben; Trefferqu
 
 ### Jam-Café
 
-Nur für Musiker ohne Band, 2 Lieder, beliebig oft. Danach stellen sich 3 Musiker vor
-(72 % gewöhnlich, 24 % selten, 4 % episch), die zum Gastgeber passen:
+Nur für Musiker ohne Band, 2 Lieder, beliebig oft. Im Publikum sitzen Musiker: Erwartung 35 (Straßenmusik 25,
+Open Stage 12). Danach stellen sich 3 Musiker vor, die zum Gastgeber passen. Wie gut sie sind, hängt von der
+Session ab (Publikumsleiste 0 → 100 %): Seltenheit von 85/14/1 % auf 35/45/20 % (gewöhnlich/selten/episch),
+Mindest-Können von 5 auf 26.
 - jeder spielt ein anderes Instrument, das der Gastgeber nicht spielt, und teilt ein Genre mit ihm,
 - kein Charakterzug reibt sich mit dem Gastgeber; ist er Partytier, ist der neue es oft auch,
 - alle haben Können-Stufe 0 (höhere Stufen gibt es nur über den Talent-Scout).

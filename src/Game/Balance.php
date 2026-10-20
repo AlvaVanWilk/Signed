@@ -130,15 +130,24 @@ final class Balance
     /** Ausschlag eines Patzers bzw. Glanzmoments [min, max]. */
     public const LIVE_SWING = [7.0, 13.0];
     /** Straßenmusik: Das Geld behalten die Musiker; fürs Label bleiben etwas Präsenz und Bekanntheit. */
-    public const BUSKING = ['songs' => 3, 'presence' => [0.3, 0.8], 'fame' => 0.3, 'expect' => 10, 'falloff' => 150, 'minFactor' => 0.1];
+    public const BUSKING = ['songs' => 3, 'presence' => [0.3, 0.8], 'fame' => 0.3, 'expect' => 25, 'falloff' => 150, 'minFactor' => 0.1];
     /** Bandprobe: keine Zuschauer, dafür doppelte Eingespieltheit und etwas Können für alle. */
     public const REHEARSAL = ['songs' => 2, 'cohesion' => 2.5, 'skill' => 0.4];
     /** Band-Promo: alle Mitglieder sind unterwegs und gewinnen Präsenz, die Band etwas Ruhm. */
     public const BAND_PROMO = ['seconds' => 600, 'presence' => [1.2, 2.5], 'fame' => [1.0, 3.0]];
     /** Jam-Café: nur Musiker ohne Band; danach drei passende Musiker (Stufe 0) zur Auswahl für eine Band. */
+    /**
+     * Im Publikum sitzen Musiker – sie erwarten einiges. Wie gut die Session lief (Publikumsleiste 0–100),
+     * bestimmt, wie gut die Musiker sind, die sich danach melden: Seltenheit und Können werden zwischen
+     * „schlecht“ und „begeistert“ gemischt. Können bleibt immer unter Stufe 1.
+     */
     public const JAM = [
-        'songs' => 2, 'cards' => 3, 'fame' => 0.2,
-        'odds' => ['common' => 72, 'rare' => 24, 'epic' => 4, 'legendary' => 0],
+        'songs' => 2, 'cards' => 3, 'fame' => 0.2, 'expect' => 35,
+        'odds' => [
+            'low' => ['common' => 85, 'rare' => 14, 'epic' => 1, 'legendary' => 0],
+            'high' => ['common' => 35, 'rare' => 45, 'epic' => 20, 'legendary' => 0],
+        ],
+        'minSkill' => [5.0, 26.0],
     ];
     public const OPENSTAGE = [
         'songs' => 2, 'fame' => 1.4, 'expect' => 12, 'falloff' => 120,

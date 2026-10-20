@@ -62,7 +62,8 @@ final class Generator
         // Unter maxSkill bleiben (z. B. Können-Stufe 0 aus dem Jam-Café).
         $best = max($skill1, (float) $skill2);
         if (isset($opts['maxSkill']) && $best >= $opts['maxSkill']) {
-            $scale = $opts['maxSkill'] * Rng::float(0.7, 0.98) / $best;
+            $floor = min($opts['maxSkill'] * 0.98, max($opts['maxSkill'] * 0.7, $opts['minSkill'] ?? 0));
+            $scale = Rng::float($floor, $opts['maxSkill'] * 0.98) / $best;
             $skill1 *= $scale;
             $skill2 = $skill2 === null ? null : $skill2 * $scale;
         }

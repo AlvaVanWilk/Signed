@@ -562,3 +562,28 @@ test('Wechselbörse: Marktwert steigt mit Können, Stufen und Ruhm', function ()
     $better = musician(['skill1' => 50.0, 'presence' => 20.0, 'fame' => 150.0, 'level' => 1, 'abilities' => ['talent']]);
     check(Signed\Game\Transfers::value($better) > 3 * Signed\Game\Transfers::value($base));
 });
+
+test('Jam-Café: Je besser die Session, desto besser die Musiker, die sich melden', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Qualitaet');
+    $repo = new Signed\Game\Repo($db, $p->get('state')['label']['id']);
+    $host = $p->get('state')['musicians'][0];
+    $average = function (float $meter) use ($repo, $host): float {
+        $sum = 0.0;
+        $count = 0;
+        for ($i = 0; $i < 60; $i++) {
+            foreach (Signed\Game\Jam::createOffer($repo, $host['id'], $meter)['cards'] as $card) {
+                $sum += $card['instruments'][0]['skill'];
+                $count++;
+                checkEquals(0, $card['level']);
+            }
+        }
+        return $sum / $count;
+    };
+    $poor = $average(10);
+    $great = $average(95);
+    check($great > $poor + 5, "begeistert $great, schlecht $poor");
+    $offer = $p->get('state')['jamOffers'][0];
+    checkEquals($host['id'], $offer['host']['id']);
+    check(isset($offer['cards'][0]['match']['chemistry']));
+});

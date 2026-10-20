@@ -3,7 +3,7 @@ import { app, bandById, cat, defineActions, isBusy, musicianById, mutate, naviga
 import { openLive } from '../live.js';
 import { chip } from '../cards.js';
 import { duration, esc, money, openModal, timeAgo, toast } from '../ui.js';
-import { practiceTile, promoTile, suggestName } from './bands.js';
+import { chemistryLabel, practiceTile, promoTile, suggestName } from './bands.js';
 
 /** Untermenü eines Musikers. solo = nur ohne Band. */
 export const MUSICIAN_SECTIONS = [
@@ -89,12 +89,7 @@ function jam(m) {
   if (offer) {
     return `
       ${head('Jam-Café', m)}
-      <p class="muted">Diese Musiker würden mit ${esc(m.firstName)} eine Band gründen. Wähl einen aus – oder lehn alle ab und jamme noch einmal.</p>
-      <div class="tcg-grid">${offer.cards.map((c, index) => musicianCard(c, {
-        act: null,
-        showStatus: false,
-        extra: `<button class="btn primary small" data-act="jamChoose" data-offer="${offer.id}" data-index="${index}">Band gründen</button>`,
-      })).join('')}</div>
+      ${jamOfferHtml(offer, true)}
       <div><button class="btn ghost" data-act="jamDecline" data-offer="${offer.id}">Alle ablehnen</button></div>`;
   }
   return `
@@ -106,6 +101,35 @@ function jam(m) {
         <div class="action-main"><b>Jam-Session</b><span class="muted small">2 Lieder · Musiker für eine Band finden</span></div>
         <button class="btn primary" data-act="solo" data-id="${m.id}" data-type="jam" ${busyOf(m) ? 'disabled' : ''}>Jammen</button>
       </div>
+    </div>`;
+}
+
+/** Gastgeber und Angebote nebeneinander; was zum Gastgeber passt, ist hervorgehoben. */
+export function jamOfferHtml(offer, withButtons) {
+  const host = offer.host;
+  const hostTypes = host.instruments.map((i) => i.type);
+  return `
+    <div class="jam-board">
+      <div class="jam-host">
+        <span class="slot-label">${esc(host.firstName)}</span>
+        ${musicianCard(host, { act: null, showStatus: false })}
+      </div>
+      <div class="jam-plus">+</div>
+      <div class="tcg-grid jam-offers">${offer.cards.map((c, index) => {
+        const type = c.instruments[0].type;
+        const chem = c.match.chemistry;
+        return musicianCard(c, {
+          act: null,
+          showStatus: false,
+          extra: `
+            <ul class="jam-match">
+              <li class="good">${instrumentIcon(type)} ${esc(instrumentName(type))}${hostTypes.includes(type) ? '' : ' ergänzt'}</li>
+              <li class="good">🎵 ${c.match.genres.map((g) => esc(genreName(g))).join(', ')}</li>
+              <li class="${chem >= 1.0 ? 'good' : ''}">🤝 Chemie: ${chemistryLabel(chem)}</li>
+            </ul>
+            ${withButtons ? `<button class="btn primary small" data-act="jamChoose" data-offer="${offer.id}" data-index="${index}">Band gründen</button>` : ''}`,
+        });
+      }).join('')}</div>
     </div>`;
 }
 

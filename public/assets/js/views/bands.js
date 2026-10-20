@@ -93,7 +93,7 @@ function overview(b, members) {
     <div class="danger-zone"><button class="btn danger ghost small" data-act="bandDisband" data-id="${b.id}">Band auflösen</button></div>`;
 }
 
-function chemistryLabel(chemistry) {
+export function chemistryLabel(chemistry) {
   if (chemistry >= 1.15) return 'Super';
   if (chemistry >= 1.0) return 'Gut';
   if (chemistry >= 0.85) return 'Angespannt';

@@ -124,10 +124,10 @@ final class BandCalc
     }
 
     /** Wie viel ein Musiker vom Publikum abbekommt. */
-    public static function presenceFactor(array $m, ?array $model): float
+    public static function fameShare(array $m, ?array $model): float
     {
-        $p = Balance::PRESENCE_FACTOR;
-        $factor = $p['base'] + $m['presence'] * $p['perPresence'];
+        $p = Balance::FAME_SHARE;
+        $factor = $p['base'];
         if (Levels::has($m, 'ausstrahlung')) {
             $factor += $p['ausstrahlung'];
         }
@@ -144,7 +144,7 @@ final class BandCalc
     }
 
     /**
-     * Jeder verdient eigentlich einzeln Ruhm (Präsenz, Eigenschaften). Die Summe wird wie in einer
+     * Jeder verdient eigentlich einzeln Bekanntheit (Eigenschaften, Instrument-Design). Die Summe wird wie in einer
      * Zugewinngemeinschaft zu gleichen Teilen verteilt.
      * @return array<int, float> Musiker-ID => Gewinn
      */
@@ -154,7 +154,7 @@ final class BandCalc
         if ($count === 0) {
             return [];
         }
-        $individual = array_map(static fn ($m) => $total / $count * self::presenceFactor($m, self::gearOf($m, $gear)), $members);
+        $individual = array_map(static fn ($m) => $total / $count * self::fameShare($m, self::gearOf($m, $gear)), $members);
         $share = round(array_sum($individual) / $count, 2);
         $out = [];
         foreach ($members as $m) {

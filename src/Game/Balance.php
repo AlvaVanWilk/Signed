@@ -118,9 +118,9 @@ final class Balance
     public const CHEMISTRY_PARTY = 0.06;
 
     // ---------- Ruhm ----------
-    /** Einzelanteil am Ruhmgewinn: Grundwert + Präsenz + Boni. */
-    public const PRESENCE_FACTOR = [
-        'base' => 0.6, 'perPresence' => 0.008, 'ausstrahlung' => 0.15, 'charisma' => 0.3, 'unusual' => 0.3, 'design' => 0.2,
+    /** Einzelanteil am Ruhmgewinn: Grundwert + Boni. */
+    public const FAME_SHARE = [
+        'base' => 0.8, 'ausstrahlung' => 0.15, 'charisma' => 0.3, 'unusual' => 0.3, 'design' => 0.2,
     ];
     /** Bei diesem Sound gibt ein Auftritt genau den Grund-Ruhm des Ortes. */
     public const SOUND_FAME_REF = 30;
@@ -140,12 +140,12 @@ final class Balance
     public const LIVE_WARMUP_REACH = 0.6;
     /** Ausschlag eines Patzers bzw. Glanzmoments [min, max]. */
     public const LIVE_SWING = [7.0, 13.0];
-    /** Straßenmusik: Das Geld behalten die Musiker; fürs Label bleiben etwas Präsenz und Bekanntheit. */
-    public const BUSKING = ['songs' => 3, 'presence' => [0.3, 0.8], 'fame' => 0.3, 'expect' => 25, 'falloff' => 150, 'minFactor' => 0.1];
+    /** Straßenmusik: Das Geld behalten die Musiker; fürs Label bleibt etwas Bekanntheit. */
+    public const BUSKING = ['songs' => 3, 'fame' => 0.3, 'expect' => 25, 'falloff' => 150, 'minFactor' => 0.1];
     /** Bandprobe: keine Zuschauer, dafür doppeltes Zusammenspiel und etwas Können für alle. */
     public const REHEARSAL = ['songs' => 2, 'cohesion' => 2.5, 'skill' => 0.4];
-    /** Band-Promo: alle Mitglieder sind unterwegs und gewinnen Präsenz, die Band etwas Ruhm. */
-    public const BAND_PROMO = ['seconds' => 600, 'presence' => [1.2, 2.5], 'fame' => [1.0, 3.0]];
+    /** Band-Promo: alle Mitglieder sind unterwegs, jeder bringt Bekanntheit wie bei der Promo-Mission. */
+    public const BAND_PROMO = ['seconds' => 600, 'fame' => [0.8, 2.0]];
     /** Jam-Café: nur Musiker ohne Band; danach drei passende Musiker (Stufe 0) zur Auswahl für eine Band. */
     /**
      * Im Publikum sitzen Musiker – sie erwarten einiges. Wie gut die Session lief (Publikumsleiste 0–100),
@@ -190,7 +190,9 @@ final class Balance
 
     // ---------- Promo-Mission ----------
     public const PROMO_SECONDS = 600;
-    public const PROMO_GAIN = [2.0, 4.0];
+    /** Promo-Mission: Bekanntheit [min, max], geteilt durch (1 + Bekanntheit / Abfall). */
+    public const PROMO_FAME = [1.0, 2.5];
+    public const PROMO_FAME_FALLOFF = 40;
     public const ATTRACTIVE_FACTOR = 1.5;
 
     // ---------- Platte ----------
@@ -224,8 +226,8 @@ final class Balance
     // ---------- Wechselbörse ----------
     /** Laufzeit eines Angebots, Verlängerung bei späten Geboten, Mindestschritt beim Überbieten. */
     public const TRANSFER = ['seconds' => 172800, 'snipe' => 600, 'step' => 0.05, 'minStep' => 10];
-    /** Marktwert = base + skill × Können² + presence × Präsenz + fame × Ruhm + level × (beide Stufen) + ability × Fähigkeiten. */
-    public const TRANSFER_VALUE = ['base' => 50, 'skill' => 0.8, 'presence' => 5, 'fame' => 5, 'level' => 300, 'ability' => 100];
+    /** Marktwert = base + skill × Können² + fame × Bekanntheit + level × (beide Stufen) + ability × Fähigkeiten. */
+    public const TRANSFER_VALUE = ['base' => 170, 'skill' => 0.8, 'fame' => 5, 'level' => 300, 'ability' => 100];
 
     // ---------- Album-Charts ----------
     /** Chartpunkte = Basis × Qualität² × Soundfaktor × Format × Perfekt × Ruhm. */

@@ -23,7 +23,7 @@ final class Transfers
     {
         $v = Balance::TRANSFER_VALUE;
         $skill = max($m['skill1'], (float) ($m['skill2'] ?? 0));
-        $value = $v['base'] + $v['skill'] * $skill ** 2 + $v['presence'] * $m['presence'] + $v['fame'] * $m['fame']
+        $value = $v['base'] + $v['skill'] * $skill ** 2 + $v['fame'] * $m['fame']
             + $v['level'] * ($m['level'] + Levels::forFame($m['fame'])) + $v['ability'] * count($m['abilities']);
         return (int) (round($value / 10) * 10);
     }

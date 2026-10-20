@@ -171,7 +171,7 @@ function promo(b, members) {
     ${blockerNotice(b, members)}
     <div class="action-grid">
       ${actionTile({
-        icon: '📣', title: 'Band-Promo', meta: `${duration(cat().rules.bandPromoSeconds)} · Präsenz, Ruhm`,
+        icon: '📣', title: 'Band-Promo', meta: `${duration(cat().rules.bandPromoSeconds)} · Ruhm`,
         button: `<button class="btn primary" data-act="bandPromo" data-id="${b.id}" ${blocked ? 'disabled' : ''}>Losschicken</button>`,
       })}
       ${members.map((m) => promoTile(m, isBusy(m.busyUntil) || isBusy(b.busyUntil))).join('')}
@@ -182,7 +182,7 @@ export function promoTile(m, busy) {
   return actionTile({
     icon: face(m, 'md'),
     title: fullName(m),
-    meta: `Promo-Mission · ${duration(cat().rules.promoSeconds)} · Präsenz ${fmt0(m.presence)}`,
+    meta: `Promo-Mission · ${duration(cat().rules.promoSeconds)} · Bekanntheit ${fmt1(m.fame)}`,
     button: `<button class="btn" data-act="promo" data-id="${m.id}" ${busy ? 'disabled' : ''}>Los</button>`,
   });
 }
@@ -212,7 +212,7 @@ function gigs(b, members) {
         button: `<button class="btn" data-act="startActivity" data-id="${b.id}" data-type="openstage" ${disabled}>Spielen</button>`,
       })}
       ${actionTile({
-        icon: '🪙', title: 'Straßenmusik', meta: `${songsMeta(o.busking.songs)} · Präsenz`,
+        icon: '🪙', title: 'Straßenmusik', meta: `${songsMeta(o.busking.songs)} · etwas Ruhm`,
         button: `<button class="btn" data-act="startActivity" data-id="${b.id}" data-type="busking" ${disabled}>Spielen</button>`,
       })}
       ${actionTile({ icon: '🚌', title: 'Tournee', meta: 'Land · Kontinent · Welt', locked: true })}

@@ -153,7 +153,7 @@ function resultHtml(r) {
     return `
       <div class="eyebrow">Promo-Mission</div>
       <h2>${esc(m ? `${m.firstName} ${m.lastName}` : 'Promo')} ist zurück</h2>
-      <div class="reward-grid">${reward('Präsenz', `+${fmt1(res.presence)}`)}${reward('Präsenz jetzt', fmt1(res.total))}</div>`;
+      <div class="reward-grid">${reward('Bekanntheit', `+${fmt1(res.fame)}`)}${reward('Bekanntheit jetzt', fmt1(res.total))}</div>`;
   }
   if (r.bandId === null) {
     const m = musicianById(r.musicianId);
@@ -163,7 +163,7 @@ function resultHtml(r) {
       <div class="eyebrow">${esc(m ? `${m.firstName} ${m.lastName}` : '')}</div>
       <h2>${esc(r.title)}</h2>
       ${res.meter ? `<p class="muted">${moodText(res.meter)}</p>` : ''}
-      <div class="reward-grid">${reward('Bekanntheit', `+${fmt1(res.fame)}`)}${res.presence ? reward('Präsenz', `+${fmt1(res.presence)}`) : ''}${res.meter ? reward('Publikum', percent(res.meter / 100)) : ''}</div>
+      <div class="reward-grid">${reward('Bekanntheit', `+${fmt1(res.fame)}`)}${res.meter ? reward('Publikum', percent(res.meter / 100)) : ''}</div>
       ${jamOffer ? `<p>${jamOffer.cards.length} Musiker würden mit ${esc(m?.firstName ?? '')} eine Band gründen.</p>
         ${musician.jamOfferHtml(jamOffer, true)}` : ''}`;
   }
@@ -178,7 +178,6 @@ function resultHtml(r) {
     <div class="reward-grid">
       ${res.money ? reward('Gage', `+${money(res.money)}`) : ''}
       ${res.fame ? reward('Ruhm', `+${fmt1(res.fame)}`) : ''}
-      ${res.presence ? reward('Präsenz', `+${fmt1(res.presence)}`) : ''}
       ${res.cohesion ? reward('Zusammenspiel', `+${fmt1(res.cohesion)}`) : ''}
       ${res.meter ? reward('Publikum', percent(res.meter / 100)) : ''}
     </div>

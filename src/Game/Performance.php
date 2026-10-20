@@ -12,7 +12,7 @@ use Signed\Rng;
 final class Performance
 {
     /**
-     * @param list<array{name: string, instrument: string, skill: float, presence: float, abilities: list<string>}> $players
+     * @param list<array{name: string, instrument: string, skill: float, abilities: list<string>}> $players
      * @return array{timeline: list<array>, meter: float, perf: float}
      */
     public static function simulate(array $players, float $sound, float $expect, int $songs): array
@@ -40,7 +40,7 @@ final class Performance
                     if (Levels::has($p, 'nervenstark')) {
                         $mistake *= 0.6;
                     }
-                    $highlight = 0.02 + $p['skill'] * 0.0028 + $p['presence'] * 0.0008
+                    $highlight = 0.04 + $p['skill'] * 0.0028
                         + (Levels::techniques($p) ? 0.03 : 0) + (Levels::has($p, 'buehnentier') ? 0.05 : 0);
                     $highlight = max(0.02, min(0.36, $highlight));
                     $roll = Rng::float();

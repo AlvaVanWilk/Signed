@@ -5,21 +5,27 @@ import { esc } from '../ui.js';
 const SORTS = {
   level: (a, b) => b.level - a.level || b.fameLevel - a.fameLevel || maxSkill(b) - maxSkill(a),
   skill: (a, b) => maxSkill(b) - maxSkill(a),
-  presence: (a, b) => b.presence - a.presence,
   fame: (a, b) => b.fame - a.fame,
   newest: (a, b) => b.id - a.id,
 };
 
 const maxSkill = (m) => Math.max(...m.instruments.map((i) => i.skill));
 
-export function render() {
+/** Die Musiker so gefiltert und sortiert, wie der Katalog sie zeigt: erst ohne Band, dann in Bands. */
+export function catalogList() {
   const f = app.ui.catalog;
-  const c = cat();
   const list = app.state.musicians
     .filter((m) => !f.instrument || m.instruments.some((i) => i.type === f.instrument))
     .filter((m) => !f.genre || m.genres.includes(f.genre))
     .filter((m) => !f.status || (f.status === 'free' ? !m.bandId : !!m.bandId))
     .sort(SORTS[f.sort] || SORTS.level);
+  return [...list.filter((m) => !m.bandId), ...list.filter((m) => m.bandId)];
+}
+
+export function render() {
+  const f = app.ui.catalog;
+  const c = cat();
+  const list = catalogList();
   // Wer schon in einer Band spielt, rückt nach hinten und tritt zurück.
   const free = list.filter((m) => !m.bandId);
   const taken = list.filter((m) => m.bandId);
@@ -30,7 +36,7 @@ export function render() {
       ${select('instrument', f.instrument, 'Alle Instrumente', Object.entries(c.instruments).map(([k, v]) => [k, `${v.icon} ${v.name}`]))}
       ${select('genre', f.genre, 'Alle Genres', Object.entries(c.genres).map(([k, v]) => [k, v.name]))}
       ${select('status', f.status, 'Alle', [['free', 'Ohne Band'], ['band', 'In einer Band']])}
-      ${select('sort', f.sort, null, [['level', 'Stufe'], ['skill', 'Können'], ['presence', 'Präsenz'], ['fame', 'Bekanntheit'], ['newest', 'Neueste']])}
+      ${select('sort', f.sort, null, [['level', 'Stufe'], ['skill', 'Können'], ['fame', 'Bekanntheit'], ['newest', 'Neueste']])}
     </div>
     ${list.length ? '' : '<div class="empty">Keine Musiker.</div>'}
     ${free.length ? `<div class="tcg-grid">${free.map((m) => musicianCard(m)).join('')}</div>` : ''}

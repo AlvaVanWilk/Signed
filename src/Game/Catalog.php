@@ -70,7 +70,7 @@ final class Catalog
      */
     public const ABILITIES = [
         'talent' => ['name' => 'Talent', 'icon' => '🌱', 'desc' => 'Können wächst schneller.'],
-        'ausstrahlung' => ['name' => 'Ausstrahlung', 'icon' => '✨', 'desc' => 'Präsenz wächst schneller.'],
+        'ausstrahlung' => ['name' => 'Ausstrahlung', 'icon' => '✨', 'desc' => 'Promo bringt mehr Bekanntheit.'],
         'charisma' => ['name' => 'Charisma', 'icon' => '💫', 'desc' => 'Mehr Ruhm bei Auftritten.'],
         'nervenstark' => ['name' => 'Nervenstark', 'icon' => '🧊', 'desc' => 'Patzt live seltener.'],
         'gehoer' => ['name' => 'Absolutes Gehör', 'icon' => '👂', 'desc' => 'Mehr Spielraum in der Solo-Probe.'],

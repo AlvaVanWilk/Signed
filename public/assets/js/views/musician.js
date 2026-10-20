@@ -4,6 +4,7 @@ import { openLive } from '../live.js';
 import { chip } from '../cards.js';
 import { closeAllModals, duration, esc, money, openModal, timeAgo, toast } from '../ui.js';
 import { chemistryLabel, practiceTile, promoTile, suggestName } from './bands.js';
+import { catalogList } from './catalog.js';
 
 /** Untermenü eines Musikers. solo = nur ohne Band. */
 export const MUSICIAN_SECTIONS = [
@@ -27,7 +28,25 @@ export function renderMusician(route) {
 }
 
 function head(title, m) {
-  return `<div class="page-head"><div><div class="eyebrow">${esc(fullName(m))}</div><h1>${esc(title)}</h1></div></div>`;
+  return `${pager(m)}<div class="page-head"><div><div class="eyebrow">${esc(fullName(m))}</div><h1>${esc(title)}</h1></div></div>`;
+}
+
+/** Rückweg und Blättern durch die Liste, aus der der Musiker geöffnet wurde. */
+function pager(m) {
+  const nav = app.ui.musicianNav;
+  const ids = (nav?.ids ?? app.state.musicians.map((x) => x.id)).filter((id) => musicianById(id));
+  const index = ids.indexOf(m.id);
+  const section = location.hash.split('/')[3] ?? '';
+  const link = (id, label, cls) => `<a class="btn small ${cls}" href="#/musician/${id}${section ? `/${section}` : ''}">${label}</a>`;
+  return `
+    <div class="pager">
+      ${nav?.back ? `<a class="btn ghost small" href="${nav.back.href}">← ${esc(nav.back.label)}</a>` : '<span></span>'}
+      ${index >= 0 && ids.length > 1 ? `<span class="pager-steps">
+        ${link(ids[(index - 1 + ids.length) % ids.length], '‹', 'ghost')}
+        <span class="muted small">${index + 1} / ${ids.length}</span>
+        ${link(ids[(index + 1) % ids.length], '›', 'ghost')}
+      </span>` : ''}
+    </div>`;
 }
 
 const busyOf = (m) => isBusy(m.busyUntil) || (m.bandId && isBusy(bandById(m.bandId)?.busyUntil));
@@ -43,6 +62,7 @@ function profile(m) {
   const nextSkill = rules.skillLevels[m.level];
   const nextFame = rules.fameLevels[m.fameLevel];
   return `
+    ${pager(m)}
     <div class="profile">
       <div class="profile-card">${musicianCard(m, { act: null })}</div>
       <div class="profile-side">
@@ -185,7 +205,7 @@ function street(m) {
     <div class="action-grid">
       <div class="action-tile">
         <div class="action-icon">🪙</div>
-        <div class="action-main"><b>${esc(cat().genres[m.genres[0]].name)} auf der Straße</b><span class="muted small">3 Lieder · ${duration(3 * cat().rules.songSeconds)} · Präsenz</span></div>
+        <div class="action-main"><b>${esc(cat().genres[m.genres[0]].name)} auf der Straße</b><span class="muted small">3 Lieder · ${duration(3 * cat().rules.songSeconds)} · etwas Bekanntheit</span></div>
         <button class="btn" data-act="solo" data-id="${m.id}" data-type="busking" ${busyOf(m) ? 'disabled' : ''}>Spielen</button>
       </div>
     </div>`;
@@ -221,6 +241,16 @@ export function openAbilityChoice(id) {
 
 defineActions({
   openMusician({ id }) {
+    // Merken, woher wir kommen: Katalog, Band oder sonstwo – dorthin führt der Zurück-Knopf, und darin wird geblättert.
+    const [, view, viewId] = location.hash.split('/');
+    if (view === 'katalog') {
+      app.ui.musicianNav = { ids: catalogList().map((x) => x.id), back: { href: '#/katalog', label: 'Katalog' } };
+    } else if (view === 'band' && bandById(Number(viewId))) {
+      const band = bandById(Number(viewId));
+      app.ui.musicianNav = { ids: band.memberIds, back: { href: location.hash, label: band.name } };
+    } else if (view !== 'musician') {
+      app.ui.musicianNav = { ids: null, back: { href: location.hash || '#/', label: 'Zurück' } };
+    }
     navigate(`#/musician/${id}`);
   },
   async toggleFavorite({ id }) {
@@ -240,4 +270,12 @@ defineActions({
     const res = await mutate('soloStart', { musicianId: Number(id), type });
     if (res) openLive(res.activity.id);
   },
+});
+
+// Pfeiltasten blättern auf der Musikerseite.
+document.addEventListener('keydown', (e) => {
+  if (!location.hash.startsWith('#/musician/') || document.body.classList.contains('has-modal')) return;
+  if (e.target.closest?.('input, select, textarea')) return;
+  const button = document.querySelectorAll('.pager-steps .btn')[e.key === 'ArrowLeft' ? 0 : e.key === 'ArrowRight' ? 1 : -1];
+  if (button) location.hash = button.getAttribute('href');
 });

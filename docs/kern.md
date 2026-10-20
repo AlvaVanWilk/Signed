@@ -12,7 +12,7 @@ Der Kernkreislauf: **Musiker und Instrumente finden → Bands zusammenstellen �
 | Label | Konto mit Labelname, 2.000 ₲ Startkapital und ein Scout-Gutschein (keine Musiker zu Beginn) |
 | Läden | Talent-Scout (5 Musiker mit Können-Stufe 1, einer unterschreibt) und sechs Läden, in denen man mehrere Karten sieht und eine mitnimmt (siehe unten) |
 | Konto | Klick aufs Geld: Tantiemen pro Tag, Platten in den Charts, Kontoauszug |
-| Musiker | Einmalig, zufällig erzeugt: 1–2 Instrumente, Können, Präsenz, Bekanntheit, Genre-Symbole, Fähigkeiten (an die Können-Stufe gebunden), Charakterzüge, „Ungewöhnlich“, Profilbild. Favoriten ohne Band stehen in der zweiten Menüzeile |
+| Musiker | Einmalig, zufällig erzeugt: 1–2 Instrumente, Können, Bekanntheit, Genre-Symbole, Fähigkeiten (an die Können-Stufe gebunden), Charakterzüge, „Ungewöhnlich“, Profilbild. Favoriten ohne Band stehen in der zweiten Menüzeile |
 | Instrumente | 44 Modelle (11 Arten × 4 Seltenheiten); jedes Exemplar weicht pro Wert um bis zu ±12 vom Modell ab; frei tauschbar |
 | Manager | Stufe 1–5, 1–2 Fähigkeiten, bis zu 3 Bands mit geteilter Leistung |
 | Bands | Besetzungsregeln, Sound, Zusammenspiel, Chemie, Ruhm nach dem Ehe-Modell, Bandhistorie |
@@ -32,8 +32,7 @@ Tournee bzw. ausgeschriebenen Gigs (im Spiel ausgegraut markiert).
 
 ### Musiker
 
-- Startwerte je Seltenheit (Können / Präsenz): gewöhnlich 5–30 / 5–25, selten 15–42 / 10–35,
-  episch 25–52 / 15–45, legendär 35–58 / 25–55. Aus Läden kommt also höchstens Können-Stufe 1 und keine Bekanntheit.
+- Start-Können je Seltenheit: gewöhnlich 5–30, selten 15–42, episch 25–52, legendär 35–58. Aus Läden kommt also höchstens Können-Stufe 1 und keine Bekanntheit.
 - 20 % spielen zwei Instrumente. Dann gilt: Hauptinstrument × 0,85, Zweitinstrument × 0,55–0,8.
   Jede Probe verbessert nur das geübte Instrument (geteilter Können-Topf).
 - „Ungewöhnlich“ (2 %): Das Lieblingsgenre passt nicht zum Klischee des Instruments. Bringt mehr Ruhm.
@@ -44,10 +43,11 @@ Tournee bzw. ausgeschriebenen Gigs (im Spiel ausgegraut markiert).
   - Beide auf 3: **Legende**.
   - Namen der Können-Stufen: Anfänger, Fortgeschritten, Profi, Virtuose.
     Bekanntheits-Stufen: Unbekannt, Lokal bekannt, Szenegröße, Star.
-  - Auf der Karte: Können pro Instrument als Leiste aus 10 Kästchen (je 10 Punkte bis 100), Bekanntheit ⭐ und
-    Präsenz ✨ klein darunter, Lieblingsgenres als Symbole oben rechts.
+  - Auf der Karte: Kartenfarbe = Können-Stufe (grau, bronze, silber, gold), Funkeln und Schein = Bekanntheits-Stufe
+    (statisch, ohne Animation). Dazu Können pro Instrument als Leiste aus 10 Kästchen (je 10 Punkte bis 100),
+    Lieblingsgenres als Symbole oben rechts und die Fähigkeiten bzw. Charakterzüge.
 - Fähigkeiten: eine pro Können-Stufe. Bei Stufe 1 und 2 kommt eine zufällige dazu, bei Stufe 3 wählt man aus drei.
-  Talent (Können +50 % schneller), Ausstrahlung (Präsenz +50 % schneller, etwas mehr Ruhm), Charisma (mehr Ruhm),
+  Talent (Können +50 % schneller), Ausstrahlung (Promo bringt 50 % mehr Bekanntheit, etwas mehr Ruhm), Charisma (mehr Ruhm),
   Nervenstark (verspielt sich live seltener), Absolutes Gehör (großzügigeres Timing), Bühnentier,
   Studiofuchs (grüner Bereich am Mischpult +4 %) und die Spezialtechniken passend zum Instrument.
 
@@ -81,14 +81,14 @@ Ein schwacher Musiker zieht den Sound runter, und vier Musiker sind höchstens 2
 - Ruhmgewinn eines Auftritts = Grund-Ruhm des Ortes pro Lied × Soundfaktor × Publikum × Zufall (0,9–1,1).
   - Soundfaktor = Sound / 30 (zwischen 0,2 und 3).
   - Publikum = 0,4 + 1,2 × Publikumsleiste/100.
-- Einzelanteil = Gewinn / Mitglieder × (0,6 + 0,008 × Präsenz + Boni für Attraktiv, Charisma,
+- Einzelanteil = Gewinn / Mitglieder × (0,8 + Boni für Ausstrahlung, Charisma,
   Ungewöhnlich und Instrument-Design). Die Summe der Einzelanteile wird gleichmäßig auf alle verteilt.
 
 ### Auftritte
 
 | | Lieder | Geld | Ruhm pro Lied | Besonderheit |
 |---|---|---|---|---|
-| Straßenmusik | 3 | – | 0,3 × (1 − Ruhm/150), mindestens 10 %; Erwartung 25 | Präsenz +0,3–0,8; auch einzeln ohne Band |
+| Straßenmusik | 3 | – | 0,3 × (1 − Ruhm/150), mindestens 10 %; Erwartung 25 | auch einzeln ohne Band |
 | Bandprobe | 2 | – | – | Zusammenspiel × 2,5, etwas Können für alle |
 | Open Stage | 2 | – | 1,4 × (1 − Ruhm/120) | 7 % Manager-Karte, sonst 15 % Fan-Karte (+3–10 Ruhm) |
 | Gig | 1 bis Maximum | Gage des Ortes pro Lied, vorher bekannt | je nach Ort | erst mit Platte |
@@ -104,7 +104,7 @@ Das Stadion bleibt der Tournee vorbehalten.
   um 40 % Richtung 50 + 0,6 × (Gleichgewicht der Band − 50). Im Browser gleitet sie fließend und wackelt ständig
   ein wenig (rein optisch).
 - Jedes Lied hat 4 Abschnitte; in jedem kann jeder Musiker patzen
-  (Chance 24 % minus 0,26 % pro Können-Punkt) oder glänzen (steigt mit Können, Präsenz und Spezialtechnik),
+  (Chance 24 % minus 0,26 % pro Können-Punkt) oder glänzen (steigt mit Können, Spezialtechnik und Bühnentier),
   jeweils ±7–13 Punkte. Dazu pro Abschnitt Grundstimmung, Vergleich Sound zu Erwartung des Ortes und Zufall;
   ab dem zweiten Lied rückt die Leiste jedes Mal 8 % Richtung Mitte. Schwache Bands landen im Schnitt bei etwa 30 %, starke bei etwa 85 %.
 
@@ -151,8 +151,8 @@ Ein Lied dauert 30 Sekunden. Bewertet wird in Perfekt / Gut / Daneben; Trefferqu
 
 ### Promo
 
-- Promo-Mission (ein Musiker): 10 Minuten, läuft offline. Präsenz + 2–4 × Ausstrahlung-Faktor × (1 − Präsenz/110).
-- Band-Promo: 10 Minuten, alle Mitglieder +1,2–2,5 Präsenz, die Band +1–3 Ruhm.
+- Promo-Mission (ein Musiker): 10 Minuten, läuft offline. Bekanntheit + 1–2,5 × Ausstrahlung-Faktor / (1 + Bekanntheit/40).
+- Band-Promo: 10 Minuten, jedes Mitglied bringt 0,8–2 nach derselben Formel; verteilt wie Auftrittsruhm.
 
 ### Jam-Café
 
@@ -171,7 +171,7 @@ Jam-Café für den Gastgeber vorbei. Lehnt man alle ab, verfällt die Auswahl un
 
 - Ein Musiker ohne Band kommt für 2 Tage an die Börse. Solange ist er gesperrt (keine Band, keine Aktivitäten),
   seine Instrumente bleiben beim Label.
-- Mindestpreis = Marktwert = 50 + 0,8 × Können² + 5 × Präsenz + 5 × Ruhm + 300 × (Können-Stufe + Bekanntheits-Stufe)
+- Mindestpreis = Marktwert = 170 + 0,8 × Können² + 5 × Bekanntheit + 300 × (Können-Stufe + Bekanntheits-Stufe)
   + 100 × Fähigkeiten, auf 10 gerundet. Beispiele: Anfänger (Können 15) etwa 300 ₲, Scout-Musiker (Können 35–45) etwa 1.600–2.300 ₲.
 - Gebote sind verbindlich: Das Geld wird beim Bieten zurückgelegt, wer überboten wird, bekommt es sofort zurück.
   Überbieten um mindestens 5 % (mindestens 10 ₲). Wer vorn liegt und erhöht, legt nur die Differenz dazu.
@@ -206,12 +206,12 @@ Diese Punkte sind im Konzept offen. Für den Kern habe ich sie so festgelegt; al
 
 - **Besetzung:** Jedes Mitglied spielt in der Band genau ein Instrument. Ein Sänger mit Gitarre zählt
   als Gitarrist, wenn er in der Band Gitarre spielt. Höchstens 6 Mitglieder.
-- **Straßenmusik:** vorläufig ohne Geld fürs Label, dafür Präsenz und etwas Ruhm. Noch offen, ob sie bleibt.
+- **Straßenmusik:** vorläufig ohne Geld fürs Label, dafür etwas Ruhm. Noch offen, ob sie bleibt.
 - **Open Stage:** lohnt sich ab 120 Ruhm nicht mehr.
 - **Platte:** Die letzte Platte erst live spielen (2 Lieder pro Plattenlied), dann die nächste. Ja, der Sound bestimmt, wie fehlerverzeihend das Minispiel ist.
 - **Charts:** statt einer Liste pro Genre gibt es gemeinsame Album-Charts; die Label-Gesamtliste zählt den Ruhm aller eigenen Bands.
 - **Ruhm verfällt nicht** (vorerst).
-- **Präsenz:** Einzelanteil wie oben unter „Ruhm“.
+- **Präsenz** ist vorerst raus, um es einfach zu halten (der Wert steht noch in der Datenbank, zählt aber nicht).
 - **Ob man bei Gigs mitspielt:** vorerst nicht, man schaut im Live-Ticker zu.
 
 ## Bekannte Grenzen

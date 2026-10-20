@@ -48,13 +48,13 @@ test('Zusammenspiel erhöht den Sound', function () {
     check(BandCalc::sound($band, 'rock', 100, []) > BandCalc::sound($band, 'rock', 0, []));
 });
 
-test('Ruhm wird zu gleichen Teilen verteilt, Präsenz zählt', function () {
-    $quiet = [musician(['presence' => 0]), musician(['presence' => 0])];
-    $loud = [musician(['presence' => 80]), musician(['presence' => 0])];
+test('Bekanntheit wird zu gleichen Teilen verteilt, Charisma zählt', function () {
+    $quiet = [musician(), musician()];
+    $loud = [musician(['abilities' => ['charisma']]), musician()];
     $gainsQuiet = BandCalc::splitFame($quiet, 10, []);
     $gainsLoud = BandCalc::splitFame($loud, 10, []);
     checkEquals(1, count(array_unique($gainsLoud)), 'Alle bekommen gleich viel');
-    check(array_sum($gainsLoud) > array_sum($gainsQuiet), 'Mehr Präsenz bringt mehr Ruhm');
+    check(array_sum($gainsLoud) > array_sum($gainsQuiet), 'Charisma bringt mehr Bekanntheit');
 });
 
 test('Bandruhm ist die Summe der Bekanntheit', function () {
@@ -195,7 +195,7 @@ test('Chartpunkte: Qualität zählt, LPs mehr als EPs, Punkte schrumpfen', funct
 });
 
 test('Simulation: bessere Bands begeistern das Publikum mehr', function () {
-    $player = static fn (float $skill) => ['name' => 'Kim', 'instrument' => 'guitar', 'skill' => $skill, 'presence' => 30.0, 'abilities' => []];
+    $player = static fn (float $skill) => ['name' => 'Kim', 'instrument' => 'guitar', 'skill' => $skill, 'abilities' => []];
     $weak = 0.0;
     $strong = 0.0;
     for ($i = 0; $i < 60; $i++) {

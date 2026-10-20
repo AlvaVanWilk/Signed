@@ -322,7 +322,7 @@ test('Straßenmusik bringt dem Label kein Geld, aber Präsenz; sperrt die Band b
     $result = $state['results'][0]['result'];
     checkEquals(0, $result['money']);
     checkEquals($money, $state['label']['money']);
-    check($result['presence'] > 0, 'Etwas Präsenz für die Musiker');
+    check($result['fame'] > 0, 'Etwas Bekanntheit für die Musiker');
     check(bandById($state, $band['id'])['cohesion'] > 0, 'Auftritte steigern das Zusammenspiel');
     check(bandById($state, $band['id'])['released'], 'Band ist jetzt freigegeben');
 
@@ -361,7 +361,7 @@ test('Solo-Probe verbessert das Können, Schummeln wird abgelehnt', function () 
     $p->post('promoStart', ['musicianId' => $m['id']]);
 });
 
-test('Promo-Mission steigert die Präsenz nach Ablauf', function () {
+test('Promo-Mission steigert die Bekanntheit nach Ablauf, bei Bekannten weniger', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Promo');
     $m = $p->get('state')['musicians'][0];
@@ -370,8 +370,13 @@ test('Promo-Mission steigert die Präsenz nach Ablauf', function () {
     Clock::advance(Balance::PROMO_SECONDS);
     $state = $p->get('state');
     $after = array_values(array_filter($state['musicians'], static fn ($x) => $x['id'] === $m['id']))[0];
-    check($after['presence'] > $m['presence']);
-    checkEquals(round($after['presence'] - $m['presence'], 1), $state['results'][0]['result']['presence']);
+    check($after['fame'] > $m['fame']);
+    checkEquals(round($after['fame'] - $m['fame'], 1), $state['results'][0]['result']['fame']);
+
+    $db->exec('UPDATE musicians SET fame = 400 WHERE id = ?', [$m['id']]);
+    $p->post('promoStart', ['musicianId' => $m['id']]);
+    Clock::advance(Balance::PROMO_SECONDS);
+    check($p->get('state')['results'][1]['result']['fame'] < Balance::PROMO_FAME[1] / 5, 'Wer schon bekannt ist, gewinnt wenig');
 });
 
 test('Platte produzieren, dann Gigs spielen, dann die nächste Platte', function () {
@@ -600,8 +605,8 @@ test('Wechselbörse: zurückziehen ohne Gebot, Zuschlag vorzeitig, späte Gebote
 });
 
 test('Wechselbörse: Marktwert steigt mit Können, Stufen und Ruhm', function () {
-    $base = musician(['skill1' => 20.0, 'presence' => 20.0, 'fame' => 0.0, 'level' => 0, 'abilities' => []]);
-    $better = musician(['skill1' => 50.0, 'presence' => 20.0, 'fame' => 150.0, 'level' => 1, 'abilities' => ['talent']]);
+    $base = musician(['skill1' => 20.0, 'fame' => 0.0, 'level' => 0, 'abilities' => []]);
+    $better = musician(['skill1' => 50.0, 'fame' => 150.0, 'level' => 1, 'abilities' => ['talent']]);
     check(Signed\Game\Transfers::value($better) > 3 * Signed\Game\Transfers::value($base));
 });
 

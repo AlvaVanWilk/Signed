@@ -10,6 +10,8 @@ export const app = {
   offset: 0,
   ui: {
     catalog: { instrument: '', genre: '', status: '', sort: 'level' },
+    /** Von wo aus ein Musiker geöffnet wurde: Liste zum Durchblättern und Rückweg. */
+    musicianNav: null,
     chartsTab: 'albums',
     gigSongs: {},
     form: {},

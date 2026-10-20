@@ -18,7 +18,6 @@ final class Present
             'lastName' => $m['last_name'],
             'rarity' => $m['rarity'],
             'instruments' => $instruments,
-            'presence' => round($m['presence'], 1),
             'fame' => round($m['fame'], 1),
             'genres' => $m['genres'],
             'level' => $m['level'],

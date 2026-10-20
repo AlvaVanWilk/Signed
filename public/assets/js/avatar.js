@@ -8,18 +8,18 @@ const HAIR_BACK = {
 };
 
 const HAIR_FRONT = {
-  kurz: 'M32 42 C31 20 69 20 68 42 C64 31 40 29 32 42 Z',
-  bob: 'M31 40 C32 21 68 21 69 40 C60 30 40 30 31 40 Z',
-  lang: 'M31 41 C32 20 68 20 69 41 C62 29 38 29 31 41 Z',
-  zopf: 'M32 41 C31 20 69 20 68 41 C63 30 37 30 32 41 Z',
-  dutt: 'M32 41 C31 21 69 21 68 41 C63 31 37 31 32 41 Z',
-  sidecut: 'M36 38 C34 18 70 20 69 40 C64 28 50 26 36 38 Z',
+  kurz: 'M32 42 C30 9 70 9 68 42 C64 31 40 29 32 42 Z',
+  bob: 'M31 41 C29 8 71 8 69 41 C60 30 40 30 31 41 Z',
+  lang: 'M31 41 C29 8 71 8 69 41 C62 29 38 29 31 41 Z',
+  zopf: 'M32 41 C30 9 70 9 68 41 C63 30 37 30 32 41 Z',
+  dutt: 'M32 41 C30 9 70 9 68 41 C63 31 37 31 32 41 Z',
+  sidecut: 'M36 38 C33 8 71 9 69 40 C64 28 50 26 36 38 Z',
   irokese: 'M45 12 L55 12 L57 34 L43 34 Z',
 };
 
 const HATS = {
   beanie: '<path d="M31 37 C31 13 69 13 69 37 Z" fill="HAT"/><rect x="29" y="32" width="42" height="7" rx="3" fill="HAT2"/>',
-  cap: '<path d="M32 35 C32 17 68 17 68 35 Z" fill="HAT"/><path d="M60 33 C70 32 78 34 80 37 L60 37 Z" fill="HAT2"/>',
+  cap: '<path d="M31 35 C30 13 70 13 69 35 Z" fill="HAT"/><path d="M60 33 C70 32 78 34 80 37 L60 37 Z" fill="HAT2"/>',
   fedora: '<ellipse cx="50" cy="31" rx="27" ry="5" fill="HAT2"/><path d="M36 31 C36 15 64 15 64 31 Z" fill="HAT"/><rect x="36" y="25" width="28" height="4" fill="HAT2"/>',
   cowboy: '<path d="M18 30 C30 38 70 38 82 30 C76 34 24 34 18 30 Z" fill="HAT2"/><path d="M36 32 C34 14 66 14 64 32 Z" fill="HAT"/>',
 };

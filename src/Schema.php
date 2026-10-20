@@ -249,6 +249,18 @@ final class Schema
                 'ALTER TABLE gear ADD COLUMN design INTEGER NOT NULL DEFAULT 0',
                 [Migrations::class, 'levelsAndGear'],
             ],
+            // 4: Jam-Café mit Auswahl
+            [
+                'CREATE TABLE jam_offers (
+                    id {PK},
+                    label_id INTEGER NOT NULL,
+                    musician_id INTEGER NOT NULL,
+                    cards TEXT NOT NULL,
+                    status VARCHAR(10) NOT NULL,
+                    created_at INTEGER NOT NULL
+                ){OPTS}',
+                'CREATE INDEX jam_offers_label ON jam_offers (label_id, status)',
+            ],
         ];
     }
 }

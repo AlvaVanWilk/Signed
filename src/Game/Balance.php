@@ -135,9 +135,9 @@ final class Balance
     public const REHEARSAL = ['songs' => 2, 'cohesion' => 2.5, 'skill' => 0.4];
     /** Band-Promo: alle Mitglieder sind unterwegs und gewinnen Präsenz, die Band etwas Ruhm. */
     public const BAND_PROMO = ['seconds' => 600, 'presence' => [1.2, 2.5], 'fame' => [1.0, 3.0]];
-    /** Jam-Café: nur Musiker ohne Band; danach kommen passende Musiker dazu. */
+    /** Jam-Café: nur Musiker ohne Band; danach drei passende Musiker (Stufe 0) zur Auswahl für eine Band. */
     public const JAM = [
-        'songs' => 2, 'cooldown' => 86400, 'cards' => 3, 'sameGenre' => 0.6, 'fame' => 0.2,
+        'songs' => 2, 'cards' => 3, 'fame' => 0.2,
         'odds' => ['common' => 72, 'rare' => 24, 'epic' => 4, 'legendary' => 0],
     ];
     public const OPENSTAGE = [

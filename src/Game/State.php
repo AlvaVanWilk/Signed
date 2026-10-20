@@ -133,6 +133,7 @@ final class State
             'now' => $now,
             'label' => $label,
             'scout' => (new Scout($repo))->status(),
+            'jamOffers' => (new Jam($repo))->open(),
             'musicians' => array_values(array_map(static fn ($m) => Present::musician($m, $gearIds[$m['id']] ?? []), $musicians)),
             'gear' => array_values(array_map([Present::class, 'gear'], $gear)),
             'managers' => array_values(array_map(static fn ($m) => Present::manager($m, $managerBands[$m['id']] ?? []), $managers)),

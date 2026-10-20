@@ -160,7 +160,9 @@ function resultHtml(r) {
       <div class="eyebrow">${esc(m ? `${m.firstName} ${m.lastName}` : '')}</div>
       <h2>${esc(r.title)}</h2>
       <div class="reward-grid">${reward('Ruhm', `+${fmt1(res.fame)}`)}${res.presence ? reward('Präsenz', `+${fmt1(res.presence)}`) : ''}</div>
-      ${res.cards?.length ? `<p>Neue Bekanntschaften – sie unterschreiben bei dir:</p><div class="tcg-grid small-cards">${res.cards.map((c) => musicianCard(c, { showStatus: false })).join('')}</div>` : ''}`;
+      ${res.jamOffer ? `<p>${res.jamOffer.cards.length} Musiker würden mit ${esc(m?.firstName ?? '')} eine Band gründen.</p>
+        <div class="tcg-grid small-cards">${res.jamOffer.cards.map((c) => musicianCard(c, { act: null, showStatus: false })).join('')}</div>
+        <div class="dialog-actions"><button class="btn primary" data-act="closeModalAndGo" data-href="#/musician/${r.musicianId}/jam">Auswählen</button></div>` : ''}`;
   }
   const band = bandById(r.bandId);
   const drops = (res.drops || []).map((d) => d.kind === 'manager'

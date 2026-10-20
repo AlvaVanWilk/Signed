@@ -14,7 +14,7 @@ final class Generator
     }
 
     /**
-     * @param array{instrument?: string, genre?: string, single?: bool, minSkill?: float, avoid?: string[]} $opts
+     * @param array{instrument?: string, genre?: string, single?: bool, minSkill?: float, maxSkill?: float, avoid?: string[], getsAlongWith?: string[]} $opts
      * @return array Musiker im Datenbankformat (JSON-Felder noch als Arrays)
      */
     public static function musician(string $rarity, array $opts = []): array
@@ -59,6 +59,13 @@ final class Generator
         if (isset($opts['minSkill']) && max($skill1, (float) $skill2) < $opts['minSkill']) {
             $skill1 = $opts['minSkill'];
         }
+        // Unter maxSkill bleiben (z. B. Können-Stufe 0 aus dem Jam-Café).
+        $best = max($skill1, (float) $skill2);
+        if (isset($opts['maxSkill']) && $best >= $opts['maxSkill']) {
+            $scale = $opts['maxSkill'] * Rng::float(0.7, 0.98) / $best;
+            $skill1 *= $scale;
+            $skill2 = $skill2 === null ? null : $skill2 * $scale;
+        }
         // Aus Packs höchstens Können-Stufe 1, und dann genau eine Fähigkeit.
         $level = min(1, Levels::forSkill(max($skill1, (float) $skill2)));
         $abilities = $level ? [Levels::randomAbility(array_filter([$instr1, $instr2]), [])] : [];
@@ -76,7 +83,7 @@ final class Generator
             'genres' => $genres,
             'level' => $level,
             'abilities' => $abilities,
-            'personality' => self::personality(),
+            'personality' => self::personality($opts['getsAlongWith'] ?? []),
             'unusual' => !in_array($primary, $typical, true),
             'look' => $look,
         ];
@@ -167,16 +174,17 @@ final class Generator
         return (string) Rng::weighted($weights);
     }
 
-    private static function personality(): array
+    /** @param string[] $partner Charakterzüge, mit denen sich der neue Musiker vertragen soll */
+    private static function personality(array $partner = []): array
     {
-        $first = Rng::pick(array_keys(Catalog::PERSONALITIES));
+        $fits = static fn (string $p): bool => !array_filter($partner, static fn ($q) => BandCalc::clashes($p, $q));
+        $pool = array_values(array_filter(array_keys(Catalog::PERSONALITIES), $fits));
+        // Zwei Partytiere finden sich gern.
+        $first = in_array('partytier', $partner, true) && Rng::chance(0.4) ? 'partytier' : Rng::pick($pool);
         if (!Rng::chance(0.35)) {
             return [$first];
         }
-        $options = array_filter(
-            array_keys(Catalog::PERSONALITIES),
-            static fn ($p) => $p !== $first && !BandCalc::clashes($first, $p)
-        );
-        return [$first, Rng::pick($options)];
+        $options = array_filter($pool, static fn ($p) => $p !== $first && !BandCalc::clashes($first, $p));
+        return [$first, Rng::pick(array_values($options))];
     }
 }

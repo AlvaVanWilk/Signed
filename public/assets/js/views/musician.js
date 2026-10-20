@@ -1,9 +1,9 @@
 import { abilityInfo, emptySlot, fullName, gearCard, gearModel, genreName, instrumentIcon, instrumentName, musicianCard, musicianStatus } from '../cards.js';
-import { app, bandById, cat, defineActions, isBusy, musicianById, mutate, navigate, serverNow } from '../core.js';
+import { app, bandById, cat, defineActions, isBusy, musicianById, mutate, navigate } from '../core.js';
 import { openLive } from '../live.js';
 import { chip } from '../cards.js';
-import { duration, esc, fmt0, fmt1, openModal, timeAgo, toast } from '../ui.js';
-import { practiceTile, promoTile } from './bands.js';
+import { duration, esc, openModal, timeAgo, toast } from '../ui.js';
+import { practiceTile, promoTile, suggestName } from './bands.js';
 
 /** Untermenü eines Musikers. solo = nur ohne Band. */
 export const MUSICIAN_SECTIONS = [
@@ -82,18 +82,72 @@ function promo(m) {
 }
 
 function jam(m) {
-  const ready = m.jamAt + cat().rules.jamCooldown;
-  const waiting = serverNow() < ready;
+  const offer = jamOfferFor(m);
+  if (offer) {
+    return `
+      ${head('Jam-Café', m)}
+      <p class="muted">Diese Musiker würden mit ${esc(m.firstName)} eine Band gründen. Wähl einen aus – oder lehn alle ab und jamme noch einmal.</p>
+      <div class="tcg-grid">${offer.cards.map((c, index) => musicianCard(c, {
+        act: null,
+        showStatus: false,
+        extra: `<button class="btn primary small" data-act="jamChoose" data-offer="${offer.id}" data-index="${index}">Band gründen</button>`,
+      })).join('')}</div>
+      <div><button class="btn ghost" data-act="jamDecline" data-offer="${offer.id}">Alle ablehnen</button></div>`;
+  }
   return `
     ${head('Jam-Café', m)}
     ${statusNotice(m)}
     <div class="action-grid">
       <div class="action-tile">
         <div class="action-icon">☕</div>
-        <div class="action-main"><b>Jam-Session</b><span class="muted small">${waiting ? `Wieder in <span data-until="${ready}"></span>` : '2 Lieder · neue Musiker kennenlernen'}</span></div>
-        <button class="btn primary" data-act="solo" data-id="${m.id}" data-type="jam" ${waiting || busyOf(m) ? 'disabled' : ''}>Jammen</button>
+        <div class="action-main"><b>Jam-Session</b><span class="muted small">2 Lieder · Musiker für eine Band finden</span></div>
+        <button class="btn primary" data-act="solo" data-id="${m.id}" data-type="jam" ${busyOf(m) ? 'disabled' : ''}>Jammen</button>
       </div>
     </div>`;
+}
+
+const jamOfferFor = (m) => app.state.jamOffers.find((o) => o.musicianId === m.id);
+
+/** Mit dem gewählten Musiker aus dem Jam-Café eine Band gründen. */
+function openJamBand(offerId, index) {
+  const offer = app.state.jamOffers.find((o) => o.id === Number(offerId));
+  const host = offer && musicianById(offer.musicianId);
+  if (!host) return;
+  const card = offer.cards[Number(index)];
+  const shared = host.genres.filter((g) => card.genres.includes(g));
+  const used = new Set(app.state.bands.map((b) => b.genre));
+  const modal = openModal({
+    html: `
+      <h2>Band gründen</h2>
+      <p>${esc(fullName(host))} und ${esc(fullName(card))}</p>
+      <form class="stack">
+        <label class="field"><span>Bandname</span>
+          <span class="input-dice"><input name="name" maxlength="40" required><button type="button" class="btn small" data-dice title="Zufälliger Name">🎲</button></span>
+        </label>
+        <label class="field"><span>Genre</span>
+          <select name="genre">${shared.map((g) => `<option value="${g}" ${used.has(g) ? 'disabled' : ''}>${esc(genreName(g))}${used.has(g) ? ' (schon vergeben)' : ''}</option>`).join('')}</select>
+        </label>
+        <div class="dialog-actions">
+          <button type="button" class="btn ghost" data-cancel>Abbrechen</button>
+          <button class="btn primary">Band gründen</button>
+        </div>
+      </form>`,
+  });
+  const form = modal.body.querySelector('form');
+  const free = shared.find((g) => !used.has(g));
+  if (free) form.genre.value = free;
+  form.querySelector('[data-cancel]').addEventListener('click', () => modal.close());
+  form.querySelector('[data-dice]').addEventListener('click', async () => {
+    form.name.value = await suggestName('band');
+  });
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const res = await mutate('jamPick', { offerId: offer.id, index: Number(index), name: form.name.value, genre: form.genre.value });
+    if (!res) return;
+    modal.close();
+    toast('Die Band ist gegründet!', 'ok');
+    navigate(`#/band/${res.bandId}`);
+  });
 }
 
 function street(m) {
@@ -147,6 +201,12 @@ defineActions({
   },
   chooseAbility({ id }) {
     openAbilityChoice(id);
+  },
+  jamChoose({ offer, index }) {
+    openJamBand(offer, index);
+  },
+  async jamDecline({ offer }) {
+    await mutate('jamDecline', { offerId: Number(offer) });
   },
   async solo({ id, type }) {
     const res = await mutate('soloStart', { musicianId: Number(id), type });

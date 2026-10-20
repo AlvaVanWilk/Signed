@@ -7,6 +7,7 @@ use Signed\Game\Activities;
 use Signed\Game\Balance;
 use Signed\Game\Bands;
 use Signed\Game\Charts;
+use Signed\Game\Jam;
 use Signed\Game\Levels;
 use Signed\Game\Minigames;
 use Signed\Game\Names;
@@ -49,6 +50,8 @@ final class Api
         'promoStart' => ['POST', true],
         'bandPromo' => ['POST', true],
         'soloStart' => ['POST', true],
+        'jamPick' => ['POST', true],
+        'jamDecline' => ['POST', true],
         'musicianFavorite' => ['POST', true],
         'abilityChoose' => ['POST', true],
         'recordStart' => ['POST', true],
@@ -290,6 +293,18 @@ final class Api
     {
         $activity = (new Activities($repo))->startSolo(self::int($in, 'musicianId'), self::str($in, 'type'));
         return ['activity' => $activity, 'state' => State::build($repo)];
+    }
+
+    private function jamPick(array $in, Repo $repo): array
+    {
+        $id = (new Jam($repo))->pick(self::int($in, 'offerId'), self::int($in, 'index'), self::str($in, 'name'), self::str($in, 'genre'));
+        return ['bandId' => $id, 'state' => State::build($repo)];
+    }
+
+    private function jamDecline(array $in, Repo $repo): array
+    {
+        (new Jam($repo))->decline(self::int($in, 'offerId'));
+        return ['state' => State::build($repo)];
     }
 
     private function musicianFavorite(array $in, Repo $repo): array

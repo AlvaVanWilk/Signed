@@ -15,7 +15,7 @@ Der Kernkreislauf: **Packs kaufen → Bands zusammenstellen → auftreten und Pl
 | Instrumente | 44 Modelle (11 Arten × 4 Seltenheiten); jedes Exemplar weicht pro Wert um bis zu ±12 vom Modell ab; frei tauschbar |
 | Manager | Stufe 1–5, 1–2 Fähigkeiten, bis zu 3 Bands mit geteilter Leistung |
 | Bands | Besetzungsregeln, Sound, Eingespieltheit, Chemie, Ruhm nach dem Ehe-Modell, Bandhistorie |
-| Aktivitäten | Band: Bandprobe, Band-Promo, Straßenmusik, Open Stage, Gig (erst mit Platte), Platte (Mischpult pro Lied). Einzeln: Solo-Probe (Rhythmus oder Tonhöhe), Promo-Mission. Ohne Band: Jam-Café, Straßenmusik |
+| Aktivitäten | Band: Bandprobe, Band-Promo, Straßenmusik, Open Stage, Gig (erst mit Platte), Platte (Mischpult pro Lied). Einzeln: Solo-Probe (Rhythmus oder Tonhöhe), Promo-Mission. Ohne Band: Jam-Café (Mitmusiker für die erste Band), Straßenmusik |
 | Live | Live-Ticker mit Publikumsleiste für alle Auftritte |
 | Charts | Gemeinsame Album-Charts aller Spieler mit täglichen Tantiemen, dazu eine Label-Gesamtliste |
 | Namen | Zufallsnamen für Bands und Platten; Bandnamen sind im ganzen Spiel eindeutig. Musiker: 236 Vornamen, 253 Nachnamen, ein Nachname kommt im eigenen Label nur einmal vor (solange noch freie da sind) |
@@ -144,8 +144,14 @@ Ein Lied dauert 30 Sekunden. Bewertet wird in Perfekt / Gut / Daneben; Trefferqu
 
 ### Jam-Café
 
-Nur für Musiker ohne Band, einmal pro Tag, 2 Lieder. Danach unterschreiben 3 neue Musiker
-(72 % gewöhnlich, 24 % selten, 4 % episch), 60 % davon im Genre des Musikers. Ersetzt das Pack für den Einstieg.
+Nur für Musiker ohne Band, 2 Lieder, beliebig oft. Danach stellen sich 3 Musiker vor
+(72 % gewöhnlich, 24 % selten, 4 % episch), die zum Gastgeber passen:
+- jeder spielt ein anderes Instrument, das der Gastgeber nicht spielt, und teilt ein Genre mit ihm,
+- kein Charakterzug reibt sich mit dem Gastgeber; ist er Partytier, ist der neue es oft auch,
+- alle haben Können-Stufe 0 (höhere Stufen gibt es nur über den Talent-Scout).
+
+Einer wird ausgewählt und gründet mit dem Gastgeber eine Band in einem gemeinsamen Genre. Damit ist das
+Jam-Café für den Gastgeber vorbei. Lehnt man alle ab, verfällt die Auswahl und man kann wieder jammen.
 
 ### Instrumente
 

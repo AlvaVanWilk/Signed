@@ -156,7 +156,7 @@ test('Nachnamen wiederholen sich im eigenen Label nicht', function () {
     checkEquals(count($names), count(array_unique($names)));
 });
 
-test('Jam-Café: ein Musiker ohne Band findet neue Musiker, einmal am Tag', function () {
+test('Jam-Café: drei passende Musiker zur Auswahl, einer gründet mit dem Gastgeber eine Band', function () {
     $db = freshDb();
     $p = player($db);
     $p->post('register', ['username' => 'jammer', 'password' => 'geheim123', 'labelName' => 'Jam Records']);
@@ -164,15 +164,46 @@ test('Jam-Café: ein Musiker ohne Band findet neue Musiker, einmal am Tag', func
     $m = $p->post('scoutPick', ['offerId' => $offer['id'], 'index' => 0])['musician'];
     $state = $p->get('state');
     check($state['musicians'][0]['favorite'], 'Der erste Musiker ist automatisch Favorit');
-    $p->post('soloStart', ['musicianId' => $m['id'], 'type' => 'jam']);
-    Clock::advance(Balance::JAM['songs'] * Balance::SONG_SECONDS);
-    $state = $p->get('state');
-    checkEquals(1 + Balance::JAM['cards'], count($state['musicians']));
-    checkEquals(Balance::JAM['cards'], count($state['results'][0]['result']['cards']));
-    checkApiError(fn () => $p->post('soloStart', ['musicianId' => $m['id'], 'type' => 'jam']), 'heute schon');
-    $p->post('soloStart', ['musicianId' => $m['id'], 'type' => 'busking']);
-    Clock::advance(86400);
-    $p->post('soloStart', ['musicianId' => $m['id'], 'type' => 'jam']);
+
+    $jam = function () use ($p, $m): array {
+        $p->post('soloStart', ['musicianId' => $m['id'], 'type' => 'jam']);
+        Clock::advance(Balance::JAM['songs'] * Balance::SONG_SECONDS);
+        $state = $p->get('state');
+        checkEquals(1, count($state['musicians']), 'Niemand unterschreibt von allein');
+        checkEquals(1, count($state['jamOffers']));
+        return $state['jamOffers'][0];
+    };
+    $offer = $jam();
+    checkEquals(Balance::JAM['cards'], count($offer['cards']));
+    $types = [];
+    foreach ($offer['cards'] as $card) {
+        checkEquals(0, $card['level'], 'Aus dem Jam-Café nur Stufe 0');
+        check((bool) array_intersect($card['genres'], $m['genres']), 'Gemeinsames Genre');
+        check(!in_array($card['instruments'][0]['type'], array_column($m['instruments'], 'type'), true), 'Anderes Instrument');
+        foreach ($card['personality'] as $a) {
+            foreach ($m['personality'] as $b) {
+                check(!Signed\Game\BandCalc::clashes($a, $b), 'Keine Reibung');
+            }
+        }
+        $types[] = $card['instruments'][0]['type'];
+    }
+    checkEquals(count($types), count(array_unique($types)));
+
+    // Alle ablehnen und noch einmal – beliebig oft.
+    $p->post('jamDecline', ['offerId' => $offer['id']]);
+    checkEquals([], $p->get('state')['jamOffers']);
+    $offer = $jam();
+
+    $card = $offer['cards'][1];
+    $genre = array_values(array_intersect($card['genres'], $m['genres']))[0];
+    $res = $p->post('jamPick', ['offerId' => $offer['id'], 'index' => 1, 'name' => 'Die Jamsession', 'genre' => $genre]);
+    $band = bandById($res['state'], $res['bandId']);
+    checkEquals($genre, $band['genre']);
+    checkEquals(2, count($res['state']['musicians']));
+    checkEquals([], $res['state']['jamOffers']);
+    checkApiError(fn () => $p->post('soloStart', ['musicianId' => $m['id'], 'type' => 'jam']), 'Band');
+    checkApiError(fn () => $p->post('jamPick', ['offerId' => $offer['id'], 'index' => 0, 'name' => 'Nochmal', 'genre' => $genre]), 'nicht mehr');
+
     $p->post('musicianFavorite', ['musicianId' => $m['id'], 'favorite' => false]);
     check(!$p->get('state')['musicians'][0]['favorite']);
 });

@@ -160,9 +160,6 @@ final class Activities
             if ($m['busy_until'] > $now) {
                 throw new ApiError(sprintf('%s ist gerade beschäftigt.', $m['first_name']));
             }
-            if ($type === 'jam' && $now < $m['jam_at'] + Balance::JAM['cooldown']) {
-                throw new ApiError(sprintf('%s war heute schon im Jam-Café.', $m['first_name']));
-            }
             $gear = $this->repo->gearByMusician();
             $genre = $m['genres'][0];
             $sound = BandCalc::sound([$m], $genre, 0, $gear);
@@ -172,7 +169,6 @@ final class Activities
                 $expect = Balance::OPENSTAGE['expect'];
                 $title = 'Jam-Café: ' . Rng::pick(Catalog::JAM_CAFES);
                 $presence = [];
-                $db->update('musicians', ['jam_at' => $now], ['id' => $musicianId]);
             } else {
                 $cfg = Balance::BUSKING;
                 $songs = $cfg['songs'];
@@ -366,10 +362,9 @@ final class Activities
             'fame' => round(self::applyFame($repo, $reward['fameGains'] ?? []), 1),
             'presence' => self::applyPresence($repo, $reward['presence'] ?? []),
             'meter' => $reward['meter'] ?? null,
-            'cards' => [],
         ];
         if (!empty($reward['jam'])) {
-            $result['cards'] = self::jamFinds($repo, (int) $row['musician_id']);
+            $result['jamOffer'] = Jam::createOffer($repo, (int) $row['musician_id']);
         }
         return $result;
     }
@@ -379,32 +374,6 @@ final class Activities
         $gains = self::applyPresence($repo, [(int) $row['musician_id'] => (float) $data['reward']['presence']]);
         $m = $repo->db->one('SELECT presence FROM musicians WHERE id = ?', [(int) $row['musician_id']]);
         return ['presence' => $gains, 'total' => $m === null ? 0 : round((float) $m['presence'], 1)];
-    }
-
-    /** Im Jam-Café lernt der Musiker andere kennen: passende Instrumente, oft dasselbe Genre. */
-    private static function jamFinds(Repo $repo, int $musicianId): array
-    {
-        $row = $repo->db->one('SELECT * FROM musicians WHERE id = ? AND label_id = ?', [$musicianId, $repo->labelId]);
-        if ($row === null) {
-            return [];
-        }
-        $host = Repo::hydrateMusician($row);
-        $cfg = Balance::JAM;
-        $weights = array_map(static fn ($i) => $i['weight'], Catalog::INSTRUMENTS);
-        unset($weights[$host['instr1']]);
-        $cards = [];
-        for ($i = 0; $i < $cfg['cards']; $i++) {
-            $instrument = (string) Rng::weighted($weights);
-            unset($weights[$instrument]);
-            $opts = ['instrument' => $instrument, 'avoid' => $repo->lastNames()];
-            if (Rng::chance($cfg['sameGenre']) && in_array($host['genres'][0], Catalog::INSTRUMENTS[$instrument]['genres'], true)) {
-                $opts['genre'] = $host['genres'][0];
-            }
-            $id = $repo->insertMusician(Generator::musician(Generator::rarity($cfg['odds']), $opts), 'jam');
-            $cards[] = Present::musician($repo->musician($id));
-        }
-        $repo->log('jam', sprintf('Im Jam-Café lernt %s %d Musiker kennen, die bei deinem Label unterschreiben.', $host['first_name'], count($cards)), null, $musicianId);
-        return $cards;
     }
 
     // ---------- Hilfen ----------

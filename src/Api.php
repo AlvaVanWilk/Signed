@@ -237,7 +237,7 @@ final class Api
     private function bandCreate(array $in, Repo $repo): array
     {
         $members = is_array($in['members'] ?? null) ? array_values($in['members']) : [];
-        $id = (new Bands($repo))->create(self::str($in, 'name'), self::str($in, 'genre'), $members);
+        $id = (new Bands($repo))->create(self::str($in, 'name'), $members);
         return ['bandId' => $id, 'state' => State::build($repo)];
     }
 
@@ -311,7 +311,7 @@ final class Api
 
     private function jamPick(array $in, Repo $repo): array
     {
-        $id = (new Jam($repo))->pick(self::int($in, 'offerId'), self::int($in, 'index'), self::str($in, 'name'), self::str($in, 'genre'));
+        $id = (new Jam($repo))->pick(self::int($in, 'offerId'), self::int($in, 'index'), self::str($in, 'name'));
         return ['bandId' => $id, 'state' => State::build($repo)];
     }
 

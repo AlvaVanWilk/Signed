@@ -34,4 +34,46 @@ final class Migrations
             }
         }
     }
+
+    /**
+     * 8: Synthesizer werden zu Keyboards (Musiker und Instrumente). Pro Genre darf es jetzt mehrere Bands geben,
+     * deshalb fällt die Sperre „ein Genre pro Label“ weg; das Genre einer Band ergibt sich ab jetzt aus der Besetzung.
+     */
+    public static function keysAndGenres(Db $db): void
+    {
+        $db->raw($db->driver() === 'mysql' ? 'DROP INDEX bands_label_genre ON bands' : 'DROP INDEX IF EXISTS bands_label_genre');
+        $db->raw('CREATE INDEX bands_label ON bands (label_id)');
+
+        foreach ($db->all("SELECT id, instr1, instr2, skill1, skill2, band_slot FROM musicians WHERE instr1 = 'synth' OR instr2 = 'synth'") as $m) {
+            $instr1 = $m['instr1'] === 'synth' ? 'keys' : $m['instr1'];
+            $instr2 = $m['instr2'] === 'synth' ? 'keys' : $m['instr2'];
+            $skill1 = (float) $m['skill1'];
+            $skill2 = $m['skill2'] === null ? null : (float) $m['skill2'];
+            if ($instr1 === $instr2) {
+                // Wer beides spielte, spielt jetzt einmal Keyboard – mit dem besseren Können.
+                $skill1 = max($skill1, (float) $skill2);
+                $instr2 = null;
+                $skill2 = null;
+            }
+            $db->update('musicians', ['instr1' => $instr1, 'instr2' => $instr2, 'skill1' => $skill1, 'skill2' => $skill2, 'band_slot' => $instr2 === null ? 1 : (int) $m['band_slot']], ['id' => (int) $m['id']]);
+        }
+
+        $models = ['syn_mini' => 'key_home', 'syn_poly' => 'key_stage', 'syn_modular' => 'key_organ', 'syn_neon' => 'key_neon'];
+        foreach ($models as $old => $new) {
+            $db->exec('UPDATE gear SET model = ? WHERE model = ?', [$new, $old]);
+        }
+        foreach ($db->all('SELECT id, model FROM gear WHERE klang = 0') as $row) {
+            $model = Catalog::GEAR[$row['model']] ?? null;
+            if ($model !== null) {
+                $db->update('gear', ['klang' => $model['klang'], 'spielbarkeit' => $model['spielbarkeit'], 'design' => $model['design']], ['id' => (int) $row['id']]);
+            }
+        }
+        // Wer jetzt zwei Keyboards hält, behält eins am Musiker.
+        foreach ($db->all("SELECT musician_id FROM gear WHERE musician_id IS NOT NULL AND model LIKE 'key_%' GROUP BY musician_id HAVING COUNT(*) > 1") as $row) {
+            $ids = array_column($db->all("SELECT id FROM gear WHERE musician_id = ? AND model LIKE 'key_%' ORDER BY klang DESC", [$row['musician_id']]), 'id');
+            foreach (array_slice($ids, 1) as $id) {
+                $db->update('gear', ['musician_id' => null], ['id' => (int) $id]);
+            }
+        }
+    }
 }

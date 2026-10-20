@@ -21,12 +21,42 @@ export function genreTag(key) {
   return `<span class="genre-tag g-${key}">${genreGlyph(key)}${esc(genreName(key))}</span>`;
 }
 
-/** Genre-Auswahl als farbige Marken (statt einer Liste); disabled = Genre schon vergeben. */
-export function genrePicker(name, keys, selected, disabled = new Set()) {
-  return `<span class="genre-picker">${keys.map((key) => `
-    <label class="genre-tag g-${key} ${disabled.has(key) ? 'off' : ''}" title="${disabled.has(key) ? 'Schon vergeben' : esc(genreName(key))}">
-      <input type="radio" name="${name}" value="${key}" ${key === selected ? 'checked' : ''} ${disabled.has(key) ? 'disabled' : ''}>${genreGlyph(key)}${esc(genreName(key))}
-    </label>`).join('')}</span>`;
+/**
+ * Genre einer Besetzung, wie der Server es rechnet (BandCalc::identity): alle mögen das Genre und die Instrumente passen.
+ * members: [{ genres, type }]; prefer/preferSecond halten die bisherige Ausrichtung.
+ */
+export function bandIdentity(members, prefer = '', preferSecond = null) {
+  const c = cat();
+  const types = {};
+  for (const m of members) types[m.type] = (types[m.type] || 0) + 1;
+  const keys = Object.keys(c.genreLineup);
+  const allFans = (g) => members.length >= c.rules.minMembers && members.every((m) => m.genres.includes(g));
+  const lineup = (g) => c.genreLineup[g].every(([options, need]) => options.reduce((sum, t) => sum + (types[t] || 0), 0) >= need);
+  const eligible = keys.filter((g) => allFans(g) && lineup(g));
+  const primary = eligible.includes(prefer) ? prefer : eligible[0] ?? null;
+  let second = null;
+  if (primary) {
+    const shared = keys.filter((g) => g !== primary && allFans(g));
+    second = shared.includes(preferSecond) ? preferSecond : shared[0] ?? null;
+  }
+  return { primary, second, title: primary ? bandTitle(primary, second) : null, bonus: primary ? (second ? c.rules.hybridBonus : c.rules.genreBonus) : 1 };
+}
+
+export function bandTitle(primary, second) {
+  const name = genreName(primary);
+  if (second) return `${genreName(second)}-${name}-Band`;
+  return name.includes('-') ? `${name}-Band` : `${name}band`;
+}
+
+/** Genre-Marken einer Band; ohne gemeinsames Genre eine neutrale Marke. */
+export function bandGenreTags(b) {
+  return b.genres.length ? b.genres.map(genreTag).join('') : '<span class="genre-tag g-none">ohne Genre</span>';
+}
+
+/** Farbe einer Band in Menü und Seitenleiste: Genre-Farbe, bei Hybriden beide, sonst neutral. */
+export function bandFill(b) {
+  if (b.genres.length === 2) return { cls: 'genre-fill-split', style: `--fill: linear-gradient(110deg, var(--c-${b.genres[1]}) 0 50%, var(--c-${b.genres[0]}) 50% 100%)` };
+  return { cls: b.genres.length ? `genre-fill-${b.genres[0]}` : 'genre-fill-none', style: '' };
 }
 
 export function face(person, size = '') {

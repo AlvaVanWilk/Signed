@@ -77,6 +77,13 @@ final class Repo
         return $total;
     }
 
+    /** Label-Ruhm: Ruhm aller eigenen Bands (Bandnamen und Mitglieder). */
+    public function labelFame(): float
+    {
+        return (float) $this->db->value('SELECT COALESCE(SUM(fame_own), 0) FROM bands WHERE label_id = ?', [$this->labelId])
+            + (float) $this->db->value('SELECT COALESCE(SUM(fame), 0) FROM musicians WHERE label_id = ? AND band_id IS NOT NULL', [$this->labelId]);
+    }
+
     // ---------- Musiker ----------
 
     /** @return array<int, array> */
@@ -305,7 +312,8 @@ final class Repo
         return [
             'id' => (int) $r['id'],
             'name' => $r['name'],
-            'genre' => $r['genre'],
+            'genre' => (string) $r['genre'],
+            'genre2' => $r['genre2'] ?? null,
             'manager_id' => $r['manager_id'] === null ? null : (int) $r['manager_id'],
             'cohesion' => (float) $r['cohesion'],
             'sound' => (float) $r['sound'],

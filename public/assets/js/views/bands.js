@@ -1,5 +1,5 @@
 import { api } from '../api.js';
-import { emptySlot, face, fullName, gearCard, gearModel, genreIcon, genreName, genrePicker, genreTag, instrumentIcon, instrumentName, managerCard, musicianCard } from '../cards.js';
+import { bandGenreTags, bandIdentity, emptySlot, face, fullName, gearCard, gearModel, genreIcon, genreTag, instrumentIcon, instrumentName, managerCard, musicianCard } from '../cards.js';
 import { app, bandById, cat, defineActions, isBusy, managerById, musicianById, mutate, navigate, rerender, runningFor } from '../core.js';
 import { openLive } from '../live.js';
 import { startPractice, startRecordSong } from '../play.js';
@@ -20,7 +20,7 @@ export function renderList() {
   const s = app.state;
   return `
     <div class="section-head"><h1>Bands</h1><button class="btn primary" data-act="newBand">+ Neue Band</button></div>
-    ${s.bands.length ? `<div class="tile-grid">${s.bands.map((b) => `<a class="panel band-link" href="#/band/${b.id}"><b>${esc(b.name)}</b>${genreTag(b.genre)}</a>`).join('')}</div>`
+    ${s.bands.length ? `<div class="tile-grid">${s.bands.map((b) => `<a class="panel band-link" href="#/band/${b.id}"><b>${esc(b.name)}</b><span class="chips">${bandGenreTags(b)}</span></a>`).join('')}</div>`
       : '<div class="empty">Noch keine Band.</div>'}`;
 }
 
@@ -76,7 +76,7 @@ function overview(b, members) {
   const gig = b.options.gig;
   return `
     <div class="page-head">
-      <div><div class="eyebrow">${genreTag(b.genre)}</div><h1>${esc(b.name)} <button class="icon-btn" data-act="bandRename" data-id="${b.id}" title="Umbenennen">✎</button></h1></div>
+      <div><div class="eyebrow">${b.title ? esc(b.title) : 'Band'}</div><h1>${esc(b.name)} <button class="icon-btn" data-act="bandRename" data-id="${b.id}" title="Umbenennen">✎</button></h1></div>
     </div>
     <div class="stat-grid">
       <div class="tile"><span>Sound</span><b>${fmt1(b.sound)}</b></div>
@@ -97,7 +97,33 @@ function overview(b, members) {
         <div class="lineup-manager">${managerSlot(b)}</div>
       </div>
     </div>
+    ${genrePanel(b, members)}
     <div class="danger-zone"><button class="btn danger ghost small" data-act="bandDisband" data-id="${b.id}">Band auflösen</button></div>`;
+}
+
+/**
+ * Genre-Übersicht: Welche Genres die Mitglieder mögen und was zur Genre-Band fehlt.
+ * Ein zweites Genre, das alle mögen, macht eine Genre-Band zum Hybrid.
+ */
+function genrePanel(b, members) {
+  const rows = Object.entries(b.genreChecks)
+    .filter(([, check]) => check.fans > 0)
+    .sort((x, y) => y[1].fans - x[1].fans);
+  const need = ([options, count]) => `${count > 1 ? `${count} × ` : ''}${options.map((t) => `${instrumentIcon(t)} ${esc(instrumentName(t))}`).join(' oder ')}`;
+  return `
+    <section class="panel genre-panel">
+      <div class="section-head"><h2>Genre</h2>
+        <span>${b.title ? `${bandGenreTags(b)} <b>${esc(b.title)}</b> · +${percent(b.genreBonus - 1)} Sound` : '<span class="muted">Noch kein gemeinsames Genre</span>'}</span>
+      </div>
+      <p class="muted small">Mögen alle Mitglieder ein Genre und passt die Besetzung, wird die Band eine Genre-Band (+${percent(cat().rules.genreBonus - 1)} Sound). Mögen alle noch ein zweites Genre, wird sie hybrid (+${percent(cat().rules.hybridBonus - 1)}).</p>
+      <div class="genre-rows">${rows.map(([genre, check]) => `
+        <div class="genre-row ${b.genres.includes(genre) ? 'reached' : ''}">
+          ${genreTag(genre)}
+          <span class="${check.allFans ? 'ok' : 'muted'}">${check.fans} / ${members.length} mögen es</span>
+          <span class="genre-needs">${cat().genreLineup[genre].map((req, i) => `<span class="need ${check.requirements[i].met ? 'ok' : 'warn'}">${check.requirements[i].met ? '✓' : '✗'} ${need(req)}</span>`).join('')}</span>
+        </div>`).join('')}
+      </div>
+    </section>`;
 }
 
 export function chemistryLabel(chemistry) {
@@ -125,7 +151,6 @@ function memberTile(b, m, place) {
             ${m.instruments.map((i, idx) => `<option value="${idx + 1}" ${idx === slotIndex ? 'selected' : ''}>${instrumentIcon(i.type)} ${esc(instrumentName(i.type))}</option>`).join('')}
           </select>` : '<span></span>'}
         ${gear ? '' : '<span class="bad small">ohne Instrument</span>'}
-        ${m.genres.includes(b.genre) ? '' : '<span class="warn small">fremdes Genre</span>'}
         <button class="icon-btn" data-act="removeMember" data-band="${b.id}" data-musician="${m.id}" title="Aus der Band nehmen">✕</button>
       </div>
     </div>`;
@@ -366,14 +391,13 @@ function openManagerPicker(bandId) {
   });
 }
 
-function pickRow(m, genre, { checkbox = true, button = '' } = {}) {
-  const fits = m.genres.includes(genre);
+function pickRow(m, { checkbox = true, button = '', note = '' } = {}) {
   return `
     <div class="pick-row" data-id="${m.id}">
       <label class="pick-main">
         ${checkbox ? `<input type="checkbox" value="${m.id}">` : ''}
         ${face(m, 'sm')}
-        <span class="pick-name">${esc(fullName(m))}<small class="muted">${m.genres.map(genreIcon).join('')}${fits ? '' : ' · <span class="warn">fremdes Genre</span>'}</small></span>
+        <span class="pick-name">${esc(fullName(m))}<small class="muted">${m.genres.map(genreIcon).join('')}${note ? ` · ${note}` : ''}</small></span>
       </label>
       ${m.instruments.length > 1 ? `
         <select data-slot>
@@ -399,19 +423,15 @@ function lineupProblems(picks) {
 function openCreateBand() {
   const s = app.state;
   const free = s.musicians.filter((m) => !m.bandId);
-  const used = new Set(s.bands.map((b) => b.genre));
-  const genres = Object.entries(cat().genres).filter(([key]) => !used.has(key));
+  const slots = s.label.bandSlots;
+  if (s.bands.length >= slots.open) {
+    toast(slots.next === null ? 'Mehr Bands kann dein Label nicht führen.' : `Deine nächste Band kannst du ab ${fmt0(slots.next)} Label-Ruhm gründen.`, 'error');
+    return;
+  }
   if (free.length < cat().rules.minMembers) {
     toast('Du brauchst mindestens zwei Musiker ohne Band.', 'error');
     return;
   }
-  if (!genres.length) {
-    toast('Dein Label hat schon in jedem Genre eine Band.', 'error');
-    return;
-  }
-  const counts = {};
-  for (const m of free) for (const g of m.genres) if (!used.has(g)) counts[g] = (counts[g] || 0) + 1;
-  const suggested = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? genres[0][0];
 
   const modal = openModal({
     wide: true,
@@ -422,9 +442,6 @@ function openCreateBand() {
           <label class="field"><span>Bandname</span>
             <span class="input-dice"><input name="name" maxlength="40" required placeholder="z. B. Die Kellerkinder"><button type="button" class="btn small" data-dice title="Zufälliger Name">🎲</button></span>
           </label>
-        </div>
-        <div class="field"><span>Genre</span>
-          ${genrePicker('genre', Object.keys(cat().genres), suggested, used)}
         </div>
         <div class="pick-list"></div>
         <p class="create-summary small"></p>
@@ -448,22 +465,20 @@ function openCreateBand() {
     });
 
   const drawList = () => {
-    list.innerHTML = free.map((m) => pickRow(m, form.genre.value)).join('');
+    list.innerHTML = free.map((m) => pickRow(m)).join('');
     list.querySelectorAll('input[type=checkbox]').forEach((cb) => { cb.checked = selected.has(Number(cb.value)); });
   };
   const update = () => {
     selected.clear();
     for (const p of picks()) selected.add(p.id);
     const problems = lineupProblems(picks());
-    summary.innerHTML = problems.length ? `<span class="warn">${problems.map(esc).join(' ')}</span>` : `<span class="ok">${selected.size} Musiker – passt!</span>`;
+    const identity = bandIdentity(picks().map((p) => ({ type: p.type, genres: musicianById(p.id).genres })));
+    summary.innerHTML = problems.length
+      ? `<span class="warn">${problems.map(esc).join(' ')}</span>`
+      : `<span class="ok">${selected.size} Musiker – ${identity.title ? `das wird eine ${esc(identity.title)} (+${percent(identity.bonus - 1)} Sound)` : 'noch ohne gemeinsames Genre'}.</span>`;
   };
   drawList();
   update();
-  form.addEventListener('change', (e) => {
-    if (e.target.name !== 'genre') return;
-    drawList();
-    update();
-  });
   list.addEventListener('change', update);
   form.querySelector('[data-cancel]').addEventListener('click', () => modal.close());
   form.querySelector('[data-dice]').addEventListener('click', async () => {
@@ -477,13 +492,26 @@ function openCreateBand() {
       toast(problems[0], 'error');
       return;
     }
-    const res = await mutate('bandCreate', { name: form.name.value, genre: form.genre.value, members });
+    const res = await mutate('bandCreate', { name: form.name.value, members });
     if (res) {
       modal.close();
       navigate(`#/band/${res.bandId}`);
       toast('Die Band ist gegründet!', 'ok');
     }
   });
+}
+
+/** Was mit dem Genre der Band passiert, wenn dieser Musiker dazukommt (mit seinem Hauptinstrument). */
+function joinNote(band, m) {
+  const current = band.memberIds.map((id) => {
+    const x = musicianById(id);
+    return { genres: x.genres, type: x.instruments[x.bandSlot - 1]?.type ?? x.instruments[0].type };
+  });
+  const before = bandIdentity(current, band.genres[0] ?? '', band.genres[1] ?? null);
+  const after = bandIdentity([...current, { genres: m.genres, type: m.instruments[0].type }], band.genres[0] ?? '', band.genres[1] ?? null);
+  if (after.title === before.title) return '';
+  if (!after.title) return `<span class="warn">${esc(before.title)} fällt weg</span>`;
+  return `<span class="ok">wird ${esc(after.title)}</span>`;
 }
 
 function openAddMember(bandId) {
@@ -497,8 +525,9 @@ function openAddMember(bandId) {
     wide: true,
     html: `
       <h2>Musiker für ${esc(band.name)}</h2>
-      <div class="pick-list">${free.map((m) => pickRow(m, band.genre, {
+      <div class="pick-list">${free.map((m) => pickRow(m, {
         checkbox: false,
+        note: joinNote(band, m),
         button: `<button class="btn small" data-add="${m.id}">Aufnehmen</button>`,
       })).join('')}
       </div>`,

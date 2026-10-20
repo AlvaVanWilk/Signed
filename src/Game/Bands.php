@@ -14,20 +14,19 @@ final class Bands
     }
 
     /** @param list<array{id: int, slot?: int}> $entries */
-    public function create(string $name, string $genre, array $entries): int
+    public function create(string $name, array $entries): int
     {
         $name = self::cleanName($name, 'Der Bandname');
-        if (!isset(Catalog::GENRES[$genre])) {
-            throw new ApiError('Unbekanntes Genre.');
-        }
         $db = $this->repo->db;
-        return $db->transaction(function () use ($db, $name, $genre, $entries): int {
+        return $db->transaction(function () use ($db, $name, $entries): int {
             if (Names::bandTaken($db, $name)) {
                 throw new ApiError(sprintf('Den Bandnamen „%s“ gibt es schon. Wie wäre es mit dem Würfel?', $name));
             }
-            $taken = (int) $db->value('SELECT COUNT(*) FROM bands WHERE label_id = ? AND genre = ?', [$this->repo->labelId, $genre]);
-            if ($taken > 0) {
-                throw new ApiError(sprintf('Dein Label hat schon eine %s-Band. Pro Genre ist eine Band erlaubt.', Catalog::GENRES[$genre]['name']));
+            $slots = self::slots($this->repo->labelFame());
+            if (count($this->repo->bands()) >= $slots['open']) {
+                throw new ApiError($slots['next'] === null
+                    ? 'Mehr Bands kann dein Label nicht führen.'
+                    : sprintf('Deine nächste Band kannst du ab %s Label-Ruhm gründen.', number_format($slots['next'], 0, ',', '.')));
             }
             $members = [];
             foreach ($entries as $entry) {
@@ -49,13 +48,14 @@ final class Bands
                 'label_id' => $this->repo->labelId,
                 'name' => $name,
                 'name_key' => Names::key($name),
-                'genre' => $genre,
+                'genre' => '',
                 'created_at' => Clock::now(),
             ]);
             foreach ($members as $m) {
                 $db->update('musicians', ['band_id' => $bandId, 'band_slot' => $m['band_slot']], ['id' => $m['id']]);
             }
-            $this->repo->log('band', sprintf('Die Band „%s“ (%s) ist gegründet.', $name, Catalog::GENRES[$genre]['name']), $bandId);
+            $this->repo->log('band', sprintf('Die Band „%s“ ist gegründet.', $name), $bandId);
+            $this->syncIdentity($this->repo->band($bandId));
             return $bandId;
         });
     }
@@ -89,6 +89,7 @@ final class Bands
                 $this->lowerCohesion($band, Balance::COHESION_ADD_PENALTY);
                 $this->repo->log('lineup', sprintf('%s steigt bei %s ein.', self::fullName($m), $band['name']), $bandId, $m['id']);
             }
+            $this->syncIdentity($band);
         });
     }
 
@@ -113,6 +114,7 @@ final class Bands
                     number_format($m['fame'], 1, ',', '.')
                 ), $bandId, $m['id']);
             }
+            $this->syncIdentity($band);
         });
     }
 
@@ -136,7 +138,32 @@ final class Bands
             if ($band['released']) {
                 $this->lowerCohesion($band, Balance::COHESION_SWITCH_PENALTY);
             }
+            $this->syncIdentity($band);
         });
+    }
+
+    /**
+     * Genre der Band neu bestimmen und speichern; ein Wechsel kommt in die Chronik.
+     * @return array siehe BandCalc::identity()
+     */
+    public function syncIdentity(array $band, ?array $members = null): array
+    {
+        $identity = BandCalc::identity($members ?? $this->repo->members($band['id']), $band['genre'], $band['genre2']);
+        $primary = $identity['primary'] ?? '';
+        if ($primary !== $band['genre'] || $identity['second'] !== $band['genre2']) {
+            $this->repo->db->update('bands', ['genre' => $primary, 'genre2' => $identity['second']], ['id' => $band['id']]);
+            $this->repo->log('band', $identity['title'] !== null
+                ? sprintf('%s ist jetzt eine %s.', $band['name'], $identity['title'])
+                : sprintf('%s hat keine gemeinsame Genre-Linie mehr.', $band['name']), $band['id']);
+        }
+        return $identity;
+    }
+
+    /** Wie viele Bands das Label führen darf und ab welchem Label-Ruhm die nächste dazukommt. */
+    public static function slots(float $labelFame): array
+    {
+        $open = count(array_filter(Balance::BAND_SLOTS, static fn ($min) => $labelFame >= $min));
+        return ['open' => $open, 'max' => count(Balance::BAND_SLOTS), 'next' => Balance::BAND_SLOTS[$open] ?? null];
     }
 
     public function setManager(int $bandId, ?int $managerId): void

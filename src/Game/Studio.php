@@ -111,7 +111,7 @@ final class Studio
         $lp = 1 + Balance::RECORD_LP_BONUS * max(0, $songs - Balance::RECORD_MIN_SONGS);
         $perfectFactor = $perfect ? Balance::RECORD_PERFECT_BONUS : 1.0;
         $sales = 1 + min(Balance::RECORD_FAME_SALES_MAX, BandCalc::bandFame($band, $members) / Balance::RECORD_FAME_SALES);
-        $sound = BandCalc::sound($members, $band['genre'], $band['cohesion'], $gear);
+        $sound = BandCalc::bandSound($band, $members, $gear);
 
         $money = (int) round($songs * Balance::RECORD_MONEY_PER_SONG * (0.3 + $quality ** 2) * $lp * $perfectFactor * $sales);
         $fame = $songs * Balance::RECORD_FAME_PER_SONG * BandCalc::soundFactor($sound) * (0.3 + $quality ** 1.5) * $lp * $perfectFactor;

@@ -89,6 +89,8 @@ final class Balance
     public const SCOUT_SHIFT = 0.06;
 
     // ---------- Band ----------
+    /** Band-Plätze: die erste sofort, jede weitere ab diesem Label-Ruhm (Summe des Ruhms aller eigenen Bands). */
+    public const BAND_SLOTS = [0, 150, 800];
     public const MIN_MEMBERS = 2;
     public const MAX_MEMBERS = 6;
     public const MAX_PER_INSTRUMENT = ['drums' => 1, 'guitar' => 2];
@@ -96,7 +98,10 @@ final class Balance
     // ---------- Sound ----------
     /** Sound = (Gewicht × Durchschnitt + Rest × schwächster Musiker) × Besetzung × Zusammenspiel. */
     public const SOUND_MEAN_WEIGHT = 0.75;
-    public const OFF_GENRE_FACTOR = 0.75;
+    /** Sound-Bonus, wenn alle Mitglieder ein Genre teilen und die Besetzung dazu passt (Genre-Band) … */
+    public const GENRE_BONUS = 1.15;
+    /** … und wenn sie dazu noch ein zweites Genre teilen (Hybrid, z. B. Punk-Rock). */
+    public const HYBRID_BONUS = 1.25;
     /** Maximaler Bonus eines Instruments mit Klang 100 (+50 %). */
     public const GEAR_MAX_BONUS = 0.5;
     /** Ohne eigenes Instrument spielt man auf irgendwas Geliehenem – das klingt nach nichts. */

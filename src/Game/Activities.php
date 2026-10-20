@@ -53,7 +53,7 @@ final class Activities
                 throw new ApiError($blocker);
             }
             $gear = $this->repo->gearByMusician();
-            $sound = BandCalc::sound($members, $band['genre'], $band['cohesion'], $gear);
+            $sound = BandCalc::bandSound($band, $members, $gear);
             $fame = BandCalc::bandFame($band, $members);
             [$manager, $level] = $this->repo->bandManager($band);
             $chemistry = BandCalc::chemistry($members);
@@ -161,8 +161,7 @@ final class Activities
                 throw new ApiError(sprintf('%s ist gerade beschäftigt.', $m['first_name']));
             }
             $gear = $this->repo->gearByMusician();
-            $genre = $m['genres'][0];
-            $sound = BandCalc::sound([$m], $genre, 0, $gear);
+            $sound = BandCalc::sound([$m], 0, $gear);
             if ($type === 'jam') {
                 $songs = Balance::JAM['songs'];
                 $fameTotal = Balance::JAM['fame'] * $songs;

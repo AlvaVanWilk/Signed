@@ -304,6 +304,11 @@ final class Schema
             [
                 'ALTER TABLE bands ADD COLUMN fame_own REAL NOT NULL DEFAULT 0',
             ],
+            // 8: Genre ergibt sich aus der Besetzung, Keyboard und Synthesizer sind ein Instrument
+            [
+                'ALTER TABLE bands ADD COLUMN genre2 VARCHAR(16) NULL',
+                [Migrations::class, 'keysAndGenres'],
+            ],
         ];
     }
 }

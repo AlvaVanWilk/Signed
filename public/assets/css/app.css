@@ -855,11 +855,6 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .genre-tag { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px 3px 7px; border-radius: 999px; background: var(--g); color: #fff; font-size: 0.78rem; font-weight: 700; white-space: nowrap; letter-spacing: 0; text-transform: none; }
 .genre-tag .genre-icon { width: 15px; height: 15px; stroke: #fff; stroke-width: 2.2; fill: none; }
 .eyebrow .genre-tag { font-size: 0.8rem; }
-.genre-picker { display: flex; flex-wrap: wrap; gap: 8px; }
-.genre-picker .genre-tag { cursor: pointer; padding: 6px 12px 6px 9px; font-size: 0.9rem; opacity: 0.55; border: 2px solid transparent; }
-.genre-picker .genre-tag:has(input:checked) { opacity: 1; border-color: #fff; }
-.genre-picker .genre-tag.off { opacity: 0.2; cursor: not-allowed; text-decoration: line-through; }
-.genre-picker input { position: absolute; opacity: 0; pointer-events: none; }
 
 /* ---------- Bekanntheit als Sternchen-Leiste neben dem Können ---------- */
 .fame-stars { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 0; font-size: 4.1cqi; line-height: 1; min-width: 0; overflow: hidden; }
@@ -868,3 +863,23 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 
 /* Musikerkarte: Hintergrund in allen Lieblingsgenres, mit etwas Licht und Schatten darüber. */
 .genre-split { --art: linear-gradient(160deg, rgba(255, 255, 255, 0.28), rgba(0, 0, 0, 0.3)), var(--split); }
+
+/* Band ohne gemeinsames Genre: neutral */
+.g-none, .genre-fill-none { --g: #4b4560; --fill: var(--g); }
+.genre-fill-split { color: #fff; }
+
+/* ---------- Genre-Übersicht auf der Bandseite ---------- */
+.genre-panel .section-head { align-items: center; }
+.genre-panel .section-head > span { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.genre-rows { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.genre-row { display: grid; grid-template-columns: 120px 110px 1fr; gap: 12px; align-items: center; padding: 8px 10px; border-radius: var(--radius-sm); background: var(--panel-2); font-size: 0.88rem; }
+.genre-row.reached { box-shadow: inset 0 0 0 2px var(--ok); }
+.genre-row .genre-tag { justify-self: start; }
+.genre-needs { display: flex; flex-wrap: wrap; gap: 6px 12px; }
+.need.ok { color: var(--ok); }
+.need.warn { color: var(--muted); }
+@media (max-width: 640px) {
+  .genre-row { grid-template-columns: 1fr; gap: 4px; }
+}
+/* Zwei Instrumente + Bekanntheit: Bild etwas kleiner, damit alle drei Leisten Platz haben. */
+.tcg[class*='lvl-']:has(.skill-row + .skill-row + .skill-row) .tcg-art { flex-basis: 50%; }

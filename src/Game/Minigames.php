@@ -73,8 +73,8 @@ final class Minigames
                 if ($blocker !== null) {
                     throw new ApiError($blocker);
                 }
-                $sound = BandCalc::sound($members, $band['genre'], $band['cohesion'], $this->repo->gearByMusician());
-                $genre = $band['genre'];
+                $sound = BandCalc::bandSound($band, $members, $this->repo->gearByMusician());
+                $genre = BandCalc::identity($members, $band['genre'], $band['genre2'])['music'];
                 $bpm = Catalog::GENRES[$genre]['bpm'];
                 // Am Mischpult: Die Spuren schwanken je nach Können, der Sound bestimmt, wie viel verziehen wird.
                 $tracks = Chart::mixerTracks(array_map(static fn ($m) => [

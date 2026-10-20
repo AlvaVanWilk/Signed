@@ -1,8 +1,8 @@
-import { abilityInfo, emptySlot, fullName, gearCard, gearModel, genreName, genrePicker, genreTag, instrumentIcon, instrumentName, musicianCard, musicianStatus } from '../cards.js';
+import { abilityInfo, bandIdentity, emptySlot, fullName, gearCard, gearModel, genreName, genreTag, instrumentIcon, instrumentName, musicianCard, musicianStatus } from '../cards.js';
 import { app, bandById, cat, defineActions, isBusy, musicianById, mutate, navigate } from '../core.js';
 import { openLive } from '../live.js';
 import { chip } from '../cards.js';
-import { closeAllModals, duration, esc, money, openModal, timeAgo, toast } from '../ui.js';
+import { closeAllModals, duration, esc, fmt0, money, openModal, timeAgo, toast } from '../ui.js';
 import { chemistryLabel, practiceTile, promoTile, suggestName } from './bands.js';
 import { catalogList } from './catalog.js';
 
@@ -162,8 +162,15 @@ function openJamBand(offerId, index) {
   const host = offer && musicianById(offer.musicianId);
   if (!host) return;
   const card = offer.cards[Number(index)];
-  const shared = host.genres.filter((g) => card.genres.includes(g));
-  const used = new Set(app.state.bands.map((b) => b.genre));
+  const slots = app.state.label.bandSlots;
+  if (app.state.bands.length >= slots.open) {
+    toast(slots.next === null ? 'Mehr Bands kann dein Label nicht führen.' : `Deine nächste Band kannst du ab ${fmt0(slots.next)} Label-Ruhm gründen.`, 'error');
+    return;
+  }
+  const identity = bandIdentity([
+    { genres: host.genres, type: host.instruments[0].type },
+    { genres: card.genres, type: card.instruments[0].type },
+  ]);
   const modal = openModal({
     html: `
       <h2>Band gründen</h2>
@@ -172,9 +179,7 @@ function openJamBand(offerId, index) {
         <label class="field"><span>Bandname</span>
           <span class="input-dice"><input name="name" maxlength="40" required><button type="button" class="btn small" data-dice title="Zufälliger Name">🎲</button></span>
         </label>
-        <div class="field"><span>Genre</span>
-          ${genrePicker('genre', shared, shared.find((g) => !used.has(g)), used)}
-        </div>
+        <p class="small ${identity.title ? 'ok' : 'muted'}">${identity.title ? `Das wird eine ${esc(identity.title)}.` : 'Noch ohne gemeinsames Genre.'}</p>
         <div class="dialog-actions">
           <button type="button" class="btn ghost" data-cancel>Abbrechen</button>
           <button class="btn primary">Band gründen</button>
@@ -188,7 +193,7 @@ function openJamBand(offerId, index) {
   });
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const res = await mutate('jamPick', { offerId: offer.id, index: Number(index), name: form.name.value, genre: form.genre.value });
+    const res = await mutate('jamPick', { offerId: offer.id, index: Number(index), name: form.name.value });
     if (!res) return;
     closeAllModals();
     toast('Die Band ist gegründet!', 'ok');

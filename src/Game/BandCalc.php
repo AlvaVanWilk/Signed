@@ -26,13 +26,12 @@ final class BandCalc
         return $gear[$m['id']][self::instrument($m)] ?? null;
     }
 
-    /** Beitrag eines Musikers: Können × Instrument (Symbiose) × Genre-Passung. */
-    public static function memberValue(array $m, string $genre, ?array $model): float
+    /** Beitrag eines Musikers: Können × Instrument (Symbiose). */
+    public static function memberValue(array $m, ?array $model): float
     {
         $skill = self::skill($m);
-        $fit = in_array($genre, $m['genres'], true) ? 1.0 : Balance::OFF_GENRE_FACTOR;
         $gear = $model === null ? Balance::NO_GEAR_FACTOR : 1 + self::gearBonus($model, $skill);
-        return $skill * $gear * $fit;
+        return $skill * $gear;
     }
 
     /** Ein gutes Instrument entfaltet sich nur in fähigen Händen. */
@@ -46,18 +45,85 @@ final class BandCalc
         return $model['klang'] / 100 * Balance::GEAR_MAX_BONUS * $unlock;
     }
 
-    public static function sound(array $members, string $genre, float $cohesion, array $gear): float
+    /** @param float $bonus Genre-Bonus der Band (1 = keine Genre-Einheit), siehe identity() */
+    public static function sound(array $members, float $cohesion, array $gear, float $bonus = 1.0): float
     {
         if (!$members) {
             return 0.0;
         }
-        $values = array_map(static fn ($m) => self::memberValue($m, $genre, self::gearOf($m, $gear)), $members);
+        $values = array_map(static fn ($m) => self::memberValue($m, self::gearOf($m, $gear)), $members);
         $mean = array_sum($values) / count($values);
         $core = Balance::SOUND_MEAN_WEIGHT * $mean + (1 - Balance::SOUND_MEAN_WEIGHT) * min($values);
         $types = count(array_unique(array_map([self::class, 'instrument'], $members)));
         $lineup = 1 + Balance::LINEUP_BONUS * min(Balance::LINEUP_BONUS_MAX_TYPES, $types - 1);
         $cohesionFactor = Balance::COHESION_FLOOR + (1 - Balance::COHESION_FLOOR) * $cohesion / 100;
-        return round($core * $lineup * $cohesionFactor, 1);
+        return round($core * $lineup * $cohesionFactor * $bonus, 1);
+    }
+
+    /** Sound einer Band samt Genre-Bonus. */
+    public static function bandSound(array $band, array $members, array $gear): float
+    {
+        return self::sound($members, $band['cohesion'], $gear, self::identity($members, $band['genre'], $band['genre2'])['bonus']);
+    }
+
+    /**
+     * Genre einer Band ergibt sich aus der Besetzung: Teilen alle Mitglieder ein Genre und passt die Besetzung dazu,
+     * ist es eine Genre-Band (z. B. Rockband). Teilen sie zusätzlich ein zweites Genre, wird sie hybrid (Punk-Rock-Band).
+     * $prefer/$preferSecond halten die bisherige Ausrichtung, wenn mehrere Genres in Frage kommen.
+     * @return array{primary: ?string, second: ?string, title: ?string, bonus: float, music: string, checks: array<string, array>}
+     */
+    public static function identity(array $members, string $prefer = '', ?string $preferSecond = null): array
+    {
+        $types = array_count_values(array_map([self::class, 'instrument'], $members));
+        $count = count($members);
+        $checks = [];
+        foreach (Catalog::GENRE_LINEUP as $genre => $needs) {
+            $fans = count(array_filter($members, static fn ($m) => in_array($genre, $m['genres'], true)));
+            $requirements = [];
+            foreach ($needs as [$options, $need]) {
+                $have = array_sum(array_map(static fn ($t) => $types[$t] ?? 0, $options));
+                $requirements[] = ['instruments' => $options, 'need' => $need, 'have' => $have, 'met' => $have >= $need];
+            }
+            $lineup = !in_array(false, array_column($requirements, 'met'), true);
+            $checks[$genre] = [
+                'fans' => $fans,
+                'allFans' => $count >= Balance::MIN_MEMBERS && $fans === $count,
+                'requirements' => $requirements,
+                'lineup' => $lineup,
+            ];
+        }
+        $eligible = array_keys(array_filter($checks, static fn ($c) => $c['allFans'] && $c['lineup']));
+        $primary = in_array($prefer, $eligible, true) ? $prefer : ($eligible[0] ?? null);
+        $second = null;
+        if ($primary !== null) {
+            $shared = array_values(array_filter(array_keys($checks), static fn ($g) => $g !== $primary && $checks[$g]['allFans']));
+            $second = in_array($preferSecond, $shared, true) ? $preferSecond : ($shared[0] ?? null);
+        }
+        // Musik ohne Genre-Einheit: das Genre, das die meisten mögen.
+        $music = $primary ?? array_keys($checks)[0];
+        foreach ($checks as $genre => $check) {
+            if ($primary === null && $check['fans'] > $checks[$music]['fans']) {
+                $music = $genre;
+            }
+        }
+        return [
+            'primary' => $primary,
+            'second' => $second,
+            'title' => $primary === null ? null : self::title($primary, $second),
+            'bonus' => $primary === null ? 1.0 : ($second === null ? Balance::GENRE_BONUS : Balance::HYBRID_BONUS),
+            'music' => $music,
+            'checks' => $checks,
+        ];
+    }
+
+    /** „Rockband“, „Hip-Hop-Band“, „Punk-Rock-Band“. */
+    public static function title(string $primary, ?string $second): string
+    {
+        $name = Catalog::GENRES[$primary]['name'];
+        if ($second !== null) {
+            return Catalog::GENRES[$second]['name'] . '-' . $name . '-Band';
+        }
+        return str_contains($name, '-') ? $name . '-Band' : $name . 'band';
     }
 
     /** Können-Zuwachs: Talent beschleunigt, je besser jemand schon ist, desto langsamer geht es. */

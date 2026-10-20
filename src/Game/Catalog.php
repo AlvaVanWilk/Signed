@@ -39,12 +39,9 @@ final class Catalog
         'drums' => ['name' => 'Schlagzeug', 'icon' => '🥁', 'weight' => 14,
             'genres' => ['pop', 'rock', 'metal', 'punk', 'jazz', 'hiphop', 'folk'],
             'techniques' => ['doublebass', 'blastbeat']],
-        'keys' => ['name' => 'Keyboard', 'icon' => '🎹', 'weight' => 10,
+        'keys' => ['name' => 'Keyboard', 'icon' => '🎹', 'weight' => 15,
             'genres' => ['pop', 'rock', 'jazz', 'elektro', 'hiphop'],
-            'techniques' => ['arpeggio', 'improvisation']],
-        'synth' => ['name' => 'Synthesizer', 'icon' => '🎛️', 'weight' => 7,
-            'genres' => ['pop', 'elektro', 'hiphop'],
-            'techniques' => ['sounddesign', 'arpeggio']],
+            'techniques' => ['arpeggio', 'improvisation', 'sounddesign']],
         'turntables' => ['name' => 'Turntables', 'icon' => '💿', 'weight' => 4,
             'genres' => ['hiphop', 'elektro'],
             'techniques' => ['scratching', 'juggling']],
@@ -60,6 +57,21 @@ final class Catalog
         'flute' => ['name' => 'Flöte', 'icon' => '🪈', 'weight' => 3,
             'genres' => ['folk', 'jazz', 'pop'],
             'techniques' => ['zirkular', 'flatterzunge']],
+    ];
+
+    /**
+     * Was eine Band braucht, um sich nach einem Genre zu nennen (zusätzlich müssen alle Mitglieder das Genre mögen).
+     * Je Bedingung: Instrumente (eins davon genügt) und Anzahl.
+     */
+    public const GENRE_LINEUP = [
+        'pop' => [[['vocals'], 1]],
+        'rock' => [[['guitar'], 1], [['drums'], 1]],
+        'metal' => [[['guitar'], 2], [['drums'], 1]],
+        'punk' => [[['guitar'], 1], [['bass'], 1], [['drums'], 1]],
+        'jazz' => [[['bass'], 1], [['sax', 'trumpet'], 1]],
+        'elektro' => [[['keys', 'turntables'], 1]],
+        'hiphop' => [[['vocals'], 1], [['turntables'], 1]],
+        'folk' => [[['violin', 'flute', 'guitar'], 1]],
     ];
 
     /** Diese Instrumente üben im Tonhöhen-Spiel statt im Rhythmus-Spiel. */
@@ -147,30 +159,38 @@ final class Catalog
         'mic_tube' => ['type' => 'vocals', 'name' => 'Vintage-Röhrenmikro', 'rarity' => 'epic', 'klang' => 60, 'spielbarkeit' => 55, 'design' => 45],
         'mic_gold' => ['type' => 'vocals', 'name' => 'Goldkehlchen', 'rarity' => 'legendary', 'klang' => 86, 'spielbarkeit' => 45, 'design' => 85],
 
-        'gtr_school' => ['type' => 'guitar', 'name' => 'Schülergitarre', 'rarity' => 'common', 'klang' => 10, 'spielbarkeit' => 85, 'design' => 5],
-        'gtr_strato' => ['type' => 'guitar', 'name' => 'Strato Standard', 'rarity' => 'rare', 'klang' => 36, 'spielbarkeit' => 68, 'design' => 25],
-        'gtr_monster' => ['type' => 'guitar', 'name' => 'Monster-Axt', 'rarity' => 'epic', 'klang' => 58, 'spielbarkeit' => 50, 'design' => 75],
-        'gtr_sunburst' => ['type' => 'guitar', 'name' => 'Sunburst ’59', 'rarity' => 'legendary', 'klang' => 88, 'spielbarkeit' => 38, 'design' => 80],
+        // electric: nur fürs Spiel – wählt die akustische oder elektrische Spur. Angezeigt wird es nicht.
+        'gtr_school' => ['type' => 'guitar', 'name' => 'Einsteiger-E-Gitarre', 'rarity' => 'common', 'klang' => 10, 'spielbarkeit' => 85, 'design' => 5, 'electric' => true],
+        'gtr_strato' => ['type' => 'guitar', 'name' => 'Strato Standard', 'rarity' => 'rare', 'klang' => 36, 'spielbarkeit' => 68, 'design' => 25, 'electric' => true],
+        'gtr_monster' => ['type' => 'guitar', 'name' => 'Monster-Axt', 'rarity' => 'epic', 'klang' => 58, 'spielbarkeit' => 50, 'design' => 75, 'electric' => true],
+        'gtr_sunburst' => ['type' => 'guitar', 'name' => 'Sunburst ’59', 'rarity' => 'legendary', 'klang' => 88, 'spielbarkeit' => 38, 'design' => 80, 'electric' => true],
+        'gtr_camp' => ['type' => 'guitar', 'name' => 'Wandergitarre', 'rarity' => 'common', 'klang' => 10, 'spielbarkeit' => 88, 'design' => 8, 'electric' => false],
+        'gtr_western' => ['type' => 'guitar', 'name' => 'Westerngitarre', 'rarity' => 'rare', 'klang' => 35, 'spielbarkeit' => 70, 'design' => 22, 'electric' => false],
+        'gtr_jumbo' => ['type' => 'guitar', 'name' => 'Jumbo-Western', 'rarity' => 'epic', 'klang' => 60, 'spielbarkeit' => 50, 'design' => 55, 'electric' => false],
+        'gtr_master' => ['type' => 'guitar', 'name' => 'Meisterstück Akustik', 'rarity' => 'legendary', 'klang' => 87, 'spielbarkeit' => 40, 'design' => 82, 'electric' => false],
 
         'bass_entry' => ['type' => 'bass', 'name' => 'Einsteigerbass', 'rarity' => 'common', 'klang' => 10, 'spielbarkeit' => 85, 'design' => 5],
         'bass_jazz' => ['type' => 'bass', 'name' => 'Jazzbass Deluxe', 'rarity' => 'rare', 'klang' => 38, 'spielbarkeit' => 66, 'design' => 20],
         'bass_abyss' => ['type' => 'bass', 'name' => 'Fünfsaiter Abyss', 'rarity' => 'epic', 'klang' => 62, 'spielbarkeit' => 48, 'design' => 45],
         'bass_deep' => ['type' => 'bass', 'name' => 'Tiefseebass', 'rarity' => 'legendary', 'klang' => 85, 'spielbarkeit' => 40, 'design' => 75],
 
-        'drm_rehearsal' => ['type' => 'drums', 'name' => 'Proberaum-Set', 'rarity' => 'common', 'klang' => 10, 'spielbarkeit' => 85, 'design' => 5],
-        'drm_maple' => ['type' => 'drums', 'name' => 'Ahorn-Kit', 'rarity' => 'rare', 'klang' => 36, 'spielbarkeit' => 68, 'design' => 25],
-        'drm_double' => ['type' => 'drums', 'name' => 'Doppelfuß-Monster', 'rarity' => 'epic', 'klang' => 60, 'spielbarkeit' => 48, 'design' => 60],
-        'drm_thunder' => ['type' => 'drums', 'name' => 'Donnerkuppel', 'rarity' => 'legendary', 'klang' => 87, 'spielbarkeit' => 40, 'design' => 85],
+        'drm_rehearsal' => ['type' => 'drums', 'name' => 'Proberaum-Set', 'rarity' => 'common', 'klang' => 10, 'spielbarkeit' => 85, 'design' => 5, 'electric' => false],
+        'drm_maple' => ['type' => 'drums', 'name' => 'Ahorn-Kit', 'rarity' => 'rare', 'klang' => 36, 'spielbarkeit' => 68, 'design' => 25, 'electric' => false],
+        'drm_double' => ['type' => 'drums', 'name' => 'Doppelfuß-Monster', 'rarity' => 'epic', 'klang' => 60, 'spielbarkeit' => 48, 'design' => 60, 'electric' => false],
+        'drm_thunder' => ['type' => 'drums', 'name' => 'Donnerkuppel', 'rarity' => 'legendary', 'klang' => 87, 'spielbarkeit' => 40, 'design' => 85, 'electric' => false],
+        'drm_pads' => ['type' => 'drums', 'name' => 'Übungs-E-Drums', 'rarity' => 'common', 'klang' => 9, 'spielbarkeit' => 90, 'design' => 8, 'electric' => true],
+        'drm_eset' => ['type' => 'drums', 'name' => 'E-Drum-Set', 'rarity' => 'rare', 'klang' => 35, 'spielbarkeit' => 72, 'design' => 30, 'electric' => true],
+        'drm_epro' => ['type' => 'drums', 'name' => 'E-Drum Pro', 'rarity' => 'epic', 'klang' => 60, 'spielbarkeit' => 52, 'design' => 55, 'electric' => true],
+        'drm_neon' => ['type' => 'drums', 'name' => 'Neon-E-Drums', 'rarity' => 'legendary', 'klang' => 86, 'spielbarkeit' => 42, 'design' => 90, 'electric' => true],
 
-        'key_home' => ['type' => 'keys', 'name' => 'Heimkeyboard', 'rarity' => 'common', 'klang' => 8, 'spielbarkeit' => 90, 'design' => 5],
-        'key_stage' => ['type' => 'keys', 'name' => 'Stage Piano', 'rarity' => 'rare', 'klang' => 36, 'spielbarkeit' => 70, 'design' => 20],
-        'key_organ' => ['type' => 'keys', 'name' => 'Röhrenorgel B3', 'rarity' => 'epic', 'klang' => 62, 'spielbarkeit' => 50, 'design' => 50],
-        'key_grand' => ['type' => 'keys', 'name' => 'Bühnenflügel Nocturne', 'rarity' => 'legendary', 'klang' => 88, 'spielbarkeit' => 40, 'design' => 80],
-
-        'syn_mini' => ['type' => 'synth', 'name' => 'Mini-Synth', 'rarity' => 'common', 'klang' => 10, 'spielbarkeit' => 85, 'design' => 10],
-        'syn_poly' => ['type' => 'synth', 'name' => 'Polysynth 80', 'rarity' => 'rare', 'klang' => 36, 'spielbarkeit' => 65, 'design' => 30],
-        'syn_modular' => ['type' => 'synth', 'name' => 'Modular-Wand', 'rarity' => 'epic', 'klang' => 64, 'spielbarkeit' => 42, 'design' => 65],
-        'syn_neon' => ['type' => 'synth', 'name' => 'Neonwelle Prime', 'rarity' => 'legendary', 'klang' => 86, 'spielbarkeit' => 40, 'design' => 90],
+        'key_home' => ['type' => 'keys', 'name' => 'Heimkeyboard', 'rarity' => 'common', 'klang' => 8, 'spielbarkeit' => 90, 'design' => 5, 'electric' => true],
+        'key_stage' => ['type' => 'keys', 'name' => 'Polysynth 80', 'rarity' => 'rare', 'klang' => 36, 'spielbarkeit' => 66, 'design' => 28, 'electric' => true],
+        'key_organ' => ['type' => 'keys', 'name' => 'Synth-Workstation', 'rarity' => 'epic', 'klang' => 62, 'spielbarkeit' => 48, 'design' => 60, 'electric' => true],
+        'key_neon' => ['type' => 'keys', 'name' => 'Neonwelle Prime', 'rarity' => 'legendary', 'klang' => 86, 'spielbarkeit' => 40, 'design' => 90, 'electric' => true],
+        'key_upright' => ['type' => 'keys', 'name' => 'Wohnzimmerklavier', 'rarity' => 'common', 'klang' => 10, 'spielbarkeit' => 86, 'design' => 8, 'electric' => false],
+        'key_studio' => ['type' => 'keys', 'name' => 'Studioklavier', 'rarity' => 'rare', 'klang' => 37, 'spielbarkeit' => 68, 'design' => 22, 'electric' => false],
+        'key_stagepiano' => ['type' => 'keys', 'name' => 'Bühnenklavier', 'rarity' => 'epic', 'klang' => 61, 'spielbarkeit' => 50, 'design' => 50, 'electric' => false],
+        'key_grand' => ['type' => 'keys', 'name' => 'Goldenes Klavier', 'rarity' => 'legendary', 'klang' => 88, 'spielbarkeit' => 40, 'design' => 85, 'electric' => false],
 
         'tt_entry' => ['type' => 'turntables', 'name' => 'Einsteiger-Deck', 'rarity' => 'common', 'klang' => 10, 'spielbarkeit' => 85, 'design' => 10],
         'tt_direct' => ['type' => 'turntables', 'name' => 'Direktantrieb 1200', 'rarity' => 'rare', 'klang' => 36, 'spielbarkeit' => 68, 'design' => 25],
@@ -308,7 +328,6 @@ final class Catalog
         'bass' => ['%s rumpelt am Bass daneben.'],
         'drums' => ['%s verliert einen Stick.', '%s schleppt hinterher.'],
         'keys' => ['%s erwischt die falsche Taste.'],
-        'synth' => ['Der Sound von %s klingt plötzlich schief.'],
         'turntables' => ['Bei %s springt die Platte.'],
         'sax' => ['%s quietscht am Saxophon.'],
         'trumpet' => ['%s kiekst auf der Trompete.'],
@@ -322,7 +341,6 @@ final class Catalog
         'bass' => ['%s groovt, dass der Boden bebt.'],
         'drums' => ['%s haut ein Fill raus, das sitzt.', '%s treibt die Band nach vorn.'],
         'keys' => ['%s zaubert ein Solo auf den Tasten.'],
-        'synth' => ['%s lässt einen fetten Drop los.'],
         'turntables' => ['%s scratcht wie ein Weltmeister.'],
         'sax' => ['%s spielt ein Solo, das unter die Haut geht.'],
         'trumpet' => ['%s schmettert ein Solo bis in die letzte Reihe.'],

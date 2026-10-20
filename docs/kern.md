@@ -15,7 +15,7 @@ Der Kernkreislauf: **Musiker und Instrumente finden → Bands zusammenstellen �
 | Musiker | Einmalig, zufällig erzeugt: 1–2 Instrumente, Können, Bekanntheit, Genre-Symbole, Fähigkeiten (an die Können-Stufe gebunden), Charakterzüge, „Ungewöhnlich“, Profilbild. Favoriten ohne Band stehen in der zweiten Menüzeile |
 | Instrumente | 44 Modelle (11 Arten × 4 Seltenheiten); jedes Exemplar weicht pro Wert um bis zu ±12 vom Modell ab; frei tauschbar |
 | Manager | Stufe 1–5, 1–2 Fähigkeiten, bis zu 3 Bands mit geteilter Leistung |
-| Bands | Besetzungsregeln, Sound, Zusammenspiel, Chemie, Ruhm nach dem Ehe-Modell, Bandhistorie |
+| Bands | Bis zu 3 Bands (freigeschaltet über Label-Ruhm), Genre ergibt sich aus der Besetzung, Sound, Zusammenspiel, Chemie, Ruhm |
 | Aktivitäten | Band: Bandprobe, Band-Promo, Straßenmusik, Open Stage, Gig (erst mit Platte), Platte (Mischpult pro Lied). Einzeln: Solo-Probe (Rhythmus oder Tonhöhe), Promo-Mission. Ohne Band: Jam-Café (Mitmusiker für die erste Band), Straßenmusik |
 | Live | Live-Ticker mit Publikumsleiste für alle Auftritte |
 | Charts | Gemeinsame Album-Charts aller Spieler mit täglichen Tantiemen, dazu eine Label-Gesamtliste |
@@ -58,15 +58,38 @@ Tournee bzw. ausgeschriebenen Gigs (im Spiel ausgegraut markiert).
 ### Sound
 
 ```
-Beitrag    = Können × (1 + Instrumentbonus) × Genre-Passung
+Beitrag    = Können × (1 + Instrumentbonus), ohne eigenes Instrument × 0,5
 Instrument = Klang/100 × 0,5 × min(1, Können / (100 − Spielbarkeit))
-Genre      = 1, außerhalb der eigenen Genres 0,75
-Sound      = (0,75 × Durchschnitt + 0,25 × schwächster Beitrag)
+Sound      = (0,75 × Durchschnitt + 0,25 × schwächster Beitrag) × Genre-Bonus (1 / 1,15 / 1,25)
              × (1 + 0,05 × weitere Instrumentenarten, höchstens +20 %)
              × (0,7 + 0,3 × Zusammenspiel/100)
 ```
 
 Ein schwacher Musiker zieht den Sound runter, und vier Musiker sind höchstens 20 % stärker als zwei.
+
+### Genre einer Band
+
+- Beim Gründen wählt man kein Genre. Eine Band ist erst einmal einfach eine Band.
+- **Genre-Band** (z. B. „Rockband“): Alle Mitglieder mögen das Genre **und** die Besetzung passt. Sound × 1,15.
+- **Hybrid** (z. B. „Punk-Rock-Band“): Genre-Band, und alle mögen zusätzlich ein zweites Genre (ohne weitere
+  Besetzungs-Bedingung). Sound × 1,25. Name: zweites Genre vor dem Bandgenre.
+- Besetzungs-Bedingungen (gezählt wird das Instrument, das jemand in der Band spielt):
+
+| Genre | braucht |
+|---|---|
+| Pop | Gesang |
+| Rock | Gitarre, Schlagzeug |
+| Metal | 2 Gitarren, Schlagzeug |
+| Punk | Gitarre, Bass, Schlagzeug |
+| Jazz | Bass, Saxophon oder Trompete |
+| Elektro | Keyboard oder Turntables |
+| Hip-Hop | Gesang, Turntables |
+| Folk | Geige, Flöte oder Gitarre |
+
+- Kommen mehrere Genres in Frage, bleibt die Band bei ihrem bisherigen; sonst gilt die Reihenfolge oben.
+- Ohne Genre-Einheit spielt die Musik im Genre, das die meisten Mitglieder mögen (ohne Bonus).
+- Wechsel kommen in die Chronik; beim Aufnehmen zeigt das Spiel vorher, ob die Band ihr Genre verliert oder gewinnt.
+- **Band-Plätze:** die erste Band sofort, die zweite ab 150, die dritte ab 800 Label-Ruhm. Genres dürfen sich wiederholen.
 
 ### Zusammenspiel und Chemie
 
@@ -208,6 +231,7 @@ gibt es keinen neuen Laden. Chancen: gewöhnlich / selten / episch / legendär.
 
 Diese Punkte sind im Konzept offen. Für den Kern habe ich sie so festgelegt; alles lässt sich ändern.
 
+- **Instrumente:** Keyboard und Synthesizer sind ein Instrument (Keyboard). Gitarren, Schlagzeuge und Keyboards gibt es akustisch und elektrisch; das merkt sich nur das Spiel, um später die passende Spur zu spielen.
 - **Besetzung:** Jedes Mitglied spielt in der Band genau ein Instrument. Ein Sänger mit Gitarre zählt
   als Gitarrist, wenn er in der Band Gitarre spielt. Höchstens 6 Mitglieder.
 - **Straßenmusik:** vorläufig ohne Geld fürs Label, dafür etwas Ruhm. Noch offen, ob sie bleibt.

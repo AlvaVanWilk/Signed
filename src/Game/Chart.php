@@ -86,7 +86,7 @@ final class Chart
     /** Instrumentengruppen am Mischpult, wenn die Band zu groß für Einzelspuren ist. */
     private const MIXER_GROUPS = [
         'Rhythmus' => ['drums', 'bass', 'turntables'],
-        'Harmonie' => ['guitar', 'keys', 'synth'],
+        'Harmonie' => ['guitar', 'keys'],
         'Melodie' => ['vocals', 'sax', 'trumpet', 'violin', 'flute'],
     ];
 

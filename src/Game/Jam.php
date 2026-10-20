@@ -51,22 +51,18 @@ final class Jam
     }
 
     /** Der gewählte Musiker unterschreibt und gründet mit dem Gastgeber eine Band. */
-    public function pick(int $offerId, int $index, string $bandName, string $genre): int
+    public function pick(int $offerId, int $index, string $bandName): int
     {
-        return $this->repo->db->transaction(function () use ($offerId, $index, $bandName, $genre): int {
+        return $this->repo->db->transaction(function () use ($offerId, $index, $bandName): int {
             $offer = $this->offer($offerId);
             $cards = json_decode($offer['cards'], true);
             if (!isset($cards[$index])) {
                 throw new ApiError('Diesen Musiker gibt es in der Auswahl nicht.');
             }
-            $card = $cards[$index];
             $host = $this->repo->musician((int) $offer['musician_id']);
-            if (!in_array($genre, $host['genres'], true) || !in_array($genre, $card['genres'], true)) {
-                throw new ApiError('Die Band braucht ein Genre, das beide spielen.');
-            }
-            $id = $this->repo->insertMusician($card, 'jam');
+            $id = $this->repo->insertMusician($cards[$index], 'jam');
             $this->repo->db->update('jam_offers', ['status' => 'done'], ['id' => $offerId]);
-            return (new Bands($this->repo))->create($bandName, $genre, [
+            return (new Bands($this->repo))->create($bandName, [
                 ['id' => $host['id'], 'slot' => 1],
                 ['id' => $id, 'slot' => 1],
             ]);

@@ -23,8 +23,7 @@ function foundBand(Player $p, string $name = 'Die Ersten'): array
 {
     $state = $p->get('state');
     $members = array_map(static fn ($m) => ['id' => $m['id'], 'slot' => 1], $state['musicians']);
-    $genre = $state['musicians'][0]['genres'][0];
-    $res = $p->post('bandCreate', ['name' => $name, 'genre' => $genre, 'members' => $members]);
+    $res = $p->post('bandCreate', ['name' => $name, 'members' => $members]);
     return array_values(array_filter($res['state']['bands'], static fn ($b) => $b['id'] === $res['bandId']))[0];
 }
 
@@ -183,7 +182,7 @@ test('Jam-Café: drei passende Musiker zur Auswahl, einer gründet mit dem Gastg
         return $state['jamOffers'][0];
     };
     $offer = $jam();
-    checkEquals(Balance::JAM['cards'], count($offer['cards']));
+    check(count($offer['cards']) >= 2 && count($offer['cards']) <= Balance::JAM['cards']);
     $types = [];
     foreach ($offer['cards'] as $card) {
         checkEquals(0, $card['level'], 'Aus dem Jam-Café nur Stufe 0');
@@ -203,15 +202,13 @@ test('Jam-Café: drei passende Musiker zur Auswahl, einer gründet mit dem Gastg
     checkEquals([], $p->get('state')['jamOffers']);
     $offer = $jam();
 
-    $card = $offer['cards'][1];
-    $genre = array_values(array_intersect($card['genres'], $m['genres']))[0];
-    $res = $p->post('jamPick', ['offerId' => $offer['id'], 'index' => 1, 'name' => 'Die Jamsession', 'genre' => $genre]);
+    $res = $p->post('jamPick', ['offerId' => $offer['id'], 'index' => 1, 'name' => 'Die Jamsession']);
     $band = bandById($res['state'], $res['bandId']);
-    checkEquals($genre, $band['genre']);
+    checkEquals(2, count($band['memberIds']));
     checkEquals(2, count($res['state']['musicians']));
     checkEquals([], $res['state']['jamOffers']);
     checkApiError(fn () => $p->post('soloStart', ['musicianId' => $m['id'], 'type' => 'jam']), 'Band');
-    checkApiError(fn () => $p->post('jamPick', ['offerId' => $offer['id'], 'index' => 0, 'name' => 'Nochmal', 'genre' => $genre]), 'nicht mehr');
+    checkApiError(fn () => $p->post('jamPick', ['offerId' => $offer['id'], 'index' => 0, 'name' => 'Nochmal']), 'nicht mehr');
 
     $p->post('musicianFavorite', ['musicianId' => $m['id'], 'favorite' => false]);
     check(!$p->get('state')['musicians'][0]['favorite']);
@@ -290,16 +287,26 @@ test('Packs: Backstage ohne gewöhnliche Karten, Werkstatt nach Wunsch, Music St
     check($fitting > $total * 0.5, "passend $fitting von $total");
 });
 
-test('Bandregeln: ein Genre pro Label, niemand in zwei Bands', function () {
+test('Bandregeln: weitere Bands erst mit Label-Ruhm, niemand in zwei Bands, Genre aus der Besetzung', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Lou');
     $band = foundBand($p);
+    checkEquals('rock', $band['genres'][0] ?? null, 'Gesang, Gitarre, Schlagzeug, alle Rock: eine Rockband');
+    checkEquals('Rockband', $band['title']);
     $state = $p->get('state');
     $m = $state['musicians'][0];
-    checkApiError(fn () => $p->post('bandCreate', ['name' => 'Zweite', 'genre' => $band['genre'], 'members' => []]), 'Pro Genre');
-    $other = $band['genre'] === 'pop' ? 'rock' : 'pop';
-    checkApiError(fn () => $p->post('bandCreate', ['name' => 'Zweite', 'genre' => $other, 'members' => [['id' => $m['id']]]]), 'schon in einer Band');
-    checkApiError(fn () => $p->post('bandCreate', ['name' => '   ', 'genre' => $other, 'members' => []]), 'Bandname');
+    checkEquals(1, $state['label']['bandSlots']['open']);
+    checkApiError(fn () => $p->post('bandCreate', ['name' => 'Zweite', 'members' => []]), '150 Label-Ruhm');
+    $db->exec('UPDATE bands SET fame_own = 200');
+    checkEquals(2, $p->get('state')['label']['bandSlots']['open']);
+    checkApiError(fn () => $p->post('bandCreate', ['name' => 'Zweite', 'members' => [['id' => $m['id']]]]), 'schon in einer Band');
+    checkApiError(fn () => $p->post('bandCreate', ['name' => '   ', 'members' => []]), 'Bandname');
+
+    // Ohne Schlagzeug ist es keine Rockband mehr.
+    $drummer = array_values(array_filter($state['musicians'], static fn ($x) => $x['instruments'][0]['type'] === 'drums'))[0];
+    $state = $p->post('bandRemoveMember', ['bandId' => $band['id'], 'musicianId' => $drummer['id']])['state'];
+    checkEquals([], bandById($state, $band['id'])['genres']);
+    check(str_contains($state['history'][0]['text'], 'keine gemeinsame Genre-Linie'));
 });
 
 test('Straßenmusik bringt dem Label kein Geld, aber Präsenz; sperrt die Band bis zum Ende', function () {
@@ -555,7 +562,7 @@ test('Wechselbörse: anbieten, bieten, überbieten, Zuschlag nach Ablauf', funct
     checkApiError(fn () => $seller->post('transferBid', ['transferId' => $offer['id'], 'amount' => $offer['minPrice']]), 'eigenen');
     // Wer an der Börse steht, kann keiner Band beitreten.
     $members = array_map(static fn ($x) => ['id' => $x['id'], 'slot' => 1], $state['musicians']);
-    checkApiError(fn () => $seller->post('bandCreate', ['name' => 'Gesperrt', 'genre' => 'rock', 'members' => $members]), 'Wechselbörse');
+    checkApiError(fn () => $seller->post('bandCreate', ['name' => 'Gesperrt', 'members' => $members]), 'Wechselbörse');
 
     // Unter dem Mindestpreis geht nicht; das Geld wird zurückgelegt.
     checkApiError(fn () => $a->post('transferBid', ['transferId' => $offer['id'], 'amount' => $offer['minPrice'] - 10]), 'mindestens');

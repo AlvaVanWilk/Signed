@@ -12,27 +12,46 @@ test('Ein schwacher Musiker zieht den Sound runter', function () {
     $strong = [musician(['skill1' => 60]), musician(['skill1' => 60, 'instr1' => 'drums'])];
     $mixed = [musician(['skill1' => 60]), musician(['skill1' => 20, 'instr1' => 'drums'])];
     $even = [musician(['skill1' => 40]), musician(['skill1' => 40, 'instr1' => 'drums'])];
-    $soundMixed = BandCalc::sound($mixed, 'rock', 0, []);
-    check(BandCalc::sound($strong, 'rock', 0, []) > $soundMixed);
-    check(BandCalc::sound($even, 'rock', 0, []) > $soundMixed, 'Gleicher Durchschnitt, aber ein Schwacher soll schlechter klingen');
+    $soundMixed = BandCalc::sound($mixed, 0, []);
+    check(BandCalc::sound($strong, 0, []) > $soundMixed);
+    check(BandCalc::sound($even, 0, []) > $soundMixed, 'Gleicher Durchschnitt, aber ein Schwacher soll schlechter klingen');
 });
 
 test('Vier Musiker sind nicht doppelt so stark wie zwei', function () {
     $two = [musician(['instr1' => 'guitar']), musician(['instr1' => 'drums'])];
     $four = [musician(['instr1' => 'guitar']), musician(['instr1' => 'drums']), musician(['instr1' => 'bass']), musician(['instr1' => 'vocals'])];
-    $ratio = BandCalc::sound($four, 'rock', 50, []) / BandCalc::sound($two, 'rock', 50, []);
+    $ratio = BandCalc::sound($four, 50, []) / BandCalc::sound($two, 50, []);
     check($ratio > 1.0 && $ratio < 1.25, "Verhältnis $ratio");
 });
 
-test('Außerhalb des Genres gibt es weniger Bonus', function () {
-    $m = musician(['genres' => ['pop']]);
-    checkEquals(40.0 * Balance::OFF_GENRE_FACTOR * Balance::NO_GEAR_FACTOR, BandCalc::memberValue($m, 'elektro', null));
-    checkEquals(40.0 * Balance::NO_GEAR_FACTOR, BandCalc::memberValue($m, 'pop', null));
+test('Genre ergibt sich aus der Besetzung: alle mögen es und die Instrumente passen', function () {
+    $rock = static fn (string $instrument, array $genres = ['rock']) => musician(['instr1' => $instrument, 'genres' => $genres]);
+    $none = BandCalc::identity([$rock('guitar'), $rock('bass'), $rock('vocals', ['pop'])]);
+    checkEquals(null, $none['primary']);
+    checkEquals(1.0, $none['bonus']);
+    checkEquals('rock', $none['music'], 'Ohne Genre spielt die Musik, die die meisten mögen');
+
+    $noDrums = BandCalc::identity([$rock('guitar'), $rock('vocals')]);
+    checkEquals(null, $noDrums['primary'], 'Rock braucht ein Schlagzeug');
+    check(!$noDrums['checks']['rock']['lineup'] && $noDrums['checks']['rock']['allFans']);
+
+    $band = BandCalc::identity([$rock('guitar'), $rock('drums')]);
+    checkEquals('rock', $band['primary']);
+    checkEquals('Rockband', $band['title']);
+    checkEquals(Balance::GENRE_BONUS, $band['bonus']);
+
+    $hybrid = BandCalc::identity([$rock('guitar', ['rock', 'punk']), $rock('drums', ['punk', 'rock'])]);
+    checkEquals('Punk-Rock-Band', $hybrid['title'], 'Fürs zweite Genre reicht es, dass alle es mögen');
+    checkEquals(Balance::HYBRID_BONUS, $hybrid['bonus']);
+    checkEquals('Punk-Rock-Band', BandCalc::identity([$rock('guitar', ['rock', 'punk']), $rock('drums', ['punk', 'rock'])], 'rock', 'punk')['title']);
+
+    $sound = BandCalc::sound([$rock('guitar'), $rock('drums')], 0, [], $band['bonus']);
+    check(abs($sound / BandCalc::sound([$rock('guitar'), $rock('drums')], 0, []) - Balance::GENRE_BONUS) < 0.01);
 });
 
 test('Ohne Instrument klingt es nach wenig, schon ein einfaches hilft', function () {
     $m = musician(['genres' => ['pop']]);
-    check(BandCalc::memberValue($m, 'pop', Catalog::GEAR['gtr_sunburst']) > 2 * BandCalc::memberValue($m, 'pop', null));
+    check(BandCalc::memberValue($m, Catalog::GEAR['gtr_sunburst']) > 2 * BandCalc::memberValue($m, null));
 });
 
 test('Gutes Instrument entfaltet sich nur in fähigen Händen', function () {
@@ -45,7 +64,7 @@ test('Gutes Instrument entfaltet sich nur in fähigen Händen', function () {
 
 test('Zusammenspiel erhöht den Sound', function () {
     $band = [musician(), musician(['instr1' => 'drums'])];
-    check(BandCalc::sound($band, 'rock', 100, []) > BandCalc::sound($band, 'rock', 0, []));
+    check(BandCalc::sound($band, 100, []) > BandCalc::sound($band, 0, []));
 });
 
 test('Bekanntheit wird zu gleichen Teilen verteilt, Charisma zählt', function () {

@@ -64,7 +64,8 @@ final class State
         $bandsOut = [];
         foreach ($bands as $band) {
             $list = $members[$band['id']] ?? [];
-            $sound = BandCalc::sound($list, $band['genre'], $band['cohesion'], $gearMap);
+            $identity = (new Bands($repo))->syncIdentity($band, $list);
+            $sound = BandCalc::sound($list, $band['cohesion'], $gearMap, $identity['bonus']);
             if (abs($sound - $band['sound']) >= 0.05) {
                 // Zwischenspeicher für die Charts (Kritikerwertung).
                 $db->update('bands', ['sound' => $sound], ['id' => $band['id']]);
@@ -79,7 +80,10 @@ final class State
             $bandsOut[] = [
                 'id' => $band['id'],
                 'name' => $band['name'],
-                'genre' => $band['genre'],
+                'genres' => array_values(array_filter([$identity['primary'], $identity['second']])),
+                'title' => $identity['title'],
+                'genreBonus' => $identity['bonus'],
+                'genreChecks' => $identity['checks'],
                 'managerId' => $band['manager_id'],
                 'managerLevel' => $level,
                 'memberIds' => array_map(static fn ($m) => $m['id'], $list),
@@ -133,7 +137,7 @@ final class State
 
         return [
             'now' => $now,
-            'label' => $label,
+            'label' => $label + ['bandSlots' => Bands::slots($repo->labelFame())],
             'scout' => (new Scout($repo))->status(),
             'jamOffers' => (new Jam($repo))->open(),
             'market' => (new Transfers($repo))->market(),

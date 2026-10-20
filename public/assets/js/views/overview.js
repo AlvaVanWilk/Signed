@@ -1,4 +1,4 @@
-import { face, genreTag } from '../cards.js';
+import { bandGenreTags, face } from '../cards.js';
 import { app, bandById, isBusy, musicianById, runningFor, serverNow } from '../core.js';
 import { esc, fmt0, fmt1, money, timeAgo } from '../ui.js';
 
@@ -84,7 +84,7 @@ export function bandTile(b) {
     <a class="band-tile" href="#/band/${b.id}">
       <div class="band-tile-head">
         <b>${esc(b.name)}</b>
-        ${genreTag(b.genre)}
+        ${bandGenreTags(b)}
       </div>
       <div class="faces">${members.map((m) => face(m, 'sm')).join('')}</div>
       <div class="band-tile-stats">

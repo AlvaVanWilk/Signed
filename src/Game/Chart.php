@@ -92,13 +92,15 @@ final class Chart
 
     /**
      * Spuren am Mischpult: bis zu vier Musiker einzeln, größere Bands in Gruppen (Rhythmus, Harmonie, Melodie).
-     * @param list<array{name: string, instrument: string, skill: float}> $players
-     * @return list<array{name: string, instruments: list<string>, skill: float}>
+     * @param list<array{name: string, instrument: string, skill: float, stem?: array}> $players
+     * @return list<array{name: string, instruments: list<string>, skill: float, stems: list<array>}>
      */
     public static function mixerTracks(array $players): array
     {
         if (count($players) <= self::MIXER_MAX_TRACKS) {
-            return array_map(static fn ($p) => ['name' => $p['name'], 'instruments' => [$p['instrument']], 'skill' => $p['skill']], $players);
+            return array_map(static fn ($p) => [
+                'name' => $p['name'], 'instruments' => [$p['instrument']], 'skill' => $p['skill'], 'stems' => isset($p['stem']) ? [$p['stem']] : [],
+            ], $players);
         }
         $tracks = [];
         foreach (self::MIXER_GROUPS as $group => $types) {
@@ -108,6 +110,7 @@ final class Chart
                     'name' => $group,
                     'instruments' => array_values(array_unique(array_column($members, 'instrument'))),
                     'skill' => array_sum(array_column($members, 'skill')) / count($members),
+                    'stems' => array_values(array_filter(array_column($members, 'stem'))),
                 ];
             }
         }

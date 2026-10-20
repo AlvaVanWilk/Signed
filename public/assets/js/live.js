@@ -1,12 +1,22 @@
 import { app, bandById, cat, musicianById, serverNow } from './core.js';
 import { duration, esc, openModal } from './ui.js';
+import { getAudio } from './audio.js';
+import { loadStems, memberStem, playStems } from './music.js';
 
 const ICONS = { song: '🎵', mistake: '😬', highlight: '🔥', crowd: '👥' };
 
 /** Live-Ansicht eines Auftritts: Publikumsleiste und Live-Ticker, abgespielt nach Serverzeit. */
 export function openLive(activityId) {
   let timer = null;
-  const modal = openModal({ wide: true, className: 'live-modal', html: '<div class="live"></div>', onClose: () => clearInterval(timer) });
+  let player = null;
+  const stopMusic = () => {
+    player?.stop();
+    player = null;
+  };
+  const modal = openModal({ wide: true, className: 'live-modal', html: '<div class="live"></div>', onClose: () => {
+    clearInterval(timer);
+    stopMusic();
+  } });
   const root = modal.body.querySelector('.live');
   const activity = app.state.running.find((a) => a.id === Number(activityId));
   if (!activity) {
@@ -18,6 +28,16 @@ export function openLive(activityId) {
   const who = band ? band.name : solo ? `${solo.firstName} ${solo.lastName}` : '';
   const songSeconds = cat().rules.songSeconds;
   const total = activity.endsAt - activity.startedAt;
+  const players = band ? band.memberIds.map(musicianById).filter(Boolean) : solo ? [solo] : [];
+  const groups = players.map((m) => [memberStem(m, band, activity.id)]);
+
+  // Die Aufnahmen laufen in Schleife mit, passend zur Serverzeit: Wer später zuschaut, hört mitten im Lied.
+  loadStems(groups).then((buffers) => {
+    const elapsed = serverNow() - activity.startedAt;
+    if (!buffers || modal.closed || elapsed >= total) return;
+    const ctx = getAudio();
+    player = playStems(buffers, ctx.currentTime + 0.05, { offset: elapsed % songSeconds, loop: true, volume: 0.8 });
+  });
 
   root.innerHTML = `
     <div class="live-head">
@@ -59,6 +79,7 @@ export function openLive(activityId) {
     leftEl.textContent = elapsed >= total ? 'Vorbei!' : duration(total - elapsed);
     if (elapsed >= total) {
       clearInterval(timer);
+      stopMusic();
       setTimeout(() => modal.close(), 1500);
     }
   }

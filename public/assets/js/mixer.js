@@ -1,4 +1,5 @@
 import { getAudio, playTrackBeat, scheduleBacking } from './audio.js';
+import { loadStems, playStems } from './music.js';
 import { instrumentIcon } from './cards.js';
 import { COLORS, judgeRatio, mountShell } from './mg-shell.js';
 import { duration, percent } from './ui.js';
@@ -45,6 +46,15 @@ export function createMixerGame(container, game) {
   let running = false;
   let stopBacking = () => {};
   let resolvePlay;
+  // Echte Aufnahmen, sofern es sie gibt; sonst spielt der Synthesizer.
+  let stems = null;
+  let stemPlayer = null;
+  const startButton = shell.el('.mg-start');
+  startButton.disabled = true;
+  loadStems(tracks.map((t) => t.stems || [])).then((result) => {
+    stems = result;
+    startButton.disabled = false;
+  });
 
   const clock = () => (audio ? audio.currentTime : performance.now() / 1000);
   const levelOf = (k, now) => Math.max(0, Math.min(1, faders[k] + offsets[k] + Math.sin(now * 1.7 + phases[k]) * 0.015));
@@ -66,6 +76,8 @@ export function createMixerGame(container, game) {
     tracks.forEach((_, k) => {
       offsets[k] += (targets[k] - offsets[k]) * Math.min(1, dt * 1.6);
     });
+    // Mit Aufnahmen hört man den Pegel direkt: Sollwert = volle Lautstärke, darüber lauter, darunter leiser.
+    if (stemPlayer) tracks.forEach((_, k) => stemPlayer.gains[k].gain.setTargetAtTime(Math.min(1.8, levelOf(k, now) / ZONE_CENTER), audio.currentTime, 0.03));
     // Wer einen Regler festhält, hält den Pegel dort, wo der Finger ist.
     for (const { k, y } of pointers.values()) setFaderFromPointer(k, y);
     tracks.forEach((_, k) => {
@@ -81,7 +93,7 @@ export function createMixerGame(container, game) {
     const beatIndex = Math.floor(now / beat);
     if (now >= 0 && now < game.duration && beatIndex > lastBeat) {
       lastBeat = beatIndex;
-      tracks.forEach((track, k) => track.instruments.forEach((instrument) => playTrackBeat(instrument, beatIndex, now, game.bpm, Math.min(1, levelOf(k, now) * 1.25))));
+      if (!stemPlayer) tracks.forEach((track, k) => track.instruments.forEach((instrument) => playTrackBeat(instrument, beatIndex, now, game.bpm, Math.min(1, levelOf(k, now) * 1.25))));
     }
   }
 
@@ -209,6 +221,7 @@ export function createMixerGame(container, game) {
     t0 = clock() + 0.15 + 4 * beat;
     last = clock();
     stopBacking = scheduleBacking({ genre: game.genre, bpm: game.bpm, start: t0, duration: game.duration, drums: false, bass: false });
+    if (stems) stemPlayer = playStems(stems, t0);
     running = true;
     raf = requestAnimationFrame(frame);
   }
@@ -217,6 +230,7 @@ export function createMixerGame(container, game) {
     running = false;
     cancelAnimationFrame(raf);
     stopBacking();
+    stemPlayer?.stop();
     resolvePlay?.(result);
   }
 

@@ -24,7 +24,7 @@ Der Kernkreislauf: **Musiker und Instrumente finden → Bands zusammenstellen �
 
 ### Bewusst noch nicht drin
 
-Battle of the Bands, Tournee, Festival, Sonderevents (Interview, Charity), Remaster, Produzenten, ausgeschriebene Gigs, Roadies, Gastmusiker, Contest im ESC-Stil, die echte Musik aus Logic Pro.
+Battle of the Bands, Tournee, Festival, Sonderevents (Interview, Charity), Remaster, Produzenten, ausgeschriebene Gigs, Roadies, Gastmusiker, Contest im ESC-Stil, Aufnahmen für alle Genres und Stufen.
 Die Manager-Fähigkeiten **Tourplaner** und **Netzwerker** werden schon verteilt, wirken aber erst mit
 Tournee bzw. ausgeschriebenen Gigs (im Spiel ausgegraut markiert).
 
@@ -227,6 +227,18 @@ gibt es keinen neuen Laden. Chancen: gewöhnlich / selten / episch / legendär.
 
 „Passend zur Besetzung“: Instrumentenarten, für die ein Musiker des Labels noch kein Instrument hat, kommen fünfmal so oft.
 
+## Musik
+
+- Aufnahmen aus Logic Pro: je Genre und Stufe ein Ordner `public/assets/music/<genre>-<stufe>/` mit einer MP3 pro Spur
+  (z. B. `gitarre-elektrisch.mp3`, `gesang.mp3`) und `noten.json` (Noten aus der MIDI-Datei).
+  Alle Spuren: 120 BPM, 12 Takte = 24 Sekunden, gleiche Tonart.
+- Einlesen lokal mit `php tools/musik-import.php pop-0 datei.mid spur.wav …` (braucht ffmpeg). Lautheit je Rolle:
+  Gesang −17 LUFS, Bass und Schlagzeug −19, Keyboard und Turntables −21, Bläser/Geige/Flöte −22, Gitarre −23.
+- Jeder Musiker spielt die Spur seines Instruments, seiner Stufe und eines Genres: das Genre der Band, sonst eines
+  seiner Lieblingsgenres. Akustisch oder elektrisch richtet sich nach seinem Instrument.
+- Fehlt eine Spur, nimmt das Spiel die nächste Stufe, dann die andere Variante, dann Pop. Gibt es gar keine, bleibt der Synthesizer.
+- Zu hören am Mischpult (jeder Regler steuert seine Spuren) und in der Live-Ansicht von Auftritten.
+
 ## Vorläufige Entscheidungen zu offenen Fragen
 
 Diese Punkte sind im Konzept offen. Für den Kern habe ich sie so festgelegt; alles lässt sich ändern.
@@ -246,8 +258,8 @@ Diese Punkte sind im Konzept offen. Für den Kern habe ich sie so festgelegt; al
 
 - Das Ergebnis des Minispiels kommt aus dem Browser. Der Server prüft nur, ob es plausibel ist
   (Notenzahl, Mindestdauer). Für ein Hobbyspiel unter Bekannten reicht das; gegen gezieltes Schummeln nicht.
-- Die Musik ist ein Synthesizer-Platzhalter. Mit den Logic-Pro-Aufnahmen kommen Noten (Rhythmus) und
-  Melodien (Tonhöhe) später direkt aus den MIDI-Dateien.
+- Bisher gibt es nur Pop Stufe 0 als Aufnahme. Die Minispiele Rhythmus und Tonhöhe nutzen noch den Synthesizer;
+  ihre Noten kommen später aus `noten.json`.
 - Bei sehr verzögerten Kopfhörern (Bluetooth) hört man die Treffer später, als man sie sieht. Gewertet wird
   nach dem Bild. Eine Latenz-Kalibrierung fehlt noch.
 - Noch keine Bremse gegen Passwort-Raten beim Login.

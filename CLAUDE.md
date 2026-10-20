@@ -21,6 +21,11 @@ Musik-Sammelkartenspiel (Web-App). Konzept: Claude-Doc „Signed – Spielkonzep
 - Browser: `public/assets/js/` mit ES-Modulen. `core.js` hält den Zustand, Aktionen laufen über
   `data-act` / `data-form` / `data-change` und `defineActions`.
 
+## Musik
+
+- Aufnahmen liegen in `public/assets/music/<genre>-<stufe>/` und werden lokal mit `tools/musik-import.php` (ffmpeg)
+  aus Logic-WAVs und MIDI erzeugt. Zuordnung der Spuren: `src/Game/Music.php`, Abspielen: `public/assets/js/music.js`.
+
 ## Prüfen
 
 - `php tests/run.php` – muss grün sein.

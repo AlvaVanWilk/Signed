@@ -74,15 +74,19 @@ final class Minigames
                     throw new ApiError($blocker);
                 }
                 $sound = BandCalc::bandSound($band, $members, $this->repo->gearByMusician());
-                $genre = BandCalc::identity($members, $band['genre'], $band['genre2'])['music'];
+                $identity = BandCalc::identity($members, $band['genre'], $band['genre2']);
+                $genre = $identity['music'];
+                $bandGenres = array_values(array_filter([$identity['primary'], $identity['second']]));
                 $bpm = Catalog::GENRES[$genre]['bpm'];
                 // Am Mischpult: Die Spuren schwanken je nach Können, der Sound bestimmt, wie viel verziehen wird.
+                $gearMap = $this->repo->gearByMusician();
                 $tracks = Chart::mixerTracks(array_map(static fn ($m) => [
                     'name' => $m['first_name'], 'instrument' => BandCalc::instrument($m), 'skill' => BandCalc::skill($m),
+                    'stem' => Music::stem($m, $gearMap, $bandGenres),
                 ], $members));
                 $chart = [
                     'mode' => 'mixer',
-                    'tracks' => array_map(static fn ($t) => ['name' => $t['name'], 'instruments' => $t['instruments']], $tracks),
+                    'tracks' => array_map(static fn ($t) => ['name' => $t['name'], 'instruments' => $t['instruments'], 'stems' => $t['stems']], $tracks),
                     'drifts' => Chart::mixerDrifts(array_column($tracks, 'skill'), Balance::SONG_SECONDS),
                     'zone' => Chart::mixerZone($sound) + (array_filter($members, static fn ($m) => Levels::has($m, 'studiofuchs')) ? 0.04 : 0),
                     'segments' => Chart::MIXER_SEGMENTS,

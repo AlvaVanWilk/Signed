@@ -127,6 +127,8 @@ final class Present
             'personalities' => Catalog::PERSONALITIES,
             'managerSkills' => Catalog::MANAGER_SKILLS,
             'gear' => Catalog::GEAR,
+            'music' => Music::manifest(),
+            'musicStems' => Music::STEMS,
             'packs' => $packs,
             'rules' => [
                 'startMoney' => Balance::START_MONEY,

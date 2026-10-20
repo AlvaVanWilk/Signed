@@ -78,6 +78,7 @@ jobs:
               --exclude-glob .git* \
               --exclude-glob .github/ \
               --exclude-glob tests/ \
+              --exclude-glob tools/ \
               --exclude-glob docs/ \
               --exclude-glob '*.md' \
               --exclude-glob config.sample.php \

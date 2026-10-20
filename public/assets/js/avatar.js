@@ -33,12 +33,21 @@ export function avatar(look = {}) {
   const hatted = look.hat && look.hat !== 'none';
   const parts = [];
 
-  parts.push(`<path d="M12 100 C12 78 30 69 50 69 C70 69 88 78 88 100 Z" fill="${look.shirt || '#2b2d42'}"/>`);
+  const female = look.gender === 'f';
+  // Frauen: schmalere Schultern, runder Ausschnitt, Lippen und Ohrringe – sonst wirken die gesichtslosen Köpfe männlich.
+  parts.push(female
+    ? `<path d="M17 100 C17 80 32 70 50 70 C68 70 83 80 83 100 Z" fill="${look.shirt || '#2b2d42'}"/>`
+    : `<path d="M12 100 C12 78 30 69 50 69 C70 69 88 78 88 100 Z" fill="${look.shirt || '#2b2d42'}"/>`);
   if (style === 'afro') parts.push(`<circle cx="50" cy="35" r="26" fill="${hair}"/>`);
   if (HAIR_BACK[style]) parts.push(`<path d="${HAIR_BACK[style]}" fill="${hair}"/>`);
   parts.push(`<rect x="43" y="56" width="14" height="16" rx="6" fill="${skin}"/>`);
   parts.push(`<ellipse cx="33" cy="45" rx="3.5" ry="5" fill="${skin}"/><ellipse cx="67" cy="45" rx="3.5" ry="5" fill="${skin}"/>`);
-  parts.push(`<ellipse cx="50" cy="42" rx="17" ry="20" fill="${skin}"/>`);
+  if (female) parts.push(`<path d="M38 70 C40 83 60 83 62 70 Z" fill="${skin}"/>`);
+  parts.push(`<ellipse cx="50" cy="42" rx="${female ? 16 : 17}" ry="20" fill="${skin}"/>`);
+  if (female) {
+    parts.push('<path d="M45 53 C47.5 51.6 52.5 51.6 55 53 C52.5 56.4 47.5 56.4 45 53 Z" fill="#c2405a"/>');
+    parts.push('<g fill="#f2c14e"><circle cx="33.5" cy="51" r="1.3"/><circle cx="33.5" cy="55" r="2.6"/><circle cx="66.5" cy="51" r="1.3"/><circle cx="66.5" cy="55" r="2.6"/></g>');
+  }
 
   if (style === 'locken') {
     for (const [x, y, r] of [[36, 30, 7], [44, 24, 8], [54, 23, 8], [63, 29, 7], [33, 38, 5], [67, 38, 5]]) {

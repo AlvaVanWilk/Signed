@@ -419,10 +419,10 @@ button.card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
 .meter { margin-bottom: 12px; }
 .meter-labels { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
 .meter-track { position: relative; height: 22px; border-radius: 999px; background: linear-gradient(90deg, rgba(255, 96, 96, 0.25), rgba(255, 255, 255, 0.06) 50%, rgba(61, 220, 151, 0.25)); overflow: visible; }
-.meter-fill { height: 100%; border-radius: 999px; transition: width 0.8s ease, background 0.8s; background: var(--warn); }
+.meter-fill { height: 100%; border-radius: 999px; transition: background 0.8s; background: var(--warn); }
 .meter-fill[data-mood='high'] { background: var(--ok); }
 .meter-fill[data-mood='low'] { background: var(--bad); }
-.meter-needle { position: absolute; top: -4px; bottom: -4px; width: 4px; margin-left: -2px; border-radius: 2px; background: #fff; transition: left 0.8s ease; box-shadow: 0 0 10px rgba(255, 255, 255, 0.6); }
+.meter-needle { position: absolute; top: -4px; bottom: -4px; width: 4px; margin-left: -2px; border-radius: 2px; background: #fff; box-shadow: 0 0 10px rgba(255, 255, 255, 0.6); }
 .live-progress { height: 4px; background: rgba(255, 255, 255, 0.07); border-radius: 999px; margin-bottom: 14px; overflow: hidden; }
 .live-progress-fill { height: 100%; background: var(--accent); transition: width 0.25s linear; }
 .ticker { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; max-height: 300px; overflow-y: auto; }

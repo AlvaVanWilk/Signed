@@ -92,10 +92,13 @@ Das Stadion bleibt der Tournee vorbehalten.
   Ein Manager erlaubt 3 + ⌈Stufe × 1,4⌉ Lieder (Stufe 5: 10 Lieder = 5 Minuten).
 - Verhandler: +8 % Gage pro Stufe. PR-Profi: +8 % Ruhm pro Stufe. Scout: weniger gewöhnliche Karten in Packs.
   Managt einer mehrere Bands, wird seine Stufe durch die Zahl der Bands geteilt.
-- Publikumsleiste: startet bei 50. Jedes Lied hat 4 Abschnitte; in jedem kann jeder Musiker patzen
+- Publikumsleiste: startet bei 0 – das Publikum muss erst überzeugt werden. Im ersten Lied rückt sie pro Abschnitt
+  um 40 % Richtung 50 + 0,6 × (Gleichgewicht der Band − 50). Im Browser gleitet sie fließend und wackelt ständig
+  ein wenig (rein optisch).
+- Jedes Lied hat 4 Abschnitte; in jedem kann jeder Musiker patzen
   (Chance 24 % minus 0,26 % pro Können-Punkt) oder glänzen (steigt mit Können, Präsenz und Spezialtechnik),
   jeweils ±7–13 Punkte. Dazu pro Abschnitt Grundstimmung, Vergleich Sound zu Erwartung des Ortes und Zufall;
-  die Leiste rückt jedes Mal 8 % Richtung Mitte. Schwache Bands landen im Schnitt bei etwa 30 %, starke bei etwa 85 %.
+  ab dem zweiten Lied rückt die Leiste jedes Mal 8 % Richtung Mitte. Schwache Bands landen im Schnitt bei etwa 30 %, starke bei etwa 85 %.
 
 ### Talent-Scout
 

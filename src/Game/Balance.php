@@ -121,6 +121,12 @@ final class Balance
     public const LIVE_MOOD = 1.0;
     /** Pro Abschnitt rückt die Leiste um diesen Anteil Richtung Mitte (das Publikum beruhigt sich). */
     public const LIVE_SETTLE = 0.08;
+    /** Die Leiste startet hier; im ersten Lied muss die Band das Publikum erst überzeugen. */
+    public const LIVE_START = 0.0;
+    /** Im ersten Lied rückt die Leiste pro Abschnitt um diesen Anteil zu ihrem Gleichgewicht (Aufwärmen). */
+    public const LIVE_WARMUP = 0.4;
+    /** Ziel des Aufwärmens: 50 plus dieser Anteil des Abstands zum Gleichgewicht der Band. */
+    public const LIVE_WARMUP_REACH = 0.6;
     /** Ausschlag eines Patzers bzw. Glanzmoments [min, max]. */
     public const LIVE_SWING = [7.0, 13.0];
     /** Straßenmusik: Das Geld behalten die Musiker; fürs Label bleiben etwas Präsenz und Bekanntheit. */

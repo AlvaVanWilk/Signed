@@ -22,7 +22,9 @@ final class Performance
         $phaseLength = $length / $phases;
         // Klingt die Band besser, als der Ort erwartet, steigt die Stimmung von selbst – sonst sinkt sie.
         $drift = max(-4.0, min(4.0, ($sound - $expect) / max($expect, 10) * 4));
-        $meter = 50.0;
+        $meter = Balance::LIVE_START;
+        // Im ersten Lied wärmt sich das Publikum ein Stück Richtung Gleichgewicht aus Grundstimmung und Sound auf.
+        $warm = max(0.0, min(100.0, 50 + Balance::LIVE_WARMUP_REACH * (Balance::LIVE_MOOD + $drift) / Balance::LIVE_SETTLE));
         $timeline = [];
         $songEnds = [];
 
@@ -54,9 +56,15 @@ final class Performance
                     $meter = max(0.0, min(100.0, $meter + $event['delta']));
                     $timeline[] = ['t' => round($event['t'], 1), 'kind' => $event['kind'], 'text' => $event['text'], 'meter' => round($meter, 1)];
                 }
-                // Grundstimmung und Sound wirken laufend; das Publikum beruhigt sich etwas Richtung Mitte.
-                $meter += Balance::LIVE_MOOD + $drift + Rng::float(-2, 2);
-                $meter += (50 - $meter) * Balance::LIVE_SETTLE;
+                if ($s === 0) {
+                    // Erstes Lied: Das Publikum lässt sich erst überzeugen und zieht schnell Richtung der Stimmung,
+                    // die diese Band auf Dauer erzeugt.
+                    $meter += Rng::float(-2, 2) + ($warm - $meter) * Balance::LIVE_WARMUP;
+                } else {
+                    // Grundstimmung und Sound wirken laufend; das Publikum beruhigt sich etwas Richtung Mitte.
+                    $meter += Balance::LIVE_MOOD + $drift + Rng::float(-2, 2);
+                    $meter += (50 - $meter) * Balance::LIVE_SETTLE;
+                }
                 $meter = max(0.0, min(100.0, $meter));
                 $isLast = $phase === $phases - 1;
                 $timeline[] = [

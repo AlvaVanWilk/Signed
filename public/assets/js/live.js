@@ -53,10 +53,7 @@ export function openLive(activityId) {
       li.innerHTML = `<span class="tick-icon">${ICONS[e.kind] ?? '•'}</span><span>${esc(e.text)}</span>`;
       ticker.prepend(li);
     }
-    const meter = events.length ? events[events.length - 1].meter : 50;
-    fill.style.width = `${meter}%`;
-    needle.style.left = `${meter}%`;
-    fill.dataset.mood = meter >= 65 ? 'high' : meter <= 35 ? 'low' : 'mid';
+    target = meterAt(elapsed);
     progress.style.width = `${(elapsed / total) * 100}%`;
     songEl.textContent = `Lied ${Math.min(activity.songs, Math.floor(elapsed / songSeconds) + 1)} von ${activity.songs}`;
     leftEl.textContent = elapsed >= total ? 'Vorbei!' : duration(total - elapsed);
@@ -66,6 +63,42 @@ export function openLive(activityId) {
     }
   }
 
+  /**
+   * Stand der Leiste zur Zeit t: Patzer und Glanzmomente springen sofort,
+   * die allgemeine Stimmung verändert sich fließend bis zum nächsten Stimmungspunkt.
+   */
+  function meterAt(t) {
+    const line = activity.timeline;
+    let i = -1;
+    while (i + 1 < line.length && line[i + 1].t <= t) i++;
+    const prev = i >= 0 ? { t: line[i].t, meter: line[i].meter } : { t: 0, meter: line[0]?.meter ?? 0 };
+    const next = line[i + 1];
+    if (!next || (next.kind !== 'mood' && next.kind !== 'crowd') || next.t <= prev.t) return prev.meter;
+    return prev.meter + (next.meter - prev.meter) * ((t - prev.t) / (next.t - prev.t));
+  }
+
+  // Die Leiste gleitet zum Wert des Servers und wackelt dabei ständig: Das Publikum ist immer in Bewegung.
+  let target = 0;
+  let base = 0;
+  let last = performance.now();
+  const seed = Math.random() * 100;
+  function animate(now) {
+    if (modal.closed) return;
+    const dt = Math.min(0.1, (now - last) / 1000);
+    last = now;
+    base += (target - base) * (1 - Math.exp(-dt * 2.2));
+    const t = now / 1000 + seed;
+    // Je aufgeheizter die Stimmung, desto stärker schwankt sie.
+    const amp = 1.5 + 3 * (base / 100);
+    const wobble = amp * (Math.sin(t * 1.3) * 0.5 + Math.sin(t * 3.7 + 1.1) * 0.3 + Math.sin(t * 0.45 + 2.3) * 0.6);
+    const value = Math.max(0, Math.min(100, base + wobble));
+    fill.style.width = `${value}%`;
+    needle.style.left = `${value}%`;
+    fill.dataset.mood = base >= 65 ? 'high' : base <= 35 ? 'low' : 'mid';
+    requestAnimationFrame(animate);
+  }
+
   timer = setInterval(draw, 250);
   draw();
+  requestAnimationFrame(animate);
 }

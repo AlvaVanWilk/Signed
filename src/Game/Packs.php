@@ -35,14 +35,19 @@ final class Packs
             $odds = $this->withScout($pack['odds']);
             $kinds = $pack['slots'] ?? array_map(static fn () => (string) Rng::weighted($pack['kinds']), range(1, $pack['choices']));
             $avoid = $this->repo->lastNames();
-            $types = empty($pack['fit']) ? null : $this->neededTypes();
             $cards = [];
             foreach ($kinds as $kind) {
-                $card = $this->draw($kind, Generator::rarity($odds), $key, $avoid, empty($pack['chooseType']) ? $types : [$type => 1]);
+                $card = $this->draw($kind, Generator::rarity($odds), $key, $avoid, empty($pack['chooseType']) ? null : [$type => 1]);
                 if (isset($card['data']['last_name'])) {
                     $avoid[] = $card['data']['last_name'];
                 }
                 $cards[] = $card;
+            }
+            $tip = empty($pack['tip']) || !Rng::chance(Balance::STORE_TIP_CHANCE) ? null : $this->tipFor();
+            if ($tip !== null) {
+                $index = Rng::int(0, count($cards) - 1);
+                $cards[$index] = $this->draw('gear', Generator::rarity($odds), $key, $avoid, [$tip['type'] => 1]);
+                $cards[$index]['tip'] = $tip['name'];
             }
             $id = $this->repo->db->insert('pack_offers', [
                 'label_id' => $this->repo->labelId,
@@ -102,22 +107,25 @@ final class Packs
         return ['kind' => 'musician', 'data' => Generator::musician($rarity, ['avoid' => $avoid])];
     }
 
-    /**
-     * Der Verkäufer im Music Store schaut, wer bei dir noch ohne Instrument spielt:
-     * diese Arten kommen fünfmal so oft, die übrigen nach ihrer normalen Häufigkeit.
-     */
-    private function neededTypes(): array
+    /** Wem fehlt ein Instrument? Bandmitglieder (für ihr Instrument in der Band) vor Musikern ohne Band. */
+    private function tipFor(): ?array
     {
-        $weights = array_map(static fn ($i) => $i['weight'], Catalog::INSTRUMENTS);
         $gear = $this->repo->gearByMusician();
+        $inBand = [];
+        $free = [];
         foreach ($this->repo->musicians() as $m) {
-            foreach (array_filter([$m['instr1'], $m['instr2']]) as $type) {
-                if (!isset($gear[$m['id']][$type])) {
-                    $weights[$type] *= Balance::STORE_FIT_FACTOR;
+            $type = $m['band_id'] !== null && (int) $m['band_slot'] === 2 && $m['instr2'] ? $m['instr2'] : $m['instr1'];
+            if (!isset($gear[$m['id']][$type])) {
+                $entry = ['type' => $type, 'name' => $m['first_name']];
+                if ($m['band_id'] !== null) {
+                    $inBand[] = $entry;
+                } else {
+                    $free[] = $entry;
                 }
             }
         }
-        return $weights;
+        $pool = $inBand ?: $free;
+        return $pool ? Rng::pick($pool) : null;
     }
 
     /** Ein Scout unter den Managern des Labels senkt die Chance auf gewöhnliche Karten. */
@@ -150,7 +158,7 @@ final class Packs
             // Noch nicht mitgenommen: Die Karte hat keine echte ID, nur ihren Platz in der Auswahl.
             $data = $card['data'];
             $cards[] = match ($card['kind']) {
-                'gear' => ['kind' => 'gear', 'gear' => Present::gear(['id' => $index, 'model' => $data['model'], 'musician_id' => null] + $data['stats'])],
+                'gear' => ['kind' => 'gear', 'gear' => Present::gear(['id' => $index, 'model' => $data['model'], 'musician_id' => null] + $data['stats']), 'tip' => $card['tip'] ?? null],
                 'manager' => ['kind' => 'manager', 'manager' => Present::manager($data + ['id' => $index])],
                 default => ['kind' => 'musician', 'musician' => Present::musician($data + ['id' => $index, 'band_id' => null, 'band_slot' => 1, 'busy_until' => 0, 'ability_choice' => null, 'favorite' => false, 'jam_at' => 0])],
             };

@@ -109,7 +109,7 @@ final class Present
             $packs[$key] = [
                 'name' => $pack['name'], 'price' => $pack['price'], 'desc' => $pack['desc'],
                 'choices' => count($pack['slots'] ?? []) ?: $pack['choices'], 'kinds' => $pack['slots'] ?? array_keys($pack['kinds']),
-                'odds' => $pack['odds'], 'chooseType' => !empty($pack['chooseType']), 'fit' => !empty($pack['fit']),
+                'odds' => $pack['odds'], 'chooseType' => !empty($pack['chooseType']), 'tip' => !empty($pack['tip']),
             ];
         }
         return [

@@ -256,13 +256,12 @@ test('Aufstieg: Bei Können 35 gibt es eine Fähigkeit, bei Stufe 3 wählt man a
     checkEquals(null, $after['abilityChoice']);
 });
 
-test('Packs: Backstage ohne gewöhnliche Karten, Werkstatt nach Wunsch, Music Store passend zur Besetzung', function () {
+test('Packs: Backstage ohne gewöhnliche Karten, Werkstatt nach Wunsch, Tipp im Music Store passt', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Rich');
     $db->exec('UPDATE labels SET money = 1000000');
     $rarity = static fn ($c) => ($c['musician'] ?? $c['manager'] ?? null)['rarity'] ?? Signed\Game\Catalog::GEAR[$c['gear']['model']]['rarity'];
-    $fitting = 0;
-    $total = 0;
+    $tips = 0;
     $own = array_unique(array_merge(...array_map(static fn ($m) => array_column($m['instruments'], 'type'), $p->get('state')['musicians'])));
     for ($i = 0; $i < 15; $i++) {
         $offer = $p->post('buyPack', ['pack' => 'backstage'])['offer'];
@@ -279,12 +278,15 @@ test('Packs: Backstage ohne gewöhnliche Karten, Werkstatt nach Wunsch, Music St
 
         $offer = $p->post('buyPack', ['pack' => 'musicstore'])['offer'];
         foreach ($offer['cards'] as $card) {
-            $total++;
-            $fitting += in_array(Signed\Game\Catalog::GEAR[$card['gear']['model']]['type'], $own, true) ? 1 : 0;
+            if ($card['tip'] !== null) {
+                $tips++;
+                check(in_array(Signed\Game\Catalog::GEAR[$card['gear']['model']]['type'], $own, true));
+            }
         }
-        $p->post('packPick', ['offerId' => $offer['id'], 'index' => 0]);
+        // Nicht mitnehmen, damit der Musiker ohne Instrument bleibt.
+        $p->post('packPick', ['offerId' => $offer['id'], 'index' => array_search(null, array_column($offer['cards'], 'tip'), true)]);
     }
-    check($fitting > $total * 0.5, "passend $fitting von $total");
+    check($tips >= 1 && $tips <= 10, "Tipps $tips von 15");
 });
 
 test('Bandregeln: weitere Bands erst mit Label-Ruhm, niemand in zwei Bands, Genre aus der Besetzung', function () {

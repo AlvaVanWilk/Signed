@@ -49,7 +49,7 @@ final class Balance
     /**
      * Packs sind Orte zum Stöbern: Man sieht `choices` verdeckte Karten und nimmt eine mit.
      * kinds = Gewichte, welche Kartenart je Platz kommt; slots = feste Kartenarten.
-     * fit = der Laden sucht Instrumente für Musiker ohne Instrument; chooseType = Instrumentenart selbst wählen.
+     * tip = manchmal ist eine Karte ein Instrument für einen Musiker, der noch keins hat; chooseType = Instrumentenart selbst wählen.
      */
     public const PACKS = [
         'troedel' => [
@@ -63,13 +63,13 @@ final class Balance
             'odds' => ['common' => 68, 'rare' => 26, 'epic' => 5, 'legendary' => 1],
         ],
         'secondhand' => [
-            'name' => 'Second-Hand-Laden', 'price' => 350, 'desc' => 'Gebrauchte Instrumente in ordentlichem Zustand, passend zu deiner Besetzung.',
-            'choices' => 4, 'kinds' => ['gear' => 100], 'fit' => true,
+            'name' => 'Second-Hand-Laden', 'price' => 350, 'desc' => 'Gebrauchte Instrumente in ordentlichem Zustand.',
+            'choices' => 4, 'kinds' => ['gear' => 100],
             'odds' => ['common' => 50, 'rare' => 38, 'epic' => 10, 'legendary' => 2],
         ],
         'musicstore' => [
-            'name' => 'Music Store', 'price' => 800, 'desc' => 'Neue Instrumente. Der Verkäufer sucht passend zu deiner Besetzung aus.',
-            'choices' => 4, 'kinds' => ['gear' => 100], 'fit' => true,
+            'name' => 'Music Store', 'price' => 800, 'desc' => 'Neue Instrumente. Manchmal hat der Verkäufer einen Tipp für einen deiner Musiker.',
+            'choices' => 4, 'kinds' => ['gear' => 100], 'tip' => true,
             'odds' => ['common' => 10, 'rare' => 55, 'epic' => 30, 'legendary' => 5],
         ],
         'backstage' => [
@@ -83,8 +83,8 @@ final class Balance
             'odds' => ['common' => 0, 'rare' => 0, 'epic' => 75, 'legendary' => 25],
         ],
     ];
-    /** In Läden mit fit kommen Instrumente für Musiker ohne Instrument so viel häufiger. */
-    public const STORE_FIT_FACTOR = 5;
+    /** Chance auf den Tipp des Verkäufers (Läden mit tip): Eine Karte passt zu einem Musiker ohne Instrument, Bandmitglieder zuerst. */
+    public const STORE_TIP_CHANCE = 0.25;
     /** Pro Scout-Stufe sinkt die Chance auf gewöhnliche Karten um diesen Anteil. */
     public const SCOUT_SHIFT = 0.06;
 

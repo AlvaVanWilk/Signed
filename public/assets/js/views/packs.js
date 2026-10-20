@@ -117,6 +117,7 @@ export function openPackOffer() {
                 <div class="flip-front">${revealFace(card)}</div>
               </div>
             </div>
+            ${card.tip ? `<div class="pack-tip small">Tipp vom Verkäufer: passt zu ${esc(card.tip)}</div>` : ''}
             <button class="btn primary small" data-pick="${i}" hidden>Mitnehmen</button>
           </div>`).join('')}
       </div>

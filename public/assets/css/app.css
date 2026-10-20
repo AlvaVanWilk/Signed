@@ -293,6 +293,7 @@ button.card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
 .pack-backstage .pack-art { background: linear-gradient(135deg, #b45309, #ffc23d); }
 .pack-werkstatt .pack-art { background: linear-gradient(135deg, #111827, #4b5563 55%, #c9d1dd); }
 .reveal-slot { display: flex; flex-direction: column; gap: 8px; }
+.pack-tip { color: var(--accent); font-weight: 600; text-align: center; }
 .pack-scout { border-color: rgba(176, 107, 255, 0.5); }
 .pack-scout .pack-art { background: linear-gradient(135deg, #4a1a8a, #b06bff 60%, #ff4f8b); }
 .pack-scout .btn { margin-top: 0; }

@@ -220,12 +220,12 @@ gibt es keinen neuen Laden. Chancen: gewöhnlich / selten / episch / legendär.
 |---|---|---|---|---|
 | Trödelmarkt | 120 ₲ | 4 | 70 % Instrumente, 24 % Musiker, 6 % Manager | 86 / 11 / 2,5 / 0,5 |
 | Schwarzes Brett | 200 ₲ | 4 | Musiker | 68 / 26 / 5 / 1 |
-| Second-Hand-Laden | 350 ₲ | 4 | Instrumente, passend zur Besetzung | 50 / 38 / 10 / 2 |
-| Music Store | 800 ₲ | 4 | Instrumente, passend zur Besetzung | 10 / 55 / 30 / 5 |
+| Second-Hand-Laden | 350 ₲ | 4 | Instrumente | 50 / 38 / 10 / 2 |
+| Music Store | 800 ₲ | 4 | Instrumente, manchmal mit Tipp | 10 / 55 / 30 / 5 |
 | Backstage-Pass | 1.500 ₲ | 4 | 2 Musiker, 1 Manager, 1 Instrument | 0 / 55 / 35 / 10 |
 | Meisterwerkstatt | 2.400 ₲ | 3 | Instrument nach Wahl | 0 / 0 / 75 / 25 |
 
-„Passend zur Besetzung“: Instrumentenarten, für die ein Musiker des Labels noch kein Instrument hat, kommen fünfmal so oft.
+Instrumente sind zufällig. Im Music Store hat der Verkäufer mit 25 % Chance einen Tipp: Eine der Karten ist ein Instrument für einen Musiker, der noch keins hat (Bandmitglieder zuerst), und ist so markiert.
 
 ## Musik
 

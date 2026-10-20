@@ -1,20 +1,21 @@
 # Der Kern von Signed
 
-Stand: dritte Runde (Stufen, Fähigkeiten, Band- und Musikerseiten). Währung: Groove (₲). Grundlage ist das Claude-Doc „Signed – Spielkonzept“.
+Stand: vierte Runde (Läden mit Auswahl, Konto, neue Karten). Währung: Groove Coins (₲). Grundlage ist das Claude-Doc „Signed – Spielkonzept“.
 Alle Zahlen stehen in [`src/Game/Balance.php`](../src/Game/Balance.php) und sind Startwerte zum Nachjustieren.
 
 ## Was spielbar ist
 
-Der Kernkreislauf: **Packs kaufen → Bands zusammenstellen → auftreten und Platten produzieren → Geld + Ruhm → neue Packs.**
+Der Kernkreislauf: **Musiker und Instrumente finden → Bands zusammenstellen → auftreten und Platten produzieren → Geld + Ruhm → stöbern.**
 
 | Bereich | Umfang im Kern |
 |---|---|
 | Label | Konto mit Labelname, 2.000 ₲ Startkapital und ein Scout-Gutschein (keine Musiker zu Beginn) |
-| Packs | Talent-Scout (5 Musiker mit Können-Stufe 1, einer unterschreibt), Demo (150 ₲), Studio (450 ₲), Equipment (300 ₲), Profi-Equipment (1.200 ₲), Gold (1.500 ₲, mindestens eine seltene Karte) |
+| Läden | Talent-Scout (5 Musiker mit Können-Stufe 1, einer unterschreibt) und sechs Läden, in denen man mehrere Karten sieht und eine mitnimmt (siehe unten) |
+| Konto | Klick aufs Geld: Tantiemen pro Tag, Platten in den Charts, Kontoauszug |
 | Musiker | Einmalig, zufällig erzeugt: 1–2 Instrumente, Können, Präsenz, Bekanntheit, Genre-Symbole, Fähigkeiten (an die Können-Stufe gebunden), Charakterzüge, „Ungewöhnlich“, Profilbild. Favoriten ohne Band stehen in der zweiten Menüzeile |
 | Instrumente | 44 Modelle (11 Arten × 4 Seltenheiten); jedes Exemplar weicht pro Wert um bis zu ±12 vom Modell ab; frei tauschbar |
 | Manager | Stufe 1–5, 1–2 Fähigkeiten, bis zu 3 Bands mit geteilter Leistung |
-| Bands | Besetzungsregeln, Sound, Eingespieltheit, Chemie, Ruhm nach dem Ehe-Modell, Bandhistorie |
+| Bands | Besetzungsregeln, Sound, Zusammenspiel, Chemie, Ruhm nach dem Ehe-Modell, Bandhistorie |
 | Aktivitäten | Band: Bandprobe, Band-Promo, Straßenmusik, Open Stage, Gig (erst mit Platte), Platte (Mischpult pro Lied). Einzeln: Solo-Probe (Rhythmus oder Tonhöhe), Promo-Mission. Ohne Band: Jam-Café (Mitmusiker für die erste Band), Straßenmusik |
 | Live | Live-Ticker mit Publikumsleiste für alle Auftritte |
 | Charts | Gemeinsame Album-Charts aller Spieler mit täglichen Tantiemen, dazu eine Label-Gesamtliste |
@@ -32,7 +33,7 @@ Tournee bzw. ausgeschriebenen Gigs (im Spiel ausgegraut markiert).
 ### Musiker
 
 - Startwerte je Seltenheit (Können / Präsenz): gewöhnlich 5–30 / 5–25, selten 15–42 / 10–35,
-  episch 25–52 / 15–45, legendär 35–58 / 25–55. Aus Packs kommt also höchstens Können-Stufe 1 und kein Ruhm.
+  episch 25–52 / 15–45, legendär 35–58 / 25–55. Aus Läden kommt also höchstens Können-Stufe 1 und keine Bekanntheit.
 - 20 % spielen zwei Instrumente. Dann gilt: Hauptinstrument × 0,85, Zweitinstrument × 0,55–0,8.
   Jede Probe verbessert nur das geübte Instrument (geteilter Können-Topf).
 - „Ungewöhnlich“ (2 %): Das Lieblingsgenre passt nicht zum Klischee des Instruments. Bringt mehr Ruhm.
@@ -41,6 +42,10 @@ Tournee bzw. ausgeschriebenen Gigs (im Spiel ausgegraut markiert).
     wer übt und spielt, steigt auf. Die Stufe bestimmt Rahmenfarbe der Karte (grau, bronze, silber, gold).
   - **Bekanntheits-Stufe** 0–3 nach Ruhm: ab 20, 120, 600. Sie lässt die Karte stärker leuchten (ohne Animation).
   - Beide auf 3: **Legende**.
+  - Namen der Können-Stufen: Anfänger, Fortgeschritten, Profi, Virtuose.
+    Bekanntheits-Stufen: Unbekannt, Lokal bekannt, Szenegröße, Star.
+  - Auf der Karte: Können pro Instrument als Leiste aus 10 Kästchen (je 10 Punkte bis 100), Bekanntheit ⭐ und
+    Präsenz ✨ klein darunter, Lieblingsgenres als Symbole oben rechts.
 - Fähigkeiten: eine pro Können-Stufe. Bei Stufe 1 und 2 kommt eine zufällige dazu, bei Stufe 3 wählt man aus drei.
   Talent (Können +50 % schneller), Ausstrahlung (Präsenz +50 % schneller, etwas mehr Ruhm), Charisma (mehr Ruhm),
   Nervenstark (verspielt sich live seltener), Absolutes Gehör (großzügigeres Timing), Bühnentier,
@@ -54,22 +59,25 @@ Instrument = Klang/100 × 0,5 × min(1, Können / (100 − Spielbarkeit))
 Genre      = 1, außerhalb der eigenen Genres 0,75
 Sound      = (0,75 × Durchschnitt + 0,25 × schwächster Beitrag)
              × (1 + 0,05 × weitere Instrumentenarten, höchstens +20 %)
-             × (0,7 + 0,3 × Eingespieltheit/100)
+             × (0,7 + 0,3 × Zusammenspiel/100)
 ```
 
 Ein schwacher Musiker zieht den Sound runter, und vier Musiker sind höchstens 20 % stärker als zwei.
 
-### Eingespieltheit und Chemie
+### Zusammenspiel und Chemie
 
 - Wächst pro Lied auf der Bühne (1,2 × Chemie) und pro Studio-Lied (2 × Trefferquote × Chemie).
 - Chemie 0,5–1,5: Reibung (Diva+Diva, Rampensau+Rampensau, Perfektionist+Chaot, Ehrgeizig+Gelassen) −0,15,
   ein Ruhepol halbiert das; Teamplayer +0,04 pro Paar, Partytier+Partytier +0,06.
-- Höchstwert der Eingespieltheit = 70 + (Chemie − 1) × 60, zwischen 40 und 100.
+- Höchstwert des Zusammenspiels = 70 + (Chemie − 1) × 60, zwischen 40 und 100.
 - Nach der Freigabe (erster Auftritt) kostet: neues Mitglied −5, Instrumentwechsel −5, Rauswurf −30.
 
 ### Ruhm
 
-- Bandruhm = Summe der Bekanntheit aller Mitglieder. Wer geht, nimmt seine Bekanntheit mit.
+- Begriffe: Ein Musiker hat **Bekanntheit**, eine Band hat **Ruhm**.
+- Bandruhm = Summe der Bekanntheit aller Mitglieder (Ehe-Modell). Wer geht, nimmt seine Bekanntheit mit.
+  Was eine Band gewinnt, wird als Bekanntheit auf die Mitglieder verteilt – damit wächst der Ruhm mit.
+  Eine Rückwirkung (Ruhm erhöht zusätzlich die Bekanntheit) gibt es bewusst nicht, sonst würde doppelt gezählt.
 - Ruhmgewinn eines Auftritts = Grund-Ruhm des Ortes pro Lied × Soundfaktor × Publikum × Zufall (0,9–1,1).
   - Soundfaktor = Sound / 30 (zwischen 0,2 und 3).
   - Publikum = 0,4 + 1,2 × Publikumsleiste/100.
@@ -81,16 +89,16 @@ Ein schwacher Musiker zieht den Sound runter, und vier Musiker sind höchstens 2
 | | Lieder | Geld | Ruhm pro Lied | Besonderheit |
 |---|---|---|---|---|
 | Straßenmusik | 3 | – | 0,3 × (1 − Ruhm/150), mindestens 10 %; Erwartung 25 | Präsenz +0,3–0,8; auch einzeln ohne Band |
-| Bandprobe | 2 | – | – | Eingespieltheit × 2,5, etwas Können für alle |
+| Bandprobe | 2 | – | – | Zusammenspiel × 2,5, etwas Können für alle |
 | Open Stage | 2 | – | 1,4 × (1 − Ruhm/120) | 7 % Manager-Karte, sonst 15 % Fan-Karte (+3–10 Ruhm) |
 | Gig | 1 bis Maximum | Gage des Ortes pro Lied, vorher bekannt | je nach Ort | erst mit Platte |
 
 Orte nach Bandruhm: Kneipe (ab 0), Club (30), Konzertsaal (150), Halle (600), Arena (2.500).
 Das Stadion bleibt der Tournee vorbehalten.
 
-- Ein Gig hat höchstens so viele Lieder, wie die Band produziert hat, und ohne Manager höchstens 3.
+- Ein Gig hat mindestens 3 Lieder, höchstens so viele, wie die Band produziert hat, und ohne Manager höchstens 3.
   Ein Manager erlaubt 3 + ⌈Stufe × 1,4⌉ Lieder (Stufe 5: 10 Lieder = 5 Minuten).
-- Verhandler: +8 % Gage pro Stufe. PR-Profi: +8 % Ruhm pro Stufe. Scout: weniger gewöhnliche Karten in Packs.
+- Verhandler: +8 % Gage pro Stufe. PR-Profi: +8 % Ruhm pro Stufe. Scout: weniger gewöhnliche Karten in Läden.
   Managt einer mehrere Bands, wird seine Stufe durch die Zahl der Bands geteilt.
 - Publikumsleiste: startet bei 0 – das Publikum muss erst überzeugt werden. Im ersten Lied rückt sie pro Abschnitt
   um 40 % Richtung 50 + 0,6 × (Gleichgewicht der Band − 50). Im Browser gleitet sie fließend und wackelt ständig
@@ -117,19 +125,22 @@ Ein Lied dauert 30 Sekunden. Bewertet wird in Perfekt / Gut / Daneben; Trefferqu
 - **Tonhöhe** (Solo-Probe für Gesang und Geige): Gedrückt halten lässt den Ton steigen, Loslassen sinken.
   Jeder Ton der Melodie zählt als Perfekt ab 70 % der Zeit im richtigen Bereich, als Gut ab 40 %.
   Der Bereich ist ±7–13 % der Tonleiter, mit Absolutem Gehör +3 %.
-- **Mischpult** (Studio): Die Band spielt, die Pegel der Spuren schwanken – pro Spur 3–11 Ausschläge,
-  je schwächer der Musiker, desto öfter und stärker. Jede Spur hat 6 Abschnitte à 5 Sekunden, bewertet wie oben.
+- **Mischpult** (Studio): Die Band spielt, die Pegel gleiten ständig – ein Zufallspfad, der zur Mitte zurückstrebt.
+  Neuer Zielpunkt alle 0,7–1,4 Sekunden, Schritt 0,05–0,18; je schwächer der Musiker, desto öfter und weiter.
+  Bis zu 4 Musiker haben eigene Spuren; größere Bands werden zu Gruppen (Rhythmus, Harmonie, Melodie) mit
+  dem durchschnittlichen Können zusammengefasst. Jede Spur hat 6 Abschnitte à 5 Sekunden, bewertet wie oben.
   Der grüne Bereich ist ±11–19 %, je nach Sound der Band.
 - Solo-Probe: Können + 4 × Trefferquote^1,5 × Talent × max(0,08; 1 − Können/110).
 
 ### Platte
 
 - 3 (EP) bis 12 Lieder (LP), Pauschalpreis 500 ₲. Pro Lied ein Minispiel, in Etappen spielbar.
-- Jedes Lied: etwas Können für alle Mitglieder, Eingespieltheit.
+- Jedes Lied: etwas Können für alle Mitglieder, Zusammenspiel.
 - Fertig: Erstverkauf = Lieder × 60 ₲ × (0,3 + Qualität²) × LP-Bonus × Perfekt-Bonus × Verkäufe,
   Ruhm = Lieder × 5 × Soundfaktor × (0,3 + Qualität^1,5) × LP-Bonus × Perfekt-Bonus.
   - LP-Bonus: +4 % pro Lied über 3. Perfekt (kein einziger Fehler): × 1,5. Verkäufe: 1 + Bandruhm/400, höchstens × 5.
-- Danach braucht die Band 3 Gigs, bevor sie die nächste Platte beginnen darf.
+- Vor der nächsten Platte spielt die Band die letzte live: 2 Lieder pro Lied der Platte auf Gigs
+  (EP mit 3 Liedern: 6 Lieder, also 2 Gigs; LP mit 10 Liedern: 20 Lieder).
 
 ### Album-Charts
 
@@ -170,9 +181,24 @@ Jam-Café für den Gastgeber vorbei. Lehnt man alle ab, verfällt die Auswahl un
 
 ### Instrumente
 
-- Equipment-Pack (300 ₲): 62 % gewöhnlich, 30 % selten, 7 % episch, 1 % legendär.
-- Profi-Equipment (1.200 ₲): 50 % selten, 38 % episch, 12 % legendär.
 - Jedes Exemplar: Klang, Spielbarkeit und Design je Modellwert ± bis zu 12.
+- Ohne eigenes Instrument zählt ein Musiker im Sound nur halb (× 0,5).
+
+### Läden
+
+Man bezahlt, sieht mehrere verdeckte Karten, deckt sie auf und nimmt **eine** mit. Solange eine Auswahl offen ist,
+gibt es keinen neuen Laden. Chancen: gewöhnlich / selten / episch / legendär.
+
+| Laden | Preis | Karten | Was | Chancen |
+|---|---|---|---|---|
+| Trödelmarkt | 120 ₲ | 4 | 70 % Instrumente, 24 % Musiker, 6 % Manager | 86 / 11 / 2,5 / 0,5 |
+| Schwarzes Brett | 200 ₲ | 4 | Musiker | 68 / 26 / 5 / 1 |
+| Second-Hand-Laden | 350 ₲ | 4 | Instrumente, passend zur Besetzung | 50 / 38 / 10 / 2 |
+| Music Store | 800 ₲ | 4 | Instrumente, passend zur Besetzung | 10 / 55 / 30 / 5 |
+| Backstage-Pass | 1.500 ₲ | 4 | 2 Musiker, 1 Manager, 1 Instrument | 0 / 55 / 35 / 10 |
+| Meisterwerkstatt | 2.400 ₲ | 3 | Instrument nach Wahl | 0 / 0 / 75 / 25 |
+
+„Passend zur Besetzung“: Instrumentenarten, für die ein Musiker des Labels noch kein Instrument hat, kommen fünfmal so oft.
 
 ## Vorläufige Entscheidungen zu offenen Fragen
 
@@ -182,7 +208,7 @@ Diese Punkte sind im Konzept offen. Für den Kern habe ich sie so festgelegt; al
   als Gitarrist, wenn er in der Band Gitarre spielt. Höchstens 6 Mitglieder.
 - **Straßenmusik:** vorläufig ohne Geld fürs Label, dafür Präsenz und etwas Ruhm. Noch offen, ob sie bleibt.
 - **Open Stage:** lohnt sich ab 120 Ruhm nicht mehr.
-- **Platte:** 3 Gigs bis zur nächsten Platte. Ja, der Sound bestimmt, wie fehlerverzeihend das Minispiel ist.
+- **Platte:** Die letzte Platte erst live spielen (2 Lieder pro Plattenlied), dann die nächste. Ja, der Sound bestimmt, wie fehlerverzeihend das Minispiel ist.
 - **Charts:** statt einer Liste pro Genre gibt es gemeinsame Album-Charts; die Label-Gesamtliste zählt den Ruhm aller eigenen Bands.
 - **Ruhm verfällt nicht** (vorerst).
 - **Präsenz:** Einzelanteil wie oben unter „Ruhm“.

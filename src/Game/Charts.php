@@ -116,7 +116,7 @@ final class Charts
                     return;
                 }
                 $repo = new Repo($db, $labelId);
-                $repo->earn((int) round($money));
+                $repo->earn((int) round($money), sprintf('Tantiemen „%s“', $row['title']));
                 $members = $row['band_id'] === null ? [] : $repo->members((int) $row['band_id']);
                 foreach ($members as $m) {
                     $db->exec('UPDATE musicians SET fame = fame + ? WHERE id = ?', [$fame / count($members), $m['id']]);
@@ -129,6 +129,37 @@ final class Charts
                 ), $row['band_id'] === null ? null : (int) $row['band_id']);
             });
         }
+    }
+
+    /** Regelmäßige Einnahmen: alle eigenen Platten, die gerade charten, und der Kontoauszug. */
+    public static function income(Db $db, int $labelId): array
+    {
+        $now = Clock::now();
+        $records = [];
+        foreach ($db->all(
+            "SELECT r.title, r.chart_points, r.finished_at, b.name AS band_name FROM records r
+             LEFT JOIN bands b ON b.id = r.band_id
+             WHERE r.label_id = ? AND r.status = 'done' AND r.chart_points > 0",
+            [$labelId]
+        ) as $row) {
+            $points = self::current((float) $row['chart_points'], $now - (int) $row['finished_at']);
+            if ($points >= Balance::CHART_MIN_POINTS) {
+                $records[] = [
+                    'title' => $row['title'],
+                    'band' => $row['band_name'] ?? 'aufgelöste Band',
+                    'points' => round($points, 1),
+                    'perDay' => (int) round($points * Balance::ROYALTY_MONEY),
+                ];
+            }
+        }
+        usort($records, static fn ($a, $b) => $b['perDay'] <=> $a['perDay']);
+        $ledger = $db->all('SELECT amount, text, created_at FROM ledger WHERE label_id = ? ORDER BY id DESC LIMIT 40', [$labelId]);
+        return [
+            'perDay' => array_sum(array_column($records, 'perDay')),
+            'decay' => Balance::CHART_DECAY,
+            'records' => $records,
+            'ledger' => array_map(static fn ($l) => ['amount' => (int) $l['amount'], 'text' => $l['text'], 'at' => (int) $l['created_at']], $ledger),
+        ];
     }
 
     /** Label-Gesamtliste: Summe des Ruhms aller eigenen Bands. */

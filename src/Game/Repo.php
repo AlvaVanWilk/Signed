@@ -23,7 +23,7 @@ final class Repo
         return ['id' => (int) $row['id'], 'username' => $row['username'], 'name' => $row['name'], 'money' => (int) $row['money']];
     }
 
-    public function spend(int $amount): void
+    public function spend(int $amount, string $reason): void
     {
         if ($amount <= 0) {
             return;
@@ -32,13 +32,23 @@ final class Repo
         if ($changed === 0) {
             throw new ApiError('Dafür reicht das Geld nicht.');
         }
+        $this->book(-$amount, $reason);
     }
 
-    public function earn(int $amount): void
+    public function earn(int $amount, string $reason): void
     {
         if ($amount > 0) {
             $this->db->exec('UPDATE labels SET money = money + ? WHERE id = ?', [$amount, $this->labelId]);
+            $this->book($amount, $reason);
         }
+    }
+
+    /** Kontoauszug: jede Einnahme und Ausgabe mit Grund. */
+    private function book(int $amount, string $reason): void
+    {
+        $this->db->insert('ledger', [
+            'label_id' => $this->labelId, 'amount' => $amount, 'text' => mb_substr($reason, 0, 120), 'created_at' => Clock::now(),
+        ]);
     }
 
     public function log(string $kind, string $text, ?int $bandId = null, ?int $musicianId = null): void
@@ -286,6 +296,7 @@ final class Repo
             'perfect_records' => (int) $r['perfect_records'],
             'gigs_played' => (int) $r['gigs_played'],
             'gigs_since_record' => (int) $r['gigs_since_record'],
+            'live_songs_needed' => (int) $r['live_songs_needed'],
             'released' => (bool) $r['released'],
             'busy_until' => (int) $r['busy_until'],
             'created_at' => (int) $r['created_at'],

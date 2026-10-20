@@ -30,7 +30,7 @@ export function render() {
       ${select('instrument', f.instrument, 'Alle Instrumente', Object.entries(c.instruments).map(([k, v]) => [k, `${v.icon} ${v.name}`]))}
       ${select('genre', f.genre, 'Alle Genres', Object.entries(c.genres).map(([k, v]) => [k, v.name]))}
       ${select('status', f.status, 'Alle', [['free', 'Ohne Band'], ['band', 'In einer Band']])}
-      ${select('sort', f.sort, null, [['level', 'Stufe'], ['skill', 'Können'], ['presence', 'Präsenz'], ['fame', 'Ruhm'], ['newest', 'Neueste']])}
+      ${select('sort', f.sort, null, [['level', 'Stufe'], ['skill', 'Können'], ['presence', 'Präsenz'], ['fame', 'Bekanntheit'], ['newest', 'Neueste']])}
     </div>
     ${list.length ? '' : '<div class="empty">Keine Musiker.</div>'}
     ${free.length ? `<div class="tcg-grid">${free.map((m) => musicianCard(m)).join('')}</div>` : ''}

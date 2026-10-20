@@ -109,7 +109,8 @@ final class Present
         foreach (Balance::PACKS as $key => $pack) {
             $packs[$key] = [
                 'name' => $pack['name'], 'price' => $pack['price'], 'desc' => $pack['desc'],
-                'slots' => $pack['slots'], 'odds' => $pack['odds'], 'guarantee' => $pack['guarantee'] ?? null,
+                'choices' => count($pack['slots'] ?? []) ?: $pack['choices'], 'kinds' => $pack['slots'] ?? array_keys($pack['kinds']),
+                'odds' => $pack['odds'], 'chooseType' => !empty($pack['chooseType']), 'fit' => !empty($pack['fit']),
             ];
         }
         return [
@@ -121,6 +122,8 @@ final class Present
             ),
             'abilities' => Catalog::ABILITIES,
             'techniqueDesc' => Catalog::TECHNIQUE_DESC,
+            'levelNames' => Catalog::LEVEL_NAMES,
+            'fameNames' => Catalog::FAME_NAMES,
             'personalities' => Catalog::PERSONALITIES,
             'managerSkills' => Catalog::MANAGER_SKILLS,
             'gear' => Catalog::GEAR,
@@ -135,7 +138,7 @@ final class Present
                 'recordCost' => Balance::RECORD_COST,
                 'recordMinSongs' => Balance::RECORD_MIN_SONGS,
                 'recordMaxSongs' => Balance::RECORD_MAX_SONGS,
-                'gigsBetweenRecords' => Balance::GIGS_BETWEEN_RECORDS,
+                'gigMinSongs' => Balance::GIG_MIN_SONGS,
                 'promoSeconds' => Balance::PROMO_SECONDS,
                 'cohesionRemovePenalty' => Balance::COHESION_REMOVE_PENALTY,
                 'scoutPrice' => Balance::SCOUT_PRICE,

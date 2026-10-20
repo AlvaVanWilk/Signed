@@ -81,7 +81,7 @@ function overview(b, members) {
     <div class="stat-grid">
       <div class="tile"><span>Sound</span><b>${fmt1(b.sound)}</b></div>
       <div class="tile"><span>Ruhm</span><b>${fmt1(b.fame)}</b>${gig.nextVenue ? `<small>${esc(gig.nextVenue)} ab ${fmt0(gig.nextFame)}</small>${bar(gig.progress, 1, 'thin')}` : ''}</div>
-      <div class="tile"><span>Eingespieltheit</span><b>${fmt0(b.cohesion)}<small> / ${fmt0(b.maxCohesion)}</small></b>${bar(b.cohesion, 100, 'thin')}</div>
+      <div class="tile"><span>Zusammenspiel</span><b>${fmt0(b.cohesion)}<small> / ${fmt0(b.maxCohesion)}</small></b>${bar(b.cohesion, 100, 'thin')}</div>
       <div class="tile"><span>Chemie</span><b>${chemistryLabel(b.chemistry)}</b></div>
       <div class="tile"><span>Platten</span><b>${fmt0(b.records)}</b><small>${fmt0(b.songsRecorded)} Lieder</small></div>
     </div>
@@ -124,6 +124,7 @@ function memberTile(b, m, place) {
           <select data-change="bandSetSlot" data-band="${b.id}" data-musician="${m.id}">
             ${m.instruments.map((i, idx) => `<option value="${idx + 1}" ${idx === slotIndex ? 'selected' : ''}>${instrumentIcon(i.type)} ${esc(instrumentName(i.type))}</option>`).join('')}
           </select>` : '<span></span>'}
+        ${gear ? '' : '<span class="bad small">ohne Instrument</span>'}
         ${m.genres.includes(b.genre) ? '' : '<span class="warn small">fremdes Genre</span>'}
         <button class="icon-btn" data-act="removeMember" data-band="${b.id}" data-musician="${m.id}" title="Aus der Band nehmen">✕</button>
       </div>
@@ -145,7 +146,7 @@ function practice(b, members) {
     ${blockerNotice(b, members)}
     <div class="action-grid">
       ${actionTile({
-        icon: '🥁', title: 'Bandprobe', meta: `${songsMeta(b.options.rehearsal.songs)} · Eingespieltheit, Können`,
+        icon: '🥁', title: 'Bandprobe', meta: `${songsMeta(b.options.rehearsal.songs)} · Zusammenspiel, Können`,
         button: `<button class="btn primary" data-act="startActivity" data-id="${b.id}" data-type="rehearsal" ${blocked ? 'disabled' : ''}>Proben</button>`,
       })}
       ${members.map((m) => practiceTile(m, isBusy(m.busyUntil) || isBusy(b.busyUntil))).join('')}
@@ -192,7 +193,7 @@ function gigs(b, members) {
   const disabled = blocker(b, members) ? 'disabled' : '';
   const o = b.options;
   const gig = o.gig;
-  const songs = Math.max(1, Math.min(app.ui.gigSongs[b.id] || gig.maxSongs, gig.maxSongs));
+  const songs = Math.max(gig.minSongs, Math.min(app.ui.gigSongs[b.id] || gig.maxSongs, gig.maxSongs));
   return `
     ${head('Auftritte', b)}
     ${blockerNotice(b, members)}
@@ -202,7 +203,7 @@ function gigs(b, members) {
         meta: gig.available ? `${money(gig.gagePerSong)} pro Lied` : 'Erst mit der ersten Platte',
         body: gig.available ? `
           <span class="small"><label class="inline-select">Lieder
-            <select data-change="gigSongs" data-id="${b.id}">${Array.from({ length: gig.maxSongs }, (_, i) => i + 1).map((n) => `<option value="${n}" ${n === songs ? 'selected' : ''}>${n}</option>`).join('')}</select>
+            <select data-change="gigSongs" data-id="${b.id}">${Array.from({ length: gig.maxSongs - gig.minSongs + 1 }, (_, i) => gig.minSongs + i).map((n) => `<option value="${n}" ${n === songs ? 'selected' : ''}>${n}</option>`).join('')}</select>
           </label> · ${duration(songs * cat().rules.songSeconds)} · <b>${money(gig.gagePerSong * songs)}</b></span>` : '',
         button: `<button class="btn primary" data-act="startActivity" data-id="${b.id}" data-type="gig" ${gig.available ? disabled : 'disabled'}>Spielen</button>`,
       })}
@@ -545,7 +546,7 @@ defineActions({
     const m = musicianById(musician);
     if (b.released) {
       const ok = await confirmDialog(
-        `${fullName(m)} verlässt ${b.name}: Eingespieltheit −${cat().rules.cohesionRemovePenalty}, Bandruhm −${fmt1(m.fame)}.`,
+        `${fullName(m)} verlässt ${b.name}: Zusammenspiel −${cat().rules.cohesionRemovePenalty}, Bandruhm −${fmt1(m.fame)}.`,
         { ok: 'Rausnehmen', danger: true },
       );
       if (!ok) return;
@@ -572,7 +573,7 @@ defineActions({
   },
   async startActivity({ id, type }) {
     const b = bandById(id);
-    const songs = type === 'gig' ? Math.max(1, Math.min(app.ui.gigSongs[b.id] || b.options.gig.maxSongs, b.options.gig.maxSongs)) : 0;
+    const songs = type === 'gig' ? Math.max(b.options.gig.minSongs, Math.min(app.ui.gigSongs[b.id] || b.options.gig.maxSongs, b.options.gig.maxSongs)) : 0;
     const res = await mutate('activityStart', { bandId: b.id, type, songs });
     if (res) openLive(res.activity.id);
   },

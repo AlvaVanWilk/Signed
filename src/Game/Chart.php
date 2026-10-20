@@ -80,24 +80,57 @@ final class Chart
     /** Abschnitte pro Spur im Mischpult-Spiel; jeder wird einzeln bewertet. */
     public const MIXER_SEGMENTS = 6;
 
+    /** Mehr als so viele Spuren werden zu Gruppen zusammengefasst. */
+    public const MIXER_MAX_TRACKS = 4;
+
+    /** Instrumentengruppen am Mischpult, wenn die Band zu groß für Einzelspuren ist. */
+    private const MIXER_GROUPS = [
+        'Rhythmus' => ['drums', 'bass', 'turntables'],
+        'Harmonie' => ['guitar', 'keys', 'synth'],
+        'Melodie' => ['vocals', 'sax', 'trumpet', 'violin', 'flute'],
+    ];
+
     /**
-     * Mischpult (Studio): Die Pegel der Spuren schwanken; schwächere Musiker häufiger und stärker.
+     * Spuren am Mischpult: bis zu vier Musiker einzeln, größere Bands in Gruppen (Rhythmus, Harmonie, Melodie).
+     * @param list<array{name: string, instrument: string, skill: float}> $players
+     * @return list<array{name: string, instruments: list<string>, skill: float}>
+     */
+    public static function mixerTracks(array $players): array
+    {
+        if (count($players) <= self::MIXER_MAX_TRACKS) {
+            return array_map(static fn ($p) => ['name' => $p['name'], 'instruments' => [$p['instrument']], 'skill' => $p['skill']], $players);
+        }
+        $tracks = [];
+        foreach (self::MIXER_GROUPS as $group => $types) {
+            $members = array_values(array_filter($players, static fn ($p) => in_array($p['instrument'], $types, true)));
+            if ($members) {
+                $tracks[] = [
+                    'name' => $group,
+                    'instruments' => array_values(array_unique(array_column($members, 'instrument'))),
+                    'skill' => array_sum(array_column($members, 'skill')) / count($members),
+                ];
+            }
+        }
+        return $tracks;
+    }
+
+    /**
+     * Mischpult (Studio): Jede Spur gleitet ständig um ihren Pegel – ein Zufallspfad, der immer wieder zur Mitte
+     * zurückstrebt. Schwächere Musiker bewegen sich öfter und weiter weg, gute nur sanft.
      * @param list<float> $skills Können pro Spur
-     * @return list<array{t: float, k: int, v: float}> Zeitpunkt, Spur, Pegeländerung
+     * @return list<array{t: float, k: int, v: float}> Zeitpunkt, Spur, Ziel-Abweichung vom Sollpegel
      */
     public static function mixerDrifts(array $skills, int $duration): array
     {
         $drifts = [];
         foreach (array_values($skills) as $track => $skill) {
             $shaky = (100 - min(100.0, $skill)) / 100;
-            $count = (int) round(3 + $shaky * 8);
-            $size = 0.1 + $shaky * 0.22;
-            for ($i = 0; $i < $count; $i++) {
-                $drifts[] = [
-                    't' => round(Rng::float(1.5, $duration - 1.5), 2),
-                    'k' => $track,
-                    'v' => round(Rng::chance(0.5) ? $size : -$size, 3),
-                ];
+            $interval = 1.4 - 0.7 * $shaky;
+            $step = 0.05 + 0.13 * $shaky;
+            $offset = 0.0;
+            for ($t = Rng::float(0.3, $interval); $t < $duration; $t += $interval * Rng::float(0.7, 1.3)) {
+                $offset = max(-0.5, min(0.5, $offset * 0.75 + Rng::float(-$step, $step) * 1.6));
+                $drifts[] = ['t' => round($t, 2), 'k' => $track, 'v' => round($offset, 3)];
             }
         }
         usort($drifts, static fn ($a, $b) => $a['t'] <=> $b['t']);

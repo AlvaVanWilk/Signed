@@ -34,6 +34,7 @@ final class Api
         'state' => ['GET', true],
         'charts' => ['GET', true],
         'buyPack' => ['POST', true],
+        'packPick' => ['POST', true],
         'scoutOpen' => ['POST', true],
         'scoutPick' => ['POST', true],
         'nameSuggest' => ['POST', true],
@@ -191,8 +192,15 @@ final class Api
 
     private function buyPack(array $in, Repo $repo): array
     {
-        $cards = (new Packs($repo))->buy(self::str($in, 'pack'));
-        return ['cards' => $cards, 'state' => State::build($repo)];
+        $type = isset($in['type']) && is_string($in['type']) ? $in['type'] : null;
+        $offer = (new Packs($repo))->buy(self::str($in, 'pack'), $type);
+        return ['offer' => $offer, 'state' => State::build($repo)];
+    }
+
+    private function packPick(array $in, Repo $repo): array
+    {
+        $card = (new Packs($repo))->pick(self::int($in, 'offerId'), self::int($in, 'index'));
+        return ['card' => $card, 'state' => State::build($repo)];
     }
 
     private function scoutOpen(array $in, Repo $repo): array

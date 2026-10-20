@@ -31,7 +31,8 @@ final class BandCalc
     {
         $skill = self::skill($m);
         $fit = in_array($genre, $m['genres'], true) ? 1.0 : Balance::OFF_GENRE_FACTOR;
-        return $skill * (1 + self::gearBonus($model, $skill)) * $fit;
+        $gear = $model === null ? Balance::NO_GEAR_FACTOR : 1 + self::gearBonus($model, $skill);
+        return $skill * $gear * $fit;
     }
 
     /** Ein gutes Instrument entfaltet sich nur in fähigen Händen. */
@@ -116,7 +117,7 @@ final class BandCalc
         return round(max(0.5, min(1.5, 1 + $positive - $negative)), 2);
     }
 
-    /** Chemie bestimmt, wie hoch die Eingespieltheit maximal werden kann. */
+    /** Chemie bestimmt, wie hoch das Zusammenspiel maximal werden kann. */
     public static function maxCohesion(float $chemistry): float
     {
         return max(40.0, min(100.0, 70 + ($chemistry - 1) * 60));

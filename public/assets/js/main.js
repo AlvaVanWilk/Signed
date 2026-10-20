@@ -1,7 +1,7 @@
 import { api } from './api.js';
 import { actions, app, bandById, defineActions, musicianById, navigate, onRender, refresh, rerender, serverNow } from './core.js';
 import { levelUpBanners, musicianCard } from './cards.js';
-import { closeAllModals, duration, esc, fmt1, money, openModal, percent, topModal } from './ui.js';
+import { closeAllModals, duration, esc, fmt1, money, openModal, percent, timeAgo, topModal } from './ui.js';
 import * as auth from './views/auth.js';
 import * as bands from './views/bands.js';
 import * as catalog from './views/catalog.js';
@@ -14,7 +14,7 @@ import * as storage from './views/storage.js';
 
 const NAV = [
   ['', 'Übersicht'],
-  ['packs', 'Packs'],
+  ['packs', 'Läden'],
   ['katalog', 'Katalog'],
   ['lager', 'Lager'],
   ['boerse', 'Börse'],
@@ -94,14 +94,12 @@ function layout(content, route) {
   const side = sidebar(route);
   return `
     <header class="topbar">
-      <div class="topbar-row">
       <a class="logo" href="#/">Signed</a>
       <nav class="nav">${NAV.map(([key, label]) => `<a href="#/${key}" class="${key === active ? 'active' : ''}">${label}</a>`).join('')}</nav>
       <div class="label-info">
         <span class="label-name" title="Dein Label">${esc(s.label.name)}</span>
-        <span class="money-pill">${money(s.label.money)}</span>
+        <button class="money-pill" data-act="openFinance" title="Konto und Einnahmen">${money(s.label.money)}</button>
         <button class="btn ghost small" data-act="logout">Abmelden</button>
-      </div>
       </div>
       ${subnav(route)}
     </header>
@@ -165,7 +163,7 @@ function resultHtml(r) {
       <div class="eyebrow">${esc(m ? `${m.firstName} ${m.lastName}` : '')}</div>
       <h2>${esc(r.title)}</h2>
       ${res.meter ? `<p class="muted">${moodText(res.meter)}</p>` : ''}
-      <div class="reward-grid">${reward('Ruhm', `+${fmt1(res.fame)}`)}${res.presence ? reward('Präsenz', `+${fmt1(res.presence)}`) : ''}${res.meter ? reward('Publikum', percent(res.meter / 100)) : ''}</div>
+      <div class="reward-grid">${reward('Bekanntheit', `+${fmt1(res.fame)}`)}${res.presence ? reward('Präsenz', `+${fmt1(res.presence)}`) : ''}${res.meter ? reward('Publikum', percent(res.meter / 100)) : ''}</div>
       ${jamOffer ? `<p>${jamOffer.cards.length} Musiker würden mit ${esc(m?.firstName ?? '')} eine Band gründen.</p>
         ${musician.jamOfferHtml(jamOffer, true)}` : ''}`;
   }
@@ -181,7 +179,7 @@ function resultHtml(r) {
       ${res.money ? reward('Gage', `+${money(res.money)}`) : ''}
       ${res.fame ? reward('Ruhm', `+${fmt1(res.fame)}`) : ''}
       ${res.presence ? reward('Präsenz', `+${fmt1(res.presence)}`) : ''}
-      ${res.cohesion ? reward('Eingespieltheit', `+${fmt1(res.cohesion)}`) : ''}
+      ${res.cohesion ? reward('Zusammenspiel', `+${fmt1(res.cohesion)}`) : ''}
       ${res.meter ? reward('Publikum', percent(res.meter / 100)) : ''}
     </div>
     ${levelUpBanners(res.levelUps)}
@@ -221,6 +219,31 @@ function showResults() {
   resultModal.body.querySelector('[data-close]').addEventListener('click', () => resultModal?.close());
 }
 
+// ---------- Konto ----------
+
+/** Konto in Groove Coins: regelmäßige Einnahmen aus den Charts und der Kontoauszug. */
+function financeHtml() {
+  const f = app.state.finance;
+  const now = app.state.now;
+  return `
+    <div class="eyebrow">Groove Coins</div>
+    <h2>${money(app.state.label.money)}</h2>
+    <div class="reward-grid">
+      ${reward('Tantiemen pro Tag', money(f.perDay))}
+      ${reward('Platten in den Charts', String(f.records.length))}
+    </div>
+    ${f.records.length ? `
+      <p class="muted small">Die Chartpunkte – und damit die Tantiemen – sinken jeden Tag um ${percent(1 - f.decay)}.</p>
+      <table class="charts finance-table">
+        <thead><tr><th>Platte</th><th>Band</th><th>Punkte</th><th>pro Tag</th></tr></thead>
+        <tbody>${f.records.map((r) => `<tr><td>„${esc(r.title)}“</td><td>${esc(r.band)}</td><td>${fmt1(r.points)}</td><td>${money(r.perDay)}</td></tr>`).join('')}</tbody>
+      </table>` : '<p class="muted">Noch keine Platte in den Charts – regelmäßige Einnahmen kommen über Tantiemen.</p>'}
+    <h3>Kontoauszug</h3>
+    ${f.ledger.length ? `<ul class="history ledger">${f.ledger.map((l) => `
+      <li><span>${esc(l.text)}</span><span class="ledger-right"><b class="${l.amount < 0 ? 'bad' : 'ok'}">${l.amount > 0 ? '+' : '−'}${money(Math.abs(l.amount))}</b><time>${timeAgo(l.at, now)}</time></span></li>`).join('')}</ul>`
+    : '<p class="muted">Noch keine Buchungen.</p>'}`;
+}
+
 // ---------- Ereignisse ----------
 
 defineActions({
@@ -231,6 +254,9 @@ defineActions({
     app.state = null;
     app.charts = null;
     rerender();
+  },
+  openFinance() {
+    openModal({ wide: true, className: 'finance-modal', render: financeHtml });
   },
   closeModalAndGo({ href }) {
     closeAllModals();

@@ -91,8 +91,11 @@ final class Activities
                         throw new ApiError('Richtige Gigs gibt es erst, wenn die Band eine Platte produziert hat.');
                     }
                     $max = BandCalc::maxGigSongs($band['songs_recorded'], $level);
-                    if ($songs < 1 || $songs > $max) {
-                        throw new ApiError(sprintf('Ein Gig dieser Band kann 1 bis %d Lieder lang sein.', $max));
+                    $min = min($max, Balance::GIG_MIN_SONGS);
+                    if ($songs < $min || $songs > $max) {
+                        throw new ApiError($min === $max
+                            ? sprintf('Ein Gig dieser Band hat %d Lieder.', $max)
+                            : sprintf('Ein Gig dieser Band kann %d bis %d Lieder lang sein.', $min, $max));
                     }
                     $venue = BandCalc::venue($fame);
                     $negotiator = BandCalc::managerBonus($manager, $level, 'verhandler', Balance::NEGOTIATOR_BONUS);
@@ -303,7 +306,7 @@ final class Activities
         $db = $repo->db;
         $reward = $data['reward'];
         $bandId = (int) $row['band_id'];
-        $repo->earn((int) ($reward['money'] ?? 0));
+        $repo->earn((int) ($reward['money'] ?? 0), sprintf('Gage: %s', $data['title']));
         $fameGain = self::applyFame($repo, $reward['fameGains'] ?? []);
         $result = [
             'money' => (int) ($reward['money'] ?? 0),
@@ -326,6 +329,7 @@ final class Activities
             if ($row['type'] === 'gig') {
                 $updates['gigs_played'] = $band['gigs_played'] + 1;
                 $updates['gigs_since_record'] = $band['gigs_since_record'] + 1;
+                $updates['live_songs_needed'] = max(0, $band['live_songs_needed'] - (int) $data['songs']);
                 if ($band['gigs_played'] === 0) {
                     $repo->log('gig', sprintf('%s spielt den ersten richtigen Gig.', $band['name']), $bandId);
                 }

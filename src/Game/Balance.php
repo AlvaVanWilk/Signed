@@ -45,36 +45,45 @@ final class Balance
     public const MANAGER_MAX_BANDS = 3;
 
     // ---------- Packs ----------
+    /**
+     * Packs sind Orte zum Stöbern: Man sieht `choices` verdeckte Karten und nimmt eine mit.
+     * kinds = Gewichte, welche Kartenart je Platz kommt; slots = feste Kartenarten.
+     * fit = der Laden sucht Instrumente für Musiker ohne Instrument; chooseType = Instrumentenart selbst wählen.
+     */
     public const PACKS = [
-        'demo' => [
-            'name' => 'Demo-Pack', 'price' => 150, 'desc' => 'Günstiger Einstieg: zwei Musiker und eine Überraschung.',
-            'slots' => ['musician', 'musician', 'any'],
-            'odds' => ['common' => 80, 'rare' => 17, 'epic' => 3, 'legendary' => 0],
+        'troedel' => [
+            'name' => 'Trödelmarkt', 'price' => 120, 'desc' => 'Meist Ramsch, manchmal ein Schatz – und ab und zu jemand, der Musik macht.',
+            'choices' => 4, 'kinds' => ['gear' => 70, 'musician' => 24, 'manager' => 6],
+            'odds' => ['common' => 86, 'rare' => 11, 'epic' => 2.5, 'legendary' => 0.5],
         ],
-        'studio' => [
-            'name' => 'Studio-Pack', 'price' => 450, 'desc' => 'Drei Musiker, ein Instrument und eine Überraschung.',
-            'slots' => ['musician', 'musician', 'musician', 'gear', 'any'],
-            'odds' => ['common' => 60, 'rare' => 30, 'epic' => 9, 'legendary' => 1],
+        'aushang' => [
+            'name' => 'Schwarzes Brett', 'price' => 200, 'desc' => 'Musiker suchen eine Band.',
+            'choices' => 4, 'kinds' => ['musician' => 100],
+            'odds' => ['common' => 68, 'rare' => 26, 'epic' => 5, 'legendary' => 1],
         ],
-        'gear' => [
-            'name' => 'Equipment-Pack', 'price' => 300, 'desc' => 'Drei solide Instrumente.',
-            'slots' => ['gear', 'gear', 'gear'],
-            'odds' => ['common' => 62, 'rare' => 30, 'epic' => 7, 'legendary' => 1],
+        'secondhand' => [
+            'name' => 'Second-Hand-Laden', 'price' => 350, 'desc' => 'Gebrauchte Instrumente in ordentlichem Zustand, passend zu deiner Besetzung.',
+            'choices' => 4, 'kinds' => ['gear' => 100], 'fit' => true,
+            'odds' => ['common' => 50, 'rare' => 38, 'epic' => 10, 'legendary' => 2],
         ],
-        'gearpro' => [
-            'name' => 'Profi-Equipment', 'price' => 1200, 'desc' => 'Drei hochwertige Instrumente.',
-            'slots' => ['gear', 'gear', 'gear'],
-            'odds' => ['common' => 0, 'rare' => 50, 'epic' => 38, 'legendary' => 12],
+        'musicstore' => [
+            'name' => 'Music Store', 'price' => 800, 'desc' => 'Neue Instrumente. Der Verkäufer sucht passend zu deiner Besetzung aus.',
+            'choices' => 4, 'kinds' => ['gear' => 100], 'fit' => true,
+            'odds' => ['common' => 10, 'rare' => 55, 'epic' => 30, 'legendary' => 5],
         ],
-        'gold' => [
-            'name' => 'Gold-Pack', 'price' => 1500, 'desc' => 'Drei Musiker, ein Instrument, ein Manager. Mindestens eine seltene Karte.',
-            'slots' => ['musician', 'musician', 'musician', 'gear', 'manager'],
-            'odds' => ['common' => 15, 'rare' => 52, 'epic' => 27, 'legendary' => 6],
-            'guarantee' => 'rare',
+        'backstage' => [
+            'name' => 'Backstage-Pass', 'price' => 1500, 'desc' => 'Hinter der Bühne triffst du Musiker, Manager und ihr Equipment.',
+            'choices' => 4, 'slots' => ['musician', 'musician', 'manager', 'gear'],
+            'odds' => ['common' => 0, 'rare' => 55, 'epic' => 35, 'legendary' => 10],
+        ],
+        'werkstatt' => [
+            'name' => 'Meisterwerkstatt', 'price' => 2400, 'desc' => 'Eine Privat-Anfertigung für ein Instrument deiner Wahl.',
+            'choices' => 3, 'kinds' => ['gear' => 100], 'chooseType' => true,
+            'odds' => ['common' => 0, 'rare' => 0, 'epic' => 75, 'legendary' => 25],
         ],
     ];
-    /** Wahrscheinlichkeiten für einen Überraschungs-Slot. */
-    public const ANY_SLOT = ['musician' => 55, 'gear' => 33, 'manager' => 12];
+    /** In Läden mit fit kommen Instrumente für Musiker ohne Instrument so viel häufiger. */
+    public const STORE_FIT_FACTOR = 5;
     /** Pro Scout-Stufe sinkt die Chance auf gewöhnliche Karten um diesen Anteil. */
     public const SCOUT_SHIFT = 0.06;
 
@@ -84,20 +93,22 @@ final class Balance
     public const MAX_PER_INSTRUMENT = ['drums' => 1, 'guitar' => 2];
 
     // ---------- Sound ----------
-    /** Sound = (Gewicht × Durchschnitt + Rest × schwächster Musiker) × Besetzung × Eingespieltheit. */
+    /** Sound = (Gewicht × Durchschnitt + Rest × schwächster Musiker) × Besetzung × Zusammenspiel. */
     public const SOUND_MEAN_WEIGHT = 0.75;
     public const OFF_GENRE_FACTOR = 0.75;
     /** Maximaler Bonus eines Instruments mit Klang 100 (+50 %). */
     public const GEAR_MAX_BONUS = 0.5;
+    /** Ohne eigenes Instrument spielt man auf irgendwas Geliehenem – das klingt nach nichts. */
+    public const NO_GEAR_FACTOR = 0.5;
     /** Jedes Instrument weicht pro Wert bis zu so viel vom Modell ab. */
     public const GEAR_VARIANCE = 12;
     /** +5 % je weiterem unterschiedlichen Instrument, höchstens für 4 weitere. */
     public const LINEUP_BONUS = 0.05;
     public const LINEUP_BONUS_MAX_TYPES = 4;
-    /** Sound-Faktor bei Eingespieltheit 0; bei 100 ist er 1. */
+    /** Sound-Faktor bei Zusammenspiel 0; bei 100 ist er 1. */
     public const COHESION_FLOOR = 0.7;
 
-    // ---------- Eingespieltheit & Chemie ----------
+    // ---------- Zusammenspiel & Chemie ----------
     public const COHESION_PER_SONG = 1.2;
     public const COHESION_ADD_PENALTY = 5;
     public const COHESION_REMOVE_PENALTY = 30;
@@ -131,7 +142,7 @@ final class Balance
     public const LIVE_SWING = [7.0, 13.0];
     /** Straßenmusik: Das Geld behalten die Musiker; fürs Label bleiben etwas Präsenz und Bekanntheit. */
     public const BUSKING = ['songs' => 3, 'presence' => [0.3, 0.8], 'fame' => 0.3, 'expect' => 25, 'falloff' => 150, 'minFactor' => 0.1];
-    /** Bandprobe: keine Zuschauer, dafür doppelte Eingespieltheit und etwas Können für alle. */
+    /** Bandprobe: keine Zuschauer, dafür doppeltes Zusammenspiel und etwas Können für alle. */
     public const REHEARSAL = ['songs' => 2, 'cohesion' => 2.5, 'skill' => 0.4];
     /** Band-Promo: alle Mitglieder sind unterwegs und gewinnen Präsenz, die Band etwas Ruhm. */
     public const BAND_PROMO = ['seconds' => 600, 'presence' => [1.2, 2.5], 'fame' => [1.0, 3.0]];
@@ -163,6 +174,8 @@ final class Balance
     ];
     /** Lieder pro Gig ohne Manager; mit Manager kommen pro (effektiver) Stufe welche dazu. */
     public const GIG_SONG_CAP = 3;
+    /** Ein richtiger Gig hat mindestens so viele Lieder. */
+    public const GIG_MIN_SONGS = 3;
     public const MANAGER_SONGS_PER_LEVEL = 1.4;
     public const NEGOTIATOR_BONUS = 0.08;
     public const PR_BONUS = 0.08;
@@ -184,7 +197,8 @@ final class Balance
     public const RECORD_COST = 500;
     public const RECORD_MIN_SONGS = 3;
     public const RECORD_MAX_SONGS = 12;
-    public const GIGS_BETWEEN_RECORDS = 3;
+    /** Vor der nächsten Platte spielt die Band die letzte live: so viele Lieder pro Lied der Platte, auf Gigs. */
+    public const LIVE_SONGS_PER_RECORD_SONG = 2;
     public const RECORD_SONG_SKILL = 0.6;
     public const RECORD_SONG_COHESION = 2.0;
     /** Erstverkauf beim Erscheinen; das eigentliche Einkommen sind die Tantiemen, solange die Platte chartet. */

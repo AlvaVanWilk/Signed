@@ -42,7 +42,7 @@ export function musicianStatus(m) {
  * Gemeinsamer Aufbau aller Karten: Kopf mit Name und Seltenheit, Bildfeld, Typzeile, Textfeld, Werte.
  * opts: act/data (Klick-Aktion), size ('' | 'sm'), extra (HTML unter der Karte), tag ('button' | 'div')
  */
-function tcg({ rarity = '', frame = '', theme = '', name, badge = '', art, type, text, stats, foot = '', act = null, data = {}, size = '', extra = '' }) {
+function tcg({ rarity = '', frame = '', theme = '', name, badge = '', art, type, text, stats = [], minis = '', foot = '', act = null, data = {}, size = '', extra = '' }) {
   const tag = act ? 'button' : 'div';
   const attrs = act ? ` data-act="${act}" ${Object.entries(data).map(([k, v]) => `data-${k}="${esc(v)}"`).join(' ')}` : '';
   const card = `
@@ -55,7 +55,8 @@ function tcg({ rarity = '', frame = '', theme = '', name, badge = '', art, type,
         <span class="tcg-art">${art}</span>
         <span class="tcg-type">${type}</span>
         <span class="tcg-text">${text}</span>
-        <span class="tcg-stats">${stats.map(([value, label]) => `<span class="tcg-stat"><b>${value}</b><small>${esc(label)}</small></span>`).join('')}</span>
+        ${stats.length ? `<span class="tcg-stats">${stats.map(([value, label]) => `<span class="tcg-stat"><b>${value}</b><small>${esc(label)}</small></span>`).join('')}</span>` : ''}
+        ${minis ? `<span class="tcg-minis">${minis}</span>` : ''}
         ${foot ? `<span class="tcg-foot">${foot}</span>` : ''}
       </span>
     </${tag}>`;
@@ -73,29 +74,51 @@ export function musicianFrame(m) {
   return `lvl-${m.level} fame-${m.fameLevel}${legend ? ' legend' : ''}`;
 }
 
-export function levelPips(level) {
-  return `<span class="tcg-pips" title="Können-Stufe ${level}">${[1, 2, 3].map((i) => `<i class="${i <= level ? 'on' : ''}"></i>`).join('')}</span>`;
+/** Genre als flaches Umriss-Symbol. */
+const GENRE_PATHS = {
+  pop: 'M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6l-5.4 2.9 1.2-6-4.5-4.2 6.1-.7z',
+  rock: 'M13.5 2L5 13.5h6.5L10 22l9-12h-6.5z',
+  metal: 'M7.5 13V4.5a1.5 1.5 0 013 0V11 M15 11V5.5a1.5 1.5 0 013 0V14c0 4.5-2.7 7.5-6.2 7.5S6.5 19 6.5 15.5V13 M10.5 11.5a1.3 1.3 0 012.5 0v1 M13 11.5a1.2 1.2 0 012 0 M6.5 15.5l5.5-2',
+  punk: 'M12 3a9 9 0 100 18 9 9 0 100-18 M7 19L12 5l5 14 M7.5 13.5h9',
+  jazz: 'M3 16.5c4 2.5 14 2.5 18 0 M5.5 16l1.6-7.2c.4-1.7 2.2-2.3 3.4-1.2L12 9l1.5-1.4c1.2-1.1 3-.5 3.4 1.2l1.6 7.2 M7 13.5c3 1 7 1 10 0',
+  elektro: 'M2 12h4l2.5-7 3.5 14 3.5-14 2.5 7h4',
+  hiphop: 'M3 8.5h18V19H3z M7 8.5V5.5h10v3 M8 15.5a2 2 0 100-.1z M16 15.5a2 2 0 100-.1z M11 11.5h2',
+  folk: 'M5 19C5 10 11 5 20 4c-.8 9-6.2 15-15 15z M5 19l8.5-8.5',
+};
+
+export function genreIcon(key) {
+  return `<svg class="genre-icon" viewBox="0 0 24 24" aria-label="${esc(genreName(key))}"><title>${esc(genreName(key))}</title><path d="${GENRE_PATHS[key] ?? ''}"/></svg>`;
+}
+
+/** Können als Leiste aus Kästchen: 10 Kästchen à 10 Punkte bis zum Höchstwert 100. */
+export function skillBar(skill) {
+  return `<span class="skill-cells" title="Können ${fmt0(skill)} von 100">${Array.from({ length: 10 }, (_, i) => {
+    const fill = Math.max(0, Math.min(1, (skill - i * 10) / 10));
+    return `<i style="--f:${Math.round(fill * 100)}%"></i>`;
+  }).join('')}</span>`;
 }
 
 export function musicianCard(m, { act = 'openMusician', size = '', extra = '', showStatus = true } = {}) {
   const c = cat();
-  const main = m.instruments.reduce((best, i) => (i.skill > best.skill ? i : best), m.instruments[0]);
   const band = m.bandId ? bandById(m.bandId) : null;
   const status = showStatus ? (musicianStatus(m) || (band ? esc(band.name) : '')) : '';
   const abilities = m.abilities.map((a) => abilityInfo(a));
+  const legend = m.level >= 3 && m.fameLevel >= 3;
   return tcg({
     frame: musicianFrame(m),
     theme: `genre-bg-${m.genres[0]}`,
     name: fullName(m),
-    badge: levelPips(m.level),
+    badge: `<span class="tcg-genres">${m.genres.map(genreIcon).join('')}</span>`,
     art: `${avatar(m.look)}
       <span class="tcg-badge">${m.instruments.map((i) => instrumentIcon(i.type)).join('')}</span>
       ${abilities.length ? `<span class="tcg-abilities">${abilities.map((a) => `<i title="${esc(a.name)}">${a.icon}</i>`).join('')}</span>` : ''}`,
-    type: `${m.instruments.map((i) => `${esc(instrumentName(i.type))} ${fmt0(i.skill)}`).join(' · ')}<em>${m.genres.map(genreName).map(esc).join(' · ')}</em>`,
-    text: abilities.length
-      ? abilities.map((a) => `<b>${esc(a.name)}</b>`).join(' · ')
-      : `<i>${m.personality.map((p) => esc(c.personalities[p])).join(' · ')}</i>`,
-    stats: [[fmt0(main.skill), 'Können'], [fmt0(m.presence), 'Präsenz'], [fmt1(m.fame), 'Ruhm']],
+    type: legend ? '<b>Legende</b>' : `${esc(c.levelNames[m.level])}<em>${esc(c.fameNames[m.fameLevel])}</em>`,
+    text: `
+      ${m.instruments.map((i) => `<span class="skill-row"><span class="skill-name">${instrumentIcon(i.type)}<span> ${esc(instrumentName(i.type))}</span></span>${skillBar(i.skill)}<b>${fmt0(i.skill)}</b></span>`).join('')}
+      <span class="tcg-traits">${abilities.length
+        ? abilities.map((a) => `<b>${esc(a.name)}</b>`).join(' · ')
+        : `<i>${m.personality.map((p) => esc(c.personalities[p])).join(' · ')}</i>`}</span>`,
+    minis: `<span title="Bekanntheit">⭐ ${fmt1(m.fame)}</span><span title="Präsenz">✨ ${fmt0(m.presence)}</span>`,
     foot: status,
     act,
     data: { id: m.id },

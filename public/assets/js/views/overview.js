@@ -9,8 +9,9 @@ export function render() {
   const choices = s.musicians.filter((m) => m.abilityChoice);
   const steps = [
     { done: s.musicians.length > 0, text: 'Talent-Scout: ersten Musiker unter Vertrag nehmen', href: '#/packs' },
-    { done: s.musicians.length > 1, text: 'Mitmusiker finden: Jam-Café oder Pack', href: firstFavorite ? `#/musician/${firstFavorite.id}/jam` : '#/packs' },
+    { done: s.musicians.length > 1, text: 'Mitmusiker finden: Jam-Café oder Schwarzes Brett', href: firstFavorite ? `#/musician/${firstFavorite.id}/jam` : '#/packs' },
     { done: s.bands.length > 0, text: 'Band gründen', act: 'newBand' },
+    { done: s.gear.some((g) => g.musicianId), text: 'Instrumente besorgen: ohne eigenes Instrument klingt es nach wenig', href: '#/packs' },
     { done: s.bands.some((b) => b.released), text: 'Erster Auftritt' },
     { done: s.bands.some((b) => b.records > 0), text: 'Erste Platte aufnehmen' },
     { done: s.bands.some((b) => b.gigsPlayed > 0), text: 'Erster richtiger Gig' },

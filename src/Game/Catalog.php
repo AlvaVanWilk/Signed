@@ -99,6 +99,10 @@ final class Catalog
         'flatterzunge' => ['name' => 'Flatterzunge', 'icon' => '🦋', 'technique' => true],
     ];
 
+    /** Namen der Stufen: Können-Leiter und Bekanntheits-Leiter (0–3). */
+    public const LEVEL_NAMES = ['Anfänger', 'Fortgeschritten', 'Profi', 'Virtuose'];
+    public const FAME_NAMES = ['Unbekannt', 'Lokal bekannt', 'Szenegröße', 'Star'];
+
     /** Was eine Spezialtechnik bewirkt (gilt für alle Techniken). */
     public const TECHNIQUE_DESC = 'Spezialtechnik: mehr Glanzmomente live.';
 

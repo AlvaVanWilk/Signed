@@ -69,7 +69,7 @@ function recordSummary(r) {
   const head = `
     <h3>Lied ${r.songsDone} von ${r.songsTotal} im Kasten – Trefferquote ${percent(r.accuracy)}</h3>
     ${counts(r)}
-    <p class="muted">Eingespieltheit +${fmt1(r.cohesion)}</p>
+    <p class="muted">Zusammenspiel +${fmt1(r.cohesion)}</p>
     ${levelUpBanners(r.levelUps)}`;
   if (!r.completed) return head;
   const c = r.completed;

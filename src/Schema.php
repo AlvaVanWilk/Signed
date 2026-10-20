@@ -279,6 +279,27 @@ final class Schema
                 'CREATE INDEX transfers_status ON transfers (status, ends_at)',
                 'CREATE INDEX transfers_musician ON transfers (musician_id, status)',
             ],
+            // 6: Packs mit Auswahl, Kontoauszug, Live-Pflicht vor der nächsten Platte
+            [
+                'CREATE TABLE pack_offers (
+                    id {PK},
+                    label_id INTEGER NOT NULL,
+                    pack VARCHAR(20) NOT NULL,
+                    cards TEXT NOT NULL,
+                    status VARCHAR(10) NOT NULL,
+                    created_at INTEGER NOT NULL
+                ){OPTS}',
+                'CREATE INDEX pack_offers_label ON pack_offers (label_id, status)',
+                'CREATE TABLE ledger (
+                    id {PK},
+                    label_id INTEGER NOT NULL,
+                    amount INTEGER NOT NULL,
+                    text VARCHAR(120) NOT NULL,
+                    created_at INTEGER NOT NULL
+                ){OPTS}',
+                'CREATE INDEX ledger_label ON ledger (label_id, id)',
+                'ALTER TABLE bands ADD COLUMN live_songs_needed INTEGER NOT NULL DEFAULT 0',
+            ],
         ];
     }
 }

@@ -50,7 +50,7 @@ function profile(m) {
         ${m.abilityChoice ? `<div class="notice choice"><span>⭐ ${esc(m.firstName)} ist jetzt Experte und darf eine dritte Fähigkeit wählen.</span><button class="btn primary small" data-act="chooseAbility" data-id="${m.id}">Wählen</button></div>` : ''}
         <div class="stat-grid">
           <div class="tile"><span>Können-Stufe</span><b>${m.level}</b><small>${nextSkill ? `Stufe ${m.level + 1} ab ${nextSkill}` : 'Höchste Stufe'}</small></div>
-          <div class="tile"><span>Bekanntheit</span><b>${m.fameLevel}</b><small>${nextFame ? `Stufe ${m.fameLevel + 1} ab ${nextFame} Ruhm` : 'Höchste Stufe'}</small></div>
+          <div class="tile"><span>Bekanntheit</span><b>${m.fameLevel}</b><small>${nextFame ? `Stufe ${m.fameLevel + 1} ab ${nextFame}` : 'Höchste Stufe'}</small></div>
           <div class="tile"><span>Band</span><b class="small-b">${band ? `<a href="#/band/${band.id}">${esc(band.name)}</a>` : '–'}</b>
             ${band ? '' : `<button class="btn small ${m.favorite ? 'primary' : ''}" data-act="toggleFavorite" data-id="${m.id}">${m.favorite ? '★ Favorit' : '☆ Favorit'}</button>`}
           </div>

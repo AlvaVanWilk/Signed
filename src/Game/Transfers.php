@@ -106,7 +106,8 @@ final class Transfers
             }
             $raising = $t['best_label_id'] !== null && (int) $t['best_label_id'] === $this->repo->labelId;
             // Wer schon vorn liegt und erhöht, legt nur die Differenz dazu.
-            $this->repo->spend($raising ? $amount - (int) $t['best_amount'] : $amount);
+            $name = self::musicianName($db, (int) $t['musician_id']);
+            $this->repo->spend($raising ? $amount - (int) $t['best_amount'] : $amount, sprintf('Gebot für %s (zurückgelegt)', $name));
             // Kurz vor Schluss verlängert jedes Gebot die Frist, damit niemand in letzter Sekunde zuschnappt.
             $endsAt = max((int) $t['ends_at'], $now + Balance::TRANSFER['snipe']);
             $claimed = $db->exec(
@@ -118,10 +119,9 @@ final class Transfers
                 throw new ApiError('Gerade hat jemand anderes geboten. Schau dir das neue Gebot an.');
             }
             $db->update('musicians', ['busy_until' => $endsAt], ['id' => (int) $t['musician_id']]);
-            $name = self::musicianName($db, (int) $t['musician_id']);
             if ($t['best_label_id'] !== null && !$raising) {
                 $previous = new Repo($db, (int) $t['best_label_id']);
-                $previous->earn((int) $t['best_amount']);
+                $previous->earn((int) $t['best_amount'], sprintf('Gebot für %s zurück', $name));
                 $previous->log('transfer', sprintf('Du wurdest bei %s überboten. Dein Gebot ist zurück auf dem Konto.', $name));
             }
             $this->repo->log('transfer', sprintf('Du bietest %s ₲ für %s.', number_format($amount, 0, ',', '.'), $name));
@@ -207,7 +207,7 @@ final class Transfers
         $buyer = new Repo($db, (int) $t['best_label_id']);
         $db->update('musicians', ['label_id' => $buyer->labelId, 'band_id' => null, 'busy_until' => 0, 'favorite' => 0], ['id' => $musicianId]);
         $db->exec("UPDATE jam_offers SET status = 'declined' WHERE musician_id = ? AND status = 'open'", [$musicianId]);
-        $seller->earn((int) $t['best_amount']);
+        $seller->earn((int) $t['best_amount'], sprintf('Verkauf: %s', $name));
         $price = number_format((int) $t['best_amount'], 0, ',', '.');
         $seller->log('transfer', sprintf('%s wechselt für %s ₲ zu %s.', $name, $price, $buyer->label()['name']));
         $buyer->log('transfer', sprintf('%s unterschreibt für %s ₲ bei deinem Label.', $name, $price), null, $musicianId);

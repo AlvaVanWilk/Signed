@@ -9,8 +9,8 @@ const KEYS = [['q', 'a'], ['w', 's'], ['e', 'd'], ['r', 'f'], ['t', 'g'], ['z', 
 const KEY_SPEED = 0.9;
 
 /**
- * Mischpult (Studio): Die Band spielt von selbst, die Pegel der Spuren schwanken – bei schwächeren Musikern
- * öfter und stärker. Du hältst jede Spur mit ihrem Regler im grünen Bereich.
+ * Mischpult (Studio): Die Band spielt von selbst, die Pegel der Spuren gleiten ständig – bei schwächeren Musikern
+ * schneller und weiter. Du hältst jede Spur mit ihrem Regler im grünen Bereich. Große Bands kommen in Gruppen.
  */
 export function createMixerGame(container, game) {
   const tracks = game.tracks;
@@ -60,10 +60,11 @@ export function createMixerGame(container, game) {
   function step(now, dt) {
     while (driftIndex < game.drifts.length && game.drifts[driftIndex].t <= now) {
       const d = game.drifts[driftIndex++];
-      targets[d.k] = Math.max(-0.55, Math.min(0.55, targets[d.k] + d.v));
+      targets[d.k] = d.v;
     }
+    // Weich zum nächsten Zielpunkt gleiten: ständige Bewegung statt Sprünge.
     tracks.forEach((_, k) => {
-      offsets[k] += (targets[k] - offsets[k]) * Math.min(1, dt * 3);
+      offsets[k] += (targets[k] - offsets[k]) * Math.min(1, dt * 1.6);
     });
     // Wer einen Regler festhält, hält den Pegel dort, wo der Finger ist.
     for (const { k, y } of pointers.values()) setFaderFromPointer(k, y);
@@ -80,7 +81,7 @@ export function createMixerGame(container, game) {
     const beatIndex = Math.floor(now / beat);
     if (now >= 0 && now < game.duration && beatIndex > lastBeat) {
       lastBeat = beatIndex;
-      tracks.forEach((track, k) => playTrackBeat(track.instrument, beatIndex, now, game.bpm, Math.min(1, levelOf(k, now) * 1.25)));
+      tracks.forEach((track, k) => track.instruments.forEach((instrument) => playTrackBeat(instrument, beatIndex, now, game.bpm, Math.min(1, levelOf(k, now) * 1.25))));
     }
   }
 
@@ -120,7 +121,7 @@ export function createMixerGame(container, game) {
       draw.fillStyle = '#f3eefc';
       draw.font = '600 13px system-ui, sans-serif';
       draw.textAlign = 'center';
-      draw.fillText(`${instrumentIcon(track.instrument)} ${track.name}`, cx, h - 30);
+      draw.fillText(`${track.instruments.map(instrumentIcon).join('')} ${track.name}`, cx, h - 30);
       draw.fillStyle = '#a49bbd';
       draw.font = '600 11px system-ui, sans-serif';
       draw.fillText(KEYS[k].map((key) => key.toUpperCase()).join(' / '), cx, h - 12);

@@ -26,8 +26,13 @@ test('Vier Musiker sind nicht doppelt so stark wie zwei', function () {
 
 test('Außerhalb des Genres gibt es weniger Bonus', function () {
     $m = musician(['genres' => ['pop']]);
-    checkEquals(40.0 * Balance::OFF_GENRE_FACTOR, BandCalc::memberValue($m, 'elektro', null));
-    checkEquals(40.0, BandCalc::memberValue($m, 'pop', null));
+    checkEquals(40.0 * Balance::OFF_GENRE_FACTOR * Balance::NO_GEAR_FACTOR, BandCalc::memberValue($m, 'elektro', null));
+    checkEquals(40.0 * Balance::NO_GEAR_FACTOR, BandCalc::memberValue($m, 'pop', null));
+});
+
+test('Ohne Instrument klingt es nach wenig, schon ein einfaches hilft', function () {
+    $m = musician(['genres' => ['pop']]);
+    check(BandCalc::memberValue($m, 'pop', Catalog::GEAR['gtr_sunburst']) > 2 * BandCalc::memberValue($m, 'pop', null));
 });
 
 test('Gutes Instrument entfaltet sich nur in fähigen Händen', function () {
@@ -38,7 +43,7 @@ test('Gutes Instrument entfaltet sich nur in fähigen Händen', function () {
     checkEquals($model['klang'] / 100 * Balance::GEAR_MAX_BONUS, $good);
 });
 
-test('Eingespieltheit erhöht den Sound', function () {
+test('Zusammenspiel erhöht den Sound', function () {
     $band = [musician(), musician(['instr1' => 'drums'])];
     check(BandCalc::sound($band, 'rock', 100, []) > BandCalc::sound($band, 'rock', 0, []));
 });
@@ -213,4 +218,17 @@ test('Minispiel: Noten liegen im Lied, Fenster wachsen mit Können', function ()
     check(Chart::windows(80)['good'] > Chart::windows(10)['good']);
     check(Chart::windows(10, true)['good'] > Chart::windows(10)['good']);
     checkEquals(0.8, Chart::accuracy(5, 5, 0));
+});
+
+test('Mischpult: bis 4 Musiker einzeln, größere Bands in Gruppen; gute Musiker schwanken weniger', function () {
+    $p = static fn (string $instrument, float $skill = 50) => ['name' => $instrument, 'instrument' => $instrument, 'skill' => $skill];
+    checkEquals(4, count(Signed\Game\Chart::mixerTracks([$p('vocals'), $p('guitar'), $p('bass'), $p('drums')])));
+    $groups = Signed\Game\Chart::mixerTracks([$p('vocals'), $p('guitar'), $p('bass'), $p('drums'), $p('keys'), $p('sax')]);
+    checkEquals(['Rhythmus', 'Harmonie', 'Melodie'], array_column($groups, 'name'));
+    checkEquals(['bass', 'drums'], $groups[0]['instruments']);
+    $spread = static function (float $skill): float {
+        $drifts = Signed\Game\Chart::mixerDrifts([$skill], 300);
+        return array_sum(array_map(static fn ($d) => abs($d['v']), $drifts)) / count($drifts);
+    };
+    check($spread(90) < $spread(10) / 2, 'Gute Musiker bewegen sich sanfter');
 });

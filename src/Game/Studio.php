@@ -22,9 +22,9 @@ final class Studio
         if ($memberCount < Balance::MIN_MEMBERS) {
             return sprintf('Die Band braucht mindestens %d Musiker.', Balance::MIN_MEMBERS);
         }
-        $missing = Balance::GIGS_BETWEEN_RECORDS - $band['gigs_since_record'];
-        if ($band['records'] > 0 && $missing > 0) {
-            return sprintf('Erst live spielen: noch %d %s bis zur nächsten Platte.', $missing, $missing === 1 ? 'Gig' : 'Gigs');
+        $missing = $band['live_songs_needed'];
+        if ($missing > 0) {
+            return sprintf('Erst die letzte Platte live spielen: noch %d %s auf Gigs.', $missing, $missing === 1 ? 'Lied' : 'Lieder');
         }
         return null;
     }
@@ -41,7 +41,7 @@ final class Studio
             if ($blocker !== null) {
                 throw new ApiError($blocker);
             }
-            $this->repo->spend(Balance::RECORD_COST);
+            $this->repo->spend(Balance::RECORD_COST, 'Studiozeit');
             $this->repo->db->insert('records', [
                 'label_id' => $this->repo->labelId,
                 'band_id' => $bandId,
@@ -56,7 +56,7 @@ final class Studio
         });
     }
 
-    /** Ein Lied ist eingespielt. Gibt jedem Mitglied etwas Können und der Band Eingespieltheit. */
+    /** Ein Lied ist eingespielt. Gibt jedem Mitglied etwas Können und der Band Zusammenspiel. */
     public function songDone(array $record, array $band, array $members, array $gear, int $perfect, int $good, int $miss): array
     {
         $db = $this->repo->db;
@@ -119,11 +119,11 @@ final class Studio
         foreach ($gains as $musicianId => $gain) {
             $db->exec('UPDATE musicians SET fame = fame + ? WHERE id = ?', [$gain, $musicianId]);
         }
-        $this->repo->earn($money);
+        $this->repo->earn($money, sprintf('Erstverkauf „%s“', $record['title']));
 
         $db->exec(
-            'UPDATE bands SET records = records + 1, songs_recorded = songs_recorded + ?, gigs_since_record = 0, perfect_records = perfect_records + ? WHERE id = ?',
-            [$songs, $perfect ? 1 : 0, $band['id']]
+            'UPDATE bands SET records = records + 1, songs_recorded = songs_recorded + ?, gigs_since_record = 0, live_songs_needed = ?, perfect_records = perfect_records + ? WHERE id = ?',
+            [$songs, $songs * Balance::LIVE_SONGS_PER_RECORD_SONG, $perfect ? 1 : 0, $band['id']]
         );
         $fameGain = round(array_sum($gains), 1);
         $firstRecord = (int) $db->value("SELECT COUNT(*) FROM records WHERE label_id = ? AND status = 'done'", [$this->repo->labelId]) === 0;

@@ -48,7 +48,7 @@ final class Scout
                 if ($now < $last + Balance::SCOUT_COOLDOWN) {
                     throw new ApiError(sprintf('Der Talent-Scout ist erst am %s wieder für dich unterwegs.', date('d.m.', $last + Balance::SCOUT_COOLDOWN)));
                 }
-                $this->repo->spend(Balance::SCOUT_PRICE);
+                $this->repo->spend(Balance::SCOUT_PRICE, 'Talent-Scout');
                 $db->update('labels', ['scout_bought_at' => $now], ['id' => $this->repo->labelId]);
             }
 

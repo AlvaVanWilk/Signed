@@ -129,15 +129,22 @@ test('Test-Musiker bilden eine gültige Band', function () {
 test('Packs kosten Geld und landen im Katalog', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Kim');
-    $res = $p->post('buyPack', ['pack' => 'studio']);
-    checkEquals(5, count($res['cards']));
-    checkEquals(Balance::START_MONEY - Balance::PACKS['studio']['price'], $res['state']['label']['money']);
-    $musicians = count(array_filter($res['cards'], static fn ($c) => $c['kind'] === 'musician'));
-    checkEquals(3 + $musicians, count($res['state']['musicians']));
+    $res = $p->post('buyPack', ['pack' => 'aushang']);
+    checkEquals(4, count($res['offer']['cards']));
+    checkEquals(Balance::START_MONEY - Balance::PACKS['aushang']['price'], $res['state']['label']['money']);
+    checkEquals(3, count($res['state']['musicians']), 'Erst wählen, dann gehört die Karte dir');
+    checkApiError(fn () => $p->post('buyPack', ['pack' => 'troedel']), 'erst eine Karte');
+    $res = $p->post('packPick', ['offerId' => $res['offer']['id'], 'index' => 2]);
+    checkEquals('musician', $res['card']['kind']);
+    checkEquals(4, count($res['state']['musicians']));
+    checkEquals(null, $res['state']['packOffer']);
+    checkApiError(fn () => $p->post('packPick', ['offerId' => 1, 'index' => 0]), 'nicht mehr');
 
-    $p->post('buyPack', ['pack' => 'gold']);
-    checkApiError(fn () => $p->post('buyPack', ['pack' => 'gold']), 'Geld');
+    checkApiError(fn () => $p->post('buyPack', ['pack' => 'werkstatt']), 'Instrument');
+    checkApiError(fn () => $p->post('buyPack', ['pack' => 'werkstatt', 'type' => 'drums']), 'Geld');
     checkApiError(fn () => $p->post('buyPack', ['pack' => 'gibtsnicht']), 'Pack');
+    $ledger = $p->get('state')['finance']['ledger'];
+    checkEquals(-Balance::PACKS['aushang']['price'], $ledger[0]['amount']);
 });
 
 test('Nachnamen wiederholen sich im eigenen Label nicht', function () {
@@ -146,13 +153,15 @@ test('Nachnamen wiederholen sich im eigenen Label nicht', function () {
     $db->exec('UPDATE labels SET money = 100000');
     $names = [];
     for ($i = 0; $i < 12; $i++) {
-        foreach ($p->post('buyPack', ['pack' => 'studio'])['cards'] as $card) {
+        $offer = $p->post('buyPack', ['pack' => 'backstage'])['offer'];
+        foreach ($offer['cards'] as $card) {
             if ($card['kind'] !== 'gear') {
                 $names[] = $card[$card['kind']]['lastName'];
             }
         }
+        $p->post('packPick', ['offerId' => $offer['id'], 'index' => 0]);
     }
-    check(count($names) > 40, 'genug Karten gezogen');
+    check(count($names) > 30, 'genug Karten gezogen');
     checkEquals(count($names), count(array_unique($names)));
 });
 
@@ -250,15 +259,35 @@ test('Aufstieg: Bei Können 35 gibt es eine Fähigkeit, bei Stufe 3 wählt man a
     checkEquals(null, $after['abilityChoice']);
 });
 
-test('Gold-Pack garantiert eine seltene Karte', function () {
+test('Packs: Backstage ohne gewöhnliche Karten, Werkstatt nach Wunsch, Music Store passend zur Besetzung', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Rich');
-    $db->exec('UPDATE labels SET money = 100000');
-    for ($i = 0; $i < 20; $i++) {
-        $cards = $p->post('buyPack', ['pack' => 'gold'])['cards'];
-        $rarities = array_map(static fn ($c) => ($c['musician'] ?? $c['manager'] ?? null)['rarity'] ?? Signed\Game\Catalog::GEAR[$c['gear']['model']]['rarity'], $cards);
-        check(array_diff($rarities, ['common']) !== [], 'Mindestens eine nicht-gewöhnliche Karte');
+    $db->exec('UPDATE labels SET money = 1000000');
+    $rarity = static fn ($c) => ($c['musician'] ?? $c['manager'] ?? null)['rarity'] ?? Signed\Game\Catalog::GEAR[$c['gear']['model']]['rarity'];
+    $fitting = 0;
+    $total = 0;
+    $own = array_unique(array_merge(...array_map(static fn ($m) => array_column($m['instruments'], 'type'), $p->get('state')['musicians'])));
+    for ($i = 0; $i < 15; $i++) {
+        $offer = $p->post('buyPack', ['pack' => 'backstage'])['offer'];
+        check(!in_array('common', array_map($rarity, $offer['cards']), true));
+        checkEquals(['musician', 'musician', 'manager', 'gear'], array_column($offer['cards'], 'kind'));
+        $p->post('packPick', ['offerId' => $offer['id'], 'index' => 3]);
+
+        $offer = $p->post('buyPack', ['pack' => 'werkstatt', 'type' => 'drums'])['offer'];
+        foreach ($offer['cards'] as $card) {
+            checkEquals('drums', Signed\Game\Catalog::GEAR[$card['gear']['model']]['type']);
+            check(in_array($rarity($card), ['epic', 'legendary'], true));
+        }
+        $p->post('packPick', ['offerId' => $offer['id'], 'index' => 0]);
+
+        $offer = $p->post('buyPack', ['pack' => 'musicstore'])['offer'];
+        foreach ($offer['cards'] as $card) {
+            $total++;
+            $fitting += in_array(Signed\Game\Catalog::GEAR[$card['gear']['model']]['type'], $own, true) ? 1 : 0;
+        }
+        $p->post('packPick', ['offerId' => $offer['id'], 'index' => 0]);
     }
+    check($fitting > $total * 0.5, "passend $fitting von $total");
 });
 
 test('Bandregeln: ein Genre pro Label, niemand in zwei Bands', function () {
@@ -294,7 +323,7 @@ test('Straßenmusik bringt dem Label kein Geld, aber Präsenz; sperrt die Band b
     checkEquals(0, $result['money']);
     checkEquals($money, $state['label']['money']);
     check($result['presence'] > 0, 'Etwas Präsenz für die Musiker');
-    check(bandById($state, $band['id'])['cohesion'] > 0, 'Auftritte steigern die Eingespieltheit');
+    check(bandById($state, $band['id'])['cohesion'] > 0, 'Auftritte steigern das Zusammenspiel');
     check(bandById($state, $band['id'])['released'], 'Band ist jetzt freigegeben');
 
     $p->post('activityAck', ['activityId' => $state['results'][0]['id']]);
@@ -376,20 +405,24 @@ test('Platte produzieren, dann Gigs spielen, dann die nächste Platte', function
     checkEquals(3, $band['options']['gig']['maxSongs']);
     check($band['record']['blocker'] !== null, 'Nächste Platte erst nach Gigs');
 
-    checkApiError(fn () => $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'gig', 'songs' => 4]), '1 bis 3');
-    for ($i = 0; $i < Balance::GIGS_BETWEEN_RECORDS; $i++) {
-        $gig = $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'gig', 'songs' => 2])['activity'];
+    checkApiError(fn () => $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'gig', 'songs' => 4]), '3 Lieder');
+    checkApiError(fn () => $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'gig', 'songs' => 2]), '3 Lieder');
+    // EP mit 3 Liedern: 6 Lieder live, also 2 Gigs à 3 Lieder.
+    $gigs = 3 * Balance::LIVE_SONGS_PER_RECORD_SONG / 3;
+    for ($i = 0; $i < $gigs; $i++) {
+        check(str_contains((string) bandById($p->get('state'), $band['id'])['record']['blocker'], 'live'));
+        $gig = $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'gig', 'songs' => 3])['activity'];
         check(str_starts_with($gig['title'], 'Gig: '));
-        Clock::advance(2 * Balance::SONG_SECONDS);
+        Clock::advance(3 * Balance::SONG_SECONDS);
     }
     $state = $p->get('state');
     $band = bandById($state, $band['id']);
-    checkEquals(Balance::GIGS_BETWEEN_RECORDS, $band['gigsPlayed']);
+    checkEquals($gigs, $band['gigsPlayed']);
     checkEquals(null, $band['record']['blocker'], 'Nach genug Gigs darf die nächste Platte kommen');
     check(array_sum(array_map(static fn ($r) => $r['result']['money'], $state['results'])) > 0, 'Gigs bringen Gage');
 });
 
-test('Umbesetzung nach der Freigabe kostet Eingespieltheit, Bekanntheit geht mit', function () {
+test('Umbesetzung nach der Freigabe kostet Zusammenspiel, Bekanntheit geht mit', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Lineup');
     $band = foundBand($p);

@@ -163,6 +163,8 @@ final class Activities
             $gear = $this->repo->gearByMusician();
             $sound = BandCalc::sound([$m], 0, $gear);
             if ($type === 'jam') {
+                // Im Jam-Café geht es ums Gründen: ohne freien Band-Platz gar nicht erst hin.
+                (new Bands($this->repo))->assertSlotFree();
                 $songs = Balance::JAM['songs'];
                 $fameTotal = Balance::JAM['fame'] * $songs;
                 $expect = Balance::JAM['expect'];

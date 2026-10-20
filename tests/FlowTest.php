@@ -210,6 +210,11 @@ test('Jam-Café: drei passende Musiker zur Auswahl, einer gründet mit dem Gastg
     checkApiError(fn () => $p->post('soloStart', ['musicianId' => $m['id'], 'type' => 'jam']), 'Band');
     checkApiError(fn () => $p->post('jamPick', ['offerId' => $offer['id'], 'index' => 0, 'name' => 'Nochmal']), 'nicht mehr');
 
+    // Ohne freien Band-Platz geht niemand mehr ins Jam-Café.
+    $shop = $p->post('buyPack', ['pack' => 'aushang'])['offer'];
+    $free = $p->post('packPick', ['offerId' => $shop['id'], 'index' => 0])['card']['musician'];
+    checkApiError(fn () => $p->post('soloStart', ['musicianId' => $free['id'], 'type' => 'jam']), 'Label-Ruhm');
+
     $p->post('musicianFavorite', ['musicianId' => $m['id'], 'favorite' => false]);
     check(!$p->get('state')['musicians'][0]['favorite']);
 });

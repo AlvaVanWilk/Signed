@@ -22,12 +22,7 @@ final class Bands
             if (Names::bandTaken($db, $name)) {
                 throw new ApiError(sprintf('Den Bandnamen „%s“ gibt es schon. Wie wäre es mit dem Würfel?', $name));
             }
-            $slots = self::slots($this->repo->labelFame());
-            if (count($this->repo->bands()) >= $slots['open']) {
-                throw new ApiError($slots['next'] === null
-                    ? 'Mehr Bands kann dein Label nicht führen.'
-                    : sprintf('Deine nächste Band kannst du ab %s Label-Ruhm gründen.', number_format($slots['next'], 0, ',', '.')));
-            }
+            $this->assertSlotFree();
             $members = [];
             foreach ($entries as $entry) {
                 $id = (int) ($entry['id'] ?? 0);
@@ -157,6 +152,17 @@ final class Bands
                 : sprintf('%s hat keine gemeinsame Genre-Linie mehr.', $band['name']), $band['id']);
         }
         return $identity;
+    }
+
+    /** Ist noch ein Band-Platz frei? Sonst Fehler mit dem Ruhm, ab dem der nächste dazukommt. */
+    public function assertSlotFree(): void
+    {
+        $slots = self::slots($this->repo->labelFame());
+        if (count($this->repo->bands()) >= $slots['open']) {
+            throw new ApiError($slots['next'] === null
+                ? 'Mehr Bands kann dein Label nicht führen.'
+                : sprintf('Deine nächste Band kannst du ab %s Label-Ruhm gründen.', number_format($slots['next'], 0, ',', '.')));
+        }
     }
 
     /** Wie viele Bands das Label führen darf und ab welchem Label-Ruhm die nächste dazukommt. */

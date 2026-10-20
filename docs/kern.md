@@ -192,7 +192,7 @@ Mindest-Können von 5 auf 26.
 - alle haben Können-Stufe 0 (höhere Stufen gibt es nur über den Talent-Scout).
 
 Einer wird ausgewählt und gründet mit dem Gastgeber eine Band in einem gemeinsamen Genre. Damit ist das
-Jam-Café für den Gastgeber vorbei. Lehnt man alle ab, verfällt die Auswahl und man kann wieder jammen.
+Jam-Café für den Gastgeber vorbei. Lehnt man alle ab, verfällt die Auswahl und man kann wieder jammen. Ins Jam-Café kann man nur, wenn ein Band-Platz frei ist.
 
 ### Wechselbörse
 

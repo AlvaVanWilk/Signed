@@ -112,14 +112,19 @@ function jam(m) {
       ${jamOfferHtml(offer, true)}
       <div><button class="btn ghost" data-act="jamDecline" data-offer="${offer.id}">Alle ablehnen</button></div>`;
   }
+  const slots = app.state.label.bandSlots;
+  const full = app.state.bands.length >= slots.open;
+  const note = !full ? '2 Lieder · Musiker für eine Band finden'
+    : slots.next === null ? 'Dein Label führt schon so viele Bands, wie es kann.'
+    : `Erst ab ${fmt0(slots.next)} Label-Ruhm: Dann ist Platz für eine weitere Band.`;
   return `
     ${head('Jam-Café', m)}
     ${statusNotice(m)}
     <div class="action-grid">
       <div class="action-tile">
         <div class="action-icon">☕</div>
-        <div class="action-main"><b>Jam-Session</b><span class="muted small">2 Lieder · Musiker für eine Band finden</span></div>
-        <button class="btn primary" data-act="solo" data-id="${m.id}" data-type="jam" ${busyOf(m) ? 'disabled' : ''}>Jammen</button>
+        <div class="action-main"><b>Jam-Session</b><span class="muted small">${esc(note)}</span></div>
+        <button class="btn primary" data-act="solo" data-id="${m.id}" data-type="jam" ${busyOf(m) || full ? 'disabled' : ''}>Jammen</button>
       </div>
     </div>`;
 }

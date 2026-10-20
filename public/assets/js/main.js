@@ -159,13 +159,15 @@ function resultHtml(r) {
   }
   if (r.bandId === null) {
     const m = musicianById(r.musicianId);
+    // Immer die aktuelle Auswahl aus dem Spielstand zeigen (ältere Ergebnisse sind anders gespeichert).
+    const jamOffer = res.jamOffer ? app.state.jamOffers.find((o) => o.id === res.jamOffer.id) : null;
     return `
       <div class="eyebrow">${esc(m ? `${m.firstName} ${m.lastName}` : '')}</div>
       <h2>${esc(r.title)}</h2>
       ${res.meter ? `<p class="muted">${moodText(res.meter)}</p>` : ''}
       <div class="reward-grid">${reward('Ruhm', `+${fmt1(res.fame)}`)}${res.presence ? reward('Präsenz', `+${fmt1(res.presence)}`) : ''}${res.meter ? reward('Publikum', percent(res.meter / 100)) : ''}</div>
-      ${res.jamOffer ? `<p>${res.jamOffer.cards.length} Musiker würden mit ${esc(m?.firstName ?? '')} eine Band gründen.</p>
-        ${musician.jamOfferHtml(res.jamOffer, false)}` : ''}`;
+      ${jamOffer ? `<p>${jamOffer.cards.length} Musiker würden mit ${esc(m?.firstName ?? '')} eine Band gründen.</p>
+        ${musician.jamOfferHtml(jamOffer, false)}` : ''}`;
   }
   const band = bandById(r.bandId);
   const drops = (res.drops || []).map((d) => d.kind === 'manager'
@@ -187,6 +189,16 @@ function resultHtml(r) {
     ${drops}`;
 }
 
+/** Ein kaputtes Ergebnis darf nie das ganze Spiel blockieren. */
+function safeResultHtml(r) {
+  try {
+    return resultHtml(r);
+  } catch (e) {
+    console.error(e);
+    return `<h2>${esc(r.title ?? 'Ergebnis')}</h2>`;
+  }
+}
+
 function showResults() {
   if (resultModal || !app.state?.results.length) return;
   // Nicht über ein laufendes Minispiel legen.
@@ -194,7 +206,7 @@ function showResults() {
   const r = app.state.results[0];
   resultModal = openModal({
     className: 'result-modal',
-    html: `${resultHtml(r)}<div class="dialog-actions">${r.result.jamOffer
+    html: `${safeResultHtml(r)}<div class="dialog-actions">${r.result.jamOffer && app.state.jamOffers.some((o) => o.id === r.result.jamOffer.id)
       ? `<button class="btn ghost" data-close>Später</button><button class="btn primary" data-act="closeModalAndGo" data-href="#/musician/${r.musicianId}/jam">Auswählen</button>`
       : '<button class="btn primary" data-close>Weiter</button>'}</div>`,
     onClose: () => {

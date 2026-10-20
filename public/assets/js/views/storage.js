@@ -19,13 +19,13 @@ export function render() {
       <p class="muted">Instrumente sind nicht einmalig und lassen sich jederzeit tauschen. Ein gutes Instrument entfaltet sich nur in fähigen Händen.</p>
       ${s.gear.length ? Object.entries(byType).map(([type, items]) => `
         <h3>${esc(instrumentName(type))}</h3>
-        <div class="card-grid">${items.map((g) => gearCard(g, assignSelect(g, type))).join('')}</div>`).join('') : '<div class="empty">Noch keine Instrumente. Sie stecken in Studio- und Equipment-Packs.</div>'}
+        <div class="tcg-grid">${items.map((g) => gearCard(g, { extra: assignSelect(g, type) })).join('')}</div>`).join('') : '<div class="empty">Noch keine Instrumente. Sie stecken in Studio- und Equipment-Packs.</div>'}
     </section>
 
     <section>
       <h2>Manager</h2>
       <p class="muted">Ein Manager betreut bis zu ${cat().rules.managerMaxBands} Bands, teilt seine Leistung dann aber auf. Zuweisen kannst du ihn auf der Seite der Band.</p>
-      ${s.managers.length ? `<div class="card-grid">${s.managers.map((m) => managerCard(m, managedBands(m))).join('')}</div>` : '<div class="empty">Noch kein Manager. Manager gibt es in Packs und manchmal nach einer Open Stage.</div>'}
+      ${s.managers.length ? `<div class="tcg-grid">${s.managers.map((m) => managerCard(m, { extra: managedBands(m) })).join('')}</div>` : '<div class="empty">Noch kein Manager. Manager gibt es in Packs und manchmal nach einer Open Stage.</div>'}
     </section>
 
     <section>

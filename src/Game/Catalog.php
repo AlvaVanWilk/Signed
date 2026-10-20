@@ -61,6 +61,9 @@ final class Catalog
             'techniques' => ['zirkular', 'flatterzunge']],
     ];
 
+    /** Diese Instrumente üben im Tonhöhen-Spiel statt im Rhythmus-Spiel. */
+    public const PITCH_INSTRUMENTS = ['vocals', 'violin'];
+
     public const TECHNIQUES = [
         'falsett' => 'Falsett',
         'growl' => 'Growl',
@@ -212,6 +215,24 @@ final class Catalog
             'Funken', 'Wolken', 'Kaffee', 'Beton', 'Nordlicht', 'Kirsch', 'Sturm', 'Glitzer', 'Rauch', 'Kellerkind'],
         ['herz', 'rausch', 'blues', 'fieber', 'lichter', 'regen', 'traum', 'tanz', 'nacht', 'flug', 'puls', 'gold',
             'sirene', 'walzer', 'ballade', 'hymne', 'sehnsucht', 'zug', 'funk', 'fieberwahn'],
+    ];
+
+    /** Bausteine für Zufallsnamen von Bands und Platten. */
+    public const NAME_WORDS = [
+        'adjectives' => ['Wilde', 'Leise', 'Rostige', 'Goldene', 'Verlorene', 'Elektrische', 'Schlaflose', 'Kalte',
+            'Brennende', 'Neue', 'Letzte', 'Schöne', 'Laute', 'Blaue', 'Heimliche', 'Zerbrochene'],
+        'nouns' => ['Herzen', 'Wölfe', 'Lichter', 'Funken', 'Sirenen', 'Wellen', 'Gespenster', 'Nächte', 'Träume',
+            'Raketen', 'Stimmen', 'Spiegel', 'Wolken', 'Geister', 'Löwen', 'Kometen'],
+        'bandPlural' => ['Kellerkinder', 'Nachtfalter', 'Straßenkatzen', 'Mondscheinbrüder', 'Flutlichter',
+            'Stadtneurotiker', 'Hinterhofhelden', 'Glücksritter', 'Dachbodenpiraten', 'Funkenflieger', 'Wellenreiter'],
+        'english' => ['Neon', 'Velvet', 'Electric', 'Silent', 'Golden', 'Midnight', 'Broken', 'Wild', 'Paper', 'Crystal',
+            'Static', 'Lonely', 'Cosmic', 'Rusty'],
+        'englishPlural' => ['Wolves', 'Echoes', 'Ghosts', 'Rebels', 'Dreamers', 'Hearts', 'Satellites', 'Strangers',
+            'Foxes', 'Lights', 'Machines', 'Saints', 'Riots'],
+        'prefixes' => ['Neon', 'Kupfer', 'Asphalt', 'Beton', 'Glitzer', 'Mitternachts', 'Nordlicht', 'Kirsch', 'Sturm'],
+        'suffixes' => ['Kollektiv', 'Orchester', 'Express', 'Syndikat', 'Club', 'Projekt', 'Allstars', 'Brigade'],
+        'places' => ['am Hafen', 'im Keller', 'auf dem Dach', 'in der Großstadt', 'unter Neonlicht', 'am Bahnhof',
+            'im Regen', 'am Meer'],
     ];
 
     public const STREETS = ['Fußgängerzone', 'U-Bahn-Station', 'Marktplatz', 'Flohmarkt', 'Hafenpromenade', 'Bahnhofsvorplatz'];

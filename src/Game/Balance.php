@@ -102,8 +102,14 @@ final class Balance
     public const SOUND_FAME_REF = 30;
 
     // ---------- Auftritte ----------
-    /** Grundstimmung pro Lied: Leute mögen Live-Musik. */
-    public const LIVE_MOOD = 2.0;
+    /** Live-Simulation: jedes Lied hat mehrere Abschnitte, in denen jeder Musiker glänzen oder patzen kann. */
+    public const LIVE_PHASES = 4;
+    /** Grundstimmung pro Abschnitt: Leute mögen Live-Musik. */
+    public const LIVE_MOOD = 1.0;
+    /** Pro Abschnitt rückt die Leiste um diesen Anteil Richtung Mitte (das Publikum beruhigt sich). */
+    public const LIVE_SETTLE = 0.08;
+    /** Ausschlag eines Patzers bzw. Glanzmoments [min, max]. */
+    public const LIVE_SWING = [7.0, 13.0];
     public const BUSKING = ['songs' => 3, 'gage' => 14, 'fame' => 0.3, 'expect' => 10, 'falloff' => 150, 'minFactor' => 0.1];
     public const OPENSTAGE = [
         'songs' => 2, 'fame' => 1.4, 'expect' => 12, 'falloff' => 120,
@@ -125,6 +131,8 @@ final class Balance
 
     // ---------- Minispiel ----------
     public const PRACTICE_GAIN = 4.0;
+    /** Fenster des Rhythmusspiels in ms bei Können 0; mit Können wachsen sie (Chart::windows). */
+    public const RHYTHM_WINDOWS = ['perfect' => 60, 'good' => 135];
     public const TALENT_FACTOR = 1.5;
     /** So lange (Sekunden) bleibt ein gestartetes Minispiel gültig. */
     public const MINIGAME_TTL = 180;
@@ -149,4 +157,33 @@ final class Balance
     /** Verkäufe steigen mit dem Bandruhm: +1 pro 400 Ruhm, höchstens +4. */
     public const RECORD_FAME_SALES = 400;
     public const RECORD_FAME_SALES_MAX = 4;
+
+    // ---------- Talent-Scout ----------
+    /** Gutscheine zum Label-Start; weitere gibt es für Meilensteine. */
+    public const SCOUT_START_VOUCHERS = 1;
+    public const SCOUT_PRICE = 3000;
+    /** Kauf ohne Gutschein höchstens einmal pro Woche. */
+    public const SCOUT_COOLDOWN = 7 * 24 * 3600;
+    public const SCOUT_CARDS = 5;
+    public const SCOUT_ODDS = ['rare' => 60, 'epic' => 32, 'legendary' => 8];
+
+    // ---------- Album-Charts ----------
+    /** Chartpunkte = Basis × Qualität² × Soundfaktor × Format × Perfekt × Ruhm. */
+    public const CHART_BASE = 100;
+    public const CHART_EP_FACTOR = 0.6;
+    /** LPs ab dieser Liedzahl; jedes weitere Lied +4 %. */
+    public const CHART_LP_SONGS = 7;
+    public const CHART_LP_PER_SONG = 0.04;
+    public const CHART_PERFECT = 1.3;
+    /** Bandruhm hebt die Punkte: +1 pro 500 Ruhm, höchstens +2. */
+    public const CHART_FAME = 500;
+    public const CHART_FAME_MAX = 2;
+    /** Die Punkte schrumpfen jeden Tag auf diesen Anteil. */
+    public const CHART_DECAY = 0.88;
+    /** Unter dieser Punktzahl fällt eine Platte aus den Charts. */
+    public const CHART_MIN_POINTS = 1.0;
+    public const CHART_SIZE = 50;
+    /** Tantiemen pro Chartpunkt und Tag. */
+    public const ROYALTY_MONEY = 2.0;
+    public const ROYALTY_FAME = 0.05;
 }

@@ -1,4 +1,5 @@
-import { face, fullName, gearModel, genreName, instrumentIcon, instrumentName, musicianStatus } from '../cards.js';
+import { api } from '../api.js';
+import { emptySlot, face, fullName, gearCard, gearModel, genreName, instrumentIcon, instrumentName, managerCard, musicianCard } from '../cards.js';
 import { app, bandById, cat, defineActions, isBusy, managerById, musicianById, mutate, navigate, rerender, runningFor } from '../core.js';
 import { openLive } from '../live.js';
 import { startRecordSong } from '../play.js';
@@ -14,7 +15,7 @@ export function renderList() {
       <button class="btn primary" data-act="newBand">+ Neue Band</button>
     </div>
     ${s.bands.length ? `<div class="band-grid">${s.bands.map(bandTile).join('')}</div>` : `
-      <div class="empty">Noch keine Band. Deine Starter-Musiker warten schon – <button class="link" data-act="newBand">jetzt gründen</button>.</div>`}`;
+      <div class="empty">Noch keine Band. Mit mindestens zwei Musikern kannst du <button class="link" data-act="newBand">jetzt eine gründen</button>.</div>`}`;
 }
 
 export function renderDetail(id) {
@@ -42,6 +43,22 @@ export function renderDetail(id) {
       </div>
     </section>
 
+    <section class="panel">
+      <div class="section-head">
+        <h2>Aufstellung</h2>
+        <span class="muted small">${b.released ? `Freigegeben: Jeder Wechsel kostet Eingespieltheit, ein Rauswurf ${cat().rules.cohesionRemovePenalty} Punkte.` : 'Bis zum ersten Auftritt kannst du die Besetzung frei ändern.'}</span>
+      </div>
+      <div class="lineup-board">
+        <div class="lineup">
+          ${members.map((m) => memberUnit(b, m)).join('')}
+          ${members.length < cat().rules.maxMembers ? `<div class="lineup-unit"><div class="lineup-cards">${emptySlot('Musiker aufnehmen', { act: 'addMember', data: { id: b.id } })}</div></div>` : ''}
+        </div>
+        <div class="lineup-side">
+          <div><span class="slot-label">Manager</span>${managerUnit(b)}</div>
+        </div>
+      </div>
+    </section>
+
     <div class="columns">
       <div class="stack">
         <section class="panel">
@@ -56,13 +73,8 @@ export function renderDetail(id) {
       </div>
       <div class="stack">
         <section class="panel">
-          <div class="section-head"><h2>Besetzung</h2><button class="btn small" data-act="addMember" data-id="${b.id}" ${members.length >= cat().rules.maxMembers ? 'disabled' : ''}>+ Musiker</button></div>
-          <div class="members">${members.map((m) => memberRow(b, m)).join('')}</div>
-          ${b.released ? `<p class="muted small">Die Band ist freigegeben: Jeder Wechsel kostet Eingespieltheit, ein Rauswurf ${cat().rules.cohesionRemovePenalty} Punkte.</p>` : '<p class="muted small">Bis zum ersten Auftritt kannst du die Besetzung frei ändern.</p>'}
-        </section>
-        <section class="panel">
-          <h2>Manager</h2>
-          ${managerSection(b)}
+          <h2>Diskografie</h2>
+          ${discography(b)}
         </section>
         <section class="panel">
           <h2>Bandhistorie</h2>
@@ -71,6 +83,110 @@ export function renderDetail(id) {
         </section>
       </div>
     </div>`;
+}
+
+function memberUnit(b, m) {
+  const slotIndex = m.instruments.length > 1 ? m.bandSlot - 1 : 0;
+  const played = m.instruments[slotIndex];
+  const gear = app.state.gear.find((g) => g.musicianId === m.id && gearModel(g.model).type === played.type);
+  const gearData = { musician: m.id, type: played.type };
+  return `
+    <div class="lineup-unit">
+      <div class="lineup-cards">
+        ${musicianCard(m, { size: 'sm' })}
+        ${gear
+          ? gearCard(gear, { act: 'pickGear', data: gearData, size: 'sm' })
+          : emptySlot(`${instrumentName(played.type)} einlegen`, { act: 'pickGear', data: gearData, icon: instrumentIcon(played.type) })}
+      </div>
+      <div class="lineup-controls">
+        ${m.instruments.length > 1 ? `
+          <select data-change="bandSetSlot" data-band="${b.id}" data-musician="${m.id}" title="Welches Instrument spielt ${esc(m.firstName)} in der Band?">
+            ${m.instruments.map((i, idx) => `<option value="${idx + 1}" ${idx === slotIndex ? 'selected' : ''}>${instrumentIcon(i.type)} ${esc(instrumentName(i.type))}</option>`).join('')}
+          </select>` : `<span>${instrumentIcon(played.type)} ${esc(instrumentName(played.type))}</span>`}
+        ${m.genres.includes(b.genre) ? '' : '<span class="warn">fremdes Genre</span>'}
+        <button class="icon-btn" data-act="removeMember" data-band="${b.id}" data-musician="${m.id}" title="Aus der Band nehmen">✕</button>
+      </div>
+    </div>`;
+}
+
+function managerUnit(b) {
+  const manager = b.managerId ? managerById(b.managerId) : null;
+  if (!manager) {
+    return emptySlot(app.state.managers.length ? 'Manager zuweisen' : 'Noch kein Manager', { act: 'pickManager', data: { id: b.id }, icon: '💼' });
+  }
+  return `
+    <div class="tcg-wrap">
+      ${managerCard(manager, { act: 'pickManager', data: { id: b.id }, size: 'sm' })}
+      <span class="muted small">Für diese Band Stufe ${fmt1(b.managerLevel)}${manager.bandIds.length > 1 ? ` (geteilt auf ${manager.bandIds.length} Bands)` : ''}</span>
+    </div>`;
+}
+
+function discography(b) {
+  if (!b.discography.length) return '<p class="muted">Noch keine Platte. Erst mit einer Platte gibt es richtige Gigs und einen Platz in den Charts.</p>';
+  return `
+    <ul class="discography">${b.discography.map((r) => `
+      <li>
+        <div><b>„${esc(r.title)}“</b><span class="muted small">${r.format} · ${r.songs} Lieder · Qualität ${percent(r.quality)}${r.perfect ? ' · perfekt' : ''}</span></div>
+        ${r.charting ? `<span class="chip special" title="Aktuelle Chartpunkte">Charts · ${fmt1(r.points)}</span>` : '<span class="muted small">aus den Charts</span>'}
+      </li>`).join('')}
+    </ul>`;
+}
+
+function openGearPicker(musicianId, type) {
+  const m = musicianById(musicianId);
+  const modal = openModal({
+    wide: true,
+    render: () => {
+      const options = app.state.gear.filter((g) => gearModel(g.model).type === type && (!g.musicianId || g.musicianId === m.id));
+      const current = options.find((g) => g.musicianId === m.id);
+      return `
+        <h2>${esc(instrumentName(type))} für ${esc(m.firstName)}</h2>
+        <p class="muted">Ein gutes Instrument entfaltet sich nur in fähigen Händen: ${esc(m.firstName)} hat Können ${fmt0(m.instruments.find((i) => i.type === type)?.skill ?? 0)}.</p>
+        ${options.length ? `<div class="tcg-grid">${options.map((g) => gearCard(g, {
+          extra: g === current
+            ? '<button class="btn small" data-gear-remove>Herausnehmen</button>'
+            : `<button class="btn primary small" data-gear="${g.id}">Einlegen</button>`,
+        })).join('')}</div>` : `<div class="empty">Kein freies Instrument dieser Art im Lager. Instrumente gibt es im Equipment-Pack.</div>`}`;
+    },
+  });
+  modal.body.addEventListener('click', async (e) => {
+    const add = e.target.closest('[data-gear]');
+    const remove = e.target.closest('[data-gear-remove]');
+    if (add && await mutate('gearAssign', { gearId: Number(add.dataset.gear), musicianId: m.id })) modal.close();
+    if (remove) {
+      const current = app.state.gear.find((g) => g.musicianId === m.id && gearModel(g.model).type === type);
+      if (current && await mutate('gearAssign', { gearId: current.id, musicianId: null })) modal.close();
+    }
+  });
+}
+
+function openManagerPicker(bandId) {
+  const b = bandById(bandId);
+  const max = cat().rules.managerMaxBands;
+  if (!app.state.managers.length) {
+    toast('Noch kein Manager unter Vertrag. Manager gibt es in Packs und manchmal nach einer Open Stage.', 'info');
+    return;
+  }
+  const modal = openModal({
+    wide: true,
+    render: () => `
+      <h2>Manager für ${esc(b.name)}</h2>
+      <p class="muted">Ein Manager betreut bis zu ${max} Bands, teilt seine Leistung dann aber auf. Er ermöglicht längere Gigs.</p>
+      <div class="tcg-grid">${app.state.managers.map((m) => {
+        const mine = m.id === b.managerId;
+        const full = !mine && m.bandIds.length >= max;
+        return managerCard(m, {
+          extra: mine
+            ? '<button class="btn small" data-manager="">Abziehen</button>'
+            : `<button class="btn primary small" data-manager="${m.id}" ${full ? 'disabled' : ''}>${full ? 'Ausgelastet' : 'Zuweisen'}</button>`,
+        });
+      }).join('')}</div>`,
+  });
+  modal.body.addEventListener('click', async (e) => {
+    const button = e.target.closest('[data-manager]');
+    if (!button || button.disabled) return;
+    if (await mutate('bandSetManager', { bandId: b.id, managerId: button.dataset.manager ? Number(button.dataset.manager) : null })) modal.close();
+  });
 }
 
 function chemistryLabel(chemistry) {
@@ -172,54 +288,14 @@ function studio(b, members) {
   return `
     <form data-form="recordStart" data-id="${b.id}" class="stack">
       <p class="muted small">Eine Platte kostet pauschal ${money(rules.recordCost)}, egal wie viele Lieder. Mehr Lieder bringen mehr Geld und Ruhm – aber auch mehr Chancen auf Fehler.</p>
-      <label class="field"><span>Titel</span><input name="title" maxlength="60" required data-ui="${titleKey}" value="${esc(form[titleKey] || '')}" placeholder="z. B. ${esc(b.name)} EP"></label>
+      <label class="field"><span>Titel</span>
+        <span class="input-dice"><input name="title" maxlength="60" required data-ui="${titleKey}" value="${esc(form[titleKey] || '')}" placeholder="z. B. ${esc(b.name)} EP"><button type="button" class="btn small" data-act="diceRecord" data-key="${titleKey}" title="Zufälliger Titel">🎲</button></span>
+      </label>
       <label class="field"><span>Lieder: <b data-output="${songsKey}">${songs}</b> <small class="muted">(${rules.recordMinSongs} = EP, bis ${rules.recordMaxSongs} = LP)</small></span>
         <input type="range" name="songs" min="${rules.recordMinSongs}" max="${rules.recordMaxSongs}" value="${songs}" data-ui="${songsKey}">
       </label>
       <button class="btn primary" ${app.state.label.money < rules.recordCost ? 'disabled' : ''}>Produktion starten · ${money(rules.recordCost)}</button>
     </form>`;
-}
-
-function memberRow(b, m) {
-  const slotIndex = m.instruments.length > 1 ? m.bandSlot - 1 : 0;
-  const played = m.instruments[slotIndex];
-  const gear = app.state.gear.find((g) => g.musicianId === m.id && gearModel(g.model).type === played.type);
-  const offGenre = !m.genres.includes(b.genre);
-  return `
-    <div class="member-row">
-      <button class="plain" data-act="openMusician" data-id="${m.id}">${face(m, 'md')}</button>
-      <div class="member-info">
-        <button class="link" data-act="openMusician" data-id="${m.id}">${esc(fullName(m))}</button>
-        <span class="muted small">${musicianStatus(m) || `⭐ ${fmt1(m.fame)} · ✨ ${fmt1(m.presence)}`}${offGenre ? ' · <span class="warn">fremdes Genre</span>' : ''}</span>
-      </div>
-      <div class="member-instr">
-        ${m.instruments.length > 1 ? `
-          <select data-change="bandSetSlot" data-band="${b.id}" data-musician="${m.id}">
-            ${m.instruments.map((i, idx) => `<option value="${idx + 1}" ${idx === slotIndex ? 'selected' : ''}>${instrumentIcon(i.type)} ${esc(instrumentName(i.type))}</option>`).join('')}
-          </select>` : `<span>${instrumentIcon(played.type)} ${esc(instrumentName(played.type))}</span>`}
-        <span class="muted small">${gear ? esc(gearModel(gear.model).name) : 'Standardinstrument'}</span>
-      </div>
-      <div class="member-skill"><b>${fmt1(played.skill)}</b>${bar(played.skill, 100, 'thin')}</div>
-      <button class="icon-btn" data-act="removeMember" data-band="${b.id}" data-musician="${m.id}" title="Aus der Band nehmen">✕</button>
-    </div>`;
-}
-
-function managerSection(b) {
-  const managers = app.state.managers;
-  const max = cat().rules.managerMaxBands;
-  if (!managers.length) {
-    return '<p class="muted">Noch kein Manager unter Vertrag. Manager gibt es in Packs und manchmal nach einer Open Stage.</p>';
-  }
-  const current = b.managerId ? managerById(b.managerId) : null;
-  return `
-    <select data-change="bandSetManager" data-band="${b.id}">
-      <option value="">Ohne Manager</option>
-      ${managers.map((m) => {
-        const full = !m.bandIds.includes(b.id) && m.bandIds.length >= max;
-        return `<option value="${m.id}" ${m.id === b.managerId ? 'selected' : ''} ${full ? 'disabled' : ''}>${esc(fullName(m))} · Stufe ${m.level}${m.bandIds.length ? ` · ${m.bandIds.length} ${m.bandIds.length === 1 ? 'Band' : 'Bands'}` : ''}</option>`;
-      }).join('')}
-    </select>
-    ${current ? `<p class="muted small">Effektive Stufe für diese Band: ${fmt1(b.managerLevel)}${current.bandIds.length > 1 ? ` (geteilt auf ${current.bandIds.length} Bands)` : ''}. Fähigkeiten: ${current.skills.map((s) => esc(cat().managerSkills[s].name)).join(', ')}.</p>` : ''}`;
 }
 
 function pickRow(m, genre, { checkbox = true, button = '' } = {}) {
@@ -275,7 +351,9 @@ function openCreateBand() {
       <h2>Neue Band gründen</h2>
       <form class="stack create-band">
         <div class="form-row">
-          <label class="field"><span>Bandname</span><input name="name" maxlength="40" required placeholder="z. B. Die Kellerkinder"></label>
+          <label class="field"><span>Bandname</span>
+            <span class="input-dice"><input name="name" maxlength="40" required placeholder="z. B. Die Kellerkinder"><button type="button" class="btn small" data-dice title="Zufälliger Name">🎲</button></span>
+          </label>
           <label class="field"><span>Genre</span>
             <select name="genre">${genres.map(([key, g]) => `<option value="${key}" ${key === suggested ? 'selected' : ''}>${esc(g.name)}</option>`).join('')}</select>
           </label>
@@ -320,6 +398,9 @@ function openCreateBand() {
   });
   list.addEventListener('change', update);
   form.querySelector('[data-cancel]').addEventListener('click', () => modal.close());
+  form.querySelector('[data-dice]').addEventListener('click', async () => {
+    form.name.value = await suggestName('band');
+  });
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const members = picks().map(({ id, slot }) => ({ id, slot }));
@@ -365,7 +446,29 @@ function openAddMember(bandId) {
   });
 }
 
+async function suggestName(kind) {
+  try {
+    return (await api('nameSuggest', { kind })).name;
+  } catch (e) {
+    toast(e.message, 'error');
+    return '';
+  }
+}
+
 defineActions({
+  async diceRecord({ key }) {
+    const name = await suggestName('record');
+    if (!name) return;
+    app.ui.form[key] = name;
+    const input = document.querySelector(`[data-ui="${key}"]`);
+    if (input) input.value = name;
+  },
+  pickGear({ musician, type }) {
+    openGearPicker(Number(musician), type);
+  },
+  pickManager({ id }) {
+    openManagerPicker(Number(id));
+  },
   newBand() {
     openCreateBand();
   },

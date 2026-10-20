@@ -44,6 +44,8 @@ export function openLive(activityId) {
     const events = activity.timeline.filter((e) => e.t <= elapsed);
     for (; shown < events.length; shown++) {
       const e = events[shown];
+      // Stimmungs-Ereignisse bewegen nur die Leiste.
+      if (!e.text) continue;
       const li = document.createElement('li');
       li.className = `tick tick-${e.kind}`;
       li.innerHTML = `<span class="tick-icon">${ICONS[e.kind] ?? '•'}</span><span>${esc(e.text)}</span>`;

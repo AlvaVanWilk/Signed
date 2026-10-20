@@ -140,6 +140,27 @@ test('Generator: Instrumentenmodelle gibt es für jede Art und Seltenheit', func
     }
 });
 
+test('Minispiele: Tonhöhen-Melodie und Mischpult', function () {
+    $melody = Chart::melody(110, 30);
+    check(count($melody) >= 6);
+    foreach ($melody as $n) {
+        check($n['p'] >= 0 && $n['p'] <= 7 && $n['t'] + $n['d'] <= 29.5);
+    }
+    check(Chart::pitchTolerance(80) > Chart::pitchTolerance(10));
+    $drifts = Chart::mixerDrifts([10.0, 90.0], 30);
+    $weak = count(array_filter($drifts, static fn ($d) => $d['k'] === 0));
+    $strong = count(array_filter($drifts, static fn ($d) => $d['k'] === 1));
+    check($weak > $strong, 'Schwache Musiker schwanken öfter');
+    check(Chart::mixerZone(80) > Chart::mixerZone(10));
+});
+
+test('Chartpunkte: Qualität zählt, LPs mehr als EPs, Punkte schrumpfen', function () {
+    check(Signed\Game\Charts::points(3, 0.9, 30, false, 0) > Signed\Game\Charts::points(3, 0.5, 30, false, 0));
+    check(Signed\Game\Charts::points(10, 0.8, 30, false, 0) > Signed\Game\Charts::points(6, 0.8, 30, false, 0) * 1.5);
+    check(Signed\Game\Charts::points(3, 0.8, 30, true, 0) > Signed\Game\Charts::points(3, 0.8, 30, false, 0));
+    checkEquals(round(100 * Balance::CHART_DECAY, 3), round(Signed\Game\Charts::current(100, 86400), 3));
+});
+
 test('Simulation: bessere Bands begeistern das Publikum mehr', function () {
     $player = static fn (float $skill) => ['name' => 'Kim', 'instrument' => 'guitar', 'skill' => $skill, 'presence' => 30.0, 'traits' => [], 'techniques' => []];
     $weak = 0.0;

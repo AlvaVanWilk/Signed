@@ -6,7 +6,8 @@ export function render() {
   const s = app.state;
   const fame = s.bands.reduce((sum, b) => sum + b.fame, 0);
   const steps = [
-    { done: s.musicians.length > 0, text: 'Starter-Pack öffnen' },
+    { done: s.musicians.length > 0, text: 'Talent-Scout: den ersten Musiker unter Vertrag nehmen', href: '#/packs' },
+    { done: s.musicians.length > 1, text: 'Weitere Musiker aus einem Pack holen', href: '#/packs' },
     { done: s.bands.length > 0, text: 'Erste Band gründen', href: '#/bands' },
     { done: s.bands.some((b) => b.released), text: 'Erster Auftritt: Straßenmusik oder Open Stage', href: '#/bands' },
     { done: s.bands.some((b) => b.records > 0), text: 'Erste Platte produzieren – erst dann gibt es richtige Gigs', href: '#/bands' },

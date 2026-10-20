@@ -8,9 +8,11 @@ use Signed\Game\Balance;
 use Signed\Game\Bands;
 use Signed\Game\Charts;
 use Signed\Game\Minigames;
+use Signed\Game\Names;
 use Signed\Game\Packs;
 use Signed\Game\Present;
 use Signed\Game\Repo;
+use Signed\Game\Scout;
 use Signed\Game\State;
 use Signed\Game\Studio;
 
@@ -29,6 +31,9 @@ final class Api
         'state' => ['GET', true],
         'charts' => ['GET', true],
         'buyPack' => ['POST', true],
+        'scoutOpen' => ['POST', true],
+        'scoutPick' => ['POST', true],
+        'nameSuggest' => ['POST', true],
         'bandCreate' => ['POST', true],
         'bandRename' => ['POST', true],
         'bandAddMember' => ['POST', true],
@@ -76,6 +81,7 @@ final class Api
             throw $e;
         }
         Activities::settleDue($this->db, $labelId);
+        Charts::payRoyalties($this->db, $labelId);
         return $this->{$action}($in, $repo);
     }
 
@@ -108,7 +114,7 @@ final class Api
         $labelName = Bands::cleanName(self::str($in, 'labelName'), 'Der Labelname');
         $nameKey = mb_strtolower($labelName);
 
-        [$id, $cards] = $this->db->transaction(function () use ($username, $password, $labelName, $nameKey): array {
+        $id = $this->db->transaction(function () use ($username, $password, $labelName, $nameKey): int {
             if ($this->db->value('SELECT id FROM labels WHERE username = ?', [$username]) !== null) {
                 throw new ApiError('Dieser Benutzername ist schon vergeben.');
             }
@@ -121,17 +127,16 @@ final class Api
                 'name' => $labelName,
                 'name_key' => $nameKey,
                 'money' => Balance::START_MONEY,
+                'scout_vouchers' => Balance::SCOUT_START_VOUCHERS,
                 'created_at' => Clock::now(),
                 'last_seen' => Clock::now(),
             ]);
-            $repo = new Repo($this->db, $id);
-            $cards = (new Packs($repo))->starter();
-            $repo->log('label', sprintf('Das Label „%s“ ist gegründet. Drei Musiker warten auf ihre erste Band.', $labelName));
-            return [$id, $cards];
+            (new Repo($this->db, $id))->log('label', sprintf('Das Label „%s“ ist gegründet. Der Talent-Scout wartet auf deinen Auftrag.', $labelName));
+            return $id;
         });
 
         $this->session->setLabelId($id);
-        return ['label' => (new Repo($this->db, $id))->label(), 'cards' => $cards];
+        return ['label' => (new Repo($this->db, $id))->label()];
     }
 
     private function login(array $in): array
@@ -174,6 +179,23 @@ final class Api
     {
         $cards = (new Packs($repo))->buy(self::str($in, 'pack'));
         return ['cards' => $cards, 'state' => State::build($repo)];
+    }
+
+    private function scoutOpen(array $in, Repo $repo): array
+    {
+        $offer = (new Scout($repo))->open(!empty($in['voucher']));
+        return ['offer' => $offer, 'state' => State::build($repo)];
+    }
+
+    private function scoutPick(array $in, Repo $repo): array
+    {
+        $musician = (new Scout($repo))->pick(self::int($in, 'offerId'), self::int($in, 'index'));
+        return ['musician' => $musician, 'state' => State::build($repo)];
+    }
+
+    private function nameSuggest(array $in, Repo $repo): array
+    {
+        return ['name' => ($in['kind'] ?? '') === 'band' ? Names::band($this->db) : Names::record()];
     }
 
     private function gearAssign(array $in, Repo $repo): array

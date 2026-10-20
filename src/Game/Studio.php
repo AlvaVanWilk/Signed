@@ -122,15 +122,20 @@ final class Studio
             [$songs, $perfect ? 1 : 0, $band['id']]
         );
         $fameGain = round(array_sum($gains), 1);
+        $firstRecord = (int) $db->value("SELECT COUNT(*) FROM records WHERE label_id = ? AND status = 'done'", [$this->repo->labelId]) === 0;
+        $chartPoints = Charts::points($songs, $quality, $sound, $perfect, BandCalc::fame($members));
+        $now = Clock::now();
         $db->update('records', [
             'status' => 'done',
             'money_reward' => $money,
             'fame_reward' => $fameGain,
             'perfect' => $perfect ? 1 : 0,
-            'finished_at' => Clock::now(),
+            'finished_at' => $now,
+            'chart_points' => $chartPoints,
+            'royalties_until' => $now,
         ], ['id' => $record['id']]);
 
-        $format = $songs >= 7 ? 'LP' : 'EP';
+        $format = $songs >= Balance::CHART_LP_SONGS ? 'LP' : 'EP';
         $this->repo->log('record', sprintf(
             '%s veröffentlicht „%s“ (%s, %d Lieder)%s',
             $band['name'],
@@ -140,9 +145,18 @@ final class Studio
             $perfect ? ' – eine perfekte Platte!' : '.'
         ), $band['id']);
 
+        if ($firstRecord) {
+            Scout::grant($this->repo, 'die erste Platte deines Labels.');
+        }
+        if ($perfect) {
+            Scout::grant($this->repo, sprintf('„%s“ ist eine perfekte Platte.', $record['title']));
+        }
+
         return [
             'title' => $record['title'],
             'format' => $format,
+            'chartPoints' => $chartPoints,
+            'vouchers' => ($firstRecord ? 1 : 0) + ($perfect ? 1 : 0),
             'songs' => $songs,
             'quality' => round($quality, 3),
             'misses' => $misses,

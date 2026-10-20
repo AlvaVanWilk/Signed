@@ -1,53 +1,40 @@
 import { getAudio, playLane, playMiss, scheduleBacking } from './audio.js';
 import { instrumentIcon } from './cards.js';
+import { COLORS, mountShell } from './mg-shell.js';
+import { createMixerGame } from './mixer.js';
+import { createPitchGame } from './pitch.js';
 import { duration, esc, percent } from './ui.js';
 
 const KEYS = { d: 0, f: 1, j: 2, k: 3, arrowleft: 0, arrowdown: 1, arrowup: 2, arrowright: 3, 1: 0, 2: 1, 3: 2, 4: 3 };
 const KEY_LABELS = ['D', 'F', 'J', 'K'];
-const COLORS = ['#ff4f8b', '#ffb547', '#4fd1ff', '#9b7bff'];
 /** Sekunden, die eine Note von oben bis zur Linie fällt. */
-const TRAVEL = 1.6;
+const TRAVEL = 1.8;
 
 /**
- * Rhythmus-Minispiel: im richtigen Moment die richtige Taste drücken.
- * play() liefert {perfect, good, miss} oder {aborted: true}.
+ * Startet das passende Minispiel: Rhythmus (Tasten im Takt), Tonhöhe (Gesang, Geige) oder Mischpult (Studio).
+ * Alle liefern über play() {perfect, good, miss} oder {aborted: true}.
  */
 export function createMinigame(container, game) {
-  container.innerHTML = `
-    <div class="mg">
-      <div class="mg-head">
-        <div><h2>${esc(game.title)}</h2><div class="muted">${esc(game.subtitle)}</div></div>
-        <button class="btn ghost small mg-abort">Abbrechen</button>
-      </div>
-      <div class="mg-hud">
-        <span>Treffer <b class="mg-acc">–</b></span>
-        <span class="mg-combo"></span>
-        <span>Zeit <b class="mg-time">${duration(game.duration)}</b></span>
-      </div>
-      <div class="mg-stage">
-        <canvas class="mg-canvas"></canvas>
-        <div class="mg-overlay">
-          <p>Drück <b>D F J K</b> (oder tipp auf die Felder), wenn eine Note die Linie erreicht.</p>
-          <button class="btn primary big mg-start">Los geht’s</button>
-        </div>
-      </div>
-      <div class="mg-keys">
-        ${KEY_LABELS.map((k, i) => `
-          <button class="mg-key" data-lane="${i}" style="--lane:${COLORS[i]}">
-            <b>${k}</b><small>${instrumentIcon(game.lanes[i])} ${esc(game.laneNames[i])}</small>
-          </button>`).join('')}
-      </div>
-      <div class="mg-result" hidden></div>
-    </div>`;
+  if (game.mode === 'pitch') return createPitchGame(container, game);
+  if (game.mode === 'mixer') return createMixerGame(container, game);
+  return createRhythmGame(container, game);
+}
 
-  const canvas = container.querySelector('.mg-canvas');
-  const draw2d = canvas.getContext('2d');
-  const overlay = container.querySelector('.mg-overlay');
-  const accEl = container.querySelector('.mg-acc');
-  const comboEl = container.querySelector('.mg-combo');
-  const timeEl = container.querySelector('.mg-time');
+function createRhythmGame(container, game) {
+  const shell = mountShell(container, game, {
+    hud: '<span>Treffer <b class="mg-acc">–</b></span><span class="mg-combo"></span><span>Zeit <b class="mg-time"></b></span>',
+    hint: 'Drück <b>D F J K</b> (oder tipp auf die Felder), wenn eine Note die Linie erreicht.',
+    below: `<div class="mg-keys">${KEY_LABELS.map((k, i) => `
+      <button class="mg-key" data-lane="${i}" style="--lane:${COLORS[i]}">
+        <b>${k}</b><small>${instrumentIcon(game.lanes[i])} ${esc(game.laneNames[i])}</small>
+      </button>`).join('')}</div>`,
+  });
+  const { canvas, draw } = shell;
+  const accEl = shell.el('.mg-acc');
+  const comboEl = shell.el('.mg-combo');
+  const timeEl = shell.el('.mg-time');
   const keyButtons = [...container.querySelectorAll('.mg-key')];
-  const resultEl = container.querySelector('.mg-result');
+  timeEl.textContent = duration(game.duration);
 
   const notes = game.notes.map((n) => ({ t: n.t, l: n.l, judged: null }));
   const perfectWin = game.windows.perfect / 1000;
@@ -59,7 +46,6 @@ export function createMinigame(container, game) {
   let combo = 0;
   let audio = null;
   let t0 = 0;
-  let startedAt = 0;
   let raf = 0;
   let running = false;
   let stopBacking = () => {};
@@ -67,13 +53,6 @@ export function createMinigame(container, game) {
 
   const clock = () => (audio ? audio.currentTime : performance.now() / 1000);
   const songTime = () => clock() - t0;
-
-  function resize() {
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = canvas.clientWidth * dpr;
-    canvas.height = canvas.clientHeight * dpr;
-    draw2d.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
 
   function judge(lane) {
     if (!running) return;
@@ -114,34 +93,44 @@ export function createMinigame(container, game) {
     }
   }
 
+  function roundRect(x, y, w, h, r) {
+    draw.beginPath();
+    draw.moveTo(x + r, y);
+    draw.arcTo(x + w, y, x + w, y + h, r);
+    draw.arcTo(x + w, y + h, x, y + h, r);
+    draw.arcTo(x, y + h, x, y, r);
+    draw.arcTo(x, y, x + w, y, r);
+    draw.fill();
+  }
+
   function render(now) {
     const w = canvas.clientWidth;
     const h = canvas.clientHeight;
     const laneW = w / 4;
     const hitY = h - 46;
-    draw2d.clearRect(0, 0, w, h);
+    draw.clearRect(0, 0, w, h);
 
     for (let l = 0; l < 4; l++) {
-      draw2d.fillStyle = l % 2 ? 'rgba(255,255,255,0.025)' : 'rgba(255,255,255,0.05)';
-      draw2d.fillRect(l * laneW, 0, laneW, h);
+      draw.fillStyle = l % 2 ? 'rgba(255,255,255,0.025)' : 'rgba(255,255,255,0.05)';
+      draw.fillRect(l * laneW, 0, laneW, h);
       const glow = Math.max(0, 1 - (clock() - pressed[l]) / 0.18);
       if (glow > 0) {
-        const gradient = draw2d.createLinearGradient(0, hitY - 120, 0, hitY);
+        const gradient = draw.createLinearGradient(0, hitY - 120, 0, hitY);
         gradient.addColorStop(0, 'rgba(0,0,0,0)');
-        gradient.addColorStop(1, COLORS[l] + '55');
-        draw2d.globalAlpha = glow;
-        draw2d.fillStyle = gradient;
-        draw2d.fillRect(l * laneW, hitY - 120, laneW, 120);
-        draw2d.globalAlpha = 1;
+        gradient.addColorStop(1, `${COLORS[l]}55`);
+        draw.globalAlpha = glow;
+        draw.fillStyle = gradient;
+        draw.fillRect(l * laneW, hitY - 120, laneW, 120);
+        draw.globalAlpha = 1;
       }
-      draw2d.strokeStyle = COLORS[l];
-      draw2d.lineWidth = 2;
-      draw2d.beginPath();
-      draw2d.arc(l * laneW + laneW / 2, hitY, Math.min(22, laneW * 0.28), 0, Math.PI * 2);
-      draw2d.stroke();
+      draw.strokeStyle = COLORS[l];
+      draw.lineWidth = 2;
+      draw.beginPath();
+      draw.arc(l * laneW + laneW / 2, hitY, Math.min(24, laneW * 0.3), 0, Math.PI * 2);
+      draw.stroke();
     }
-    draw2d.fillStyle = 'rgba(255,255,255,0.35)';
-    draw2d.fillRect(0, hitY - 1, w, 2);
+    draw.fillStyle = 'rgba(255,255,255,0.35)';
+    draw.fillRect(0, hitY - 1, w, 2);
 
     for (const note of notes) {
       if (note.judged === 'perfect' || note.judged === 'good') continue;
@@ -150,10 +139,10 @@ export function createMinigame(container, game) {
       if (y > h + 20) continue;
       const x = note.l * laneW + laneW / 2;
       const nw = Math.min(64, laneW * 0.62);
-      draw2d.globalAlpha = note.judged === 'miss' ? 0.25 : 1;
-      draw2d.fillStyle = COLORS[note.l];
-      roundRect(x - nw / 2, y - 8, nw, 16, 8);
-      draw2d.globalAlpha = 1;
+      draw.globalAlpha = note.judged === 'miss' ? 0.25 : 1;
+      draw.fillStyle = COLORS[note.l];
+      roundRect(x - nw / 2, y - 9, nw, 18, 9);
+      draw.globalAlpha = 1;
     }
 
     const at = clock();
@@ -164,34 +153,24 @@ export function createMinigame(container, game) {
         popups.splice(i, 1);
         continue;
       }
-      draw2d.globalAlpha = 1 - age / 0.5;
-      draw2d.fillStyle = p.color;
-      draw2d.font = '700 16px system-ui, sans-serif';
-      draw2d.textAlign = 'center';
-      draw2d.fillText(p.text, p.lane * laneW + laneW / 2, hitY - 34 - age * 40);
-      draw2d.globalAlpha = 1;
+      draw.globalAlpha = 1 - age / 0.5;
+      draw.fillStyle = p.color;
+      draw.font = '700 16px system-ui, sans-serif';
+      draw.textAlign = 'center';
+      draw.fillText(p.text, p.lane * laneW + laneW / 2, hitY - 36 - age * 40);
+      draw.globalAlpha = 1;
     }
 
     if (now < 0) {
-      draw2d.fillStyle = '#fff';
-      draw2d.font = '800 64px system-ui, sans-serif';
-      draw2d.textAlign = 'center';
-      draw2d.fillText(String(Math.ceil(-now / beat)), w / 2, h / 2);
+      draw.fillStyle = '#fff';
+      draw.font = '800 64px system-ui, sans-serif';
+      draw.textAlign = 'center';
+      draw.fillText(String(Math.ceil(-now / beat)), w / 2, h / 2);
     }
-    draw2d.fillStyle = 'rgba(255,255,255,0.12)';
-    draw2d.fillRect(0, 0, w, 4);
-    draw2d.fillStyle = '#ff4f8b';
-    draw2d.fillRect(0, 0, w * Math.max(0, Math.min(1, now / game.duration)), 4);
-  }
-
-  function roundRect(x, y, w, h, r) {
-    draw2d.beginPath();
-    draw2d.moveTo(x + r, y);
-    draw2d.arcTo(x + w, y, x + w, y + h, r);
-    draw2d.arcTo(x + w, y + h, x, y + h, r);
-    draw2d.arcTo(x, y + h, x, y, r);
-    draw2d.arcTo(x, y, x + w, y, r);
-    draw2d.fill();
+    draw.fillStyle = 'rgba(255,255,255,0.12)';
+    draw.fillRect(0, 0, w, 4);
+    draw.fillStyle = '#ff4f8b';
+    draw.fillRect(0, 0, w * Math.max(0, Math.min(1, now / game.duration)), 4);
   }
 
   function frame() {
@@ -223,11 +202,10 @@ export function createMinigame(container, game) {
   }
 
   function start() {
-    overlay.hidden = true;
-    resize();
+    shell.hideOverlay();
+    shell.resize();
     audio = getAudio();
     t0 = clock() + 0.15 + 4 * beat;
-    startedAt = clock();
     stopBacking = scheduleBacking({
       genre: game.genre,
       bpm: game.bpm,
@@ -248,18 +226,18 @@ export function createMinigame(container, game) {
   }
 
   window.addEventListener('keydown', onKey, true);
-  window.addEventListener('resize', resize);
+  window.addEventListener('resize', shell.resize);
   canvas.addEventListener('pointerdown', onPointer);
   keyButtons.forEach((button, lane) => button.addEventListener('pointerdown', (e) => {
     e.preventDefault();
     judge(lane);
   }));
-  container.querySelector('.mg-start').addEventListener('click', start);
-  container.querySelector('.mg-abort').addEventListener('click', () => {
-    if (resultEl.hidden) finish({ aborted: true });
+  shell.el('.mg-start').addEventListener('click', start);
+  shell.el('.mg-abort').addEventListener('click', () => {
+    if (!shell.resultShown()) finish({ aborted: true });
   });
   requestAnimationFrame(() => {
-    resize();
+    shell.resize();
     render(-4 * beat);
   });
 
@@ -267,28 +245,13 @@ export function createMinigame(container, game) {
     play: () => new Promise((resolve) => {
       resolvePlay = resolve;
     }),
-    /** Zeigt das Ergebnis unter dem Spielfeld. buttons: [{label, cls, onClick}] */
-    showResult(html, buttons = []) {
-      container.querySelector('.mg-abort').hidden = true;
-      resultEl.hidden = false;
-      resultEl.innerHTML = `${html}<div class="dialog-actions"></div>`;
-      const actionsEl = resultEl.querySelector('.dialog-actions');
-      for (const b of buttons) {
-        const el = document.createElement('button');
-        el.className = `btn ${b.cls || 'ghost'}`;
-        el.textContent = b.label;
-        el.addEventListener('click', b.onClick);
-        actionsEl.append(el);
-      }
-      resultEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-    },
-    elapsed: () => clock() - startedAt,
+    showResult: shell.showResult,
     destroy() {
       running = false;
       cancelAnimationFrame(raf);
       stopBacking();
       window.removeEventListener('keydown', onKey, true);
-      window.removeEventListener('resize', resize);
+      window.removeEventListener('resize', shell.resize);
     },
   };
 }

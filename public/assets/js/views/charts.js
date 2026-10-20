@@ -1,6 +1,6 @@
 import { api } from '../api.js';
 import { app, cat, defineActions, rerender } from '../core.js';
-import { esc, fmt0, fmt1, toast } from '../ui.js';
+import { esc, fmt0, fmt1, money, toast } from '../ui.js';
 
 let loading = false;
 
@@ -18,32 +18,55 @@ export async function loadCharts() {
 }
 
 export function render() {
-  const tab = app.ui.chartsTab;
-  const genres = cat().genres;
-  const tabs = [['labels', 'Labels'], ...Object.entries(genres).map(([k, g]) => [k, g.name])];
+  const tab = app.ui.chartsTab === 'labels' ? 'labels' : 'albums';
   const charts = app.charts;
-  const list = charts ? (tab === 'labels' ? charts.labels : charts.genres[tab] || []) : null;
+  const rules = cat().rules;
 
   return `
     <div class="section-head">
-      <div><h1>Charts</h1><p class="muted">Gemessen wird Ruhm – über alle Labels. Pro Genre hat jedes Label höchstens eine Band.</p></div>
+      <div>
+        <h1>Charts</h1>
+        <p class="muted">${tab === 'albums'
+          ? `Die Top ${rules.chartSize} der Platten aller Labels. Qualität, Sound und Ruhm geben Punkte, die jeden Tag etwas schrumpfen. Solange eine Platte chartet, bringt sie täglich Tantiemen. Platz 1 gibt einen Scout-Gutschein.`
+          : 'Die erfolgreichsten Labels nach dem Ruhm all ihrer Bands.'}</p>
+      </div>
       <button class="btn ghost small" data-act="chartsReload">Aktualisieren</button>
     </div>
-    <div class="tabs scroll">${tabs.map(([key, name]) => `<button class="tab ${key === tab ? 'active' : ''}" data-act="chartsTab" data-tab="${key}">${esc(name)}</button>`).join('')}</div>
-    ${list === null ? '<div class="empty">Charts werden geladen …</div>' : list.length ? table(list, tab === 'labels') : '<div class="empty">In diesem Genre gibt es noch keine Band.</div>'}`;
+    <div class="tabs">
+      <button class="tab ${tab === 'albums' ? 'active' : ''}" data-act="chartsTab" data-tab="albums">Album-Charts</button>
+      <button class="tab ${tab === 'labels' ? 'active' : ''}" data-act="chartsTab" data-tab="labels">Labels</button>
+    </div>
+    ${!charts ? '<div class="empty">Charts werden geladen …</div>' : tab === 'albums' ? albums(charts.albums) : labels(charts.labels)}`;
 }
 
-function table(list, labels) {
+function albums(list) {
+  if (!list.length) return '<div class="empty">Noch keine Platte in den Charts. Die erste fertige Platte steigt hier ein.</div>';
   return `
     <table class="charts">
-      <thead><tr><th>#</th>${labels ? '<th>Label</th><th>Bands</th>' : '<th>Band</th><th>Label</th><th title="Kritikerwertung">Sound</th>'}<th>Ruhm</th></tr></thead>
+      <thead><tr><th>#</th><th>Platte</th><th>Band · Label</th><th title="Tage in den Charts">Tage</th><th>Punkte</th></tr></thead>
       <tbody>${list.map((e) => `
         <tr class="${e.own ? 'own' : ''}">
           <td class="rank">${e.rank}</td>
-          ${labels
-            ? `<td>${esc(e.label)}</td><td>${fmt0(e.bands)}</td>`
-            : `<td>${e.own ? `<a href="#/band/${e.bandId}">${esc(e.band)}</a>` : esc(e.band)}</td><td class="muted">${esc(e.label)}</td><td>${fmt1(e.sound)}</td>`}
-          <td><b>${fmt1(e.fame)}</b></td>
+          <td><b>${esc(e.title)}</b> <span class="chip">${e.format}</span>${e.perfect ? ' <span class="chip special" title="Ohne einen einzigen Fehler">perfekt</span>' : ''}</td>
+          <td>${esc(e.band)}<br><span class="muted small">${esc(e.label)}</span></td>
+          <td>${fmt0(e.days)}</td>
+          <td><b>${fmt1(e.points)}</b>${e.own ? `<br><span class="muted small">≈ ${money(e.perDay)} / Tag</span>` : ''}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+function labels(list) {
+  if (!list.length) return '<div class="empty">Noch kein Label mit Band.</div>';
+  return `
+    <table class="charts">
+      <thead><tr><th>#</th><th>Label</th><th>Bands</th><th>Ruhm</th></tr></thead>
+      <tbody>${list.map((e) => `
+        <tr class="${e.own ? 'own' : ''}">
+          <td class="rank">${e.rank}</td>
+          <td>${esc(e.label)}</td>
+          <td>${fmt0(e.bands)}</td>
+          <td><b>${fmt1(e.points)}</b></td>
         </tr>`).join('')}
       </tbody>
     </table>`;

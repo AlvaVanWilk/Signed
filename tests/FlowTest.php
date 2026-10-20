@@ -6,15 +6,19 @@ use Signed\Game\Balance;
 
 /** Spielt den Kernkreislauf einmal komplett über die API durch. */
 
+/** Registriert ein Label und gibt ihm drei gewöhnliche Rock-Musiker, damit die Tests gleich eine Band haben. */
 function registerPlayer(Signed\Db $db, string $name): Player
 {
     $p = player($db);
     $res = $p->post('register', ['username' => strtolower($name), 'password' => 'geheim123', 'labelName' => "$name Records"]);
-    checkEquals(3, count($res['cards']), 'Starter-Pack mit drei Musikern');
+    $repo = new Signed\Game\Repo($db, $res['label']['id']);
+    foreach (['vocals', 'guitar', 'drums'] as $instrument) {
+        $repo->insertMusician(Signed\Game\Generator::musician('common', ['instrument' => $instrument, 'genre' => 'rock', 'single' => true]), 'test');
+    }
     return $p;
 }
 
-/** Gründet aus den Starter-Musikern eine Band. */
+/** Gründet aus den drei Test-Musikern eine Band. */
 function foundBand(Player $p, string $name = 'Die Ersten'): array
 {
     $state = $p->get('state');
@@ -28,7 +32,7 @@ function playSong(Player $p, array $start, float $hitRate = 1.0): array
 {
     $game = $p->post('minigameStart', $start)['game'];
     Clock::advance(Balance::SONG_SECONDS + 2);
-    $count = count($game['notes']);
+    $count = $game['count'];
     $perfect = (int) floor($count * $hitRate);
     return $p->post('minigameFinish', ['sessionId' => $game['sessionId'], 'perfect' => $perfect, 'good' => 0, 'miss' => $count - $perfect]);
 }
@@ -64,11 +68,56 @@ test('Registrieren, anmelden, abmelden', function () {
     checkApiError(fn () => $p->get('buyPack'), 'Anfragemethode');
 });
 
-test('Starter-Musiker bilden eine gültige Band', function () {
+test('Neues Label startet ohne Musiker, aber mit Scout-Gutschein', function () {
+    $db = freshDb();
+    $p = player($db);
+    $p->post('register', ['username' => 'neu', 'password' => 'geheim123', 'labelName' => 'Neu Records']);
+    $state = $p->get('state');
+    checkEquals(0, count($state['musicians']));
+    checkEquals(Balance::SCOUT_START_VOUCHERS, $state['scout']['vouchers']);
+    checkEquals(null, $state['scout']['offer']);
+});
+
+test('Talent-Scout: fünf gute Karten, eine unterschreibt, Kauf nur einmal pro Woche', function () {
+    $db = freshDb();
+    $p = player($db);
+    $p->post('register', ['username' => 'scout', 'password' => 'geheim123', 'labelName' => 'Scout Records']);
+    $offer = $p->post('scoutOpen', ['voucher' => true])['offer'];
+    checkEquals(Balance::SCOUT_CARDS, count($offer['cards']));
+    foreach ($offer['cards'] as $card) {
+        check($card['rarity'] !== 'common', 'Nur gute Karten');
+    }
+    checkEquals($offer['id'], $p->post('scoutOpen', ['voucher' => true])['offer']['id'], 'Offene Auswahl wird wieder gezeigt, kein zweiter Gutschein');
+    $res = $p->post('scoutPick', ['offerId' => $offer['id'], 'index' => 2]);
+    checkEquals($offer['cards'][2]['firstName'], $res['musician']['firstName']);
+    checkEquals(1, count($res['state']['musicians']));
+    checkEquals(0, $res['state']['scout']['vouchers']);
+    checkApiError(fn () => $p->post('scoutPick', ['offerId' => $offer['id'], 'index' => 1]), 'nicht mehr');
+    checkApiError(fn () => $p->post('scoutOpen', ['voucher' => true]), 'keinen Scout-Gutschein');
+
+    $db->exec('UPDATE labels SET money = 10000');
+    $offer = $p->post('scoutOpen', [])['offer'];
+    checkEquals(10000 - Balance::SCOUT_PRICE, $p->get('state')['label']['money']);
+    $p->post('scoutPick', ['offerId' => $offer['id'], 'index' => 0]);
+    checkApiError(fn () => $p->post('scoutOpen', []), 'wieder für dich unterwegs');
+    Clock::advance(Balance::SCOUT_COOLDOWN);
+    $p->post('scoutOpen', []);
+});
+
+test('Bandnamen sind im ganzen Spiel eindeutig, der Würfel schlägt freie Namen vor', function () {
+    $db = freshDb();
+    $a = registerPlayer($db, 'Erste');
+    $b = registerPlayer($db, 'Zweite');
+    foundBand($a, 'Die Kellerkinder');
+    checkApiError(fn () => foundBand($b, 'die kellerkinder'), 'gibt es schon');
+    $name = $b->post('nameSuggest', ['kind' => 'band'])['name'];
+    check($name !== '' && strtolower($name) !== 'die kellerkinder');
+    check($b->post('nameSuggest', ['kind' => 'record'])['name'] !== '');
+});
+
+test('Test-Musiker bilden eine gültige Band', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Sandra');
-    $state = $p->get('state');
-    checkEquals(1, count(array_unique(array_map(static fn ($m) => $m['genres'][0], $state['musicians']))), 'Ein gemeinsames Genre');
     $band = foundBand($p);
     checkEquals(3, count($band['memberIds']));
     check($band['sound'] > 0);
@@ -154,7 +203,7 @@ test('Solo-Probe verbessert das Können, Schummeln wird abgelehnt', function () 
     $m = $p->get('state')['musicians'][0];
     $game = $p->post('minigameStart', ['kind' => 'practice', 'musicianId' => $m['id'], 'slot' => 1])['game'];
     check(count($game['notes']) > 10);
-    $count = count($game['notes']);
+    $count = $game['count'];
 
     checkApiError(fn () => $p->post('minigameFinish', ['sessionId' => $game['sessionId'], 'perfect' => $count, 'good' => 0, 'miss' => 0]), 'noch nicht vorbei');
     Clock::advance(Balance::SONG_SECONDS);
@@ -283,20 +332,40 @@ test('Manager: höchstens drei Bands, Fan-Karte bringt Ruhm', function () {
     checkEquals(0, count($state['items']));
 });
 
-test('Charts zeigen Bands aller Labels', function () {
+test('Album-Charts: Platten aller Labels, Platz 1 gibt einen Gutschein, Tantiemen fließen täglich', function () {
     $db = freshDb();
     $a = registerPlayer($db, 'Alpha');
     $b = registerPlayer($db, 'Beta');
     $bandA = foundBand($a, 'Alpha Band');
-    foundBand($b, 'Beta Band');
-    $db->exec('UPDATE musicians SET fame = 5 WHERE band_id = ?', [$bandA['id']]);
+    $bandB = foundBand($b, 'Beta Band');
+    $a->post('recordStart', ['bandId' => $bandA['id'], 'title' => 'Alpha EP', 'songs' => 3]);
+    for ($i = 0; $i < 3; $i++) {
+        $done = playSong($a, ['kind' => 'record', 'bandId' => $bandA['id']]);
+    }
+    checkEquals(Balance::SCOUT_START_VOUCHERS + 2, $done['state']['scout']['vouchers'], 'Gutschein für die erste und für die perfekte Platte');
+    $b->post('recordStart', ['bandId' => $bandB['id'], 'title' => 'Beta EP', 'songs' => 3]);
+    for ($i = 0; $i < 3; $i++) {
+        playSong($b, ['kind' => 'record', 'bandId' => $bandB['id']], 0.5);
+    }
 
     $charts = $b->get('charts');
-    $list = $charts['genres'][$bandA['genre']];
-    checkEquals('Alpha Band', $list[0]['band']);
-    check(!$list[0]['own']);
-    checkEquals('Alpha Records', $charts['labels'][0]['label']);
+    checkEquals(2, count($charts['albums']));
+    checkEquals('Alpha EP', $charts['albums'][0]['title'], 'Die bessere Platte steht vorn');
+    checkEquals('EP', $charts['albums'][0]['format']);
+    check(!$charts['albums'][0]['own'] && $charts['albums'][1]['own']);
     checkEquals(2, count($charts['labels']));
+    checkEquals(Balance::SCOUT_START_VOUCHERS + 3, $a->get('state')['scout']['vouchers'], 'Platz 1 bringt einen weiteren Gutschein');
+    $b->get('charts');
+    checkEquals(Balance::SCOUT_START_VOUCHERS + 3, $a->get('state')['scout']['vouchers'], 'Nur einmal pro Platte');
+
+    $money = $a->get('state')['label']['money'];
+    Clock::advance(2 * 86400 + 60);
+    $state = $a->get('state');
+    check($state['label']['money'] > $money, 'Tantiemen nach zwei Tagen');
+    check(str_starts_with($state['history'][0]['text'], 'Tantiemen'));
+    $points = bandById($state, $bandA['id'])['discography'][0]['points'];
+    $before = $charts['albums'][0]['points'];
+    check(abs($points - $before * Balance::CHART_DECAY ** 2) < 0.5, 'Punkte schrumpfen täglich');
 });
 
 test('Auflösen gibt die Musiker frei und behält ihre Bekanntheit', function () {

@@ -1,7 +1,6 @@
 import { api } from '../api.js';
-import { app, defineActions, refresh } from '../core.js';
-import { toast } from '../ui.js';
-import { openPackReveal } from './packs.js';
+import { actions, app, cat, defineActions, refresh } from '../core.js';
+import { esc, money, openModal, toast } from '../ui.js';
 
 export function render() {
   const tab = app.ui.authTab || 'register';
@@ -37,6 +36,22 @@ export function render() {
     </div>`;
 }
 
+function openWelcome() {
+  const modal = openModal({
+    html: `
+      <div class="eyebrow">Willkommen bei Signed</div>
+      <h2>${esc(app.label.name)} ist gegründet!</h2>
+      <p>Dein Startkapital: <b>${money(app.state.label.money)}</b>. Dazu bekommst du einen <b>Scout-Gutschein</b>:
+        Der Talent-Scout stellt dir ${cat().rules.scoutCards} gute Musiker vor, und du nimmst einen davon unter Vertrag.</p>
+      <p class="muted">Für eine Band brauchst du mindestens zwei Musiker. Die restlichen findest du danach in den Packs.</p>
+      <div class="dialog-actions"><button class="btn primary" data-start>Talent-Scout losschicken</button></div>`,
+  });
+  modal.body.querySelector('[data-start]').addEventListener('click', () => {
+    modal.close();
+    actions.scoutOpen({ voucher: '1' });
+  });
+}
+
 defineActions({
   authTab({ tab }) {
     app.ui.authTab = tab;
@@ -47,7 +62,7 @@ defineActions({
       const res = await api('register', values);
       app.label = res.label;
       await refresh();
-      openPackReveal(res.cards, 'Dein Starter-Pack', 'Drei Musiker aus demselben Genre – genug für deine erste Band.');
+      openWelcome();
     } catch (e) {
       toast(e.message, 'error');
     }

@@ -38,10 +38,25 @@ final class Minigames
                 $skill = BandCalc::skill($m, $slot);
                 $genre = $m['genres'][0];
                 $bpm = Catalog::GENRES[$genre]['bpm'];
-                $notes = Chart::generate($bpm, Chart::density($skill), Balance::SONG_SECONDS);
-                $windows = Chart::windows($skill, in_array('gehoer', $m['traits'], true));
-                $lanes = array_fill(0, Chart::LANES, $instrument);
-                $laneNames = array_fill(0, Chart::LANES, $m['first_name']);
+                $perfectPitch = in_array('gehoer', $m['traits'], true);
+                // Gesang und Geige spielen nach Tonhöhe, alle anderen nach Rhythmus.
+                if (in_array($instrument, Catalog::PITCH_INSTRUMENTS, true)) {
+                    $chart = [
+                        'mode' => 'pitch',
+                        'notes' => Chart::melody($bpm, Balance::SONG_SECONDS),
+                        'tolerance' => Chart::pitchTolerance($skill, $perfectPitch),
+                        'instrument' => $instrument,
+                    ];
+                } else {
+                    $chart = [
+                        'mode' => 'rhythm',
+                        'notes' => Chart::generate($bpm, Chart::density($skill), Balance::SONG_SECONDS),
+                        'windows' => Chart::windows($skill, $perfectPitch),
+                        'lanes' => array_fill(0, Chart::LANES, $instrument),
+                        'laneNames' => array_fill(0, Chart::LANES, $m['first_name']),
+                    ];
+                }
+                $chart['count'] = count($chart['notes']);
 
                 $db->update('musicians', ['busy_until' => $expires], ['id' => $m['id']]);
                 $row = ['musician_id' => $m['id'], 'band_id' => null, 'record_id' => null, 'slot' => $slot];
@@ -61,16 +76,15 @@ final class Minigames
                 $sound = BandCalc::sound($members, $band['genre'], $band['cohesion'], $this->repo->gearByMusician());
                 $genre = $band['genre'];
                 $bpm = Catalog::GENRES[$genre]['bpm'];
-                $notes = Chart::generate($bpm, Chart::density($sound), Balance::SONG_SECONDS);
-                // Der Sound der Band bestimmt, wie fehlerverzeihend das Timing ist.
-                $windows = Chart::windows($sound);
-                $lanes = [];
-                $laneNames = [];
-                for ($i = 0; $i < Chart::LANES; $i++) {
-                    $player = $members[$i % count($members)];
-                    $lanes[] = BandCalc::instrument($player);
-                    $laneNames[] = $player['first_name'];
-                }
+                // Am Mischpult: Die Spuren schwanken je nach Können, der Sound bestimmt, wie viel verziehen wird.
+                $chart = [
+                    'mode' => 'mixer',
+                    'tracks' => array_map(static fn ($m) => ['name' => $m['first_name'], 'instrument' => BandCalc::instrument($m)], $members),
+                    'drifts' => Chart::mixerDrifts(array_map([BandCalc::class, 'skill'], $members), Balance::SONG_SECONDS),
+                    'zone' => Chart::mixerZone($sound),
+                    'segments' => Chart::MIXER_SEGMENTS,
+                    'count' => count($members) * Chart::MIXER_SEGMENTS,
+                ];
 
                 $db->update('bands', ['busy_until' => $expires], ['id' => $band['id']]);
                 $row = ['musician_id' => null, 'band_id' => $band['id'], 'record_id' => $record['id'], 'slot' => null];
@@ -83,7 +97,7 @@ final class Minigames
             $id = $db->insert('minigames', $row + [
                 'label_id' => $this->repo->labelId,
                 'kind' => $kind,
-                'chart' => json_encode(['notes' => $notes, 'bpm' => $bpm, 'windows' => $windows]),
+                'chart' => json_encode($chart + ['bpm' => $bpm]),
                 'started_at' => $now,
                 'expires_at' => $expires,
                 'status' => 'open',
@@ -97,11 +111,7 @@ final class Minigames
                 'genre' => $genre,
                 'bpm' => $bpm,
                 'duration' => Balance::SONG_SECONDS,
-                'notes' => $notes,
-                'windows' => $windows,
-                'lanes' => $lanes,
-                'laneNames' => $laneNames,
-            ];
+            ] + $chart;
         });
     }
 
@@ -116,7 +126,7 @@ final class Minigames
                 return ['expired' => true];
             }
             $chart = json_decode($session['chart'], true);
-            if (min($perfect, $good, $miss) < 0 || $perfect + $good + $miss !== count($chart['notes'])) {
+            if (min($perfect, $good, $miss) < 0 || $perfect + $good + $miss !== (int) ($chart['count'] ?? count($chart['notes']))) {
                 throw new ApiError('Ungültiges Ergebnis.');
             }
             if ($now - (int) $session['started_at'] < Balance::SONG_SECONDS - 1) {

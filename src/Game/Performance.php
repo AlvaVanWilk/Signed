@@ -18,34 +18,51 @@ final class Performance
     public static function simulate(array $players, float $sound, float $expect, int $songs): array
     {
         $length = Balance::SONG_SECONDS;
-        $drift = max(-10.0, min(10.0, ($sound - $expect) / max($expect, 10) * 8));
+        $phases = Balance::LIVE_PHASES;
+        $phaseLength = $length / $phases;
+        // Klingt die Band besser, als der Ort erwartet, steigt die Stimmung von selbst – sonst sinkt sie.
+        $drift = max(-4.0, min(4.0, ($sound - $expect) / max($expect, 10) * 4));
         $meter = 50.0;
         $timeline = [];
         $songEnds = [];
 
         for ($s = 0; $s < $songs; $s++) {
             $start = $s * $length;
-            $events = [['t' => $start + 0.5, 'kind' => 'song', 'text' => sprintf('Lied %d: „%s“', $s + 1, Generator::songTitle()), 'delta' => 0.0]];
-            foreach ($players as $p) {
-                $mistake = max(0.02, min(0.25, 0.25 - $p['skill'] * 0.0022));
-                if (in_array('nervenstark', $p['traits'], true)) {
-                    $mistake *= 0.6;
+            $timeline[] = ['t' => round($start + 0.5, 1), 'kind' => 'song', 'text' => sprintf('Lied %d: „%s“', $s + 1, Generator::songTitle()), 'meter' => round($meter, 1)];
+            for ($phase = 0; $phase < $phases; $phase++) {
+                $from = $start + $phase * $phaseLength;
+                $events = [];
+                foreach ($players as $p) {
+                    // Wie oft jemand patzt oder glänzt, hängt vom Können ab.
+                    $mistake = max(0.02, min(0.24, 0.24 - $p['skill'] * 0.0026));
+                    if (in_array('nervenstark', $p['traits'], true)) {
+                        $mistake *= 0.6;
+                    }
+                    $highlight = max(0.02, min(0.32, 0.02 + $p['skill'] * 0.0028 + $p['presence'] * 0.0008 + ($p['techniques'] ? 0.03 : 0)));
+                    $roll = Rng::float();
+                    $at = $from + Rng::float(0.5, $phaseLength - 0.5);
+                    if ($roll < $mistake) {
+                        $events[] = ['t' => $at, 'kind' => 'mistake', 'text' => self::mistakeText($p), 'delta' => -Rng::float(...Balance::LIVE_SWING)];
+                    } elseif ($roll < $mistake + $highlight) {
+                        $events[] = ['t' => $at, 'kind' => 'highlight', 'text' => self::highlightText($p), 'delta' => Rng::float(...Balance::LIVE_SWING)];
+                    }
                 }
-                $highlight = max(0.03, min(0.35, 0.05 + $p['skill'] * 0.002 + $p['presence'] * 0.0008 + ($p['techniques'] ? 0.03 : 0)));
-                $roll = Rng::float();
-                if ($roll < $mistake) {
-                    $events[] = ['t' => $start + Rng::float(3, 26), 'kind' => 'mistake', 'text' => self::mistakeText($p), 'delta' => -Rng::float(5, 9)];
-                } elseif ($roll < $mistake + $highlight) {
-                    $events[] = ['t' => $start + Rng::float(3, 26), 'kind' => 'highlight', 'text' => self::highlightText($p), 'delta' => Rng::float(5, 9)];
+                usort($events, static fn ($a, $b) => $a['t'] <=> $b['t']);
+                foreach ($events as $event) {
+                    $meter = max(0.0, min(100.0, $meter + $event['delta']));
+                    $timeline[] = ['t' => round($event['t'], 1), 'kind' => $event['kind'], 'text' => $event['text'], 'meter' => round($meter, 1)];
                 }
-            }
-            $events[] = ['t' => $start + $length - 1.5, 'kind' => 'crowd', 'text' => '', 'delta' => Balance::LIVE_MOOD + $drift + Rng::float(-4, 4)];
-            usort($events, static fn ($a, $b) => $a['t'] <=> $b['t']);
-
-            foreach ($events as $event) {
-                $meter = max(0.0, min(100.0, $meter + $event['delta']));
-                $text = $event['kind'] === 'crowd' ? self::crowdText($meter) : $event['text'];
-                $timeline[] = ['t' => round($event['t'], 1), 'kind' => $event['kind'], 'text' => $text, 'meter' => round($meter, 1)];
+                // Grundstimmung und Sound wirken laufend; das Publikum beruhigt sich etwas Richtung Mitte.
+                $meter += Balance::LIVE_MOOD + $drift + Rng::float(-2, 2);
+                $meter += (50 - $meter) * Balance::LIVE_SETTLE;
+                $meter = max(0.0, min(100.0, $meter));
+                $isLast = $phase === $phases - 1;
+                $timeline[] = [
+                    't' => round($from + $phaseLength - ($isLast ? 1.0 : 0.2), 1),
+                    'kind' => $isLast ? 'crowd' : 'mood',
+                    'text' => $isLast ? self::crowdText($meter) : '',
+                    'meter' => round($meter, 1),
+                ];
             }
             $songEnds[] = $meter;
         }

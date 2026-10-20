@@ -10,7 +10,7 @@ export const app = {
   offset: 0,
   ui: {
     catalog: { instrument: '', genre: '', status: '', sort: 'rarity' },
-    chartsTab: 'labels',
+    chartsTab: 'albums',
     gigSongs: {},
     form: {},
   },

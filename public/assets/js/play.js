@@ -68,7 +68,7 @@ function recordSummary(r) {
   const head = `
     <h3>Lied ${r.songsDone} von ${r.songsTotal} im Kasten – Trefferquote ${percent(r.accuracy)}</h3>
     ${counts(r)}
-    <p class="muted">Jedes Bandmitglied hat etwas Können dazugewonnen. Eingespieltheit +${fmt1(r.cohesion)}.</p>`;
+    <p class="muted">Gemischt wird in Abschnitten: Perfekt heißt fast durchgehend im grünen Bereich. Jedes Bandmitglied hat etwas Können dazugewonnen, Eingespieltheit +${fmt1(r.cohesion)}.</p>`;
   if (!r.completed) return head;
   const c = r.completed;
   return `${head}
@@ -79,6 +79,7 @@ function recordSummary(r) {
         <div class="reward"><span>Verkäufe</span><b>+${money(c.money)}</b></div>
         <div class="reward"><span>Ruhm</span><b>+${fmt1(c.fame)}</b></div>
       </div>
+      <p>Neu in den Album-Charts mit <b>${fmt1(c.chartPoints)} Punkten</b>.${c.vouchers ? ` Dazu ${c.vouchers === 1 ? 'ein Scout-Gutschein' : `${c.vouchers} Scout-Gutscheine`}!` : ''}</p>
       <p class="muted">Jetzt kann die Band richtige Gigs spielen.</p>
     </div>`;
 }

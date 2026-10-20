@@ -1,6 +1,6 @@
 import { gearCard, managerCard, musicianCard, rarityName } from '../cards.js';
-import { app, cat, defineActions, mutate } from '../core.js';
-import { esc, money, openModal } from '../ui.js';
+import { app, cat, defineActions, mutate, serverNow } from '../core.js';
+import { esc, money, openModal, toast } from '../ui.js';
 
 const SLOT_NAMES = { musician: 'Musiker', gear: 'Instrument', manager: 'Manager', any: 'Überraschung' };
 const RARITY_ORDER = ['common', 'rare', 'epic', 'legendary'];
@@ -13,8 +13,49 @@ export function render() {
       <div class="money-pill">${money(app.state.label.money)}</div>
     </div>
     <div class="pack-grid">
+      ${scoutTile()}
       ${Object.entries(packs).map(([key, pack]) => packTile(key, pack)).join('')}
     </div>`;
+}
+
+function scoutTile() {
+  const scout = app.state.scout;
+  const rules = cat().rules;
+  const canBuy = serverNow() >= scout.nextPurchase;
+  const next = new Date(scout.nextPurchase * 1000).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' });
+  return `
+    <div class="pack pack-scout">
+      <div class="pack-art"><span>Talent-Scout</span></div>
+      <p>Der Scout stellt dir ${rules.scoutCards} vielversprechende Musiker vor, alle mindestens selten. Einer unterschreibt bei dir, die anderen ziehen weiter.</p>
+      <p class="muted small">Gutscheine gibt es zum Label-Start, für die erste Platte, für perfekte Platten und für Platz 1 der Album-Charts.</p>
+      ${scout.offer ? '<button class="btn primary" data-act="scoutShow">Auswahl ansehen</button>' : `
+        <button class="btn primary" data-act="scoutOpen" data-voucher="1" ${scout.vouchers ? '' : 'disabled'}>Gutschein einlösen (${scout.vouchers})</button>
+        <button class="btn" data-act="scoutOpen" data-voucher="" ${canBuy && app.state.label.money >= scout.price ? '' : 'disabled'}>Ohne Gutschein · ${money(scout.price)}</button>
+        <span class="muted small">${canBuy ? 'Ohne Gutschein höchstens einmal pro Woche.' : `Ohne Gutschein wieder ab ${esc(next)}.`}</span>`}
+    </div>`;
+}
+
+/** Die Auswahl des Scouts. Schließt sich von selbst, sobald jemand unterschrieben hat. */
+export function openScoutOffer() {
+  openModal({
+    wide: true,
+    className: 'scout-modal',
+    render: () => {
+      const offer = app.state.scout.offer;
+      if (!offer) return null;
+      return `
+        <div class="eyebrow">Talent-Scout</div>
+        <h2>Wen nimmst du unter Vertrag?</h2>
+        <p class="muted">Nur einer unterschreibt, die anderen sind danach weg. Du kannst das Fenster schließen und später weiter überlegen.</p>
+        <div class="tcg-grid scout-grid">
+          ${offer.cards.map((m, index) => musicianCard(m, {
+            act: null,
+            showStatus: false,
+            extra: `<button class="btn primary small" data-act="scoutPick" data-offer="${offer.id}" data-index="${index}">Unter Vertrag nehmen</button>`,
+          })).join('')}
+        </div>`;
+    },
+  });
 }
 
 function packTile(key, pack) {
@@ -37,7 +78,7 @@ function packTile(key, pack) {
 }
 
 function revealFace(card) {
-  if (card.kind === 'musician') return musicianCard(card.musician, { act: 'noop' });
+  if (card.kind === 'musician') return musicianCard(card.musician, { showStatus: false });
   if (card.kind === 'gear') return gearCard(card.gear);
   return managerCard(card.manager);
 }
@@ -81,6 +122,21 @@ export function openPackReveal(cards, title, intro = '') {
 }
 
 defineActions({
+  async scoutOpen({ voucher }) {
+    const res = await mutate('scoutOpen', { voucher: !!voucher });
+    if (res) openScoutOffer();
+  },
+  scoutShow() {
+    openScoutOffer();
+  },
+  async scoutPick({ offer, index }) {
+    const res = await mutate('scoutPick', { offerId: Number(offer), index: Number(index) });
+    if (!res) return;
+    toast(`${res.musician.firstName} ${res.musician.lastName} hat unterschrieben!`, 'ok');
+    if (app.state.musicians.length < cat().rules.minMembers) {
+      toast('Für eine Band brauchst du mindestens zwei Musiker – ein Demo-Pack hilft.', 'info');
+    }
+  },
   async buyPack({ pack }) {
     const res = await mutate('buyPack', { pack });
     if (res) openPackReveal(res.cards, cat().packs[pack].name);

@@ -22,6 +22,9 @@ final class Bands
         }
         $db = $this->repo->db;
         return $db->transaction(function () use ($db, $name, $genre, $entries): int {
+            if (Names::bandTaken($db, $name)) {
+                throw new ApiError(sprintf('Den Bandnamen „%s“ gibt es schon. Wie wäre es mit dem Würfel?', $name));
+            }
             $taken = (int) $db->value('SELECT COUNT(*) FROM bands WHERE label_id = ? AND genre = ?', [$this->repo->labelId, $genre]);
             if ($taken > 0) {
                 throw new ApiError(sprintf('Dein Label hat schon eine %s-Band. Pro Genre ist eine Band erlaubt.', Catalog::GENRES[$genre]['name']));
@@ -44,6 +47,7 @@ final class Bands
             $bandId = $db->insert('bands', [
                 'label_id' => $this->repo->labelId,
                 'name' => $name,
+                'name_key' => Names::key($name),
                 'genre' => $genre,
                 'created_at' => Clock::now(),
             ]);
@@ -59,7 +63,10 @@ final class Bands
     {
         $band = $this->repo->band($bandId);
         $name = self::cleanName($name, 'Der Bandname');
-        $this->repo->db->update('bands', ['name' => $name], ['id' => $band['id']]);
+        if (Names::bandTaken($this->repo->db, $name, $band['id'])) {
+            throw new ApiError(sprintf('Den Bandnamen „%s“ gibt es schon.', $name));
+        }
+        $this->repo->db->update('bands', ['name' => $name, 'name_key' => Names::key($name)], ['id' => $band['id']]);
     }
 
     public function addMember(int $bandId, int $musicianId, int $slot): void

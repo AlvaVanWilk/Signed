@@ -308,3 +308,75 @@ export function scheduleBacking({ genre, bpm, start, duration, drums = true, bas
     setTimeout(() => bus.disconnect(), 400);
   };
 }
+
+// ---------- Tonhöhen-Spiel ----------
+
+/** Natürliche Moll-Tonleiter (passend zu Am – F – C – G), Stufen 0–7. */
+const SCALE = [0, 2, 3, 5, 7, 8, 10, 12];
+const VOICE_BASE = { vocals: 57, violin: 69 };
+
+/** Stufe (auch Zwischenwerte) → MIDI-Ton. */
+export function scaleMidi(type, degree) {
+  const d = Math.max(0, Math.min(7, degree));
+  const low = Math.floor(d);
+  const high = Math.min(7, low + 1);
+  return (VOICE_BASE[type] ?? 60) + SCALE[low] + (SCALE[high] - SCALE[low]) * (d - low);
+}
+
+/** Durchgehender Ton, dessen Höhe und Lautstärke man laufend ändern kann (Gesang, Geige). */
+export function createVoice(type) {
+  if (!ctx) return { setPitch() {}, setLevel() {}, stop() {} };
+  const osc = ctx.createOscillator();
+  osc.type = 'sawtooth';
+  const lfo = ctx.createOscillator();
+  const depth = ctx.createGain();
+  lfo.frequency.value = type === 'violin' ? 6 : 5.5;
+  depth.gain.value = type === 'violin' ? 14 : 18;
+  lfo.connect(depth).connect(osc.detune);
+  const gain = ctx.createGain();
+  gain.gain.value = 0;
+  if (type === 'violin') {
+    osc.connect(filter('lowpass', 3200)).connect(gain);
+  } else {
+    osc.connect(filter('bandpass', 800, 5)).connect(gain);
+    osc.connect(filter('bandpass', 1200, 7)).connect(gain);
+  }
+  gain.connect(master);
+  osc.start();
+  lfo.start();
+  const peak = type === 'violin' ? 0.22 : 1.4;
+  return {
+    setPitch(midi) {
+      osc.frequency.setTargetAtTime(freq(midi), ctx.currentTime, 0.02);
+    },
+    setLevel(level) {
+      gain.gain.setTargetAtTime(level * peak, ctx.currentTime, 0.05);
+    },
+    stop() {
+      gain.gain.setTargetAtTime(0, ctx.currentTime, 0.05);
+      setTimeout(() => {
+        osc.stop();
+        lfo.stop();
+        gain.disconnect();
+      }, 300);
+    },
+  };
+}
+
+// ---------- Mischpult ----------
+
+/** Ein Schlag einer Bandspur mit einstellbarer Lautstärke (0–1). */
+export function playTrackBeat(type, beatIndex, songTime, bpm, volume) {
+  if (!ctx || volume <= 0.01) return;
+  const t = ctx.currentTime;
+  if (type === 'drums') {
+    const step = beatIndex % 4;
+    if (step === 0 || step === 2) kick(master, t, volume);
+    else snare(master, t, volume * 0.8);
+    hat(master, t, volume * 0.7);
+    return;
+  }
+  const chord = chordAt(songTime, bpm);
+  const lane = type === 'bass' ? 0 : [0, 1, 2, 1][beatIndex % 4];
+  tone(type, laneMidi(type, lane, chord), t, (60 / bpm) * 0.8, 0.8 * volume);
+}

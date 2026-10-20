@@ -1,6 +1,6 @@
 import { avatar } from './avatar.js';
 import { app, bandById, cat, isBusy } from './core.js';
-import { bar, esc, fmt0, fmt1 } from './ui.js';
+import { esc, fmt0, fmt1 } from './ui.js';
 
 export const instrumentName = (type) => cat().instruments[type]?.name ?? type;
 export const instrumentIcon = (type) => cat().instruments[type]?.icon ?? '🎵';
@@ -33,51 +33,77 @@ export function musicianStatus(m) {
   return '';
 }
 
-export function musicianCard(m, { act = 'openMusician', extra = '' } = {}) {
+// ---------- Sammelkarten ----------
+
+/**
+ * Gemeinsamer Aufbau aller Karten: Kopf mit Name und Seltenheit, Bildfeld, Typzeile, Textfeld, Werte.
+ * opts: act/data (Klick-Aktion), size ('' | 'sm'), extra (HTML unter der Karte), tag ('button' | 'div')
+ */
+function tcg({ rarity, theme = '', name, art, type, text, stats, foot = '', act = null, data = {}, size = '', extra = '' }) {
+  const tag = act ? 'button' : 'div';
+  const attrs = act ? ` data-act="${act}" ${Object.entries(data).map(([k, v]) => `data-${k}="${esc(v)}"`).join(' ')}` : '';
+  const card = `
+    <${tag} class="tcg rarity-${rarity} ${theme} ${size}"${attrs}>
+      <span class="tcg-frame">
+        <span class="tcg-head">
+          <span class="tcg-name">${esc(name)}</span>
+          <span class="tcg-gem" title="${esc(rarityName(rarity))}"></span>
+        </span>
+        <span class="tcg-art">${art}</span>
+        <span class="tcg-type">${type}</span>
+        <span class="tcg-text">${text}</span>
+        <span class="tcg-stats">${stats.map(([value, label]) => `<span class="tcg-stat"><b>${value}</b><small>${esc(label)}</small></span>`).join('')}</span>
+        ${foot ? `<span class="tcg-foot">${foot}</span>` : ''}
+      </span>
+    </${tag}>`;
+  return extra ? `<div class="tcg-wrap ${size}">${card}${extra}</div>` : card;
+}
+
+export function musicianCard(m, { act = 'openMusician', size = '', extra = '', showStatus = true } = {}) {
+  const c = cat();
+  const main = m.instruments.reduce((best, i) => (i.skill > best.skill ? i : best), m.instruments[0]);
+  const lines = [
+    ...m.traits.map((t) => `<b>${esc(c.traits[t].name)}</b> ${esc(c.traits[t].desc)}`),
+    ...m.techniques.map((t) => `<b>${esc(c.techniques[t])}</b> Spezialtechnik`),
+  ];
+  if (m.unusual) lines.unshift('<b>Ungewöhnlich</b> Erregt mehr Aufsehen.');
   const band = m.bandId ? bandById(m.bandId) : null;
-  const status = musicianStatus(m);
-  return `
-    <button class="card card-musician rarity-${m.rarity}" data-act="${act}" data-id="${m.id}">
-      <span class="rarity-tag">${esc(rarityName(m.rarity))}</span>
-      ${face(m, 'lg')}
-      <span class="card-title">${esc(fullName(m))}</span>
-      <span class="card-instruments">${m.instruments.map((i) => `
-        <span class="skill-line"><span>${instrumentIcon(i.type)} ${esc(instrumentName(i.type))}</span><b>${fmt1(i.skill)}</b></span>
-        ${bar(i.skill, 100, 'thin')}`).join('')}
-      </span>
-      <span class="chips">${genreChips(m.genres)}${m.unusual ? chip('Ungewöhnlich', 'special') : ''}</span>
-      <span class="card-stats">
-        <span title="Präsenz">✨ ${fmt1(m.presence)}</span>
-        <span title="Bekanntheit">⭐ ${fmt1(m.fame)}</span>
-        ${m.traits.length + m.techniques.length ? `<span title="Besonderheiten">◆ ${m.traits.length + m.techniques.length}</span>` : ''}
-      </span>
-      <span class="card-foot">${status || (band ? `🎵 ${esc(band.name)}` : '<span class="muted">frei</span>')}</span>
-      ${extra}
-    </button>`;
+  const status = showStatus ? (musicianStatus(m) || (band ? `🎵 ${esc(band.name)}` : '')) : '';
+  return tcg({
+    rarity: m.rarity,
+    theme: `genre-bg-${m.genres[0]}`,
+    name: fullName(m),
+    art: `${avatar(m.look)}<span class="tcg-badge">${m.instruments.map((i) => instrumentIcon(i.type)).join('')}</span>`,
+    type: `${m.instruments.map((i) => `${esc(instrumentName(i.type))} ${fmt0(i.skill)}`).join(' · ')}<em>${m.genres.map(genreName).map(esc).join(' · ')}</em>`,
+    text: lines.length ? lines.join('<br>') : `<i>${esc(c.personalities[m.personality[0]] ?? '')}${m.personality[1] ? ` · ${esc(c.personalities[m.personality[1]])}` : ''}</i>`,
+    stats: [[fmt0(main.skill), 'Können'], [fmt0(m.presence), 'Präsenz'], [fmt1(m.fame), 'Ruhm']],
+    foot: status,
+    act,
+    data: { id: m.id },
+    size,
+    extra,
+  });
 }
 
 export function gearModel(key) {
   return cat().gear[key];
 }
 
-export function gearStats(model) {
-  return `
-    <span class="stat-row"><span>Klang</span>${bar(model.klang, 100, 'thin')}<b>${model.klang}</b></span>
-    <span class="stat-row"><span>Spielbarkeit</span>${bar(model.spielbarkeit, 100, 'thin')}<b>${model.spielbarkeit}</b></span>
-    <span class="stat-row"><span>Design</span>${bar(model.design, 100, 'thin')}<b>${model.design}</b></span>`;
-}
-
-export function gearCard(g, extra = '') {
+export function gearCard(g, { act = null, data = {}, size = '', extra = '' } = {}) {
   const model = gearModel(g.model);
-  return `
-    <div class="card card-gear rarity-${model.rarity}">
-      <span class="rarity-tag">${esc(rarityName(model.rarity))}</span>
-      <span class="gear-icon">${instrumentIcon(model.type)}</span>
-      <span class="card-title">${esc(model.name)}</span>
-      <span class="muted small">${esc(instrumentName(model.type))}</span>
-      <span class="gear-stats">${gearStats(model)}</span>
-      ${extra}
-    </div>`;
+  return tcg({
+    rarity: model.rarity,
+    theme: 'gear-bg',
+    name: model.name,
+    art: `<span class="tcg-icon">${instrumentIcon(model.type)}</span>`,
+    type: `Instrument<em>${esc(instrumentName(model.type))}</em>`,
+    text: `Voller Klang ab Können ${fmt0(100 - model.spielbarkeit)}.${model.design >= 60 ? '<br><b>Blickfang</b> Bringt mehr Ruhm.' : ''}`,
+    stats: [[model.klang, 'Klang'], [model.spielbarkeit, 'Spielb.'], [model.design, 'Design']],
+    act,
+    data,
+    size,
+    extra,
+  });
 }
 
 export function managerSkills(skills) {
@@ -87,14 +113,26 @@ export function managerSkills(skills) {
   }).join('');
 }
 
-export function managerCard(m, extra = '') {
-  return `
-    <div class="card card-manager rarity-${m.rarity}">
-      <span class="rarity-tag">${esc(rarityName(m.rarity))}</span>
-      ${face(m, 'lg')}
-      <span class="card-title">${esc(fullName(m))}</span>
-      <span class="muted small">Manager · Stufe ${fmt0(m.level)}</span>
-      <span class="chips">${managerSkills(m.skills)}</span>
-      ${extra}
-    </div>`;
+export function managerCard(m, { act = null, data = {}, size = '', extra = '' } = {}) {
+  const skills = cat().managerSkills;
+  return tcg({
+    rarity: m.rarity,
+    theme: 'manager-bg',
+    name: fullName(m),
+    art: `${avatar(m.look)}<span class="tcg-badge">💼</span>`,
+    type: `Manager<em>Stufe ${fmt0(m.level)}</em>`,
+    text: m.skills.map((s) => `<b>${esc(skills[s].name)}</b> ${esc(skills[s].desc)}${skills[s].active ? '' : ' <i>(später)</i>'}`).join('<br>'),
+    stats: [[fmt0(m.level), 'Stufe'], [fmt0(m.bandIds.length), 'Bands']],
+    act,
+    data,
+    size,
+    extra,
+  });
+}
+
+/** Leerer Kartenplatz, z. B. für ein fehlendes Instrument oder einen Manager. */
+export function emptySlot(label, { act = null, data = {}, size = '', icon = '+' } = {}) {
+  const attrs = act ? ` data-act="${act}" ${Object.entries(data).map(([k, v]) => `data-${k}="${esc(v)}"`).join(' ')}` : '';
+  const tag = act ? 'button' : 'div';
+  return `<${tag} class="tcg-slot ${size}"${attrs}><span class="tcg-slot-icon">${icon}</span><span>${esc(label)}</span></${tag}>`;
 }

@@ -38,29 +38,6 @@ final class Packs
         });
     }
 
-    /** Drei gewöhnliche Musiker aus einem Genre, die zusammen eine erste Band gründen können. */
-    public function starter(): array
-    {
-        $genre = (string) Rng::pick(array_keys(Catalog::GENRES));
-        $weights = [];
-        foreach (Catalog::INSTRUMENTS as $key => $instrument) {
-            if ($key !== 'vocals' && in_array($genre, $instrument['genres'], true)) {
-                $weights[$key] = $instrument['weight'];
-            }
-        }
-        $first = (string) Rng::weighted($weights);
-        unset($weights[$first]);
-        $second = (string) Rng::weighted($weights);
-
-        $cards = [];
-        foreach (['vocals', $first, $second] as $instrument) {
-            $m = Generator::musician('common', ['instrument' => $instrument, 'genre' => $genre, 'single' => true]);
-            $id = $this->repo->insertMusician($m, 'starter');
-            $cards[] = ['kind' => 'musician', 'musician' => Present::musician($this->repo->musician($id))];
-        }
-        return $cards;
-    }
-
     private function create(string $kind, string $rarity, string $origin): array
     {
         if ($kind === 'gear') {

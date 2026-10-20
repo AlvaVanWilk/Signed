@@ -131,6 +131,10 @@ final class Present
                 'gigsBetweenRecords' => Balance::GIGS_BETWEEN_RECORDS,
                 'promoSeconds' => Balance::PROMO_SECONDS,
                 'cohesionRemovePenalty' => Balance::COHESION_REMOVE_PENALTY,
+                'scoutPrice' => Balance::SCOUT_PRICE,
+                'scoutCards' => Balance::SCOUT_CARDS,
+                'chartLpSongs' => Balance::CHART_LP_SONGS,
+                'chartSize' => Balance::CHART_SIZE,
             ],
         ];
     }

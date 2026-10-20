@@ -34,7 +34,7 @@ export function render() {
       ${select('status', f.status, 'Alle', [['free', 'Ohne Band'], ['band', 'In einer Band']])}
       ${select('sort', f.sort, null, [['rarity', 'Seltenheit'], ['skill', 'Können'], ['presence', 'Präsenz'], ['fame', 'Bekanntheit'], ['newest', 'Neueste']])}
     </div>
-    ${list.length ? `<div class="card-grid">${list.map((m) => musicianCard(m)).join('')}</div>` : '<div class="empty">Keine Musiker für diesen Filter.</div>'}`;
+    ${list.length ? `<div class="tcg-grid">${list.map((m) => musicianCard(m)).join('')}</div>` : '<div class="empty">Keine Musiker für diesen Filter.</div>'}`;
 }
 
 function select(key, value, emptyLabel, options) {

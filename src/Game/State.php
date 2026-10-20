@@ -43,6 +43,22 @@ final class State
             $openRecords[$record['band_id']] = $record;
         }
 
+        $discography = [];
+        foreach ($db->all("SELECT * FROM records WHERE label_id = ? AND status = 'done' ORDER BY finished_at DESC", [$repo->labelId]) as $row) {
+            $results = json_decode($row['song_results'], true) ?: [];
+            $points = Charts::current((float) $row['chart_points'], $now - (int) $row['finished_at']);
+            $discography[(int) $row['band_id']][] = [
+                'title' => $row['title'],
+                'songs' => (int) $row['songs_total'],
+                'format' => (int) $row['songs_total'] >= Balance::CHART_LP_SONGS ? 'LP' : 'EP',
+                'quality' => $results ? round(array_sum(array_column($results, 'accuracy')) / count($results), 3) : 0,
+                'perfect' => (bool) $row['perfect'],
+                'charting' => $points >= Balance::CHART_MIN_POINTS,
+                'points' => round($points, 1),
+                'finishedAt' => (int) $row['finished_at'],
+            ];
+        }
+
         $bandsOut = [];
         foreach ($bands as $band) {
             $list = $members[$band['id']] ?? [];
@@ -103,6 +119,7 @@ final class State
                     'open' => Present::record($open),
                     'blocker' => Studio::blocker($band, count($list), $open),
                 ],
+                'discography' => $discography[$band['id']] ?? [],
             ];
         }
 
@@ -116,6 +133,7 @@ final class State
         return [
             'now' => $now,
             'label' => $label,
+            'scout' => (new Scout($repo))->status(),
             'musicians' => array_values(array_map(static fn ($m) => Present::musician($m, $gearIds[$m['id']] ?? []), $musicians)),
             'gear' => array_values(array_map([Present::class, 'gear'], $gear)),
             'managers' => array_values(array_map(static fn ($m) => Present::manager($m, $managerBands[$m['id']] ?? []), $managers)),

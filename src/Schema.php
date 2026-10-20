@@ -215,6 +215,27 @@ final class Schema
                 'CREATE INDEX history_label ON history (label_id, id)',
                 'CREATE INDEX history_band ON history (band_id, id)',
             ],
+            // 2: Talent-Scout, Album-Charts, eindeutige Bandnamen
+            [
+                'ALTER TABLE labels ADD COLUMN scout_vouchers INTEGER NOT NULL DEFAULT 0',
+                'ALTER TABLE labels ADD COLUMN scout_bought_at INTEGER NOT NULL DEFAULT 0',
+                'UPDATE labels SET scout_vouchers = 1',
+                'CREATE TABLE scout_offers (
+                    id {PK},
+                    label_id INTEGER NOT NULL,
+                    cards TEXT NOT NULL,
+                    status VARCHAR(10) NOT NULL,
+                    created_at INTEGER NOT NULL
+                ){OPTS}',
+                'CREATE INDEX scout_offers_label ON scout_offers (label_id, status)',
+                'ALTER TABLE records ADD COLUMN chart_points REAL NOT NULL DEFAULT 0',
+                'ALTER TABLE records ADD COLUMN royalties_until INTEGER NOT NULL DEFAULT 0',
+                'ALTER TABLE records ADD COLUMN topped INTEGER NOT NULL DEFAULT 0',
+                'CREATE INDEX records_status ON records (status, finished_at)',
+                "ALTER TABLE bands ADD COLUMN name_key VARCHAR(60) NOT NULL DEFAULT ''",
+                'UPDATE bands SET name_key = LOWER(name)',
+                'CREATE INDEX bands_name_key ON bands (name_key)',
+            ],
         ];
     }
 }

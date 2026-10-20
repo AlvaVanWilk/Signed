@@ -46,7 +46,8 @@ Tournee bzw. ausgeschriebenen Gigs (im Spiel ausgegraut markiert).
   - Auf der Karte: Kartenfarbe = Können-Stufe (grau, grün, blau, lila; Legende in Regenbogenfarben), Funkeln und
     Schein = Bekanntheits-Stufe (statisch, ohne Animation). Darunter die beiden wichtigen Werte in gleicher Form:
     Können pro Instrument als 10 Kästchen (je 10 Punkte bis 100) und Bekanntheit als 10 Sternchen (jede
-    Bekanntheits-Stufe füllt ein Drittel). Lieblingsgenres als farbige Abzeichen oben rechts.
+    Bekanntheits-Stufe füllt ein Drittel). Lieblingsgenres als farbige Abzeichen oben rechts; der Bildhintergrund
+    ist schräg in die Farben aller Lieblingsgenres geteilt.
 - Jedes Genre hat eine feste Farbe und ein Symbol – auf Karten, an Bands (Menü, Seitenleiste, Bandseite) und in
   der Genre-Auswahl.
 - Fähigkeiten: eine pro Können-Stufe. Bei Stufe 1 und 2 kommt eine zufällige dazu, bei Stufe 3 wählt man aus drei.

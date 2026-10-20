@@ -55,11 +55,11 @@ export function musicianStatus(m) {
  * Gemeinsamer Aufbau aller Karten: Kopf mit Name und Seltenheit, Bildfeld, Typzeile, Textfeld, Werte.
  * opts: act/data (Klick-Aktion), size ('' | 'sm'), extra (HTML unter der Karte), tag ('button' | 'div')
  */
-function tcg({ rarity = '', frame = '', theme = '', name, badge = '', art, type = '', text, stats = [], minis = '', foot = '', act = null, data = {}, size = '', extra = '' }) {
+function tcg({ rarity = '', frame = '', theme = '', style = '', name, badge = '', art, type = '', text, stats = [], minis = '', foot = '', act = null, data = {}, size = '', extra = '' }) {
   const tag = act ? 'button' : 'div';
   const attrs = act ? ` data-act="${act}" ${Object.entries(data).map(([k, v]) => `data-${k}="${esc(v)}"`).join(' ')}` : '';
   const card = `
-    <${tag} class="tcg ${frame || `rarity-${rarity}`} ${theme} ${size}"${attrs}>
+    <${tag} class="tcg ${frame || `rarity-${rarity}`} ${theme} ${size}"${style ? ` style="${style}"` : ''}${attrs}>
       <span class="tcg-frame">
         <span class="tcg-head">
           <span class="tcg-name">${esc(name)}</span>
@@ -103,6 +103,13 @@ export function genreGlyph(key) {
   return `<svg class="genre-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${GENRE_PATHS[key] ?? ''}"/></svg>`;
 }
 
+/** Bildhintergrund in den Farben aller Lieblingsgenres, schräg geteilt. */
+function genreSplit(genres) {
+  const step = 100 / genres.length;
+  const stops = genres.map((g, i) => `var(--c-${g}) ${(i * step).toFixed(1)}% ${((i + 1) * step).toFixed(1)}%`).join(', ');
+  return `--split: linear-gradient(120deg, ${stops})`;
+}
+
 /** Rundes Genre-Abzeichen in der Farbe des Genres. */
 export function genreIcon(key) {
   return `<span class="genre-badge g-${key}" title="${esc(genreName(key))}">${genreGlyph(key)}</span>`;
@@ -139,7 +146,8 @@ export function musicianCard(m, { act = 'openMusician', size = '', extra = '', s
   const abilities = m.abilities.map((a) => abilityInfo(a));
   return tcg({
     frame: musicianFrame(m),
-    theme: `genre-bg-${m.genres[0]}`,
+    theme: 'genre-split',
+    style: genreSplit(m.genres),
     name: fullName(m),
     badge: `<span class="tcg-genres">${m.genres.map(genreIcon).join('')}</span>`,
     art: `${avatar(m.look)}

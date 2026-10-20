@@ -1,4 +1,7 @@
 :root {
+  /* Helle Genre-Farben für Bildhintergründe (die kräftigen stehen bei .g-*). */
+  --c-pop: #e64980; --c-rock: #f76707; --c-metal: #868e96; --c-punk: #82c91e;
+  --c-jazz: #f0b400; --c-elektro: #339af0; --c-hiphop: #845ef7; --c-folk: #40c057;
   --bg: #0e0c14;
   --bg-2: #14111c;
   --panel: #1b1726;
@@ -817,7 +820,7 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .tcg-genres { display: flex; gap: 1.2cqi; flex: none; }
 .genre-icon { width: 7cqi; height: 7cqi; fill: none; stroke: #3a3247; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
 .tcg .tcg-text { display: flex; flex-direction: column; gap: 1.6cqi; padding-top: 0.5cqi; }
-.skill-row { display: grid; grid-template-columns: 37% 1fr auto; align-items: center; gap: 1.6cqi; font-size: 4cqi; }
+.skill-row { display: grid; grid-template-columns: 37% minmax(0, 1fr) auto; align-items: center; gap: 1.6cqi; font-size: 4cqi; }
 .skill-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #3a3247; }
 .skill-row > b { font-size: 4.6cqi; min-width: 5cqi; text-align: right; }
 .skill-cells { display: grid; grid-template-columns: repeat(10, 1fr); gap: 0.8cqi; }
@@ -859,6 +862,9 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .genre-picker input { position: absolute; opacity: 0; pointer-events: none; }
 
 /* ---------- Bekanntheit als Sternchen-Leiste neben dem Können ---------- */
-.fame-stars { display: grid; grid-template-columns: repeat(10, 1fr); gap: 0.2cqi; font-size: 4.6cqi; line-height: 1; }
+.fame-stars { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 0; font-size: 4.1cqi; line-height: 1; min-width: 0; overflow: hidden; }
 .fame-stars i { font-style: normal; text-align: center; background: linear-gradient(90deg, #e09f00 var(--f), rgba(0, 0, 0, 0.18) var(--f)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .tile .bar { flex: none; }
+
+/* Musikerkarte: Hintergrund in allen Lieblingsgenres, mit etwas Licht und Schatten darüber. */
+.genre-split { --art: linear-gradient(160deg, rgba(255, 255, 255, 0.28), rgba(0, 0, 0, 0.3)), var(--split); }

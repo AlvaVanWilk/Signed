@@ -17,7 +17,8 @@ export function genreChips(genres) {
 }
 
 export function face(person, size = '') {
-  return `<span class="face ${size} rarity-${person.rarity}">${avatar(person.look)}</span>`;
+  const frame = person.level === undefined ? `rarity-${person.rarity}` : `lvl-${person.level}`;
+  return `<span class="face ${size} ${frame}">${avatar(person.look)}</span>`;
 }
 
 /** Was der Musiker gerade tut, oder leer. */
@@ -39,15 +40,15 @@ export function musicianStatus(m) {
  * Gemeinsamer Aufbau aller Karten: Kopf mit Name und Seltenheit, Bildfeld, Typzeile, Textfeld, Werte.
  * opts: act/data (Klick-Aktion), size ('' | 'sm'), extra (HTML unter der Karte), tag ('button' | 'div')
  */
-function tcg({ rarity, theme = '', name, art, type, text, stats, foot = '', act = null, data = {}, size = '', extra = '' }) {
+function tcg({ rarity = '', frame = '', theme = '', name, badge = '', art, type, text, stats, foot = '', act = null, data = {}, size = '', extra = '' }) {
   const tag = act ? 'button' : 'div';
   const attrs = act ? ` data-act="${act}" ${Object.entries(data).map(([k, v]) => `data-${k}="${esc(v)}"`).join(' ')}` : '';
   const card = `
-    <${tag} class="tcg rarity-${rarity} ${theme} ${size}"${attrs}>
+    <${tag} class="tcg ${frame || `rarity-${rarity}`} ${theme} ${size}"${attrs}>
       <span class="tcg-frame">
         <span class="tcg-head">
           <span class="tcg-name">${esc(name)}</span>
-          <span class="tcg-gem" title="${esc(rarityName(rarity))}"></span>
+          ${badge || `<span class="tcg-gem" title="${esc(rarityName(rarity))}"></span>`}
         </span>
         <span class="tcg-art">${art}</span>
         <span class="tcg-type">${type}</span>
@@ -59,23 +60,39 @@ function tcg({ rarity, theme = '', name, art, type, text, stats, foot = '', act 
   return extra ? `<div class="tcg-wrap ${size}">${card}${extra}</div>` : card;
 }
 
+export function abilityInfo(key) {
+  const info = cat().abilities[key];
+  return { ...info, desc: info.desc ?? cat().techniqueDesc };
+}
+
+/** Kartenrahmen nach Können-Stufe, Schein nach Bekanntheits-Stufe; beides voll = Legende. */
+export function musicianFrame(m) {
+  const legend = m.level >= 3 && m.fameLevel >= 3;
+  return `lvl-${m.level} fame-${m.fameLevel}${legend ? ' legend' : ''}`;
+}
+
+export function levelPips(level) {
+  return `<span class="tcg-pips" title="Können-Stufe ${level}">${[1, 2, 3].map((i) => `<i class="${i <= level ? 'on' : ''}"></i>`).join('')}</span>`;
+}
+
 export function musicianCard(m, { act = 'openMusician', size = '', extra = '', showStatus = true } = {}) {
   const c = cat();
   const main = m.instruments.reduce((best, i) => (i.skill > best.skill ? i : best), m.instruments[0]);
-  const lines = [
-    ...m.traits.map((t) => `<b>${esc(c.traits[t].name)}</b> ${esc(c.traits[t].desc)}`),
-    ...m.techniques.map((t) => `<b>${esc(c.techniques[t])}</b> Spezialtechnik`),
-  ];
-  if (m.unusual) lines.unshift('<b>Ungewöhnlich</b> Erregt mehr Aufsehen.');
   const band = m.bandId ? bandById(m.bandId) : null;
-  const status = showStatus ? (musicianStatus(m) || (band ? `🎵 ${esc(band.name)}` : '')) : '';
+  const status = showStatus ? (musicianStatus(m) || (band ? esc(band.name) : '')) : '';
+  const abilities = m.abilities.map((a) => abilityInfo(a));
   return tcg({
-    rarity: m.rarity,
+    frame: musicianFrame(m),
     theme: `genre-bg-${m.genres[0]}`,
     name: fullName(m),
-    art: `${avatar(m.look)}<span class="tcg-badge">${m.instruments.map((i) => instrumentIcon(i.type)).join('')}</span>`,
+    badge: levelPips(m.level),
+    art: `${avatar(m.look)}
+      <span class="tcg-badge">${m.instruments.map((i) => instrumentIcon(i.type)).join('')}</span>
+      ${abilities.length ? `<span class="tcg-abilities">${abilities.map((a) => `<i title="${esc(a.name)}">${a.icon}</i>`).join('')}</span>` : ''}`,
     type: `${m.instruments.map((i) => `${esc(instrumentName(i.type))} ${fmt0(i.skill)}`).join(' · ')}<em>${m.genres.map(genreName).map(esc).join(' · ')}</em>`,
-    text: lines.length ? lines.join('<br>') : `<i>${esc(c.personalities[m.personality[0]] ?? '')}${m.personality[1] ? ` · ${esc(c.personalities[m.personality[1]])}` : ''}</i>`,
+    text: abilities.length
+      ? abilities.map((a) => `<b>${esc(a.name)}</b>`).join(' · ')
+      : `<i>${m.personality.map((p) => esc(c.personalities[p])).join(' · ')}</i>`,
     stats: [[fmt0(main.skill), 'Können'], [fmt0(m.presence), 'Präsenz'], [fmt1(m.fame), 'Ruhm']],
     foot: status,
     act,
@@ -90,14 +107,14 @@ export function gearModel(key) {
 }
 
 export function gearCard(g, { act = null, data = {}, size = '', extra = '' } = {}) {
-  const model = gearModel(g.model);
+  const model = { ...gearModel(g.model), ...(g.klang ? { klang: g.klang, spielbarkeit: g.spielbarkeit, design: g.design } : {}) };
   return tcg({
     rarity: model.rarity,
     theme: 'gear-bg',
     name: model.name,
     art: `<span class="tcg-icon">${instrumentIcon(model.type)}</span>`,
     type: `Instrument<em>${esc(instrumentName(model.type))}</em>`,
-    text: `Voller Klang ab Können ${fmt0(100 - model.spielbarkeit)}.${model.design >= 60 ? '<br><b>Blickfang</b> Bringt mehr Ruhm.' : ''}`,
+    text: `Voller Klang ab Können ${fmt0(100 - model.spielbarkeit)}`,
     stats: [[model.klang, 'Klang'], [model.spielbarkeit, 'Spielb.'], [model.design, 'Design']],
     act,
     data,
@@ -135,4 +152,10 @@ export function emptySlot(label, { act = null, data = {}, size = '', icon = '+' 
   const attrs = act ? ` data-act="${act}" ${Object.entries(data).map(([k, v]) => `data-${k}="${esc(v)}"`).join(' ')}` : '';
   const tag = act ? 'button' : 'div';
   return `<${tag} class="tcg-slot ${size}"${attrs}><span class="tcg-slot-icon">${icon}</span><span>${esc(label)}</span></${tag}>`;
+}
+
+/** Meldung, wenn Musiker eine Können-Stufe aufsteigen. */
+export function levelUpBanners(levelUps = []) {
+  return levelUps.map((l) => `
+    <div class="banner">⭐ ${esc(l.name)} erreicht Können-Stufe ${l.level}${l.abilities.length ? ` und lernt ${l.abilities.map((a) => `${cat().abilities[a].icon} ${esc(cat().abilities[a].name)}`).join(', ')}` : ''}${l.choice ? ' und darf eine Fähigkeit wählen' : ''}.</div>`).join('');
 }

@@ -38,7 +38,7 @@ final class Minigames
                 $skill = BandCalc::skill($m, $slot);
                 $genre = $m['genres'][0];
                 $bpm = Catalog::GENRES[$genre]['bpm'];
-                $perfectPitch = in_array('gehoer', $m['traits'], true);
+                $perfectPitch = Levels::has($m, 'gehoer');
                 // Gesang und Geige spielen nach Tonhöhe, alle anderen nach Rhythmus.
                 if (in_array($instrument, Catalog::PITCH_INSTRUMENTS, true)) {
                     $chart = [
@@ -81,7 +81,7 @@ final class Minigames
                     'mode' => 'mixer',
                     'tracks' => array_map(static fn ($m) => ['name' => $m['first_name'], 'instrument' => BandCalc::instrument($m)], $members),
                     'drifts' => Chart::mixerDrifts(array_map([BandCalc::class, 'skill'], $members), Balance::SONG_SECONDS),
-                    'zone' => Chart::mixerZone($sound),
+                    'zone' => Chart::mixerZone($sound) + (array_filter($members, static fn ($m) => Levels::has($m, 'studiofuchs')) ? 0.04 : 0),
                     'segments' => Chart::MIXER_SEGMENTS,
                     'count' => count($members) * Chart::MIXER_SEGMENTS,
                 ];
@@ -178,10 +178,10 @@ final class Minigames
         $slot = (int) $session['slot'];
         $skill = BandCalc::skill($m, $slot);
         $accuracy = Chart::accuracy($perfect, $good, $miss);
-        $talent = in_array('talent', $m['traits'], true) ? Balance::TALENT_FACTOR : 1.0;
-        $gain = Balance::PRACTICE_GAIN * $accuracy ** 1.5 * $talent * max(0.08, 1 - $skill / 110);
+        $gain = BandCalc::trainingGain($m, Balance::PRACTICE_GAIN * $accuracy ** 1.5, $slot);
         $after = min((float) Balance::MAX_STAT, $skill + $gain);
         $this->repo->db->update('musicians', [$slot === 2 ? 'skill2' : 'skill1' => $after], ['id' => $m['id']]);
+        $levelUp = Levels::check($this->repo, $m['id']);
         return [
             'accuracy' => round($accuracy, 3),
             'musicianId' => $m['id'],
@@ -189,6 +189,7 @@ final class Minigames
             'skillBefore' => round($skill, 1),
             'skillAfter' => round($after, 1),
             'gain' => round($after - $skill, 1),
+            'levelUps' => $levelUp === null ? [] : [$levelUp],
         ];
     }
 

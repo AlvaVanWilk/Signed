@@ -92,8 +92,10 @@ final class Repo
             'presence' => $m['presence'],
             'fame' => $m['fame'],
             'genres' => json_encode($m['genres']),
-            'traits' => json_encode($m['traits']),
-            'techniques' => json_encode($m['techniques']),
+            'traits' => '[]',
+            'techniques' => '[]',
+            'level' => $m['level'],
+            'abilities' => json_encode($m['abilities']),
             'personality' => json_encode($m['personality']),
             'unusual' => $m['unusual'] ? 1 : 0,
             'look' => json_encode($m['look']),
@@ -120,8 +122,11 @@ final class Repo
             'presence' => (float) $r['presence'],
             'fame' => (float) $r['fame'],
             'genres' => json_decode($r['genres'], true) ?: [],
-            'traits' => json_decode($r['traits'], true) ?: [],
-            'techniques' => json_decode($r['techniques'], true) ?: [],
+            'level' => (int) $r['level'],
+            'abilities' => json_decode($r['abilities'], true) ?: [],
+            'ability_choice' => $r['ability_choice'] ? json_decode($r['ability_choice'], true) : null,
+            'favorite' => (bool) $r['favorite'],
+            'jam_at' => (int) $r['jam_at'],
             'personality' => json_decode($r['personality'], true) ?: [],
             'unusual' => (bool) $r['unusual'],
             'look' => json_decode($r['look'], true) ?: [],
@@ -139,11 +144,14 @@ final class Repo
     public function gear(): array
     {
         $out = [];
-        foreach ($this->db->all('SELECT id, model, musician_id FROM gear WHERE label_id = ? ORDER BY id', [$this->labelId]) as $row) {
+        foreach ($this->db->all('SELECT id, model, musician_id, klang, spielbarkeit, design FROM gear WHERE label_id = ? ORDER BY id', [$this->labelId]) as $row) {
             $out[(int) $row['id']] = [
                 'id' => (int) $row['id'],
                 'model' => $row['model'],
                 'musician_id' => $row['musician_id'] === null ? null : (int) $row['musician_id'],
+                'klang' => (int) $row['klang'],
+                'spielbarkeit' => (int) $row['spielbarkeit'],
+                'design' => (int) $row['design'],
             ];
         }
         return $out;
@@ -156,15 +164,26 @@ final class Repo
         foreach ($gear ?? $this->gear() as $item) {
             $model = Catalog::GEAR[$item['model']] ?? null;
             if ($item['musician_id'] !== null && $model !== null) {
-                $map[$item['musician_id']][$model['type']] = $model + ['key' => $item['model'], 'gearId' => $item['id']];
+                // Die Werte des einzelnen Instruments gehen vor die des Modells.
+                $stats = ['klang' => $item['klang'], 'spielbarkeit' => $item['spielbarkeit'], 'design' => $item['design']];
+                $map[$item['musician_id']][$model['type']] = $stats + $model + ['key' => $item['model'], 'gearId' => $item['id']];
             }
         }
         return $map;
     }
 
-    public function insertGear(string $model): int
+    public function insertGear(string $model, ?array $stats = null): int
     {
-        return $this->db->insert('gear', ['label_id' => $this->labelId, 'model' => $model, 'musician_id' => null, 'created_at' => Clock::now()]);
+        $stats ??= Generator::gearStats($model);
+        return $this->db->insert('gear', [
+            'label_id' => $this->labelId,
+            'model' => $model,
+            'musician_id' => null,
+            'klang' => $stats['klang'],
+            'spielbarkeit' => $stats['spielbarkeit'],
+            'design' => $stats['design'],
+            'created_at' => Clock::now(),
+        ]);
     }
 
     // ---------- Manager ----------

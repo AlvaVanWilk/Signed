@@ -9,12 +9,13 @@ use Signed\Db;
 use Signed\Rng;
 
 /**
- * Automatische und passive Aktionen: Straßenmusik, Open Stage, Gigs und Promo-Missionen.
- * Das Ergebnis wird beim Start berechnet und gutgeschrieben, sobald die Zeit abgelaufen ist.
+ * Automatische und passive Aktionen von Bands und einzelnen Musikern: Straßenmusik, Open Stage, Gigs,
+ * Bandprobe, Promo und Jam-Café. Das Ergebnis wird beim Start berechnet und gutgeschrieben, sobald die Zeit abgelaufen ist.
  */
 final class Activities
 {
-    public const PERFORMANCES = ['busking', 'openstage', 'gig'];
+    public const BAND_TYPES = ['busking', 'openstage', 'gig', 'rehearsal'];
+    public const SOLO_TYPES = ['busking', 'jam'];
 
     public function __construct(private Repo $repo)
     {
@@ -39,7 +40,7 @@ final class Activities
 
     public function start(int $bandId, string $type, int $songs = 0): array
     {
-        if (!in_array($type, self::PERFORMANCES, true)) {
+        if (!in_array($type, self::BAND_TYPES, true)) {
             throw new ApiError('Unbekannte Aktivität.');
         }
         $db = $this->repo->db;
@@ -55,57 +56,60 @@ final class Activities
             $sound = BandCalc::sound($members, $band['genre'], $band['cohesion'], $gear);
             $fame = BandCalc::fame($members);
             [$manager, $level] = $this->repo->bandManager($band);
-            $venueKey = null;
-
-            if ($type === 'busking') {
-                $cfg = Balance::BUSKING;
-                $songs = $cfg['songs'];
-                $falloff = BandCalc::falloff($fame, $cfg['falloff'], $cfg['minFactor']);
-                $gage = (int) round($cfg['gage'] * $songs * $falloff);
-                $fameBase = $cfg['fame'] * $falloff;
-                $expect = $cfg['expect'];
-                $title = 'Straßenmusik: ' . Rng::pick(Catalog::STREETS);
-            } elseif ($type === 'openstage') {
-                $cfg = Balance::OPENSTAGE;
-                $songs = $cfg['songs'];
-                $gage = 0;
-                $fameBase = $cfg['fame'] * BandCalc::falloff($fame, $cfg['falloff']);
-                $expect = $cfg['expect'];
-                $title = 'Open Stage: ' . Rng::pick(Catalog::OPEN_STAGES);
-            } else {
-                if ($band['records'] < 1) {
-                    throw new ApiError('Richtige Gigs gibt es erst, wenn die Band eine Platte produziert hat.');
-                }
-                $max = BandCalc::maxGigSongs($band['songs_recorded'], $level);
-                if ($songs < 1 || $songs > $max) {
-                    throw new ApiError(sprintf('Ein Gig dieser Band kann 1 bis %d Lieder lang sein.', $max));
-                }
-                $venue = BandCalc::venue($fame);
-                $negotiator = BandCalc::managerBonus($manager, $level, 'verhandler', Balance::NEGOTIATOR_BONUS);
-                $gage = BandCalc::gagePerSong($venue, $negotiator) * $songs;
-                $fameBase = $venue['fame'];
-                $expect = $venue['expect'];
-                $venueKey = $venue['key'];
-                $title = sprintf('Gig: %s (%s)', Rng::pick(Catalog::VENUE_NAMES[$venue['key']]), $venue['name']);
-            }
-
-            $players = array_map(static fn ($m) => [
-                'name' => $m['first_name'],
-                'instrument' => BandCalc::instrument($m),
-                'skill' => BandCalc::skill($m),
-                'presence' => $m['presence'],
-                'traits' => $m['traits'],
-                'techniques' => $m['techniques'],
-            ], $members);
-            $sim = Performance::simulate($players, $sound, (float) $expect, $songs);
-
-            // Ruhm: Größe des Auftritts × Sound × Publikum, plus etwas Zufall.
-            $fameTotal = 0.0;
-            for ($i = 0; $i < $songs; $i++) {
-                $fameTotal += $fameBase * BandCalc::soundFactor($sound) * $sim['perf'] * Rng::float(0.9, 1.1);
-            }
-            $fameTotal *= 1 + BandCalc::managerBonus($manager, $level, 'prprofi', Balance::PR_BONUS);
             $chemistry = BandCalc::chemistry($members);
+            $venueKey = null;
+            $gage = 0;
+            $presence = [];
+            $skill = [];
+            $cohesionPerSong = Balance::COHESION_PER_SONG;
+
+            if ($type === 'rehearsal') {
+                $songs = Balance::REHEARSAL['songs'];
+                $cohesionPerSong = Balance::REHEARSAL['cohesion'];
+                foreach ($members as $m) {
+                    $skill[$m['id']] = round(BandCalc::trainingGain($m, Balance::REHEARSAL['skill'] * $songs), 2);
+                }
+                $title = 'Bandprobe';
+                $sim = ['timeline' => self::rehearsalTimeline($members, $songs), 'meter' => 0.0, 'perf' => 0.0];
+                $fameTotal = 0.0;
+            } else {
+                if ($type === 'busking') {
+                    $cfg = Balance::BUSKING;
+                    $songs = $cfg['songs'];
+                    $fameBase = $cfg['fame'] * BandCalc::falloff($fame, $cfg['falloff'], $cfg['minFactor']);
+                    $expect = $cfg['expect'];
+                    $title = 'Straßenmusik: ' . Rng::pick(Catalog::STREETS);
+                    $presence = self::buskingPresence($members);
+                } elseif ($type === 'openstage') {
+                    $cfg = Balance::OPENSTAGE;
+                    $songs = $cfg['songs'];
+                    $fameBase = $cfg['fame'] * BandCalc::falloff($fame, $cfg['falloff']);
+                    $expect = $cfg['expect'];
+                    $title = 'Open Stage: ' . Rng::pick(Catalog::OPEN_STAGES);
+                } else {
+                    if ($band['records'] < 1) {
+                        throw new ApiError('Richtige Gigs gibt es erst, wenn die Band eine Platte produziert hat.');
+                    }
+                    $max = BandCalc::maxGigSongs($band['songs_recorded'], $level);
+                    if ($songs < 1 || $songs > $max) {
+                        throw new ApiError(sprintf('Ein Gig dieser Band kann 1 bis %d Lieder lang sein.', $max));
+                    }
+                    $venue = BandCalc::venue($fame);
+                    $negotiator = BandCalc::managerBonus($manager, $level, 'verhandler', Balance::NEGOTIATOR_BONUS);
+                    $gage = BandCalc::gagePerSong($venue, $negotiator) * $songs;
+                    $fameBase = $venue['fame'];
+                    $expect = $venue['expect'];
+                    $venueKey = $venue['key'];
+                    $title = sprintf('Gig: %s (%s)', Rng::pick(Catalog::VENUE_NAMES[$venue['key']]), $venue['name']);
+                }
+                $sim = Performance::simulate(array_map([self::class, 'player'], $members), $sound, (float) $expect, $songs);
+                // Ruhm: Größe des Auftritts × Sound × Publikum, plus etwas Zufall.
+                $fameTotal = 0.0;
+                for ($i = 0; $i < $songs; $i++) {
+                    $fameTotal += $fameBase * BandCalc::soundFactor($sound) * $sim['perf'] * Rng::float(0.9, 1.1);
+                }
+                $fameTotal *= 1 + BandCalc::managerBonus($manager, $level, 'prprofi', Balance::PR_BONUS);
+            }
 
             $drops = [];
             if ($type === 'openstage') {
@@ -121,30 +125,81 @@ final class Activities
             if ($claimed === 0) {
                 throw new ApiError('Die Band ist gerade beschäftigt.');
             }
-
-            $id = $db->insert('activities', [
-                'label_id' => $this->repo->labelId,
-                'band_id' => $bandId,
-                'musician_id' => null,
-                'type' => $type,
-                'started_at' => $now,
-                'ends_at' => $endsAt,
-                'data' => json_encode([
-                    'title' => $title,
-                    'songs' => $songs,
-                    'timeline' => $sim['timeline'],
-                    'reward' => [
-                        'money' => $gage,
-                        'fameGains' => BandCalc::splitFame($members, $fameTotal, $gear),
-                        'cohesion' => round(Balance::COHESION_PER_SONG * $songs * $chemistry, 2),
-                        'maxCohesion' => BandCalc::maxCohesion($chemistry),
-                        'meter' => $sim['meter'],
-                        'drops' => $drops,
-                        'venue' => $venueKey,
-                    ],
-                ], JSON_UNESCAPED_UNICODE),
+            return $this->insert($bandId, null, $type, $now, $endsAt, [
+                'title' => $title,
+                'songs' => $songs,
+                'timeline' => $sim['timeline'],
+                'reward' => [
+                    'money' => $gage,
+                    'fameGains' => BandCalc::splitFame($members, $fameTotal, $gear),
+                    'presence' => $presence,
+                    'skill' => $skill,
+                    'cohesion' => round($cohesionPerSong * $songs * $chemistry, 2),
+                    'maxCohesion' => BandCalc::maxCohesion($chemistry),
+                    'meter' => $sim['meter'],
+                    'drops' => $drops,
+                    'venue' => $venueKey,
+                ],
             ]);
-            return Present::activity($db->one('SELECT * FROM activities WHERE id = ?', [$id]));
+        });
+    }
+
+    /** Ein Musiker ohne Band: Straßenmusik oder Jam-Café. */
+    public function startSolo(int $musicianId, string $type): array
+    {
+        if (!in_array($type, self::SOLO_TYPES, true)) {
+            throw new ApiError('Unbekannte Aktivität.');
+        }
+        $db = $this->repo->db;
+        return $db->transaction(function () use ($db, $musicianId, $type): array {
+            $now = Clock::now();
+            $m = $this->repo->musician($musicianId);
+            if ($m['band_id'] !== null) {
+                throw new ApiError(sprintf('%s spielt in einer Band. Auftritte laufen über die Band.', $m['first_name']));
+            }
+            if ($m['busy_until'] > $now) {
+                throw new ApiError(sprintf('%s ist gerade beschäftigt.', $m['first_name']));
+            }
+            if ($type === 'jam' && $now < $m['jam_at'] + Balance::JAM['cooldown']) {
+                throw new ApiError(sprintf('%s war heute schon im Jam-Café.', $m['first_name']));
+            }
+            $gear = $this->repo->gearByMusician();
+            $genre = $m['genres'][0];
+            $sound = BandCalc::sound([$m], $genre, 0, $gear);
+            if ($type === 'jam') {
+                $songs = Balance::JAM['songs'];
+                $fameTotal = Balance::JAM['fame'] * $songs;
+                $expect = Balance::OPENSTAGE['expect'];
+                $title = 'Jam-Café: ' . Rng::pick(Catalog::JAM_CAFES);
+                $presence = [];
+                $db->update('musicians', ['jam_at' => $now], ['id' => $musicianId]);
+            } else {
+                $cfg = Balance::BUSKING;
+                $songs = $cfg['songs'];
+                $fameTotal = $cfg['fame'] * $songs * BandCalc::falloff($m['fame'], $cfg['falloff'], $cfg['minFactor']);
+                $expect = $cfg['expect'];
+                $title = 'Straßenmusik: ' . Rng::pick(Catalog::STREETS);
+                $presence = self::buskingPresence([$m]);
+            }
+            $sim = Performance::simulate([self::player($m)], $sound, (float) $expect, $songs);
+            $fameTotal *= BandCalc::soundFactor($sound) * $sim['perf'];
+
+            $endsAt = $now + $songs * Balance::SONG_SECONDS;
+            $claimed = $db->exec('UPDATE musicians SET busy_until = ? WHERE id = ? AND busy_until <= ?', [$endsAt, $musicianId, $now]);
+            if ($claimed === 0) {
+                throw new ApiError(sprintf('%s ist gerade beschäftigt.', $m['first_name']));
+            }
+            return $this->insert(null, $musicianId, $type, $now, $endsAt, [
+                'title' => $title,
+                'songs' => $songs,
+                'timeline' => $sim['timeline'],
+                'reward' => [
+                    'fameGains' => BandCalc::splitFame([$m], $fameTotal, $gear),
+                    'presence' => $presence,
+                    'meter' => $sim['meter'],
+                    'jam' => $type === 'jam',
+                ],
+            ]);
         });
     }
 
@@ -164,28 +219,47 @@ final class Activities
             if ($m['presence'] >= Balance::MAX_STAT) {
                 throw new ApiError(sprintf('%s hat schon die volle Präsenz.', $m['first_name']));
             }
-            $factor = in_array('attraktiv', $m['traits'], true) ? Balance::ATTRACTIVE_FACTOR : 1.0;
-            $gain = Rng::float(...Balance::PROMO_GAIN) * $factor * max(0.1, 1 - $m['presence'] / 110);
             $endsAt = $now + Balance::PROMO_SECONDS;
-
             $claimed = $db->exec('UPDATE musicians SET busy_until = ? WHERE id = ? AND busy_until <= ?', [$endsAt, $musicianId, $now]);
             if ($claimed === 0) {
                 throw new ApiError(sprintf('%s ist gerade beschäftigt.', $m['first_name']));
             }
-            $id = $db->insert('activities', [
-                'label_id' => $this->repo->labelId,
-                'band_id' => null,
-                'musician_id' => $musicianId,
-                'type' => 'promo',
-                'started_at' => $now,
-                'ends_at' => $endsAt,
-                'data' => json_encode([
-                    'title' => 'Promo-Mission: ' . Bands::fullName($m),
-                    'songs' => 0,
-                    'reward' => ['presence' => round($gain, 2)],
-                ], JSON_UNESCAPED_UNICODE),
+            return $this->insert(null, $musicianId, 'promo', $now, $endsAt, [
+                'title' => 'Promo-Mission: ' . Bands::fullName($m),
+                'songs' => 0,
+                'reward' => ['presence' => round(self::presenceGain($m, Balance::PROMO_GAIN), 2)],
             ]);
-            return Present::activity($db->one('SELECT * FROM activities WHERE id = ?', [$id]));
+        });
+    }
+
+    /** Band-Promo: Alle Mitglieder sind unterwegs, gewinnen Präsenz, und die Band wird bekannter. */
+    public function bandPromo(int $bandId): array
+    {
+        $db = $this->repo->db;
+        return $db->transaction(function () use ($db, $bandId): array {
+            $now = Clock::now();
+            $band = $this->repo->band($bandId);
+            $members = $this->repo->members($bandId);
+            $blocker = self::blocker($band, $members, $now);
+            if ($blocker !== null) {
+                throw new ApiError($blocker);
+            }
+            $cfg = Balance::BAND_PROMO;
+            $endsAt = $now + $cfg['seconds'];
+            if ($db->exec('UPDATE bands SET busy_until = ? WHERE id = ? AND busy_until <= ?', [$endsAt, $bandId, $now]) === 0) {
+                throw new ApiError('Die Band ist gerade beschäftigt.');
+            }
+            $presence = [];
+            foreach ($members as $m) {
+                $presence[$m['id']] = round(self::presenceGain($m, $cfg['presence']), 2);
+                $db->update('musicians', ['busy_until' => $endsAt], ['id' => $m['id']]);
+            }
+            $fame = Rng::float(...$cfg['fame']) * count($members);
+            return $this->insert($bandId, null, 'bandpromo', $now, $endsAt, [
+                'title' => 'Band-Promo: ' . $band['name'],
+                'songs' => 0,
+                'reward' => ['presence' => $presence, 'fameGains' => BandCalc::splitFame($members, $fame, $this->repo->gearByMusician())],
+            ]);
         });
     }
 
@@ -216,37 +290,38 @@ final class Activities
                 }
                 $repo = new Repo($db, (int) $row['label_id']);
                 $data = json_decode($row['data'], true) ?: [];
-                $result = $row['type'] === 'promo'
-                    ? self::applyPromo($repo, $row, $data)
-                    : self::applyPerformance($repo, $row, $data);
+                $result = match (true) {
+                    $row['type'] === 'promo' => self::applyPromo($repo, $row, $data),
+                    $row['band_id'] === null => self::applySolo($repo, $row, $data),
+                    default => self::applyBand($repo, $row, $data),
+                };
                 $db->update('activities', ['result' => json_encode($result, JSON_UNESCAPED_UNICODE)], ['id' => (int) $row['id']]);
             });
         }
     }
 
-    private static function applyPerformance(Repo $repo, array $row, array $data): array
+    // ---------- Gutschrift ----------
+
+    private static function applyBand(Repo $repo, array $row, array $data): array
     {
         $db = $repo->db;
         $reward = $data['reward'];
         $bandId = (int) $row['band_id'];
-        $repo->earn((int) $reward['money']);
-
-        $fameGain = 0.0;
-        foreach ($reward['fameGains'] as $musicianId => $gain) {
-            $db->exec('UPDATE musicians SET fame = fame + ? WHERE id = ? AND label_id = ?', [(float) $gain, (int) $musicianId, $repo->labelId]);
-            $fameGain += (float) $gain;
-        }
+        $repo->earn((int) ($reward['money'] ?? 0));
+        $fameGain = self::applyFame($repo, $reward['fameGains'] ?? []);
         $result = [
-            'money' => (int) $reward['money'],
+            'money' => (int) ($reward['money'] ?? 0),
             'fame' => round($fameGain, 1),
-            'meter' => $reward['meter'],
+            'meter' => $reward['meter'] ?? null,
+            'presence' => self::applyPresence($repo, $reward['presence'] ?? []),
             'cohesion' => 0.0,
             'drops' => [],
             'venueUp' => null,
+            'levelUps' => self::applySkill($repo, $reward['skill'] ?? []),
         ];
 
         $bandRow = $db->one('SELECT * FROM bands WHERE id = ?', [$bandId]);
-        if ($bandRow !== null) {
+        if ($bandRow !== null && isset($reward['cohesion'])) {
             $band = Repo::hydrateBand($bandRow);
             $cohesion = $band['cohesion'] >= $reward['maxCohesion']
                 ? $band['cohesion']
@@ -271,7 +346,7 @@ final class Activities
             }
         }
 
-        foreach ($reward['drops'] as $drop) {
+        foreach ($reward['drops'] ?? [] as $drop) {
             if ($drop['kind'] === 'manager') {
                 $manager = $repo->manager($repo->insertManager(Generator::manager('common')));
                 $result['drops'][] = ['kind' => 'manager', 'name' => $manager['first_name'] . ' ' . $manager['last_name'], 'level' => $manager['level'], 'skills' => $manager['skills']];
@@ -284,16 +359,153 @@ final class Activities
         return $result;
     }
 
+    private static function applySolo(Repo $repo, array $row, array $data): array
+    {
+        $reward = $data['reward'];
+        $result = [
+            'fame' => round(self::applyFame($repo, $reward['fameGains'] ?? []), 1),
+            'presence' => self::applyPresence($repo, $reward['presence'] ?? []),
+            'meter' => $reward['meter'] ?? null,
+            'cards' => [],
+        ];
+        if (!empty($reward['jam'])) {
+            $result['cards'] = self::jamFinds($repo, (int) $row['musician_id']);
+        }
+        return $result;
+    }
+
     private static function applyPromo(Repo $repo, array $row, array $data): array
     {
-        $db = $repo->db;
-        $musician = $db->one('SELECT presence FROM musicians WHERE id = ? AND label_id = ?', [(int) $row['musician_id'], $repo->labelId]);
-        if ($musician === null) {
-            return ['presence' => 0, 'total' => 0];
+        $gains = self::applyPresence($repo, [(int) $row['musician_id'] => (float) $data['reward']['presence']]);
+        $m = $repo->db->one('SELECT presence FROM musicians WHERE id = ?', [(int) $row['musician_id']]);
+        return ['presence' => $gains, 'total' => $m === null ? 0 : round((float) $m['presence'], 1)];
+    }
+
+    /** Im Jam-Café lernt der Musiker andere kennen: passende Instrumente, oft dasselbe Genre. */
+    private static function jamFinds(Repo $repo, int $musicianId): array
+    {
+        $row = $repo->db->one('SELECT * FROM musicians WHERE id = ? AND label_id = ?', [$musicianId, $repo->labelId]);
+        if ($row === null) {
+            return [];
         }
-        $before = (float) $musician['presence'];
-        $after = min((float) Balance::MAX_STAT, $before + (float) $data['reward']['presence']);
-        $db->update('musicians', ['presence' => $after], ['id' => (int) $row['musician_id']]);
-        return ['presence' => round($after - $before, 1), 'total' => round($after, 1)];
+        $host = Repo::hydrateMusician($row);
+        $cfg = Balance::JAM;
+        $weights = array_map(static fn ($i) => $i['weight'], Catalog::INSTRUMENTS);
+        unset($weights[$host['instr1']]);
+        $cards = [];
+        for ($i = 0; $i < $cfg['cards']; $i++) {
+            $instrument = (string) Rng::weighted($weights);
+            unset($weights[$instrument]);
+            $opts = ['instrument' => $instrument];
+            if (Rng::chance($cfg['sameGenre']) && in_array($host['genres'][0], Catalog::INSTRUMENTS[$instrument]['genres'], true)) {
+                $opts['genre'] = $host['genres'][0];
+            }
+            $id = $repo->insertMusician(Generator::musician(Generator::rarity($cfg['odds']), $opts), 'jam');
+            $cards[] = Present::musician($repo->musician($id));
+        }
+        $repo->log('jam', sprintf('Im Jam-Café lernt %s %d Musiker kennen, die bei deinem Label unterschreiben.', $host['first_name'], count($cards)), null, $musicianId);
+        return $cards;
+    }
+
+    // ---------- Hilfen ----------
+
+    private function insert(?int $bandId, ?int $musicianId, string $type, int $now, int $endsAt, array $data): array
+    {
+        $id = $this->repo->db->insert('activities', [
+            'label_id' => $this->repo->labelId,
+            'band_id' => $bandId,
+            'musician_id' => $musicianId,
+            'type' => $type,
+            'started_at' => $now,
+            'ends_at' => $endsAt,
+            'data' => json_encode($data, JSON_UNESCAPED_UNICODE),
+        ]);
+        return Present::activity($this->repo->db->one('SELECT * FROM activities WHERE id = ?', [$id]));
+    }
+
+    private static function player(array $m): array
+    {
+        return [
+            'name' => $m['first_name'],
+            'instrument' => BandCalc::instrument($m),
+            'skill' => BandCalc::skill($m),
+            'presence' => $m['presence'],
+            'abilities' => $m['abilities'],
+        ];
+    }
+
+    private static function presenceGain(array $m, array $range): float
+    {
+        $factor = Levels::has($m, 'ausstrahlung') ? Balance::ATTRACTIVE_FACTOR : 1.0;
+        return Rng::float(...$range) * $factor * max(0.1, 1 - $m['presence'] / 110);
+    }
+
+    /** @return array<int, float> */
+    private static function buskingPresence(array $members): array
+    {
+        $out = [];
+        foreach ($members as $m) {
+            $out[$m['id']] = round(self::presenceGain($m, Balance::BUSKING['presence']), 2);
+        }
+        return $out;
+    }
+
+    private static function rehearsalTimeline(array $members, int $songs): array
+    {
+        $timeline = [];
+        for ($s = 0; $s < $songs; $s++) {
+            $start = $s * Balance::SONG_SECONDS;
+            $timeline[] = ['t' => $start + 0.5, 'kind' => 'song', 'text' => sprintf('Lied %d: „%s“', $s + 1, Generator::songTitle()), 'meter' => 50];
+            foreach ([8, 19] as $offset) {
+                $text = sprintf(Rng::pick(Catalog::REHEARSAL_LINES), Rng::pick($members)['first_name']);
+                $timeline[] = ['t' => $start + $offset, 'kind' => 'highlight', 'text' => $text, 'meter' => 50];
+            }
+        }
+        return $timeline;
+    }
+
+    private static function applyFame(Repo $repo, array $gains): float
+    {
+        $total = 0.0;
+        foreach ($gains as $musicianId => $gain) {
+            $repo->db->exec('UPDATE musicians SET fame = fame + ? WHERE id = ? AND label_id = ?', [(float) $gain, (int) $musicianId, $repo->labelId]);
+            $total += (float) $gain;
+        }
+        return $total;
+    }
+
+    private static function applyPresence(Repo $repo, array $gains): float
+    {
+        $total = 0.0;
+        foreach ($gains as $musicianId => $gain) {
+            $row = $repo->db->one('SELECT presence FROM musicians WHERE id = ? AND label_id = ?', [(int) $musicianId, $repo->labelId]);
+            if ($row === null) {
+                continue;
+            }
+            $after = min((float) Balance::MAX_STAT, (float) $row['presence'] + (float) $gain);
+            $repo->db->update('musicians', ['presence' => $after], ['id' => (int) $musicianId]);
+            $total += $after - (float) $row['presence'];
+        }
+        return round($total, 1);
+    }
+
+    /** Können-Zuwachs auf das Instrument, das der Musiker in der Band spielt; danach Stufen prüfen. */
+    private static function applySkill(Repo $repo, array $gains): array
+    {
+        $levelUps = [];
+        foreach ($gains as $musicianId => $gain) {
+            $row = $repo->db->one('SELECT * FROM musicians WHERE id = ? AND label_id = ?', [(int) $musicianId, $repo->labelId]);
+            if ($row === null) {
+                continue;
+            }
+            $m = Repo::hydrateMusician($row);
+            $column = $m['band_slot'] === 2 && $m['instr2'] !== null ? 'skill2' : 'skill1';
+            $repo->db->update('musicians', [$column => min((float) Balance::MAX_STAT, BandCalc::skill($m) + (float) $gain)], ['id' => $m['id']]);
+            $levelUp = Levels::check($repo, $m['id']);
+            if ($levelUp !== null) {
+                $levelUps[] = $levelUp;
+            }
+        }
+        return $levelUps;
     }
 }

@@ -7,7 +7,7 @@ const nf1 = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 1, maximumFr
 
 export const fmt0 = (n) => nf0.format(n);
 export const fmt1 = (n) => nf1.format(n);
-export const money = (n) => `${nf0.format(n)} €`;
+export const money = (n) => `${nf0.format(n)} ₲`;
 export const percent = (x) => `${nf0.format(Math.round(x * 100))} %`;
 
 export function duration(seconds) {

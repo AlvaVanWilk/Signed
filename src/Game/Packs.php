@@ -41,9 +41,8 @@ final class Packs
     private function create(string $kind, string $rarity, string $origin): array
     {
         if ($kind === 'gear') {
-            $model = Generator::gear($rarity);
-            $id = $this->repo->insertGear($model);
-            return ['kind' => 'gear', 'gear' => ['id' => $id, 'model' => $model, 'musicianId' => null]];
+            $id = $this->repo->insertGear(Generator::gear($rarity));
+            return ['kind' => 'gear', 'gear' => Present::gear($this->repo->gear()[$id])];
         }
         if ($kind === 'manager') {
             $id = $this->repo->insertManager(Generator::manager($rarity));

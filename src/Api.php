@@ -7,6 +7,7 @@ use Signed\Game\Activities;
 use Signed\Game\Balance;
 use Signed\Game\Bands;
 use Signed\Game\Charts;
+use Signed\Game\Levels;
 use Signed\Game\Minigames;
 use Signed\Game\Names;
 use Signed\Game\Packs;
@@ -46,6 +47,10 @@ final class Api
         'activityStart' => ['POST', true],
         'activityAck' => ['POST', true],
         'promoStart' => ['POST', true],
+        'bandPromo' => ['POST', true],
+        'soloStart' => ['POST', true],
+        'musicianFavorite' => ['POST', true],
+        'abilityChoose' => ['POST', true],
         'recordStart' => ['POST', true],
         'minigameStart' => ['POST', true],
         'minigameFinish' => ['POST', true],
@@ -273,6 +278,31 @@ final class Api
     {
         $activity = (new Activities($repo))->promo(self::int($in, 'musicianId'));
         return ['activity' => $activity, 'state' => State::build($repo)];
+    }
+
+    private function bandPromo(array $in, Repo $repo): array
+    {
+        $activity = (new Activities($repo))->bandPromo(self::int($in, 'bandId'));
+        return ['activity' => $activity, 'state' => State::build($repo)];
+    }
+
+    private function soloStart(array $in, Repo $repo): array
+    {
+        $activity = (new Activities($repo))->startSolo(self::int($in, 'musicianId'), self::str($in, 'type'));
+        return ['activity' => $activity, 'state' => State::build($repo)];
+    }
+
+    private function musicianFavorite(array $in, Repo $repo): array
+    {
+        $m = $repo->musician(self::int($in, 'musicianId'));
+        $this->db->update('musicians', ['favorite' => empty($in['favorite']) ? 0 : 1], ['id' => $m['id']]);
+        return ['state' => State::build($repo)];
+    }
+
+    private function abilityChoose(array $in, Repo $repo): array
+    {
+        Levels::choose($repo, self::int($in, 'musicianId'), self::str($in, 'ability'));
+        return ['state' => State::build($repo)];
     }
 
     private function recordStart(array $in, Repo $repo): array

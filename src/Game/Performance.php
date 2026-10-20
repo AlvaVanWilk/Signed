@@ -12,7 +12,7 @@ use Signed\Rng;
 final class Performance
 {
     /**
-     * @param list<array{name: string, instrument: string, skill: float, presence: float, traits: list<string>, techniques: list<string>}> $players
+     * @param list<array{name: string, instrument: string, skill: float, presence: float, abilities: list<string>}> $players
      * @return array{timeline: list<array>, meter: float, perf: float}
      */
     public static function simulate(array $players, float $sound, float $expect, int $songs): array
@@ -35,10 +35,12 @@ final class Performance
                 foreach ($players as $p) {
                     // Wie oft jemand patzt oder glänzt, hängt vom Können ab.
                     $mistake = max(0.02, min(0.24, 0.24 - $p['skill'] * 0.0026));
-                    if (in_array('nervenstark', $p['traits'], true)) {
+                    if (Levels::has($p, 'nervenstark')) {
                         $mistake *= 0.6;
                     }
-                    $highlight = max(0.02, min(0.32, 0.02 + $p['skill'] * 0.0028 + $p['presence'] * 0.0008 + ($p['techniques'] ? 0.03 : 0)));
+                    $highlight = 0.02 + $p['skill'] * 0.0028 + $p['presence'] * 0.0008
+                        + (Levels::techniques($p) ? 0.03 : 0) + (Levels::has($p, 'buehnentier') ? 0.05 : 0);
+                    $highlight = max(0.02, min(0.36, $highlight));
                     $roll = Rng::float();
                     $at = $from + Rng::float(0.5, $phaseLength - 0.5);
                     if ($roll < $mistake) {
@@ -83,8 +85,9 @@ final class Performance
 
     private static function highlightText(array $p): string
     {
-        if ($p['techniques'] && Rng::chance(0.4)) {
-            return sprintf('%s: perfektes %s!', $p['name'], Catalog::TECHNIQUES[Rng::pick($p['techniques'])]);
+        $techniques = Levels::techniques($p);
+        if ($techniques && Rng::chance(0.4)) {
+            return sprintf('%s: perfektes %s!', $p['name'], Catalog::ABILITIES[Rng::pick($techniques)]['name']);
         }
         return sprintf(Rng::pick(Catalog::HIGHLIGHTS[$p['instrument']]), $p['name']);
     }

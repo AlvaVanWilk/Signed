@@ -54,7 +54,7 @@ final class Scout
 
             $cards = [];
             for ($i = 0; $i < Balance::SCOUT_CARDS; $i++) {
-                $cards[] = Generator::musician(Generator::rarity(Balance::SCOUT_ODDS));
+                $cards[] = Generator::musician(Generator::rarity(Balance::SCOUT_ODDS), ['minSkill' => Balance::SKILL_LEVELS[0]]);
             }
             $id = $db->insert('scout_offers', [
                 'label_id' => $this->repo->labelId,
@@ -78,7 +78,12 @@ final class Scout
             if (!isset($cards[$index])) {
                 throw new ApiError('Diesen Musiker gibt es in der Auswahl nicht.');
             }
+            $first = (int) $this->repo->db->value('SELECT COUNT(*) FROM musicians WHERE label_id = ?', [$this->repo->labelId]) === 0;
             $id = $this->repo->insertMusician($cards[$index], 'scout');
+            if ($first) {
+                // Der erste Musiker eines Labels steht gleich als Favorit in der Leiste.
+                $this->repo->db->update('musicians', ['favorite' => 1], ['id' => $id]);
+            }
             $this->repo->db->update('scout_offers', ['status' => 'done'], ['id' => $offerId]);
             $m = $this->repo->musician($id);
             $this->repo->log('scout', sprintf('Der Talent-Scout hat %s entdeckt: %s unterschreibt bei deinem Label.', Bands::fullName($m), $m['first_name']), null, $id);
@@ -106,7 +111,7 @@ final class Scout
         $cards = [];
         foreach (json_decode($offer['cards'], true) as $index => $m) {
             // Noch nicht unterschrieben: Die Karte hat keine echte ID, nur ihren Platz in der Auswahl.
-            $cards[] = Present::musician($m + ['id' => $index, 'band_id' => null, 'band_slot' => 1, 'busy_until' => 0]);
+            $cards[] = Present::musician($m + ['id' => $index, 'band_id' => null, 'band_slot' => 1, 'busy_until' => 0, 'ability_choice' => null, 'favorite' => false, 'jam_at' => 0]);
         }
         return ['id' => (int) $offer['id'], 'cards' => $cards];
     }

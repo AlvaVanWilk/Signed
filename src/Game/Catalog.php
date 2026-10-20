@@ -64,38 +64,43 @@ final class Catalog
     /** Diese Instrumente üben im Tonhöhen-Spiel statt im Rhythmus-Spiel. */
     public const PITCH_INSTRUMENTS = ['vocals', 'violin'];
 
-    public const TECHNIQUES = [
-        'falsett' => 'Falsett',
-        'growl' => 'Growl',
-        'belting' => 'Belting',
-        'rap' => 'Rap',
-        'beatbox' => 'Beatbox',
-        'tapping' => 'Tapping',
-        'shredding' => 'Shredding',
-        'fingerstyle' => 'Fingerstyle',
-        'slap' => 'Slap',
-        'walking' => 'Walking Bass',
-        'doublebass' => 'Double Bass',
-        'blastbeat' => 'Blastbeat',
-        'arpeggio' => 'Arpeggio-Läufe',
-        'improvisation' => 'Improvisation',
-        'sounddesign' => 'Sounddesign',
-        'scratching' => 'Scratching',
-        'juggling' => 'Beat Juggling',
-        'zirkular' => 'Zirkularatmung',
-        'highnotes' => 'High Notes',
-        'flageolett' => 'Flageolett',
-        'flatterzunge' => 'Flatterzunge',
+    /**
+     * Fähigkeiten: Ein Musiker hat so viele, wie seine Können-Stufe angibt (höchstens 3).
+     * technique = an ein Instrument gebunden (siehe INSTRUMENTS[...]['techniques']).
+     */
+    public const ABILITIES = [
+        'talent' => ['name' => 'Talent', 'icon' => '🌱', 'desc' => 'Können wächst schneller.'],
+        'ausstrahlung' => ['name' => 'Ausstrahlung', 'icon' => '✨', 'desc' => 'Präsenz wächst schneller.'],
+        'charisma' => ['name' => 'Charisma', 'icon' => '💫', 'desc' => 'Mehr Ruhm bei Auftritten.'],
+        'nervenstark' => ['name' => 'Nervenstark', 'icon' => '🧊', 'desc' => 'Patzt live seltener.'],
+        'gehoer' => ['name' => 'Absolutes Gehör', 'icon' => '👂', 'desc' => 'Mehr Spielraum in der Solo-Probe.'],
+        'buehnentier' => ['name' => 'Bühnentier', 'icon' => '🔥', 'desc' => 'Mehr Glanzmomente live.'],
+        'studiofuchs' => ['name' => 'Studiofuchs', 'icon' => '🎚️', 'desc' => 'Leichter zu mischen im Studio.'],
+        'falsett' => ['name' => 'Falsett', 'icon' => '🪶', 'technique' => true],
+        'growl' => ['name' => 'Growl', 'icon' => '🐺', 'technique' => true],
+        'belting' => ['name' => 'Belting', 'icon' => '📣', 'technique' => true],
+        'rap' => ['name' => 'Rap', 'icon' => '🗣️', 'technique' => true],
+        'beatbox' => ['name' => 'Beatbox', 'icon' => '👄', 'technique' => true],
+        'tapping' => ['name' => 'Tapping', 'icon' => '👆', 'technique' => true],
+        'shredding' => ['name' => 'Shredding', 'icon' => '⚡', 'technique' => true],
+        'fingerstyle' => ['name' => 'Fingerstyle', 'icon' => '🤌', 'technique' => true],
+        'slap' => ['name' => 'Slap', 'icon' => '👋', 'technique' => true],
+        'walking' => ['name' => 'Walking Bass', 'icon' => '🚶', 'technique' => true],
+        'doublebass' => ['name' => 'Double Bass', 'icon' => '🦶', 'technique' => true],
+        'blastbeat' => ['name' => 'Blastbeat', 'icon' => '💥', 'technique' => true],
+        'arpeggio' => ['name' => 'Arpeggio-Läufe', 'icon' => '🌊', 'technique' => true],
+        'improvisation' => ['name' => 'Improvisation', 'icon' => '🎲', 'technique' => true],
+        'sounddesign' => ['name' => 'Sounddesign', 'icon' => '🧪', 'technique' => true],
+        'scratching' => ['name' => 'Scratching', 'icon' => '🌀', 'technique' => true],
+        'juggling' => ['name' => 'Beat Juggling', 'icon' => '🤹', 'technique' => true],
+        'zirkular' => ['name' => 'Zirkularatmung', 'icon' => '🔄', 'technique' => true],
+        'highnotes' => ['name' => 'High Notes', 'icon' => '🏔️', 'technique' => true],
+        'flageolett' => ['name' => 'Flageolett', 'icon' => '🔔', 'technique' => true],
+        'flatterzunge' => ['name' => 'Flatterzunge', 'icon' => '🦋', 'technique' => true],
     ];
 
-    /** Eigenschaften: permanente Boni (Besonderheiten-Topf). */
-    public const TRAITS = [
-        'talent' => ['name' => 'Talent', 'desc' => 'Können wächst 50 % schneller.'],
-        'attraktiv' => ['name' => 'Attraktiv', 'desc' => 'Präsenz wächst 50 % schneller, etwas mehr Ruhm.'],
-        'charisma' => ['name' => 'Charisma', 'desc' => 'Bringt bei Auftritten deutlich mehr Ruhm.'],
-        'nervenstark' => ['name' => 'Nervenstark', 'desc' => 'Verspielt sich live seltener.'],
-        'gehoer' => ['name' => 'Absolutes Gehör', 'desc' => 'Großzügigeres Timing in der Solo-Probe.'],
-    ];
+    /** Was eine Spezialtechnik bewirkt (gilt für alle Techniken). */
+    public const TECHNIQUE_DESC = 'Spezialtechnik: mehr Glanzmomente live.';
 
     /** Charakterzüge für die Chemie. */
     public const PERSONALITIES = [
@@ -234,6 +239,10 @@ final class Catalog
         'places' => ['am Hafen', 'im Keller', 'auf dem Dach', 'in der Großstadt', 'unter Neonlicht', 'am Bahnhof',
             'im Regen', 'am Meer'],
     ];
+
+    public const JAM_CAFES = ['Café Klangfarbe', 'Jazzkeller Blaue Note', 'Session im Hinterhof', 'Bar Zum Plattenspieler', 'Kulturcafé Kreuzton'];
+    public const REHEARSAL_LINES = ['%s feilt am Übergang.', '%s zählt neu ein.', 'Die Band spielt die Bridge noch einmal.',
+        '%s schlägt ein neues Intro vor.', 'Alle grinsen – das saß!', '%s probiert ein anderes Solo.'];
 
     public const STREETS = ['Fußgängerzone', 'U-Bahn-Station', 'Marktplatz', 'Flohmarkt', 'Hafenpromenade', 'Bahnhofsvorplatz'];
     public const OPEN_STAGES = ['Kulturcafé Funkloch', 'Open Mic im Schlachthof', 'Bühne frei! im Jugendzentrum', 'Die Kleine Kneipe', 'Studentenkeller'];

@@ -2,135 +2,305 @@ import { api } from '../api.js';
 import { emptySlot, face, fullName, gearCard, gearModel, genreName, instrumentIcon, instrumentName, managerCard, musicianCard } from '../cards.js';
 import { app, bandById, cat, defineActions, isBusy, managerById, musicianById, mutate, navigate, rerender, runningFor } from '../core.js';
 import { openLive } from '../live.js';
-import { startRecordSong } from '../play.js';
+import { startPractice, startRecordSong } from '../play.js';
 import { bar, confirmDialog, duration, esc, fmt0, fmt1, money, openModal, percent, promptDialog, timeAgo, toast } from '../ui.js';
-import { bandTile } from './overview.js';
+
+/** Untermenü einer Band: [Pfad, Icon, Bezeichnung] */
+export const BAND_SECTIONS = [
+  ['', '🎸', 'Band'],
+  ['uebung', '🥁', 'Übung'],
+  ['promo', '📣', 'Promo'],
+  ['auftritte', '🎤', 'Auftritte'],
+  ['studio', '💿', 'Studio'],
+  ['chronik', '📜', 'Chronik'],
+  ['auszeichnungen', '🏆', 'Auszeichnungen'],
+];
 
 export function renderList() {
   const s = app.state;
-  const rules = cat().rules;
   return `
-    <div class="section-head">
-      <div><h1>Bands</h1><p class="muted">Pro Genre eine Band, ${rules.minMembers} bis ${rules.maxMembers} Musiker. Geld gehört dem Label, Ruhm den Musikern.</p></div>
-      <button class="btn primary" data-act="newBand">+ Neue Band</button>
-    </div>
-    ${s.bands.length ? `<div class="band-grid">${s.bands.map(bandTile).join('')}</div>` : `
-      <div class="empty">Noch keine Band. Mit mindestens zwei Musikern kannst du <button class="link" data-act="newBand">jetzt eine gründen</button>.</div>`}`;
+    <div class="section-head"><h1>Bands</h1><button class="btn primary" data-act="newBand">+ Neue Band</button></div>
+    ${s.bands.length ? `<div class="tile-grid">${s.bands.map((b) => `<a class="panel band-link" href="#/band/${b.id}"><b>${esc(b.name)}</b><span class="chip genre genre-${b.genre}">${esc(genreName(b.genre))}</span></a>`).join('')}</div>`
+      : '<div class="empty">Noch keine Band.</div>'}`;
 }
 
-export function renderDetail(id) {
-  const b = bandById(id);
-  if (!b) return '<div class="empty">Diese Band gibt es nicht mehr. <a href="#/bands">Zu den Bands</a></div>';
+export function renderBand(route) {
+  const b = bandById(route.id);
+  if (!b) return '<div class="empty">Diese Band gibt es nicht mehr.</div>';
   const members = b.memberIds.map(musicianById).filter(Boolean);
-  const history = app.state.history.filter((h) => h.bandId === b.id);
+  const section = BAND_SECTIONS.some(([key]) => key === route.section) ? route.section : '';
+  const render = { '': overview, uebung: practice, promo, auftritte: gigs, studio, chronik: chronicle, auszeichnungen: awards }[section];
+  return render(b, members);
+}
 
+function head(title, b) {
+  return `<div class="page-head"><div><div class="eyebrow">${esc(b.name)}</div><h1>${esc(title)}</h1></div></div>`;
+}
+
+/** Was gerade läuft oder warum nichts geht. */
+function blocker(b, members) {
+  const running = runningFor(b.id);
+  if (running) return { text: running.title, running };
+  if (isBusy(b.busyUntil)) return { text: 'Die Band ist gerade beschäftigt.' };
+  const away = members.find((m) => isBusy(m.busyUntil));
+  if (away) return { text: `${away.firstName} ist gerade unterwegs.` };
+  if (members.length < cat().rules.minMembers) return { text: 'Die Band braucht mindestens zwei Musiker.' };
+  return null;
+}
+
+function blockerNotice(b, members) {
+  const block = blocker(b, members);
+  if (!block) return '';
   return `
-    <a class="back" href="#/bands">← Alle Bands</a>
-    <section class="band-head">
-      <div>
-        <div class="eyebrow">${esc(genreName(b.genre))}</div>
-        <h1>${esc(b.name)} <button class="icon-btn" data-act="bandRename" data-id="${b.id}" title="Umbenennen">✎</button></h1>
-        <div class="faces">${members.map((m) => face(m, 'md')).join('')}</div>
-      </div>
-      <div class="stat-tiles">
-        <div class="tile" title="Kritikerwertung: Können, Instrumente, Genre-Passung und Eingespieltheit"><span>Sound</span><b>${fmt1(b.sound)}</b></div>
-        <div class="tile" title="Summe der Bekanntheit aller Mitglieder"><span>Ruhm</span><b>${fmt1(b.fame)}</b>
-          ${b.options.gig.nextVenue ? `<small>${esc(b.options.gig.nextVenue)} ab ${fmt0(b.options.gig.nextFame)}</small>${bar(b.options.gig.progress, 1, 'thin')}` : '<small>Höchste Stufe</small>'}
-        </div>
-        <div class="tile" title="Wächst durch gemeinsame Auftritte und Aufnahmen. Die Chemie bestimmt das Maximum."><span>Eingespieltheit</span><b>${fmt0(b.cohesion)}<small> / ${fmt0(b.maxCohesion)}</small></b>${bar(b.cohesion, 100, 'thin')}</div>
-        <div class="tile" title="Wie gut die Charaktere zueinander passen"><span>Chemie</span><b>${chemistryLabel(b.chemistry)}</b><small>× ${fmt1(b.chemistry)}</small></div>
-        <div class="tile"><span>Diskografie</span><b>${fmt0(b.records)} ${b.records === 1 ? 'Platte' : 'Platten'}</b><small>${fmt0(b.songsRecorded)} Lieder${b.perfectRecords ? ` · ${b.perfectRecords}× perfekt` : ''}</small></div>
-      </div>
-    </section>
-
-    <section class="panel">
-      <div class="section-head">
-        <h2>Aufstellung</h2>
-        <span class="muted small">${b.released ? `Freigegeben: Jeder Wechsel kostet Eingespieltheit, ein Rauswurf ${cat().rules.cohesionRemovePenalty} Punkte.` : 'Bis zum ersten Auftritt kannst du die Besetzung frei ändern.'}</span>
-      </div>
-      <div class="lineup-board">
-        <div class="lineup">
-          ${members.map((m) => memberUnit(b, m)).join('')}
-          ${members.length < cat().rules.maxMembers ? `<div class="lineup-unit"><div class="lineup-cards">${emptySlot('Musiker aufnehmen', { act: 'addMember', data: { id: b.id } })}</div></div>` : ''}
-        </div>
-        <div class="lineup-side">
-          <div><span class="slot-label">Manager</span>${managerUnit(b)}</div>
-        </div>
-      </div>
-    </section>
-
-    <div class="columns">
-      <div class="stack">
-        <section class="panel">
-          <h2>Auftritte</h2>
-          ${blockerNotice(b, members)}
-          ${performances(b, members)}
-        </section>
-        <section class="panel">
-          <h2>Studio</h2>
-          ${studio(b, members)}
-        </section>
-      </div>
-      <div class="stack">
-        <section class="panel">
-          <h2>Diskografie</h2>
-          ${discography(b)}
-        </section>
-        <section class="panel">
-          <h2>Bandhistorie</h2>
-          ${history.length ? `<ul class="history">${history.map((h) => `<li><span>${esc(h.text)}</span><time>${timeAgo(h.createdAt, app.state.now)}</time></li>`).join('')}</ul>` : '<p class="muted">Die Geschichte dieser Band beginnt gerade.</p>'}
-          <div class="danger-zone"><button class="btn danger ghost small" data-act="bandDisband" data-id="${b.id}">Band auflösen</button></div>
-        </section>
-      </div>
+    <div class="notice">
+      <span class="pulse"></span><span>${esc(block.text)}</span>
+      ${block.running ? `<span class="countdown" data-until="${block.running.endsAt}"></span>${block.running.type !== 'bandpromo' ? `<button class="btn small" data-act="watch" data-id="${block.running.id}">Zuschauen</button>` : ''}` : ''}
     </div>`;
 }
 
-function memberUnit(b, m) {
+/** Kachel für eine Aktion: Icon, Titel, eine Zeile Info, optional Zusatz, Knopf. */
+function actionTile({ icon, title, meta = '', body = '', button = '', locked = false }) {
+  return `
+    <div class="action-tile ${locked ? 'locked' : ''}">
+      <div class="action-icon">${icon}</div>
+      <div class="action-main"><b>${esc(title)}</b>${meta ? `<span class="muted small">${meta}</span>` : ''}${body}</div>
+      ${locked ? '<span class="chip">bald</span>' : button}
+    </div>`;
+}
+
+const songsMeta = (songs) => `${songs} ${songs === 1 ? 'Lied' : 'Lieder'} · ${duration(songs * cat().rules.songSeconds)}`;
+
+// ---------- Band ----------
+
+function overview(b, members) {
+  const gig = b.options.gig;
+  return `
+    <div class="page-head">
+      <div><div class="eyebrow">${esc(genreName(b.genre))}</div><h1>${esc(b.name)} <button class="icon-btn" data-act="bandRename" data-id="${b.id}" title="Umbenennen">✎</button></h1></div>
+    </div>
+    <div class="stat-grid">
+      <div class="tile"><span>Sound</span><b>${fmt1(b.sound)}</b></div>
+      <div class="tile"><span>Ruhm</span><b>${fmt1(b.fame)}</b>${gig.nextVenue ? `<small>${esc(gig.nextVenue)} ab ${fmt0(gig.nextFame)}</small>${bar(gig.progress, 1, 'thin')}` : ''}</div>
+      <div class="tile"><span>Eingespieltheit</span><b>${fmt0(b.cohesion)}<small> / ${fmt0(b.maxCohesion)}</small></b>${bar(b.cohesion, 100, 'thin')}</div>
+      <div class="tile"><span>Chemie</span><b>${chemistryLabel(b.chemistry)}</b></div>
+      <div class="tile"><span>Platten</span><b>${fmt0(b.records)}</b><small>${fmt0(b.songsRecorded)} Lieder</small></div>
+    </div>
+    <div class="lineup-grid">
+      ${members.map((m) => memberTile(b, m)).join('')}
+      ${members.length < cat().rules.maxMembers ? `<div class="lineup-tile">${emptySlot('Musiker aufnehmen', { act: 'addMember', data: { id: b.id } })}<span></span></div>` : ''}
+      <div class="lineup-tile manager-tile">${managerSlot(b)}<span class="slot-label">Manager${b.managerId ? ` · Stufe ${fmt1(b.managerLevel)}` : ''}</span></div>
+    </div>
+    <div class="danger-zone"><button class="btn danger ghost small" data-act="bandDisband" data-id="${b.id}">Band auflösen</button></div>`;
+}
+
+function chemistryLabel(chemistry) {
+  if (chemistry >= 1.15) return 'Super';
+  if (chemistry >= 1.0) return 'Gut';
+  if (chemistry >= 0.85) return 'Angespannt';
+  return 'Zoff';
+}
+
+function memberTile(b, m) {
   const slotIndex = m.instruments.length > 1 ? m.bandSlot - 1 : 0;
   const played = m.instruments[slotIndex];
   const gear = app.state.gear.find((g) => g.musicianId === m.id && gearModel(g.model).type === played.type);
   const gearData = { musician: m.id, type: played.type };
   return `
-    <div class="lineup-unit">
-      <div class="lineup-cards">
+    <div class="lineup-tile">
+      <div class="lineup-pair">
         ${musicianCard(m, { size: 'sm' })}
-        ${gear
-          ? gearCard(gear, { act: 'pickGear', data: gearData, size: 'sm' })
-          : emptySlot(`${instrumentName(played.type)} einlegen`, { act: 'pickGear', data: gearData, icon: instrumentIcon(played.type) })}
+        ${gear ? gearCard(gear, { act: 'pickGear', data: gearData, size: 'sm' }) : emptySlot(instrumentName(played.type), { act: 'pickGear', data: gearData, icon: instrumentIcon(played.type) })}
       </div>
       <div class="lineup-controls">
         ${m.instruments.length > 1 ? `
-          <select data-change="bandSetSlot" data-band="${b.id}" data-musician="${m.id}" title="Welches Instrument spielt ${esc(m.firstName)} in der Band?">
+          <select data-change="bandSetSlot" data-band="${b.id}" data-musician="${m.id}">
             ${m.instruments.map((i, idx) => `<option value="${idx + 1}" ${idx === slotIndex ? 'selected' : ''}>${instrumentIcon(i.type)} ${esc(instrumentName(i.type))}</option>`).join('')}
           </select>` : `<span>${instrumentIcon(played.type)} ${esc(instrumentName(played.type))}</span>`}
-        ${m.genres.includes(b.genre) ? '' : '<span class="warn">fremdes Genre</span>'}
+        ${m.genres.includes(b.genre) ? '' : '<span class="warn small">fremdes Genre</span>'}
         <button class="icon-btn" data-act="removeMember" data-band="${b.id}" data-musician="${m.id}" title="Aus der Band nehmen">✕</button>
       </div>
     </div>`;
 }
 
-function managerUnit(b) {
+function managerSlot(b) {
   const manager = b.managerId ? managerById(b.managerId) : null;
-  if (!manager) {
-    return emptySlot(app.state.managers.length ? 'Manager zuweisen' : 'Noch kein Manager', { act: 'pickManager', data: { id: b.id }, icon: '💼' });
-  }
+  if (!manager) return emptySlot('Manager', { act: 'pickManager', data: { id: b.id }, icon: '💼' });
+  return managerCard(manager, { act: 'pickManager', data: { id: b.id }, size: 'sm' });
+}
+
+// ---------- Übung ----------
+
+function practice(b, members) {
+  const blocked = !!blocker(b, members);
   return `
-    <div class="tcg-wrap">
-      ${managerCard(manager, { act: 'pickManager', data: { id: b.id }, size: 'sm' })}
-      <span class="muted small">Für diese Band Stufe ${fmt1(b.managerLevel)}${manager.bandIds.length > 1 ? ` (geteilt auf ${manager.bandIds.length} Bands)` : ''}</span>
+    ${head('Übung', b)}
+    ${blockerNotice(b, members)}
+    <div class="action-grid">
+      ${actionTile({
+        icon: '🥁', title: 'Bandprobe', meta: `${songsMeta(b.options.rehearsal.songs)} · Eingespieltheit, Können`,
+        button: `<button class="btn primary" data-act="startActivity" data-id="${b.id}" data-type="rehearsal" ${blocked ? 'disabled' : ''}>Proben</button>`,
+      })}
+      ${members.map((m) => practiceTile(m, isBusy(m.busyUntil) || isBusy(b.busyUntil))).join('')}
     </div>`;
 }
 
-function discography(b) {
-  if (!b.discography.length) return '<p class="muted">Noch keine Platte. Erst mit einer Platte gibt es richtige Gigs und einen Platz in den Charts.</p>';
-  return `
-    <ul class="discography">${b.discography.map((r) => `
-      <li>
-        <div><b>„${esc(r.title)}“</b><span class="muted small">${r.format} · ${r.songs} Lieder · Qualität ${percent(r.quality)}${r.perfect ? ' · perfekt' : ''}</span></div>
-        ${r.charting ? `<span class="chip special" title="Aktuelle Chartpunkte">Charts · ${fmt1(r.points)}</span>` : '<span class="muted small">aus den Charts</span>'}
-      </li>`).join('')}
-    </ul>`;
+export function practiceTile(m, busy) {
+  return actionTile({
+    icon: face(m, 'md'),
+    title: fullName(m),
+    meta: 'Solo-Probe',
+    body: `<span class="tile-buttons">${m.instruments.map((i, idx) => `<button class="btn small" data-act="practice" data-id="${m.id}" data-slot="${idx + 1}" ${busy ? 'disabled' : ''}>${instrumentIcon(i.type)} ${esc(instrumentName(i.type))} ${fmt0(i.skill)}</button>`).join('')}</span>`,
+  });
 }
+
+// ---------- Promo ----------
+
+function promo(b, members) {
+  const blocked = !!blocker(b, members);
+  return `
+    ${head('Promo', b)}
+    ${blockerNotice(b, members)}
+    <div class="action-grid">
+      ${actionTile({
+        icon: '📣', title: 'Band-Promo', meta: `${duration(cat().rules.bandPromoSeconds)} · Präsenz, Ruhm`,
+        button: `<button class="btn primary" data-act="bandPromo" data-id="${b.id}" ${blocked ? 'disabled' : ''}>Losschicken</button>`,
+      })}
+      ${members.map((m) => promoTile(m, isBusy(m.busyUntil) || isBusy(b.busyUntil))).join('')}
+    </div>`;
+}
+
+export function promoTile(m, busy) {
+  return actionTile({
+    icon: face(m, 'md'),
+    title: fullName(m),
+    meta: `Promo-Mission · ${duration(cat().rules.promoSeconds)} · Präsenz ${fmt0(m.presence)}`,
+    button: `<button class="btn" data-act="promo" data-id="${m.id}" ${busy ? 'disabled' : ''}>Los</button>`,
+  });
+}
+
+// ---------- Auftritte ----------
+
+function gigs(b, members) {
+  const disabled = blocker(b, members) ? 'disabled' : '';
+  const o = b.options;
+  const gig = o.gig;
+  const songs = Math.max(1, Math.min(app.ui.gigSongs[b.id] || gig.maxSongs, gig.maxSongs));
+  return `
+    ${head('Auftritte', b)}
+    ${blockerNotice(b, members)}
+    <div class="action-grid">
+      ${actionTile({
+        icon: '🎤', title: `Gig · ${gig.venue}`,
+        meta: gig.available ? `${money(gig.gagePerSong)} pro Lied` : 'Erst mit der ersten Platte',
+        body: gig.available ? `
+          <span class="small"><label class="inline-select">Lieder
+            <select data-change="gigSongs" data-id="${b.id}">${Array.from({ length: gig.maxSongs }, (_, i) => i + 1).map((n) => `<option value="${n}" ${n === songs ? 'selected' : ''}>${n}</option>`).join('')}</select>
+          </label> · ${duration(songs * cat().rules.songSeconds)} · <b>${money(gig.gagePerSong * songs)}</b></span>` : '',
+        button: `<button class="btn primary" data-act="startActivity" data-id="${b.id}" data-type="gig" ${gig.available ? disabled : 'disabled'}>Spielen</button>`,
+      })}
+      ${actionTile({
+        icon: '🎙️', title: 'Open Stage', meta: `${songsMeta(o.openstage.songs)} · Ruhm, Chance auf eine Karte`,
+        button: `<button class="btn" data-act="startActivity" data-id="${b.id}" data-type="openstage" ${disabled}>Spielen</button>`,
+      })}
+      ${actionTile({
+        icon: '🪙', title: 'Straßenmusik', meta: `${songsMeta(o.busking.songs)} · Präsenz`,
+        button: `<button class="btn" data-act="startActivity" data-id="${b.id}" data-type="busking" ${disabled}>Spielen</button>`,
+      })}
+      ${actionTile({ icon: '🚌', title: 'Tournee', meta: 'Land · Kontinent · Welt', locked: true })}
+    </div>`;
+}
+
+// ---------- Studio ----------
+
+function studio(b, members) {
+  const rules = cat().rules;
+  const open = b.record.open;
+  const blocked = !!blocker(b, members);
+  let record;
+  if (open) {
+    record = actionTile({
+      icon: '💿', title: `„${open.title}“`, meta: `${open.songsDone} von ${open.songsTotal} Liedern`,
+      body: `<span class="song-dots">${Array.from({ length: open.songsTotal }, (_, i) => {
+        const r = open.songResults[i];
+        return `<span class="song-dot ${r ? (r.miss === 0 ? 'perfect' : r.accuracy >= 0.75 ? 'good' : 'weak') : ''}"></span>`;
+      }).join('')}</span>`,
+      button: `<button class="btn primary" data-act="recordSong" data-id="${b.id}" ${blocked ? 'disabled' : ''}>Lied ${open.songsDone + 1}</button>`,
+    });
+  } else if (b.record.blocker) {
+    record = actionTile({ icon: '💿', title: 'Neue Platte', meta: esc(b.record.blocker) });
+  } else {
+    const form = app.ui.form;
+    const titleKey = `recordTitle${b.id}`;
+    const songsKey = `recordSongs${b.id}`;
+    const songs = Number(form[songsKey] || rules.recordMinSongs);
+    record = `
+      <form class="action-tile record-form" data-form="recordStart" data-id="${b.id}">
+        <div class="action-icon">💿</div>
+        <div class="action-main">
+          <b>Neue Platte</b>
+          <span class="input-dice"><input name="title" maxlength="60" required data-ui="${titleKey}" value="${esc(form[titleKey] || '')}" placeholder="Titel"><button type="button" class="btn small" data-act="diceRecord" data-key="${titleKey}" title="Zufälliger Titel">🎲</button></span>
+          <label class="small">Lieder: <b data-output="${songsKey}">${songs}</b>
+            <input type="range" name="songs" min="${rules.recordMinSongs}" max="${rules.recordMaxSongs}" value="${songs}" data-ui="${songsKey}">
+          </label>
+        </div>
+        <button class="btn primary" ${app.state.label.money < rules.recordCost ? 'disabled' : ''}>${money(rules.recordCost)}</button>
+      </form>`;
+  }
+  return `
+    ${head('Studio', b)}
+    ${blockerNotice(b, members)}
+    <div class="action-grid">
+      ${record}
+      ${actionTile({ icon: '🎛️', title: 'Remaster', meta: 'Ältere Platten neu herausbringen', locked: true })}
+      ${actionTile({ icon: '🎧', title: 'Produzent', meta: 'Mit einem Produzenten aufnehmen', locked: true })}
+    </div>
+    ${b.discography.length ? `
+      <h2>Diskografie</h2>
+      <div class="tile-grid">${b.discography.map((r) => `
+        <div class="panel record-tile">
+          <b>„${esc(r.title)}“</b>
+          <span class="muted small">${r.format} · ${r.songs} Lieder · ${percent(r.quality)}${r.perfect ? ' · perfekt' : ''}</span>
+          ${r.charting ? `<span class="chip special">Charts · ${fmt1(r.points)}</span>` : ''}
+        </div>`).join('')}
+      </div>` : ''}`;
+}
+
+// ---------- Chronik & Auszeichnungen ----------
+
+function chronicle(b) {
+  const history = app.state.history.filter((h) => h.bandId === b.id);
+  return `
+    ${head('Chronik', b)}
+    <section class="panel">
+      ${history.length ? `<ul class="history">${history.map((h) => `<li><span>${esc(h.text)}</span><time>${timeAgo(h.createdAt, app.state.now)}</time></li>`).join('')}</ul>` : '<p class="muted">Noch nichts passiert.</p>'}
+    </section>`;
+}
+
+/** Auszeichnungen ergeben sich aus dem, was die Band erreicht hat. */
+function bandAwards(b) {
+  const list = [];
+  if (b.gigsPlayed > 0) list.push(['🎤', 'Erster Gig', `${b.gigsPlayed} Gigs gespielt`]);
+  if (b.records > 0) list.push(['💿', 'Erste Platte', `${b.records} ${b.records === 1 ? 'Platte' : 'Platten'}`]);
+  for (const r of b.discography) {
+    if (r.perfect) list.push(['✨', 'Perfekte Platte', `„${r.title}“`]);
+    if (r.peak >= 400) list.push(['💽', 'Platin-Schallplatte', `„${r.title}“`]);
+    else if (r.peak >= 150) list.push(['🥇', 'Goldene Schallplatte', `„${r.title}“`]);
+    if (r.topped) list.push(['🏆', 'Platz 1 der Charts', `„${r.title}“`]);
+  }
+  if (['halle', 'arena'].includes(b.options.gig.venueKey)) list.push(['🏟️', 'Große Bühne', b.options.gig.venue]);
+  return list;
+}
+
+function awards(b) {
+  const list = bandAwards(b);
+  return `
+    ${head('Auszeichnungen', b)}
+    ${list.length ? `<div class="award-grid">${list.map(([icon, title, sub]) => `
+      <div class="award"><span class="award-icon">${icon}</span><b>${esc(title)}</b><span class="muted small">${esc(sub)}</span></div>`).join('')}</div>`
+      : '<div class="empty">Noch keine Auszeichnungen.</div>'}`;
+}
+
+// ---------- Auswahl-Dialoge ----------
 
 function openGearPicker(musicianId, type) {
   const m = musicianById(musicianId);
@@ -141,12 +311,11 @@ function openGearPicker(musicianId, type) {
       const current = options.find((g) => g.musicianId === m.id);
       return `
         <h2>${esc(instrumentName(type))} für ${esc(m.firstName)}</h2>
-        <p class="muted">Ein gutes Instrument entfaltet sich nur in fähigen Händen: ${esc(m.firstName)} hat Können ${fmt0(m.instruments.find((i) => i.type === type)?.skill ?? 0)}.</p>
         ${options.length ? `<div class="tcg-grid">${options.map((g) => gearCard(g, {
           extra: g === current
             ? '<button class="btn small" data-gear-remove>Herausnehmen</button>'
             : `<button class="btn primary small" data-gear="${g.id}">Einlegen</button>`,
-        })).join('')}</div>` : `<div class="empty">Kein freies Instrument dieser Art im Lager. Instrumente gibt es im Equipment-Pack.</div>`}`;
+        })).join('')}</div>` : '<div class="empty">Kein freies Instrument dieser Art im Lager.</div>'}`;
     },
   });
   modal.body.addEventListener('click', async (e) => {
@@ -164,14 +333,13 @@ function openManagerPicker(bandId) {
   const b = bandById(bandId);
   const max = cat().rules.managerMaxBands;
   if (!app.state.managers.length) {
-    toast('Noch kein Manager unter Vertrag. Manager gibt es in Packs und manchmal nach einer Open Stage.', 'info');
+    toast('Noch kein Manager unter Vertrag.', 'info');
     return;
   }
   const modal = openModal({
     wide: true,
     render: () => `
       <h2>Manager für ${esc(b.name)}</h2>
-      <p class="muted">Ein Manager betreut bis zu ${max} Bands, teilt seine Leistung dann aber auf. Er ermöglicht längere Gigs.</p>
       <div class="tcg-grid">${app.state.managers.map((m) => {
         const mine = m.id === b.managerId;
         const full = !mine && m.bandIds.length >= max;
@@ -187,115 +355,6 @@ function openManagerPicker(bandId) {
     if (!button || button.disabled) return;
     if (await mutate('bandSetManager', { bandId: b.id, managerId: button.dataset.manager ? Number(button.dataset.manager) : null })) modal.close();
   });
-}
-
-function chemistryLabel(chemistry) {
-  if (chemistry >= 1.15) return 'Super';
-  if (chemistry >= 1.0) return 'Gut';
-  if (chemistry >= 0.85) return 'Angespannt';
-  return 'Zoff';
-}
-
-/** Warum die Band gerade nichts starten kann, sonst null. */
-function blocker(b, members) {
-  const running = runningFor(b.id);
-  if (running) return { text: `Live: ${running.title}`, running };
-  if (isBusy(b.busyUntil)) return { text: 'Die Band ist gerade im Studio.' };
-  const away = members.find((m) => isBusy(m.busyUntil));
-  if (away) return { text: `${away.firstName} ist gerade unterwegs.` };
-  if (members.length < cat().rules.minMembers) return { text: 'Die Band braucht mindestens zwei Musiker.' };
-  return null;
-}
-
-function blockerNotice(b, members) {
-  const block = blocker(b, members);
-  if (!block) return '';
-  return `
-    <div class="notice">
-      <span class="pulse"></span><span>${esc(block.text)}</span>
-      ${block.running ? `<span class="countdown" data-until="${block.running.endsAt}"></span><button class="btn small" data-act="watch" data-id="${block.running.id}">Zuschauen</button>` : ''}
-    </div>`;
-}
-
-function performances(b, members) {
-  const disabled = blocker(b, members) ? 'disabled' : '';
-  const songSeconds = cat().rules.songSeconds;
-  const o = b.options;
-  const gig = o.gig;
-  const songs = Math.max(1, Math.min(app.ui.gigSongs[b.id] || gig.maxSongs, gig.maxSongs));
-
-  return `
-    <div class="action-row">
-      <div>
-        <b>Straßenmusik</b>
-        <span class="muted small">${o.busking.songs} Lieder · ${duration(o.busking.songs * songSeconds)} · ca. ${money(o.busking.gage)} · kaum Ruhm · keine Platte nötig</span>
-      </div>
-      <button class="btn" data-act="startActivity" data-id="${b.id}" data-type="busking" ${disabled}>Spielen</button>
-    </div>
-    <div class="action-row">
-      <div>
-        <b>Open Stage</b>
-        <span class="muted small">${o.openstage.songs} Lieder · ${duration(o.openstage.songs * songSeconds)} · kein Geld · etwas Ruhm · kleine Chance auf eine Karte</span>
-        ${o.openstage.worthIt ? '' : '<span class="note small">Für eine so bekannte Band bringt die Open Stage keinen Ruhm mehr.</span>'}
-      </div>
-      <button class="btn" data-act="startActivity" data-id="${b.id}" data-type="openstage" ${disabled}>Spielen</button>
-    </div>
-    <div class="action-row ${gig.available ? '' : 'locked'}">
-      <div>
-        <b>Gig · ${esc(gig.venue)}</b>
-        ${gig.available ? `
-          <span class="muted small">Gage ${money(gig.gagePerSong)} pro Lied · Ruhm hängt vom Auftritt ab</span>
-          <span class="small">
-            <label class="inline-select">Lieder
-              <select data-change="gigSongs" data-id="${b.id}">
-                ${Array.from({ length: gig.maxSongs }, (_, i) => i + 1).map((n) => `<option value="${n}" ${n === songs ? 'selected' : ''}>${n}</option>`).join('')}
-              </select>
-            </label>
-            = ${duration(songs * songSeconds)} · <b>${money(gig.gagePerSong * songs)}</b>
-          </span>
-          ${gig.maxSongs < gig.songCap ? `<span class="note small">Länger spielen? Dafür braucht die Band mehr produzierte Lieder (bis ${gig.songCap} mit diesem Management).</span>` : ''}
-          ${gig.songCap < 10 ? `<span class="note small">Ein ${b.managerId ? 'besserer ' : ''}Manager ermöglicht längere Gigs (jetzt höchstens ${gig.songCap} Lieder).</span>` : ''}`
-          : '<span class="muted small">Richtige Gigs gibt es erst, wenn die Band eine Platte produziert hat (eine EP reicht).</span>'}
-      </div>
-      <button class="btn primary" data-act="startActivity" data-id="${b.id}" data-type="gig" ${gig.available ? disabled : 'disabled'}>Gig spielen</button>
-    </div>`;
-}
-
-function studio(b, members) {
-  const rules = cat().rules;
-  const open = b.record.open;
-  const blocked = !!blocker(b, members);
-  if (open) {
-    return `
-      <div class="record-open">
-        <div class="record-title"><span>💿</span><div><b>„${esc(open.title)}“</b><span class="muted small">${open.songsDone} von ${open.songsTotal} Liedern eingespielt</span></div></div>
-        ${bar(open.songsDone, open.songsTotal)}
-        <div class="song-dots">${Array.from({ length: open.songsTotal }, (_, i) => {
-          const r = open.songResults[i];
-          return `<span class="song-dot ${r ? (r.miss === 0 ? 'perfect' : r.accuracy >= 0.75 ? 'good' : 'weak') : ''}" title="${r ? `Lied ${i + 1}: ${percent(r.accuracy)}` : `Lied ${i + 1}`}"></span>`;
-        }).join('')}</div>
-        <p class="muted small">Pro Lied ein Minispiel. Jedes Lied bringt Können, Geld und Ruhm gibt es, wenn die Platte fertig ist. Ohne Fehler wird sie perfekt.</p>
-        <button class="btn primary" data-act="recordSong" data-id="${b.id}" ${blocked ? 'disabled' : ''}>Lied ${open.songsDone + 1} einspielen</button>
-      </div>`;
-  }
-  if (b.record.blocker) {
-    return `<p class="muted">${esc(b.record.blocker)}</p>`;
-  }
-  const form = app.ui.form;
-  const titleKey = `recordTitle${b.id}`;
-  const songsKey = `recordSongs${b.id}`;
-  const songs = Number(form[songsKey] || rules.recordMinSongs);
-  return `
-    <form data-form="recordStart" data-id="${b.id}" class="stack">
-      <p class="muted small">Eine Platte kostet pauschal ${money(rules.recordCost)}, egal wie viele Lieder. Mehr Lieder bringen mehr Geld und Ruhm – aber auch mehr Chancen auf Fehler.</p>
-      <label class="field"><span>Titel</span>
-        <span class="input-dice"><input name="title" maxlength="60" required data-ui="${titleKey}" value="${esc(form[titleKey] || '')}" placeholder="z. B. ${esc(b.name)} EP"><button type="button" class="btn small" data-act="diceRecord" data-key="${titleKey}" title="Zufälliger Titel">🎲</button></span>
-      </label>
-      <label class="field"><span>Lieder: <b data-output="${songsKey}">${songs}</b> <small class="muted">(${rules.recordMinSongs} = EP, bis ${rules.recordMaxSongs} = LP)</small></span>
-        <input type="range" name="songs" min="${rules.recordMinSongs}" max="${rules.recordMaxSongs}" value="${songs}" data-ui="${songsKey}">
-      </label>
-      <button class="btn primary" ${app.state.label.money < rules.recordCost ? 'disabled' : ''}>Produktion starten · ${money(rules.recordCost)}</button>
-    </form>`;
 }
 
 function pickRow(m, genre, { checkbox = true, button = '' } = {}) {
@@ -334,7 +393,7 @@ function openCreateBand() {
   const used = new Set(s.bands.map((b) => b.genre));
   const genres = Object.entries(cat().genres).filter(([key]) => !used.has(key));
   if (free.length < cat().rules.minMembers) {
-    toast('Du brauchst mindestens zwei Musiker ohne Band. Neue Musiker gibt es bei den Packs.', 'error');
+    toast('Du brauchst mindestens zwei Musiker ohne Band.', 'error');
     return;
   }
   if (!genres.length) {
@@ -358,7 +417,6 @@ function openCreateBand() {
             <select name="genre">${genres.map(([key, g]) => `<option value="${key}" ${key === suggested ? 'selected' : ''}>${esc(g.name)}</option>`).join('')}</select>
           </label>
         </div>
-        <p class="muted small">Musiker außerhalb ihres Genres dürfen mitspielen, bringen aber weniger. Höchstens 1 Schlagzeug und 2 Gitarren pro Band.</p>
         <div class="pick-list"></div>
         <p class="create-summary small"></p>
         <div class="dialog-actions">
@@ -422,14 +480,13 @@ function openAddMember(bandId) {
   const band = bandById(bandId);
   const free = app.state.musicians.filter((m) => !m.bandId);
   if (!free.length) {
-    toast('Alle Musiker spielen schon in einer Band. Neue gibt es bei den Packs.', 'error');
+    toast('Alle Musiker spielen schon in einer Band.', 'error');
     return;
   }
   const modal = openModal({
     wide: true,
     html: `
       <h2>Musiker für ${esc(band.name)}</h2>
-      ${band.released ? '<p class="muted small">Ein neues Mitglied senkt die Eingespieltheit leicht und startet mit seiner eigenen Bekanntheit.</p>' : ''}
       <div class="pick-list">${free.map((m) => pickRow(m, band.genre, {
         checkbox: false,
         button: `<button class="btn small" data-add="${m.id}">Aufnehmen</button>`,
@@ -446,7 +503,7 @@ function openAddMember(bandId) {
   });
 }
 
-async function suggestName(kind) {
+export async function suggestName(kind) {
   try {
     return (await api('nameSuggest', { kind })).name;
   } catch (e) {
@@ -480,7 +537,7 @@ defineActions({
     const m = musicianById(musician);
     if (b.released) {
       const ok = await confirmDialog(
-        `${fullName(m)} verlässt ${b.name}. Die Eingespieltheit sinkt um ${cat().rules.cohesionRemovePenalty} Punkte, und der Bandruhm sinkt um ${fmt1(m.fame)} – so viel Bekanntheit nimmt ${m.firstName} mit.`,
+        `${fullName(m)} verlässt ${b.name}: Eingespieltheit −${cat().rules.cohesionRemovePenalty}, Bandruhm −${fmt1(m.fame)}.`,
         { ok: 'Rausnehmen', danger: true },
       );
       if (!ok) return;
@@ -490,9 +547,6 @@ defineActions({
   async bandSetSlot(value, el) {
     await mutate('bandSetSlot', { bandId: Number(el.dataset.band), musicianId: Number(el.dataset.musician), slot: Number(value) });
   },
-  async bandSetManager(value, el) {
-    await mutate('bandSetManager', { bandId: Number(el.dataset.band), managerId: value ? Number(value) : null });
-  },
   async bandRename({ id }) {
     const b = bandById(id);
     const name = await promptDialog('Neuer Bandname', b.name);
@@ -500,9 +554,9 @@ defineActions({
   },
   async bandDisband({ id }) {
     const b = bandById(id);
-    const ok = await confirmDialog(`${b.name} auflösen? Die Musiker behalten ihre Bekanntheit und kommen zurück in den Katalog. Eine laufende Produktion geht verloren.`, { ok: 'Auflösen', danger: true });
+    const ok = await confirmDialog(`${b.name} auflösen? Eine laufende Produktion geht verloren.`, { ok: 'Auflösen', danger: true });
     if (!ok) return;
-    if (await mutate('bandDisband', { bandId: b.id })) navigate('#/bands');
+    if (await mutate('bandDisband', { bandId: b.id })) navigate('#/');
   },
   gigSongs(value, el) {
     app.ui.gigSongs[el.dataset.id] = Number(value);
@@ -514,16 +568,27 @@ defineActions({
     const res = await mutate('activityStart', { bandId: b.id, type, songs });
     if (res) openLive(res.activity.id);
   },
+  async bandPromo({ id }) {
+    if (await mutate('bandPromo', { bandId: Number(id) })) toast('Die Band ist auf Promo-Tour.', 'ok');
+  },
   async recordStart(values, form) {
     const bandId = Number(form.dataset.id);
     const res = await mutate('recordStart', { bandId, title: values.title, songs: Number(values.songs) });
     if (res) {
       delete app.ui.form[`recordTitle${bandId}`];
-      toast('Ab ins Studio! Spiel jetzt das erste Lied ein.', 'ok');
       rerender();
     }
   },
   recordSong({ id }) {
     startRecordSong(id);
+  },
+  practice({ id, slot }) {
+    startPractice(id, slot);
+  },
+  async promo({ id }) {
+    if (await mutate('promoStart', { musicianId: Number(id) })) toast(`${musicianById(id).firstName} ist auf Promo-Tour.`, 'ok');
+  },
+  watch({ id }) {
+    openLive(id);
   },
 });

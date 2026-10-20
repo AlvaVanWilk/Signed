@@ -14,7 +14,7 @@ final class Generator
     }
 
     /**
-     * @param array{instrument?: string, genre?: string, single?: bool} $opts
+     * @param array{instrument?: string, genre?: string, single?: bool, minSkill?: float} $opts
      * @return array Musiker im Datenbankformat (JSON-Felder noch als Arrays)
      */
     public static function musician(string $rarity, array $opts = []): array
@@ -45,7 +45,8 @@ final class Generator
             $pool = array_values(array_diff($pool, [$genre]));
         }
 
-        $base = Rng::float(...$cfg['skill']);
+        [$low, $high] = $cfg['skill'];
+        $base = Rng::float(max($low, min($high, $opts['minSkill'] ?? $low)), $high);
         $skill1 = $base;
         $instr2 = null;
         $skill2 = null;
@@ -55,12 +56,12 @@ final class Generator
             $skill2 = $base * Rng::float(...Balance::MULTI_SECOND_FACTOR);
         }
 
-        $techniques = [];
-        foreach (array_filter([$instr1, $instr2]) as $instrument) {
-            if (Rng::chance($cfg['technique'])) {
-                $techniques[] = Rng::pick(Catalog::INSTRUMENTS[$instrument]['techniques']);
-            }
+        if (isset($opts['minSkill']) && max($skill1, (float) $skill2) < $opts['minSkill']) {
+            $skill1 = $opts['minSkill'];
         }
+        // Aus Packs höchstens Können-Stufe 1, und dann genau eine Fähigkeit.
+        $level = min(1, Levels::forSkill(max($skill1, (float) $skill2)));
+        $abilities = $level ? [Levels::randomAbility(array_filter([$instr1, $instr2]), [])] : [];
 
         return [
             'first_name' => $first,
@@ -73,8 +74,8 @@ final class Generator
             'presence' => round(Rng::float(...$cfg['presence']), 1),
             'fame' => 0.0,
             'genres' => $genres,
-            'traits' => Rng::sample(array_keys(Catalog::TRAITS), (int) Rng::weighted($cfg['traits'])),
-            'techniques' => array_values(array_unique($techniques)),
+            'level' => $level,
+            'abilities' => $abilities,
             'personality' => self::personality(),
             'unusual' => !in_array($primary, $typical, true),
             'look' => $look,
@@ -87,6 +88,18 @@ final class Generator
         $type ??= (string) Rng::weighted(array_map(static fn ($i) => $i['weight'], Catalog::INSTRUMENTS));
         $models = array_keys(array_filter(Catalog::GEAR, static fn ($g) => $g['type'] === $type && $g['rarity'] === $rarity));
         return (string) Rng::pick($models);
+    }
+
+    /** Werte eines einzelnen Instruments: um das Modell gestreut, mal Klang-, mal Design-lastig. */
+    public static function gearStats(string $model): array
+    {
+        $base = Catalog::GEAR[$model];
+        $spread = Balance::GEAR_VARIANCE;
+        $stats = [];
+        foreach (['klang', 'spielbarkeit', 'design'] as $stat) {
+            $stats[$stat] = max(1, min(100, $base[$stat] + Rng::int(-$spread, $spread)));
+        }
+        return $stats;
     }
 
     public static function manager(string $rarity): array

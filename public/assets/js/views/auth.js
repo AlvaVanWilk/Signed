@@ -41,9 +41,7 @@ function openWelcome() {
     html: `
       <div class="eyebrow">Willkommen bei Signed</div>
       <h2>${esc(app.label.name)} ist gegründet!</h2>
-      <p>Dein Startkapital: <b>${money(app.state.label.money)}</b>. Dazu bekommst du einen <b>Scout-Gutschein</b>:
-        Der Talent-Scout stellt dir ${cat().rules.scoutCards} gute Musiker vor, und du nimmst einen davon unter Vertrag.</p>
-      <p class="muted">Für eine Band brauchst du mindestens zwei Musiker. Die restlichen findest du danach in den Packs.</p>
+      <p>Startkapital: <b>${money(app.state.label.money)}</b> und ein <b>Scout-Gutschein</b>. Der Talent-Scout stellt dir ${cat().rules.scoutCards} Musiker vor – einer unterschreibt.</p>
       <div class="dialog-actions"><button class="btn primary" data-start>Talent-Scout losschicken</button></div>`,
   });
   modal.body.querySelector('[data-start]').addEventListener('click', () => {

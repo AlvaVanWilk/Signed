@@ -9,7 +9,7 @@ export function render() {
   const packs = cat().packs;
   return `
     <div class="section-head">
-      <div><h1>Packs</h1><p class="muted">Jeder Musiker existiert genau einmal im ganzen Spiel – wer ihn zieht, hat ihn.</p></div>
+      <h1>Packs</h1>
       <div class="money-pill">${money(app.state.label.money)}</div>
     </div>
     <div class="pack-grid">
@@ -26,12 +26,11 @@ function scoutTile() {
   return `
     <div class="pack pack-scout">
       <div class="pack-art"><span>Talent-Scout</span></div>
-      <p>Der Scout stellt dir ${rules.scoutCards} vielversprechende Musiker vor, alle mindestens selten. Einer unterschreibt bei dir, die anderen ziehen weiter.</p>
-      <p class="muted small">Gutscheine gibt es zum Label-Start, für die erste Platte, für perfekte Platten und für Platz 1 der Album-Charts.</p>
+      <p>${rules.scoutCards} Musiker mit Können-Stufe 1 – einer unterschreibt.</p>
       ${scout.offer ? '<button class="btn primary" data-act="scoutShow">Auswahl ansehen</button>' : `
         <button class="btn primary" data-act="scoutOpen" data-voucher="1" ${scout.vouchers ? '' : 'disabled'}>Gutschein einlösen (${scout.vouchers})</button>
         <button class="btn" data-act="scoutOpen" data-voucher="" ${canBuy && app.state.label.money >= scout.price ? '' : 'disabled'}>Ohne Gutschein · ${money(scout.price)}</button>
-        <span class="muted small">${canBuy ? 'Ohne Gutschein höchstens einmal pro Woche.' : `Ohne Gutschein wieder ab ${esc(next)}.`}</span>`}
+        ${canBuy ? '' : `<span class="muted small">Ohne Gutschein wieder ab ${esc(next)}</span>`}`}
     </div>`;
 }
 
@@ -46,7 +45,6 @@ export function openScoutOffer() {
       return `
         <div class="eyebrow">Talent-Scout</div>
         <h2>Wen nimmst du unter Vertrag?</h2>
-        <p class="muted">Nur einer unterschreibt, die anderen sind danach weg. Du kannst das Fenster schließen und später weiter überlegen.</p>
         <div class="tcg-grid scout-grid">
           ${offer.cards.map((m, index) => musicianCard(m, {
             act: null,
@@ -134,7 +132,7 @@ defineActions({
     if (!res) return;
     toast(`${res.musician.firstName} ${res.musician.lastName} hat unterschrieben!`, 'ok');
     if (app.state.musicians.length < cat().rules.minMembers) {
-      toast('Für eine Band brauchst du mindestens zwei Musiker – ein Demo-Pack hilft.', 'info');
+      toast('Mitmusiker findest du im Jam-Café oder in Packs.', 'info');
     }
   },
   async buyPack({ pack }) {

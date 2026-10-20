@@ -64,12 +64,15 @@ final class Studio
         $results = $record['song_results'];
         $results[] = ['accuracy' => round($accuracy, 3), 'perfect' => $perfect, 'good' => $good, 'miss' => $miss];
 
+        $levelUps = [];
         foreach ($members as $m) {
-            $skill = BandCalc::skill($m);
-            $talent = in_array('talent', $m['traits'], true) ? Balance::TALENT_FACTOR : 1.0;
-            $gain = Balance::RECORD_SONG_SKILL * $accuracy * $talent * max(0.08, 1 - $skill / 110);
+            $gain = BandCalc::trainingGain($m, Balance::RECORD_SONG_SKILL * $accuracy);
             $column = $m['band_slot'] === 2 && $m['instr2'] !== null ? 'skill2' : 'skill1';
-            $db->update('musicians', [$column => min((float) Balance::MAX_STAT, $skill + $gain)], ['id' => $m['id']]);
+            $db->update('musicians', [$column => min((float) Balance::MAX_STAT, BandCalc::skill($m) + $gain)], ['id' => $m['id']]);
+            $levelUp = Levels::check($this->repo, $m['id']);
+            if ($levelUp !== null) {
+                $levelUps[] = $levelUp;
+            }
         }
 
         $chemistry = BandCalc::chemistry($members);
@@ -85,6 +88,7 @@ final class Studio
             'songsDone' => count($results),
             'songsTotal' => $record['songs_total'],
             'cohesion' => round($cohesion - $band['cohesion'], 1),
+            'levelUps' => $levelUps,
             'completed' => null,
         ];
         if (count($results) >= $record['songs_total']) {

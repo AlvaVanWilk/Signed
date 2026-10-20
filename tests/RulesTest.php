@@ -106,7 +106,9 @@ test('Generator: höchstens zwei Instrumente, Spezialisten sind besser', functio
         $m = Generator::musician((string) array_rand(Balance::MUSICIAN));
         check(isset(Catalog::INSTRUMENTS[$m['instr1']]));
         check($m['genres'] !== [] && count($m['genres']) === count(array_unique($m['genres'])));
-        check(count($m['traits']) <= 2);
+        check($m['level'] <= 1, 'Aus Packs höchstens Können-Stufe 1');
+        checkEquals($m['level'], count($m['abilities']), 'So viele Fähigkeiten wie Stufen');
+        checkEquals(0.0, $m['fame'], 'Neue Musiker haben keinen Ruhm');
         if ($m['instr2'] !== null) {
             $multi++;
             check($m['instr2'] !== $m['instr1']);
@@ -134,10 +136,36 @@ test('Generator: Instrumentenmodelle gibt es für jede Art und Seltenheit', func
     }
     foreach (Catalog::INSTRUMENTS as $key => $instrument) {
         foreach ($instrument['techniques'] as $technique) {
-            check(isset(Catalog::TECHNIQUES[$technique]), "Technik $technique fehlt");
+            check(!empty(Catalog::ABILITIES[$technique]['technique']), "Technik $technique fehlt");
         }
         check(isset(Catalog::HIGHLIGHTS[$key]), "Highlight-Texte für $key fehlen");
     }
+});
+
+test('Stufen: Können- und Bekanntheitsleiter, Fähigkeiten passen zum Instrument', function () {
+    checkEquals(0, Signed\Game\Levels::forSkill(34.9));
+    checkEquals(1, Signed\Game\Levels::forSkill(35));
+    checkEquals(3, Signed\Game\Levels::forSkill(99));
+    checkEquals(0, Signed\Game\Levels::forFame(0));
+    checkEquals(3, Signed\Game\Levels::forFame(5000));
+    for ($i = 0; $i < 50; $i++) {
+        foreach (Signed\Game\Levels::options(['drums'], []) as $ability) {
+            $info = Catalog::ABILITIES[$ability];
+            check(empty($info['technique']) || in_array($ability, Catalog::INSTRUMENTS['drums']['techniques'], true), "$ability passt nicht zum Schlagzeug");
+        }
+    }
+    $scout = Generator::musician('epic', ['minSkill' => 35]);
+    checkEquals(1, $scout['level'], 'Scout-Musiker haben Stufe 1');
+});
+
+test('Instrumente streuen um die Werte ihres Modells', function () {
+    $seen = [];
+    for ($i = 0; $i < 40; $i++) {
+        $stats = Generator::gearStats('gtr_strato');
+        $seen[$stats['klang']] = true;
+        check(abs($stats['klang'] - Catalog::GEAR['gtr_strato']['klang']) <= Balance::GEAR_VARIANCE);
+    }
+    check(count($seen) > 5, 'Unterschiedliche Werte');
 });
 
 test('Minispiele: Tonhöhen-Melodie und Mischpult', function () {
@@ -162,7 +190,7 @@ test('Chartpunkte: Qualität zählt, LPs mehr als EPs, Punkte schrumpfen', funct
 });
 
 test('Simulation: bessere Bands begeistern das Publikum mehr', function () {
-    $player = static fn (float $skill) => ['name' => 'Kim', 'instrument' => 'guitar', 'skill' => $skill, 'presence' => 30.0, 'traits' => [], 'techniques' => []];
+    $player = static fn (float $skill) => ['name' => 'Kim', 'instrument' => 'guitar', 'skill' => $skill, 'presence' => 30.0, 'abilities' => []];
     $weak = 0.0;
     $strong = 0.0;
     for ($i = 0; $i < 60; $i++) {

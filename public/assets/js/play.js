@@ -1,4 +1,4 @@
-import { instrumentName } from './cards.js';
+import { instrumentName, levelUpBanners } from './cards.js';
 import { bandById, mutate } from './core.js';
 import { createMinigame } from './minigame.js';
 import { esc, fmt1, money, openModal, percent } from './ui.js';
@@ -61,14 +61,16 @@ function practiceSummary(r) {
   return `
     <h3>Trefferquote ${percent(r.accuracy)}</h3>
     ${counts(r)}
-    <p class="big-number">${esc(instrumentName(r.instrument))}: ${fmt1(r.skillBefore)} → <b>${fmt1(r.skillAfter)}</b> <span class="ok">+${fmt1(r.gain)}</span></p>`;
+    <p class="big-number">${esc(instrumentName(r.instrument))}: ${fmt1(r.skillBefore)} → <b>${fmt1(r.skillAfter)}</b> <span class="ok">+${fmt1(r.gain)}</span></p>
+    ${levelUpBanners(r.levelUps)}`;
 }
 
 function recordSummary(r) {
   const head = `
     <h3>Lied ${r.songsDone} von ${r.songsTotal} im Kasten – Trefferquote ${percent(r.accuracy)}</h3>
     ${counts(r)}
-    <p class="muted">Gemischt wird in Abschnitten: Perfekt heißt fast durchgehend im grünen Bereich. Jedes Bandmitglied hat etwas Können dazugewonnen, Eingespieltheit +${fmt1(r.cohesion)}.</p>`;
+    <p class="muted">Eingespieltheit +${fmt1(r.cohesion)}</p>
+    ${levelUpBanners(r.levelUps)}`;
   if (!r.completed) return head;
   const c = r.completed;
   return `${head}
@@ -80,6 +82,5 @@ function recordSummary(r) {
         <div class="reward"><span>Ruhm</span><b>+${fmt1(c.fame)}</b></div>
       </div>
       <p>Neu in den Album-Charts mit <b>${fmt1(c.chartPoints)} Punkten</b>.${c.vouchers ? ` Dazu ${c.vouchers === 1 ? 'ein Scout-Gutschein' : `${c.vouchers} Scout-Gutscheine`}!` : ''}</p>
-      <p class="muted">Jetzt kann die Band richtige Gigs spielen.</p>
     </div>`;
 }

@@ -54,6 +54,8 @@ final class State
                 'quality' => $results ? round(array_sum(array_column($results, 'accuracy')) / count($results), 3) : 0,
                 'perfect' => (bool) $row['perfect'],
                 'charting' => $points >= Balance::CHART_MIN_POINTS,
+                'peak' => round((float) $row['chart_points'], 1),
+                'topped' => (bool) $row['topped'],
                 'points' => round($points, 1),
                 'finishedAt' => (int) $row['finished_at'],
             ];
@@ -94,11 +96,8 @@ final class State
                 'released' => $band['released'],
                 'busyUntil' => $band['busy_until'],
                 'options' => [
-                    'busking' => [
-                        'songs' => Balance::BUSKING['songs'],
-                        'gage' => (int) round(Balance::BUSKING['gage'] * Balance::BUSKING['songs']
-                            * BandCalc::falloff($fame, Balance::BUSKING['falloff'], Balance::BUSKING['minFactor'])),
-                    ],
+                    'busking' => ['songs' => Balance::BUSKING['songs']],
+                    'rehearsal' => ['songs' => Balance::REHEARSAL['songs']],
                     'openstage' => [
                         'songs' => Balance::OPENSTAGE['songs'],
                         'worthIt' => BandCalc::falloff($fame, Balance::OPENSTAGE['falloff']) > 0,
@@ -125,7 +124,7 @@ final class State
 
         $running = $db->all('SELECT * FROM activities WHERE label_id = ? AND settled = 0 ORDER BY ends_at', [$repo->labelId]);
         $results = $db->all('SELECT * FROM activities WHERE label_id = ? AND settled = 1 AND seen = 0 ORDER BY ends_at', [$repo->labelId]);
-        $history = $db->all('SELECT id, band_id, kind, text, created_at FROM history WHERE label_id = ? ORDER BY id DESC LIMIT 40', [$repo->labelId]);
+        $history = $db->all('SELECT id, band_id, musician_id, kind, text, created_at FROM history WHERE label_id = ? ORDER BY id DESC LIMIT 80', [$repo->labelId]);
         $items = $db->all('SELECT id, kind, value FROM items WHERE label_id = ? ORDER BY id', [$repo->labelId]);
 
         $db->update('labels', ['last_seen' => $now], ['id' => $repo->labelId]);
@@ -144,6 +143,7 @@ final class State
             'history' => array_map(static fn ($h) => [
                 'id' => (int) $h['id'],
                 'bandId' => $h['band_id'] === null ? null : (int) $h['band_id'],
+                'musicianId' => $h['musician_id'] === null ? null : (int) $h['musician_id'],
                 'kind' => $h['kind'],
                 'text' => $h['text'],
                 'createdAt' => (int) $h['created_at'],

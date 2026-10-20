@@ -16,13 +16,19 @@ final class Balance
     public const SONG_SECONDS = 30;
 
     // ---------- Musiker ----------
-    /** Startwerte je Seltenheit: [min, max]; traits = Gewichte für 0/1/2 Eigenschaften. */
+    /**
+     * Startwerte je Pack-Qualität [min, max]. Aus Packs kommen Musiker höchstens mit Können-Stufe 1,
+     * deshalb bleibt das Können unter der zweiten Schwelle. Ruhm haben neue Musiker nie.
+     */
     public const MUSICIAN = [
-        'common' => ['skill' => [8, 28], 'presence' => [5, 25], 'traits' => [70, 27, 3], 'technique' => 0.12],
-        'rare' => ['skill' => [22, 42], 'presence' => [12, 38], 'traits' => [45, 45, 10], 'technique' => 0.25],
-        'epic' => ['skill' => [36, 58], 'presence' => [22, 52], 'traits' => [25, 55, 20], 'technique' => 0.45],
-        'legendary' => ['skill' => [52, 75], 'presence' => [35, 70], 'traits' => [10, 50, 40], 'technique' => 0.7],
+        'common' => ['skill' => [5, 30], 'presence' => [5, 25]],
+        'rare' => ['skill' => [15, 42], 'presence' => [10, 35]],
+        'epic' => ['skill' => [25, 52], 'presence' => [15, 45]],
+        'legendary' => ['skill' => [35, 58], 'presence' => [25, 55]],
     ];
+    /** Können-Stufen 1–3 ab diesen Werten; Bekanntheits-Stufen 1–3 ab diesem Ruhm. */
+    public const SKILL_LEVELS = [35, 60, 85];
+    public const FAME_LEVELS = [20, 120, 600];
     public const MAX_STAT = 100;
     public const SECOND_INSTRUMENT_CHANCE = 0.2;
     /** Wer zwei Instrumente spielt, ist in beidem schwächer als ein Spezialist. */
@@ -51,9 +57,14 @@ final class Balance
             'odds' => ['common' => 60, 'rare' => 30, 'epic' => 9, 'legendary' => 1],
         ],
         'gear' => [
-            'name' => 'Equipment-Pack', 'price' => 300, 'desc' => 'Drei Instrumente für deine Musiker.',
+            'name' => 'Equipment-Pack', 'price' => 300, 'desc' => 'Drei solide Instrumente.',
             'slots' => ['gear', 'gear', 'gear'],
-            'odds' => ['common' => 55, 'rare' => 32, 'epic' => 11, 'legendary' => 2],
+            'odds' => ['common' => 62, 'rare' => 30, 'epic' => 7, 'legendary' => 1],
+        ],
+        'gearpro' => [
+            'name' => 'Profi-Equipment', 'price' => 1200, 'desc' => 'Drei hochwertige Instrumente.',
+            'slots' => ['gear', 'gear', 'gear'],
+            'odds' => ['common' => 0, 'rare' => 50, 'epic' => 38, 'legendary' => 12],
         ],
         'gold' => [
             'name' => 'Gold-Pack', 'price' => 1500, 'desc' => 'Drei Musiker, ein Instrument, ein Manager. Mindestens eine seltene Karte.',
@@ -78,6 +89,8 @@ final class Balance
     public const OFF_GENRE_FACTOR = 0.75;
     /** Maximaler Bonus eines Instruments mit Klang 100 (+50 %). */
     public const GEAR_MAX_BONUS = 0.5;
+    /** Jedes Instrument weicht pro Wert bis zu so viel vom Modell ab. */
+    public const GEAR_VARIANCE = 12;
     /** +5 % je weiterem unterschiedlichen Instrument, höchstens für 4 weitere. */
     public const LINEUP_BONUS = 0.05;
     public const LINEUP_BONUS_MAX_TYPES = 4;
@@ -96,7 +109,7 @@ final class Balance
     // ---------- Ruhm ----------
     /** Einzelanteil am Ruhmgewinn: Grundwert + Präsenz + Boni. */
     public const PRESENCE_FACTOR = [
-        'base' => 0.6, 'perPresence' => 0.008, 'attraktiv' => 0.15, 'charisma' => 0.3, 'unusual' => 0.3, 'design' => 0.2,
+        'base' => 0.6, 'perPresence' => 0.008, 'ausstrahlung' => 0.15, 'charisma' => 0.3, 'unusual' => 0.3, 'design' => 0.2,
     ];
     /** Bei diesem Sound gibt ein Auftritt genau den Grund-Ruhm des Ortes. */
     public const SOUND_FAME_REF = 30;
@@ -110,7 +123,17 @@ final class Balance
     public const LIVE_SETTLE = 0.08;
     /** Ausschlag eines Patzers bzw. Glanzmoments [min, max]. */
     public const LIVE_SWING = [7.0, 13.0];
-    public const BUSKING = ['songs' => 3, 'gage' => 14, 'fame' => 0.3, 'expect' => 10, 'falloff' => 150, 'minFactor' => 0.1];
+    /** Straßenmusik: Das Geld behalten die Musiker; fürs Label bleiben etwas Präsenz und Bekanntheit. */
+    public const BUSKING = ['songs' => 3, 'presence' => [0.3, 0.8], 'fame' => 0.3, 'expect' => 10, 'falloff' => 150, 'minFactor' => 0.1];
+    /** Bandprobe: keine Zuschauer, dafür doppelte Eingespieltheit und etwas Können für alle. */
+    public const REHEARSAL = ['songs' => 2, 'cohesion' => 2.5, 'skill' => 0.4];
+    /** Band-Promo: alle Mitglieder sind unterwegs und gewinnen Präsenz, die Band etwas Ruhm. */
+    public const BAND_PROMO = ['seconds' => 600, 'presence' => [1.2, 2.5], 'fame' => [1.0, 3.0]];
+    /** Jam-Café: nur Musiker ohne Band; danach kommen passende Musiker dazu. */
+    public const JAM = [
+        'songs' => 2, 'cooldown' => 86400, 'cards' => 3, 'sameGenre' => 0.6, 'fame' => 0.2,
+        'odds' => ['common' => 72, 'rare' => 24, 'epic' => 4, 'legendary' => 0],
+    ];
     public const OPENSTAGE = [
         'songs' => 2, 'fame' => 1.4, 'expect' => 12, 'falloff' => 120,
         'managerChance' => 0.07, 'fanChance' => 0.15, 'fanValue' => [3, 10],
@@ -165,7 +188,8 @@ final class Balance
     /** Kauf ohne Gutschein höchstens einmal pro Woche. */
     public const SCOUT_COOLDOWN = 7 * 24 * 3600;
     public const SCOUT_CARDS = 5;
-    public const SCOUT_ODDS = ['rare' => 60, 'epic' => 32, 'legendary' => 8];
+    /** Der Scout bringt nur Musiker mit Können-Stufe 1. */
+    public const SCOUT_ODDS = ['epic' => 70, 'legendary' => 30];
 
     // ---------- Album-Charts ----------
     /** Chartpunkte = Basis × Qualität² × Soundfaktor × Format × Perfekt × Ruhm. */

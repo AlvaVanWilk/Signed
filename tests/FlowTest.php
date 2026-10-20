@@ -140,6 +140,69 @@ test('Packs kosten Geld und landen im Katalog', function () {
     checkApiError(fn () => $p->post('buyPack', ['pack' => 'gibtsnicht']), 'Pack');
 });
 
+test('Jam-Café: ein Musiker ohne Band findet neue Musiker, einmal am Tag', function () {
+    $db = freshDb();
+    $p = player($db);
+    $p->post('register', ['username' => 'jammer', 'password' => 'geheim123', 'labelName' => 'Jam Records']);
+    $offer = $p->post('scoutOpen', ['voucher' => true])['offer'];
+    $m = $p->post('scoutPick', ['offerId' => $offer['id'], 'index' => 0])['musician'];
+    $state = $p->get('state');
+    check($state['musicians'][0]['favorite'], 'Der erste Musiker ist automatisch Favorit');
+    $p->post('soloStart', ['musicianId' => $m['id'], 'type' => 'jam']);
+    Clock::advance(Balance::JAM['songs'] * Balance::SONG_SECONDS);
+    $state = $p->get('state');
+    checkEquals(1 + Balance::JAM['cards'], count($state['musicians']));
+    checkEquals(Balance::JAM['cards'], count($state['results'][0]['result']['cards']));
+    checkApiError(fn () => $p->post('soloStart', ['musicianId' => $m['id'], 'type' => 'jam']), 'heute schon');
+    $p->post('soloStart', ['musicianId' => $m['id'], 'type' => 'busking']);
+    Clock::advance(86400);
+    $p->post('soloStart', ['musicianId' => $m['id'], 'type' => 'jam']);
+    $p->post('musicianFavorite', ['musicianId' => $m['id'], 'favorite' => false]);
+    check(!$p->get('state')['musicians'][0]['favorite']);
+});
+
+test('Bandprobe und Band-Promo', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Probe');
+    $band = foundBand($p);
+    $before = array_column($p->get('state')['musicians'], 'instruments', 'id');
+    $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'rehearsal']);
+    Clock::advance(Balance::REHEARSAL['songs'] * Balance::SONG_SECONDS);
+    $state = $p->get('state');
+    check(bandById($state, $band['id'])['cohesion'] > 0);
+    foreach ($state['musicians'] as $m) {
+        check($m['instruments'][0]['skill'] > $before[$m['id']][0]['skill'], 'Probe bringt Können');
+    }
+    $p->post('bandPromo', ['bandId' => $band['id']]);
+    checkApiError(fn () => $p->post('promoStart', ['musicianId' => $band['memberIds'][0]]), 'beschäftigt');
+    Clock::advance(Balance::BAND_PROMO['seconds']);
+    check(bandById($p->get('state'), $band['id'])['fame'] > 0, 'Promo macht die Band bekannter');
+});
+
+test('Aufstieg: Bei Können 35 gibt es eine Fähigkeit, bei Stufe 3 wählt man aus drei', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Level');
+    $m = $p->get('state')['musicians'][0];
+    $db->exec('UPDATE musicians SET skill1 = 59.9, level = 1, abilities = ? WHERE id = ?', ['["talent"]', $m['id']]);
+    $game = $p->post('minigameStart', ['kind' => 'practice', 'musicianId' => $m['id']])['game'];
+    Clock::advance(Balance::SONG_SECONDS + 1);
+    $result = $p->post('minigameFinish', ['sessionId' => $game['sessionId'], 'perfect' => $game['count'], 'good' => 0, 'miss' => 0])['result'];
+    checkEquals(2, $result['levelUps'][0]['level']);
+    $after = array_values(array_filter($p->get('state')['musicians'], static fn ($x) => $x['id'] === $m['id']))[0];
+    checkEquals(2, count($after['abilities']));
+
+    $db->exec('UPDATE musicians SET skill1 = 84.9 WHERE id = ?', [$m['id']]);
+    $game = $p->post('minigameStart', ['kind' => 'practice', 'musicianId' => $m['id']])['game'];
+    Clock::advance(Balance::SONG_SECONDS + 1);
+    $result = $p->post('minigameFinish', ['sessionId' => $game['sessionId'], 'perfect' => $game['count'], 'good' => 0, 'miss' => 0])['result'];
+    checkEquals(3, count($result['levelUps'][0]['choice']));
+    checkApiError(fn () => $p->post('abilityChoose', ['musicianId' => $m['id'], 'ability' => 'gibtsnicht']), 'nicht zur Wahl');
+    $state = $p->post('abilityChoose', ['musicianId' => $m['id'], 'ability' => $result['levelUps'][0]['choice'][1]])['state'];
+    $after = array_values(array_filter($state['musicians'], static fn ($x) => $x['id'] === $m['id']))[0];
+    checkEquals(3, count($after['abilities']));
+    checkEquals(null, $after['abilityChoice']);
+});
+
 test('Gold-Pack garantiert eine seltene Karte', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Rich');
@@ -163,7 +226,7 @@ test('Bandregeln: ein Genre pro Label, niemand in zwei Bands', function () {
     checkApiError(fn () => $p->post('bandCreate', ['name' => '   ', 'genre' => $other, 'members' => []]), 'Bandname');
 });
 
-test('Straßenmusik bringt Geld, sperrt die Band und wird nach Ablauf gutgeschrieben', function () {
+test('Straßenmusik bringt dem Label kein Geld, aber Präsenz; sperrt die Band bis zum Ende', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Busker');
     $band = foundBand($p);
@@ -181,8 +244,9 @@ test('Straßenmusik bringt Geld, sperrt die Band und wird nach Ablauf gutgeschri
     $state = $p->get('state');
     checkEquals(1, count($state['results']));
     $result = $state['results'][0]['result'];
-    check($result['money'] > 0);
-    checkEquals($money + $result['money'], $state['label']['money']);
+    checkEquals(0, $result['money']);
+    checkEquals($money, $state['label']['money']);
+    check($result['presence'] > 0, 'Etwas Präsenz für die Musiker');
     check(bandById($state, $band['id'])['cohesion'] > 0, 'Auftritte steigern die Eingespieltheit');
     check(bandById($state, $band['id'])['released'], 'Band ist jetzt freigegeben');
 

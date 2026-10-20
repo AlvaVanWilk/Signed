@@ -5,13 +5,15 @@ import { esc, fmt0, fmt1, money, timeAgo } from '../ui.js';
 export function render() {
   const s = app.state;
   const fame = s.bands.reduce((sum, b) => sum + b.fame, 0);
+  const firstFavorite = s.musicians.find((m) => m.favorite && !m.bandId);
+  const choices = s.musicians.filter((m) => m.abilityChoice);
   const steps = [
-    { done: s.musicians.length > 0, text: 'Talent-Scout: den ersten Musiker unter Vertrag nehmen', href: '#/packs' },
-    { done: s.musicians.length > 1, text: 'Weitere Musiker aus einem Pack holen', href: '#/packs' },
-    { done: s.bands.length > 0, text: 'Erste Band gründen', href: '#/bands' },
-    { done: s.bands.some((b) => b.released), text: 'Erster Auftritt: Straßenmusik oder Open Stage', href: '#/bands' },
-    { done: s.bands.some((b) => b.records > 0), text: 'Erste Platte produzieren – erst dann gibt es richtige Gigs', href: '#/bands' },
-    { done: s.bands.some((b) => b.gigsPlayed > 0), text: 'Ersten richtigen Gig spielen', href: '#/bands' },
+    { done: s.musicians.length > 0, text: 'Talent-Scout: ersten Musiker unter Vertrag nehmen', href: '#/packs' },
+    { done: s.musicians.length > 1, text: 'Mitmusiker finden: Jam-Café oder Pack', href: firstFavorite ? `#/musician/${firstFavorite.id}/jam` : '#/packs' },
+    { done: s.bands.length > 0, text: 'Band gründen', act: 'newBand' },
+    { done: s.bands.some((b) => b.released), text: 'Erster Auftritt' },
+    { done: s.bands.some((b) => b.records > 0), text: 'Erste Platte aufnehmen' },
+    { done: s.bands.some((b) => b.gigsPlayed > 0), text: 'Erster richtiger Gig' },
   ];
   const nextStep = steps.find((step) => !step.done);
 
@@ -29,12 +31,13 @@ export function render() {
       </div>
     </section>
 
+    ${choices.map((m) => `<div class="notice choice"><span>⭐ ${esc(m.firstName)} ${esc(m.lastName)} darf eine dritte Fähigkeit wählen.</span><button class="btn primary small" data-act="chooseAbility" data-id="${m.id}">Wählen</button></div>`).join('')}
     ${nextStep ? `
       <section class="panel">
         <h2>Erste Schritte</h2>
         <ol class="steps">${steps.map((step) => `
           <li class="${step.done ? 'done' : step === nextStep ? 'next' : ''}">
-            ${step.href && step === nextStep ? `<a href="${step.href}">${esc(step.text)}</a>` : esc(step.text)}
+            ${step === nextStep && step.href ? `<a href="${step.href}">${esc(step.text)}</a>` : step === nextStep && step.act ? `<button class="link" data-act="${step.act}">${esc(step.text)}</button>` : esc(step.text)}
           </li>`).join('')}
         </ol>
       </section>` : ''}
@@ -46,9 +49,8 @@ export function render() {
       </section>` : ''}
 
     <section>
-      <div class="section-head"><h2>Deine Bands</h2><a class="btn ghost small" href="#/bands">Alle Bands</a></div>
-      ${s.bands.length ? `<div class="band-grid">${s.bands.map(bandTile).join('')}</div>` : `
-        <div class="empty">Noch keine Band. <a href="#/bands">Gründe jetzt deine erste Band</a> – mindestens zwei Musiker.</div>`}
+      <div class="section-head"><h2>Deine Bands</h2></div>
+      ${s.bands.length ? `<div class="band-grid">${s.bands.map(bandTile).join('')}</div>` : '<div class="empty">Noch keine Band.</div>'}
     </section>
 
     <section class="panel">
@@ -85,7 +87,7 @@ export function bandTile(b) {
       </div>
       <div class="faces">${members.map((m) => face(m, 'sm')).join('')}</div>
       <div class="band-tile-stats">
-        <span title="Sound (Kritikerwertung)">🎚️ ${fmt1(b.sound)}</span>
+        <span title="Sound">🎚️ ${fmt1(b.sound)}</span>
         <span title="Ruhm">⭐ ${fmt1(b.fame)}</span>
         <span title="Platten">💿 ${fmt0(b.records)}</span>
       </div>

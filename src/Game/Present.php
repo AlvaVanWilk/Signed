@@ -21,8 +21,12 @@ final class Present
             'presence' => round($m['presence'], 1),
             'fame' => round($m['fame'], 1),
             'genres' => $m['genres'],
-            'traits' => $m['traits'],
-            'techniques' => $m['techniques'],
+            'level' => $m['level'],
+            'fameLevel' => Levels::forFame($m['fame']),
+            'abilities' => $m['abilities'],
+            'abilityChoice' => $m['ability_choice'],
+            'favorite' => $m['favorite'],
+            'jamAt' => $m['jam_at'],
             'personality' => $m['personality'],
             'unusual' => $m['unusual'],
             'look' => (object) $m['look'],
@@ -35,7 +39,10 @@ final class Present
 
     public static function gear(array $g): array
     {
-        return ['id' => $g['id'], 'model' => $g['model'], 'musicianId' => $g['musician_id']];
+        return [
+            'id' => $g['id'], 'model' => $g['model'], 'musicianId' => $g['musician_id'],
+            'klang' => $g['klang'], 'spielbarkeit' => $g['spielbarkeit'], 'design' => $g['design'],
+        ];
     }
 
     public static function manager(array $m, array $bandIds = []): array
@@ -112,8 +119,8 @@ final class Present
                 static fn ($i) => ['name' => $i['name'], 'icon' => $i['icon'], 'genres' => $i['genres'], 'techniques' => $i['techniques']],
                 Catalog::INSTRUMENTS
             ),
-            'techniques' => Catalog::TECHNIQUES,
-            'traits' => Catalog::TRAITS,
+            'abilities' => Catalog::ABILITIES,
+            'techniqueDesc' => Catalog::TECHNIQUE_DESC,
             'personalities' => Catalog::PERSONALITIES,
             'managerSkills' => Catalog::MANAGER_SKILLS,
             'gear' => Catalog::GEAR,
@@ -132,6 +139,10 @@ final class Present
                 'promoSeconds' => Balance::PROMO_SECONDS,
                 'cohesionRemovePenalty' => Balance::COHESION_REMOVE_PENALTY,
                 'scoutPrice' => Balance::SCOUT_PRICE,
+                'skillLevels' => Balance::SKILL_LEVELS,
+                'fameLevels' => Balance::FAME_LEVELS,
+                'jamCooldown' => Balance::JAM['cooldown'],
+                'bandPromoSeconds' => Balance::BAND_PROMO['seconds'],
                 'scoutCards' => Balance::SCOUT_CARDS,
                 'chartLpSongs' => Balance::CHART_LP_SONGS,
                 'chartSize' => Balance::CHART_SIZE,

@@ -1,10 +1,12 @@
 import { api } from './api.js';
 import { actions, app, bandById, defineActions, musicianById, navigate, onRender, refresh, rerender, serverNow } from './core.js';
+import { levelUpBanners, musicianCard } from './cards.js';
 import { closeAllModals, duration, esc, fmt1, money, openModal, percent, topModal } from './ui.js';
 import * as auth from './views/auth.js';
 import * as bands from './views/bands.js';
 import * as catalog from './views/catalog.js';
 import * as charts from './views/charts.js';
+import * as musician from './views/musician.js';
 import * as overview from './views/overview.js';
 import * as packs from './views/packs.js';
 import * as storage from './views/storage.js';
@@ -14,7 +16,6 @@ const NAV = [
   ['packs', 'Packs'],
   ['katalog', 'Katalog'],
   ['lager', 'Lager'],
-  ['bands', 'Bands'],
   ['charts', 'Charts'],
 ];
 
@@ -24,20 +25,73 @@ const VIEWS = {
   katalog: () => catalog.render(),
   lager: () => storage.render(),
   bands: () => bands.renderList(),
-  band: (route) => bands.renderDetail(route.id),
+  band: (route) => bands.renderBand(route),
+  musician: (route) => musician.renderMusician(route),
   charts: () => charts.render(),
 };
 
 function parseRoute() {
-  const [name = '', id] = location.hash.replace(/^#\/?/, '').split('/');
-  return { name: VIEWS[name] ? name : '', id: id ? Number(id) : null };
+  const [name = '', id, section = ''] = location.hash.replace(/^#\/?/, '').split('/');
+  return { name: VIEWS[name] ? name : '', id: id ? Number(id) : null, section };
+}
+
+/** Zweite Menüzeile: die Bands des Labels und favorisierte Musiker ohne Band. */
+function subnav(route) {
+  const s = app.state;
+  const favorites = s.musicians.filter((m) => m.favorite && !m.bandId);
+  const active = (kind, id) => route.name === kind && route.id === id;
+  return `
+    <nav class="subnav">
+      ${s.bands.map((b) => `<a href="#/band/${b.id}" class="subnav-btn genre-fill-${b.genre} ${active('band', b.id) ? 'active' : ''}">${esc(b.name)}</a>`).join('')}
+      ${favorites.map((m) => `<a href="#/musician/${m.id}" class="subnav-btn fav ${active('musician', m.id) ? 'active' : ''}">★ ${esc(m.firstName)} ${esc(m.lastName)}</a>`).join('')}
+      <button class="subnav-btn add" data-act="newBand">+ Band</button>
+    </nav>`;
+}
+
+let lastSide = '';
+
+/** Seitenleiste für Band- und Musikerseiten: die gewählte Band rutscht nach links, darunter ihr Menü. */
+function sidebar(route) {
+  const key = `${route.name}/${route.id}`;
+  const enter = key !== lastSide;
+  lastSide = key;
+  let title;
+  let base;
+  let sections;
+  let theme;
+  if (route.name === 'band') {
+    const b = bandById(route.id);
+    if (!b) return '';
+    title = b.name;
+    base = `#/band/${b.id}`;
+    sections = bands.BAND_SECTIONS;
+    theme = `genre-fill-${b.genre}`;
+  } else if (route.name === 'musician') {
+    const m = musicianById(route.id);
+    if (!m) return '';
+    title = `${m.firstName} ${m.lastName}`;
+    base = `#/musician/${m.id}`;
+    sections = musician.sectionsFor(m);
+    theme = 'fav';
+  } else {
+    return '';
+  }
+  return `
+    <aside class="side ${enter ? 'enter' : ''}">
+      <a class="side-entity subnav-btn ${theme}" href="${base}">${esc(title)}</a>
+      <nav class="side-menu">${sections.map(([key, icon, label]) => `
+        <a href="${base}${key ? `/${key}` : ''}" class="${route.section === key ? 'active' : ''}" title="${esc(label)}"><span>${icon}</span><small>${esc(label)}</small></a>`).join('')}
+      </nav>
+    </aside>`;
 }
 
 function layout(content, route) {
   const s = app.state;
-  const active = route.name === 'band' ? 'bands' : route.name;
+  const active = route.name;
+  const side = sidebar(route);
   return `
     <header class="topbar">
+      <div class="topbar-row">
       <a class="logo" href="#/">Signed</a>
       <nav class="nav">${NAV.map(([key, label]) => `<a href="#/${key}" class="${key === active ? 'active' : ''}">${label}</a>`).join('')}</nav>
       <div class="label-info">
@@ -45,8 +99,10 @@ function layout(content, route) {
         <span class="money-pill">${money(s.label.money)}</span>
         <button class="btn ghost small" data-act="logout">Abmelden</button>
       </div>
+      </div>
+      ${subnav(route)}
     </header>
-    <main class="page">${content}</main>`;
+    <div class="shell ${side ? 'with-side' : ''}">${side}<main class="page">${content}</main></div>`;
 }
 
 function render() {
@@ -98,6 +154,14 @@ function resultHtml(r) {
       <h2>${esc(m ? `${m.firstName} ${m.lastName}` : 'Promo')} ist zurück</h2>
       <div class="reward-grid">${reward('Präsenz', `+${fmt1(res.presence)}`)}${reward('Präsenz jetzt', fmt1(res.total))}</div>`;
   }
+  if (r.bandId === null) {
+    const m = musicianById(r.musicianId);
+    return `
+      <div class="eyebrow">${esc(m ? `${m.firstName} ${m.lastName}` : '')}</div>
+      <h2>${esc(r.title)}</h2>
+      <div class="reward-grid">${reward('Ruhm', `+${fmt1(res.fame)}`)}${res.presence ? reward('Präsenz', `+${fmt1(res.presence)}`) : ''}</div>
+      ${res.cards?.length ? `<p>Neue Bekanntschaften – sie unterschreiben bei dir:</p><div class="tcg-grid small-cards">${res.cards.map((c) => musicianCard(c, { showStatus: false })).join('')}</div>` : ''}`;
+  }
   const band = bandById(r.bandId);
   const drops = (res.drops || []).map((d) => d.kind === 'manager'
     ? `<div class="banner">🎴 Neue Karte: <b>${esc(d.name)}</b> will dein Manager werden (Stufe ${d.level}). Du findest ihn im Lager.</div>`
@@ -105,13 +169,15 @@ function resultHtml(r) {
   return `
     <div class="eyebrow">${esc(band?.name ?? '')}</div>
     <h2>${esc(r.title)}</h2>
-    <p class="muted">${moodText(res.meter)}</p>
+    ${res.meter ? `<p class="muted">${moodText(res.meter)}</p>` : ''}
     <div class="reward-grid">
-      ${r.type !== 'openstage' ? reward('Gage', `+${money(res.money)}`) : ''}
-      ${reward('Ruhm', `+${fmt1(res.fame)}`)}
-      ${reward('Eingespieltheit', `+${fmt1(res.cohesion)}`)}
-      ${reward('Publikum', percent(res.meter / 100))}
+      ${res.money ? reward('Gage', `+${money(res.money)}`) : ''}
+      ${res.fame ? reward('Ruhm', `+${fmt1(res.fame)}`) : ''}
+      ${res.presence ? reward('Präsenz', `+${fmt1(res.presence)}`) : ''}
+      ${res.cohesion ? reward('Eingespieltheit', `+${fmt1(res.cohesion)}`) : ''}
+      ${res.meter ? reward('Publikum', percent(res.meter / 100)) : ''}
     </div>
+    ${levelUpBanners(res.levelUps)}
     ${res.venueUp ? `<div class="banner">⭐ Neue Stufe! Ab jetzt spielt die Band Gigs in: <b>${esc(res.venueUp)}</b>.</div>` : ''}
     ${drops}`;
 }

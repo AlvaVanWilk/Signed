@@ -1,4 +1,4 @@
-import { app, bandById, cat, serverNow } from './core.js';
+import { app, bandById, cat, musicianById, serverNow } from './core.js';
 import { duration, esc, openModal } from './ui.js';
 
 const ICONS = { song: '🎵', mistake: '😬', highlight: '🔥', crowd: '👥' };
@@ -14,12 +14,14 @@ export function openLive(activityId) {
     return;
   }
   const band = bandById(activity.bandId);
+  const solo = band ? null : musicianById(activity.musicianId);
+  const who = band ? band.name : solo ? `${solo.firstName} ${solo.lastName}` : '';
   const songSeconds = cat().rules.songSeconds;
   const total = activity.endsAt - activity.startedAt;
 
   root.innerHTML = `
     <div class="live-head">
-      <div><div class="eyebrow">Live</div><h2>${esc(activity.title)}</h2><div class="muted">${esc(band?.name ?? '')}</div></div>
+      <div><div class="eyebrow">Live</div><h2>${esc(activity.title)}</h2><div class="muted">${esc(who)}</div></div>
       <div class="live-clock"><span class="live-song"></span><b class="live-left"></b></div>
     </div>
     <div class="meter">
@@ -28,7 +30,7 @@ export function openLive(activityId) {
     </div>
     <div class="live-progress"><div class="live-progress-fill"></div></div>
     <ol class="ticker"></ol>
-    <p class="muted small live-note">Du kannst das Fenster schließen – die Band spielt weiter, und das Ergebnis kommt automatisch.</p>`;
+    `;
 
   const fill = root.querySelector('.meter-fill');
   const needle = root.querySelector('.meter-needle');

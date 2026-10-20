@@ -59,6 +59,13 @@ final class BandCalc
         return round($core * $lineup * $cohesionFactor, 1);
     }
 
+    /** Können-Zuwachs: Talent beschleunigt, je besser jemand schon ist, desto langsamer geht es. */
+    public static function trainingGain(array $m, float $base, ?int $slot = null): float
+    {
+        $talent = Levels::has($m, 'talent') ? Balance::TALENT_FACTOR : 1.0;
+        return $base * $talent * max(0.08, 1 - self::skill($m, $slot) / 110);
+    }
+
     /** Bandruhm = Summe der Bekanntheit aller aktuellen Mitglieder. */
     public static function fame(array $members): float
     {
@@ -120,10 +127,10 @@ final class BandCalc
     {
         $p = Balance::PRESENCE_FACTOR;
         $factor = $p['base'] + $m['presence'] * $p['perPresence'];
-        if (in_array('attraktiv', $m['traits'], true)) {
-            $factor += $p['attraktiv'];
+        if (Levels::has($m, 'ausstrahlung')) {
+            $factor += $p['ausstrahlung'];
         }
-        if (in_array('charisma', $m['traits'], true)) {
+        if (Levels::has($m, 'charisma')) {
             $factor += $p['charisma'];
         }
         if ($m['unusual']) {

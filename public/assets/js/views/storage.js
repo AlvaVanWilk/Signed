@@ -11,26 +11,24 @@ export function render() {
   }
   return `
     <div class="section-head">
-      <div><h1>Lager</h1><p class="muted">Instrumente, Manager und weitere Karten deines Labels.</p></div>
+      <h1>Lager</h1>
     </div>
 
     <section>
       <h2>Instrumente</h2>
-      <p class="muted">Instrumente sind nicht einmalig und lassen sich jederzeit tauschen. Ein gutes Instrument entfaltet sich nur in fähigen Händen.</p>
       ${s.gear.length ? Object.entries(byType).map(([type, items]) => `
         <h3>${esc(instrumentName(type))}</h3>
-        <div class="tcg-grid">${items.map((g) => gearCard(g, { extra: assignSelect(g, type) })).join('')}</div>`).join('') : '<div class="empty">Noch keine Instrumente. Sie stecken in Studio- und Equipment-Packs.</div>'}
+        <div class="tcg-grid">${items.map((g) => gearCard(g, { extra: assignSelect(g, type) })).join('')}</div>`).join('') : '<div class="empty">Noch keine Instrumente.</div>'}
     </section>
 
     <section>
       <h2>Manager</h2>
-      <p class="muted">Ein Manager betreut bis zu ${cat().rules.managerMaxBands} Bands, teilt seine Leistung dann aber auf. Zuweisen kannst du ihn auf der Seite der Band.</p>
-      ${s.managers.length ? `<div class="tcg-grid">${s.managers.map((m) => managerCard(m, { extra: managedBands(m) })).join('')}</div>` : '<div class="empty">Noch kein Manager. Manager gibt es in Packs und manchmal nach einer Open Stage.</div>'}
+      ${s.managers.length ? `<div class="tcg-grid">${s.managers.map((m) => managerCard(m, { extra: managedBands(m) })).join('')}</div>` : '<div class="empty">Noch kein Manager.</div>'}
     </section>
 
     <section>
       <h2>Fan-Karten</h2>
-      ${s.items.length ? `<div class="card-grid">${s.items.map(itemCard).join('')}</div>` : '<div class="empty">Keine Fan-Karten. Die gibt es mit etwas Glück nach einer Open Stage.</div>'}
+      ${s.items.length ? `<div class="card-grid">${s.items.map(itemCard).join('')}</div>` : '<div class="empty">Keine Fan-Karten.</div>'}
     </section>`;
 }
 
@@ -53,7 +51,7 @@ function itemCard(item) {
     <div class="card card-item">
       <span class="gear-icon">💌</span>
       <span class="card-title">Fan-Karte</span>
-      <span class="muted small">+${fmt0(item.value)} Ruhm für eine Band, verteilt auf alle Mitglieder.</span>
+      <span class="muted small">+${fmt0(item.value)} Ruhm für eine Band</span>
       ${app.state.bands.length ? `
         <select class="card-select" data-change="useItem" data-item="${item.id}">
           <option value="">Einsetzen bei …</option>

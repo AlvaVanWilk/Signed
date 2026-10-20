@@ -121,7 +121,7 @@ final class Charts
                     $db->exec('UPDATE musicians SET fame = fame + ? WHERE id = ?', [$fame / count($members), $m['id']]);
                 }
                 $repo->log('royalty', sprintf(
-                    'Tantiemen für „%s“: +%s €%s.',
+                    'Tantiemen für „%s“: +%s ₲%s.',
                     $row['title'],
                     number_format($money, 0, ',', '.'),
                     $members ? sprintf(' und +%s Ruhm', number_format($fame, 1, ',', '.')) : ''

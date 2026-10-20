@@ -42,8 +42,9 @@ final class Schema
             if ($version <= $current) {
                 continue;
             }
-            foreach ($statements as $sql) {
-                $db->raw(self::dialect($db, $sql));
+            foreach ($statements as $step) {
+                // Ein Schritt ist SQL oder eine PHP-Funktion für Datenumbauten.
+                is_callable($step) ? $step($db) : $db->raw(self::dialect($db, $step));
             }
             $db->exec("DELETE FROM meta WHERE k = 'schema'");
             $db->exec("INSERT INTO meta (k, v) VALUES ('schema', ?)", [(string) $version]);
@@ -59,7 +60,7 @@ final class Schema
         ]);
     }
 
-    /** @return list<list<string>> */
+    /** @return list<list<string|callable>> */
     private static function migrations(): array
     {
         return [
@@ -235,6 +236,18 @@ final class Schema
                 "ALTER TABLE bands ADD COLUMN name_key VARCHAR(60) NOT NULL DEFAULT ''",
                 'UPDATE bands SET name_key = LOWER(name)',
                 'CREATE INDEX bands_name_key ON bands (name_key)',
+            ],
+            // 3: Stufen und Fähigkeiten, Favoriten, Jam-Café, eigene Werte pro Instrument
+            [
+                'ALTER TABLE musicians ADD COLUMN level INTEGER NOT NULL DEFAULT 0',
+                "ALTER TABLE musicians ADD COLUMN abilities VARCHAR(255) NOT NULL DEFAULT '[]'",
+                'ALTER TABLE musicians ADD COLUMN ability_choice VARCHAR(255) NULL',
+                'ALTER TABLE musicians ADD COLUMN favorite INTEGER NOT NULL DEFAULT 0',
+                'ALTER TABLE musicians ADD COLUMN jam_at INTEGER NOT NULL DEFAULT 0',
+                'ALTER TABLE gear ADD COLUMN klang INTEGER NOT NULL DEFAULT 0',
+                'ALTER TABLE gear ADD COLUMN spielbarkeit INTEGER NOT NULL DEFAULT 0',
+                'ALTER TABLE gear ADD COLUMN design INTEGER NOT NULL DEFAULT 0',
+                [Migrations::class, 'levelsAndGear'],
             ],
         ];
     }

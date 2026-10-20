@@ -44,7 +44,7 @@ final class Jam
     {
         $rows = $this->repo->db->all(
             "SELECT o.id, o.musician_id, o.cards FROM jam_offers o JOIN musicians m ON m.id = o.musician_id
-             WHERE o.label_id = ? AND o.status = 'open' AND m.band_id IS NULL ORDER BY o.id",
+             WHERE o.label_id = ? AND o.status = 'open' AND m.band_id IS NULL AND m.label_id = o.label_id ORDER BY o.id",
             [$this->repo->labelId]
         );
         return array_map([self::class, 'present'], $rows);

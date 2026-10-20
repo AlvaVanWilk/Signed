@@ -2,7 +2,7 @@ import { abilityInfo, emptySlot, fullName, gearCard, gearModel, genreName, instr
 import { app, bandById, cat, defineActions, isBusy, musicianById, mutate, navigate } from '../core.js';
 import { openLive } from '../live.js';
 import { chip } from '../cards.js';
-import { duration, esc, openModal, timeAgo, toast } from '../ui.js';
+import { duration, esc, money, openModal, timeAgo, toast } from '../ui.js';
 import { practiceTile, promoTile, suggestName } from './bands.js';
 
 /** Untermenü eines Musikers. solo = nur ohne Band. */
@@ -53,6 +53,9 @@ function profile(m) {
           <div class="tile"><span>Bekanntheit</span><b>${m.fameLevel}</b><small>${nextFame ? `Stufe ${m.fameLevel + 1} ab ${nextFame} Ruhm` : 'Höchste Stufe'}</small></div>
           <div class="tile"><span>Band</span><b class="small-b">${band ? `<a href="#/band/${band.id}">${esc(band.name)}</a>` : '–'}</b>
             ${band ? '' : `<button class="btn small ${m.favorite ? 'primary' : ''}" data-act="toggleFavorite" data-id="${m.id}">${m.favorite ? '★ Favorit' : '☆ Favorit'}</button>`}
+          </div>
+          <div class="tile"><span>Marktwert</span><b>${money(m.value)}</b>
+            ${band || busyOf(m) ? '' : `<button class="btn small" data-act="transferList" data-id="${m.id}">An die Börse</button>`}
           </div>
         </div>
         <div class="tile-grid compact">

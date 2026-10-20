@@ -753,3 +753,9 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .catalog-split { margin: 12px 0 -8px; color: var(--muted); font-size: 1rem; text-transform: uppercase; letter-spacing: 0.08em; }
 .tcg-grid.in-band .tcg { opacity: 0.42; transition: opacity 0.15s; }
 .tcg-grid.in-band .tcg:hover, .tcg-grid.in-band .tcg:focus-visible { opacity: 1; }
+
+/* ---------- Wechselbörse ---------- */
+.market-info { display: flex; flex-direction: column; gap: 6px; font-size: 0.88rem; }
+.market-info .chip { align-self: flex-start; }
+.market-bid { display: flex; gap: 6px; }
+.market-bid input { flex: 1; min-width: 0; padding: 6px 8px; }

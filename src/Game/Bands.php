@@ -39,6 +39,7 @@ final class Bands
                 if ($m['band_id'] !== null) {
                     throw new ApiError(sprintf('%s spielt schon in einer Band.', $m['first_name']));
                 }
+                self::assertNotListed($db, $m);
                 $m['band_slot'] = self::slot($m, (int) ($entry['slot'] ?? 1));
                 $members[$id] = $m;
             }
@@ -77,6 +78,7 @@ final class Bands
             if ($m['band_id'] !== null) {
                 throw new ApiError(sprintf('%s spielt schon in einer Band.', $m['first_name']));
             }
+            self::assertNotListed($this->repo->db, $m);
             $m['band_slot'] = self::slot($m, $slot);
             $members = $this->repo->members($bandId);
             $members[] = $m;
@@ -223,6 +225,13 @@ final class Bands
             throw new ApiError(sprintf('%s braucht 1 bis %d Zeichen.', $what, $max));
         }
         return $value;
+    }
+
+    private static function assertNotListed(\Signed\Db $db, array $m): void
+    {
+        if (Transfers::listed($db, $m['id'])) {
+            throw new ApiError(sprintf('%s steht auf der Wechselbörse.', $m['first_name']));
+        }
     }
 
     public static function fullName(array $m): string

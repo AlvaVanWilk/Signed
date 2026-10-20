@@ -6,6 +6,7 @@ import * as auth from './views/auth.js';
 import * as bands from './views/bands.js';
 import * as catalog from './views/catalog.js';
 import * as charts from './views/charts.js';
+import * as market from './views/market.js';
 import * as musician from './views/musician.js';
 import * as overview from './views/overview.js';
 import * as packs from './views/packs.js';
@@ -16,6 +17,7 @@ const NAV = [
   ['packs', 'Packs'],
   ['katalog', 'Katalog'],
   ['lager', 'Lager'],
+  ['boerse', 'Börse'],
   ['charts', 'Charts'],
 ];
 
@@ -28,6 +30,7 @@ const VIEWS = {
   band: (route) => bands.renderBand(route),
   musician: (route) => musician.renderMusician(route),
   charts: () => charts.render(),
+  boerse: () => market.render(),
 };
 
 function parseRoute() {

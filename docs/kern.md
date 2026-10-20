@@ -18,12 +18,12 @@ Der Kernkreislauf: **Packs kaufen → Bands zusammenstellen → auftreten und Pl
 | Aktivitäten | Band: Bandprobe, Band-Promo, Straßenmusik, Open Stage, Gig (erst mit Platte), Platte (Mischpult pro Lied). Einzeln: Solo-Probe (Rhythmus oder Tonhöhe), Promo-Mission. Ohne Band: Jam-Café (Mitmusiker für die erste Band), Straßenmusik |
 | Live | Live-Ticker mit Publikumsleiste für alle Auftritte |
 | Charts | Gemeinsame Album-Charts aller Spieler mit täglichen Tantiemen, dazu eine Label-Gesamtliste |
+| Wechselbörse | Musiker ohne Band für 2 Tage anbieten; verbindliche Gebote, Mindestpreis aus den Werten |
 | Namen | Zufallsnamen für Bands und Platten; Bandnamen sind im ganzen Spiel eindeutig. Musiker: 236 Vornamen, 253 Nachnamen, ein Nachname kommt im eigenen Label nur einmal vor (solange noch freie da sind) |
 
 ### Bewusst noch nicht drin
 
-Battle of the Bands, Tournee, Festival, Sonderevents (Interview, Charity), Remaster, Produzenten, ausgeschriebene Gigs, Handel und
-Transfermarkt, Roadies, Gastmusiker, Contest im ESC-Stil, die echte Musik aus Logic Pro.
+Battle of the Bands, Tournee, Festival, Sonderevents (Interview, Charity), Remaster, Produzenten, ausgeschriebene Gigs, Roadies, Gastmusiker, Contest im ESC-Stil, die echte Musik aus Logic Pro.
 Die Manager-Fähigkeiten **Tourplaner** und **Netzwerker** werden schon verteilt, wirken aber erst mit
 Tournee bzw. ausgeschriebenen Gigs (im Spiel ausgegraut markiert).
 
@@ -152,6 +152,18 @@ Nur für Musiker ohne Band, 2 Lieder, beliebig oft. Danach stellen sich 3 Musike
 
 Einer wird ausgewählt und gründet mit dem Gastgeber eine Band in einem gemeinsamen Genre. Damit ist das
 Jam-Café für den Gastgeber vorbei. Lehnt man alle ab, verfällt die Auswahl und man kann wieder jammen.
+
+### Wechselbörse
+
+- Ein Musiker ohne Band kommt für 2 Tage an die Börse. Solange ist er gesperrt (keine Band, keine Aktivitäten),
+  seine Instrumente bleiben beim Label.
+- Mindestpreis = Marktwert = 50 + 0,8 × Können² + 5 × Präsenz + 5 × Ruhm + 300 × (Können-Stufe + Bekanntheits-Stufe)
+  + 100 × Fähigkeiten, auf 10 gerundet. Beispiele: Anfänger (Können 15) etwa 300 ₲, Scout-Musiker (Können 35–45) etwa 1.600–2.300 ₲.
+- Gebote sind verbindlich: Das Geld wird beim Bieten zurückgelegt, wer überboten wird, bekommt es sofort zurück.
+  Überbieten um mindestens 5 % (mindestens 10 ₲). Wer vorn liegt und erhöht, legt nur die Differenz dazu.
+- Ein Gebot in den letzten 10 Minuten verlängert die Frist auf 10 Minuten.
+- Am Ende geht der Musiker an das höchste Gebot. Der Verkäufer kann vorher zuschlagen; zurückziehen kann er nur,
+  solange niemand geboten hat. Ohne Gebot bleibt der Musiker beim Label.
 
 ### Instrumente
 

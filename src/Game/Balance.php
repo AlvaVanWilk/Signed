@@ -197,6 +197,12 @@ final class Balance
     /** Der Scout bringt nur Musiker mit Können-Stufe 1. */
     public const SCOUT_ODDS = ['epic' => 70, 'legendary' => 30];
 
+    // ---------- Wechselbörse ----------
+    /** Laufzeit eines Angebots, Verlängerung bei späten Geboten, Mindestschritt beim Überbieten. */
+    public const TRANSFER = ['seconds' => 172800, 'snipe' => 600, 'step' => 0.05, 'minStep' => 10];
+    /** Marktwert = base + skill × Können² + presence × Präsenz + fame × Ruhm + level × (beide Stufen) + ability × Fähigkeiten. */
+    public const TRANSFER_VALUE = ['base' => 50, 'skill' => 0.8, 'presence' => 5, 'fame' => 5, 'level' => 300, 'ability' => 100];
+
     // ---------- Album-Charts ----------
     /** Chartpunkte = Basis × Qualität² × Soundfaktor × Format × Perfekt × Ruhm. */
     public const CHART_BASE = 100;

@@ -261,6 +261,24 @@ final class Schema
                 ){OPTS}',
                 'CREATE INDEX jam_offers_label ON jam_offers (label_id, status)',
             ],
+            // 5: Wechselbörse
+            [
+                'CREATE TABLE transfers (
+                    id {PK},
+                    label_id INTEGER NOT NULL,
+                    musician_id INTEGER NOT NULL,
+                    min_price INTEGER NOT NULL,
+                    best_amount INTEGER NOT NULL DEFAULT 0,
+                    best_label_id INTEGER NULL,
+                    bids INTEGER NOT NULL DEFAULT 0,
+                    status VARCHAR(10) NOT NULL,
+                    created_at INTEGER NOT NULL,
+                    ends_at INTEGER NOT NULL,
+                    closed_at INTEGER NULL
+                ){OPTS}',
+                'CREATE INDEX transfers_status ON transfers (status, ends_at)',
+                'CREATE INDEX transfers_musician ON transfers (musician_id, status)',
+            ],
         ];
     }
 }

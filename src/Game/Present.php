@@ -33,6 +33,7 @@ final class Present
             'bandSlot' => $m['band_slot'],
             'busyUntil' => $m['busy_until'],
             'gearIds' => $gearIds,
+            'value' => Transfers::value($m),
         ];
     }
 

@@ -491,3 +491,74 @@ test('Auflösen gibt die Musiker frei und behält ihre Bekanntheit', function ()
         checkEquals(4.0, $m['fame']);
     }
 });
+
+test('Wechselbörse: anbieten, bieten, überbieten, Zuschlag nach Ablauf', function () {
+    $db = freshDb();
+    $seller = registerPlayer($db, 'Verkauf');
+    $a = registerPlayer($db, 'Bieter');
+    $b = registerPlayer($db, 'Konkurrenz');
+    $m = $seller->get('state')['musicians'][0];
+
+    $seller->post('transferList', ['musicianId' => $m['id']]);
+    $state = $seller->get('state');
+    checkEquals(1, count($state['market']['mine']));
+    $offer = $state['market']['mine'][0];
+    check($offer['minPrice'] > 0);
+    checkApiError(fn () => $seller->post('transferList', ['musicianId' => $m['id']]), 'beschäftigt');
+    checkApiError(fn () => $seller->post('transferBid', ['transferId' => $offer['id'], 'amount' => $offer['minPrice']]), 'eigenen');
+    // Wer an der Börse steht, kann keiner Band beitreten.
+    $members = array_map(static fn ($x) => ['id' => $x['id'], 'slot' => 1], $state['musicians']);
+    checkApiError(fn () => $seller->post('bandCreate', ['name' => 'Gesperrt', 'genre' => 'rock', 'members' => $members]), 'Wechselbörse');
+
+    // Unter dem Mindestpreis geht nicht; das Geld wird zurückgelegt.
+    checkApiError(fn () => $a->post('transferBid', ['transferId' => $offer['id'], 'amount' => $offer['minPrice'] - 10]), 'mindestens');
+    $before = $a->get('state')['label']['money'];
+    $a->post('transferBid', ['transferId' => $offer['id'], 'amount' => $offer['minPrice']]);
+    checkEquals($before - $offer['minPrice'], $a->get('state')['label']['money']);
+    checkApiError(fn () => $seller->post('transferWithdraw', ['transferId' => $offer['id']]), 'Gebot');
+
+    // Überbieten: Das alte Gebot geht zurück.
+    $market = $b->get('state')['market']['offers'][0];
+    check($market['minBid'] > $offer['minPrice']);
+    $b->post('transferBid', ['transferId' => $offer['id'], 'amount' => $market['minBid']]);
+    checkEquals($before, $a->get('state')['label']['money']);
+    check($b->get('state')['market']['offers'][0]['leading']);
+
+    // Ablauf: Der Musiker wechselt, der Verkäufer bekommt das Geld.
+    $sellerMoney = $seller->get('state')['label']['money'];
+    Clock::advance(Balance::TRANSFER['seconds'] + 1);
+    $state = $b->get('state');
+    checkEquals(4, count($state['musicians']));
+    check(in_array($m['id'], array_column($state['musicians'], 'id'), true));
+    checkEquals($sellerMoney + $market['minBid'], $seller->get('state')['label']['money']);
+    checkEquals(2, count($seller->get('state')['musicians']));
+    checkEquals([], $b->get('state')['market']['offers']);
+});
+
+test('Wechselbörse: zurückziehen ohne Gebot, Zuschlag vorzeitig, späte Gebote verlängern', function () {
+    $db = freshDb();
+    $seller = registerPlayer($db, 'Anbieter');
+    $buyer = registerPlayer($db, 'Kaeufer');
+    [$m1, $m2] = $seller->get('state')['musicians'];
+
+    $seller->post('transferList', ['musicianId' => $m1['id']]);
+    $offer = $seller->get('state')['market']['mine'][0];
+    $seller->post('transferWithdraw', ['transferId' => $offer['id']]);
+    checkEquals([], $seller->get('state')['market']['mine']);
+    checkEquals(0, $seller->get('state')['musicians'][0]['busyUntil'] > Clock::now() ? 1 : 0);
+
+    $seller->post('transferList', ['musicianId' => $m2['id']]);
+    $offer = $seller->get('state')['market']['mine'][0];
+    Clock::advance(Balance::TRANSFER['seconds'] - 60);
+    $buyer->post('transferBid', ['transferId' => $offer['id'], 'amount' => $offer['minPrice']]);
+    $after = $seller->get('state')['market']['mine'][0];
+    check($after['endsAt'] >= Clock::now() + Balance::TRANSFER['snipe'] - 1, 'Spätes Gebot verlängert die Frist');
+    $seller->post('transferAccept', ['transferId' => $offer['id']]);
+    checkEquals(4, count($buyer->get('state')['musicians']));
+});
+
+test('Wechselbörse: Marktwert steigt mit Können, Stufen und Ruhm', function () {
+    $base = musician(['skill1' => 20.0, 'presence' => 20.0, 'fame' => 0.0, 'level' => 0, 'abilities' => []]);
+    $better = musician(['skill1' => 50.0, 'presence' => 20.0, 'fame' => 150.0, 'level' => 1, 'abilities' => ['talent']]);
+    check(Signed\Game\Transfers::value($better) > 3 * Signed\Game\Transfers::value($base));
+});

@@ -23,6 +23,8 @@ export function face(person, size = '') {
 
 /** Was der Musiker gerade tut, oder leer. */
 export function musicianStatus(m) {
+  const listing = app.state.market?.mine.find((t) => t.musician.id === m.id);
+  if (listing) return `Auf der Wechselbörse · <span data-until="${listing.endsAt}"></span>`;
   if (isBusy(m.busyUntil)) {
     const promo = app.state.running.find((a) => a.type === 'promo' && a.musicianId === m.id);
     return promo ? `Promo-Tour · <span data-until="${promo.endsAt}"></span>` : 'Beschäftigt';

@@ -12,6 +12,8 @@ export const percent = (x) => `${nf0.format(Math.round(x * 100))} %`;
 
 export function duration(seconds) {
   const s = Math.max(0, Math.ceil(seconds));
+  if (s >= 86400) return `${Math.floor(s / 86400)} T ${Math.floor((s % 86400) / 3600)} Std.`;
+  if (s >= 3600) return `${Math.floor(s / 3600)} Std. ${Math.floor((s % 3600) / 60)} Min.`;
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 

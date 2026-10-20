@@ -17,6 +17,7 @@ use Signed\Game\Repo;
 use Signed\Game\Scout;
 use Signed\Game\State;
 use Signed\Game\Studio;
+use Signed\Game\Transfers;
 
 /**
  * Nimmt Aktionen aus dem Browser entgegen. Jede verändernde Aktion liefert den neuen Spielstand mit,
@@ -51,6 +52,10 @@ final class Api
         'bandPromo' => ['POST', true],
         'soloStart' => ['POST', true],
         'jamPick' => ['POST', true],
+        'transferList' => ['POST', true],
+        'transferWithdraw' => ['POST', true],
+        'transferBid' => ['POST', true],
+        'transferAccept' => ['POST', true],
         'jamDecline' => ['POST', true],
         'musicianFavorite' => ['POST', true],
         'abilityChoose' => ['POST', true],
@@ -90,6 +95,7 @@ final class Api
         }
         Activities::settleDue($this->db, $labelId);
         Charts::payRoyalties($this->db, $labelId);
+        Transfers::settleDue($this->db);
         return $this->{$action}($in, $repo);
     }
 
@@ -299,6 +305,30 @@ final class Api
     {
         $id = (new Jam($repo))->pick(self::int($in, 'offerId'), self::int($in, 'index'), self::str($in, 'name'), self::str($in, 'genre'));
         return ['bandId' => $id, 'state' => State::build($repo)];
+    }
+
+    private function transferList(array $in, Repo $repo): array
+    {
+        (new Transfers($repo))->list(self::int($in, 'musicianId'));
+        return ['state' => State::build($repo)];
+    }
+
+    private function transferWithdraw(array $in, Repo $repo): array
+    {
+        (new Transfers($repo))->withdraw(self::int($in, 'transferId'));
+        return ['state' => State::build($repo)];
+    }
+
+    private function transferBid(array $in, Repo $repo): array
+    {
+        (new Transfers($repo))->bid(self::int($in, 'transferId'), self::int($in, 'amount'));
+        return ['state' => State::build($repo)];
+    }
+
+    private function transferAccept(array $in, Repo $repo): array
+    {
+        (new Transfers($repo))->accept(self::int($in, 'transferId'));
+        return ['state' => State::build($repo)];
     }
 
     private function jamDecline(array $in, Repo $repo): array

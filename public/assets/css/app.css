@@ -744,3 +744,7 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .lineup-tile > .tcg-slot { width: calc(60% - 3px); }
 .manager-tile > .tcg-slot, .manager-tile > .tcg { width: 100%; }
 .side.enter { animation: side-in 0.25s ease-out; }
+
+/* Als App vom Home-Bildschirm: Platz für Statusleiste und Notch lassen. */
+.topbar { padding-top: max(10px, env(safe-area-inset-top)); padding-left: max(24px, env(safe-area-inset-left)); padding-right: max(24px, env(safe-area-inset-right)); }
+@media (max-width: 640px) { .topbar { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); } }

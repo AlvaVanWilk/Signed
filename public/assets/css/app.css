@@ -748,3 +748,8 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 /* Als App vom Home-Bildschirm: Platz für Statusleiste und Notch lassen. */
 .topbar { padding-top: max(10px, env(safe-area-inset-top)); padding-left: max(24px, env(safe-area-inset-left)); padding-right: max(24px, env(safe-area-inset-right)); }
 @media (max-width: 640px) { .topbar { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); } }
+
+/* Katalog: Musiker in Bands treten zurück. */
+.catalog-split { margin: 12px 0 -8px; color: var(--muted); font-size: 1rem; text-transform: uppercase; letter-spacing: 0.08em; }
+.tcg-grid.in-band .tcg { opacity: 0.42; transition: opacity 0.15s; }
+.tcg-grid.in-band .tcg:hover, .tcg-grid.in-band .tcg:focus-visible { opacity: 1; }

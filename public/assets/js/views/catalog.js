@@ -20,6 +20,9 @@ export function render() {
     .filter((m) => !f.genre || m.genres.includes(f.genre))
     .filter((m) => !f.status || (f.status === 'free' ? !m.bandId : !!m.bandId))
     .sort(SORTS[f.sort] || SORTS.level);
+  // Wer schon in einer Band spielt, rückt nach hinten und tritt zurück.
+  const free = list.filter((m) => !m.bandId);
+  const taken = list.filter((m) => m.bandId);
 
   return `
     <div class="section-head"><h1>Katalog</h1></div>
@@ -29,7 +32,9 @@ export function render() {
       ${select('status', f.status, 'Alle', [['free', 'Ohne Band'], ['band', 'In einer Band']])}
       ${select('sort', f.sort, null, [['level', 'Stufe'], ['skill', 'Können'], ['presence', 'Präsenz'], ['fame', 'Ruhm'], ['newest', 'Neueste']])}
     </div>
-    ${list.length ? `<div class="tcg-grid">${list.map((m) => musicianCard(m)).join('')}</div>` : '<div class="empty">Keine Musiker.</div>'}`;
+    ${list.length ? '' : '<div class="empty">Keine Musiker.</div>'}
+    ${free.length ? `<div class="tcg-grid">${free.map((m) => musicianCard(m)).join('')}</div>` : ''}
+    ${taken.length ? `<h2 class="catalog-split">In einer Band</h2><div class="tcg-grid in-band">${taken.map((m) => musicianCard(m)).join('')}</div>` : ''}`;
 }
 
 function select(key, value, emptyLabel, options) {

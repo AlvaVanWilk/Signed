@@ -2,6 +2,7 @@ import { api } from './api.js';
 import { actions, app, bandById, defineActions, musicianById, navigate, onRender, refresh, rerender, serverNow } from './core.js';
 import { bandFill, genreGlyph, levelUpBanners, musicianCard } from './cards.js';
 import { closeAllModals, duration, esc, fmt1, money, openModal, percent, timeAgo, topModal } from './ui.js';
+import './celebrate.js';
 import * as auth from './views/auth.js';
 import * as bands from './views/bands.js';
 import * as catalog from './views/catalog.js';

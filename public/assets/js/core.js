@@ -36,10 +36,19 @@ export function rerender() {
   refreshModals();
 }
 
+const stateListeners = [];
+
+/** fn(vorher, nachher) läuft bei jedem neuen Spielstand, z. B. für Feiern nach einer Änderung. */
+export function onStateChange(fn) {
+  stateListeners.push(fn);
+}
+
 export function setState(state) {
+  const previous = app.state;
   app.state = state;
   app.label = state.label;
   app.offset = state.now - Date.now() / 1000;
+  if (previous) stateListeners.forEach((fn) => fn(previous, state));
 }
 
 /** Serverzeit in Sekunden. */

@@ -884,3 +884,14 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 }
 /* Zwei Instrumente + Bekanntheit: Bild etwas kleiner, damit alle drei Leisten Platz haben. */
 .tcg[class*='lvl-']:has(.skill-row + .skill-row + .skill-row) .tcg-art { flex-basis: 50%; }
+
+/* Genre-Band geworden */
+.celebrate { position: fixed; inset: 0; z-index: 200; display: grid; place-content: center; justify-items: center; gap: 14px; padding: 16px; text-align: center; background: rgba(10, 8, 20, 0.55); animation: celebrate-out 0.5s ease-in 3.2s forwards; cursor: pointer; }
+.celebrate-icons { display: flex; gap: 12px; animation: celebrate-pop 0.7s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
+.celebrate-icons .genre-badge { width: min(38vw, 170px); height: min(38vw, 170px); box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.85), 0 0 40px var(--g); }
+.celebrate-text { color: #fff; font-size: clamp(22px, 5vw, 36px); font-weight: 800; text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5); animation: celebrate-rise 0.5s ease-out 0.35s both; }
+.celebrate-bonus { color: #fff; opacity: 0.85; font-weight: 600; animation: celebrate-rise 0.5s ease-out 0.55s both; }
+@keyframes celebrate-pop { from { transform: scale(0.2) rotate(-25deg); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes celebrate-rise { from { transform: translateY(16px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes celebrate-out { to { opacity: 0; visibility: hidden; } }
+@media (prefers-reduced-motion: reduce) { .celebrate-icons, .celebrate-text, .celebrate-bonus { animation: none; } }

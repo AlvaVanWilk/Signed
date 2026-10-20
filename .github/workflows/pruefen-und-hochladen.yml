@@ -1,0 +1,86 @@
+# Läuft bei jeder Änderung im Repository:
+#   1. PHP-Syntax prüfen und Spielregeln testen (mit PHP 8.1, der Mindestversion)
+#   2. per SFTP auf den IONOS-Webspace laden:
+#      - main in den echten Ordner (IONOS_SFTP_PATH, zum Beispiel /signed),
+#      - jeder andere Zweig in den Testordner (derselbe Name mit „-test“, zum Beispiel /signed-test).
+#        Der Testordner hat seine eigene Datenbank, Spielstände bleiben getrennt.
+#
+# Für Schritt 2 braucht es einmalig vier Geheimnisse unter
+# Settings → Secrets and variables → Actions (siehe README):
+#   IONOS_SFTP_HOST, IONOS_SFTP_USER, IONOS_SFTP_PASSWORD, IONOS_SFTP_PATH
+# Fehlen sie, wird Schritt 2 übersprungen.
+#
+# Hochgeladen wird ohne Löschen: Die Datenbank in data/ und eine config.php auf dem Server bleiben erhalten.
+
+name: Prüfen und hochladen
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: signed-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  pruefen-und-hochladen:
+    runs-on: ubuntu-latest
+    env:
+      IONOS_SFTP_HOST: ${{ secrets.IONOS_SFTP_HOST }}
+      IONOS_SFTP_USER: ${{ secrets.IONOS_SFTP_USER }}
+      IONOS_SFTP_PATH: ${{ secrets.IONOS_SFTP_PATH }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: PHP-Syntax prüfen
+        run: find src public tests -name '*.php' -print0 | xargs -0 -n1 php -l > /dev/null
+
+      - name: Spielregeln testen
+        run: php tests/run.php
+
+      - name: Auf den Webspace laden
+        if: github.event_name != 'pull_request'
+        env:
+          LFTP_PASSWORD: ${{ secrets.IONOS_SFTP_PASSWORD }}
+        run: |
+          fehlt=0
+          for name in IONOS_SFTP_HOST IONOS_SFTP_USER IONOS_SFTP_PATH LFTP_PASSWORD; do
+            if [ -z "${!name}" ]; then echo "Fehlt: ${name/LFTP_PASSWORD/IONOS_SFTP_PASSWORD}"; fehlt=1; fi
+          done
+          if [ "$fehlt" = 1 ]; then echo "Nicht hochgeladen: Es fehlen Geheimnisse (siehe README)."; exit 0; fi
+
+          ordner="${IONOS_SFTP_PATH%/}"
+          if [ "$GITHUB_REF" = "refs/heads/main" ]; then
+            echo "Ziel: der echte Ordner."
+          else
+            ordner="${ordner}-test"
+            echo "Ziel: der Testordner (echter Ordner mit -test)."
+          fi
+
+          sudo apt-get install -y -qq lftp > /dev/null
+          lftp -c "
+            set sftp:auto-confirm yes;
+            set net:max-retries 3;
+            set net:timeout 30;
+            open --env-password -u \"$IONOS_SFTP_USER\" sftp://$IONOS_SFTP_HOST;
+            mkdir -p -f \"$ordner\";
+            mirror --reverse --parallel=4 \
+              --exclude-glob .git* \
+              --exclude-glob .github/ \
+              --exclude-glob tests/ \
+              --exclude-glob docs/ \
+              --exclude-glob '*.md' \
+              --exclude-glob config.sample.php \
+              ./ \"$ordner\"
+          "
+          echo "Hochgeladen."

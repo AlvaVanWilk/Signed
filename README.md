@@ -32,19 +32,25 @@ php tests/run.php
 Die Tests prüfen die Spielregeln und spielen den kompletten Kernkreislauf über die API durch
 (mit vorgespulter Uhr, also in wenigen Sekunden).
 
-## Auf den Webspace bringen
+## Auf den Webspace bringen (IONOS, automatisch)
 
-1. Den ganzen Ordner hochladen (per FTP oder Git), **ohne** `data/signed.sqlite` und `tests/`.
-2. Die Domain bzw. Subdomain auf den Ordner `public/` zeigen lassen. So liegen `src/`, `data/` und
-   `config.php` außerhalb des Webroots.
-   - Geht das beim Anbieter nicht, schützen die mitgelieferten `.htaccess`-Dateien `src/`, `data/`,
-     `docs/` und `tests/` (nur Apache). Das Spiel ist dann unter `…/public/` erreichbar.
-3. Der Ordner `data/` muss für PHP beschreibbar sein.
-4. Optional `config.sample.php` nach `config.php` kopieren, z. B. für MySQL oder einen anderen
-   Speicherort der SQLite-Datei.
-5. HTTPS einschalten (bei fast allen Anbietern ein Klick), damit Passwörter verschlüsselt übertragen werden.
+Bei jeder Änderung prüft GitHub den Code und lädt ihn per SFTP hoch
+(`.github/workflows/pruefen-und-hochladen.yml`):
 
-Benötigte PHP-Erweiterungen: `pdo_sqlite` (oder `pdo_mysql`), `mbstring`, `json`, `session`.
+- `main` → der echte Ordner (`IONOS_SFTP_PATH`, z. B. `/signed`)
+- jeder andere Zweig → der Testordner mit „-test“ (z. B. `/signed-test`, eigene Datenbank)
+
+Einmalig einrichten:
+
+1. Unter **Settings → Secrets and variables → Actions** die Geheimnisse `IONOS_SFTP_HOST`,
+   `IONOS_SFTP_USER`, `IONOS_SFTP_PASSWORD` und `IONOS_SFTP_PATH` anlegen.
+2. Bei IONOS PHP 8.1 oder neuer einstellen.
+3. Eine Adresse (Domain, Subdomain oder Unterordner) auf den Ordner zeigen lassen. Die `.htaccess` im
+   Projektordner leitet alles nach `public/` weiter; `src/`, `data/` und `config.php` bleiben unerreichbar.
+
+Die Datenbank `data/signed.sqlite` entsteht beim ersten Aufruf und wird beim Hochladen nie überschrieben.
+Anderer Server: Ordner ohne `tests/`, `docs/`, `.git` hochladen, `data/` beschreibbar machen, optional
+`config.sample.php` nach `config.php` kopieren. PHP-Erweiterungen: `pdo_sqlite` (oder `pdo_mysql`), `mbstring`.
 
 ## Aufbau
 

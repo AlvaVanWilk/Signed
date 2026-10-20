@@ -39,15 +39,17 @@ export function openLive(activityId) {
     player = playStems(buffers, ctx.currentTime + 0.05, { offset: elapsed % songSeconds, loop: true, volume: 0.8 });
   });
 
+  // Bei der Probe hört niemand zu: kein Publikum, keine Leiste.
+  const crowd = activity.type !== 'rehearsal';
   root.innerHTML = `
     <div class="live-head">
-      <div><div class="eyebrow">Live</div><h2>${esc(activity.title)}</h2><div class="muted">${esc(who)}</div></div>
+      <div><div class="eyebrow">${crowd ? 'Live' : 'Probenraum'}</div><h2>${esc(activity.title)}</h2><div class="muted">${esc(who)}</div></div>
       <div class="live-clock"><span class="live-song"></span><b class="live-left"></b></div>
     </div>
-    <div class="meter">
+    ${crowd ? `<div class="meter">
       <div class="meter-labels"><span>Buhrufe</span><span>Publikum</span><span>Ekstase</span></div>
       <div class="meter-track"><div class="meter-fill"></div><div class="meter-needle"></div></div>
-    </div>
+    </div>` : ''}
     <div class="live-progress"><div class="live-progress-fill"></div></div>
     <ol class="ticker"></ol>
     `;
@@ -121,5 +123,5 @@ export function openLive(activityId) {
 
   timer = setInterval(draw, 250);
   draw();
-  requestAnimationFrame(animate);
+  if (crowd) requestAnimationFrame(animate);
 }

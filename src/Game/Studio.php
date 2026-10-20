@@ -110,15 +110,13 @@ final class Studio
 
         $lp = 1 + Balance::RECORD_LP_BONUS * max(0, $songs - Balance::RECORD_MIN_SONGS);
         $perfectFactor = $perfect ? Balance::RECORD_PERFECT_BONUS : 1.0;
-        $sales = 1 + min(Balance::RECORD_FAME_SALES_MAX, BandCalc::fame($members) / Balance::RECORD_FAME_SALES);
+        $sales = 1 + min(Balance::RECORD_FAME_SALES_MAX, BandCalc::bandFame($band, $members) / Balance::RECORD_FAME_SALES);
         $sound = BandCalc::sound($members, $band['genre'], $band['cohesion'], $gear);
 
         $money = (int) round($songs * Balance::RECORD_MONEY_PER_SONG * (0.3 + $quality ** 2) * $lp * $perfectFactor * $sales);
         $fame = $songs * Balance::RECORD_FAME_PER_SONG * BandCalc::soundFactor($sound) * (0.3 + $quality ** 1.5) * $lp * $perfectFactor;
         $gains = BandCalc::splitFame($members, $fame, $gear);
-        foreach ($gains as $musicianId => $gain) {
-            $db->exec('UPDATE musicians SET fame = fame + ? WHERE id = ?', [$gain, $musicianId]);
-        }
+        $this->repo->addBandFame($band['id'], $gains);
         $this->repo->earn($money, sprintf('Erstverkauf „%s“', $record['title']));
 
         $db->exec(
@@ -127,7 +125,7 @@ final class Studio
         );
         $fameGain = round(array_sum($gains), 1);
         $firstRecord = (int) $db->value("SELECT COUNT(*) FROM records WHERE label_id = ? AND status = 'done'", [$this->repo->labelId]) === 0;
-        $chartPoints = Charts::points($songs, $quality, $sound, $perfect, BandCalc::fame($members));
+        $chartPoints = Charts::points($songs, $quality, $sound, $perfect, BandCalc::bandFame($band, $members));
         $now = Clock::now();
         $db->update('records', [
             'status' => 'done',

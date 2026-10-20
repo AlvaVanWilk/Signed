@@ -300,6 +300,10 @@ final class Schema
                 'CREATE INDEX ledger_label ON ledger (label_id, id)',
                 'ALTER TABLE bands ADD COLUMN live_songs_needed INTEGER NOT NULL DEFAULT 0',
             ],
+            // 7: Ruhm, der am Bandnamen hängt
+            [
+                'ALTER TABLE bands ADD COLUMN fame_own REAL NOT NULL DEFAULT 0',
+            ],
         ];
     }
 }

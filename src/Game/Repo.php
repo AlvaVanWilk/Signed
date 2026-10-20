@@ -59,6 +59,24 @@ final class Repo
         ]);
     }
 
+    /**
+     * Ruhm für eine Band: Ein Teil bleibt am Bandnamen hängen, der Rest wird Bekanntheit der Mitglieder.
+     * @param array<int, float> $gains Musiker-ID => Gewinn
+     * @return float der ganze Gewinn
+     */
+    public function addBandFame(int $bandId, array $gains): float
+    {
+        $total = array_sum($gains);
+        if ($total <= 0) {
+            return 0.0;
+        }
+        $this->db->exec('UPDATE bands SET fame_own = fame_own + ? WHERE id = ? AND label_id = ?', [$total * Balance::BAND_FAME_SHARE, $bandId, $this->labelId]);
+        foreach ($gains as $musicianId => $gain) {
+            $this->db->exec('UPDATE musicians SET fame = fame + ? WHERE id = ? AND label_id = ?', [$gain * (1 - Balance::BAND_FAME_SHARE), (int) $musicianId, $this->labelId]);
+        }
+        return $total;
+    }
+
     // ---------- Musiker ----------
 
     /** @return array<int, array> */
@@ -298,6 +316,7 @@ final class Repo
             'gigs_since_record' => (int) $r['gigs_since_record'],
             'live_songs_needed' => (int) $r['live_songs_needed'],
             'released' => (bool) $r['released'],
+            'fame_own' => (float) $r['fame_own'],
             'busy_until' => (int) $r['busy_until'],
             'created_at' => (int) $r['created_at'],
         ];

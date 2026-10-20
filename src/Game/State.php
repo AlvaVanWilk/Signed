@@ -69,7 +69,7 @@ final class State
                 // Zwischenspeicher für die Charts (Kritikerwertung).
                 $db->update('bands', ['sound' => $sound], ['id' => $band['id']]);
             }
-            $fame = BandCalc::fame($list);
+            $fame = BandCalc::bandFame($band, $list);
             $chemistry = BandCalc::chemistry($list);
             $manager = $band['manager_id'] !== null ? ($managers[$band['manager_id']] ?? null) : null;
             $level = BandCalc::managerLevel($manager, count($managerBands[$band['manager_id']] ?? []));
@@ -85,6 +85,7 @@ final class State
                 'memberIds' => array_map(static fn ($m) => $m['id'], $list),
                 'sound' => $sound,
                 'fame' => $fame,
+                'fameOwn' => round($band['fame_own'], 1),
                 'cohesion' => round($band['cohesion'], 1),
                 'maxCohesion' => BandCalc::maxCohesion($chemistry),
                 'chemistry' => $chemistry,

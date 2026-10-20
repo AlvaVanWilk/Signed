@@ -13,15 +13,15 @@ const HAIR_FRONT = {
   lang: 'M31 41 C29 8 71 8 69 41 C62 29 38 29 31 41 Z',
   zopf: 'M32 41 C30 9 70 9 68 41 C63 30 37 30 32 41 Z',
   dutt: 'M32 41 C30 9 70 9 68 41 C63 31 37 31 32 41 Z',
-  sidecut: 'M36 38 C33 8 71 9 69 40 C64 28 50 26 36 38 Z',
+  sidecut: 'M40 34 C38 8 72 7 70 41 C66 29 54 25 40 34 Z',
   irokese: 'M45 12 L55 12 L57 34 L43 34 Z',
 };
 
 const HATS = {
   beanie: '<path d="M31 37 C31 13 69 13 69 37 Z" fill="HAT"/><rect x="29" y="32" width="42" height="7" rx="3" fill="HAT2"/>',
   cap: '<path d="M31 35 C30 13 70 13 69 35 Z" fill="HAT"/><path d="M60 33 C70 32 78 34 80 37 L60 37 Z" fill="HAT2"/>',
-  fedora: '<ellipse cx="50" cy="31" rx="27" ry="5" fill="HAT2"/><path d="M36 31 C36 15 64 15 64 31 Z" fill="HAT"/><rect x="36" y="25" width="28" height="4" fill="HAT2"/>',
-  cowboy: '<path d="M18 30 C30 38 70 38 82 30 C76 34 24 34 18 30 Z" fill="HAT2"/><path d="M36 32 C34 14 66 14 64 32 Z" fill="HAT"/>',
+  fedora: '<path d="M31 29 C30 9 70 9 69 29 Z" fill="HAT"/><rect x="31" y="23" width="38" height="5" fill="HAT2"/><ellipse cx="50" cy="29" rx="29" ry="5" fill="HAT2"/>',
+  cowboy: '<path d="M31 30 C29 6 71 6 69 30 Z" fill="HAT"/><path d="M14 26 C24 36 76 36 86 26 C82 33 74 35 50 35 C26 35 18 33 14 26 Z" fill="HAT2"/>',
 };
 
 const HAT_COLORS = { beanie: ['#ff4f8b', '#c73a6c'], cap: ['#3a86ff', '#2763c4'], fedora: ['#3b3245', '#1d1824'], cowboy: ['#a0703f', '#7a5230'] };
@@ -30,6 +30,7 @@ export function avatar(look = {}) {
   const skin = look.skin || '#d9a27e';
   const hair = look.hairColor || '#3b2a20';
   const style = look.hair || 'kurz';
+  const hatted = look.hat && look.hat !== 'none';
   const parts = [];
 
   parts.push(`<path d="M12 100 C12 78 30 69 50 69 C70 69 88 78 88 100 Z" fill="${look.shirt || '#2b2d42'}"/>`);
@@ -45,11 +46,12 @@ export function avatar(look = {}) {
     }
   } else if (style === 'afro') {
     parts.push(`<path d="M33 38 C34 24 66 24 67 38 C60 32 40 32 33 38 Z" fill="${hair}"/>`);
-  } else if (HAIR_FRONT[style]) {
-    parts.push(`<path d="${HAIR_FRONT[style]}" fill="${hair}"/>`);
+  } else if (HAIR_FRONT[style] && !(hatted && style === 'irokese')) {
+    // Unter einem Hut sieht man vom Undercut nur den Ansatz.
+    parts.push(`<path d="${HAIR_FRONT[hatted && style === 'sidecut' ? 'kurz' : style]}" fill="${hair}"/>`);
   }
-  if (style === 'dutt') parts.push(`<circle cx="50" cy="17" r="8" fill="${hair}"/>`);
-  if (style === 'sidecut') parts.push(`<path d="M33 40 C33 33 35 30 37 29 L37 40 Z" fill="${hair}" opacity="0.35"/>`);
+  if (style === 'dutt' && !hatted) parts.push(`<circle cx="50" cy="17" r="8" fill="${hair}"/>`);
+  if (style === 'sidecut' && !hatted) parts.push(`<path d="M32 42 C30 12 52 10 56 22 C46 22 40 28 38 34 C35 36 33 39 32 42 Z" fill="${hair}" opacity="0.45"/>`);
 
   if (look.freckles) {
     for (const [x, y] of [[41, 48], [44, 50], [39, 51], [59, 48], [56, 50], [61, 51]]) {

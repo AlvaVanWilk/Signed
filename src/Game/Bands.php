@@ -207,9 +207,7 @@ final class Bands
                 throw new ApiError('Die Band hat keine Mitglieder.');
             }
             $value = (float) $item['value'];
-            foreach ($members as $m) {
-                $db->exec('UPDATE musicians SET fame = fame + ? WHERE id = ?', [$value / count($members), $m['id']]);
-            }
+            $this->repo->addBandFame($bandId, array_fill_keys(array_column($members, 'id'), $value / count($members)));
             $db->exec('DELETE FROM items WHERE id = ?', [$itemId]);
             $this->repo->log('card', sprintf('Fan-Karte für %s eingesetzt: +%s Ruhm.', $band['name'], number_format($value, 0, ',', '.')), $bandId);
             return $value;

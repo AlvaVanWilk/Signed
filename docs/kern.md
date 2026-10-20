@@ -43,9 +43,12 @@ Tournee bzw. ausgeschriebenen Gigs (im Spiel ausgegraut markiert).
   - Beide auf 3: **Legende**.
   - Namen der Können-Stufen: Anfänger, Fortgeschritten, Profi, Virtuose.
     Bekanntheits-Stufen: Unbekannt, Lokal bekannt, Szenegröße, Star.
-  - Auf der Karte: Kartenfarbe = Können-Stufe (grau, bronze, silber, gold), Funkeln und Schein = Bekanntheits-Stufe
-    (statisch, ohne Animation). Dazu Können pro Instrument als Leiste aus 10 Kästchen (je 10 Punkte bis 100),
-    Lieblingsgenres als Symbole oben rechts und die Fähigkeiten bzw. Charakterzüge.
+  - Auf der Karte: Kartenfarbe = Können-Stufe (grau, grün, blau, lila; Legende in Regenbogenfarben), Funkeln und
+    Schein = Bekanntheits-Stufe (statisch, ohne Animation). Darunter die beiden wichtigen Werte in gleicher Form:
+    Können pro Instrument als 10 Kästchen (je 10 Punkte bis 100) und Bekanntheit als 10 Sternchen (jede
+    Bekanntheits-Stufe füllt ein Drittel). Lieblingsgenres als farbige Abzeichen oben rechts.
+- Jedes Genre hat eine feste Farbe und ein Symbol – auf Karten, an Bands (Menü, Seitenleiste, Bandseite) und in
+  der Genre-Auswahl.
 - Fähigkeiten: eine pro Können-Stufe. Bei Stufe 1 und 2 kommt eine zufällige dazu, bei Stufe 3 wählt man aus drei.
   Talent (Können +50 % schneller), Ausstrahlung (Promo bringt 50 % mehr Bekanntheit, etwas mehr Ruhm), Charisma (mehr Ruhm),
   Nervenstark (verspielt sich live seltener), Absolutes Gehör (großzügigeres Timing), Bühnentier,
@@ -75,9 +78,9 @@ Ein schwacher Musiker zieht den Sound runter, und vier Musiker sind höchstens 2
 ### Ruhm
 
 - Begriffe: Ein Musiker hat **Bekanntheit**, eine Band hat **Ruhm**.
-- Bandruhm = Summe der Bekanntheit aller Mitglieder (Ehe-Modell). Wer geht, nimmt seine Bekanntheit mit.
-  Was eine Band gewinnt, wird als Bekanntheit auf die Mitglieder verteilt – damit wächst der Ruhm mit.
-  Eine Rückwirkung (Ruhm erhöht zusätzlich die Bekanntheit) gibt es bewusst nicht, sonst würde doppelt gezählt.
+- Bandruhm = Ruhm des Bandnamens + Summe der Bekanntheit aller Mitglieder. Von jedem Ruhmgewinn der Band
+  bleiben 25 % am Bandnamen hängen, 75 % werden Bekanntheit der Mitglieder. Wer geht, nimmt seine Bekanntheit
+  mit; der Name behält seinen Teil. Eine Rückwirkung (Ruhm erhöht zusätzlich Bekanntheit) gibt es nicht.
 - Ruhmgewinn eines Auftritts = Grund-Ruhm des Ortes pro Lied × Soundfaktor × Publikum × Zufall (0,9–1,1).
   - Soundfaktor = Sound / 30 (zwischen 0,2 und 3).
   - Publikum = 0,4 + 1,2 × Publikumsleiste/100.

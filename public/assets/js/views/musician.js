@@ -1,4 +1,4 @@
-import { abilityInfo, emptySlot, fullName, gearCard, gearModel, genreName, instrumentIcon, instrumentName, musicianCard, musicianStatus } from '../cards.js';
+import { abilityInfo, emptySlot, fullName, gearCard, gearModel, genreName, genrePicker, genreTag, instrumentIcon, instrumentName, musicianCard, musicianStatus } from '../cards.js';
 import { app, bandById, cat, defineActions, isBusy, musicianById, mutate, navigate } from '../core.js';
 import { openLive } from '../live.js';
 import { chip } from '../cards.js';
@@ -85,7 +85,7 @@ function profile(m) {
           const info = abilityInfo(a);
           return `<div class="ability"><span class="ability-icon">${info.icon}</span><b>${esc(info.name)}</b><span class="muted small">${esc(info.desc)}</span></div>`;
         }).join('')}</div>` : ''}
-        <div class="chips">${m.genres.map((g) => chip(genreName(g), `genre genre-${g}`)).join('')}${m.personality.map((p) => chip(cat().personalities[p], 'trait')).join('')}</div>
+        <div class="chips">${m.genres.map(genreTag).join('')}${m.personality.map((p) => chip(cat().personalities[p], 'trait')).join('')}</div>
       </div>
     </div>`;
 }
@@ -172,9 +172,9 @@ function openJamBand(offerId, index) {
         <label class="field"><span>Bandname</span>
           <span class="input-dice"><input name="name" maxlength="40" required><button type="button" class="btn small" data-dice title="Zufälliger Name">🎲</button></span>
         </label>
-        <label class="field"><span>Genre</span>
-          <select name="genre">${shared.map((g) => `<option value="${g}" ${used.has(g) ? 'disabled' : ''}>${esc(genreName(g))}${used.has(g) ? ' (schon vergeben)' : ''}</option>`).join('')}</select>
-        </label>
+        <div class="field"><span>Genre</span>
+          ${genrePicker('genre', shared, shared.find((g) => !used.has(g)), used)}
+        </div>
         <div class="dialog-actions">
           <button type="button" class="btn ghost" data-cancel>Abbrechen</button>
           <button class="btn primary">Band gründen</button>
@@ -182,8 +182,6 @@ function openJamBand(offerId, index) {
       </form>`,
   });
   const form = modal.body.querySelector('form');
-  const free = shared.find((g) => !used.has(g));
-  if (free) form.genre.value = free;
   form.querySelector('[data-cancel]').addEventListener('click', () => modal.close());
   form.querySelector('[data-dice]').addEventListener('click', async () => {
     form.name.value = await suggestName('band');

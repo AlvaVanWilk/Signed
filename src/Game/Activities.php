@@ -54,7 +54,7 @@ final class Activities
             }
             $gear = $this->repo->gearByMusician();
             $sound = BandCalc::sound($members, $band['genre'], $band['cohesion'], $gear);
-            $fame = BandCalc::fame($members);
+            $fame = BandCalc::bandFame($band, $members);
             [$manager, $level] = $this->repo->bandManager($band);
             $chemistry = BandCalc::chemistry($members);
             $venueKey = null;
@@ -297,7 +297,7 @@ final class Activities
         $reward = $data['reward'];
         $bandId = (int) $row['band_id'];
         $repo->earn((int) ($reward['money'] ?? 0), sprintf('Gage: %s', $data['title']));
-        $fameGain = self::applyFame($repo, $reward['fameGains'] ?? []);
+        $fameGain = $repo->addBandFame($bandId, $reward['fameGains'] ?? []);
         $result = [
             'money' => (int) ($reward['money'] ?? 0),
             'fame' => round($fameGain, 1),

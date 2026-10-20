@@ -634,3 +634,18 @@ test('Jam-Café: Je besser die Session, desto besser die Musiker, die sich melde
     checkEquals($host['id'], $offer['host']['id']);
     check(isset($offer['cards'][0]['match']['chemistry']));
 });
+
+test('Ein Teil des Ruhms bleibt am Bandnamen, auch wenn Mitglieder gehen', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Name');
+    $band = foundBand($p);
+    $labelId = $p->get('state')['label']['id'];
+    $db->insert('items', ['label_id' => $labelId, 'kind' => 'fan', 'value' => 20.0, 'created_at' => Clock::now()]);
+    $state = $p->post('itemUse', ['itemId' => (int) $db->value('SELECT id FROM items'), 'bandId' => $band['id']])['state'];
+    $after = bandById($state, $band['id']);
+    checkEquals(20.0, $after['fame']);
+    checkEquals(20.0 * Balance::BAND_FAME_SHARE, $after['fameOwn']);
+    $state = $p->post('bandRemoveMember', ['bandId' => $band['id'], 'musicianId' => $after['memberIds'][0]])['state'];
+    $left = bandById($state, $band['id']);
+    check($left['fame'] < 20.0 && $left['fame'] > 20.0 * Balance::BAND_FAME_SHARE, 'Wer geht, nimmt seine Bekanntheit mit, der Name behält seinen Teil');
+});

@@ -118,6 +118,8 @@ final class Balance
     public const CHEMISTRY_PARTY = 0.06;
 
     // ---------- Ruhm ----------
+    /** Dieser Anteil jedes Ruhmgewinns bleibt am Bandnamen hängen; der Rest wird Bekanntheit der Mitglieder. */
+    public const BAND_FAME_SHARE = 0.25;
     /** Einzelanteil am Ruhmgewinn: Grundwert + Boni. */
     public const FAME_SHARE = [
         'base' => 0.8, 'ausstrahlung' => 0.15, 'charisma' => 0.3, 'unusual' => 0.3, 'design' => 0.2,

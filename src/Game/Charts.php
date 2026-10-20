@@ -118,8 +118,8 @@ final class Charts
                 $repo = new Repo($db, $labelId);
                 $repo->earn((int) round($money), sprintf('Tantiemen „%s“', $row['title']));
                 $members = $row['band_id'] === null ? [] : $repo->members((int) $row['band_id']);
-                foreach ($members as $m) {
-                    $db->exec('UPDATE musicians SET fame = fame + ? WHERE id = ?', [$fame / count($members), $m['id']]);
+                if ($members) {
+                    $repo->addBandFame((int) $row['band_id'], array_fill_keys(array_column($members, 'id'), $fame / count($members)));
                 }
                 $repo->log('royalty', sprintf(
                     'Tantiemen für „%s“: +%s ₲%s.',
@@ -162,7 +162,7 @@ final class Charts
         ];
     }
 
-    /** Label-Gesamtliste: Summe des Ruhms aller eigenen Bands. */
+    /** Label-Gesamtliste: Summe des Ruhms aller eigenen Bands (Bandnamen und Mitglieder). */
     private static function labels(Db $db, int $labelId): array
     {
         $rows = $db->all(
@@ -172,10 +172,14 @@ final class Charts
              LEFT JOIN musicians m ON m.band_id = b.id
              GROUP BY l.id, l.name'
         );
+        $own = [];
+        foreach ($db->all('SELECT label_id, SUM(fame_own) AS fame FROM bands GROUP BY label_id') as $r) {
+            $own[(int) $r['label_id']] = (float) $r['fame'];
+        }
         return array_map(static fn ($r) => [
             'label' => $r['name'],
             'bands' => (int) $r['bands'],
-            'points' => round((float) $r['fame'], 1),
+            'points' => round((float) $r['fame'] + ($own[(int) $r['id']] ?? 0), 1),
             'own' => (int) $r['id'] === $labelId,
         ], $rows);
     }

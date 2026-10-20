@@ -1,5 +1,5 @@
 import { api } from '../api.js';
-import { emptySlot, face, fullName, gearCard, gearModel, genreName, instrumentIcon, instrumentName, managerCard, musicianCard } from '../cards.js';
+import { emptySlot, face, fullName, gearCard, gearModel, genreIcon, genreName, genrePicker, genreTag, instrumentIcon, instrumentName, managerCard, musicianCard } from '../cards.js';
 import { app, bandById, cat, defineActions, isBusy, managerById, musicianById, mutate, navigate, rerender, runningFor } from '../core.js';
 import { openLive } from '../live.js';
 import { startPractice, startRecordSong } from '../play.js';
@@ -20,7 +20,7 @@ export function renderList() {
   const s = app.state;
   return `
     <div class="section-head"><h1>Bands</h1><button class="btn primary" data-act="newBand">+ Neue Band</button></div>
-    ${s.bands.length ? `<div class="tile-grid">${s.bands.map((b) => `<a class="panel band-link" href="#/band/${b.id}"><b>${esc(b.name)}</b><span class="chip genre genre-${b.genre}">${esc(genreName(b.genre))}</span></a>`).join('')}</div>`
+    ${s.bands.length ? `<div class="tile-grid">${s.bands.map((b) => `<a class="panel band-link" href="#/band/${b.id}"><b>${esc(b.name)}</b>${genreTag(b.genre)}</a>`).join('')}</div>`
       : '<div class="empty">Noch keine Band.</div>'}`;
 }
 
@@ -76,11 +76,11 @@ function overview(b, members) {
   const gig = b.options.gig;
   return `
     <div class="page-head">
-      <div><div class="eyebrow">${esc(genreName(b.genre))}</div><h1>${esc(b.name)} <button class="icon-btn" data-act="bandRename" data-id="${b.id}" title="Umbenennen">✎</button></h1></div>
+      <div><div class="eyebrow">${genreTag(b.genre)}</div><h1>${esc(b.name)} <button class="icon-btn" data-act="bandRename" data-id="${b.id}" title="Umbenennen">✎</button></h1></div>
     </div>
     <div class="stat-grid">
       <div class="tile"><span>Sound</span><b>${fmt1(b.sound)}</b></div>
-      <div class="tile"><span>Ruhm</span><b>${fmt1(b.fame)}</b>${gig.nextVenue ? `<small>${esc(gig.nextVenue)} ab ${fmt0(gig.nextFame)}</small>${bar(gig.progress, 1, 'thin')}` : ''}</div>
+      <div class="tile"><span>Ruhm</span><b>${fmt1(b.fame)}</b><small title="Am Bandnamen · bei den Mitgliedern">Name ${fmt1(b.fameOwn)} · Musiker ${fmt1(b.fame - b.fameOwn)}</small>${gig.nextVenue ? `<small>${esc(gig.nextVenue)} ab ${fmt0(gig.nextFame)}</small>${bar(gig.progress, 1, 'thin')}` : ''}</div>
       <div class="tile"><span>Zusammenspiel</span><b>${fmt0(b.cohesion)}<small> / ${fmt0(b.maxCohesion)}</small></b>${bar(b.cohesion, 100, 'thin')}</div>
       <div class="tile"><span>Chemie</span><b>${chemistryLabel(b.chemistry)}</b></div>
       <div class="tile"><span>Platten</span><b>${fmt0(b.records)}</b><small>${fmt0(b.songsRecorded)} Lieder</small></div>
@@ -373,7 +373,7 @@ function pickRow(m, genre, { checkbox = true, button = '' } = {}) {
       <label class="pick-main">
         ${checkbox ? `<input type="checkbox" value="${m.id}">` : ''}
         ${face(m, 'sm')}
-        <span class="pick-name">${esc(fullName(m))}<small class="muted">${m.genres.map(genreName).map(esc).join(', ')}${fits ? '' : ' · <span class="warn">fremdes Genre</span>'}</small></span>
+        <span class="pick-name">${esc(fullName(m))}<small class="muted">${m.genres.map(genreIcon).join('')}${fits ? '' : ' · <span class="warn">fremdes Genre</span>'}</small></span>
       </label>
       ${m.instruments.length > 1 ? `
         <select data-slot>
@@ -422,9 +422,9 @@ function openCreateBand() {
           <label class="field"><span>Bandname</span>
             <span class="input-dice"><input name="name" maxlength="40" required placeholder="z. B. Die Kellerkinder"><button type="button" class="btn small" data-dice title="Zufälliger Name">🎲</button></span>
           </label>
-          <label class="field"><span>Genre</span>
-            <select name="genre">${genres.map(([key, g]) => `<option value="${key}" ${key === suggested ? 'selected' : ''}>${esc(g.name)}</option>`).join('')}</select>
-          </label>
+        </div>
+        <div class="field"><span>Genre</span>
+          ${genrePicker('genre', Object.keys(cat().genres), suggested, used)}
         </div>
         <div class="pick-list"></div>
         <p class="create-summary small"></p>
@@ -459,7 +459,8 @@ function openCreateBand() {
   };
   drawList();
   update();
-  form.genre.addEventListener('change', () => {
+  form.addEventListener('change', (e) => {
+    if (e.target.name !== 'genre') return;
     drawList();
     update();
   });

@@ -67,10 +67,16 @@ final class BandCalc
         return $base * $talent * max(0.08, 1 - self::skill($m, $slot) / 110);
     }
 
-    /** Bandruhm = Summe der Bekanntheit aller aktuellen Mitglieder. */
+    /** Summe der Bekanntheit aller aktuellen Mitglieder. */
     public static function fame(array $members): float
     {
         return round(array_sum(array_map(static fn ($m) => $m['fame'], $members)), 1);
+    }
+
+    /** Bandruhm = Ruhm des Bandnamens + Bekanntheit der aktuellen Mitglieder. */
+    public static function bandFame(array $band, array $members): float
+    {
+        return round($band['fame_own'] + array_sum(array_column($members, 'fame')), 1);
     }
 
     public static function clashes(string $a, string $b): bool

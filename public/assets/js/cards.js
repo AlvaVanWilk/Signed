@@ -13,7 +13,20 @@ export function chip(text, cls = '') {
 }
 
 export function genreChips(genres) {
-  return genres.map((g) => chip(genreName(g), `genre genre-${g}`)).join('');
+  return genres.map(genreTag).join('');
+}
+
+/** Genre als farbige Marke mit Symbol und Namen – überall dieselbe Farbe wie die Bands des Genres. */
+export function genreTag(key) {
+  return `<span class="genre-tag g-${key}">${genreGlyph(key)}${esc(genreName(key))}</span>`;
+}
+
+/** Genre-Auswahl als farbige Marken (statt einer Liste); disabled = Genre schon vergeben. */
+export function genrePicker(name, keys, selected, disabled = new Set()) {
+  return `<span class="genre-picker">${keys.map((key) => `
+    <label class="genre-tag g-${key} ${disabled.has(key) ? 'off' : ''}" title="${disabled.has(key) ? 'Schon vergeben' : esc(genreName(key))}">
+      <input type="radio" name="${name}" value="${key}" ${key === selected ? 'checked' : ''} ${disabled.has(key) ? 'disabled' : ''}>${genreGlyph(key)}${esc(genreName(key))}
+    </label>`).join('')}</span>`;
 }
 
 export function face(person, size = '') {
@@ -86,8 +99,29 @@ const GENRE_PATHS = {
   folk: 'M5 19C5 10 11 5 20 4c-.8 9-6.2 15-15 15z M5 19l8.5-8.5',
 };
 
+export function genreGlyph(key) {
+  return `<svg class="genre-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${GENRE_PATHS[key] ?? ''}"/></svg>`;
+}
+
+/** Rundes Genre-Abzeichen in der Farbe des Genres. */
 export function genreIcon(key) {
-  return `<svg class="genre-icon" viewBox="0 0 24 24" aria-label="${esc(genreName(key))}"><title>${esc(genreName(key))}</title><path d="${GENRE_PATHS[key] ?? ''}"/></svg>`;
+  return `<span class="genre-badge g-${key}" title="${esc(genreName(key))}">${genreGlyph(key)}</span>`;
+}
+
+/** Bekanntheit auf der Karte: 10 Sternchen. Jede Bekanntheits-Stufe füllt ein Drittel der Leiste. */
+export function fameBar(fame) {
+  const steps = [0, ...cat().rules.fameLevels];
+  let filled = 10;
+  for (let i = 0; i < steps.length - 1; i++) {
+    if (fame < steps[i + 1]) {
+      filled = (i + (fame - steps[i]) / (steps[i + 1] - steps[i])) * (10 / 3);
+      break;
+    }
+  }
+  return `<span class="fame-stars" title="Bekanntheit ${fmt0(fame)}">${Array.from({ length: 10 }, (_, i) => {
+    const fill = Math.max(0, Math.min(1, filled - i));
+    return `<i style="--f:${Math.round(fill * 100)}%">★</i>`;
+  }).join('')}</span>`;
 }
 
 /** Können als Leiste aus Kästchen: 10 Kästchen à 10 Punkte bis zum Höchstwert 100. */
@@ -113,6 +147,7 @@ export function musicianCard(m, { act = 'openMusician', size = '', extra = '', s
       ${abilities.length ? `<span class="tcg-abilities">${abilities.map((a) => `<i title="${esc(a.name)}">${a.icon}</i>`).join('')}</span>` : ''}`,
     text: `
       ${m.instruments.map((i) => `<span class="skill-row"><span class="skill-name">${instrumentIcon(i.type)}<span> ${esc(instrumentName(i.type))}</span></span>${skillBar(i.skill)}<b>${fmt0(i.skill)}</b></span>`).join('')}
+      <span class="skill-row fame-row"><span class="skill-name">⭐<span> Bekanntheit</span></span>${fameBar(m.fame)}<b>${fmt0(m.fame)}</b></span>
       <span class="tcg-traits">${abilities.length
         ? abilities.map((a) => `<b>${esc(a.name)}</b>`).join(' · ')
         : `<i>${m.personality.map((p) => esc(c.personalities[p])).join(' · ')}</i>`}</span>`,

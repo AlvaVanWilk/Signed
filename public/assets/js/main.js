@@ -1,6 +1,6 @@
 import { api } from './api.js';
 import { actions, app, bandById, defineActions, musicianById, navigate, onRender, refresh, rerender, serverNow } from './core.js';
-import { levelUpBanners, musicianCard } from './cards.js';
+import { genreGlyph, levelUpBanners, musicianCard } from './cards.js';
 import { closeAllModals, duration, esc, fmt1, money, openModal, percent, timeAgo, topModal } from './ui.js';
 import * as auth from './views/auth.js';
 import * as bands from './views/bands.js';
@@ -45,7 +45,7 @@ function subnav(route) {
   const active = (kind, id) => route.name === kind && route.id === id;
   return `
     <nav class="subnav">
-      ${s.bands.map((b) => `<a href="#/band/${b.id}" class="subnav-btn genre-fill-${b.genre} ${active('band', b.id) ? 'active' : ''}">${esc(b.name)}</a>`).join('')}
+      ${s.bands.map((b) => `<a href="#/band/${b.id}" class="subnav-btn genre-fill-${b.genre} ${active('band', b.id) ? 'active' : ''}">${genreGlyph(b.genre)}${esc(b.name)}</a>`).join('')}
       ${favorites.map((m) => `<a href="#/musician/${m.id}" class="subnav-btn fav ${active('musician', m.id) ? 'active' : ''}">★ ${esc(m.firstName)} ${esc(m.lastName)}</a>`).join('')}
       <button class="subnav-btn add" data-act="newBand">+ Band</button>
     </nav>`;
@@ -62,10 +62,12 @@ function sidebar(route) {
   let base;
   let sections;
   let theme;
+  let icon = '';
   if (route.name === 'band') {
     const b = bandById(route.id);
     if (!b) return '';
     title = b.name;
+    icon = genreGlyph(b.genre);
     base = `#/band/${b.id}`;
     sections = bands.BAND_SECTIONS;
     theme = `genre-fill-${b.genre}`;
@@ -81,7 +83,7 @@ function sidebar(route) {
   }
   return `
     <aside class="side ${enter ? 'enter' : ''}">
-      <a class="side-entity subnav-btn ${theme}" href="${base}">${esc(title)}</a>
+      <a class="side-entity subnav-btn ${theme}" href="${base}">${icon}${esc(title)}</a>
       <nav class="side-menu">${sections.map(([key, icon, label]) => `
         <a href="${base}${key ? `/${key}` : ''}" class="${route.section === key ? 'active' : ''}" title="${esc(label)}"><span>${icon}</span><small>${esc(label)}</small></a>`).join('')}
       </nav>

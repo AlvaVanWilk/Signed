@@ -543,14 +543,14 @@ button.tcg:hover { transform: translateY(-4px) rotate(-0.5deg); box-shadow: 0 14
 .tcg-stat small { font-size: 3.6cqi; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.75; }
 .tcg-foot { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; font-size: 4.2cqi; color: #5b5168; }
 
-.genre-bg-pop { --art: linear-gradient(160deg, #ff8cc0, #b0246a); }
-.genre-bg-rock { --art: linear-gradient(160deg, #ff9a5c, #8a2a0d); }
-.genre-bg-metal { --art: linear-gradient(160deg, #9aa3b5, #23262e); }
-.genre-bg-punk { --art: linear-gradient(160deg, #c6f26a, #3f6b0b); }
-.genre-bg-jazz { --art: linear-gradient(160deg, #ffd56b, #8a5a06); }
-.genre-bg-elektro { --art: linear-gradient(160deg, #7be3ff, #1a4f8a); }
-.genre-bg-hiphop { --art: linear-gradient(160deg, #c89bff, #4a1a8a); }
-.genre-bg-folk { --art: linear-gradient(160deg, #8de6b8, #1d6b45); }
+.genre-bg-pop { --art: linear-gradient(160deg, #f783ac, #c2255c); }
+.genre-bg-rock { --art: linear-gradient(160deg, #ffa94d, #c2410c); }
+.genre-bg-metal { --art: linear-gradient(160deg, #adb5bd, #343a40); }
+.genre-bg-punk { --art: linear-gradient(160deg, #c0eb75, #5c940d); }
+.genre-bg-jazz { --art: linear-gradient(160deg, #ffd43b, #b07d00); }
+.genre-bg-elektro { --art: linear-gradient(160deg, #74c0fc, #1864ab); }
+.genre-bg-hiphop { --art: linear-gradient(160deg, #b197fc, #5f3dc4); }
+.genre-bg-folk { --art: linear-gradient(160deg, #8ce99a, #2b8a3e); }
 .gear-bg { --art: radial-gradient(circle at 50% 40%, #fff6dc, #c9b38a 70%); }
 .gear-bg .tcg-art { place-items: center; }
 .manager-bg { --art: linear-gradient(160deg, #d8d3c6, #5d5648); }
@@ -611,13 +611,13 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 /* ---------- Musikerkarten: Farbe nach Können-Stufe, Funkeln nach Bekanntheit (statisch, ohne Animation) ---------- */
 
 .tcg.lvl-0 { --rarity: #7d8291; }
-.tcg.lvl-1 { --rarity: #b8682e; }
-.tcg.lvl-2 { --rarity: #9fb3cc; }
-.tcg.lvl-3 { --rarity: #e9b425; }
+.tcg.lvl-1 { --rarity: #2fa84f; }
+.tcg.lvl-2 { --rarity: #2f7fe0; }
+.tcg.lvl-3 { --rarity: #b03ad6; }
 .tcg.lvl-0 .tcg-frame { background: linear-gradient(180deg, #eeeeee, #dcdcdc); }
-.tcg.lvl-1 .tcg-frame { background: linear-gradient(180deg, #f8e6d2, #ebcaa6); }
-.tcg.lvl-2 .tcg-frame { background: linear-gradient(180deg, #eef3fa, #d3dfee); }
-.tcg.lvl-3 .tcg-frame { background: linear-gradient(180deg, #fff6d6, #f5dc8c); }
+.tcg.lvl-1 .tcg-frame { background: linear-gradient(180deg, #e8f7eb, #c3e8cc); }
+.tcg.lvl-2 .tcg-frame { background: linear-gradient(180deg, #e8f1fc, #c3d9f5); }
+.tcg.lvl-3 .tcg-frame { background: linear-gradient(180deg, #f7e9fc, #e3c3f0); }
 /* Bekanntheit: je höher, desto mehr Funkeln über der Karte und ein goldener Schein. */
 .tcg.fame-1::after, .tcg.fame-2::after, .tcg.fame-3::after { content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; }
 .tcg.fame-1::after { background:
@@ -640,13 +640,14 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .tcg.fame-1 { box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5), 0 0 12px rgba(255, 210, 120, 0.25); }
 .tcg.fame-2 { box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(255, 220, 140, 0.4), 0 0 22px rgba(255, 210, 120, 0.4); }
 .tcg.fame-3 { box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5), 0 0 0 3px rgba(255, 225, 150, 0.7), 0 0 34px rgba(255, 200, 90, 0.6); }
-.tcg.legend { background: linear-gradient(135deg, #1b1626 0%, #f1c24b 30%, #fff3c4 50%, #f1c24b 70%, #1b1626 100%); }
+.tcg.legend { background: linear-gradient(135deg, #ff4d6d, #ff9f1c, #ffe14d, #3ddc84, #3a86ff, #8f5cff, #ff4dd8); }
+.tcg.legend .tcg-frame { background: linear-gradient(160deg, #ffe3ea, #fff1d6, #fffbd6, #dcf8e8, #dceaff, #ece2ff, #ffe0f7); }
 .tcg-abilities { position: absolute; right: 4%; bottom: 5%; display: flex; flex-direction: column; gap: 3%; }
 .tcg-abilities i { display: grid; place-items: center; width: 11cqi; height: 11cqi; border-radius: 50%; background: rgba(255, 255, 255, 0.92); border: 1px solid rgba(0, 0, 0, 0.25); font-style: normal; font-size: 6.4cqi; }
 .face.lvl-0 { border-color: #8d93a3; }
-.face.lvl-1 { border-color: #c07a45; }
-.face.lvl-2 { border-color: #c9d1dd; }
-.face.lvl-3 { border-color: #f1c24b; }
+.face.lvl-1 { border-color: #2fa84f; }
+.face.lvl-2 { border-color: #2f7fe0; }
+.face.lvl-3 { border-color: #b03ad6; }
 
 /* ---------- Zweite Menüzeile & Seitenleiste ---------- */
 
@@ -678,14 +679,16 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .subnav-btn.fav { --fill: #3a3150; color: var(--accent-2); }
 .subnav-btn.add { background: transparent; border: 1px dashed var(--line); color: var(--muted); }
 .subnav-btn.add:hover { color: var(--text); border-color: var(--accent); }
-.genre-fill-pop { --fill: #b0246a; }
-.genre-fill-rock { --fill: #b2421a; }
-.genre-fill-metal { --fill: #4a505e; }
-.genre-fill-punk { --fill: #4f7d12; }
-.genre-fill-jazz { --fill: #9a6a0a; }
-.genre-fill-elektro { --fill: #1f5d9a; }
-.genre-fill-hiphop { --fill: #5c2aa0; }
-.genre-fill-folk { --fill: #1d7a4f; }
+/* Genre-Farben: überall dieselben – Bands, Abzeichen, Marken, Auswahl. */
+.g-pop, .genre-fill-pop { --g: #d6336c; --fill: var(--g); }
+.g-rock, .genre-fill-rock { --g: #e8590c; --fill: var(--g); }
+.g-metal, .genre-fill-metal { --g: #5c6370; --fill: var(--g); }
+.g-punk, .genre-fill-punk { --g: #74b816; --fill: var(--g); }
+.g-jazz, .genre-fill-jazz { --g: #d99a00; --fill: var(--g); }
+.g-elektro, .genre-fill-elektro { --g: #1c7ed6; --fill: var(--g); }
+.g-hiphop, .genre-fill-hiphop { --g: #7048e8; --fill: var(--g); }
+.g-folk, .genre-fill-folk { --g: #2b8a3e; --fill: var(--g); }
+.subnav-btn .genre-icon { width: 1.1em; height: 1.1em; stroke: currentColor; }
 
 .shell.with-side { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 0 8px; max-width: 1240px; margin: 0 auto; padding-left: 20px; }
 .shell.with-side .page { margin: 0; max-width: none; width: 100%; }
@@ -814,7 +817,7 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .tcg-genres { display: flex; gap: 1.2cqi; flex: none; }
 .genre-icon { width: 7cqi; height: 7cqi; fill: none; stroke: #3a3247; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
 .tcg .tcg-text { display: flex; flex-direction: column; gap: 1.6cqi; padding-top: 0.5cqi; }
-.skill-row { display: grid; grid-template-columns: 30% 1fr auto; align-items: center; gap: 2cqi; font-size: 4.2cqi; }
+.skill-row { display: grid; grid-template-columns: 37% 1fr auto; align-items: center; gap: 1.6cqi; font-size: 4cqi; }
 .skill-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #3a3247; }
 .skill-row > b { font-size: 4.6cqi; min-width: 5cqi; text-align: right; }
 .skill-cells { display: grid; grid-template-columns: repeat(10, 1fr); gap: 0.8cqi; }
@@ -841,3 +844,21 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 
 /* Musikerkarten haben weniger Text: mehr Platz fürs Bild. */
 .tcg[class*='lvl-'] .tcg-art { flex-basis: 60%; }
+
+/* ---------- Genre-Abzeichen, Genre-Marken, Genre-Auswahl ---------- */
+.genre-badge { display: inline-grid; place-items: center; width: 8.4cqi; height: 8.4cqi; border-radius: 50%; background: var(--g); box-shadow: 0 0 0 0.3cqi rgba(255, 255, 255, 0.7); }
+.genre-badge .genre-icon { width: 70%; height: 70%; stroke: #fff; stroke-width: 2.2; }
+.pick-name .genre-badge { width: 18px; height: 18px; margin-right: 3px; vertical-align: -4px; }
+.genre-tag { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px 3px 7px; border-radius: 999px; background: var(--g); color: #fff; font-size: 0.78rem; font-weight: 700; white-space: nowrap; letter-spacing: 0; text-transform: none; }
+.genre-tag .genre-icon { width: 15px; height: 15px; stroke: #fff; stroke-width: 2.2; fill: none; }
+.eyebrow .genre-tag { font-size: 0.8rem; }
+.genre-picker { display: flex; flex-wrap: wrap; gap: 8px; }
+.genre-picker .genre-tag { cursor: pointer; padding: 6px 12px 6px 9px; font-size: 0.9rem; opacity: 0.55; border: 2px solid transparent; }
+.genre-picker .genre-tag:has(input:checked) { opacity: 1; border-color: #fff; }
+.genre-picker .genre-tag.off { opacity: 0.2; cursor: not-allowed; text-decoration: line-through; }
+.genre-picker input { position: absolute; opacity: 0; pointer-events: none; }
+
+/* ---------- Bekanntheit als Sternchen-Leiste neben dem Können ---------- */
+.fame-stars { display: grid; grid-template-columns: repeat(10, 1fr); gap: 0.2cqi; font-size: 4.6cqi; line-height: 1; }
+.fame-stars i { font-style: normal; text-align: center; background: linear-gradient(90deg, #e09f00 var(--f), rgba(0, 0, 0, 0.18) var(--f)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.tile .bar { flex: none; }

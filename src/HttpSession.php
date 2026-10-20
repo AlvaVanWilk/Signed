@@ -42,7 +42,9 @@ final class HttpSession implements Session
         }
         $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
             || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
-        session_name('signed');
+        // Eigener Cookie-Name pro Installation: Test- und echte Fassung auf derselben Domain
+        // haben getrennte Datenbanken und dürfen sich die Anmeldung nicht teilen.
+        session_name('signed' . substr(md5(dirname(__DIR__)), 0, 8));
         session_set_cookie_params([
             'lifetime' => self::LIFETIME,
             'path' => '/',

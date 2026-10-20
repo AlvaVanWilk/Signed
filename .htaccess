@@ -1,0 +1,8 @@
+# Wenn das ganze Projekt in einem Ordner auf dem Webspace liegt (z. B. /signed):
+# Alle Aufrufe gehen in public/. So bleiben src/, data/ und config.php von außen unerreichbar.
+RewriteEngine On
+RewriteRule ^(?!public/)(.*)$ public/$1 [L]
+
+<Files "config.php">
+  Require all denied
+</Files>

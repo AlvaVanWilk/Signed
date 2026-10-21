@@ -29,7 +29,7 @@ export function render() {
       <div>
         <h1>Charts</h1>
         <p class="muted">${tab === 'albums'
-          ? `Die Top ${rules.chartSize} der Platten aller Labels. Die Plätze werden alle ${fmt0(rules.chartIntervalHours)} Stunden neu vergeben – sofort, wenn eine Platte einsteigt oder Gigs und Promo sie anschieben. Eine Platte erreicht nach etwa ${fmt0(rules.chartPeakHours)} Stunden ihren Höhepunkt und fällt dann. Je höher der Platz, desto mehr Tantiemen und Ruhm (Platz 1 doppelt), und Gigs der Band werden voller. Platz 1 gibt einen Scout-Gutschein.`
+          ? `Die Top ${rules.chartSize} der Platten aller Labels. Die Plätze werden alle ${fmt0(rules.chartIntervalHours)} Stunden neu vergeben – sofort, wenn eine Platte einsteigt oder Gigs und Promo sie anschieben. Je höher der Platz, desto mehr Tantiemen und Ruhm (Platz 1 doppelt), und Gigs der Band werden voller. Platz 1 gibt einen Scout-Gutschein.`
           : 'Die erfolgreichsten Labels nach dem Ruhm all ihrer Bands.'}</p>
       </div>
       <button class="btn ghost small" data-act="chartsReload">Aktualisieren</button>

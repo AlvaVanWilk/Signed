@@ -1,4 +1,4 @@
-import { createVoice, getAudio, scaleMidi, scheduleMetronome } from './audio.js';
+import { createVoice, getAudio, latency, scaleMidi, scheduleMetronome } from './audio.js';
 import { loadStems, playStems } from './music.js';
 import { judgeRatio, mountShell } from './mg-shell.js';
 import { duration, percent } from './ui.js';
@@ -56,6 +56,7 @@ export function createPitchGame(container, game) {
   let audio = null;
   let voice = null;
   let t0 = 0;
+  let lag = 0;
   let last = 0;
   let raf = 0;
   let running = false;
@@ -196,7 +197,7 @@ export function createPitchGame(container, game) {
 
   function frame() {
     const t = clock();
-    const now = t - t0;
+    const now = t - t0 - lag;
     const dt = Math.min(0.05, t - last);
     last = t;
     const active = step(now, dt);
@@ -233,6 +234,7 @@ export function createPitchGame(container, game) {
     shell.hideOverlay();
     shell.resize();
     audio = getAudio();
+    lag = latency();
     voice = createVoice(game.instrument);
     t0 = clock() + 0.15 + 4 * beat;
     last = clock();

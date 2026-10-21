@@ -309,6 +309,40 @@ export function scheduleBacking({ genre, bpm, start, duration, drums = true, bas
   };
 }
 
+// ---------- Verzögerung (Bluetooth-Kopfhörer) ----------
+
+const LATENCY_KEY = 'signed.latency';
+
+/**
+ * Wie viel später der Ton beim Ohr ankommt (Sekunden). Eingestellt pro Gerät; sonst, was der Browser meldet.
+ * Die Minispiele verschieben Bild und Wertung um diesen Wert, damit man im Takt der Musik tippen kann.
+ */
+export function latency() {
+  const stored = storedLatency();
+  if (stored !== null) return stored / 1000;
+  const c = getAudio();
+  return c ? (c.outputLatency || 0) + (c.baseLatency || 0) : 0;
+}
+
+/** Eingestellter Wert in ms oder null (automatisch). */
+export function storedLatency() {
+  try {
+    const value = localStorage.getItem(LATENCY_KEY);
+    return value === null ? null : Number(value);
+  } catch {
+    return null;
+  }
+}
+
+export function setLatency(ms) {
+  try {
+    if (ms === null) localStorage.removeItem(LATENCY_KEY);
+    else localStorage.setItem(LATENCY_KEY, String(Math.round(ms)));
+  } catch {
+    // Ohne Speicher gilt der Wert nur bis zum Neuladen nicht – dann eben automatisch.
+  }
+}
+
 /** Metronom für die Solo-Probe: Vorzähler und ein Klick auf jeden Schlag, betont auf der Eins. */
 export function scheduleMetronome({ bpm, start, duration, countIn = 4 }) {
   if (!ctx) return () => {};

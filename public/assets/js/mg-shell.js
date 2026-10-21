@@ -17,6 +17,7 @@ export function mountShell(container, game, { hud, hint, below = '' }) {
         <div class="mg-overlay">
           <p>${hint}</p>
           <button class="btn primary big mg-start">Los geht’s</button>
+          <button type="button" class="link small mg-calibrate" data-act="calibrate">Ton kommt zu spät? Kopfhörer einstellen</button>
         </div>
       </div>
       ${below}

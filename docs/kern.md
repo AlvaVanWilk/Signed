@@ -318,6 +318,7 @@ Diese Punkte sind im Konzept offen. Für den Kern habe ich sie so festgelegt; al
 - Das Ergebnis des Minispiels kommt aus dem Browser. Der Server prüft nur, ob es plausibel ist
   (Notenzahl, Mindestdauer). Für ein Hobbyspiel unter Bekannten reicht das; gegen gezieltes Schummeln nicht.
 - Bisher gibt es nur Pop Stufe 0 als Aufnahme; alle anderen Genres und Stufen spielen sie mit.
-- Bei sehr verzögerten Kopfhörern (Bluetooth) hört man die Treffer später, als man sie sieht. Gewertet wird
-  nach dem Bild. Eine Latenz-Kalibrierung fehlt noch.
+- Bluetooth-Kopfhörer: Verzögerung pro Gerät einstellbar (im Minispiel „Ton kommt zu spät?“): Man tippt 12 Klicks
+  im Sekundentakt mit, die mittlere Verspätung (ohne die ersten 3) wird gespeichert. Rhythmus- und Tonhöhen-Spiel
+  verschieben Bild und Wertung darum. Ohne Einstellung gilt, was der Browser als Ausgabeverzögerung meldet.
 - Noch keine Bremse gegen Passwort-Raten beim Login.

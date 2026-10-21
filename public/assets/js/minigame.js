@@ -1,4 +1,4 @@
-import { getAudio, playLane, playMiss, scheduleMetronome } from './audio.js';
+import { getAudio, latency, playLane, playMiss, scheduleMetronome } from './audio.js';
 import { loadStems, playStems } from './music.js';
 import { instrumentIcon } from './cards.js';
 import { COLORS, mountShell } from './mg-shell.js';
@@ -67,7 +67,9 @@ function createRhythmGame(container, game) {
   const ownLevel = (level) => player?.gains[0]?.gain.setTargetAtTime(level, getAudio().currentTime, 0.03);
 
   const clock = () => (audio ? audio.currentTime : performance.now() / 1000);
-  const songTime = () => clock() - t0;
+  // Bild und Wertung laufen um die Verzögerung der Kopfhörer später, damit man nach Gehör tippen kann.
+  let lag = 0;
+  const songTime = () => clock() - t0 - lag;
 
   function judge(lane) {
     if (!running) return;
@@ -276,6 +278,7 @@ function createRhythmGame(container, game) {
     shell.hideOverlay();
     shell.resize();
     audio = getAudio();
+    lag = latency();
     t0 = clock() + 0.15 + 4 * beat;
     stopBacking = scheduleMetronome({ bpm: game.bpm, start: t0, duration: game.duration });
     if (buffers) player = playStems(buffers, t0, { volume: 0.9 });

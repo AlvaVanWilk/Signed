@@ -949,3 +949,7 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 
 .celebrate-trophy { font-size: min(34vw, 150px); line-height: 1; filter: drop-shadow(0 0 30px rgba(255, 200, 60, 0.9)); animation: celebrate-pop 0.8s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
 .news .news-top { font-weight: 700; color: #ffd36e; }
+/* Kopfhörer einstellen */
+.tap-button { display: block; width: 100%; min-height: 120px; margin: 12px 0; font-size: 1.4rem; font-weight: 800; border-radius: 18px; touch-action: manipulation; }
+.tap-button.down { transform: scale(0.97); background: var(--accent); color: #fff; }
+.mg-calibrate { margin-top: 10px; }

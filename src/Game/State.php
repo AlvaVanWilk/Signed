@@ -198,6 +198,7 @@ final class State
             'now' => $now,
             'label' => $label + ['bandSlots' => Bands::slots($repo->labelFame())],
             'scout' => (new Scout($repo))->status(),
+            'course' => (new Courses($repo))->status($musicians),
             'jamOffers' => (new Jam($repo))->open(),
             'market' => (new Transfers($repo))->market(),
             'packOffer' => $packOffer,

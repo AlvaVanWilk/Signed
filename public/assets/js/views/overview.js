@@ -36,6 +36,7 @@ export function render() {
       </div>
     </section>
 
+    ${courseNotice(s)}
     ${choices.map((m) => `<div class="notice choice"><span>⭐ ${esc(m.firstName)} ${esc(m.lastName)} darf eine dritte Fähigkeit wählen.</span><button class="btn primary small" data-act="chooseAbility" data-id="${m.id}">Wählen</button></div>`).join('')}
     ${nextStep ? `
       <section class="panel">
@@ -99,4 +100,13 @@ export function bandTile(b) {
       </div>
       <div class="band-tile-status">${running ? `<span class="pulse"></span> ${esc(running.title)}` : isBusy(b.busyUntil) ? 'Im Studio' : '<span class="muted">bereit</span>'}</div>
     </a>`;
+}
+
+/** Startseite: Kurs des Tages, und wer aus dem Label hin kann. */
+function courseNotice(s) {
+  const c = s.course;
+  if (!c) return '';
+  const open = c.candidates.filter((x) => !x.visited).map((x) => s.musicians.find((m) => m.id === x.musicianId)).filter(Boolean);
+  return `<div class="notice course-notice"><span>🎓 Heute: <b>${esc(c.prefix)}-Tag</b> mit ${esc(c.teacher)} – Kurs, Workshop und Meisterklasse.
+    ${open.length ? `Hin können: ${open.map((m) => `<a href="#/musician/${m.id}/uebung">${esc(m.firstName)}</a>`).join(', ')}.` : 'Heute ist niemand von dir dabei.'}</span></div>`;
 }

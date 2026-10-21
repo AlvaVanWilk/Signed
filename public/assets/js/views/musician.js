@@ -3,7 +3,7 @@ import { app, bandById, cat, defineActions, isBusy, musicianById, mutate, naviga
 import { openLive } from '../live.js';
 import { chip } from '../cards.js';
 import { closeAllModals, duration, esc, fmt0, fmt1, money, openModal, timeAgo, toast } from '../ui.js';
-import { buskingHat, cancelButton, chemistryLabel, promoOf, practiceTile, promoTile, suggestName } from './bands.js';
+import { buskingHat, cancelButton, chemistryLabel, courseTiles, promoOf, practiceTile, promoTile, suggestName } from './bands.js';
 import { catalogList } from './catalog.js';
 
 /** Untermenü eines Musikers. solo = nur ohne Band. */
@@ -97,7 +97,7 @@ function gearSlot(m, type) {
 }
 
 function practice(m) {
-  return `${head('Übung', m)}${statusNotice(m)}<div class="action-grid">${practiceTile(m, busyOf(m))}</div>`;
+  return `${head('Übung', m)}${statusNotice(m)}<div class="action-grid">${courseTiles([m])}${practiceTile(m, busyOf(m))}</div>`;
 }
 
 function promo(m) {

@@ -7,6 +7,7 @@ use Signed\Game\Activities;
 use Signed\Game\Balance;
 use Signed\Game\Bands;
 use Signed\Game\Charts;
+use Signed\Game\Courses;
 use Signed\Game\Jam;
 use Signed\Game\Levels;
 use Signed\Game\Minigames;
@@ -56,6 +57,7 @@ final class Api
         'bandPromo' => ['POST', true],
         'promoCancel' => ['POST', true],
         'practiceAuto' => ['POST', true],
+        'courseAttend' => ['POST', true],
         'soloStart' => ['POST', true],
         'jamPick' => ['POST', true],
         'transferList' => ['POST', true],
@@ -312,6 +314,12 @@ final class Api
     {
         (new Activities($repo))->ack(self::int($in, 'activityId'));
         return [];
+    }
+
+    private function courseAttend(array $in, Repo $repo): array
+    {
+        $activity = (new Courses($repo))->attend(self::int($in, 'musicianId'));
+        return ['activity' => $activity, 'state' => State::build($repo)];
     }
 
     private function practiceAuto(array $in, Repo $repo): array

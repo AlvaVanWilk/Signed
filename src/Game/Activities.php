@@ -302,13 +302,21 @@ final class Activities
         $db = $this->repo->db;
         $db->transaction(function () use ($db, $activityId): void {
             $row = $db->one(
-                "SELECT * FROM activities WHERE id = ? AND label_id = ? AND settled = 0 AND type IN ('promo', 'bandpromo', 'practice')",
+                "SELECT * FROM activities WHERE id = ? AND label_id = ? AND settled = 0 AND type IN ('promo', 'bandpromo', 'practice', 'course')",
                 [$activityId, $this->repo->labelId]
             );
             if ($row === null) {
                 throw new ApiError('Das läuft nicht mehr.');
             }
             $endsAt = (int) $row['ends_at'];
+            if ($row['type'] === 'course') {
+                // Kurs abgebrochen: Geld zurück, und er darf heute noch einmal hin.
+                $visit = $db->one('SELECT id, price FROM course_visits WHERE activity_id = ?', [(int) $row['id']]);
+                if ($visit !== null) {
+                    $this->repo->earn((int) $visit['price'], 'Kurs abgesagt: Geld zurück');
+                    $db->exec('DELETE FROM course_visits WHERE id = ?', [(int) $visit['id']]);
+                }
+            }
             $db->update('activities', ['settled' => 1, 'seen' => 1, 'ends_at' => Clock::now(), 'result' => json_encode(['cancelled' => true])], ['id' => (int) $row['id']]);
             if ($row['band_id'] !== null) {
                 $db->exec('UPDATE bands SET busy_until = 0 WHERE id = ? AND busy_until = ?', [(int) $row['band_id'], $endsAt]);
@@ -348,7 +356,7 @@ final class Activities
                 $data = json_decode($row['data'], true) ?: [];
                 $result = match (true) {
                     $row['type'] === 'promo' => self::applyPromo($repo, $row, $data),
-                    $row['type'] === 'practice' => self::applyPractice($repo, $row, $data),
+                    $row['type'] === 'practice', $row['type'] === 'course' => self::applyPractice($repo, $row, $data),
                     $row['band_id'] === null => self::applySolo($repo, $row, $data),
                     default => self::applyBand($repo, $row, $data),
                 };
@@ -472,6 +480,12 @@ final class Activities
         }
         [$low, $high] = Balance::BUSKING_HAT;
         return (int) round($low + ($high - $low) * max(0.0, min(1.0, ($perf - 0.4) / 1.2)));
+    }
+
+    /** Aktion eines einzelnen Musikers anlegen (z. B. Tageskurs). */
+    public function insertSolo(int $musicianId, string $type, int $now, int $endsAt, array $data): array
+    {
+        return $this->insert(null, $musicianId, $type, $now, $endsAt, $data);
     }
 
     private function insert(?int $bandId, ?int $musicianId, string $type, int $now, int $endsAt, array $data): array

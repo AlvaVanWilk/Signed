@@ -211,14 +211,14 @@ function skillSpan(values) {
 
 function resultHtml(r) {
   const res = r.result;
-  if (r.type === 'practice') {
+  if (r.type === 'practice' || r.type === 'course') {
     const m = musicianById(r.musicianId);
     return `
-      <div class="eyebrow">Allein geübt</div>
+      <div class="eyebrow">${r.type === 'course' ? 'Kurs geschafft' : 'Allein geübt'}</div>
       <h2>${esc(m ? m.firstName : 'Übung')} ist fertig</h2>
       <div class="reward-grid">${reward(`Können ${esc(cat().instruments[res.instrument]?.name ?? '')}`, `+${fmtGain(res.skill)}`)}${reward('Jetzt', fmt1(res.skillAfter))}</div>
       ${levelUpBanners(res.levelUps)}
-      <p class="muted small">Selbst mitspielen bringt bis zum Vierfachen.</p>`;
+      ${r.type === 'practice' ? '<p class="muted small">Selbst mitspielen bringt bis zum Vierfachen.</p>' : ''}`;
   }
   if (r.type === 'promo') {
     const m = musicianById(r.musicianId);

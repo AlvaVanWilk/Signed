@@ -1054,3 +1054,8 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 /* Gezeichnete Instrumenten-Symbole (icons.js): so groß wie die Schrift, wie ein Emoji in der Zeile */
 .ico { width: 1.15em; height: 1.15em; vertical-align: -0.22em; display: inline-block; }
 .tcg-icon .ico { width: 1em; height: 1em; vertical-align: 0; }
+
+/* Tageskurs: farblich abgesetzt, nur heute */
+.course-tile { border-color: #f2c14e; background: linear-gradient(135deg, rgba(242, 193, 78, 0.16), rgba(255, 79, 139, 0.08)), var(--panel); grid-column: 1 / -1; }
+.course-notice { border-color: #f2c14e; background: linear-gradient(135deg, rgba(242, 193, 78, 0.16), rgba(255, 79, 139, 0.08)); }
+.course-notice a { color: #ffd36e; font-weight: 700; }

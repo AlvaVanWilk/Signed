@@ -178,6 +178,11 @@ Ein Lied dauert 24 Sekunden: 12 Takte 4/4 (oder 16 Takte 3/4) bei 120 BPM – al
   pro voller Reglerlänge daneben. Eine Lampe pro Regler: grün im Bereich (±11–19 % wie am Mischpult), gelb bis zum
   2,2-fachen, sonst rot – ohne Richtung. 4 Abschnitte à 6 Sekunden; nach der Hälfte verschiebt sich jede Stellung
   um 15–35 %. Bewertet pro Regler und Abschnitt wie am Mischpult (12 Wertungen).
+- **Tageskurse:** Jeden Tag ein Instrument für alle Spieler gleich (reihum, nie zweimal hintereinander, mit Gastdozent).
+  Je Stufe ein eigener Kurs, nur für Musiker dieser Stufe: Kurs (Anfänger) +5 Können für 200 ₲, Workshop
+  (Fortgeschrittene) +8 für 800 ₲, Meisterklasse (ab Profi) +6 für 2.500 ₲. Fester Zuwachs für jeden, ohne Lernkurve
+  und ohne Stufen-Bremse – der Weg nach oben. 15 Minuten, auch offline; jeder Musiker einmal pro Tag, auch ohne Band.
+  Zurückholen gibt das Geld zurück. Ein Musiker bekommt sein Instrument etwa jeden zehnten Tag, darum sind Kurse kräftig.
 - Allein üben lassen (statt Minispiel): 2 Minuten, läuft auch offline, bringt ¼ einer perfekten Solo-Probe. Wer selbst
   spielt, bekommt je nach Treffern bis zum Vierfachen. Beim Platte-Aufnehmen gibt es diese Wahl nicht.
 - Solo-Probe: Können + 0,8 × Trefferquote^1,5 × Talent × Lernkurve; auf Stufe 0 (unter 35) × 3 –
@@ -191,6 +196,7 @@ Ziel: Ein Anfänger (Können 15) ist schnell fortgeschritten – mit gezieltem �
 heutigen Mitteln kaum weiter: Ab Stufe 1 wirken alle Können- und Bekanntheitsgewinne nur noch zu 25 %, ab Stufe 2
 nur noch zu 3 %. Profi bzw. Szenegröße dauert so rund 40 Stunden Spielzeit, Virtuose bzw. Star weit über 1.000 –
 praktisch unerreichbar, bis Tourneen und Manager dazukommen.
+**Tageskurse** öffnen diesen Weg als erste: ohne Bremse, aber selten und teuer (Profi in einigen Wochen, Virtuose deutlich länger).
 **Für neue Inhalte:** Tourneen, Manager und Co. sollen genau diese Stufen erreichbar machen (eigene, ungebremste
 Gewinne oder eine gelockerte Bremse) – nicht einfach dem heutigen Tempo unterliegen. Lokal bekannt ist man nach einigen Stunden Auftritten.
 Nur die Gewinne sind klein; wie oft man etwas hintereinander spielt, ist nicht begrenzt.

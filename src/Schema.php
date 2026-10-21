@@ -336,6 +336,19 @@ final class Schema
             [
                 'ALTER TABLE records ADD COLUMN catalog_until INTEGER NOT NULL DEFAULT 0',
             ],
+            // 14: Tageskurse – wer welchen Kurs schon besucht hat (pro Musiker und Tag einmal)
+            [
+                'CREATE TABLE course_visits (
+                    id {PK},
+                    label_id INTEGER NOT NULL,
+                    musician_id INTEGER NOT NULL,
+                    day VARCHAR(10) NOT NULL,
+                    price INTEGER NOT NULL,
+                    activity_id INTEGER NULL,
+                    created_at INTEGER NOT NULL
+                ){OPTS}',
+                'CREATE UNIQUE INDEX course_visits_once ON course_visits (musician_id, day)',
+            ],
         ];
     }
 }

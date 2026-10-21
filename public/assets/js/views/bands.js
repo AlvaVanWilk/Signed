@@ -49,7 +49,8 @@ function blocker(b, members) {
   const away = members.find((m) => isBusy(m.busyUntil));
   if (away) {
     const what = promoOf(away);
-    return { text: what?.type === 'practice' ? `${away.firstName} übt gerade allein.` : `${away.firstName} ist gerade unterwegs.`, promo: what };
+    const text = { practice: `${away.firstName} übt gerade allein.`, course: `${away.firstName} ist im Kurs.` }[what?.type] ?? `${away.firstName} ist gerade unterwegs.`;
+    return { text, promo: what };
   }
   if (members.length < cat().rules.minMembers) return { text: 'Die Band braucht mindestens zwei Musiker.' };
   return null;
@@ -67,7 +68,7 @@ function blockerNotice(b, members) {
 }
 
 /** Laufende Promo-Mission eines Musikers, falls er gerade auf einer ist. */
-export const promoOf = (m) => app.state.running.find((a) => ((a.type === 'promo' || a.type === 'practice') && a.musicianId === m.id)
+export const promoOf = (m) => app.state.running.find((a) => (['promo', 'practice', 'course'].includes(a.type) && a.musicianId === m.id)
   || (a.type === 'bandpromo' && m.bandId && a.bandId === m.bandId)) ?? null;
 
 /** Knopf zum Abbrechen einer Promo (aus Versehen gestartet); null ergibt nichts. */
@@ -211,6 +212,7 @@ function practice(b, members) {
     ${head('Übung', b)}
     ${blockerNotice(b, members)}
     <div class="action-grid">
+      ${courseTiles(members)}
       ${actionTile({
         icon: '🥁', title: 'Bandprobe', meta: `${songsMeta(b.options.rehearsal.songs)} · ${b.cohesion >= 100 ? 'Zusammenspiel ist schon voll' : 'Zusammenspiel'} · Können für alle: <b>${gainRange(members.map((m) => m.gains?.rehearsal ?? 0))}</b> je Musiker`,
         body: b.cohesion >= 100 ? '<span class="small muted">Die Band ist eingespielt. Für mehr Können lohnt sich jetzt Solo-Üben mehr.</span>' : '',
@@ -218,6 +220,36 @@ function practice(b, members) {
       })}
       ${members.map((m) => practiceTile(m, isBusy(m.busyUntil) || isBusy(b.busyUntil))).join('')}
     </div>`;
+}
+
+/**
+ * Kacheln für den Tageskurs: je Stufe (Kurs, Workshop, Meisterklasse) eine, sofern einer der Musiker passt.
+ * Ohne passenden Musiker erscheint nichts.
+ */
+export function courseTiles(members) {
+  const c = app.state.course;
+  if (!c) return '';
+  const ids = new Set(members.map((m) => m.id));
+  const candidates = c.candidates.filter((x) => ids.has(x.musicianId));
+  const audience = ['für Anfänger', 'für Fortgeschrittene', 'ab Profi'];
+  return c.kinds.map((kind, k) => {
+    const list = candidates.filter((x) => x.kind === k);
+    if (!list.length) return '';
+    return `
+      <div class="action-tile course-tile">
+        <div class="action-icon">${instrumentIcon(c.instrument)}</div>
+        <div class="action-main">
+          <b>🎓 ${esc(c.prefix)}-${esc(kind.name)} bei ${esc(c.teacher)}</b>
+          <span class="muted small">Nur heute · ${audience[k]} · <em>+${fmt1(kind.gain)} Können</em> · ${money(kind.price)} je Musiker · ${duration(c.seconds)}</span>
+          <span class="tile-buttons">${list.map((x) => {
+            const m = musicianById(x.musicianId);
+            return x.visited
+              ? `<button class="btn small" disabled>${esc(m.firstName)} war schon da ✓</button>`
+              : `<button class="btn small primary" data-act="courseAttend" data-id="${m.id}" ${isBusy(m.busyUntil) || (m.bandId && isBusy(bandById(m.bandId)?.busyUntil)) ? 'disabled' : ''}>${esc(m.firstName)} hinschicken</button>`;
+          }).join('')}</span>
+        </div>
+      </div>`;
+  }).join('');
 }
 
 /** Spanne der Zuwächse, z. B. „+0,04–0,10“ (wer schon gut ist, lernt langsamer). */
@@ -748,6 +780,12 @@ defineActions({
   },
   async promoRecord(value, el) {
     await mutate('bandPromoRecord', { bandId: Number(el.dataset.id), recordId: Number(value) });
+  },
+  async courseAttend({ id }) {
+    const c = app.state.course;
+    const x = c.candidates.find((y) => y.musicianId === Number(id));
+    if (!x || !(await confirmSpend(c.kinds[x.kind].price))) return;
+    if (await mutate('courseAttend', { musicianId: Number(id) })) toast(`${musicianById(id).firstName} ist im Kurs.`, 'ok');
   },
   async practiceAuto({ id, slot }) {
     if (await mutate('practiceAuto', { musicianId: Number(id), slot: Number(slot) })) toast(`${musicianById(id).firstName} übt jetzt allein.`, 'ok');

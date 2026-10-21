@@ -222,6 +222,13 @@ final class Balance
     public const LEVEL_PACE = [1.0, 0.25, 0.03];
     public const PRACTICE_GAIN = 0.8;
     /**
+     * Tageskurse: Jeden Tag ein zufälliges Instrument, für alle Spieler gleich. Für jede Stufe ein eigener Kurs
+     * (nur für Musiker dieser Stufe): [Name, Können, Preis]. Fester Zuwachs für jeden Teilnehmer, ohne Lernkurve und
+     * ohne Stufen-Bremse – der Weg nach oben. Ein Musiker bekommt sein Instrument nur etwa jeden zehnten Tag.
+     * Meisterklasse bewusst nur +6: Virtuose (25 Punkte über Profi) soll auch mit Kursen viele Wochen dauern.
+     */
+    public const COURSE = ['seconds' => 900, 'kinds' => [['Kurs', 5.0, 200], ['Workshop', 8.0, 800], ['Meisterklasse', 6.0, 2500]]];
+    /**
      * Allein üben lassen (ohne Minispiel): dauert länger und bringt nur diesen Anteil einer perfekten Solo-Probe.
      * Wer selbst mitspielt, bekommt je nach Treffern bis zum Vierfachen – ab etwa 40 % Treffern lohnt sich Mitspielen.
      */

@@ -265,3 +265,25 @@ test('Gigs: frisches Material zählt, Charts machen voller', function () {
     check(Signed\Game\Charts::rankFactor(10, 0.4) > 1.0 && Signed\Game\Charts::rankFactor(10, 0.4) < Signed\Game\Charts::rankFactor(2, 0.4));
     checkEquals(1.0, Signed\Game\Charts::rankFactor(11, 0.4));
 });
+
+test('Backup: einmal am Tag eine Kopie, alte werden aufgeräumt', function () {
+    $dir = sys_get_temp_dir() . '/signed-backup-test-' . getmypid();
+    @mkdir($dir);
+    array_map('unlink', glob("$dir/*") ?: []);
+    $file = tempnam(sys_get_temp_dir(), 'sdb');
+    $db = new Signed\Db('sqlite:' . $file);
+    Signed\Schema::migrate($db);
+    $first = Signed\Backup::daily($db, $dir);
+    check($first !== null && is_file($first), 'Kopie angelegt');
+    checkEquals(null, Signed\Backup::daily($db, $dir), 'Am selben Tag nicht noch einmal');
+    $copy = new Signed\Db('sqlite:' . $first);
+    check((int) $copy->value('SELECT COUNT(*) FROM meta') > 0, 'Kopie ist lesbar');
+    for ($i = 0; $i < 20; $i++) {
+        Signed\Clock::advance(86400);
+        Signed\Backup::daily($db, $dir);
+    }
+    checkEquals(14, count(glob("$dir/signed-*")));
+    array_map('unlink', glob("$dir/*") ?: []);
+    rmdir($dir);
+    unlink($file);
+});

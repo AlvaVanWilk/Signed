@@ -95,6 +95,7 @@ final class Api
             $this->session->setLabelId(null);
             throw $e;
         }
+        Backup::daily($this->db);
         Activities::settleDue($this->db, $labelId);
         Charts::payRoyalties($this->db, $labelId);
         Transfers::settleDue($this->db);

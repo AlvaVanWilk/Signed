@@ -38,6 +38,11 @@ final class Db
         return new self($c['dsn'], $c['user'] ?? null, $c['pass'] ?? null);
     }
 
+    public function quote(string $value): string
+    {
+        return $this->pdo->quote($value);
+    }
+
     public function driver(): string
     {
         return $this->driver;

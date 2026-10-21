@@ -1,0 +1,62 @@
+# Holt jeden Tag die Sicherungen des Spielstands vom Webspace (data/backups/, siehe src/Backup.php)
+# und bewahrt sie 30 Tage als Artefakt auf GitHub auf – falls auf dem Webspace etwas verloren geht.
+#
+# Das Repository ist öffentlich, Artefakte könnte also jeder mit GitHub-Konto laden. Deshalb wird verschlüsselt:
+# Geheimnis BACKUP_PASSWORD anlegen (Settings → Secrets and variables → Actions). Ohne es wird nichts hochgeladen.
+# Wiederherstellen: Artefakt laden, entschlüsseln mit
+#   gpg --decrypt signed-backup.tar.gz.gpg > signed-backup.tar.gz   (fragt nach dem Passwort)
+# und die gewünschte signed-JJJJ-MM-TT.sqlite als data/signed.sqlite hochladen.
+#
+# Nutzt dieselben SFTP-Geheimnisse wie „Prüfen und hochladen“. Zeitgesteuerte Abläufe laufen nur auf dem Hauptzweig (main).
+
+name: Backup abholen
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    env:
+      IONOS_SFTP_HOST: ${{ secrets.IONOS_SFTP_HOST }}
+      IONOS_SFTP_USER: ${{ secrets.IONOS_SFTP_USER }}
+      IONOS_SFTP_PATH: ${{ secrets.IONOS_SFTP_PATH }}
+    steps:
+      - name: Sicherungen herunterladen
+        id: holen
+        env:
+          LFTP_PASSWORD: ${{ secrets.IONOS_SFTP_PASSWORD }}
+          BACKUP_PASSWORD: ${{ secrets.BACKUP_PASSWORD }}
+        run: |
+          for name in IONOS_SFTP_HOST IONOS_SFTP_USER IONOS_SFTP_PATH LFTP_PASSWORD BACKUP_PASSWORD; do
+            if [ -z "${!name}" ]; then echo "Fehlt: ${name/LFTP_PASSWORD/IONOS_SFTP_PASSWORD} – nichts zu tun."; exit 0; fi
+          done
+          ordner="${IONOS_SFTP_PATH%/}"
+          sudo apt-get install -y -qq lftp > /dev/null
+          mkdir -p backup/echt backup/test
+          lftp -c "
+            set sftp:auto-confirm yes;
+            set net:max-retries 3;
+            set net:timeout 30;
+            open --env-password -u \"$IONOS_SFTP_USER\" sftp://$IONOS_SFTP_HOST;
+            mirror --no-empty-dirs \"$ordner/data/backups\" backup/echt || echo 'Echter Ordner: noch keine Sicherungen.';
+            mirror --no-empty-dirs \"$ordner-test/data/backups\" backup/test || echo 'Testordner: noch keine Sicherungen.';
+          "
+          ls -la backup/echt backup/test
+          tar -czf signed-backup.tar.gz backup
+          printf '%s' "$BACKUP_PASSWORD" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 \
+            --symmetric --cipher-algo AES256 -o signed-backup.tar.gz.gpg signed-backup.tar.gz
+          rm -rf backup signed-backup.tar.gz
+          echo "fertig=1" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        if: steps.holen.outputs.fertig == '1'
+        with:
+          name: signed-backup-${{ github.run_number }}
+          path: signed-backup.tar.gz.gpg
+          retention-days: 30

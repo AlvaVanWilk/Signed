@@ -239,7 +239,7 @@ export function courseTiles(members) {
         <div class="action-icon">${instrumentIcon(c.instrument)}</div>
         <div class="action-main">
           <b>🎓 ${esc(c.prefix)}-${esc(c.name)} für ${esc(level.name)} bei ${esc(c.teacher)}</b>
-          <span class="muted small">Nur heute · <em>+${fmt1(c.gain)} Können</em> · ${money(level.price)} je Musiker · ${duration(c.seconds)}</span>
+          <span class="muted small">Nur heute · <em>+${fmt1(c.gain)} Können</em> (${levelShare(c.gain)}) · ${money(level.price)} je Musiker · ${duration(c.seconds)}</span>
           <span class="tile-buttons">${list.map((x) => {
             const m = musicianById(x.musicianId);
             return x.visited
@@ -249,6 +249,15 @@ export function courseTiles(members) {
         </div>
       </div>`;
   }).join('');
+}
+
+/** Wie weit ein Zuwachs zur nächsten Stufe bringt (alle Stufen sind gleich breit), in Worten für Kinder. */
+function levelShare(gain) {
+  const levels = cat().rules.skillLevels;
+  const share = gain / (levels[1] - levels[0]);
+  const words = [[0.5, 'eine halbe Stufe'], [1 / 3, 'ein Drittel einer Stufe'], [0.25, 'ein Viertel einer Stufe'], [0.2, 'ein Fünftel einer Stufe'], [1 / 6, 'ein Sechstel einer Stufe'], [1 / 8, 'ein Achtel einer Stufe']];
+  const [, text] = words.reduce((best, w) => (Math.abs(w[0] - share) < Math.abs(best[0] - share) ? w : best));
+  return `${text} weiter`;
 }
 
 /** Spanne der Zuwächse, z. B. „+0,04–0,10“ (wer schon gut ist, lernt langsamer). */

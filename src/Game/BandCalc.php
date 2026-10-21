@@ -142,6 +142,7 @@ final class BandCalc
         if (self::hasPerk($model, 'teacher')) {
             $talent *= Balance::PERK_TEACHER;
         }
+        $talent *= Levels::pace(Levels::forSkill(self::skill($m, $slot)));
         return $base * $talent * max(0.003, max(0.0, 1 - self::skill($m, $slot) / 110) ** Balance::TRAINING_CURVE);
     }
 

@@ -431,8 +431,7 @@ final class Activities
     {
         $total = 0.0;
         foreach ($gains as $musicianId => $gain) {
-            $repo->db->exec('UPDATE musicians SET fame = fame + ? WHERE id = ? AND label_id = ?', [(float) $gain, (int) $musicianId, $repo->labelId]);
-            $total += (float) $gain;
+            $total += $repo->addMusicianFame((int) $musicianId, (float) $gain);
         }
         return $total;
     }

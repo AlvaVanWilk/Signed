@@ -287,3 +287,13 @@ test('Backup: einmal am Tag eine Kopie, alte werden aufgeräumt', function () {
     rmdir($dir);
     unlink($file);
 });
+
+test('Über Stufe 1 geht es kaum weiter: Gewinne wirken je nach Stufe nur noch zum Teil', function () {
+    $m = static fn (float $skill) => ['band_slot' => 1, 'instr2' => null, 'skill1' => $skill, 'skill2' => null, 'abilities' => []];
+    $raw = static fn (float $skill) => (1 - $skill / 110) ** Balance::TRAINING_CURVE;
+    $gain = static fn (float $skill) => BandCalc::trainingGain($m($skill), 1.0) / $raw($skill);
+    check(abs($gain(20) - Balance::LEVEL_PACE[0]) < 1e-9);
+    check(abs($gain(40) - Balance::LEVEL_PACE[1]) < 1e-9);
+    check(abs($gain(70) - Balance::LEVEL_PACE[2]) < 1e-9);
+    checkEquals(Balance::LEVEL_PACE[2], Signed\Game\Levels::pace(3));
+});

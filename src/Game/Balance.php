@@ -209,6 +209,12 @@ final class Balance
      * langsamer geht es: Zuwachs × (1 − Können/110) hoch TRAINING_CURVE.
      */
     public const TRAINING_CURVE = 2.5;
+    /**
+     * Über Stufe 1 hinaus geht es mit den heutigen Mitteln kaum weiter: Können- und Bekanntheitsgewinne wirken
+     * je nach aktueller Stufe nur noch zu diesem Anteil (Stufe 0, 1, 2+). Profi/Szenegröße ist sehr schwer,
+     * Virtuose/Star praktisch unerreichbar – Platz für Tourneen und Manager, die später dazukommen.
+     */
+    public const LEVEL_PACE = [1.0, 0.25, 0.03];
     public const PRACTICE_GAIN = 0.8;
     /** Fenster des Rhythmusspiels in ms bei Können 0; mit Können wachsen sie (Chart::windows). */
     public const RHYTHM_WINDOWS = ['perfect' => 60, 'good' => 135];

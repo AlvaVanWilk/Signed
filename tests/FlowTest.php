@@ -245,7 +245,7 @@ test('Aufstieg: Bei Können 35 gibt es eine Fähigkeit, bei Stufe 3 wählt man a
     $db = freshDb();
     $p = registerPlayer($db, 'Level');
     $m = $p->get('state')['musicians'][0];
-    $db->exec('UPDATE musicians SET skill1 = 59.9, level = 1, abilities = ? WHERE id = ?', ['["talent"]', $m['id']]);
+    $db->exec('UPDATE musicians SET skill1 = 59.995, level = 1, abilities = ? WHERE id = ?', ['["talent"]', $m['id']]);
     $game = $p->post('minigameStart', ['kind' => 'practice', 'musicianId' => $m['id']])['game'];
     Clock::advance(Balance::SONG_SECONDS + 1);
     $result = $p->post('minigameFinish', ['sessionId' => $game['sessionId'], 'perfect' => $game['count'], 'good' => 0, 'miss' => 0])['result'];
@@ -253,7 +253,7 @@ test('Aufstieg: Bei Können 35 gibt es eine Fähigkeit, bei Stufe 3 wählt man a
     $after = array_values(array_filter($p->get('state')['musicians'], static fn ($x) => $x['id'] === $m['id']))[0];
     checkEquals(2, count($after['abilities']));
 
-    $db->exec('UPDATE musicians SET skill1 = 84.99 WHERE id = ?', [$m['id']]);
+    $db->exec('UPDATE musicians SET skill1 = 84.9999 WHERE id = ?', [$m['id']]);
     $game = $p->post('minigameStart', ['kind' => 'practice', 'musicianId' => $m['id']])['game'];
     Clock::advance(Balance::SONG_SECONDS + 1);
     $result = $p->post('minigameFinish', ['sessionId' => $game['sessionId'], 'perfect' => $game['count'], 'good' => 0, 'miss' => 0])['result'];

@@ -177,9 +177,10 @@ Ein Lied dauert 24 Sekunden: 12 Takte 4/4 (oder 16 Takte 3/4) bei 120 BPM – al
 
 ### Tempo
 
-Ziel: Ein Anfänger (Können 15) ist nach etwa 3–4 Stunden Spielzeit fortgeschritten, Profi nach rund 13,
-Virtuose nach rund 50 Stunden. Bei einer Stunde am Tag also grün nach 3–4 Tagen, Profi nach etwa 2 Wochen,
-Virtuose nach knapp 2 Monaten. Bekanntheit ist ähnlich langsam: lokal bekannt nach einigen Stunden Auftritten.
+Ziel: Ein Anfänger (Können 15) ist nach etwa 3–4 Stunden Spielzeit fortgeschritten. Darüber hinaus geht es mit den
+heutigen Mitteln kaum weiter: Ab Stufe 1 wirken alle Können- und Bekanntheitsgewinne nur noch zu 25 %, ab Stufe 2
+nur noch zu 3 %. Profi bzw. Szenegröße dauert so rund 40 Stunden Spielzeit, Virtuose bzw. Star weit über 1.000 –
+praktisch unerreichbar, bis Tourneen und Manager dazukommen. Lokal bekannt ist man nach einigen Stunden Auftritten.
 Nur die Gewinne sind klein; wie oft man etwas hintereinander spielt, ist nicht begrenzt.
 
 ### Platte

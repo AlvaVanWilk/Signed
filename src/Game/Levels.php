@@ -21,6 +21,12 @@ final class Levels
         return self::step($fame, Balance::FAME_LEVELS);
     }
 
+    /** Anteil, zu dem Gewinne auf dieser Stufe wirken (siehe Balance::LEVEL_PACE). */
+    public static function pace(int $level): float
+    {
+        return Balance::LEVEL_PACE[min($level, count(Balance::LEVEL_PACE) - 1)];
+    }
+
     public static function has(array $m, string $ability): bool
     {
         return in_array($ability, $m['abilities'], true);

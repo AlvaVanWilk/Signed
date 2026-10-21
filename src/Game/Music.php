@@ -52,12 +52,12 @@ final class Music
     /**
      * Spuren einer ganzen Besetzung (Mitglieds-ID → Stem). Spielen zwei dasselbe Instrument – im Metal zwei Gitarren –,
      * soll man nicht zweimal dieselbe Aufnahme hören: Der zweite nimmt die Aufnahme eines anderen Genres
-     * (erst Pop, dann Rock, dann die übrigen), solange es eine noch nicht benutzte gibt.
+     * (erst Rock, dann Pop, dann die übrigen), solange es eine noch nicht benutzte gibt.
      * @return array<int, array> Stems wie stem(), ggf. mit anderem Genre
      */
     public static function bandStems(array $members, array $gear, array $bandGenres = []): array
     {
-        $alternatives = array_values(array_unique(array_merge(['pop', 'rock'], array_map(
+        $alternatives = array_values(array_unique(array_merge(['rock', 'pop'], array_map(
             static fn ($folder) => explode('-', $folder)[0],
             array_keys(self::manifest())
         ))));

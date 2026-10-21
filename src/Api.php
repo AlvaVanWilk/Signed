@@ -52,6 +52,7 @@ final class Api
         'activityAck' => ['POST', true],
         'promoStart' => ['POST', true],
         'bandPromo' => ['POST', true],
+        'promoCancel' => ['POST', true],
         'soloStart' => ['POST', true],
         'jamPick' => ['POST', true],
         'transferList' => ['POST', true],
@@ -303,6 +304,12 @@ final class Api
     {
         $activity = (new Activities($repo))->promo(self::int($in, 'musicianId'));
         return ['activity' => $activity, 'state' => State::build($repo)];
+    }
+
+    private function promoCancel(array $in, Repo $repo): array
+    {
+        (new Activities($repo))->cancelPromo(self::int($in, 'activityId'));
+        return ['state' => State::build($repo)];
     }
 
     private function bandPromo(array $in, Repo $repo): array

@@ -265,6 +265,32 @@ final class Activities
         });
     }
 
+    /**
+     * Promo abbrechen (z. B. aus Versehen gestartet): Musiker bzw. Band sind sofort wieder frei,
+     * es gibt keine Belohnung. Auftritte laufen dagegen immer bis zum Ende.
+     */
+    public function cancelPromo(int $activityId): void
+    {
+        $db = $this->repo->db;
+        $db->transaction(function () use ($db, $activityId): void {
+            $row = $db->one(
+                "SELECT * FROM activities WHERE id = ? AND label_id = ? AND settled = 0 AND type IN ('promo', 'bandpromo')",
+                [$activityId, $this->repo->labelId]
+            );
+            if ($row === null) {
+                throw new ApiError('Diese Promo läuft nicht mehr.');
+            }
+            $endsAt = (int) $row['ends_at'];
+            $db->update('activities', ['settled' => 1, 'seen' => 1, 'ends_at' => Clock::now(), 'result' => json_encode(['cancelled' => true])], ['id' => (int) $row['id']]);
+            if ($row['band_id'] !== null) {
+                $db->exec('UPDATE bands SET busy_until = 0 WHERE id = ? AND busy_until = ?', [(int) $row['band_id'], $endsAt]);
+                $db->exec('UPDATE musicians SET busy_until = 0 WHERE band_id = ? AND busy_until = ?', [(int) $row['band_id'], $endsAt]);
+            } else {
+                $db->exec('UPDATE musicians SET busy_until = 0 WHERE id = ? AND busy_until = ?', [(int) $row['musician_id'], $endsAt]);
+            }
+        });
+    }
+
     /** Ergebnis gesehen: taucht nicht mehr als Benachrichtigung auf. */
     public function ack(int $activityId): void
     {

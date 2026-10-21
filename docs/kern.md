@@ -230,6 +230,7 @@ Nur die Gewinne sind klein; wie oft man etwas hintereinander spielt, ist nicht b
 
 - Promo-Mission (ein Musiker): 10 Minuten, läuft offline. Bekanntheit + 0,12–0,3 × Ausstrahlung-Faktor / (1 + Bekanntheit/40).
 - Band-Promo: 10 Minuten, jedes Mitglied bringt 0,1–0,25 nach derselben Formel; verteilt wie Auftrittsruhm.
+- Beide lassen sich jederzeit abbrechen („Zurückholen“): sofort wieder frei, keine Bekanntheit, kein Chart-Schub.
 
 ### Jam-Café
 

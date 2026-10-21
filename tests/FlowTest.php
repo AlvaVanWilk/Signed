@@ -809,3 +809,28 @@ test('Rap: Hip-Hop-Gesang übt im Rhythmus-Spiel mit der Aufnahme', function () 
     $db->exec("UPDATE musicians SET genres = ? WHERE id = ?", ['["pop"]', $m['id']]);
     checkEquals('pitch', $p->post('minigameStart', ['kind' => 'practice', 'musicianId' => $m['id']])['game']['mode'], 'Pop singt nach Tonhöhe');
 });
+
+test('Promo lässt sich abbrechen: sofort wieder frei, ohne Belohnung', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Promo');
+    $band = foundBand($p);
+    $m = $band['memberIds'][0];
+    $activity = $p->post('promoStart', ['musicianId' => $m])['activity'];
+    checkApiError(fn () => $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'busking']), 'unterwegs');
+    $state = $p->post('promoCancel', ['activityId' => $activity['id']])['state'];
+    checkEquals(0, count($state['running']));
+    checkEquals(0, count($state['results']));
+    $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'busking']);
+
+    // Band-Promo genauso; Auftritte lassen sich nicht abbrechen.
+    $gig = $p->get('state')['running'][0];
+    checkApiError(fn () => $p->post('promoCancel', ['activityId' => $gig['id']]), 'Promo');
+    Clock::advance(Balance::BUSKING['songs'] * Balance::SONG_SECONDS);
+    $activity = $p->post('bandPromo', ['bandId' => $band['id']])['activity'];
+    $fame = $db->value('SELECT SUM(fame) FROM musicians');
+    $p->post('promoCancel', ['activityId' => $activity['id']]);
+    Clock::advance(Balance::BAND_PROMO['seconds']);
+    $p->get('state');
+    checkEquals($fame, $db->value('SELECT SUM(fame) FROM musicians'), 'Keine Bekanntheit nach Abbruch');
+    $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'rehearsal']);
+});

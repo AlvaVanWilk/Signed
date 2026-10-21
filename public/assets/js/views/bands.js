@@ -45,7 +45,7 @@ function blocker(b, members) {
   if (running) return { text: running.title, running };
   if (isBusy(b.busyUntil)) return { text: 'Die Band ist gerade beschäftigt.' };
   const away = members.find((m) => isBusy(m.busyUntil));
-  if (away) return { text: `${away.firstName} ist gerade unterwegs.` };
+  if (away) return { text: `${away.firstName} ist gerade unterwegs.`, promo: promoOf(away) };
   if (members.length < cat().rules.minMembers) return { text: 'Die Band braucht mindestens zwei Musiker.' };
   return null;
 }
@@ -57,7 +57,17 @@ function blockerNotice(b, members) {
     <div class="notice">
       <span class="pulse"></span><span>${esc(block.text)}</span>
       ${block.running ? `<span class="countdown" data-until="${block.running.endsAt}"></span>${block.running.type !== 'bandpromo' ? `<button class="btn small" data-act="watch" data-id="${block.running.id}">Zuschauen</button>` : ''}` : ''}
+      ${cancelButton(block.running?.type === 'bandpromo' ? block.running : block.promo)}
     </div>`;
+}
+
+/** Laufende Promo-Mission eines Musikers, falls er gerade auf einer ist. */
+export const promoOf = (m) => app.state.running.find((a) => (a.type === 'promo' && a.musicianId === m.id)
+  || (a.type === 'bandpromo' && m.bandId && a.bandId === m.bandId)) ?? null;
+
+/** Knopf zum Abbrechen einer Promo (aus Versehen gestartet); null ergibt nichts. */
+export function cancelButton(activity) {
+  return activity ? `<button class="btn small ghost" data-act="promoCancel" data-id="${activity.id}">Zurückholen</button>` : '';
 }
 
 /** Kachel für eine Aktion: Icon, Titel, eine Zeile Info, optional Zusatz, Knopf. */
@@ -699,6 +709,10 @@ defineActions({
   },
   practice({ id, slot }) {
     startPractice(id, slot);
+  },
+  async promoCancel({ id }) {
+    const ok = await confirmDialog('Promo beenden? Dann gibt es keine Bekanntheit dafür.', { ok: 'Promo beenden', danger: true });
+    if (ok && await mutate('promoCancel', { activityId: Number(id) })) toast('Promo beendet – alle sind wieder da.', 'ok');
   },
   async promo({ id }) {
     if (await mutate('promoStart', { musicianId: Number(id) })) toast(`${musicianById(id).firstName} ist auf Promo-Tour.`, 'ok');

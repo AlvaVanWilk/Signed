@@ -3,7 +3,7 @@ import { app, bandById, cat, defineActions, isBusy, musicianById, mutate, naviga
 import { openLive } from '../live.js';
 import { chip } from '../cards.js';
 import { closeAllModals, duration, esc, fmt0, money, openModal, timeAgo, toast } from '../ui.js';
-import { buskingHat, chemistryLabel, practiceTile, promoTile, suggestName } from './bands.js';
+import { buskingHat, cancelButton, chemistryLabel, promoOf, practiceTile, promoTile, suggestName } from './bands.js';
 import { catalogList } from './catalog.js';
 
 /** Untermenü eines Musikers. solo = nur ohne Band. */
@@ -53,7 +53,7 @@ const busyOf = (m) => isBusy(m.busyUntil) || (m.bandId && isBusy(bandById(m.band
 
 function statusNotice(m) {
   const status = musicianStatus(m);
-  return status ? `<div class="notice"><span class="pulse"></span><span>${status}</span></div>` : '';
+  return status ? `<div class="notice"><span class="pulse"></span><span>${status}</span>${cancelButton(promoOf(m))}</div>` : '';
 }
 
 function profile(m) {

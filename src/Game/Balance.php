@@ -149,11 +149,11 @@ final class Balance
     /** Ausschlag eines Patzers bzw. Glanzmoments [min, max]. */
     public const LIVE_SWING = [7.0, 13.0];
     /** Straßenmusik: Das Geld behalten die Musiker; fürs Label bleibt etwas Bekanntheit. */
-    public const BUSKING = ['songs' => 3, 'fame' => 0.3, 'expect' => 25, 'falloff' => 150, 'minFactor' => 0.1];
+    public const BUSKING = ['songs' => 3, 'fame' => 0.06, 'expect' => 25, 'falloff' => 150, 'minFactor' => 0.1];
     /** Bandprobe: keine Zuschauer, dafür doppeltes Zusammenspiel und etwas Können für alle. */
-    public const REHEARSAL = ['songs' => 2, 'cohesion' => 2.5, 'skill' => 0.4];
+    public const REHEARSAL = ['songs' => 2, 'cohesion' => 2.5, 'skill' => 0.08];
     /** Band-Promo: alle Mitglieder sind unterwegs, jeder bringt Bekanntheit wie bei der Promo-Mission. */
-    public const BAND_PROMO = ['seconds' => 600, 'fame' => [0.8, 2.0]];
+    public const BAND_PROMO = ['seconds' => 600, 'fame' => [0.1, 0.25]];
     /** Jam-Café: nur Musiker ohne Band; danach drei passende Musiker (Stufe 0) zur Auswahl für eine Band. */
     /**
      * Im Publikum sitzen Musiker – sie erwarten einiges. Wie gut die Session lief (Publikumsleiste 0–100),
@@ -161,7 +161,7 @@ final class Balance
      * „schlecht“ und „begeistert“ gemischt. Können bleibt immer unter Stufe 1.
      */
     public const JAM = [
-        'songs' => 2, 'cards' => 3, 'fame' => 0.2, 'expect' => 35,
+        'songs' => 2, 'cards' => 3, 'fame' => 0.03, 'expect' => 35,
         'odds' => [
             'low' => ['common' => 85, 'rare' => 14, 'epic' => 1, 'legendary' => 0],
             'high' => ['common' => 35, 'rare' => 45, 'epic' => 20, 'legendary' => 0],
@@ -169,16 +169,16 @@ final class Balance
         'minSkill' => [5.0, 26.0],
     ];
     public const OPENSTAGE = [
-        'songs' => 2, 'fame' => 1.4, 'expect' => 12, 'falloff' => 120,
-        'managerChance' => 0.07, 'fanChance' => 0.15, 'fanValue' => [3, 10],
+        'songs' => 2, 'fame' => 0.18, 'expect' => 12, 'falloff' => 120,
+        'managerChance' => 0.07, 'fanChance' => 0.15, 'fanValue' => [1, 2],
     ];
     /** Auftrittsorte für Gigs nach Bandruhm. gage und fame gelten pro Lied, expect = erwarteter Sound. */
     public const VENUES = [
-        ['key' => 'kneipe', 'name' => 'Kneipe', 'minFame' => 0, 'gage' => 30, 'fame' => 2.0, 'expect' => 15],
-        ['key' => 'club', 'name' => 'Club', 'minFame' => 30, 'gage' => 70, 'fame' => 4.0, 'expect' => 28],
-        ['key' => 'saal', 'name' => 'Konzertsaal', 'minFame' => 150, 'gage' => 160, 'fame' => 8.0, 'expect' => 42],
-        ['key' => 'halle', 'name' => 'Halle', 'minFame' => 600, 'gage' => 380, 'fame' => 16.0, 'expect' => 58],
-        ['key' => 'arena', 'name' => 'Arena', 'minFame' => 2500, 'gage' => 900, 'fame' => 32.0, 'expect' => 75],
+        ['key' => 'kneipe', 'name' => 'Kneipe', 'minFame' => 0, 'gage' => 30, 'fame' => 0.25, 'expect' => 15],
+        ['key' => 'club', 'name' => 'Club', 'minFame' => 30, 'gage' => 70, 'fame' => 0.5, 'expect' => 28],
+        ['key' => 'saal', 'name' => 'Konzertsaal', 'minFame' => 150, 'gage' => 160, 'fame' => 1.0, 'expect' => 42],
+        ['key' => 'halle', 'name' => 'Halle', 'minFame' => 600, 'gage' => 380, 'fame' => 2.0, 'expect' => 58],
+        ['key' => 'arena', 'name' => 'Arena', 'minFame' => 2500, 'gage' => 900, 'fame' => 4.0, 'expect' => 75],
     ];
     /** Lieder pro Gig ohne Manager; mit Manager kommen pro (effektiver) Stufe welche dazu. */
     public const GIG_SONG_CAP = 3;
@@ -189,7 +189,13 @@ final class Balance
     public const PR_BONUS = 0.08;
 
     // ---------- Minispiel ----------
-    public const PRACTICE_GAIN = 4.0;
+    /**
+     * Tempo: Alle Können- und Ruhmgewinne sind so bemessen, dass ein Anfänger nach etwa 3–4 Stunden Spielzeit
+     * fortgeschritten ist (Profi nach rund 13, Virtuose nach rund 50 Stunden). Je besser jemand ist, desto
+     * langsamer geht es: Zuwachs × (1 − Können/110) hoch TRAINING_CURVE.
+     */
+    public const TRAINING_CURVE = 2.5;
+    public const PRACTICE_GAIN = 0.8;
     /** Fenster des Rhythmusspiels in ms bei Können 0; mit Können wachsen sie (Chart::windows). */
     public const RHYTHM_WINDOWS = ['perfect' => 60, 'good' => 135];
     public const TALENT_FACTOR = 1.5;
@@ -199,7 +205,7 @@ final class Balance
     // ---------- Promo-Mission ----------
     public const PROMO_SECONDS = 600;
     /** Promo-Mission: Bekanntheit [min, max], geteilt durch (1 + Bekanntheit / Abfall). */
-    public const PROMO_FAME = [1.0, 2.5];
+    public const PROMO_FAME = [0.12, 0.3];
     public const PROMO_FAME_FALLOFF = 40;
     public const ATTRACTIVE_FACTOR = 1.5;
 
@@ -209,11 +215,11 @@ final class Balance
     public const RECORD_MAX_SONGS = 12;
     /** Vor der nächsten Platte spielt die Band die letzte live: so viele Lieder pro Lied der Platte, auf Gigs. */
     public const LIVE_SONGS_PER_RECORD_SONG = 2;
-    public const RECORD_SONG_SKILL = 0.6;
+    public const RECORD_SONG_SKILL = 0.12;
     public const RECORD_SONG_COHESION = 2.0;
     /** Erstverkauf beim Erscheinen; das eigentliche Einkommen sind die Tantiemen, solange die Platte chartet. */
     public const RECORD_MONEY_PER_SONG = 60;
-    public const RECORD_FAME_PER_SONG = 5.0;
+    public const RECORD_FAME_PER_SONG = 0.6;
     /** Pro Lied über 3 bringt jedes Lied 4 % mehr, damit sich das Fehlerrisiko einer LP lohnt. */
     public const RECORD_LP_BONUS = 0.04;
     public const RECORD_PERFECT_BONUS = 1.5;

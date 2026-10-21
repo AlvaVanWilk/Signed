@@ -301,7 +301,7 @@ final class Activities
         $fameGain = $repo->addBandFame($bandId, $reward['fameGains'] ?? []);
         $result = [
             'money' => (int) ($reward['money'] ?? 0),
-            'fame' => round($fameGain, 1),
+            'fame' => round($fameGain, 2),
             'meter' => $reward['meter'] ?? null,
             'cohesion' => 0.0,
             'drops' => [],
@@ -353,7 +353,7 @@ final class Activities
     {
         $reward = $data['reward'];
         $result = [
-            'fame' => round(self::applyFame($repo, $reward['fameGains'] ?? []), 1),
+            'fame' => round(self::applyFame($repo, $reward['fameGains'] ?? []), 2),
             'meter' => $reward['meter'] ?? null,
         ];
         if (!empty($reward['jam'])) {

@@ -115,12 +115,13 @@ Ein schwacher Musiker zieht den Sound runter, und vier Musiker sind höchstens 2
 
 | | Lieder | Geld | Ruhm pro Lied | Besonderheit |
 |---|---|---|---|---|
-| Straßenmusik | 3 | – | 0,3 × (1 − Ruhm/150), mindestens 10 %; Erwartung 25 | auch einzeln ohne Band |
-| Bandprobe | 2 | – | – | Zusammenspiel × 2,5, etwas Können für alle |
-| Open Stage | 2 | – | 1,4 × (1 − Ruhm/120) | 7 % Manager-Karte, sonst 15 % Fan-Karte (+3–10 Ruhm) |
+| Straßenmusik | 3 | – | 0,06 × (1 − Ruhm/150), mindestens 10 %; Erwartung 25 | auch einzeln ohne Band |
+| Bandprobe | 2 | – | – | Zusammenspiel × 2,5; Können 0,08 pro Lied (Lernkurve wie unten) |
+| Open Stage | 2 | – | 0,18 × (1 − Ruhm/120) | 7 % Manager-Karte, sonst 15 % Fan-Karte (+1–2 Ruhm) |
 | Gig | 1 bis Maximum | Gage des Ortes pro Lied, vorher bekannt | je nach Ort | erst mit Platte |
 
 Orte nach Bandruhm: Kneipe (ab 0), Club (30), Konzertsaal (150), Halle (600), Arena (2.500).
+Grund-Ruhm pro Lied: 0,25 / 0,5 / 1 / 2 / 4.
 Das Stadion bleibt der Tournee vorbehalten.
 
 - Ein Gig hat mindestens 3 Lieder, höchstens so viele, wie die Band produziert hat, und ohne Manager höchstens 3.
@@ -157,14 +158,22 @@ Ein Lied dauert 24 Sekunden: 12 Takte 4/4 (oder 16 Takte 3/4) bei 120 BPM – al
   Bis zu 4 Musiker haben eigene Spuren; größere Bands werden zu Gruppen (Rhythmus, Harmonie, Melodie) mit
   dem durchschnittlichen Können zusammengefasst. Jede Spur hat 6 Abschnitte à 4 Sekunden (2 Takte), bewertet wie oben.
   Der grüne Bereich ist ±11–19 %, je nach Sound der Band.
-- Solo-Probe: Können + 4 × Trefferquote^1,5 × Talent × max(0,08; 1 − Können/110).
+- Solo-Probe: Können + 0,8 × Trefferquote^1,5 × Talent × Lernkurve.
+- Lernkurve (alle Können-Gewinne): (1 − Können/110)^2,5. Je besser jemand ist, desto langsamer geht es.
+
+### Tempo
+
+Ziel: Ein Anfänger (Können 15) ist nach etwa 3–4 Stunden Spielzeit fortgeschritten, Profi nach rund 13,
+Virtuose nach rund 50 Stunden. Bei einer Stunde am Tag also grün nach 3–4 Tagen, Profi nach etwa 2 Wochen,
+Virtuose nach knapp 2 Monaten. Bekanntheit ist ähnlich langsam: lokal bekannt nach einigen Stunden Auftritten.
+Nur die Gewinne sind klein; wie oft man etwas hintereinander spielt, ist nicht begrenzt.
 
 ### Platte
 
 - 3 (EP) bis 12 Lieder (LP), Pauschalpreis 500 ₲. Pro Lied ein Minispiel, in Etappen spielbar.
-- Jedes Lied: etwas Können für alle Mitglieder, Zusammenspiel.
+- Jedes Lied: Können 0,12 × Trefferquote für alle Mitglieder (Lernkurve), Zusammenspiel.
 - Fertig: Erstverkauf = Lieder × 60 ₲ × (0,3 + Qualität²) × LP-Bonus × Perfekt-Bonus × Verkäufe,
-  Ruhm = Lieder × 5 × Soundfaktor × (0,3 + Qualität^1,5) × LP-Bonus × Perfekt-Bonus.
+  Ruhm = Lieder × 0,6 × Soundfaktor × (0,3 + Qualität^1,5) × LP-Bonus × Perfekt-Bonus.
   - LP-Bonus: +4 % pro Lied über 3. Perfekt (kein einziger Fehler): × 1,5. Verkäufe: 1 + Bandruhm/400, höchstens × 5.
 - Vor der nächsten Platte spielt die Band die letzte live: 2 Lieder pro Lied der Platte auf Gigs
   (EP mit 3 Liedern: 6 Lieder, also 2 Gigs; LP mit 10 Liedern: 20 Lieder).
@@ -178,8 +187,8 @@ Ein Lied dauert 24 Sekunden: 12 Takte 4/4 (oder 16 Takte 3/4) bei 120 BPM – al
 
 ### Promo
 
-- Promo-Mission (ein Musiker): 10 Minuten, läuft offline. Bekanntheit + 1–2,5 × Ausstrahlung-Faktor / (1 + Bekanntheit/40).
-- Band-Promo: 10 Minuten, jedes Mitglied bringt 0,8–2 nach derselben Formel; verteilt wie Auftrittsruhm.
+- Promo-Mission (ein Musiker): 10 Minuten, läuft offline. Bekanntheit + 0,12–0,3 × Ausstrahlung-Faktor / (1 + Bekanntheit/40).
+- Band-Promo: 10 Minuten, jedes Mitglied bringt 0,1–0,25 nach derselben Formel; verteilt wie Auftrittsruhm.
 
 ### Jam-Café
 

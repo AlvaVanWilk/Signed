@@ -130,7 +130,7 @@ final class BandCalc
     public static function trainingGain(array $m, float $base, ?int $slot = null): float
     {
         $talent = Levels::has($m, 'talent') ? Balance::TALENT_FACTOR : 1.0;
-        return $base * $talent * max(0.08, 1 - self::skill($m, $slot) / 110);
+        return $base * $talent * max(0.003, max(0.0, 1 - self::skill($m, $slot) / 110) ** Balance::TRAINING_CURVE);
     }
 
     /** Summe der Bekanntheit aller aktuellen Mitglieder. */
@@ -227,7 +227,7 @@ final class BandCalc
             return [];
         }
         $individual = array_map(static fn ($m) => $total / $count * self::fameShare($m, self::gearOf($m, $gear)), $members);
-        $share = round(array_sum($individual) / $count, 2);
+        $share = round(array_sum($individual) / $count, 3);
         $out = [];
         foreach ($members as $m) {
             $out[$m['id']] = $share;

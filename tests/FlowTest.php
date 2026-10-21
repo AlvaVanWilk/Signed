@@ -249,7 +249,7 @@ test('Aufstieg: Bei Können 35 gibt es eine Fähigkeit, bei Stufe 3 wählt man a
     $after = array_values(array_filter($p->get('state')['musicians'], static fn ($x) => $x['id'] === $m['id']))[0];
     checkEquals(2, count($after['abilities']));
 
-    $db->exec('UPDATE musicians SET skill1 = 84.9 WHERE id = ?', [$m['id']]);
+    $db->exec('UPDATE musicians SET skill1 = 84.99 WHERE id = ?', [$m['id']]);
     $game = $p->post('minigameStart', ['kind' => 'practice', 'musicianId' => $m['id']])['game'];
     Clock::advance(Balance::SONG_SECONDS + 1);
     $result = $p->post('minigameFinish', ['sessionId' => $game['sessionId'], 'perfect' => $game['count'], 'good' => 0, 'miss' => 0])['result'];
@@ -365,7 +365,7 @@ test('Solo-Probe verbessert das Können, Schummeln wird abgelehnt', function () 
     checkApiError(fn () => $p->post('promoStart', ['musicianId' => $m['id']]), 'beschäftigt');
 
     $result = $p->post('minigameFinish', ['sessionId' => $game['sessionId'], 'perfect' => $count, 'good' => 0, 'miss' => 0])['result'];
-    check($result['gain'] > 1, 'Perfekte Probe bringt spürbar Können');
+    check($result['gain'] > 0.2, 'Perfekte Probe bringt spürbar Können');
     checkEquals(round($m['instruments'][0]['skill'] + $result['gain'], 1), $result['skillAfter']);
     checkApiError(fn () => $p->post('minigameFinish', ['sessionId' => $game['sessionId'], 'perfect' => $count, 'good' => 0, 'miss' => 0]), 'nicht mehr aktiv');
 

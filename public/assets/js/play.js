@@ -1,7 +1,7 @@
 import { instrumentName, levelUpBanners } from './cards.js';
 import { bandById, mutate } from './core.js';
 import { createMinigame } from './minigame.js';
-import { esc, fmt1, money, openModal, percent } from './ui.js';
+import { esc, fmt1, fmtGain, money, openModal, percent } from './ui.js';
 
 /** Solo-Probe: ein Musiker übt sein Instrument. */
 export function startPractice(musicianId, slot = 1) {
@@ -79,7 +79,7 @@ function recordSummary(r) {
       <div class="muted">${c.format} · ${c.songs} Lieder · Qualität ${percent(c.quality)}${c.perfect ? ' · <b>perfekte Platte!</b>' : ` · ${c.misses} Fehler`}</div>
       <div class="reward-grid">
         <div class="reward"><span>Verkäufe</span><b>+${money(c.money)}</b></div>
-        <div class="reward"><span>Ruhm</span><b>+${fmt1(c.fame)}</b></div>
+        <div class="reward"><span>Ruhm</span><b>+${fmtGain(c.fame)}</b></div>
       </div>
       <p>Neu in den Album-Charts mit <b>${fmt1(c.chartPoints)} Punkten</b>.${c.vouchers ? ` Dazu ${c.vouchers === 1 ? 'ein Scout-Gutschein' : `${c.vouchers} Scout-Gutscheine`}!` : ''}</p>
     </div>`;

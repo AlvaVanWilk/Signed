@@ -144,16 +144,25 @@ final class Charts
                 $points[$i] = $p;
             }
         }
+        // Eine Band soll die Charts nicht mit vielen Platten fluten: Es zählt nur ihre neueste Platte –
+        // die, die sie gerade auf Gigs spielt und bewirbt. Eine neue Platte löst die alte ab.
+        $newest = [];
+        foreach (array_keys($points) as $i) {
+            $band = $rows[$i]['band_id'] ?? null;
+            if ($band !== null && (!isset($newest[$band]) || (int) $rows[$i]['finished_at'] > (int) $rows[$newest[$band]]['finished_at'])) {
+                $newest[$band] = $i;
+            }
+        }
+        foreach (array_keys($points) as $i) {
+            $band = $rows[$i]['band_id'] ?? null;
+            if ($band !== null && $newest[$band] !== $i) {
+                unset($points[$i]);
+            }
+        }
         arsort($points);
         $ranks = [];
         $rank = 0;
-        $perBand = [];
         foreach (array_keys($points) as $i) {
-            // Eine Band soll die Charts nicht mit vielen Platten fluten: nur ihre stärksten zählen.
-            $band = $rows[$i]['band_id'] ?? null;
-            if ($band !== null && ($perBand[$band] = ($perBand[$band] ?? 0) + 1) > Balance::CHART_PER_BAND) {
-                continue;
-            }
             $ranks[$i] = ++$rank;
         }
         $size = Balance::CHART_SIZE;

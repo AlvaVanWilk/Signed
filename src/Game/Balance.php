@@ -316,8 +316,6 @@ final class Balance
     public const CHART_BOOST_HALF = 3 * 3600;
     /** Unter dieser Punktzahl fällt eine Platte aus den Charts. */
     public const CHART_MIN_POINTS = 1.0;
-    /** Pro Band zählt nur ihre stärkste Platte in den Charts; die übrigen verkaufen sich weiter. Bei höchstens 3 Bands also höchstens 3 Platten pro Label. */
-    public const CHART_PER_BAND = 1;
     public const CHART_SIZE = 10;
     /** Platz 1 bringt einen Scout-Gutschein erst, wenn so viele Labels Platten in den Charts haben. */
     public const CHART_TOP_MIN_LABELS = 3;

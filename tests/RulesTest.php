@@ -317,7 +317,7 @@ test('Musik: Noten der anderen Variante zählen, wenn die eigene fehlt (Rock-Sch
     checkEquals(['folder' => 'rock-0', 'file' => 'schlagzeug-elektrisch'], $r);
     check(Signed\Game\Music::notes($r) !== null, 'Noten aus „schlagzeug-akustisch“');
     checkEquals('pop-0', Signed\Game\Music::resolve(['type' => 'guitar', 'level' => 0, 'genre' => 'folk', 'electric' => true])['folder'], 'Fehlt im Genre: Pop');
-    checkEquals(['folder' => 'rock-0', 'file' => 'gitarre-akustisch'], Signed\Game\Music::resolve(['type' => 'guitar', 'level' => 0, 'genre' => 'rock', 'electric' => true]), 'Im Genre zuerst die andere Variante');
+    checkEquals(['folder' => 'rock-0', 'file' => 'gitarre-elektrisch'], Signed\Game\Music::resolve(['type' => 'guitar', 'level' => 0, 'genre' => 'rock', 'electric' => false]), 'Im Genre zuerst die andere Variante');
     checkEquals(['folder' => 'metal-0', 'file' => 'gitarre-elektrisch'], Signed\Game\Music::resolve(['type' => 'guitar', 'level' => 0, 'genre' => 'metal', 'electric' => false]), 'Metal: immer E-Gitarre');
 });
 

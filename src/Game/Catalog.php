@@ -114,6 +114,8 @@ final class Catalog
 
     /** Namen der Stufen: Können-Leiter und Bekanntheits-Leiter (0–3). */
     public const LEVEL_NAMES = ['Anfänger', 'Fortgeschritten', 'Profi', 'Virtuose'];
+    /** Für Sätze wie „Ada ist an der Gitarre jetzt Profi“. */
+    public const LEVEL_WORDS = ['Anfänger', 'fortgeschritten', 'Profi', 'virtuos'];
     public const FAME_NAMES = ['Unbekannt', 'Lokal bekannt', 'Szenegröße', 'Star'];
 
     /** Was eine Spezialtechnik bewirkt (gilt für alle Techniken). */

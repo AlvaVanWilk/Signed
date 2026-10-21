@@ -966,3 +966,15 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .help-topic h2 { font-size: 1.1rem; margin: 0 0 6px; }
 .help-topic p { margin: 0; line-height: 1.5; }
 .help-btn { font-weight: 800; min-width: 34px; text-align: center; }
+
+/* Leisten pro Stufe: Fortschritt zur nächsten Stufe in der Farbe der aktuellen, dahinter die Stufe als Zahl. */
+.skill-step-0 { --step: #4a4458; }
+.skill-step-1 { --step: #2fa84f; }
+.skill-step-2 { --step: #2f7fe0; }
+.skill-step-3 { --step: #b03ad6; }
+.skill-cells[class*='skill-step-'] i { background: linear-gradient(90deg, var(--step) var(--f), rgba(0, 0, 0, 0.1) var(--f)); }
+.step-badge { display: inline-grid; place-items: center; width: 5.6cqi; height: 5.6cqi; border-radius: 50%; font-size: 3.6cqi !important; font-weight: 800; color: #fff; background: var(--step); text-align: center !important; min-width: 0 !important; }
+.fame-step-0 { --step: #b9ad8e; }
+.fame-step-1 { --step: #e0a800; }
+.fame-step-2 { --step: #f08c00; box-shadow: 0 0 1.2cqi rgba(255, 190, 40, 0.8); }
+.fame-step-3 { --step: linear-gradient(135deg, #ffd24a, #ff8a00, #ff4d8d); box-shadow: 0 0 1.6cqi rgba(255, 190, 40, 0.9); }

@@ -146,28 +146,33 @@ export function genreIcon(key) {
   return `<span class="genre-badge g-${key}" title="${esc(genreName(key))}">${genreGlyph(key)}</span>`;
 }
 
-/** Bekanntheit auf der Karte: 10 Sternchen. Jede Bekanntheits-Stufe füllt ein Drittel der Leiste. */
-export function fameBar(fame) {
-  const steps = [0, ...cat().rules.fameLevels];
-  let filled = 10;
-  for (let i = 0; i < steps.length - 1; i++) {
-    if (fame < steps[i + 1]) {
-      filled = (i + (fame - steps[i]) / (steps[i + 1] - steps[i])) * (10 / 3);
-      break;
-    }
-  }
-  return `<span class="fame-stars" title="Bekanntheit ${fmt0(fame)}">${Array.from({ length: 10 }, (_, i) => {
-    const fill = Math.max(0, Math.min(1, filled - i));
-    return `<i style="--f:${Math.round(fill * 100)}%">★</i>`;
-  }).join('')}</span>`;
+/** Stufe und Fortschritt darin (0–1) für einen Wert und die Schwellen der Stufen 1–3. */
+function stepOf(value, thresholds) {
+  const steps = [0, ...thresholds];
+  let level = 0;
+  while (level < thresholds.length && value >= thresholds[level]) level++;
+  if (level >= thresholds.length) return { level, progress: 1, next: null };
+  return { level, progress: (value - steps[level]) / (steps[level + 1] - steps[level]), next: thresholds[level] };
 }
 
-/** Können als Leiste aus Kästchen: 10 Kästchen à 10 Punkte bis zum Höchstwert 100. */
+/** Bekanntheit auf der Karte: 10 Sternchen für den Weg zur nächsten Stufe, dahinter die Stufe. */
+export function fameBar(fame) {
+  const { level, progress, next } = stepOf(fame, cat().rules.fameLevels);
+  const title = `${cat().fameNames[level]} · Bekanntheit ${fmt0(fame)}${next ? ` · nächste Stufe ab ${fmt0(next)}` : ''}`;
+  return `<span class="fame-stars" title="${esc(title)}">${Array.from({ length: 10 }, (_, i) => {
+    const fill = Math.max(0, Math.min(1, progress * 10 - i));
+    return `<i style="--f:${Math.round(fill * 100)}%">★</i>`;
+  }).join('')}</span><b class="step-badge fame-step-${level}" title="${esc(title)}">${level}</b>`;
+}
+
+/** Können als 10 Kästchen für den Weg zur nächsten Stufe, in der Farbe der Stufe; dahinter die Stufe. */
 export function skillBar(skill) {
-  return `<span class="skill-cells" title="Können ${fmt0(skill)} von 100">${Array.from({ length: 10 }, (_, i) => {
-    const fill = Math.max(0, Math.min(1, (skill - i * 10) / 10));
+  const { level, progress, next } = stepOf(skill, cat().rules.skillLevels);
+  const title = `${cat().levelNames[level]} · Können ${fmt0(skill)}${next ? ` · nächste Stufe ab ${fmt0(next)}` : ''}`;
+  return `<span class="skill-cells skill-step-${level}" title="${esc(title)}">${Array.from({ length: 10 }, (_, i) => {
+    const fill = Math.max(0, Math.min(1, progress * 10 - i));
     return `<i style="--f:${Math.round(fill * 100)}%"></i>`;
-  }).join('')}</span>`;
+  }).join('')}</span><b class="step-badge skill-step-${level}" title="${esc(title)}">${level}</b>`;
 }
 
 /**
@@ -205,8 +210,8 @@ export function musicianCard(m, { act = 'openMusician', size = '', extra = '', s
       <span class="tcg-badge">${m.instruments.map((i) => instrumentIcon(i.type)).join('')}</span>
       ${abilities.length ? `<span class="tcg-abilities">${abilities.map((a) => `<i title="${esc(a.name)}">${a.icon}</i>`).join('')}</span>` : ''}`,
     text: `
-      ${m.instruments.map((i) => `<span class="skill-row"><span class="skill-name">${instrumentIcon(i.type)}<span> ${esc(instrumentName(i.type))}</span></span>${skillBar(i.skill)}<b>${fmt0(i.skill)}</b></span>`).join('')}
-      <span class="skill-row fame-row"><span class="skill-name">⭐<span> Bekanntheit</span></span>${fameBar(m.fame)}<b>${fmt0(m.fame)}</b></span>
+      ${m.instruments.map((i) => `<span class="skill-row"><span class="skill-name">${instrumentIcon(i.type)}<span> ${esc(instrumentName(i.type))}</span></span>${skillBar(i.skill)}</span>`).join('')}
+      <span class="skill-row fame-row"><span class="skill-name">⭐<span> Bekanntheit</span></span>${fameBar(m.fame)}</span>
       <span class="tcg-traits">${abilities.length
         ? abilities.map((a) => `<b>${esc(a.name)}</b>`).join(' · ')
         : `<i>${m.personality.map((p) => esc(c.personalities[p])).join(' · ')}</i>`}</span>`,
@@ -307,8 +312,8 @@ export function emptySlot(label, { act = null, data = {}, size = '', icon = '+',
   return `<${tag} class="tcg-slot ${size}"${attrs}>${arrow}<span class="tcg-slot-icon">${icon}</span><span>${esc(label)}</span></${tag}>`;
 }
 
-/** Meldung, wenn Musiker eine Können-Stufe aufsteigen. */
+/** Meldung, wenn Musiker aufsteigen: „Ada ist an der Gitarre jetzt Profi“. */
 export function levelUpBanners(levelUps = []) {
   return levelUps.map((l) => `
-    <div class="banner">⭐ ${esc(l.name)} erreicht Können-Stufe ${l.level}${l.abilities.length ? ` und lernt ${l.abilities.map((a) => `${cat().abilities[a].icon} ${esc(cat().abilities[a].name)}`).join(', ')}` : ''}${l.choice ? ' und darf eine Fähigkeit wählen' : ''}.</div>`).join('');
+    <div class="banner">⭐ ${esc(l.name)} ist ${esc(cat().instruments[l.instrument]?.at ?? '')} jetzt ${esc(cat().levelWords[l.level])}${l.abilities.length ? ` und lernt ${l.abilities.map((a) => `${cat().abilities[a].icon} ${esc(cat().abilities[a].name)}`).join(', ')}` : ''}${l.choice ? ' und darf eine Fähigkeit wählen' : ''}.</div>`).join('');
 }

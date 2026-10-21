@@ -7,7 +7,6 @@ import { esc, openModal, timeAgo } from './ui.js';
  * Feiern nach einem neuen Spielstand: Band wird Genre-Band oder Hybrid, Musiker steigt im Können
  * oder in der Bekanntheit auf. Mehrere kommen nacheinander. Nur CSS-Transform und Deckkraft (iPad).
  */
-const SKILL_WORDS = ['', 'fortgeschritten', 'Profi', 'virtuos'];
 const FAME_WORDS = ['', 'lokal bekannt', 'eine Szenegröße', 'ein Star'];
 
 const queue = [];
@@ -49,8 +48,8 @@ function skillHtml(m) {
   const best = m.instruments.reduce((a, b) => (b.skill > a.skill ? b : a));
   return `
     <div class="celebrate-face lvl-${m.level}">${avatar(m.look)}</div>
-    <div class="celebrate-text">${esc(m.firstName)} ist ${esc(cat().instruments[best.type].at)} jetzt ${SKILL_WORDS[m.level]}!</div>
-    <div class="celebrate-sub">Können-Stufe ${m.level} · ${esc(cat().levelNames[m.level])}</div>`;
+    <div class="celebrate-text">${esc(m.firstName)} ist ${esc(cat().instruments[best.type].at)} jetzt ${esc(cat().levelWords[m.level])}!</div>
+    <div class="celebrate-sub">${m.level < 3 ? 'Neue Fähigkeit gelernt' : 'Darf eine dritte Fähigkeit wählen'}</div>`;
 }
 
 function fameHtml(m) {

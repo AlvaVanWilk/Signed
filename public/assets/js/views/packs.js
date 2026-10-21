@@ -26,7 +26,7 @@ function scoutTile() {
   return `
     <div class="pack pack-scout">
       <div class="pack-art"><span>Talent-Scout</span></div>
-      <p>${rules.scoutCards} Musiker mit Können-Stufe 1 – einer unterschreibt.</p>
+      <p>${rules.scoutCards} fortgeschrittene Musiker – einer unterschreibt.</p>
       ${scout.offer ? '<button class="btn primary" data-act="scoutShow">Auswahl ansehen</button>' : `
         <button class="btn primary" data-act="scoutOpen" data-voucher="1" ${scout.vouchers ? '' : 'disabled'}>Gutschein einlösen (${scout.vouchers})</button>
         <button class="btn" data-act="scoutOpen" data-voucher="" ${canBuy && app.state.label.money >= scout.price ? '' : 'disabled'}>Ohne Gutschein · ${money(scout.price)}</button>

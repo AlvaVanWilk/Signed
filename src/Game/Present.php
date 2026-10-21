@@ -124,6 +124,7 @@ final class Present
             'abilities' => Catalog::ABILITIES,
             'techniqueDesc' => Catalog::TECHNIQUE_DESC,
             'levelNames' => Catalog::LEVEL_NAMES,
+            'levelWords' => Catalog::LEVEL_WORDS,
             'genreLineup' => Catalog::GENRE_LINEUP,
             'fameNames' => Catalog::FAME_NAMES,
             'personalities' => Catalog::PERSONALITIES,

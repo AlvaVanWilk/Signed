@@ -46,8 +46,8 @@ Tournee bzw. ausgeschriebenen Gigs (im Spiel ausgegraut markiert).
     Bekanntheits-Stufen: Unbekannt, Lokal bekannt, Szenegröße, Star.
   - Auf der Karte: Kartenfarbe = Können-Stufe (grau, grün, blau, lila; Legende in Regenbogenfarben), Funkeln und
     Schein = Bekanntheits-Stufe (statisch, ohne Animation). Darunter die beiden wichtigen Werte in gleicher Form:
-    Können pro Instrument als 10 Kästchen (je 10 Punkte bis 100) und Bekanntheit als 10 Sternchen (jede
-    Bekanntheits-Stufe füllt ein Drittel). Lieblingsgenres als farbige Abzeichen oben rechts; der Bildhintergrund
+    Können pro Instrument als 10 Kästchen und Bekanntheit als 10 Sternchen – jeweils der Weg zur nächsten Stufe,
+    in der Farbe der aktuellen Stufe, dahinter die Stufe als Zahl. In Texten steht der Titel („ist an der Gitarre jetzt Profi“). Lieblingsgenres als farbige Abzeichen oben rechts; der Bildhintergrund
     ist schräg in die Farben aller Lieblingsgenres geteilt.
 - Jedes Genre hat eine feste Farbe und ein Symbol – auf Karten, an Bands (Menü, Seitenleiste, Bandseite) und in
   der Genre-Auswahl.

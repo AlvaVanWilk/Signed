@@ -67,10 +67,10 @@ function profile(m) {
       <div class="profile-card">${musicianCard(m, { act: null })}</div>
       <div class="profile-side">
         ${statusNotice(m)}
-        ${m.abilityChoice ? `<div class="notice choice"><span>⭐ ${esc(m.firstName)} ist jetzt Experte und darf eine dritte Fähigkeit wählen.</span><button class="btn primary small" data-act="chooseAbility" data-id="${m.id}">Wählen</button></div>` : ''}
+        ${m.abilityChoice ? `<div class="notice choice"><span>⭐ ${esc(m.firstName)} ist jetzt ${esc(cat().levelWords[3])} und darf eine dritte Fähigkeit wählen.</span><button class="btn primary small" data-act="chooseAbility" data-id="${m.id}">Wählen</button></div>` : ''}
         <div class="stat-grid">
-          <div class="tile"><span>Können-Stufe</span><b>${m.level}</b><small>${nextSkill ? `Stufe ${m.level + 1} ab ${nextSkill}` : 'Höchste Stufe'}</small></div>
-          <div class="tile"><span>Bekanntheit</span><b>${m.fameLevel}</b><small>${nextFame ? `Stufe ${m.fameLevel + 1} ab ${nextFame}` : 'Höchste Stufe'}</small></div>
+          <div class="tile"><span>Können</span><b>${esc(cat().levelNames[m.level])}</b><small>${nextSkill ? `${esc(cat().levelNames[m.level + 1])} ab Können <em>${nextSkill}</em>` : 'Höchste Stufe'}</small></div>
+          <div class="tile"><span>Bekanntheit</span><b>${esc(cat().fameNames[m.fameLevel])}</b><small>${nextFame ? `${esc(cat().fameNames[m.fameLevel + 1])} ab <em>${nextFame}</em>` : 'Höchste Stufe'}</small></div>
           <div class="tile"><span>Band</span><b class="small-b">${band ? `<a href="#/band/${band.id}">${esc(band.name)}</a>` : '–'}</b>
             ${band ? '' : `<button class="btn small ${m.favorite ? 'primary' : ''}" data-act="toggleFavorite" data-id="${m.id}">${m.favorite ? '★ Favorit' : '☆ Favorit'}</button>`}
           </div>
@@ -234,7 +234,7 @@ export function openAbilityChoice(id) {
   if (!m?.abilityChoice) return;
   const modal = openModal({
     html: `
-      <div class="eyebrow">${esc(fullName(m))} · Können-Stufe 3</div>
+      <div class="eyebrow">${esc(fullName(m))} · ${esc(cat().levelNames[3])}</div>
       <h2>Welche Fähigkeit?</h2>
       <div class="ability-list">${m.abilityChoice.map((a) => {
         const info = abilityInfo(a);

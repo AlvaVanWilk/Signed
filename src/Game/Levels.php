@@ -86,8 +86,9 @@ final class Levels
             'abilities' => json_encode($abilities),
             'ability_choice' => $choice === null ? null : json_encode($choice),
         ], ['id' => $musicianId]);
-        $repo->log('level', sprintf('%s erreicht Können-Stufe %d.', Bands::fullName($m), $level), $m['band_id'], $musicianId);
-        return ['musicianId' => $musicianId, 'name' => $m['first_name'], 'level' => $level, 'abilities' => $gained, 'choice' => $choice];
+        $best = $m['instr2'] !== null && (float) $m['skill2'] > (float) $m['skill1'] ? $m['instr2'] : $m['instr1'];
+        $repo->log('level', sprintf('%s ist %s jetzt %s.', Bands::fullName($m), Catalog::INSTRUMENTS[$best]['at'], Catalog::LEVEL_WORDS[$level]), $m['band_id'], $musicianId);
+        return ['musicianId' => $musicianId, 'name' => $m['first_name'], 'level' => $level, 'instrument' => $best, 'abilities' => $gained, 'choice' => $choice];
     }
 
     /** Stufe 3: Der Musiker wird Experte und lernt die gewählte Fähigkeit. */

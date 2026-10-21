@@ -177,12 +177,13 @@ Ein Lied dauert 24 Sekunden: 12 Takte 4/4 (oder 16 Takte 3/4) bei 120 BPM – al
   pro voller Reglerlänge daneben. Eine Lampe pro Regler: grün im Bereich (±11–19 % wie am Mischpult), gelb bis zum
   2,2-fachen, sonst rot – ohne Richtung. 4 Abschnitte à 6 Sekunden; nach der Hälfte verschiebt sich jede Stellung
   um 15–35 %. Bewertet pro Regler und Abschnitt wie am Mischpult (12 Wertungen).
-- Solo-Probe: Können + 0,8 × Trefferquote^1,5 × Talent × Lernkurve.
+- Solo-Probe: Können + 0,8 × Trefferquote^1,5 × Talent × Lernkurve; auf Stufe 0 (unter 35) doppelt –
+  von 15 auf 35 sind es so rund 28 Proben (~20 Minuten), danach normales Tempo.
 - Lernkurve (alle Können-Gewinne): (1 − Können/110)^2,5. Je besser jemand ist, desto langsamer geht es.
 
 ### Tempo
 
-Ziel: Ein Anfänger (Können 15) ist nach etwa 3–4 Stunden Spielzeit fortgeschritten. Darüber hinaus geht es mit den
+Ziel: Ein Anfänger (Können 15) ist schnell fortgeschritten – mit gezieltem Üben (Solo-Probe doppelt auf Stufe 0) in rund 20 Minuten. Darüber hinaus geht es mit den
 heutigen Mitteln kaum weiter: Ab Stufe 1 wirken alle Können- und Bekanntheitsgewinne nur noch zu 25 %, ab Stufe 2
 nur noch zu 3 %. Profi bzw. Szenegröße dauert so rund 40 Stunden Spielzeit, Virtuose bzw. Star weit über 1.000 –
 praktisch unerreichbar, bis Tourneen und Manager dazukommen.

@@ -221,6 +221,11 @@ final class Balance
      */
     public const LEVEL_PACE = [1.0, 0.25, 0.03];
     public const PRACTICE_GAIN = 0.8;
+    /**
+     * Solo-Probe auf Stufe 0 (Einsteiger) zählt so viel mehr: Der erste Aufstieg soll sich schnell anfühlen.
+     * Ab Stufe 1 gilt wieder das normale Tempo – die höheren Stufen bleiben genauso schwer.
+     */
+    public const PRACTICE_BEGINNER_BOOST = 2.0;
     /** Fenster des Rhythmusspiels in ms bei Können 0; mit Können wachsen sie (Chart::windows). */
     public const RHYTHM_WINDOWS = ['perfect' => 60, 'good' => 135];
     public const TALENT_FACTOR = 1.5;

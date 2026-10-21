@@ -107,6 +107,7 @@ final class State
                 'fameOwn' => round($band['fame_own'], 1),
                 'cohesion' => round($band['cohesion'], 1),
                 'maxCohesion' => BandCalc::maxCohesion($chemistry),
+                'chemistryNotes' => BandCalc::chemistryNotes($list),
                 'chemistry' => $chemistry,
                 'songsRecorded' => $band['songs_recorded'],
                 'records' => $band['records'],

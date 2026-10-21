@@ -111,11 +111,13 @@ function overview(b, members) {
         <small>Gigs: <em>${esc(fx.venue)}</em>, <em>${money(fx.gage)}</em> pro Lied</small>
         <small>Plattenverkauf <em>+${percent(fx.sales)}</em> · Charts <em>+${percent(fx.chart)}</em></small>
         ${gig.nextVenue ? `<small>${esc(gig.nextVenue)} ab ${fmt0(gig.nextFame)}</small>${bar(gig.progress, 1, 'thin')}` : ''}</div>
-      <div class="tile"><span>Zusammenspiel</span><b>${fmt0(b.cohesion)}<small> / ${fmt0(b.maxCohesion)}</small></b>${bar(b.cohesion, 100, 'thin')}
+      <div class="tile"><span>Zusammenspiel</span><b>${fmt0(b.cohesion)}<small> / 100</small></b>${bar(b.cohesion, 100, 'thin')}
         <small>Sound <em>× ${fmt2(fx.cohesionSound)}</em> (bei 100: × 1)</small></div>
       <div class="tile"><span>Chemie</span><b>${chemistryLabel(b.chemistry)}</b>
         <small>Zusammenspiel wächst <em>× ${fmt2(fx.chemistry)}</em></small>
-        <small>höchstens <em>${fmt0(b.maxCohesion)}</em></small></div>
+        ${b.chemistryNotes.length
+          ? b.chemistryNotes.map((n) => `<small class="${n.good ? 'ok' : 'bad'}">${n.good ? '＋' : '−'} ${esc(n.text)}</small>`).join('')
+          : '<small>Keine Reibung, aber auch niemand, der hilft</small>'}</div>
       <div class="tile"><span>Platten</span><b>${fmt0(b.records)}</b><small>${fmt0(b.songsRecorded)} Lieder</small>
         ${royalty ? `<small>Tantiemen <em>+${fmtGain(royalty.moneyPerHour / 60)} ₲</em> pro Minute</small>
         <small>Ruhm aus den Charts <em>+${fmtGain(royalty.famePerHour)}</em> pro Std.</small>` : '<small>Gerade nicht in den Charts</small>'}</div>

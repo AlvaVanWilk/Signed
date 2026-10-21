@@ -215,10 +215,49 @@ final class BandCalc
         return round(max(0.5, min(1.5, 1 + $positive - $negative)), 2);
     }
 
-    /** Chemie bestimmt, wie hoch das Zusammenspiel maximal werden kann. */
+    /**
+     * Höchstwert des Zusammenspiels: immer 100. Chemie bremst nur, wie schnell es wächst (× Chemie);
+     * früher begrenzte sie den Höchstwert, dann blieben Bands mit Reibung für immer stecken.
+     */
     public static function maxCohesion(float $chemistry): float
     {
-        return max(40.0, min(100.0, 70 + ($chemistry - 1) * 60));
+        return 100.0;
+    }
+
+    /**
+     * Warum die Chemie so ist, in kurzen Sätzen: wer sich reibt, wer hilft.
+     * @return list<array{good: bool, text: string}>
+     */
+    public static function chemistryNotes(array $members): array
+    {
+        $members = array_values($members);
+        $name = static fn ($m, $trait) => sprintf('%s (%s)', $m['first_name'], Catalog::PERSONALITIES[$trait]);
+        $notes = [];
+        $calm = [];
+        for ($i = 0; $i < count($members); $i++) {
+            if (in_array('ruhepol', $members[$i]['personality'], true)) {
+                $calm[] = $members[$i]['first_name'];
+            }
+            if (in_array('teamplayer', $members[$i]['personality'], true)) {
+                $notes[] = ['good' => true, 'text' => sprintf('%s ist Teamplayer: hilft allen', $members[$i]['first_name'])];
+            }
+            for ($j = $i + 1; $j < count($members); $j++) {
+                foreach ($members[$i]['personality'] as $x) {
+                    foreach ($members[$j]['personality'] as $y) {
+                        if (self::clashes($x, $y)) {
+                            $notes[] = ['good' => false, 'text' => sprintf('%s und %s reiben sich', $name($members[$i], $x), $name($members[$j], $y))];
+                        }
+                        if ($x === 'partytier' && $y === 'partytier') {
+                            $notes[] = ['good' => true, 'text' => sprintf('%s und %s feiern zusammen', $members[$i]['first_name'], $members[$j]['first_name'])];
+                        }
+                    }
+                }
+            }
+        }
+        if ($calm && array_filter($notes, static fn ($n) => !$n['good'])) {
+            $notes[] = ['good' => true, 'text' => sprintf('%s ist Ruhepol: halbiert die Reibung', implode(' und ', $calm))];
+        }
+        return $notes;
     }
 
     /** Wie viel ein Musiker vom Publikum abbekommt. */

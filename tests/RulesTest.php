@@ -87,7 +87,9 @@ test('Chemie: Divas reiben sich, ein Ruhepol dämpft', function () {
     check(BandCalc::chemistry($divas) < 1.0);
     check(BandCalc::chemistry($calm) > BandCalc::chemistry($divas));
     check(BandCalc::chemistry($team) > 1.0);
-    check(BandCalc::maxCohesion(BandCalc::chemistry($divas)) < BandCalc::maxCohesion(1.0));
+    checkEquals(100.0, BandCalc::maxCohesion(BandCalc::chemistry($divas)), 'Chemie bremst nur, das Maximum bleibt 100');
+    $notes = BandCalc::chemistryNotes($divas);
+    check(count(array_filter($notes, static fn ($n) => !$n['good'] && str_contains($n['text'], 'reiben sich'))) > 0, 'Erklärt, wer sich reibt');
 });
 
 test('Besetzungsregeln', function () {

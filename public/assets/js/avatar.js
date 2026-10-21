@@ -42,7 +42,7 @@ export function avatar(look = {}) {
   if (HAIR_BACK[style]) parts.push(`<path d="${HAIR_BACK[style]}" fill="${hair}"/>`);
   parts.push(`<rect x="43" y="56" width="14" height="16" rx="6" fill="${skin}"/>`);
   parts.push(`<ellipse cx="33" cy="45" rx="3.5" ry="5" fill="${skin}"/><ellipse cx="67" cy="45" rx="3.5" ry="5" fill="${skin}"/>`);
-  if (female) parts.push(`<path d="M38 70 C40 83 60 83 62 70 Z" fill="${skin}"/>`);
+  if (female) parts.push(`<path d="M43 69 L57 69 L50.5 80 L49.5 80 Z" fill="${skin}"/>`);
   parts.push(`<ellipse cx="50" cy="42" rx="${female ? 16 : 17}" ry="20" fill="${skin}"/>`);
   if (female) {
     parts.push('<path d="M45 53 C47.5 51.6 52.5 51.6 55 53 C52.5 56.4 47.5 56.4 45 53 Z" fill="#c2405a"/>');
@@ -54,7 +54,7 @@ export function avatar(look = {}) {
       parts.push(`<circle cx="${x}" cy="${y}" r="${r}" fill="${hair}"/>`);
     }
   } else if (style === 'afro') {
-    parts.push(`<path d="M33 38 C34 24 66 24 67 38 C60 32 40 32 33 38 Z" fill="${hair}"/>`);
+    parts.push(`<path d="M33 40 C30 14 70 14 67 40 C60 32 40 32 33 40 Z" fill="${hair}"/>`);
   } else if (HAIR_FRONT[style] && !(hatted && style === 'irokese')) {
     // Unter einem Hut sieht man vom Undercut nur den Ansatz.
     parts.push(`<path d="${HAIR_FRONT[hatted && style === 'sidecut' ? 'kurz' : style]}" fill="${hair}"/>`);

@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Signed – Probe: Figuren</title>
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; color: #f3eefc; background: #0e0c14; }
+    header { padding: 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+    h1 { font-size: 1.2rem; margin: 0; }
+    button { font: inherit; font-weight: 700; padding: 10px 16px; border-radius: 999px; border: 0; background: #ff4f8b; color: #fff; }
+    label { font-size: 0.9rem; color: #a49bbd; }
+    .stage { margin: 0 16px 16px; padding: 24px 12px 12px; border-radius: 18px;
+      background: radial-gradient(ellipse at 50% 0%, rgba(255, 214, 120, 0.25), transparent 60%), linear-gradient(180deg, #241b33, #15111e 70%, #3a2a1f 70%, #2a1e16);
+      display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-end; gap: 4px; }
+    .member { width: min(30vw, 190px); text-align: center; }
+    .member small { display: block; color: #a49bbd; margin-top: -4px; }
+    p.hint { margin: 0 16px; color: #a49bbd; font-size: 0.9rem; }
+
+    /* ---- Bewegung: nur transform (iPad) ---- */
+    .fig { width: 100%; height: auto; overflow: visible; --beat: 0.5s; }
+    .fig g, .fig ellipse, .fig rect { transform-box: fill-box; }
+    .fig-body { animation: fig-bounce var(--beat) ease-in-out infinite; }
+    .fig-head { transform-origin: 50% 95%; animation: fig-nod calc(var(--beat) * 2) ease-in-out infinite; }
+    .fig-eyes { transform-origin: center; animation: fig-blink 3.7s infinite; }
+    .fig-tap { transform-origin: 20% 100%; animation: fig-tap var(--beat) ease-in-out infinite; }
+    .fig-strum { transform-origin: 10% 5%; animation: fig-strum calc(var(--beat) / 2) ease-in-out infinite alternate; }
+    .fig-wave { transform-origin: 95% 95%; animation: fig-wave calc(var(--beat) * 2) ease-in-out infinite alternate; }
+    .fig-mouth { transform-origin: center; animation: fig-sing var(--beat) ease-in-out infinite; }
+    .fig-mic-arm { transform-origin: 20% 90%; animation: fig-nod calc(var(--beat) * 2) ease-in-out infinite; }
+    .fig-hit-l { transform-origin: 0% 0%; animation: fig-hit var(--beat) ease-in infinite; }
+    .fig-hit-r { transform-origin: 0% 0%; animation: fig-hit var(--beat) ease-in infinite; animation-delay: calc(var(--beat) / -2); }
+    .fig-cymbal { transform-origin: center; animation: fig-cymbal calc(var(--beat) * 2) ease-out infinite; }
+    .fig-key-l { animation: fig-key var(--beat) ease-in-out infinite; }
+    .fig-key-r { animation: fig-key var(--beat) ease-in-out infinite; animation-delay: calc(var(--beat) / -2); }
+    @keyframes fig-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(1.8px); } }
+    @keyframes fig-nod { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+    @keyframes fig-blink { 0%, 94%, 100% { transform: scaleY(1); } 96% { transform: scaleY(0.1); } }
+    @keyframes fig-tap { 0%, 60%, 100% { transform: rotate(0); } 25% { transform: rotate(-14deg); } }
+    @keyframes fig-strum { from { transform: rotate(-6deg); } to { transform: rotate(12deg); } }
+    @keyframes fig-wave { from { transform: rotate(-12deg); } to { transform: rotate(14deg); } }
+    @keyframes fig-sing { 0%, 100% { transform: scaleY(0.5); } 40% { transform: scaleY(1.25); } }
+    @keyframes fig-hit { 0%, 100% { transform: rotate(-16deg); } 40% { transform: rotate(6deg); } }
+    @keyframes fig-cymbal { 0% { transform: rotate(-6deg); } 30% { transform: rotate(5deg); } 100% { transform: rotate(0); } }
+    @keyframes fig-key { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(2.5px); } }
+    @media (prefers-reduced-motion: reduce) { .fig * { animation: none !important; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Probe: niedliche Musiker-Figuren</h1>
+    <div>
+      <label>Tempo <input type="range" min="70" max="160" value="120" data-tempo></label>
+      <button data-new>Andere Musiker</button>
+    </div>
+  </header>
+  <div class="stage"></div>
+  <p class="hint">Nur eine Probe – noch nicht im Spiel. Aussehen kommt aus denselben Merkmalen wie die Kartenbilder.</p>
+  <script type="module">
+    import { figure } from './assets/js/figure.js';
+
+    const pick = (list) => list[Math.floor(Math.random() * list.length)];
+    const SKINS = ['#f5d6c0', '#eac0a0', '#d9a27e', '#b97a56', '#8d5a3b', '#5e3a24'];
+    const HAIR = ['#1f1a17', '#3b2a20', '#6b4423', '#a0522d', '#d8b26e', '#e8d9a8', '#ff4f8b', '#4fd1ff', '#9b7bff'];
+    const SHIRTS = ['#4a6fa5', '#e4572e', '#3ddc97', '#9b7bff', '#ffb547', '#2b2d42', '#ff4f8b'];
+    const NAMES = { f: ['Mia', 'Leni', 'Nika', 'Ada', 'Hira'], m: ['Ben', 'Oskar', 'Jonas', 'Leon', 'Kenji'] };
+    const BAND = [['vocals', 'Gesang'], ['guitar', 'Gitarre'], ['bass', 'Bass'], ['keys', 'Keyboard'], ['drums', 'Schlagzeug']];
+
+    function look() {
+      const gender = pick(['f', 'm']);
+      return {
+        gender,
+        skin: pick(SKINS),
+        hairColor: pick(HAIR),
+        hair: pick(gender === 'f' ? ['lang', 'bob', 'zopf', 'dutt', 'locken', 'afro'] : ['kurz', 'locken', 'afro', 'sidecut', 'irokese', 'kurz']),
+        shirt: pick(SHIRTS),
+        glasses: pick(['none', 'none', 'round', 'square', 'sun']),
+        hat: pick(['none', 'none', 'none', 'beanie', 'cap', 'fedora']),
+        beard: gender === 'm' ? pick(['none', 'none', 'stubble', 'full']) : 'none',
+        freckles: Math.random() < 0.3,
+        name: pick(NAMES[gender]),
+      };
+    }
+
+    const stage = document.querySelector('.stage');
+    function draw() {
+      stage.innerHTML = BAND.map(([type, label]) => {
+        const l = look();
+        return `<div class="member">${figure(l, type)}<b>${l.name}</b><small>${label}</small></div>`;
+      }).join('');
+      setTempo();
+    }
+    function setTempo() {
+      const bpm = Number(document.querySelector('[data-tempo]').value);
+      stage.querySelectorAll('.fig').forEach((f) => f.style.setProperty('--beat', `${60 / bpm}s`));
+    }
+    document.querySelector('[data-new]').addEventListener('click', draw);
+    document.querySelector('[data-tempo]').addEventListener('input', setTempo);
+    draw();
+  </script>
+</body>
+</html>

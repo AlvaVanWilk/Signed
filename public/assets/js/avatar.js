@@ -1,13 +1,13 @@
 /**
  * Profilbild aus zufälligen Merkmalen. Bewusst ohne ausgearbeitetes Gesicht: nur Kopf, Frisur und Accessoires.
  */
-const HAIR_BACK = {
+export const HAIR_BACK = {
   lang: 'M29 44 C29 15 71 15 71 44 L73 78 L61 78 L62 46 C58 34 42 34 38 46 L39 78 L27 78 Z',
   bob: 'M30 44 C30 17 70 17 70 44 L71 58 L62 58 L62 42 C57 33 43 33 38 42 L38 58 L29 58 Z',
   zopf: 'M64 40 C78 44 78 66 70 74 C72 62 70 52 62 46 Z',
 };
 
-const HAIR_FRONT = {
+export const HAIR_FRONT = {
   kurz: 'M32 42 C30 9 70 9 68 42 C64 31 40 29 32 42 Z',
   bob: 'M31 41 C29 8 71 8 69 41 C60 30 40 30 31 41 Z',
   lang: 'M31 41 C29 8 71 8 69 41 C62 29 38 29 31 41 Z',
@@ -17,14 +17,14 @@ const HAIR_FRONT = {
   irokese: 'M45 12 L55 12 L57 34 L43 34 Z',
 };
 
-const HATS = {
+export const HATS = {
   beanie: '<path d="M31 37 C31 13 69 13 69 37 Z" fill="HAT"/><rect x="29" y="32" width="42" height="7" rx="3" fill="HAT2"/>',
   cap: '<path d="M31 35 C30 13 70 13 69 35 Z" fill="HAT"/><path d="M60 33 C70 32 78 34 80 37 L60 37 Z" fill="HAT2"/>',
   fedora: '<path d="M31 29 C30 9 70 9 69 29 Z" fill="HAT"/><rect x="31" y="23" width="38" height="5" fill="HAT2"/><ellipse cx="50" cy="29" rx="29" ry="5" fill="HAT2"/>',
   cowboy: '<path d="M31 30 C29 6 71 6 69 30 Z" fill="HAT"/><path d="M14 26 C24 36 76 36 86 26 C82 33 74 35 50 35 C26 35 18 33 14 26 Z" fill="HAT2"/>',
 };
 
-const HAT_COLORS = { beanie: ['#ff4f8b', '#c73a6c'], cap: ['#3a86ff', '#2763c4'], fedora: ['#3b3245', '#1d1824'], cowboy: ['#a0703f', '#7a5230'] };
+export const HAT_COLORS = { beanie: ['#ff4f8b', '#c73a6c'], cap: ['#3a86ff', '#2763c4'], fedora: ['#3b3245', '#1d1824'], cowboy: ['#a0703f', '#7a5230'] };
 
 export function avatar(look = {}) {
   const skin = look.skin || '#d9a27e';

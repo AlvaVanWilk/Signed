@@ -1,4 +1,5 @@
 import { createVoice, getAudio, scaleMidi, scheduleBacking } from './audio.js';
+import { loadStems, playStems } from './music.js';
 import { judgeRatio, mountShell } from './mg-shell.js';
 import { duration, percent } from './ui.js';
 
@@ -6,8 +7,24 @@ import { duration, percent } from './ui.js';
 const AHEAD = 3.2;
 const BEHIND = 1.0;
 const MARKER_X = 0.25;
-/** So schnell steigt bzw. sinkt der Ton (Anteil der Tonleiter pro Sekunde). */
+/** So schnell steigt bzw. sinkt der Ton (Anteil der Tonleiter pro Sekunde), mindestens bzw. höchstens. */
 const SPEED = 0.5;
+const MAX_SPEED = 1.0;
+
+/**
+ * Echte Melodien springen weiter: Die Geschwindigkeit reicht für die meisten Sprünge
+ * (drei Viertel davon schafft man rechtzeitig), bleibt aber steuerbar.
+ */
+function speedFor(notes) {
+  const rates = [];
+  for (let i = 1; i < notes.length; i++) {
+    const gap = Math.max(0.25, notes[i].t - notes[i - 1].t);
+    rates.push(Math.abs(notes[i].p - notes[i - 1].p) / 7 / gap);
+  }
+  rates.sort((a, b) => a - b);
+  const typical = rates[Math.floor(rates.length * 0.75)] ?? 0;
+  return Math.max(SPEED, Math.min(MAX_SPEED, typical));
+}
 const HOLD_KEYS = [' ', 'arrowup', 'w', 'j'];
 
 /**
@@ -28,6 +45,7 @@ export function createPitchGame(container, game) {
   timeEl.textContent = duration(game.duration);
 
   const notes = game.notes.map((n) => ({ ...n, level: n.p / 7, total: 0, inTune: 0, judged: null }));
+  const speed = speedFor(game.notes);
   const tolerance = game.tolerance;
   const beat = 60 / game.bpm;
   const counts = { perfect: 0, good: 0, miss: 0 };
@@ -44,6 +62,17 @@ export function createPitchGame(container, game) {
   let stopBacking = () => {};
   let resolvePlay;
   let streak = 0;
+  // Aufnahmen: Die Band spielt, die eigene Stimme ist man selbst (die eigene Spur bleibt stumm).
+  let buffers = null;
+  let player = null;
+  if (game.music?.backing.length) {
+    const startButton = shell.el('.mg-start');
+    startButton.disabled = true;
+    loadStems(game.music.backing.map((s) => [s])).then((loaded) => {
+      buffers = loaded;
+      startButton.disabled = false;
+    });
+  }
 
   const clock = () => (audio ? audio.currentTime : performance.now() / 1000);
 
@@ -54,7 +83,7 @@ export function createPitchGame(container, game) {
 
   function step(now, dt) {
     // Weiche Beschleunigung: schnelles Tippen hält den Ton, langes Halten lässt ihn deutlich steigen.
-    const target = holding ? SPEED : -SPEED;
+    const target = holding ? speed : -speed;
     velocity += (target - velocity) * Math.min(1, dt * 6);
     pos += velocity * dt;
     if (pos <= 0 || pos >= 1) {
@@ -78,7 +107,7 @@ export function createPitchGame(container, game) {
       }
     }
     if (voice) {
-      voice.setPitch(scaleMidi(game.instrument, pos * 7));
+      voice.setPitch(scaleMidi(game.instrument, pos * 7, game.tonality));
       voice.setLevel(active ? 1 : 0);
     }
     return active;
@@ -196,7 +225,8 @@ export function createPitchGame(container, game) {
     voice = createVoice(game.instrument);
     t0 = clock() + 0.15 + 4 * beat;
     last = clock();
-    stopBacking = scheduleBacking({ genre: game.genre, bpm: game.bpm, start: t0, duration: game.duration });
+    stopBacking = scheduleBacking({ genre: game.genre, bpm: game.bpm, start: t0, duration: game.duration, drums: !buffers, bass: !buffers });
+    if (buffers) player = playStems(buffers, t0, { volume: 0.8 });
     running = true;
     raf = requestAnimationFrame(frame);
   }
@@ -206,6 +236,8 @@ export function createPitchGame(container, game) {
     setHolding(false);
     cancelAnimationFrame(raf);
     stopBacking();
+    player?.stop();
+    player = null;
     voice?.stop();
     voice = null;
     resolvePlay?.(result);
@@ -238,6 +270,7 @@ export function createPitchGame(container, game) {
       running = false;
       cancelAnimationFrame(raf);
       stopBacking();
+      player?.stop();
       voice?.stop();
       window.removeEventListener('keydown', onKeyDown, true);
       window.removeEventListener('keyup', onKeyUp, true);

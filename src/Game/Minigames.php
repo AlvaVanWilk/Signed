@@ -39,22 +39,39 @@ final class Minigames
                 $genre = $m['genres'][0];
                 $bpm = Catalog::GENRES[$genre]['bpm'];
                 $perfectPitch = Levels::has($m, 'gehoer');
+                // Die eigene Spur aus den Aufnahmen; die Band (oder ohne Band eine Begleitung) spielt dazu.
+                [$own, $backing] = $this->practiceStems(['band_slot' => $slot] + $m);
+                $resolved = Music::resolve($own);
+                $source = $resolved === null ? null : Music::notes($resolved);
+                $music = $resolved === null ? null : [
+                    'own' => sprintf('assets/music/%s/%s.mp3', $resolved['folder'], $resolved['file']),
+                    'backing' => $backing,
+                ];
                 // Gesang und Geige spielen nach Tonhöhe, alle anderen nach Rhythmus.
                 if (in_array($instrument, Catalog::PITCH_INSTRUMENTS, true)) {
+                    $melody = $source === null ? null : Music::melodyChart($source, Balance::SONG_SECONDS);
                     $chart = [
                         'mode' => 'pitch',
-                        'notes' => Chart::melody($bpm, Balance::SONG_SECONDS),
+                        'notes' => $melody['notes'] ?? Chart::melody($bpm, Balance::SONG_SECONDS),
                         'tolerance' => Chart::pitchTolerance($skill, $perfectPitch),
                         'instrument' => $instrument,
                     ];
+                    if ($melody !== null) {
+                        $chart['tonality'] = $melody['tonality'];
+                        $chart['music'] = $music;
+                    }
                 } else {
+                    $rhythm = $source === null ? null : Music::rhythmChart($source, $instrument, Balance::SONG_SECONDS);
                     $chart = [
                         'mode' => 'rhythm',
-                        'notes' => Chart::generate($bpm, Chart::density($skill), Balance::SONG_SECONDS),
+                        'notes' => $rhythm['notes'] ?? Chart::generate($bpm, Chart::density($skill), Balance::SONG_SECONDS),
                         'windows' => Chart::windows($skill, $perfectPitch),
                         'lanes' => array_fill(0, Chart::LANES, $instrument),
-                        'laneNames' => array_fill(0, Chart::LANES, $m['first_name']),
+                        'laneNames' => $rhythm['laneNames'] ?? array_fill(0, Chart::LANES, $m['first_name']),
                     ];
+                    if ($rhythm !== null) {
+                        $chart['music'] = $music;
+                    }
                 }
                 $chart['count'] = count($chart['notes']);
 
@@ -177,6 +194,35 @@ final class Minigames
                 $this->close($session, 'aborted');
             }
         });
+    }
+
+    /**
+     * Spuren für die Solo-Probe: die eigene und die Begleitung. In einer Band spielen die anderen Mitglieder,
+     * ohne Band begleiten Schlagzeug, Bass und Keyboard im selben Genre und auf derselben Stufe.
+     * @return array{0: array, 1: list<array>}
+     */
+    private function practiceStems(array $m): array
+    {
+        $gear = $this->repo->gearByMusician();
+        $type = BandCalc::instrument($m);
+        if ($m['band_id'] !== null) {
+            $band = $this->repo->band($m['band_id']);
+            $members = $this->repo->members($band['id']);
+            $identity = BandCalc::identity($members, $band['genre'], $band['genre2']);
+            $genres = array_values(array_filter([$identity['primary'], $identity['second']]));
+            $own = Music::stem($m, $gear, $genres);
+            $backing = array_map(static fn ($o) => Music::stem($o, $gear, $genres ?: [$own['genre']]),
+                array_values(array_filter($members, static fn ($o) => $o['id'] !== $m['id'])));
+            return [$own, $backing];
+        }
+        $own = Music::stem($m, $gear);
+        $backing = [];
+        foreach (['drums', 'bass', 'keys'] as $i => $other) {
+            if ($other !== $type) {
+                $backing[] = ['type' => $other, 'level' => $m['level'], 'genre' => $own['genre'], 'electric' => ($m['id'] + $i) % 2 === 1];
+            }
+        }
+        return [$own, $backing];
     }
 
     private function practiceResult(array $session, int $perfect, int $good, int $miss): array

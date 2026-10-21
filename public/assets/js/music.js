@@ -40,11 +40,11 @@ function load(url) {
 }
 
 /**
- * Lädt die Spuren einer Besetzung. groups: Liste von Listen von Stems (eine Gruppe = ein Regler).
+ * Lädt die Spuren einer Besetzung. groups: Liste von Listen von Stems oder fertigen Pfaden (eine Gruppe = ein Regler).
  * Liefert null, wenn für keine Gruppe eine Aufnahme existiert – dann bleibt es beim Synthesizer.
  */
 export async function loadStems(groups) {
-  const urls = groups.map((stems) => stems.map(stemUrl).filter(Boolean));
+  const urls = groups.map((stems) => stems.map((s) => (typeof s === 'string' ? s : stemUrl(s))).filter(Boolean));
   if (!urls.some((list) => list.length)) return null;
   try {
     return await Promise.all(urls.map((list) => Promise.all(list.map(load))));

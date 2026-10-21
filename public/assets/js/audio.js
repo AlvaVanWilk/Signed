@@ -315,12 +315,14 @@ export function scheduleBacking({ genre, bpm, start, duration, drums = true, bas
 const SCALE = [0, 2, 3, 5, 7, 8, 10, 12];
 const VOICE_BASE = { vocals: 57, violin: 69 };
 
-/** Stufe (auch Zwischenwerte) → MIDI-Ton. */
-export function scaleMidi(type, degree) {
+/** Stufe (auch Zwischenwerte) → MIDI-Ton. tonality {root, scale} kommt bei Aufnahmen aus deren Noten. */
+export function scaleMidi(type, degree, tonality = null) {
+  const scale = tonality?.scale ?? SCALE;
+  const root = tonality?.root ?? VOICE_BASE[type] ?? 60;
   const d = Math.max(0, Math.min(7, degree));
   const low = Math.floor(d);
   const high = Math.min(7, low + 1);
-  return (VOICE_BASE[type] ?? 60) + SCALE[low] + (SCALE[high] - SCALE[low]) * (d - low);
+  return root + scale[low] + (scale[high] - scale[low]) * (d - low);
 }
 
 /** Durchgehender Ton, dessen Höhe und Lautstärke man laufend ändern kann (Gesang, Geige). */

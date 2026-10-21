@@ -150,8 +150,13 @@ Das Stadion bleibt der Tournee vorbehalten.
 Ein Lied dauert 24 Sekunden: 12 Takte 4/4 (oder 16 Takte 3/4) bei 120 BPM – alle Genres im selben Tempo und derselben Tonart, damit sich alle Spuren mischen lassen. Bewertet wird in Perfekt / Gut / Daneben; Trefferquote = (Perfekt + 0,6 × Gut) / Anzahl.
 
 - **Rhythmus** (Solo-Probe für alle außer Gesang und Geige): vier Spuren, Tasten D F J K oder Tippen.
-  Dichte 0,25–0,55 je nach Können. Zeitfenster Perfekt 60–75 ms, Gut 135–185 ms, Absolutes Gehör +20 ms.
+  Die Noten kommen aus der Aufnahme (noten.json) der eigenen Spur: Schlagzeug nur Bassdrum (links) und Snare (rechts),
+  die Hi-Hat bleibt im Klang; andere Instrumente ein Anschlag pro Zeitpunkt, Spur nach Tonhöhe (tief links).
+  Die Schwierigkeit steckt in der Spur der Stufe. Bei Treffern hört man die eigene Spur, bei Fehlern wird sie leise.
+  Die Band (ohne Band: Schlagzeug, Bass, Keyboard) spielt dazu. Ohne Aufnahme: Zufallsnoten, Dichte 0,25–0,55 je nach Können. Zeitfenster Perfekt 60–75 ms, Gut 135–185 ms, Absolutes Gehör +20 ms.
 - **Tonhöhe** (Solo-Probe für Gesang und Geige): Gedrückt halten lässt den Ton steigen, Loslassen sinken.
+  Melodie aus der Aufnahme, Tonleiter ab ihrem tiefsten Ton; die eigene Spur bleibt stumm, die Band spielt.
+  Wie schnell der Ton steigt, richtet sich nach den Sprüngen der Melodie (0,5–1 Tonleiter pro Sekunde).
   Jeder Ton der Melodie zählt als Perfekt ab 70 % der Zeit im richtigen Bereich, als Gut ab 40 %.
   Der Bereich ist ±7–13 % der Tonleiter, mit Absolutem Gehör +3 %.
 - **Mischpult** (Studio): Die Band spielt, die Pegel gleiten ständig – ein Zufallspfad, der zur Mitte zurückstrebt.
@@ -253,7 +258,7 @@ Instrumente sind zufällig. Im Music Store hat der Verkäufer mit 25 % Chance ei
 - Jeder Musiker spielt die Spur seines Instruments, seiner Stufe und eines Genres: das Genre der Band, sonst eines
   seiner Lieblingsgenres. Akustisch oder elektrisch richtet sich nach seinem Instrument.
 - Fehlt eine Spur, nimmt das Spiel die nächste Stufe, dann die andere Variante, dann Pop. Gibt es gar keine, bleibt der Synthesizer.
-- Zu hören am Mischpult (jeder Regler steuert seine Spuren) und in der Live-Ansicht von Auftritten.
+- Zu hören am Mischpult (jeder Regler steuert seine Spuren), bei der Solo-Probe und in der Live-Ansicht von Auftritten.
 
 ## Vorläufige Entscheidungen zu offenen Fragen
 
@@ -274,8 +279,7 @@ Diese Punkte sind im Konzept offen. Für den Kern habe ich sie so festgelegt; al
 
 - Das Ergebnis des Minispiels kommt aus dem Browser. Der Server prüft nur, ob es plausibel ist
   (Notenzahl, Mindestdauer). Für ein Hobbyspiel unter Bekannten reicht das; gegen gezieltes Schummeln nicht.
-- Bisher gibt es nur Pop Stufe 0 als Aufnahme. Die Minispiele Rhythmus und Tonhöhe nutzen noch den Synthesizer;
-  ihre Noten kommen später aus `noten.json`.
+- Bisher gibt es nur Pop Stufe 0 als Aufnahme; alle anderen Genres und Stufen spielen sie mit.
 - Bei sehr verzögerten Kopfhörern (Bluetooth) hört man die Treffer später, als man sie sieht. Gewertet wird
   nach dem Bild. Eine Latenz-Kalibrierung fehlt noch.
 - Noch keine Bremse gegen Passwort-Raten beim Login.

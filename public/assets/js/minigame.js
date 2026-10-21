@@ -1,4 +1,5 @@
 import { getAudio, playLane, playMiss, scheduleBacking } from './audio.js';
+import { loadStems, playStems } from './music.js';
 import { instrumentIcon } from './cards.js';
 import { COLORS, mountShell } from './mg-shell.js';
 import { createMixerGame } from './mixer.js';
@@ -50,6 +51,18 @@ function createRhythmGame(container, game) {
   let running = false;
   let stopBacking = () => {};
   let resolvePlay;
+  // Aufnahmen: eigene Spur (Gruppe 0) und Begleitung. Bei Treffern hört man sich, bei Fehlern wird die eigene Spur leise.
+  let buffers = null;
+  let player = null;
+  const startButton = shell.el('.mg-start');
+  if (game.music) {
+    startButton.disabled = true;
+    loadStems([[game.music.own], ...game.music.backing.map((s) => [s])]).then((loaded) => {
+      buffers = loaded;
+      startButton.disabled = false;
+    });
+  }
+  const ownLevel = (level) => player?.gains[0]?.gain.setTargetAtTime(level, getAudio().currentTime, 0.03);
 
   const clock = () => (audio ? audio.currentTime : performance.now() / 1000);
   const songTime = () => clock() - t0;
@@ -76,7 +89,8 @@ function createRhythmGame(container, game) {
       counts[best.judged]++;
       combo++;
       popups.push({ lane, text: best.judged === 'perfect' ? 'Perfekt!' : 'Gut', color: COLORS[lane], at: clock() });
-      playLane(game.lanes[lane], lane, now, game.bpm);
+      if (player) ownLevel(1);
+      else playLane(game.lanes[lane], lane, now, game.bpm);
     }
   }
 
@@ -88,6 +102,7 @@ function createRhythmGame(container, game) {
         counts.miss++;
         combo = 0;
         popups.push({ lane: note.l, text: 'Daneben', color: '#8b839f', at: clock() });
+        if (player) ownLevel(0.12);
         playMiss();
       }
     }
@@ -211,9 +226,10 @@ function createRhythmGame(container, game) {
       bpm: game.bpm,
       start: t0,
       duration: game.duration,
-      drums: !game.lanes.every((l) => l === 'drums'),
-      bass: !game.lanes.every((l) => l === 'bass'),
+      drums: !buffers && !game.lanes.every((l) => l === 'drums'),
+      bass: !buffers && !game.lanes.every((l) => l === 'bass'),
     });
+    if (buffers) player = playStems(buffers, t0, { volume: 0.9 });
     running = true;
     raf = requestAnimationFrame(frame);
   }
@@ -222,6 +238,8 @@ function createRhythmGame(container, game) {
     running = false;
     cancelAnimationFrame(raf);
     stopBacking();
+    player?.stop();
+    player = null;
     resolvePlay?.(result);
   }
 
@@ -250,6 +268,7 @@ function createRhythmGame(container, game) {
       running = false;
       cancelAnimationFrame(raf);
       stopBacking();
+      player?.stop();
       window.removeEventListener('keydown', onKey, true);
       window.removeEventListener('resize', shell.resize);
     },

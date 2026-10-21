@@ -72,6 +72,7 @@ jobs:
             set sftp:auto-confirm yes;
             set net:max-retries 3;
             set net:timeout 30;
+            set xfer:use-temp-file yes;
             open --env-password -u \"$IONOS_SFTP_USER\" sftp://$IONOS_SFTP_HOST;
             mkdir -p -f \"$ordner\";
             mirror --reverse --parallel=4 \

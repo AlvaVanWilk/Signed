@@ -76,6 +76,8 @@ final class Catalog
 
     /** Diese Instrumente üben im Tonhöhen-Spiel statt im Rhythmus-Spiel. */
     public const PITCH_INSTRUMENTS = ['vocals', 'violin'];
+    /** In diesen Genres wird gerappt: Gesang übt dann im Rhythmus-Spiel (Silben im Takt) statt nach Tonhöhe. */
+    public const RAP_GENRES = ['hiphop'];
 
     /**
      * Fähigkeiten: Ein Musiker hat so viele, wie seine Können-Stufe angibt (höchstens 3).

@@ -285,6 +285,9 @@ Instrumente sind zufällig. Im Music Store hat der Verkäufer mit 25 % Chance ei
   Frauenstimme, Musiker mit der Männerstimme, diverse je nach Karte. Beide teilen sich die Noten der MIDI-Spur „gesang“.
   Die MIDI-Spur kann aus echtem Gesang kommen (Logic: Flex Pitch → MIDI-Spur); sehr kurze Töne (unter 0,15 s) zählen
   nicht, ineinander gebundene Töne enden, wo der nächste beginnt.
+- Rap: In Hip-Hop wird gerappt (`Catalog::RAP_GENRES`). Gesang übt dort im Rhythmus-Spiel – man tippt die Silben
+  im Takt (Noten aus derselben MIDI-Spur wie Pop). Vorhanden: Pop 0 komplett, Rock 0 (Schlagzeug, Bass, Keyboard),
+  Hip-Hop 0 (Schlagzeug, Bass, Gesang).
 - Fehlt eine Spur, nimmt das Spiel die nächste Stufe, dann die andere Variante, dann Pop. Gibt es gar keine, bleibt der Synthesizer.
 - Zu hören am Mischpult (jeder Regler steuert seine Spuren), bei der Solo-Probe (nur die eigene Spur) und in der Live-Ansicht von Auftritten.
 

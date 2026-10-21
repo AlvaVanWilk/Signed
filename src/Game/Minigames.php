@@ -43,8 +43,9 @@ final class Minigames
                 $resolved = Music::resolve($this->practiceStem(['band_slot' => $slot] + $m));
                 $source = $resolved === null ? null : Music::notes($resolved);
                 $music = $resolved === null ? null : ['own' => sprintf('assets/music/%s/%s.mp3', $resolved['folder'], $resolved['file'])];
-                // Gesang und Geige spielen nach Tonhöhe, alle anderen nach Rhythmus.
-                if (in_array($instrument, Catalog::PITCH_INSTRUMENTS, true)) {
+                // Gesang und Geige spielen nach Tonhöhe, alle anderen nach Rhythmus – Rap ebenfalls nach Rhythmus.
+                $rap = $instrument === 'vocals' && $resolved !== null && in_array(explode('-', $resolved['folder'])[0], Catalog::RAP_GENRES, true);
+                if (in_array($instrument, Catalog::PITCH_INSTRUMENTS, true) && !$rap) {
                     $melody = $source === null ? null : Music::melodyChart($source, Balance::SONG_SECONDS);
                     $chart = [
                         'mode' => 'pitch',

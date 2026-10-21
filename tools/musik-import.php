@@ -12,6 +12,8 @@ declare(strict_types=1);
  * - WAV: auf die Lautheit seiner Rolle gebracht (LUFS, siehe TARGETS), auf 24 Sekunden geschnitten,
  *   als MP3 → public/assets/music/<ordner>/<spur>.mp3.
  *
+ * Heißt die MIDI-Datei selbst wie eine Spur („0-rock-trumpet.mid“), zählt dieser Name für alle Noten darin –
+ * die Namen, die Logic in die Datei schreibt, werden dann nicht gebraucht.
  * Spurnamen aus Logic wie „Pop Guitar E“ werden zu „gitarre-elektrisch“, „Pop Guitar“ zu „gitarre-akustisch“.
  * Gesang mit „female“/„weiblich“ bzw. „male“/„männlich“ im Namen wird „gesang-weiblich“ bzw. „gesang-maennlich“;
  * beide Stimmen teilen sich die Noten der MIDI-Spur „gesang“.
@@ -51,7 +53,7 @@ $out = dirname(__DIR__) . "/public/assets/music/$folder";
 /** „Pop Guitar E“ / „Pop_Guitar_E_1.wav“ → „gitarre-elektrisch“; null, wenn unbekannt. */
 function trackName(string $label): ?string
 {
-    $words = preg_split('/[\s_]+/', strtolower(trim(preg_replace('/\.[a-z0-9]+$/i', '', $label))));
+    $words = preg_split('/[\s_-]+/', strtolower(trim(preg_replace('/\.[a-z0-9]+$/i', '', $label))));
     $words = array_values(array_filter($words, static fn ($w) => $w !== '' && !ctype_digit($w)));
     $electric = end($words) === 'e';
     foreach ($words as $word) {
@@ -75,6 +77,9 @@ if ($data === false || substr($data, 0, 4) !== 'MThd') {
     fwrite(STDERR, "Keine MIDI-Datei: $midi\n");
     exit(1);
 }
+// Der Dateiname geht vor: Logic schreibt in die MIDI eigene Namen (z. B. „Audio 3“, „Capstan Piano“).
+// Heißt die Datei wie eine Spur („0-rock-trumpet.mid“), gehören alle Noten darin zu dieser Spur.
+$fileTrack = trackName(basename($midi));
 $division = unpack('n', substr($data, 12, 2))[1];
 $count = unpack('n', substr($data, 10, 2))[1];
 $pos = 14;
@@ -136,7 +141,7 @@ for ($t = 0; $t < $count; $t++) {
             }
         }
     }
-    $name = null;
+    $name = $notes ? $fileTrack : null;
     foreach (array_reverse($labels) as $label) {
         $name ??= trackName($label);
     }

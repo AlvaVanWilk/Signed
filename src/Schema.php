@@ -332,6 +332,10 @@ final class Schema
             [
                 'ALTER TABLE bands ADD COLUMN promo_record_id INTEGER NULL',
             ],
+            // 13: Katalog – jede Platte verkauft sich dauerhaft ein wenig, auch ohne Chartplatz
+            [
+                'ALTER TABLE records ADD COLUMN catalog_until INTEGER NOT NULL DEFAULT 0',
+            ],
         ];
     }
 }

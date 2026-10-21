@@ -894,3 +894,33 @@ test('Gigs: Die Band wählt, welches Album sie spielt – Gigs schieben dieses a
     checkEquals(0.0, (float) $db->value('SELECT boost FROM records WHERE id = ?', [$ids['Neu']]));
     checkApiError(fn () => $p->post('bandPromoRecord', ['bandId' => $band['id'], 'recordId' => 99999]), 'verkauft sich nicht');
 });
+
+test('Tantiemen: Platten ohne Chartplatz verkaufen sich weiter, ältere bringen dauerhaft Katalog-Geld', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Katalog');
+    $band = foundBand($p);
+    $labelId = (int) $db->value('SELECT label_id FROM bands WHERE id = ?', [$band['id']]);
+    foreach (['Alt' => 80, 'Neu' => 40] as $title => $points) {
+        $db->insert('records', [
+            'label_id' => $labelId, 'band_id' => $band['id'], 'title' => $title, 'songs_total' => 3, 'songs_done' => 3,
+            'song_results' => '[]', 'status' => 'done', 'created_at' => Clock::now(), 'finished_at' => Clock::now(),
+            'chart_points' => $points, 'royalties_until' => Clock::now(), 'catalog_until' => Clock::now(),
+        ]);
+        Clock::advance(60);
+    }
+    Signed\Game\Charts::markDirty($db);
+    $finance = $p->get('state')['finance'];
+    checkEquals(2, count($finance['records']), 'Beide verkaufen sich, auch die ohne Chartplatz');
+    checkEquals(1, count(array_filter($finance['records'], static fn ($r) => $r['placed'])));
+    check($finance['catalogPerHour'] > 1.1 && $finance['catalogPerHour'] < 1.3, 'Katalog: 120 Punkte × 0,01');
+
+    // Nach den Charts: Katalog läuft weiter.
+    Clock::advance(Balance::CHART_MAX_AGE + 86400);
+    $p->get('state');
+    $money = (int) $db->value('SELECT money FROM labels WHERE id = ?', [$labelId]);
+    Clock::advance(10 * 3600);
+    $state = $p->get('state');
+    $gain = $state['label']['money'] - $money;
+    check($gain >= 11 && $gain <= 13, "Katalog nach 10 Stunden: $gain");
+    checkEquals(0, count($state['finance']['records']), 'Keine Chart-Tantiemen mehr');
+});

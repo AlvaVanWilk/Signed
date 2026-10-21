@@ -301,6 +301,29 @@ final class Charts
                 }
             });
         }
+        self::payCatalog($db, $labelId, $now);
+    }
+
+    /** Katalog: Alle Platten des Labels verkaufen sich dauerhaft ein wenig (siehe Balance::CATALOG_MONEY). */
+    private static function payCatalog(Db $db, int $labelId, int $now): void
+    {
+        $rows = $db->all(
+            "SELECT id, finished_at, chart_points, catalog_until FROM records WHERE label_id = ? AND status = 'done' AND chart_points > 0 AND catalog_until < ?",
+            [$labelId, $now - 60]
+        );
+        $total = 0.0;
+        foreach ($rows as $row) {
+            $from = max((int) $row['catalog_until'], (int) $row['finished_at']);
+            if ($db->exec('UPDATE records SET catalog_until = ? WHERE id = ? AND catalog_until = ?', [$now, $row['id'], $row['catalog_until']]) === 0) {
+                continue;
+            }
+            $total += ($now - $from) / self::HOUR * (float) $row['chart_points'] * Balance::CATALOG_MONEY;
+        }
+        // Bruchteile sammeln sich im Label, ein Eintrag pro Tag im Kontoauszug.
+        $carry = (float) ($db->value('SELECT v FROM meta WHERE k = ?', ["catalog_carry_$labelId"]) ?? 0) + $total;
+        $paid = (int) floor($carry);
+        self::setMeta($db, "catalog_carry_$labelId", (string) ($carry - $paid));
+        (new Repo($db, $labelId))->earnDaily($paid, 'Katalog: ältere Platten');
     }
 
     /** Chartpunkte × Sekunden zwischen $a und $b, nur solange die Platte chartet (Simpson-Regel, höchstens 2 Minuten je Schritt). */
@@ -326,9 +349,10 @@ final class Charts
     /** Regelmäßige Einnahmen: alle eigenen Platten, die gerade charten, und der Kontoauszug. */
     public static function income(Db $db, int $labelId, ?array $albums = null): array
     {
+        $albums ??= self::albums($db, $labelId);
         $records = [];
         $bands = [];
-        foreach ($albums ?? self::albums($db, $labelId) as $album) {
+        foreach ($albums as $album) {
             if (!$album['own']) {
                 continue;
             }
@@ -350,11 +374,41 @@ final class Charts
                 'factor' => self::rankFactor($album['rank'], Balance::CHART_RANK_BONUS),
             ];
         }
+        // Eigene Platten ohne Chartplatz (eine pro Band chartet) verkaufen sich trotzdem weiter.
+        $now = Clock::now();
+        $listed = array_column(array_filter($albums, static fn ($a) => $a['own']), 'recordId');
+        $catalog = 0.0;
+        foreach ($db->all(
+            "SELECT r.id, r.band_id, r.title, r.chart_points, r.finished_at, r.boost, r.boost_at, b.name AS band_name FROM records r
+             LEFT JOIN bands b ON b.id = r.band_id WHERE r.label_id = ? AND r.status = 'done' AND r.chart_points > 0",
+            [$labelId]
+        ) as $row) {
+            $perHour = (float) $row['chart_points'] * Balance::CATALOG_MONEY;
+            $catalog += $perHour;
+            if ($row['band_id'] !== null) {
+                $bands[(int) $row['band_id']]['moneyPerHour'] = ($bands[(int) $row['band_id']]['moneyPerHour'] ?? 0) + $perHour;
+            }
+            $p = self::pointsAt($row, $now);
+            if (in_array((int) $row['id'], $listed, true) || (int) $row['finished_at'] < $now - Balance::CHART_MAX_AGE || $p < Balance::CHART_MIN_POINTS) {
+                continue;
+            }
+            if ($row['band_id'] !== null) {
+                $band = &$bands[(int) $row['band_id']];
+                $band['moneyPerHour'] = ($band['moneyPerHour'] ?? 0) + $p * Balance::ROYALTY_MONEY;
+                $band['famePerHour'] = ($band['famePerHour'] ?? 0) + $p * Balance::ROYALTY_FAME;
+                unset($band);
+            }
+            $records[] = [
+                'title' => $row['title'], 'band' => $row['band_name'] ?? 'aufgelöste Band', 'points' => round($p, 1),
+                'rank' => null, 'trend' => null, 'perHour' => round($p * Balance::ROYALTY_MONEY, 1), 'placed' => false, 'factor' => 1.0,
+            ];
+        }
         $points = array_sum(array_map(static fn ($r) => $r['points'] * $r['factor'], $records));
         $ledger = $db->all('SELECT amount, text, created_at FROM ledger WHERE label_id = ? ORDER BY id DESC LIMIT 40', [$labelId]);
         return [
             // Für die laufende Anzeige im Browser (Geld tickt zwischen zwei Abrufen weiter).
-            'moneyPerHour' => round($points * Balance::ROYALTY_MONEY, 2),
+            'moneyPerHour' => round($points * Balance::ROYALTY_MONEY + $catalog, 2),
+            'catalogPerHour' => round($catalog, 2),
             'famePerHour' => round($points * Balance::ROYALTY_FAME, 3),
             'bands' => (object) $bands,
             'records' => $records,

@@ -287,14 +287,15 @@ function financeHtml() {
     <div class="reward-grid">
       ${reward('Tantiemen pro Minute', `${fmtGain(f.moneyPerHour / 60)} ₲`)}
       ${reward('Ruhm aus den Charts pro Stunde', `+${fmtGain(f.famePerHour)}`)}
-      ${reward('Platten in den Charts', String(f.records.length))}
+      ${reward('Platten in den Charts', String(f.records.filter((r) => r.placed).length))}
     </div>
+    ${f.catalogPerHour ? `<p class="muted small">Davon Katalog: <b>${fmtGain(f.catalogPerHour / 60)} ₲</b> pro Minute – jede Platte verkauft sich für immer ein wenig.</p>` : ''}
     ${f.records.length ? `
-      <p class="muted small">Tantiemen laufen, solange eine Platte sich verkauft. In den Top ${cat().rules.chartSize} gibt es mehr: Platz 1 doppelt so viel. Gigs und Promo schieben die neueste Platte nach oben.</p>
+      <p class="muted small">Neue Platten verkaufen sich eine Woche lang gut, auch ohne Chartplatz. Pro Band steht eine in den Charts, dort gibt es mehr: Platz 1 doppelt so viel. Gigs und Promo schieben das Album an, das die Band spielt.</p>
       <table class="charts finance-table">
         <thead><tr><th>Platte</th><th>Band</th><th>Platz</th><th>Punkte</th><th>pro Minute</th></tr></thead>
-        <tbody>${f.records.map((r) => `<tr><td>„${esc(r.title)}“</td><td>${esc(r.band)}</td><td>${r.placed ? `${r.rank} ${trendBadge(r)}` : `<span class="muted">${r.rank} (nicht in den Top ${cat().rules.chartSize})</span>`}</td><td>${fmt1(r.points)}</td><td>${fmtGain(r.perHour / 60)} ₲</td></tr>`).join('')}</tbody>
-      </table>` : '<p class="muted">Noch keine Platte in den Charts – regelmäßige Einnahmen kommen über Tantiemen.</p>'}
+        <tbody>${f.records.map((r) => `<tr><td>„${esc(r.title)}“</td><td>${esc(r.band)}</td><td>${r.placed ? `${r.rank} ${trendBadge(r)}` : `<span class="muted">${r.rank ? `${r.rank} (nicht in den Top ${cat().rules.chartSize})` : 'verkauft sich'}</span>`}</td><td>${fmt1(r.points)}</td><td>${fmtGain(r.perHour / 60)} ₲</td></tr>`).join('')}</tbody>
+      </table>` : '<p class="muted">Gerade keine neue Platte im Verkauf – regelmäßige Einnahmen kommen über Tantiemen.</p>'}
     <h3>Kontoauszug</h3>
     ${f.ledger.length ? `<ul class="history ledger">${f.ledger.map((l) => `
       <li><span>${esc(l.text)}</span><span class="ledger-right"><b class="${l.amount < 0 ? 'bad' : 'ok'}">${l.amount > 0 ? '+' : '−'}${money(Math.abs(l.amount))}</b><time>${timeAgo(l.at, now)}</time></span></li>`).join('')}</ul>`

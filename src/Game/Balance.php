@@ -323,5 +323,11 @@ final class Balance
     public const CHART_TOP_MIN_LABELS = 3;
     /** Tantiemen pro Chartpunkt und Stunde (vor dem Platz-Bonus). */
     public const ROYALTY_MONEY = 0.5;
+    /**
+     * Katalog: Jede fertige Platte verkauft sich für immer ein wenig – so viel ₲ pro Stunde und Chartpunkt (Startwert
+     * der Platte), zusätzlich zu den Charts. Eine Platte mit 60 Punkten bringt so rund 14 ₲ am Tag: spürbar, wenn sich
+     * Platten ansammeln, aber klein gegen Gigs (ein Kneipen-Gig ≈ 90 ₲).
+     */
+    public const CATALOG_MONEY = 0.01;
     public const ROYALTY_FAME = 0.0125;
 }

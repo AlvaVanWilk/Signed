@@ -227,6 +227,10 @@ Nur die Gewinne sind klein; wie oft man etwas hintereinander spielt, ist nicht b
   0,0125 Ruhm, mal Platz-Bonus: Platz 1 × 2, abnehmend bis Platz 10 × 1,1, außerhalb × 1. Ruhm an die aktuellen Mitglieder.
   Eine Platte mit 60 Punkten bringt über ihre Chartzeit etwa 950–1.900 ₲ je nach Platz.
   Das Geld zählt im Browser sichtbar mit; im Kontoauszug eine Zeile pro Platte und Tag.
+- Platten ohne Chartplatz (eine pro Band chartet) verkaufen sich in ihrer ersten Woche trotzdem: Tantiemen mit Platz-Bonus × 1.
+- Katalog: Jede Platte verkauft sich für immer ein wenig – 0,01 ₲ pro Stunde und Chartpunkt (Startwert), zusätzlich
+  zu den Charts. 60 Punkte ≈ 14 ₲ am Tag. Klein gegen Gigs, aber es sammelt sich mit vielen Platten; das 5-Gig-Limit
+  zwischen zwei Platten verhindert, dass man das mit EP-Fluten ausnutzt.
 
 ### Promo
 

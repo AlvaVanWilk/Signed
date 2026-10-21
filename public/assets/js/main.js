@@ -8,6 +8,7 @@ import * as auth from './views/auth.js';
 import * as bands from './views/bands.js';
 import * as catalog from './views/catalog.js';
 import * as charts from './views/charts.js';
+import * as help from './views/help.js';
 import { trendBadge } from './views/charts.js';
 import * as market from './views/market.js';
 import * as musician from './views/musician.js';
@@ -34,6 +35,7 @@ const VIEWS = {
   musician: (route) => musician.renderMusician(route),
   charts: () => charts.render(),
   boerse: () => market.render(),
+  hilfe: () => help.render(),
 };
 
 function parseRoute() {
@@ -109,6 +111,7 @@ function layout(content, route) {
       <div class="label-info">
         <span class="label-name" title="Dein Label">${esc(s.label.name)}</span>
         <button class="money-pill" data-act="openFinance" data-live-money title="Konto und Einnahmen">${money(liveMoney())}</button>
+        <a class="btn ghost small help-btn ${active === 'hilfe' ? 'active' : ''}" href="#/hilfe" title="Hilfe">?</a>
         <button class="btn ghost small" data-act="logout">Abmelden</button>
       </div>
       ${subnav(route)}
@@ -131,6 +134,7 @@ function render() {
   root.innerHTML = layout(VIEWS[route.name](route), route);
   updateCountdowns();
   showResults();
+  help.maybeStartTour();
   if (route.name === 'charts' && !app.charts) charts.loadCharts();
 }
 

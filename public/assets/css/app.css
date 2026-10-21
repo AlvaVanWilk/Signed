@@ -953,3 +953,16 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .tap-button { display: block; width: 100%; min-height: 120px; margin: 12px 0; font-size: 1.4rem; font-weight: 800; border-radius: 18px; touch-action: manipulation; }
 .tap-button.down { transform: scale(0.97); background: var(--accent); color: #fff; }
 .mg-calibrate { margin-top: 10px; }
+
+/* Tour und Hilfe */
+.tour { display: grid; justify-items: center; gap: 10px; text-align: center; padding: 8px 4px; }
+.tour-icon { font-size: 84px; line-height: 1; animation: celebrate-pop 0.5s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
+.tour h2 { margin: 0; font-size: 1.6rem; }
+.tour p { margin: 0; font-size: 1.15rem; }
+.tour-dots { display: flex; gap: 6px; margin: 4px 0 6px; }
+.tour-dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--line); }
+.tour-dots i.on { background: var(--accent); }
+.help-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.help-topic h2 { font-size: 1.1rem; margin: 0 0 6px; }
+.help-topic p { margin: 0; line-height: 1.5; }
+.help-btn { font-weight: 800; min-width: 34px; text-align: center; }

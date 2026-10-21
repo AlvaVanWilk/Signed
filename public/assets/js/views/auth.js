@@ -1,6 +1,7 @@
 import { api } from '../api.js';
 import { actions, app, cat, defineActions, refresh } from '../core.js';
 import { esc, money, openModal, toast } from '../ui.js';
+import { claimTour, openTour } from './help.js';
 
 export function render() {
   const tab = app.ui.authTab || 'register';
@@ -59,8 +60,11 @@ defineActions({
     try {
       const res = await api('register', values);
       app.label = res.label;
+      // Neues Label: erst die kurze Tour, dann der Talent-Scout.
+      const tour = claimTour();
       await refresh();
-      openWelcome();
+      if (tour) openTour(openWelcome);
+      else openWelcome();
     } catch (e) {
       toast(e.message, 'error');
     }

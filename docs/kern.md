@@ -19,6 +19,7 @@ Der Kernkreislauf: **Musiker und Instrumente finden → Bands zusammenstellen �
 | Aktivitäten | Band: Bandprobe, Band-Promo, Straßenmusik, Open Stage, Gig (erst mit Platte), Platte (Mischpult pro Lied). Einzeln: Solo-Probe (Rhythmus oder Tonhöhe), Promo-Mission. Ohne Band: Jam-Café (Mitmusiker für die erste Band), Straßenmusik |
 | Live | Live-Ticker mit Publikumsleiste für alle Auftritte |
 | Charts | Gemeinsame Album-Charts aller Spieler mit täglichen Tantiemen, dazu eine Label-Gesamtliste |
+| Einführung und Hilfe | Kurze Tour beim ersten Mal (5 Schritte, ein Satz je Schritt, auch für Kinder), danach die Hilfeseite (?) für alle, die tiefer einsteigen wollen |
 | Wechselbörse | Musiker ohne Band für 2 Tage anbieten; verbindliche Gebote, Mindestpreis aus den Werten |
 | Namen | Zufallsnamen für Bands und Platten; Bandnamen sind im ganzen Spiel eindeutig. Musiker: 236 Vornamen, 253 Nachnamen, ein Nachname kommt im eigenen Label nur einmal vor (solange noch freie da sind) |
 

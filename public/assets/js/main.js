@@ -198,7 +198,8 @@ function celebrateResult(body, res, audience) {
     if (p < 1) requestAnimationFrame(tick);
   }
   if (els.length) requestAnimationFrame(tick);
-  if (audience && res.meter !== null && res.meter !== undefined) playApplause((res.meter - 35) / 60);
+  // Erst klimpert das Geld, dann klatscht das Publikum – gleichzeitig klingt beides wie ein Münzregen.
+  if (audience && res.meter !== null && res.meter !== undefined) playApplause((res.meter - 35) / 60, moneyTile ? duration / 1000 : 0);
 }
 
 function resultHtml(r) {

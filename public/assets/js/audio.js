@@ -336,52 +336,50 @@ export function scheduleBacking({ genre, bpm, start, duration, drums = true, bas
 // ---------- Nach dem Auftritt ----------
 
 /**
- * Applaus: einzelne Leute, die jeder in seinem eigenen Takt klatschen (3–5 Mal pro Sekunde, eigene Klangfarbe
- * wie hohle oder flache Hände), darunter ein Rauschen der Menge. strength 0–1: wie begeistert das Publikum ist.
+ * Applaus: vor allem das breite, warme Rauschen vieler Hände, darin einige einzelne Klatscher in eigenem Takt
+ * (3–5 pro Sekunde, gedämpft – keine hellen Klicks, die nach Münzen klingen). strength 0–1: wie begeistert das Publikum ist.
  * Bei wenig Begeisterung klatschen nur ein paar Leute, kurz.
  */
-export function playApplause(strength) {
+export function playApplause(strength, delay = 0) {
   const c = getAudio();
   if (!c) return;
   const s = Math.max(0, Math.min(1, strength));
   const bus = c.createGain();
-  bus.gain.value = 0.35 + 0.35 * s;
-  bus.connect(master);
+  bus.gain.value = 0.5 + 0.4 * s;
+  // Alles Helle oben weg: Hände klingen dumpf, nicht klirrend.
+  bus.connect(filter('lowpass', 2600, 0.5)).connect(master);
   const length = 1.8 + 2.6 * s;
-  const start = c.currentTime + 0.05;
+  const start = c.currentTime + 0.05 + delay;
   const fade = (t) => Math.max(0, 1 - ((t - start) / length) ** 2);
 
-  // Viele Hände gleichzeitig verschwimmen zu einem breiten Rauschen.
-  if (s > 0.2) {
-    const wash = noise();
-    wash.loop = true;
-    const g = c.createGain();
-    g.gain.setValueAtTime(0.0001, start);
-    g.gain.exponentialRampToValueAtTime(0.12 * s, start + 0.25);
-    g.gain.setTargetAtTime(0.0001, start + length * 0.6, length * 0.2);
-    wash.connect(filter('highpass', 500, 0.5)).connect(filter('lowpass', 4500, 0.5)).connect(g).connect(bus);
-    wash.start(start);
-    wash.stop(start + length + 1);
-  }
+  const wash = noise();
+  wash.loop = true;
+  const swell = c.createGain();
+  const level = 0.05 + 0.3 * s;
+  swell.gain.setValueAtTime(0.0001, start);
+  swell.gain.exponentialRampToValueAtTime(level, start + 0.3);
+  swell.gain.setTargetAtTime(0.0001, start + length * 0.55, length * 0.22);
+  wash.connect(filter('highpass', 350, 0.5)).connect(filter('bandpass', 1100, 0.4)).connect(swell).connect(bus);
+  wash.start(start, Math.random() * 0.5);
+  wash.stop(start + length + 1.5);
 
-  const people = Math.round(3 + 22 * s);
+  const people = Math.round(2 + 12 * s);
   for (let p = 0; p < people; p++) {
-    // Jede Person klingt etwas anders und klatscht in ihrem eigenen Tempo.
-    const body = filter('bandpass', 800 + Math.random() * 1400, 0.6 + Math.random() * 0.5);
+    const body = filter('bandpass', 500 + Math.random() * 700, 0.9);
     const person = c.createGain();
-    person.gain.value = 0.5 + Math.random() * 0.5;
+    person.gain.value = (0.4 + Math.random() * 0.4) * (1 - 0.5 * s);
     body.connect(person).connect(bus);
     const rate = 3 + Math.random() * 2;
-    const stopAt = start + length * (0.6 + Math.random() * 0.4);
-    for (let t = start + Math.random() * 0.35; t < stopAt; t += (1 / rate) * (0.9 + Math.random() * 0.2)) {
+    const stopAt = start + length * (0.5 + Math.random() * 0.4);
+    for (let t = start + Math.random() * 0.4; t < stopAt; t += (1 / rate) * (0.85 + Math.random() * 0.3)) {
       const n = noise();
       const g = c.createGain();
-      envelope(g, t, 0.001, 0.5 * fade(t) + 0.0002, 0.05 + Math.random() * 0.03);
+      envelope(g, t, 0.003, 0.6 * fade(t) + 0.0002, 0.09 + Math.random() * 0.05);
       n.connect(g).connect(body);
-      n.start(t, Math.random() * 0.9, 0.1);
+      n.start(t, Math.random() * 0.9, 0.18);
     }
   }
-  setTimeout(() => bus.disconnect(), (length + 1.5) * 1000);
+  setTimeout(() => bus.disconnect(), (length + delay + 2) * 1000);
 }
 
 /** Ein Münzklimpern: zwei helle, kurz ausklingende Töne. */

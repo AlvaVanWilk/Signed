@@ -78,8 +78,8 @@ export function createMixerGame(container, game) {
     });
     // Mit Aufnahmen hört man den Pegel direkt: Sollwert = volle Lautstärke, darüber lauter, darunter leiser.
     if (stemPlayer) tracks.forEach((_, k) => stemPlayer.gains[k].gain.setTargetAtTime(Math.min(1.8, levelOf(k, now) / ZONE_CENTER), audio.currentTime, 0.03));
-    // Wer einen Regler festhält, hält den Pegel dort, wo der Finger ist.
-    for (const { k, y } of pointers.values()) setFaderFromPointer(k, y);
+    // Ziehen verschiebt den Regler; die Spur schwankt aber weiter – Festhalten allein hält sie nicht im grünen Bereich.
+    for (const p of pointers.values()) moveFader(p);
     tracks.forEach((_, k) => {
       const [up, downKey] = KEYS[k];
       if (held.has(up)) faders[k] = Math.min(1.6, faders[k] + KEY_SPEED * dt);
@@ -178,12 +178,10 @@ export function createMixerGame(container, game) {
     return k >= 0 && k < tracks.length ? k : null;
   }
 
-  /** Ziehen setzt den Pegel dorthin, wo der Finger ist; die Schwankung wird mit ausgeglichen. */
-  function setFaderFromPointer(k, clientY) {
-    const rect = canvas.getBoundingClientRect();
-    const { top, range } = layout();
-    const wanted = Math.max(0, Math.min(1, 1 - (clientY - rect.top - top) / range));
-    faders[k] = Math.max(-0.6, Math.min(1.6, wanted - offsets[k]));
+  /** Der Regler folgt der Bewegung des Fingers (nicht seiner Position): Wer stillhält, lässt die Spur wegschwanken. */
+  function moveFader(p) {
+    const { range } = layout();
+    faders[p.k] = Math.max(-0.6, Math.min(1.6, p.f0 + (p.y0 - p.y) / range));
   }
 
   function onPointerDown(e) {
@@ -191,9 +189,8 @@ export function createMixerGame(container, game) {
     const k = columnAt(e.clientX);
     if (k === null) return;
     e.preventDefault();
-    canvas.setPointerCapture(e.pointerId);
-    pointers.set(e.pointerId, { k, y: e.clientY });
-    setFaderFromPointer(k, e.clientY);
+    try { canvas.setPointerCapture(e.pointerId); } catch { /* Zeiger schon weg */ }
+    pointers.set(e.pointerId, { k, y: e.clientY, y0: e.clientY, f0: faders[k] });
   }
   function onPointerMove(e) {
     const held = pointers.get(e.pointerId);

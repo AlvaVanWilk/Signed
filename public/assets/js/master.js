@@ -183,7 +183,7 @@ export function createMasterGame(container, game) {
     const k = columnAt(e.clientX);
     if (k === null) return;
     e.preventDefault();
-    canvas.setPointerCapture(e.pointerId);
+    try { canvas.setPointerCapture(e.pointerId); } catch { /* Zeiger schon weg */ }
     pointers.set(e.pointerId, { k, y: e.clientY });
   }
   function onPointerMove(e) {

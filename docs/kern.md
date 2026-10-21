@@ -172,6 +172,7 @@ Ein Lied dauert 24 Sekunden: 12 Takte 4/4 (oder 16 Takte 3/4) bei 120 BPM – al
   Bis zu 4 Musiker haben eigene Spuren; größere Bands werden zu Gruppen (Rhythmus, Harmonie, Melodie) mit
   dem durchschnittlichen Können zusammengefasst. Jede Spur hat 6 Abschnitte à 4 Sekunden (2 Takte), bewertet wie oben.
   Der grüne Bereich ist ±11–19 %, je nach Sound der Band.
+  Ein Regler folgt der Bewegung des Fingers, nicht seiner Position: Festhalten allein hält die Spur nicht im Bereich.
 - **Master-Mix** (letzte Aufnahme einer Platte): Die ganze Band läuft durch einen Klangregler mit Bässen (250 Hz),
   Mitten (1 kHz) und Höhen (4 kHz). Jeder Regler hat eine richtige Stellung (15–85 %); Abweichung klingt mit 24 dB
   pro voller Reglerlänge daneben. Eine Lampe pro Regler: grün im Bereich (±11–19 % wie am Mischpult), gelb bis zum

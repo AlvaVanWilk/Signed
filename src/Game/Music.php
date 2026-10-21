@@ -83,7 +83,7 @@ final class Music
         $electric = $stem['electric'] ? 'elektrisch' : 'akustisch';
         $other = $stem['electric'] ? 'akustisch' : 'elektrisch';
         $names = $variants ? ["$name-$electric", "$name-$other"] : [$name];
-        if (isset($stem['voice'])) {
+        if ($stem['type'] === 'vocals' && isset($stem['voice'])) {
             // Stimmen: erst die eigene, dann die andere, zuletzt eine Spur ohne Stimme.
             $otherVoice = $stem['voice'] === 'weiblich' ? 'maennlich' : 'weiblich';
             $names = ["$name-{$stem['voice']}", "$name-$otherVoice", $name];

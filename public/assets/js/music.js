@@ -15,7 +15,7 @@ export function stemUrl({ type, level, genre, electric, voice = null }) {
   if (!name) return null;
   let names = variants ? [`${name}-${electric ? 'elektrisch' : 'akustisch'}`, `${name}-${electric ? 'akustisch' : 'elektrisch'}`] : [name];
   // Gesang: eigene Stimme, dann die andere, dann eine Spur ohne Stimme (wie Music::resolve).
-  if (voice) names = [`${name}-${voice}`, `${name}-${voice === 'weiblich' ? 'maennlich' : 'weiblich'}`, name];
+  if (type === 'vocals' && voice) names = [`${name}-${voice}`, `${name}-${voice === 'weiblich' ? 'maennlich' : 'weiblich'}`, name];
   const levels = [0, 1, 2, 3].sort((a, b) => Math.abs(a - level) - Math.abs(b - level) || b - a);
   for (const g of genre === 'pop' ? ['pop'] : [genre, 'pop']) {
     for (const file of names) {

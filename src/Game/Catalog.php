@@ -168,9 +168,9 @@ final class Catalog
 
     /** active = wirkt schon im Kern; die anderen brauchen spätere Features. */
     public const MANAGER_SKILLS = [
-        'verhandler' => ['name' => 'Verhandler', 'desc' => 'Gigs werden besser bezahlt.', 'active' => true],
-        'prprofi' => ['name' => 'PR-Profi', 'desc' => 'Mehr Ruhm bei Auftritten.', 'active' => true],
-        'scout' => ['name' => 'Scout', 'desc' => 'Bessere Chancen beim Pack-Öffnen.', 'active' => true],
+        'verhandler' => ['name' => 'Verhandler', 'desc' => 'Mehr Gage bei Gigs seiner Bands.', 'active' => true],
+        'prprofi' => ['name' => 'PR-Profi', 'desc' => 'Mehr Ruhm bei Auftritten seiner Bands.', 'active' => true],
+        'scout' => ['name' => 'Scout', 'desc' => 'Weniger gewöhnliche Karten in allen Packs des Labels – auch ohne Band. Der beste Scout zählt.', 'active' => true],
         'tourplaner' => ['name' => 'Tourplaner', 'desc' => 'Mehr und passendere Locations bei Tourneen.', 'active' => false],
         'netzwerker' => ['name' => 'Netzwerker', 'desc' => 'Zugang zu ausgeschriebenen und exklusiven Gigs.', 'active' => false],
     ];

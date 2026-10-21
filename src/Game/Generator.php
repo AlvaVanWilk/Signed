@@ -122,7 +122,8 @@ final class Generator
             'last_name' => $last,
             'rarity' => $rarity,
             'level' => Rng::int(...Balance::MANAGER_LEVEL[$rarity]),
-            'skills' => Rng::sample(array_keys(Catalog::MANAGER_SKILLS), $skillCount),
+            // Nur Fähigkeiten, die schon wirken – sonst zieht man einen Manager, der nichts kann.
+            'skills' => Rng::sample(array_keys(array_filter(Catalog::MANAGER_SKILLS, static fn ($s) => $s['active'])), $skillCount),
             'look' => $look,
         ];
     }

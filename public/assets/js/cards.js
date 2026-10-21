@@ -310,16 +310,32 @@ export function managerSkills(skills) {
   }).join('');
 }
 
+/** Was eine Manager-Fähigkeit bei dieser Stufe konkret bringt (wie BandCalc::managerBonus und Packs::withScout). */
+export function managerEffect(skill, level) {
+  const r = cat().rules;
+  const pct = (x) => `${Math.round(x * 100)} %`;
+  switch (skill) {
+    case 'verhandler': return `Gigs: <em>+${pct(r.negotiatorBonus * level)}</em> Gage.`;
+    case 'prprofi': return `Auftritte: <em>+${pct(r.prBonus * level)}</em> Ruhm.`;
+    case 'scout': return `Packs: <em>−${pct(Math.min(0.6, r.scoutShift * level))}</em> gewöhnliche Karten (ganzes Label).`;
+    default: return '<i>wirkt erst mit einem späteren Update</i>';
+  }
+}
+
 export function managerCard(m, { act = null, data = {}, size = '', extra = '' } = {}) {
   const skills = cat().managerSkills;
+  const songs = Math.ceil(m.level * cat().rules.managerSongsPerLevel);
   return tcg({
     rarity: m.rarity,
     theme: 'manager-bg',
     name: fullName(m),
     art: `${avatar(m.look)}<span class="tcg-badge">💼</span>`,
     type: `Manager<em>Stufe ${fmt0(m.level)}</em>`,
-    text: m.skills.map((s) => `<b>${esc(skills[s].name)}</b> ${esc(skills[s].desc)}${skills[s].active ? '' : ' <i>(später)</i>'}`).join('<br>'),
-    stats: [[fmt0(m.level), 'Stufe'], [fmt0(m.bandIds.length), 'Bands']],
+    text: [
+      ...m.skills.map((s) => `<span><b>${esc(skills[s].name)}</b> ${managerEffect(s, m.level)}</span>`),
+      m.bandIds?.length > 1 ? `<span>Teilt sich auf ${m.bandIds.length} Bands auf.</span>` : '',
+    ].join(''),
+    stats: [[fmt0(m.level), 'Stufe'], [`+${songs}`, 'Lieder/Gig'], [fmt0(m.bandIds.length), 'Bands']],
     act,
     data,
     size,

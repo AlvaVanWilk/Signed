@@ -21,6 +21,14 @@ Musik-Sammelkartenspiel (Web-App). Konzept: Claude-Doc „Signed – Spielkonzep
 - Browser: `public/assets/js/` mit ES-Modulen. `core.js` hält den Zustand, Aktionen laufen über
   `data-act` / `data-form` / `data-change` und `defineActions`.
 
+## Spielbalance – unbedingt beachten
+
+- Profi/Szenegröße (Stufe 2) ist mit den heutigen Mitteln sehr schwer, Virtuose/Star (Stufe 3) praktisch
+  unerreichbar (`Balance::LEVEL_PACE`). Das ist Absicht: Neue Inhalte (Tourneen, Manager, …) sollen genau diese
+  Stufen erreichbar machen – etwa mit eigenen Gewinnen, die nicht durch LEVEL_PACE gebremst werden, oder indem sie
+  die Bremse lockern. Neue Inhalte also nicht einfach in das bestehende Tempo einhängen, sondern bewusst den Weg
+  nach oben öffnen und das in `docs/kern.md` (Abschnitt Tempo) festhalten.
+
 ## Musik
 
 - Aufnahmen liegen in `public/assets/music/<genre>-<stufe>/` und werden lokal mit `tools/musik-import.php` (ffmpeg)

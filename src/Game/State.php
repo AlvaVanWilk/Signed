@@ -43,20 +43,26 @@ final class State
             $openRecords[$record['band_id']] = $record;
         }
 
+        $albums = Charts::albums($db, $repo->labelId);
+        $chartEntry = array_column($albums, null, 'recordId');
         $discography = [];
         foreach ($db->all("SELECT * FROM records WHERE label_id = ? AND status = 'done' ORDER BY finished_at DESC", [$repo->labelId]) as $row) {
             $results = json_decode($row['song_results'], true) ?: [];
-            $points = Charts::current((float) $row['chart_points'], $now - (int) $row['finished_at']);
+            $entry = $chartEntry[(int) $row['id']] ?? null;
             $discography[(int) $row['band_id']][] = [
                 'title' => $row['title'],
                 'songs' => (int) $row['songs_total'],
                 'format' => (int) $row['songs_total'] >= Balance::CHART_LP_SONGS ? 'LP' : 'EP',
                 'quality' => $results ? round(array_sum(array_column($results, 'accuracy')) / count($results), 3) : 0,
                 'perfect' => (bool) $row['perfect'],
-                'charting' => $points >= Balance::CHART_MIN_POINTS,
+                'charting' => $entry !== null,
                 'peak' => round((float) $row['chart_points'], 1),
                 'topped' => (bool) $row['topped'],
-                'points' => round($points, 1),
+                'points' => $entry['points'] ?? 0,
+                'rank' => $entry['rank'] ?? null,
+                'prev' => $entry['prev'] ?? null,
+                'trend' => $entry['trend'] ?? null,
+                'best' => $entry['best'] ?? ($row['rank_best'] === null ? null : (int) $row['rank_best']),
                 'finishedAt' => (int) $row['finished_at'],
             ];
         }
@@ -171,7 +177,7 @@ final class State
             'jamOffers' => (new Jam($repo))->open(),
             'market' => (new Transfers($repo))->market(),
             'packOffer' => $packOffer,
-            'finance' => Charts::income($db, $repo->labelId),
+            'finance' => Charts::income($db, $repo->labelId, $albums),
             'musicians' => array_values(array_map(static fn ($m) => Present::musician($m, $gearIds[$m['id']] ?? []), $musicians)),
             'gear' => $gearOut,
             'managers' => array_values(array_map(static fn ($m) => Present::manager($m, $managerBands[$m['id']] ?? []), $managers)),

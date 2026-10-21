@@ -27,7 +27,7 @@ export function render() {
       <div>
         <h1>Charts</h1>
         <p class="muted">${tab === 'albums'
-          ? `Die Top ${rules.chartSize} der Platten aller Labels. Qualität, Sound und Ruhm geben Punkte, die jeden Tag etwas schrumpfen. Solange eine Platte chartet, bringt sie täglich Tantiemen. Platz 1 gibt einen Scout-Gutschein.`
+          ? `Die Top ${rules.chartSize} der Platten aller Labels, jede Stunde neu. Eine Platte steigt ein, erreicht nach etwa ${fmt0(rules.chartPeakHours)} Stunden ihren Höhepunkt und fällt dann. Gigs und Promo der Band schieben die neueste Platte nach oben (der Schub halbiert sich alle ${fmt0(rules.chartBoostHalfHours)} Stunden). Solange eine Platte chartet, laufen Tantiemen. Platz 1 gibt einen Scout-Gutschein.`
           : 'Die erfolgreichsten Labels nach dem Ruhm all ihrer Bands.'}</p>
       </div>
       <button class="btn ghost small" data-act="chartsReload">Aktualisieren</button>
@@ -43,17 +43,27 @@ function albums(list) {
   if (!list.length) return '<div class="empty">Noch keine Platte in den Charts. Die erste fertige Platte steigt hier ein.</div>';
   return `
     <table class="charts">
-      <thead><tr><th>#</th><th>Platte</th><th>Band · Label</th><th title="Tage in den Charts">Tage</th><th>Punkte</th></tr></thead>
+      <thead><tr><th>#</th><th title="Platz in der letzten Chartstunde">Vorher</th><th>Platte</th><th>Band · Label</th><th title="Stunden in den Charts">Std.</th><th title="Bester Platz">Best</th><th>Punkte</th></tr></thead>
       <tbody>${list.map((e) => `
         <tr class="${e.own ? 'own' : ''}">
           <td class="rank">${e.rank}</td>
+          <td>${trendBadge(e)}</td>
           <td><b>${esc(e.title)}</b> <span class="chip">${e.format}</span>${e.perfect ? ' <span class="chip special" title="Ohne einen einzigen Fehler">perfekt</span>' : ''}</td>
           <td>${esc(e.band)}<br><span class="muted small">${esc(e.label)}</span></td>
-          <td>${fmt0(e.days)}</td>
-          <td><b>${fmt1(e.points)}</b>${e.own ? `<br><span class="muted small">≈ ${money(e.perDay)} / Tag</span>` : ''}</td>
+          <td>${fmt0(e.hours)}</td>
+          <td>${fmt0(e.best)}</td>
+          <td><b>${fmt1(e.points)}</b>${e.own ? `<br><span class="muted small">${money(e.perHour)} / Std.</span>` : ''}</td>
         </tr>`).join('')}
       </tbody>
     </table>`;
+}
+
+/** Auf- oder Abstieg seit der letzten Chartstunde, wie in echten Charts. */
+export function trendBadge(e) {
+  if (e.trend === 'new') return '<span class="trend new">NEU</span>';
+  if (e.trend === 'up') return `<span class="trend up" title="vorher Platz ${e.prev}">▲ ${e.prev}</span>`;
+  if (e.trend === 'down') return `<span class="trend down" title="vorher Platz ${e.prev}">▼ ${e.prev}</span>`;
+  return `<span class="trend same" title="vorher Platz ${e.prev}">– ${e.prev ?? ''}</span>`;
 }
 
 function labels(list) {

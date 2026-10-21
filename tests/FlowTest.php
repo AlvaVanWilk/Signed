@@ -499,7 +499,7 @@ test('Manager: höchstens drei Bands, Fan-Karte bringt Ruhm', function () {
     checkEquals(0, count($state['items']));
 });
 
-test('Album-Charts: Platten aller Labels, Platz 1 gibt einen Gutschein, Tantiemen fließen täglich', function () {
+test('Album-Charts: Platten aller Labels, Platz 1 gibt einen Gutschein, Tantiemen laufen, Promo schiebt an', function () {
     $db = freshDb();
     $a = registerPlayer($db, 'Alpha');
     $b = registerPlayer($db, 'Beta');
@@ -534,23 +534,39 @@ test('Album-Charts: Platten aller Labels, Platz 1 gibt einen Gutschein, Tantieme
     $b->get('charts');
     checkEquals(Balance::SCOUT_START_VOUCHERS + 2, $a->get('state')['scout']['vouchers'], 'Nur einmal pro Platte');
 
-    // Tantiemen laufen ständig: in kleinen Schritten genauso viel wie in einem großen.
+    $first = array_column($b->get('charts')['albums'], null, 'title');
+    checkEquals('new', $first['Beta EP']['trend']);
+
+    // Tantiemen laufen ständig: in kleinen Schritten so viel, wie die Punkte über die Zeit ergeben.
     $money = $a->get('state')['label']['money'];
-    $start = (float) $db->value("SELECT chart_points FROM records WHERE title = 'Alpha EP'")
-        * Balance::CHART_DECAY ** ((Clock::now() - (int) $db->value("SELECT finished_at FROM records WHERE title = 'Alpha EP'")) / 86400);
+    $row = $db->one("SELECT chart_points, finished_at, boost, boost_at FROM records WHERE title = 'Alpha EP'");
+    $from = Clock::now();
     for ($i = 0; $i < 8; $i++) {
-        Clock::advance(3 * 3600);
+        Clock::advance(900);
         $a->get('state');
     }
-    Clock::advance(2 * 86400 - 24 * 3600 + 60);
+    $expected = 0.0;
+    for ($t = $from; $t < Clock::now(); $t += 10) {
+        $expected += Signed\Game\Charts::pointsAt($row, $t) * 10 / 3600 * Balance::ROYALTY_MONEY;
+    }
     $state = $a->get('state');
-    $expected = Balance::ROYALTY_MONEY * $start * (1 - Balance::CHART_DECAY ** (2 + 60 / 86400)) / -log(Balance::CHART_DECAY);
-    check(abs($state['label']['money'] - $money - $expected) <= 1.5, sprintf('Tantiemen nach zwei Tagen: %d statt %.1f', $state['label']['money'] - $money, $expected));
+    check(abs($state['label']['money'] - $money - $expected) <= 1.5, sprintf('Tantiemen nach zwei Stunden: %d statt %.1f', $state['label']['money'] - $money, $expected));
     check(str_starts_with($state['finance']['ledger'][0]['text'], 'Tantiemen'));
     check(count(array_filter($state['finance']['ledger'], static fn ($l) => str_starts_with($l['text'], 'Tantiemen'))) <= 3, 'Eine Zeile pro Tag');
-    $points = bandById($state, $bandA['id'])['discography'][0]['points'];
-    $before = $charts['albums'][0]['points'];
-    check(abs($points - $before * Balance::CHART_DECAY ** 2) < 0.5, 'Punkte schrumpfen täglich');
+    check($state['finance']['moneyPerHour'] > 0);
+
+    // Band-Promo schiebt die neueste Platte an; in der neuen Chartstunde gibt es einen Platz „vorher“.
+    $before = (float) $db->value("SELECT boost FROM records WHERE title = 'Beta EP'");
+    $b->post('bandPromo', ['bandId' => $bandB['id']]);
+    Clock::advance(Balance::BAND_PROMO['seconds']);
+    $b->get('state');
+    check((float) $db->value("SELECT boost FROM records WHERE title = 'Beta EP'") > $before, 'Promo gibt Schub');
+    Clock::advance(3600);
+    $beta = array_column($b->get('charts')['albums'], null, 'title')['Beta EP'];
+    check($beta['prev'] !== null && in_array($beta['trend'], ['up', 'down', 'same'], true));
+
+    Clock::advance(3 * 86400);
+    checkEquals([], $b->get('charts')['albums'], 'Nach ein paar Tagen sind alle draußen');
 });
 
 test('Auflösen gibt die Musiker frei und behält ihre Bekanntheit', function () {

@@ -937,3 +937,10 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .gear-bg.finish-3 .tcg-icon { filter: sepia(1) saturate(3) hue-rotate(-12deg) brightness(1.05) drop-shadow(0 0 8px rgba(255, 230, 140, 0.9)); }
 .gear-bg.finish-3 { box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5), 0 0 0 2px #f2b600, 0 0 22px rgba(255, 200, 80, 0.6); }
 .perk-list { margin: 0 0 12px; padding-left: 0; list-style: none; display: grid; gap: 4px; }
+
+/* Chart-Trend wie in echten Charts */
+.trend { font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
+.trend.up { color: var(--ok); }
+.trend.down { color: var(--bad); }
+.trend.same { color: var(--muted); }
+.trend.new { color: #ffd36e; }

@@ -157,6 +157,8 @@ final class Present
                 'scoutCards' => Balance::SCOUT_CARDS,
                 'chartLpSongs' => Balance::CHART_LP_SONGS,
                 'chartSize' => Balance::CHART_SIZE,
+                'chartPeakHours' => Balance::CHART_PEAK / 3600,
+                'chartBoostHalfHours' => Balance::CHART_BOOST_HALF / 3600,
             ],
         ];
     }

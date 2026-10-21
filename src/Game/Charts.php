@@ -7,12 +7,14 @@ use Signed\Clock;
 use Signed\Db;
 
 /**
- * Album-Charts über alle Spieler: Jede fertige Platte bekommt Chartpunkte, die jeden Tag schrumpfen.
- * Solange eine Platte chartet, bringt sie täglich Tantiemen. Dazu eine Label-Gesamtliste nach Ruhm.
+ * Album-Charts über alle Spieler, gerechnet in Stunden: Eine Platte steigt mit rund zwei Dritteln ihrer Punkte ein,
+ * erreicht nach einigen Stunden ihren Höhepunkt und fällt dann. Weil jede Platte ihren eigenen Verlauf hat,
+ * überholen sie sich gegenseitig. Gigs und Promo der Band schieben die neueste Platte zusätzlich an (Schub, der
+ * mit der Zeit nachlässt). Solange eine Platte chartet, laufen Tantiemen. Dazu eine Label-Gesamtliste nach Ruhm.
  */
 final class Charts
 {
-    private const DAY = 86400;
+    private const HOUR = 3600;
 
     /** Chartpunkte einer frisch fertigen Platte. */
     public static function points(int $songs, float $quality, float $sound, bool $perfect, float $bandFame): float
@@ -25,46 +27,90 @@ final class Charts
             * ($perfect ? Balance::CHART_PERFECT : 1) * $fame, 1);
     }
 
-    /** Punkte nach $seconds seit Erscheinen. */
-    public static function current(float $points, int $seconds): float
+    /** Verlauf ohne Schub: Einstieg bei 65 %, Höhepunkt nach CHART_PEAK, danach fallend. */
+    public static function curve(int $age): float
     {
-        return $points * Balance::CHART_DECAY ** (max(0, $seconds) / self::DAY);
+        if ($age < 0) {
+            return 0.0;
+        }
+        $x = $age / Balance::CHART_PEAK;
+        return ($x + 0.5) / 1.5 * exp((1 - $x) / 1.5);
     }
 
-    public static function build(Db $db, int $labelId): array
+    /** Chartpunkte einer Platte zum Zeitpunkt $t: Verlauf × Grundpunkte + nachlassender Schub aus Gigs und Promo. */
+    public static function pointsAt(array $row, int $t): float
+    {
+        $boost = (float) ($row['boost'] ?? 0);
+        $boostAt = (int) ($row['boost_at'] ?? 0);
+        $push = $boost > 0 && $t >= $boostAt ? $boost * 0.5 ** (($t - $boostAt) / Balance::CHART_BOOST_HALF) : 0.0;
+        return (float) $row['chart_points'] * self::curve($t - (int) $row['finished_at']) + $push;
+    }
+
+    /**
+     * Alle Platten, die gerade charten, mit Platz, Platz vorher (zur letzten vollen Stunde), bestem Platz und Trend.
+     * Merkt sich die Plätze in der Datenbank, damit man Auf- und Abstieg sieht.
+     */
+    public static function albums(Db $db, ?int $labelId = null): array
     {
         $now = Clock::now();
         $rows = $db->all(
-            "SELECT r.id, r.title, r.songs_total, r.perfect, r.chart_points, r.finished_at, r.topped, r.label_id,
-                    b.name AS band_name, l.name AS label_name
+            "SELECT r.id, r.title, r.songs_total, r.perfect, r.chart_points, r.finished_at, r.boost, r.boost_at, r.topped,
+                    r.label_id, r.band_id, r.rank_last, r.rank_prev, r.rank_hour, r.rank_best, b.name AS band_name, l.name AS label_name
              FROM records r
              JOIN labels l ON l.id = r.label_id
              LEFT JOIN bands b ON b.id = r.band_id
              WHERE r.status = 'done' AND r.chart_points > 0 AND r.finished_at >= ?",
-            [$now - 90 * self::DAY]
+            [$now - Balance::CHART_MAX_AGE]
         );
         $albums = [];
         foreach ($rows as $row) {
-            $points = self::current((float) $row['chart_points'], $now - (int) $row['finished_at']);
-            if ($points < Balance::CHART_MIN_POINTS) {
-                continue;
+            $points = self::pointsAt($row, $now);
+            if ($points >= Balance::CHART_MIN_POINTS) {
+                $albums[] = ['row' => $row, 'points' => $points];
             }
-            $albums[] = [
+        }
+        usort($albums, static fn ($a, $b) => $b['points'] <=> $a['points']);
+        $hour = intdiv($now, self::HOUR);
+        $out = [];
+        foreach ($albums as $index => $album) {
+            $row = $album['row'];
+            $rank = $index + 1;
+            $prev = $row['rank_prev'] === null ? null : (int) $row['rank_prev'];
+            $last = $row['rank_last'] === null ? null : (int) $row['rank_last'];
+            if ((int) $row['rank_hour'] < $hour) {
+                // Neue Chartstunde: der zuletzt gesehene Platz wird zum Platz „vorher“.
+                $prev = $last;
+            }
+            $best = $row['rank_best'] === null ? $rank : min((int) $row['rank_best'], $rank);
+            if ($last !== $rank || $prev !== ($row['rank_prev'] === null ? null : (int) $row['rank_prev']) || (int) $row['rank_hour'] !== $hour || (int) $row['rank_best'] !== $best) {
+                $db->update('records', ['rank_last' => $rank, 'rank_prev' => $prev, 'rank_hour' => $hour, 'rank_best' => $best], ['id' => (int) $row['id']]);
+            }
+            $out[] = [
                 'recordId' => (int) $row['id'],
+                'bandId' => $row['band_id'] === null ? null : (int) $row['band_id'],
                 'title' => $row['title'],
                 'band' => $row['band_name'] ?? 'aufgelöste Band',
                 'label' => $row['label_name'],
                 'format' => (int) $row['songs_total'] >= Balance::CHART_LP_SONGS ? 'LP' : 'EP',
                 'perfect' => (bool) $row['perfect'],
-                'days' => intdiv($now - (int) $row['finished_at'], self::DAY),
-                'points' => round($points, 1),
-                'perDay' => (int) round($points * Balance::ROYALTY_MONEY),
-                'own' => (int) $row['label_id'] === $labelId,
+                'hours' => intdiv($now - (int) $row['finished_at'], self::HOUR),
+                'points' => round($album['points'], 1),
+                'rank' => $rank,
+                'prev' => $prev,
+                'best' => $best,
+                'trend' => $prev === null ? 'new' : ($rank < $prev ? 'up' : ($rank > $prev ? 'down' : 'same')),
+                'perHour' => round($album['points'] * Balance::ROYALTY_MONEY, 1),
+                'own' => $labelId !== null && (int) $row['label_id'] === $labelId,
                 'topped' => (bool) $row['topped'],
                 'labelId' => (int) $row['label_id'],
             ];
         }
-        usort($albums, static fn ($a, $b) => $b['points'] <=> $a['points']);
+        return $out;
+    }
+
+    public static function build(Db $db, int $labelId): array
+    {
+        $albums = self::albums($db, $labelId);
 
         // Platz 1 gibt einmalig einen Scout-Gutschein – aber nur, wenn es Konkurrenz gibt.
         $competitors = count(array_unique(array_column($albums, 'labelId')));
@@ -75,105 +121,126 @@ final class Charts
             }
         }
         foreach ($albums as &$album) {
-            unset($album['topped'], $album['labelId']);
+            unset($album['topped'], $album['labelId'], $album['bandId']);
         }
         unset($album);
+        $albums = array_values(array_filter($albums, static fn ($a) => $a['rank'] <= Balance::CHART_SIZE || $a['own']));
 
-        return ['albums' => self::rank($albums), 'labels' => self::rank(self::labels($db, $labelId))];
+        return ['albums' => $albums, 'labels' => self::rank(self::labels($db, $labelId))];
+    }
+
+    /**
+     * Gigs und Promo schieben die neueste Platte der Band an, solange sie chartet. Vorher werden die Tantiemen
+     * bis jetzt abgerechnet, damit der Schub erst ab jetzt zählt.
+     */
+    public static function boost(Repo $repo, int $bandId, float $amount): void
+    {
+        if ($amount <= 0) {
+            return;
+        }
+        $now = Clock::now();
+        $row = $repo->db->one(
+            "SELECT id, chart_points, finished_at, boost, boost_at FROM records
+             WHERE band_id = ? AND status = 'done' AND chart_points > 0 AND finished_at >= ? ORDER BY finished_at DESC",
+            [$bandId, $now - Balance::CHART_MAX_AGE]
+        );
+        if ($row === null || self::pointsAt($row, $now) < Balance::CHART_MIN_POINTS) {
+            return;
+        }
+        self::payRoyalties($repo->db, $repo->labelId);
+        $left = (float) $row['boost'] > 0 ? (float) $row['boost'] * 0.5 ** (($now - (int) $row['boost_at']) / Balance::CHART_BOOST_HALF) : 0.0;
+        $repo->db->update('records', ['boost' => $left + $amount, 'boost_at' => $now], ['id' => (int) $row['id']]);
     }
 
     /**
      * Tantiemen laufen ständig: Bei jedem Aufruf wird abgerechnet, was seit dem letzten Mal angefallen ist
-     * (Integral der schrumpfenden Chartpunkte). Geld ans Label, Ruhm an die aktuellen Mitglieder der Band.
+     * (Summe der Chartpunkte über die Zeit). Geld ans Label, Ruhm an die aktuellen Mitglieder der Band.
      * Bruchteile eines ₲ werden aufgehoben, bis ein ganzer zusammenkommt.
      */
     public static function payRoyalties(Db $db, int $labelId): void
     {
         $now = Clock::now();
         $rows = $db->all(
-            "SELECT id, band_id, title, chart_points, finished_at, royalties_until, royalty_carry FROM records
-             WHERE label_id = ? AND status = 'done' AND chart_points > 0 AND royalties_until < ?",
-            [$labelId, $now]
+            "SELECT id, band_id, title, chart_points, finished_at, boost, boost_at, royalties_until, royalty_carry FROM records
+             WHERE label_id = ? AND status = 'done' AND chart_points > 0 AND royalties_until < ? AND finished_at >= ?",
+            [$labelId, $now, $now - Balance::CHART_MAX_AGE - self::HOUR]
         );
         foreach ($rows as $row) {
             $db->transaction(static function () use ($db, $labelId, $row, $now): void {
-                $from = (int) $row['royalties_until'];
-                $claimed = $db->exec('UPDATE records SET royalties_until = ? WHERE id = ? AND royalties_until = ?', [$now, $row['id'], $from]);
+                $from = max((int) $row['royalties_until'], (int) $row['finished_at']);
+                $claimed = $db->exec('UPDATE records SET royalties_until = ? WHERE id = ? AND royalties_until = ?', [$now, $row['id'], $row['royalties_until']]);
                 if ($claimed === 0) {
                     return;
                 }
-                $finished = (int) $row['finished_at'];
-                $integral = self::pointSeconds((float) $row['chart_points'], max(0, $from - $finished), $now - $finished);
-                if ($integral <= 0) {
+                $pointHours = self::pointSeconds($row, $from, $now) / self::HOUR;
+                if ($pointHours <= 0) {
                     return;
                 }
-                $money = $integral / self::DAY * Balance::ROYALTY_MONEY + (float) $row['royalty_carry'];
+                $money = $pointHours * Balance::ROYALTY_MONEY + (float) $row['royalty_carry'];
                 $paid = (int) floor($money);
                 $db->update('records', ['royalty_carry' => $money - $paid], ['id' => (int) $row['id']]);
                 $repo = new Repo($db, $labelId);
                 $repo->earnDaily($paid, sprintf('Tantiemen „%s“', $row['title']));
                 $members = $row['band_id'] === null ? [] : $repo->members((int) $row['band_id']);
                 if ($members) {
-                    $fame = $integral / self::DAY * Balance::ROYALTY_FAME;
+                    $fame = $pointHours * Balance::ROYALTY_FAME;
                     $repo->addBandFame((int) $row['band_id'], array_fill_keys(array_column($members, 'id'), $fame / count($members)));
                 }
             });
         }
     }
 
-    /** Chartpunkte × Sekunden zwischen $a und $b (Sekunden seit Erscheinen), nur solange die Platte chartet. */
-    private static function pointSeconds(float $points, int $a, int $b): float
+    /** Chartpunkte × Sekunden zwischen $a und $b, nur solange die Platte chartet (Simpson-Regel, höchstens 2 Minuten je Schritt). */
+    private static function pointSeconds(array $row, int $a, int $b): float
     {
-        $k = log(Balance::CHART_DECAY) / self::DAY;
-        if ($points < Balance::CHART_MIN_POINTS) {
-            return 0.0;
-        }
-        $end = log(Balance::CHART_MIN_POINTS / $points) / $k;
-        $b = min((float) $b, $end);
         if ($b <= $a) {
             return 0.0;
         }
-        return $points / $k * (exp($k * $b) - exp($k * $a));
+        $steps = max(2, min(4000, (int) ceil(($b - $a) / 120)));
+        $steps += $steps % 2;
+        $h = ($b - $a) / $steps;
+        $f = static function (float $t) use ($row): float {
+            $p = self::pointsAt($row, (int) round($t));
+            return $p >= Balance::CHART_MIN_POINTS ? $p : 0.0;
+        };
+        $sum = $f($a) + $f($b);
+        for ($i = 1; $i < $steps; $i++) {
+            $sum += $f($a + $i * $h) * ($i % 2 ? 4 : 2);
+        }
+        return $sum * $h / 3;
     }
 
     /** Regelmäßige Einnahmen: alle eigenen Platten, die gerade charten, und der Kontoauszug. */
-    public static function income(Db $db, int $labelId): array
+    public static function income(Db $db, int $labelId, ?array $albums = null): array
     {
-        $now = Clock::now();
         $records = [];
         $bands = [];
-        foreach ($db->all(
-            "SELECT r.title, r.band_id, r.chart_points, r.finished_at, b.name AS band_name FROM records r
-             LEFT JOIN bands b ON b.id = r.band_id
-             WHERE r.label_id = ? AND r.status = 'done' AND r.chart_points > 0",
-            [$labelId]
-        ) as $row) {
-            $points = self::current((float) $row['chart_points'], $now - (int) $row['finished_at']);
-            if ($points >= Balance::CHART_MIN_POINTS) {
-                if ($row['band_id'] !== null) {
-                    $band = &$bands[(int) $row['band_id']];
-                    $band['moneyPerHour'] = ($band['moneyPerHour'] ?? 0) + $points * Balance::ROYALTY_MONEY / 24;
-                    $band['famePerHour'] = ($band['famePerHour'] ?? 0) + $points * Balance::ROYALTY_FAME / 24;
-                    unset($band);
-                }
-                $records[] = [
-                    'title' => $row['title'],
-                    'band' => $row['band_name'] ?? 'aufgelöste Band',
-                    'points' => round($points, 1),
-                    'perDay' => (int) round($points * Balance::ROYALTY_MONEY),
-                ];
+        foreach ($albums ?? self::albums($db, $labelId) as $album) {
+            if (!$album['own']) {
+                continue;
             }
+            if ($album['bandId'] !== null) {
+                $band = &$bands[$album['bandId']];
+                $band['moneyPerHour'] = ($band['moneyPerHour'] ?? 0) + $album['points'] * Balance::ROYALTY_MONEY;
+                $band['famePerHour'] = ($band['famePerHour'] ?? 0) + $album['points'] * Balance::ROYALTY_FAME;
+                unset($band);
+            }
+            $records[] = [
+                'title' => $album['title'],
+                'band' => $album['band'],
+                'points' => $album['points'],
+                'rank' => $album['rank'],
+                'trend' => $album['trend'],
+                'perHour' => $album['perHour'],
+            ];
         }
-        usort($records, static fn ($a, $b) => $b['perDay'] <=> $a['perDay']);
-        $ledger = $db->all('SELECT amount, text, created_at FROM ledger WHERE label_id = ? ORDER BY id DESC LIMIT 40', [$labelId]);
         $points = array_sum(array_column($records, 'points'));
+        $ledger = $db->all('SELECT amount, text, created_at FROM ledger WHERE label_id = ? ORDER BY id DESC LIMIT 40', [$labelId]);
         return [
-            'perDay' => array_sum(array_column($records, 'perDay')),
             // Für die laufende Anzeige im Browser (Geld tickt zwischen zwei Abrufen weiter).
-            'moneyPerHour' => round($points * Balance::ROYALTY_MONEY / 24, 2),
-            'famePerHour' => round($points * Balance::ROYALTY_FAME / 24, 3),
+            'moneyPerHour' => round($points * Balance::ROYALTY_MONEY, 2),
+            'famePerHour' => round($points * Balance::ROYALTY_FAME, 3),
             'bands' => (object) $bands,
-            'decay' => Balance::CHART_DECAY,
             'records' => $records,
             'ledger' => array_map(static fn ($l) => ['amount' => (int) $l['amount'], 'text' => $l['text'], 'at' => (int) $l['created_at']], $ledger),
         ];

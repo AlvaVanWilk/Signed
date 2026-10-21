@@ -7,6 +7,7 @@ import * as auth from './views/auth.js';
 import * as bands from './views/bands.js';
 import * as catalog from './views/catalog.js';
 import * as charts from './views/charts.js';
+import { trendBadge } from './views/charts.js';
 import * as market from './views/market.js';
 import * as musician from './views/musician.js';
 import * as overview from './views/overview.js';
@@ -241,15 +242,14 @@ function financeHtml() {
     <div class="eyebrow">Groove Coins</div>
     <h2 data-live-money>${money(liveMoney())}</h2>
     <div class="reward-grid">
-      ${reward('Tantiemen pro Stunde', `${fmtGain(f.moneyPerHour)} ₲`)}
-      ${reward('Tantiemen pro Tag', money(f.perDay))}
+      ${reward('Tantiemen pro Stunde', money(f.moneyPerHour))}
       ${reward('Platten in den Charts', String(f.records.length))}
     </div>
     ${f.records.length ? `
-      <p class="muted small">Die Chartpunkte – und damit die Tantiemen – sinken jeden Tag um ${percent(1 - f.decay)}.</p>
+      <p class="muted small">Tantiemen laufen, solange eine Platte chartet. Gigs und Promo schieben sie in den Charts nach oben.</p>
       <table class="charts finance-table">
-        <thead><tr><th>Platte</th><th>Band</th><th>Punkte</th><th>pro Tag</th></tr></thead>
-        <tbody>${f.records.map((r) => `<tr><td>„${esc(r.title)}“</td><td>${esc(r.band)}</td><td>${fmt1(r.points)}</td><td>${money(r.perDay)}</td></tr>`).join('')}</tbody>
+        <thead><tr><th>Platte</th><th>Band</th><th>Platz</th><th>Punkte</th><th>pro Std.</th></tr></thead>
+        <tbody>${f.records.map((r) => `<tr><td>„${esc(r.title)}“</td><td>${esc(r.band)}</td><td>${r.rank} ${trendBadge(r)}</td><td>${fmt1(r.points)}</td><td>${money(r.perHour)}</td></tr>`).join('')}</tbody>
       </table>` : '<p class="muted">Noch keine Platte in den Charts – regelmäßige Einnahmen kommen über Tantiemen.</p>'}
     <h3>Kontoauszug</h3>
     ${f.ledger.length ? `<ul class="history ledger">${f.ledger.map((l) => `

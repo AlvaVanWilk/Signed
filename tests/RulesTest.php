@@ -206,11 +206,15 @@ test('Minispiele: Tonhöhen-Melodie und Mischpult', function () {
     check(Chart::mixerZone(80) > Chart::mixerZone(10));
 });
 
-test('Chartpunkte: Qualität zählt, LPs mehr als EPs, Punkte schrumpfen', function () {
+test('Chartpunkte: Qualität zählt, LPs mehr als EPs; Verlauf steigt erst und fällt dann', function () {
     check(Signed\Game\Charts::points(3, 0.9, 30, false, 0) > Signed\Game\Charts::points(3, 0.5, 30, false, 0));
     check(Signed\Game\Charts::points(10, 0.8, 30, false, 0) > Signed\Game\Charts::points(6, 0.8, 30, false, 0) * 1.5);
     check(Signed\Game\Charts::points(3, 0.8, 30, true, 0) > Signed\Game\Charts::points(3, 0.8, 30, false, 0));
-    checkEquals(round(100 * Balance::CHART_DECAY, 3), round(Signed\Game\Charts::current(100, 86400), 3));
+    $curve = [Signed\Game\Charts::class, 'curve'];
+    check(abs($curve(0) - 0.65) < 0.01, 'Einstieg mit rund zwei Dritteln');
+    check(abs($curve(Balance::CHART_PEAK) - 1.0) < 0.001, 'Höhepunkt');
+    check($curve((int) (Balance::CHART_PEAK / 2)) < 1 && $curve(2 * Balance::CHART_PEAK) < 1);
+    check($curve(10 * Balance::CHART_PEAK) < 0.02, 'Nach gut anderthalb Tagen fast draußen');
 });
 
 test('Simulation: bessere Bands begeistern das Publikum mehr', function () {

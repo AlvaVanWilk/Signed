@@ -264,14 +264,22 @@ final class Balance
     /** Bandruhm hebt die Punkte: +1 pro 500 Ruhm, höchstens +2. */
     public const CHART_FAME = 500;
     public const CHART_FAME_MAX = 2;
-    /** Die Punkte schrumpfen jeden Tag auf diesen Anteil. */
-    public const CHART_DECAY = 0.88;
+    /**
+     * Verlauf: Einstieg mit 65 % der Punkte, Höhepunkt nach CHART_PEAK Sekunden, danach fallend
+     * (nach etwa 10 × CHART_PEAK ist eine durchschnittliche Platte draußen). Älter als CHART_MAX_AGE zählt nicht mehr.
+     */
+    public const CHART_PEAK = 4 * 3600;
+    public const CHART_MAX_AGE = 7 * 86400;
+    /** Schub für die neueste Platte der Band: Gig pro Lied × Grund-Ruhm des Ortes × diesem Wert, Promo fest. Halbiert sich alle 3 Stunden. */
+    public const CHART_GIG_BOOST = 4.0;
+    public const CHART_PROMO_BOOST = ['band' => 4.0, 'solo' => 1.5];
+    public const CHART_BOOST_HALF = 3 * 3600;
     /** Unter dieser Punktzahl fällt eine Platte aus den Charts. */
     public const CHART_MIN_POINTS = 1.0;
     public const CHART_SIZE = 50;
     /** Platz 1 bringt einen Scout-Gutschein erst, wenn so viele Labels Platten in den Charts haben. */
     public const CHART_TOP_MIN_LABELS = 3;
-    /** Tantiemen pro Chartpunkt und Tag. */
-    public const ROYALTY_MONEY = 2.0;
-    public const ROYALTY_FAME = 0.05;
+    /** Tantiemen pro Chartpunkt und Stunde. */
+    public const ROYALTY_MONEY = 1.0;
+    public const ROYALTY_FAME = 0.025;
 }

@@ -139,6 +139,8 @@ final class Activities
                     'meter' => $sim['meter'],
                     'drops' => $drops,
                     'venue' => $venueKey,
+                    // Ein guter Gig schiebt die neueste Platte in den Charts an.
+                    'chartBoost' => $type === 'gig' ? round($songs * $fameBase * Balance::CHART_GIG_BOOST * $sim['perf'], 2) : 0,
                 ],
             ]);
         });
@@ -248,7 +250,10 @@ final class Activities
             return $this->insert($bandId, null, 'bandpromo', $now, $endsAt, [
                 'title' => 'Band-Promo: ' . $band['name'],
                 'songs' => 0,
-                'reward' => ['fameGains' => BandCalc::splitFame($members, $fame, $this->repo->gearByMusician())],
+                'reward' => [
+                    'fameGains' => BandCalc::splitFame($members, $fame, $this->repo->gearByMusician()),
+                    'chartBoost' => Balance::CHART_PROMO_BOOST['band'],
+                ],
             ]);
         });
     }
@@ -299,6 +304,7 @@ final class Activities
         $bandId = (int) $row['band_id'];
         $repo->earn((int) ($reward['money'] ?? 0), sprintf('Gage: %s', $data['title']));
         $fameGain = $repo->addBandFame($bandId, $reward['fameGains'] ?? []);
+        Charts::boost($repo, $bandId, (float) ($reward['chartBoost'] ?? 0));
         $result = [
             'money' => (int) ($reward['money'] ?? 0),
             'fame' => round($fameGain, 2),
@@ -365,7 +371,10 @@ final class Activities
     private static function applyPromo(Repo $repo, array $row, array $data): array
     {
         $gain = self::applyFame($repo, $data['reward']['fameGains'] ?? []);
-        $m = $repo->db->one('SELECT fame FROM musicians WHERE id = ?', [(int) $row['musician_id']]);
+        $m = $repo->db->one('SELECT fame, band_id FROM musicians WHERE id = ?', [(int) $row['musician_id']]);
+        if ($m !== null && $m['band_id'] !== null) {
+            Charts::boost($repo, (int) $m['band_id'], Balance::CHART_PROMO_BOOST['solo']);
+        }
         return ['fame' => round($gain, 1), 'total' => $m === null ? 0 : round((float) $m['fame'], 1)];
     }
 

@@ -315,6 +315,15 @@ final class Schema
                 'ALTER TABLE gear ADD COLUMN perks TEXT NULL',
                 [Migrations::class, 'gearPerks'],
             ],
+            // 10: Charts in Stunden – Schub aus Gigs und Promo, Plätze vorher und bester Platz
+            [
+                'ALTER TABLE records ADD COLUMN boost REAL NOT NULL DEFAULT 0',
+                'ALTER TABLE records ADD COLUMN boost_at INTEGER NOT NULL DEFAULT 0',
+                'ALTER TABLE records ADD COLUMN rank_last INTEGER NULL',
+                'ALTER TABLE records ADD COLUMN rank_prev INTEGER NULL',
+                'ALTER TABLE records ADD COLUMN rank_hour INTEGER NOT NULL DEFAULT 0',
+                'ALTER TABLE records ADD COLUMN rank_best INTEGER NULL',
+            ],
         ];
     }
 }

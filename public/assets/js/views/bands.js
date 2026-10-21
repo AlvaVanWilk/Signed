@@ -4,6 +4,7 @@ import { app, bandById, cat, defineActions, isBusy, managerById, musicianById, m
 import { openLive } from '../live.js';
 import { startPractice, startRecordSong } from '../play.js';
 import { assignGear, soundChange } from '../gear.js';
+import { trendBadge } from './charts.js';
 import { bar, confirmDialog, duration, esc, fmt0, fmt1, fmt2, fmtGain, money, openModal, percent, promptDialog, timeAgo, toast } from '../ui.js';
 
 /** Untermenü einer Band: [Pfad, Icon, Bezeichnung] */
@@ -309,7 +310,7 @@ function studio(b, members) {
         <div class="panel record-tile">
           <b>„${esc(r.title)}“</b>
           <span class="muted small">${r.format} · ${r.songs} Lieder · ${percent(r.quality)}${r.perfect ? ' · perfekt' : ''}</span>
-          ${r.charting ? `<span class="chip special">Charts · ${fmt1(r.points)}</span>` : ''}
+          ${r.charting ? `<span class="chip special">Charts · Platz ${r.rank}</span> ${trendBadge(r)}` : r.best ? `<span class="muted small">Bester Platz: ${r.best}</span>` : ''}
         </div>`).join('')}
       </div>` : ''}`;
 }

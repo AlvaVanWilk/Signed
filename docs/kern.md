@@ -190,9 +190,16 @@ Nur die Gewinne sind klein; wie oft man etwas hintereinander spielt, ist nicht b
 
 - Chartpunkte = 100 × Qualität² × Soundfaktor × Format × Perfekt (× 1,3) × (1 + Bandruhm/500, höchstens × 3).
   Format: EP × 0,6, LP (ab 7 Liedern) × 1 + 4 % pro Lied über 7.
-- Die Punkte schrumpfen jeden Tag auf 88 %. Unter 1 Punkt fällt die Platte heraus. Gezeigt werden die Top 50.
-- Tantiemen laufen ständig (sekundengenau abgerechnet, Bruchteile werden aufgehoben): pro Punkt und Tag 2 ₲ und 0,05 Ruhm,
-  Ruhm verteilt auf die aktuellen Mitglieder. Das Geld zählt im Browser sichtbar mit; im Kontoauszug eine Zeile pro Platte und Tag.
+- Die Charts rechnen in Stunden. Punkte jetzt = Chartpunkte × Verlauf + Schub. Verlauf mit x = Alter / 4 Stunden:
+  (x + 0,5) / 1,5 × e^((1 − x) / 1,5) – Einstieg mit 65 %, Höhepunkt nach 4 Stunden, nach etwa 40 Stunden fast null.
+  Weil jede Platte ihren eigenen Verlauf hat, überholen sich Platten; es gibt Bewegung.
+- Schub für die neueste Platte der Band, solange sie chartet: Gig = Lieder × Grund-Ruhm des Ortes × 4 × Publikum,
+  Band-Promo 4, Promo-Mission eines Mitglieds 1,5. Der Schub halbiert sich alle 3 Stunden.
+- Unter 1 Punkt ist eine Platte draußen, nach 7 Tagen zählt sie nicht mehr. Gezeigt werden die Top 50 mit Platz vorher
+  (zuletzt gesehener Platz in der vorigen Chartstunde), Trend (▲ ▼ – NEU), Stunden in den Charts und bestem Platz.
+- Tantiemen laufen ständig (sekundengenau abgerechnet, Bruchteile werden aufgehoben): pro Punkt und Stunde 1 ₲ und 0,025 Ruhm,
+  Ruhm verteilt auf die aktuellen Mitglieder. Eine Platte mit 60 Punkten bringt über ihre Chartzeit etwa 900 ₲.
+  Das Geld zählt im Browser sichtbar mit; im Kontoauszug eine Zeile pro Platte und Tag.
 
 ### Promo
 

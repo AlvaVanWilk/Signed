@@ -106,6 +106,9 @@ final class Activities
                     $title = sprintf('Gig: %s (%s)', Rng::pick(Catalog::VENUE_NAMES[$venue['key']]), $venue['name']);
                 }
                 $sim = Performance::simulate(array_map([self::class, 'player'], $members), $sound, (float) $expect, $songs);
+                if ($type === 'busking') {
+                    $gage = self::hat($this->repo, $sim['perf']);
+                }
                 // Ruhm: Größe des Auftritts × Sound × Publikum, plus etwas Zufall.
                 $fameTotal = 0.0;
                 for ($i = 0; $i < $songs; $i++) {
@@ -182,6 +185,7 @@ final class Activities
             }
             $sim = Performance::simulate([self::player($m)], $sound, (float) $expect, $songs);
             $fameTotal *= BandCalc::soundFactor($sound) * $sim['perf'];
+            $hat = $type === 'busking' ? self::hat($this->repo, $sim['perf']) : 0;
 
             $endsAt = $now + $songs * Balance::SONG_SECONDS;
             $claimed = $db->exec('UPDATE musicians SET busy_until = ? WHERE id = ? AND busy_until <= ?', [$endsAt, $musicianId, $now]);
@@ -193,6 +197,7 @@ final class Activities
                 'songs' => $songs,
                 'timeline' => $sim['timeline'],
                 'reward' => [
+                    'money' => $hat,
                     'fameGains' => BandCalc::splitFame([$m], $fameTotal, $gear),
                     'meter' => $sim['meter'],
                     'jam' => $type === 'jam',
@@ -360,7 +365,9 @@ final class Activities
     private static function applySolo(Repo $repo, array $row, array $data): array
     {
         $reward = $data['reward'];
+        $repo->earn((int) ($reward['money'] ?? 0), sprintf('Hut: %s', $data['title']));
         $result = [
+            'money' => (int) ($reward['money'] ?? 0),
             'fame' => round(self::applyFame($repo, $reward['fameGains'] ?? []), 2),
             'meter' => $reward['meter'] ?? null,
         ];
@@ -381,6 +388,16 @@ final class Activities
     }
 
     // ---------- Hilfen ----------
+
+    /** Notgroschen: Hut-Geld bei der Straßenmusik, nur solange das Label sich keine Platte leisten kann. */
+    public static function hat(Repo $repo, float $perf): int
+    {
+        if ($repo->label()['money'] >= Studio::cost(Balance::RECORD_MIN_SONGS)) {
+            return 0;
+        }
+        [$low, $high] = Balance::BUSKING_HAT;
+        return (int) round($low + ($high - $low) * max(0.0, min(1.0, ($perf - 0.4) / 1.2)));
+    }
 
     private function insert(?int $bandId, ?int $musicianId, string $type, int $now, int $endsAt, array $data): array
     {

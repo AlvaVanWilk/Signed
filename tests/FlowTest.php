@@ -320,6 +320,26 @@ test('Bandregeln: weitere Bands erst mit Label-Ruhm, niemand in zwei Bands, Genr
     check(str_contains($state['history'][0]['text'], 'keine gemeinsame Genre-Linie'));
 });
 
+test('Notgroschen: Reicht das Geld nicht für eine Platte, bringt Straßenmusik Geld in den Hut', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Pleite');
+    $band = foundBand($p);
+    $db->exec('UPDATE labels SET money = 10');
+    $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'busking']);
+    Clock::advance(Balance::BUSKING['songs'] * Balance::SONG_SECONDS);
+    $state = $p->get('state');
+    $hat = $state['results'][0]['result']['money'];
+    check($hat >= Balance::BUSKING_HAT[0] && $hat <= Balance::BUSKING_HAT[1], "Hut: $hat");
+    checkEquals(10 + $hat, $state['label']['money']);
+
+    // Solo ohne Band genauso.
+    $solo = $band['memberIds'][0];
+    $p->post('bandRemoveMember', ['bandId' => $band['id'], 'musicianId' => $solo]);
+    $p->post('soloStart', ['musicianId' => $solo, 'type' => 'busking']);
+    Clock::advance(Balance::BUSKING['songs'] * Balance::SONG_SECONDS);
+    check($p->get('state')['label']['money'] > 10 + $hat, 'Solo-Straßenmusik füllt auch den Hut');
+});
+
 test('Straßenmusik bringt dem Label kein Geld, aber Präsenz; sperrt die Band bis zum Ende', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Busker');

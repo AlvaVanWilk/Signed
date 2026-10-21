@@ -3,7 +3,7 @@ import { app, bandById, cat, defineActions, isBusy, musicianById, mutate, naviga
 import { openLive } from '../live.js';
 import { chip } from '../cards.js';
 import { closeAllModals, duration, esc, fmt0, money, openModal, timeAgo, toast } from '../ui.js';
-import { chemistryLabel, practiceTile, promoTile, suggestName } from './bands.js';
+import { buskingHat, chemistryLabel, practiceTile, promoTile, suggestName } from './bands.js';
 import { catalogList } from './catalog.js';
 
 /** Untermenü eines Musikers. solo = nur ohne Band. */
@@ -213,7 +213,7 @@ function street(m) {
     <div class="action-grid">
       <div class="action-tile">
         <div class="action-icon">🪙</div>
-        <div class="action-main"><b>${esc(cat().genres[m.genres[0]].name)} auf der Straße</b><span class="muted small">3 Lieder · ${duration(3 * cat().rules.songSeconds)} · etwas Bekanntheit</span></div>
+        <div class="action-main"><b>${esc(cat().genres[m.genres[0]].name)} auf der Straße</b><span class="muted small">3 Lieder · ${duration(3 * cat().rules.songSeconds)} · etwas Bekanntheit${buskingHat()}</span></div>
         <button class="btn" data-act="solo" data-id="${m.id}" data-type="busking" ${busyOf(m) ? 'disabled' : ''}>Spielen</button>
       </div>
     </div>`;

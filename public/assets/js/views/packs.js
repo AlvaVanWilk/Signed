@@ -1,6 +1,7 @@
 import { gearCard, managerCard, musicianCard, rarityName } from '../cards.js';
 import { app, cat, defineActions, mutate, serverNow } from '../core.js';
 import { esc, money, openModal, toast } from '../ui.js';
+import { confirmSpend } from './bands.js';
 
 const RARITY_ORDER = ['common', 'rare', 'epic', 'legendary'];
 
@@ -183,6 +184,7 @@ function askInstrument() {
 
 defineActions({
   async scoutOpen({ voucher }) {
+    if (!voucher && !(await confirmSpend(app.state.scout.price))) return;
     const res = await mutate('scoutOpen', { voucher: !!voucher });
     if (res) openScoutOffer();
   },
@@ -198,6 +200,7 @@ defineActions({
     }
   },
   async buyPack({ pack }) {
+    if (!(await confirmSpend(cat().packs[pack].price))) return;
     const body = { pack };
     if (cat().packs[pack].chooseType) {
       body.type = await askInstrument();

@@ -239,6 +239,21 @@ function chartPush(b) {
 /** Studiozeit: Grundpreis plus pro Lied. */
 export const recordCost = (songs) => cat().rules.recordCost + cat().rules.recordCostPerSong * songs;
 
+/** Reicht das Geld nicht für die kleinste Platte, bringt Straßenmusik Geld in den Hut (Notgroschen). */
+export const buskingHat = () => (app.state.label.money < recordCost(cat().rules.recordMinSongs)
+  ? ` · <b>Hut: ${money(cat().rules.buskingHat[0])}–${money(cat().rules.buskingHat[1])}</b>` : '');
+
+/**
+ * Warnt, bevor das Geld unter die kleinste Platte fällt, solange noch keine Band mit Gigs Geld verdienen kann.
+ * Liefert true, wenn ausgegeben werden darf.
+ */
+export async function confirmSpend(amount) {
+  const floor = recordCost(cat().rules.recordMinSongs);
+  const money0 = app.state.label.money;
+  if (money0 < floor || money0 - amount >= floor || app.state.bands.some((b) => b.records > 0)) return true;
+  return confirmDialog(`Danach reicht dein Geld nicht mehr für eine Platte (${money(floor)}). Trotzdem?`, { ok: 'Trotzdem', danger: true });
+}
+
 /** Warum ein Gig gerade mehr oder weniger bringt: frisches Material und eine Platte in den Charts. */
 function gigDraw(gig) {
   const parts = [];
@@ -270,7 +285,7 @@ function gigs(b, members) {
         button: `<button class="btn" data-act="startActivity" data-id="${b.id}" data-type="openstage" ${disabled}>Spielen</button>`,
       })}
       ${actionTile({
-        icon: '🪙', title: 'Straßenmusik', meta: `${songsMeta(o.busking.songs)} · etwas Ruhm`,
+        icon: '🪙', title: 'Straßenmusik', meta: `${songsMeta(o.busking.songs)} · etwas Ruhm${buskingHat()}`,
         button: `<button class="btn" data-act="startActivity" data-id="${b.id}" data-type="busking" ${disabled}>Spielen</button>`,
       })}
       ${actionTile({ icon: '🚌', title: 'Tournee', meta: 'Land · Kontinent · Welt', locked: true })}
@@ -648,6 +663,7 @@ defineActions({
       );
       if (!ok) return;
     }
+    if (!(await confirmSpend(cat().rules.renameCost))) return;
     const name = await promptDialog('Neuer Bandname', b.name);
     if (name && name !== b.name) await mutate('bandRename', { bandId: b.id, name });
   },

@@ -1,6 +1,7 @@
 import { musicianCard } from '../cards.js';
 import { app, defineActions, mutate } from '../core.js';
 import { confirmDialog, esc, money, toast } from '../ui.js';
+import { confirmSpend } from './bands.js';
 
 export function render() {
   const { offers, mine } = app.state.market;
@@ -63,6 +64,7 @@ defineActions({
     if (ok && await mutate('transferAccept', { transferId: t.id })) toast('Verkauft!', 'ok');
   },
   async transferBid(values, form) {
+    if (!(await confirmSpend(Number(values.amount)))) return;
     if (await mutate('transferBid', { transferId: Number(form.dataset.id), amount: Number(values.amount) })) toast('Gebot abgegeben. Das Geld ist zurückgelegt.', 'ok');
   },
 });

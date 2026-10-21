@@ -118,7 +118,7 @@ Ein schwacher Musiker zieht den Sound runter, und vier Musiker sind höchstens 2
 
 | | Lieder | Geld | Ruhm pro Lied | Besonderheit |
 |---|---|---|---|---|
-| Straßenmusik | 3 | – | 0,06 × (1 − Ruhm/150), mindestens 10 %; Erwartung 25 | auch einzeln ohne Band |
+| Straßenmusik | 3 | Notgroschen: 20–45 ₲ in den Hut, nur solange das Label keine EP (390 ₲) bezahlen kann | 0,06 × (1 − Ruhm/150), mindestens 10 %; Erwartung 25 | auch einzeln ohne Band |
 | Bandprobe | 2 | – | – | Zusammenspiel × 2,5; Können 0,08 pro Lied (Lernkurve wie unten) |
 | Open Stage | 2 | – | 0,18 × (1 − Ruhm/120) | 7 % Manager-Karte, sonst 15 % Fan-Karte (+1–2 Ruhm) |
 | Gig | 1 bis Maximum | Gage des Ortes pro Lied, vorher bekannt | je nach Ort | erst mit Platte |
@@ -326,7 +326,9 @@ Diese Punkte sind im Konzept offen. Für den Kern habe ich sie so festgelegt; al
 - **Instrumente:** Keyboard und Synthesizer sind ein Instrument (Keyboard). Gitarren, Schlagzeuge und Keyboards gibt es akustisch und elektrisch; das merkt sich nur das Spiel, um später die passende Spur zu spielen.
 - **Besetzung:** Jedes Mitglied spielt in der Band genau ein Instrument. Ein Sänger mit Gitarre zählt
   als Gitarrist, wenn er in der Band Gitarre spielt. Höchstens 6 Mitglieder.
-- **Straßenmusik:** vorläufig ohne Geld fürs Label, dafür etwas Ruhm. Noch offen, ob sie bleibt.
+- **Straßenmusik:** etwas Ruhm; Geld nur als Notgroschen (Hut, 20–45 ₲ je nach Auftritt), solange das Geld nicht für die
+  kleinste Platte reicht – so kommt niemand in eine Sackgasse (ca. 10 Auftritte bis zur EP). Läden, Scout, Börse und
+  Umbenennen warnen, bevor das Geld unter die kleinste Platte fällt, solange noch keine Band Gigs spielen kann.
 - **Open Stage:** lohnt sich ab 120 Ruhm nicht mehr.
 - **Platte:** Die letzte Platte erst live spielen (2 Lieder pro Plattenlied), dann die nächste. Ja, der Sound bestimmt, wie fehlerverzeihend das Minispiel ist.
 - **Charts:** statt einer Liste pro Genre gibt es gemeinsame Album-Charts; die Label-Gesamtliste zählt den Ruhm aller eigenen Bands.

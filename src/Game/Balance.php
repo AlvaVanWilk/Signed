@@ -162,6 +162,11 @@ final class Balance
     public const LIVE_SWING = [7.0, 13.0];
     /** Straßenmusik: Das Geld behalten die Musiker; fürs Label bleibt etwas Bekanntheit. */
     public const BUSKING = ['songs' => 3, 'fame' => 0.06, 'expect' => 25, 'falloff' => 150, 'minFactor' => 0.1];
+    /**
+     * Notgroschen: Reicht das Geld des Labels nicht für die kleinste Platte, geht bei der Straßenmusik der Hut rum –
+     * so viel ₲ fürs Label [schwacher, starker Auftritt]. Sonst gibt Straßenmusik kein Geld.
+     */
+    public const BUSKING_HAT = [20, 45];
     /** Bandprobe: keine Zuschauer, dafür doppeltes Zusammenspiel und etwas Können für alle. */
     public const REHEARSAL = ['songs' => 2, 'cohesion' => 2.5, 'skill' => 0.08];
     /** Band-Promo: alle Mitglieder sind unterwegs, jeder bringt Bekanntheit wie bei der Promo-Mission. */

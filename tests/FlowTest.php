@@ -449,11 +449,11 @@ test('Platte produzieren, dann Gigs spielen, dann die nächste Platte', function
     $first = playSong($p, ['kind' => 'record', 'bandId' => $band['id']]);
     checkEquals(1, $first['result']['songsDone']);
     checkEquals(null, $first['result']['completed']);
-    $second = playSong($p, ['kind' => 'record', 'bandId' => $band['id']]);
-    checkEquals('master', bandById($second['state'], $band['id'])['record']['open']['next']['type'], 'Zum Schluss der Master-Mix');
+    checkEquals('master', bandById($first['state'], $band['id'])['record']['open']['next']['type'], 'Vor dem Cover der Master-Mix');
+    // Die zweite Aufnahme ist der Master-Mix, die dritte der Cover-Automat (spielt playSong mit).
     $last = playSong($p, ['kind' => 'record', 'bandId' => $band['id']]);
     $completed = $last['result']['completed'];
-    check($completed !== null, 'Platte nach drei Liedern fertig');
+    check($completed !== null, 'Platte nach drei Aufnahmen fertig');
     check($completed['perfect'], 'Keine Fehler = perfekte Platte');
     check($completed['money'] > 0 && $completed['fame'] > 0);
 
@@ -544,12 +544,12 @@ test('Album-Charts: Platten aller Labels, Platz 1 gibt einen Gutschein, Tantieme
     $bandA = foundBand($a, 'Alpha Band');
     $bandB = foundBand($b, 'Beta Band');
     $a->post('recordStart', ['bandId' => $bandA['id'], 'title' => 'Alpha EP', 'songs' => 3]);
-    for ($i = 0; $i < 3; $i++) {
+    for ($i = 0; $i < 2; $i++) {
         $done = playSong($a, ['kind' => 'record', 'bandId' => $bandA['id']]);
     }
     checkEquals(Balance::SCOUT_START_VOUCHERS + 1, $done['state']['scout']['vouchers'], 'Gutschein nur für die erste Platte, nicht fürs Perfekte');
     $b->post('recordStart', ['bandId' => $bandB['id'], 'title' => 'Beta EP', 'songs' => 3]);
-    for ($i = 0; $i < 3; $i++) {
+    for ($i = 0; $i < 2; $i++) {
         playSong($b, ['kind' => 'record', 'bandId' => $bandB['id']], 0.5);
     }
 
@@ -564,7 +564,7 @@ test('Album-Charts: Platten aller Labels, Platz 1 gibt einen Gutschein, Tantieme
     $c = registerPlayer($db, 'Gamma');
     $bandC = foundBand($c, 'Gamma Band');
     $c->post('recordStart', ['bandId' => $bandC['id'], 'title' => 'Gamma EP', 'songs' => 3]);
-    for ($i = 0; $i < 3; $i++) {
+    for ($i = 0; $i < 2; $i++) {
         playSong($c, ['kind' => 'record', 'bandId' => $bandC['id']], 0.5);
     }
     $c->get('charts');
@@ -780,8 +780,8 @@ test('Charts: Plätze bleiben eine Chartwoche stehen, Nachrichten bei Einstieg u
     $bandB = foundBand($b, 'Zweite Band');
     foreach ([[$a, $bandA, 'Vorn'], [$b, $bandB, 'Hinten']] as [$p, $band, $title]) {
         $p->post('recordStart', ['bandId' => $band['id'], 'title' => $title, 'songs' => 3]);
-        for ($i = 0; $i < 3; $i++) {
-            playSong($p, ['kind' => 'record', 'bandId' => $band['id']], $title === 'Vorn' ? 1.0 : 0.5);
+        for ($i = 0; $i < 2; $i++) {
+            playSong($p, ['kind' => 'record', 'bandId' => $band['id']], $title === 'Vorn' ? 1.0 : 0.6);
         }
     }
     $charts = $a->get('charts')['albums'];
@@ -1086,19 +1086,20 @@ test('Jam-Café: Wer darüber eine Band gegründet hat, kann nicht noch einmal h
     }
 });
 
-test('Cover-Automat: nach dem letzten Lied, jedes Band zählt sofort, wertvolle Felder verkaufen besser', function () {
+test('Cover-Automat: die letzte Aufnahme, jedes Band zählt sofort, wertvolle Felder verkaufen besser', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Cover');
     $band = foundBand($p);
     $db->exec('UPDATE labels SET money = 100000');
     $p->post('recordStart', ['bandId' => $band['id'], 'title' => 'Bunt', 'songs' => 3]);
     $start = ['kind' => 'record', 'bandId' => $band['id']];
-    for ($i = 0; $i < 3; $i++) {
+    for ($i = 0; $i < 2; $i++) {
         $game = $p->post('minigameStart', $start)['game'];
         Clock::advance(Balance::SONG_SECONDS + 2);
         $res = $p->post('minigameFinish', ['sessionId' => $game['sessionId'], 'perfect' => $game['count'], 'good' => 0, 'miss' => 0]);
     }
-    check($res['result']['coverNext'] && $res['result']['completed'] === null, 'Erst das Cover, dann ist die Platte fertig');
+    check($res['result']['coverNext'] && $res['result']['completed'] === null, 'Die dritte Aufnahme ist das Cover');
+    checkEquals('cover', bandById($p->get('state'), $band['id'])['record']['open']['next']['type']);
     checkApiError(fn () => $p->post('minigameStart', $start), 'Cover');
 
     $cover = $p->post('coverStart', ['bandId' => $band['id']])['cover'];

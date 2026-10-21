@@ -41,7 +41,7 @@ final class Studio
     /**
      * Reihenfolge der Minispiele einer Platte. Im Topf: pro Instrument der Band einmal Einspielen („take“) und einige
      * Mischpult-Runden mit 2–3 zufälligen Mitgliedern („mix“). Daraus wird gemischt gezogen, nie zweimal dasselbe
-     * direkt hintereinander; ist der Topf leer, wird er neu gefüllt. Das letzte ist immer der Master-Mix.
+     * direkt hintereinander; ist der Topf leer, wird er neu gefüllt. Zum Schluss immer der Master-Mix, dann der Cover-Automat.
      * @return list<array{type: string, musician?: int, musicians?: list<int>}>
      */
     public static function plan(array $members, int $songs): array
@@ -66,7 +66,7 @@ final class Studio
 
         $plan = [];
         $bag = [];
-        while (count($plan) < $songs - 1) {
+        while (count($plan) < $songs - 2) {
             if (!$bag) {
                 $bag = Rng::sample($pool, count($pool));
                 // Nie dasselbe Minispiel direkt hintereinander, auch nicht über die Neufüllung hinweg.
@@ -77,7 +77,14 @@ final class Studio
             $plan[] = array_shift($bag);
         }
         $plan[] = ['type' => 'master'];
+        $plan[] = ['type' => 'cover'];
         return $plan;
+    }
+
+    /** Ist als Nächstes das Cover dran? (Ältere Produktionen ohne Cover im Plan: nach dem letzten Lied.) */
+    public static function coverNext(array $record): bool
+    {
+        return ($record['plan'][$record['songs_done']]['type'] ?? null) === 'cover' || $record['songs_done'] >= $record['songs_total'];
     }
 
     /** Der Plan einer offenen Platte; ältere Produktionen ohne Plan bekommen jetzt einen. */
@@ -154,8 +161,8 @@ final class Studio
             'cohesion' => round($cohesion - $band['cohesion'], 1),
             'levelUps' => $levelUps,
             'completed' => null,
-            // Alle Lieder im Kasten: Jetzt fehlt nur noch das Cover (Cover::start), dann ist die Platte fertig.
-            'coverNext' => count($results) >= $record['songs_total'],
+            // Als letzte Aufnahme kommt der Cover-Automat (Cover::start); danach ist die Platte fertig.
+            'coverNext' => self::coverNext(['songs_done' => count($results)] + $record),
         ];
         return $out;
     }
@@ -165,7 +172,8 @@ final class Studio
     {
         $db = $this->repo->db;
         $results = $record['song_results'];
-        $songs = count($results);
+        // Das Cover ist eine der Aufnahmen, aber kein Lied mit Trefferquote: Qualität aus den Musik-Spielen.
+        $songs = $record['songs_total'];
         $quality = array_sum(array_column($results, 'accuracy')) / max(1, $songs);
         $misses = (int) array_sum(array_column($results, 'miss'));
         $perfect = $misses === 0;
@@ -194,6 +202,7 @@ final class Studio
         $now = Clock::now();
         $db->update('records', [
             'status' => 'done',
+            'songs_done' => $songs,
             'money_reward' => $money,
             'fame_reward' => $fameGain,
             'perfect' => $perfect ? 1 : 0,

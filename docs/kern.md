@@ -218,9 +218,11 @@ Nur die Gewinne sind klein; wie oft man etwas hintereinander spielt, ist nicht b
 - Reihenfolge wird beim Start festgelegt (`Studio::plan`). Im Topf: pro Instrument der Band einmal **Einspielen**
   (das Spiel der Solo-Probe für einen Musiker mit diesem Instrument) und **Mischpult**-Runden mit 2–3 zufälligen
   Mitgliedern (eine bei 2 Musikern, sonst mindestens 2, etwa halb so viele wie Instrumente). Gezogen wird gemischt;
-  ist der Topf leer, wird er neu gefüllt. Nie zweimal dasselbe direkt hintereinander. Die letzte Aufnahme ist immer der **Master-Mix**.
+  ist der Topf leer, wird er neu gefüllt. Nie zweimal dasselbe direkt hintereinander. Die vorletzte Aufnahme ist immer der
+  **Master-Mix**, die letzte der **Cover-Automat** (bei 3 Liedern also: eine Aufnahme, Master-Mix, Cover).
 - Jede Aufnahme: Können 0,12 × Trefferquote für alle Mitglieder (Lernkurve), Zusammenspiel – egal, welches Minispiel.
-- **Cover-Automat** (`Cover`, `Balance::COVER`): Nach der letzten Aufnahme fehlt nur noch das Cover; erst danach ist die Platte fertig.
+- **Cover-Automat** (`Cover`, `Balance::COVER`): die letzte Aufnahme; danach ist die Platte fertig. Er bringt kein Können und
+  kein Zusammenspiel, die Qualität der Platte kommt nur aus den Musik-Aufnahmen.
   Vier Bänder (Motiv, Farben, Stil, Anordnung) öffnen sich nacheinander, nur eins läuft (6 / 7,5 / 9 / 10,5 Felder pro Sekunde).
   Tippen hält an – das Feld im Rahmen gilt, kein Nachrutschen. Je Band 14 Felder: 8 gewöhnlich, 3 grün, 2 blau, 1 gold
   (0/1/2/4 Punkte). Güte = Punkte / 16; sie bringt beim Erstverkauf bis +10 % Geld, Chartpunkte bleiben bei Musik und Sound.

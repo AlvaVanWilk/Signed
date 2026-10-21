@@ -19,9 +19,10 @@ export async function startCover(bandId) {
   if (!res) return;
   const cover = res.cover;
   const band = bandById(Number(bandId));
+  const total = band?.record.open?.songsTotal;
   const modal = openModal({ wide: true, dismissable: false, className: 'cover-modal', html: `
-    <div class="eyebrow">Studio · ${esc(band?.name ?? '')}</div>
-    <h2>Cover für „${esc(cover.title)}“</h2>
+    <div class="eyebrow">${esc(band?.name ?? '')} · Aufnahme ${total}/${total}</div>
+    <h2>Cover-Automat: „${esc(cover.title)}“</h2>
     <p class="muted small">Tippe, wenn das Feld im weißen Rahmen ist, das du willst. <b style="color:#3ddc97">Grün</b>, <b style="color:#4f8bff">blau</b> und
       <b style="color:#ffc23d">gold</b> umrandete Felder machen das Cover wertvoller – es verkauft sich dann besser.</p>
     <div class="cover-machine"></div>` });
@@ -46,6 +47,8 @@ export async function startCover(bandId) {
 
 /** Studio: das nächste Lied der offenen Platte einspielen. */
 export function startRecordSong(bandId) {
+  // Die letzte Aufnahme ist der Cover-Automat.
+  if (bandById(Number(bandId))?.record.open?.coverNext) return startCover(bandId);
   return runMinigame({ kind: 'record', bandId: Number(bandId) });
 }
 
@@ -94,11 +97,10 @@ async function runMinigame(request) {
     return;
   }
   const band = bandById(request.bandId);
-  const more = !result.completed && !result.coverNext && band?.record.open;
+  const more = !result.completed && band?.record.open;
   mg.showResult(recordSummary(result), [
     { label: 'Schließen', onClick: close },
     ...(more ? [{ label: 'Nächste Aufnahme', cls: 'primary', onClick: () => { close(); startRecordSong(request.bandId); } }] : []),
-    ...(result.coverNext ? [{ label: 'Cover gestalten', cls: 'primary', onClick: () => { close(); startCover(request.bandId); } }] : []),
   ]);
 }
 
@@ -137,7 +139,6 @@ function recordSummary(r) {
     ${counts(r)}
     <p class="muted">Zusammenspiel +${fmt1(r.cohesion)}</p>
     ${levelUpBanners(r.levelUps)}`;
-  if (r.coverNext) return `${head}<p class="banner">🎨 Alle Lieder sind im Kasten! Jetzt fehlt nur noch das <b>Cover</b>.</p>`;
   return head;
 }
 

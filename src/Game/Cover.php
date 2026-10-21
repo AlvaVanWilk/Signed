@@ -7,7 +7,7 @@ use Signed\ApiError;
 use Signed\Rng;
 
 /**
- * Cover-Automat: Sind alle Lieder einer Platte eingespielt, fehlt nur noch das Cover. Der Server mischt die vier Bänder
+ * Cover-Automat: die letzte Aufnahme jeder Platte (nach dem Master-Mix). Der Server mischt die vier Bänder
  * (Motiv, Farben, Stil, Anordnung); jedes angehaltene Band wird sofort festgeschrieben – Neuladen bringt also
  * keinen zweiten Versuch. Nach dem vierten ist die Platte fertig (Studio::complete). Werte in Balance::COVER.
  */
@@ -109,8 +109,8 @@ final class Cover
         if ($record === null) {
             throw new ApiError('Diese Band hat keine Platte in Produktion.');
         }
-        if ($record['songs_done'] < $record['songs_total']) {
-            throw new ApiError('Erst alle Lieder aufnehmen, dann kommt das Cover.');
+        if (!Studio::coverNext($record)) {
+            throw new ApiError('Das Cover ist erst die letzte Aufnahme.');
         }
         return $record;
     }

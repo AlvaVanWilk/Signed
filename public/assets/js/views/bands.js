@@ -2,7 +2,7 @@ import { api } from '../api.js';
 import { bandGenreTags, bandIdentity, emptySlot, face, fullName, gearCard, gearModel, genreIcon, genreTag, instrumentEmoji, instrumentIcon, instrumentName, ownGear, managerCard, musicianCard } from '../cards.js';
 import { app, bandById, cat, defineActions, isBusy, managerById, musicianById, mutate, navigate, rerender, runningFor } from '../core.js';
 import { openLive } from '../live.js';
-import { coverHtml, startCover, startPractice, startRecordSong } from '../play.js';
+import { coverHtml, startPractice, startRecordSong } from '../play.js';
 import { assignGear, soundChange } from '../gear.js';
 import { trendBadge } from './charts.js';
 import { playedInstrument, stage } from '../figure.js';
@@ -438,6 +438,7 @@ function gigs(b, members) {
 function nextStep(step, members) {
   const name = (id) => members.find((m) => m.id === id)?.firstName;
   if (step?.type === 'master') return 'Master-Mix';
+  if (step?.type === 'cover') return 'Cover-Automat';
   if (step?.type === 'take' && name(step.musician)) {
     const m = members.find((x) => x.id === step.musician);
     const slot = m.bandSlot === 2 && m.instruments[1] ? 1 : 0;
@@ -452,14 +453,9 @@ function studio(b, members) {
   const open = b.record.open;
   const blocked = !!blocker(b, members);
   let record;
-  if (open?.coverNext) {
+  if (open) {
     record = actionTile({
-      icon: '🎨', title: `„${open.title}“`, meta: 'Alle Lieder sind im Kasten – jetzt fehlt nur noch das Cover.',
-      button: `<button class="btn primary" data-act="recordCover" data-id="${b.id}">Cover gestalten</button>`,
-    });
-  } else if (open) {
-    record = actionTile({
-      icon: '💿', title: `„${open.title}“`, meta: `Aufnahme ${open.songsDone + 1}/${open.songsTotal}: ${esc(nextStep(open.next, members))}`,
+      icon: '💿', title: `„${open.title}“`, meta: `Aufnahme ${Math.min(open.songsDone + 1, open.songsTotal)}/${open.songsTotal}: ${esc(nextStep(open.coverNext ? { type: 'cover' } : open.next, members))}`,
       body: `<span class="song-dots">${Array.from({ length: open.songsTotal }, (_, i) => {
         const r = open.songResults[i];
         return `<span class="song-dot ${r ? (r.miss === 0 ? 'perfect' : r.accuracy >= 0.75 ? 'good' : 'weak') : ''}"></span>`;
@@ -866,9 +862,6 @@ defineActions({
   },
   recordSong({ id }) {
     startRecordSong(id);
-  },
-  recordCover({ id }) {
-    startCover(id);
   },
   practice({ id, slot }) {
     startPractice(id, slot);

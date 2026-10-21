@@ -225,6 +225,7 @@ function promo(b, members) {
     <div class="action-grid">
       ${actionTile({
         icon: '📣', title: 'Band-Promo', meta: `${duration(cat().rules.bandPromoSeconds)} · Ruhm${chartPush(b)}`,
+        body: setlist(b, 'Wir werben für'),
         button: `<button class="btn primary" data-act="bandPromo" data-id="${b.id}" ${blocked ? 'disabled' : ''}>Losschicken</button>`,
       })}
       ${members.map((m) => promoTile(m, isBusy(m.busyUntil) || isBusy(b.busyUntil))).join('')}
@@ -248,11 +249,11 @@ function chartPush(b) {
   return record ? ` · Schub in den Charts für „${esc(record.title)}“` : ' · Schub in den Charts, sobald eine Platte chartet';
 }
 
-/** Auswahl, welches Album die Band auf Gigs spielt (nur, wenn mehrere sich noch verkaufen). */
-function setlist(b) {
+/** Auswahl, welches Album die Band auf Gigs spielt und bewirbt (nur, wenn mehrere sich noch verkaufen). Gilt für Gigs und Promo. */
+function setlist(b, label = 'Wir spielen') {
   const albums = b.discography.filter((r) => r.promotable);
   if (albums.length < 2) return '';
-  return `<span class="small"><label class="inline-select">Wir spielen
+  return `<span class="small"><label class="inline-select">${label}
     <select data-change="promoRecord" data-id="${b.id}">${albums.map((r) => `<option value="${r.id}" ${r.promoted ? 'selected' : ''}>„${esc(r.title)}“${r.rank ? ` (Platz ${r.rank})` : ''}</option>`).join('')}</select>
   </label></span>`;
 }

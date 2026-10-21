@@ -834,3 +834,18 @@ test('Promo lässt sich abbrechen: sofort wieder frei, ohne Belohnung', function
     checkEquals($fame, $db->value('SELECT SUM(fame) FROM musicians'), 'Keine Bekanntheit nach Abbruch');
     $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'rehearsal']);
 });
+
+test('Band anderer Labels ansehen: Mitglieder, Genre, Platten und Spuren zum Anhören', function () {
+    $db = freshDb();
+    $a = registerPlayer($db, 'Anna');
+    $band = foundBand($a, 'Die Sichtbaren');
+    $b = registerPlayer($db, 'Bert');
+    $view = $b->post('bandView', ['bandId' => $band['id']]);
+    checkEquals('Die Sichtbaren', $view['name']);
+    check(!$view['own'], 'Fremde Band');
+    checkEquals(count($band['memberIds']), count($view['members']));
+    check(isset($view['members'][0]['stem']['type']), 'Spur zum Anhören');
+    check(!isset($view['members'][0]['value']), 'Kein Marktwert');
+    check($a->post('bandView', ['bandId' => $band['id']])['own']);
+    checkApiError(fn () => $b->post('bandView', ['bandId' => 99999]), 'gibt es nicht');
+});

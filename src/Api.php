@@ -33,6 +33,7 @@ final class Api
         'logout' => ['POST', false],
         'state' => ['GET', true],
         'charts' => ['GET', true],
+        'bandView' => ['POST', true],
         'buyPack' => ['POST', true],
         'packPick' => ['POST', true],
         'scoutOpen' => ['POST', true],
@@ -183,6 +184,11 @@ final class Api
     private function state(array $in, Repo $repo): array
     {
         return State::build($repo);
+    }
+
+    private function bandView(array $in, Repo $repo): array
+    {
+        return Bands::view($this->db, self::int($in, 'bandId'), $repo->labelId);
     }
 
     private function charts(array $in, Repo $repo): array

@@ -210,7 +210,7 @@ final class Charts
             }
         }
         foreach ($albums as &$album) {
-            unset($album['topped'], $album['labelId'], $album['bandId']);
+            unset($album['topped'], $album['labelId']);
         }
         unset($album);
         $albums = array_values(array_filter($albums, static fn ($a) => $a['placed'] || $a['own']));

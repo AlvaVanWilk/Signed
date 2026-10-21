@@ -5,12 +5,57 @@ namespace Signed\Game;
 
 use Signed\ApiError;
 use Signed\Clock;
+use Signed\Db;
 
 /** Bands gründen und umbesetzen, Manager und Instrumente zuweisen, Karten einsetzen. */
 final class Bands
 {
     public function __construct(private Repo $repo)
     {
+    }
+
+    /**
+     * Öffentliche Ansicht einer Band, auch von anderen Labels (z. B. aus den Charts): Mitglieder als Karten,
+     * Genre, Ruhm, Platten – und die Spuren, um reinzuhören. Nichts, was man zum Spielen gegen sie bräuchte.
+     */
+    public static function view(Db $db, int $bandId, int $viewerLabelId): array
+    {
+        $row = $db->one('SELECT b.*, l.name AS label_name FROM bands b JOIN labels l ON l.id = b.label_id WHERE b.id = ?', [$bandId]);
+        if ($row === null) {
+            throw new ApiError('Diese Band gibt es nicht mehr.', 404);
+        }
+        $repo = new Repo($db, (int) $row['label_id']);
+        $band = Repo::hydrateBand($row);
+        $members = $repo->members($bandId);
+        $gear = $repo->gearByMusician();
+        $identity = BandCalc::identity($members, $band['genre'], $band['genre2']);
+        $genres = array_values(array_filter([$identity['primary'], $identity['second']]));
+        $records = $db->all(
+            "SELECT title, songs_total, perfect, rank_best, finished_at FROM records WHERE band_id = ? AND status = 'done' ORDER BY finished_at DESC LIMIT 5",
+            [$bandId]
+        );
+        return [
+            'id' => $bandId,
+            'name' => $band['name'],
+            'label' => $row['label_name'],
+            'own' => (int) $row['label_id'] === $viewerLabelId,
+            'genres' => $genres,
+            'title' => $identity['title'],
+            'fame' => round(BandCalc::bandFame($band, $members), 1),
+            'records' => array_map(static fn ($r) => [
+                'title' => $r['title'],
+                'songs' => (int) $r['songs_total'],
+                'perfect' => (bool) $r['perfect'],
+                'best' => $r['rank_best'] === null ? null : (int) $r['rank_best'],
+            ], $records),
+            'members' => array_map(static function ($m) use ($gear, $genres) {
+                $out = Present::musician($m);
+                unset($out['busyUntil'], $out['value'], $out['favorite'], $out['abilityChoice']);
+                $out['bandId'] = null;
+                $out['stem'] = Music::stem($m, $gear, $genres);
+                return $out;
+            }, $members),
+        ];
     }
 
     /** @param list<array{id: int, slot?: int}> $entries */

@@ -48,11 +48,54 @@ final class Music
         ];
     }
 
-    /** Gesang: Musikerinnen singen mit der Frauenstimme, Musiker mit der Männerstimme, diverse je nach ID. */
+    /** Ab dieser Ähnlichkeit (Rhythmus und Töne) gelten zwei Aufnahmen als derselbe Part. */
+    private const SAME_RHYTHM = 0.9;
+    private const SAME_NOTES = 0.5;
+
+    /**
+     * Welche Aufnahmen denselben Part spielen: Ordner/Spur → Ordner/Spur der ersten gleichen Aufnahme.
+     * Akustisch und elektrisch spielen immer dasselbe; zwischen Genres entscheiden die Noten.
+     * @return array<string, string>
+     */
+    public static function parts(): array
+    {
+        static $cache = null;
+        if ($cache !== null) {
+            return $cache;
+        }
+        $cache = [];
+        $prints = [];
+        foreach (self::manifest() as $folder => $files) {
+            foreach ($files as $file) {
+                $key = "$folder/$file";
+                $notes = self::notes(['folder' => $folder, 'file' => $file])['notes'] ?? [];
+                $rhythm = array_values(array_unique(array_map(static fn ($n) => (string) (round($n[0] * 4) / 4), $notes)));
+                $tones = array_values(array_unique(array_map(static fn ($n) => (round($n[0] * 4) / 4) . ':' . $n[2], $notes)));
+                $base = preg_replace('/-(weiblich|maennlich|akustisch|elektrisch)$/', '', $file);
+                $cache[$key] = $key;
+                foreach ($prints as $other => [$otherBase, $otherRhythm, $otherTones]) {
+                    if ($otherBase === $base && $rhythm && self::overlap($rhythm, $otherRhythm) >= self::SAME_RHYTHM
+                        && self::overlap($tones, $otherTones) >= self::SAME_NOTES) {
+                        $cache[$key] = $cache[$other];
+                        break;
+                    }
+                }
+                $prints[$key] = [$base, $rhythm, $tones];
+            }
+        }
+        return $cache;
+    }
+
+    private static function overlap(array $a, array $b): float
+    {
+        $union = count(array_unique(array_merge($a, $b)));
+        return $union ? count(array_intersect($a, $b)) / $union : 0.0;
+    }
+
     /**
      * Spuren einer ganzen Besetzung (Mitglieds-ID → Stem). Spielen zwei dasselbe Instrument – im Metal zwei Gitarren –,
-     * soll man nicht zweimal dieselbe Aufnahme hören: Der zweite nimmt die Aufnahme eines anderen Genres
-     * (erst Pop, dann Rock, dann die übrigen – Metal- und Rock-Gitarre spielen fast dasselbe Riff), solange es eine noch nicht benutzte gibt.
+     * soll man nicht zweimal denselben Part hören: Der zweite nimmt die Aufnahme eines anderen Genres
+     * (erst Pop, dann Rock, dann die übrigen), deren Noten sich unterscheiden (parts()), solange es eine gibt.
      * @return array<int, array> Stems wie stem(), ggf. mit anderem Genre
      */
     public static function bandStems(array $members, array $gear, array $bandGenres = []): array
@@ -63,18 +106,21 @@ final class Music
         ))));
         $used = [];
         $out = [];
+        $parts = self::parts();
+        // Gleicher Part = gleiche Noten, auch in einem anderen Genre (Metal- und Rock-Gitarre). Gesang zählt je Stimme.
+        $part = static fn (?array $r) => $r === null ? null
+            : ($r['file'] === 'gesang' || str_starts_with($r['file'], 'gesang-') ? $r['folder'] . '/' . $r['file'] : ($parts[$r['folder'] . '/' . $r['file']] ?? null));
         foreach ($members as $m) {
             $stem = self::stem($m, $gear, $bandGenres);
             $resolved = self::resolve($stem);
-            $key = $resolved === null ? null : $resolved['folder'] . '/' . $resolved['file'];
+            $key = $part($resolved);
             if ($key !== null && isset($used[$key])) {
                 // Der Ersatz behält die Variante, die eigentlich klingen würde (Metal: E-Gitarre → Pop-E-Gitarre).
                 if (preg_match('/-(elektrisch|akustisch)$/', $resolved['file'], $variant)) {
                     $stem['electric'] = $variant[1] === 'elektrisch';
                 }
                 foreach ($alternatives as $genre) {
-                    $try = self::resolve(['genre' => $genre] + $stem);
-                    $tryKey = $try === null ? null : $try['folder'] . '/' . $try['file'];
+                    $tryKey = $part(self::resolve(['genre' => $genre] + $stem));
                     if ($tryKey !== null && !isset($used[$tryKey])) {
                         $stem['genre'] = $genre;
                         $key = $tryKey;
@@ -90,6 +136,7 @@ final class Music
         return $out;
     }
 
+    /** Gesang: Musikerinnen singen mit der Frauenstimme, Musiker mit der Männerstimme, diverse je nach ID. */
     public static function voice(array $m): string
     {
         $gender = $m['look']['gender'] ?? null;

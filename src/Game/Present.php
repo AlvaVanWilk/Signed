@@ -143,6 +143,7 @@ final class Present
             'gear' => Catalog::GEAR,
             'gearPerks' => Catalog::GEAR_PERKS,
             'music' => Music::manifest(),
+            'musicParts' => Music::parts(),
             'musicStems' => Music::STEMS,
             'packs' => $packs,
             'rules' => [

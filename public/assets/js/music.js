@@ -100,23 +100,28 @@ export function playStems(groups, when, { offset = 0, loop = false, volume = 0.9
 export function bandStems(members, band = null, seed = 0) {
   const genres = [...new Set(['pop', 'rock', ...Object.keys(cat().music || {}).map((f) => f.split('-')[0])])];
   const used = new Set();
+  // Gleicher Part = gleiche Noten, auch in einem anderen Genre (wie Music::parts). Gesang zählt je Stimme.
+  const part = (url) => {
+    const key = url?.replace(/^assets\/music\//, '').replace(/\.mp3$/, '');
+    return !key ? null : /\/gesang(-|$)/.test(key) ? key : cat().musicParts?.[key] ?? key;
+  };
   return members.map((m) => {
     const stem = memberStem(m, band, seed);
     let url = stemUrl(stem);
-    if (url && used.has(url)) {
+    if (url && used.has(part(url))) {
       // Der Ersatz behält die Variante, die eigentlich klingen würde (Metal: E-Gitarre → Pop-E-Gitarre).
       const variant = url.match(/-(elektrisch|akustisch)\.mp3$/);
       if (variant) stem.electric = variant[1] === 'elektrisch';
       for (const genre of genres) {
         const tryUrl = stemUrl({ ...stem, genre });
-        if (tryUrl && !used.has(tryUrl)) {
+        if (tryUrl && !used.has(part(tryUrl))) {
           stem.genre = genre;
           url = tryUrl;
           break;
         }
       }
     }
-    if (url) used.add(url);
+    if (url) used.add(part(url));
     return stem;
   });
 }

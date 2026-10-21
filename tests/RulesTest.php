@@ -391,3 +391,15 @@ test('Charakter: keine widersprüchlichen Eigenschaften (z. B. Teamplayer und Di
     }
     check(Generator::contradicts('diva', 'teamplayer'));
 });
+
+test('Musik: Doppelte Instrumente spielen verschiedene Parts – gleiche Noten in anderem Genre zählen als derselbe', function () {
+    $parts = Signed\Game\Music::parts();
+    checkEquals($parts['metal-0/gitarre-elektrisch'], $parts['rock-0/gitarre-elektrisch'], 'Metal- und Rock-Gitarre: dasselbe Riff');
+    check($parts['pop-0/bass-akustisch'] !== $parts['rock-0/bass-akustisch'], 'Pop- und Rock-Bass spielen Verschiedenes');
+    $b1 = musician(['id' => 601, 'instr1' => 'bass', 'genres' => ['rock']]);
+    $b2 = musician(['id' => 603, 'instr1' => 'bass', 'genres' => ['rock']]);
+    $b3 = musician(['id' => 605, 'instr1' => 'bass', 'genres' => ['rock']]);
+    $stems = Signed\Game\Music::bandStems([$b1, $b2, $b3], [], ['rock']);
+    $got = array_map(static fn ($s) => $parts[implode('/', Signed\Game\Music::resolve($s))], $stems);
+    checkEquals(3, count(array_unique($got)), 'Drei Bassisten, drei verschiedene Parts (Rock, Pop, Hip-Hop)');
+});

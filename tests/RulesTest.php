@@ -299,9 +299,13 @@ test('Über Stufe 1 geht es kaum weiter: Gewinne wirken je nach Stufe nur noch z
 });
 
 test('Gesang: Musikerinnen singen mit der Frauenstimme, Musiker mit der Männerstimme, gleiche Noten', function () {
-    $stem = static fn (string $voice) => ['type' => 'vocals', 'level' => 0, 'genre' => 'rock', 'electric' => false, 'voice' => $voice];
+    $stem = static fn (string $voice, string $genre = 'folk') => ['type' => 'vocals', 'level' => 0, 'genre' => $genre, 'electric' => false, 'voice' => $voice];
+    // Folk hat noch keine Aufnahmen: Pop springt ein. Rock und Metal singen mit eigenen (gleichen) Spuren.
     checkEquals(['folder' => 'pop-0', 'file' => 'gesang-weiblich'], Signed\Game\Music::resolve($stem('weiblich')));
     checkEquals(['folder' => 'pop-0', 'file' => 'gesang-maennlich'], Signed\Game\Music::resolve($stem('maennlich')));
+    checkEquals(['folder' => 'rock-0', 'file' => 'gesang-maennlich'], Signed\Game\Music::resolve($stem('maennlich', 'rock')));
+    checkEquals(['folder' => 'metal-0', 'file' => 'gesang-weiblich'], Signed\Game\Music::resolve($stem('weiblich', 'metal')));
+    check(count(Signed\Game\Music::notes(Signed\Game\Music::resolve($stem('weiblich', 'metal')))['notes']) > 20, 'Metal hat Noten');
     $notes = Signed\Game\Music::notes(Signed\Game\Music::resolve($stem('weiblich')));
     check($notes !== null && count($notes['notes']) > 20, 'Noten aus der gemeinsamen MIDI-Spur');
     checkEquals('weiblich', Signed\Game\Music::voice(['id' => 7, 'look' => ['gender' => 'f']]));

@@ -91,7 +91,7 @@ Ein schwacher Musiker zieht den Sound runter, und vier Musiker sind höchstens 2
 - Kommen mehrere Genres in Frage, bleibt die Band bei ihrem bisherigen; sonst gilt die Reihenfolge oben.
 - Ohne Genre-Einheit spielt die Musik im Genre, das die meisten Mitglieder mögen (ohne Bonus).
 - Wechsel kommen in die Chronik; beim Aufnehmen zeigt das Spiel vorher, ob die Band ihr Genre verliert oder gewinnt.
-- **Band-Plätze:** die erste Band sofort, die zweite ab 50, die dritte ab 150 Label-Ruhm. Genres dürfen sich wiederholen.
+- **Band-Plätze:** bis zu 8 Bands – die erste sofort, weitere ab 50, 150, 300, 500, 750, 1.050 und 1.400 Label-Ruhm. Genres dürfen sich wiederholen.
 - **Namensänderung:** vor dem ersten Auftritt frei; danach kostet sie 300 ₲ und der Ruhm am alten Namen geht verloren.
 
 ### Zusammenspiel und Chemie
@@ -219,7 +219,7 @@ Nur die Gewinne sind klein; wie oft man etwas hintereinander spielt, ist nicht b
   Gig = Lieder × √(Grund-Ruhm des Ortes) × 4 % × Publikum, Band-Promo +10 %, Promo-Mission eines Mitglieds +4 %.
   Höchstens +60 %, halbiert sich alle 3 Stunden. Weil der Schub nur die fallenden Punkte vervielfacht, hält
   Dauer-Promo eine Platte nicht in den Charts.
-- Unter 1 Punkt verkauft sich eine Platte nicht mehr, nach 7 Tagen zählt sie nicht mehr. Die Charts zeigen die Top 10; pro Band zählt nur ihre stärkste Platte (die übrigen verkaufen sich weiter, ohne Platz) – bei höchstens 3 Bands also höchstens 3 pro Label.
+- Unter 1 Punkt verkauft sich eine Platte nicht mehr, nach 7 Tagen zählt sie nicht mehr. Die Charts zeigen die Top 10; pro Band zählt nur ihre stärkste Platte und pro Label höchstens 3 (die übrigen verkaufen sich weiter, ohne Platz).
 - Die Plätze werden alle 3 Stunden neu vergeben (Chartwoche) – sofort, wenn eine Platte erscheint oder Schub bekommt.
   Dazwischen bleiben sie stehen. „Vorher“ ist der Platz zu Beginn der Chartwoche; dazu Trend (▲ ▼ – NEU),
   Stunden in den Charts und bester Platz. Nachrichten: Einstieg in die Top 10, Platz 1 (mit Feier), aus den Top 10 gefallen.

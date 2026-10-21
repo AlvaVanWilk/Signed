@@ -924,3 +924,22 @@ test('Tantiemen: Platten ohne Chartplatz verkaufen sich weiter, ältere bringen 
     check($gain >= 11 && $gain <= 13, "Katalog nach 10 Stunden: $gain");
     checkEquals(0, count($state['finance']['records']), 'Keine Chart-Tantiemen mehr');
 });
+
+test('Charts: Pro Label höchstens drei Platten, auch mit vielen Bands', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Viele');
+    $band = foundBand($p);
+    $labelId = (int) $db->value('SELECT label_id FROM bands WHERE id = ?', [$band['id']]);
+    for ($i = 1; $i <= 5; $i++) {
+        $bandId = $db->insert('bands', ['label_id' => $labelId, 'name' => "Band $i", 'genre' => 'rock', 'created_at' => Clock::now()]);
+        $db->insert('records', [
+            'label_id' => $labelId, 'band_id' => $bandId, 'title' => "Platte $i", 'songs_total' => 3, 'songs_done' => 3,
+            'song_results' => '[]', 'status' => 'done', 'created_at' => Clock::now(), 'finished_at' => Clock::now(),
+            'chart_points' => 20 * $i, 'royalties_until' => Clock::now(),
+        ]);
+    }
+    Signed\Game\Charts::markDirty($db);
+    $placed = array_column(array_filter($p->get('charts')['albums'], static fn ($a) => $a['placed']), 'title');
+    checkEquals(['Platte 5', 'Platte 4', 'Platte 3'], $placed);
+    checkEquals(8, count(Signed\Game\Balance::BAND_SLOTS));
+});

@@ -2,6 +2,7 @@ import { app, bandById, cat, musicianById, serverNow } from './core.js';
 import { duration, esc, openModal } from './ui.js';
 import { getAudio } from './audio.js';
 import { loadStems, memberStem, playStems } from './music.js';
+import { stage } from './figure.js';
 
 const ICONS = { song: '🎵', mistake: '😬', highlight: '🔥', crowd: '👥' };
 
@@ -46,6 +47,7 @@ export function openLive(activityId) {
       <div><div class="eyebrow">${crowd ? 'Live' : 'Probenraum'}</div><h2>${esc(activity.title)}</h2><div class="muted">${esc(who)}</div></div>
       <div class="live-clock"><span class="live-song"></span><b class="live-left"></b></div>
     </div>
+    ${stage(players, { bpm: cat().genres[band?.genres[0] ?? players[0]?.genres[0]]?.bpm ?? 120 })}
     ${crowd ? `<div class="meter">
       <div class="meter-labels"><span>Buhrufe</span><span>Publikum</span><span>Ekstase</span></div>
       <div class="meter-track"><div class="meter-fill"></div><div class="meter-needle"></div></div>
@@ -54,6 +56,7 @@ export function openLive(activityId) {
     <ol class="ticker"></ol>
     `;
 
+  const stageEl = root.querySelector('.fig-stage');
   const fill = root.querySelector('.meter-fill');
   const needle = root.querySelector('.meter-needle');
   const ticker = root.querySelector('.ticker');
@@ -82,6 +85,7 @@ export function openLive(activityId) {
     if (elapsed >= total) {
       clearInterval(timer);
       stopMusic();
+      stageEl.classList.add('paused');
       setTimeout(() => modal.close(), 1500);
     }
   }
@@ -118,6 +122,8 @@ export function openLive(activityId) {
     fill.style.width = `${value}%`;
     needle.style.left = `${value}%`;
     fill.dataset.mood = base >= 65 ? 'high' : base <= 35 ? 'low' : 'mid';
+    // Tobt das Publikum, springt die Band.
+    stageEl.classList.toggle('hype', base >= 65);
     requestAnimationFrame(animate);
   }
 

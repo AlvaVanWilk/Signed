@@ -5,6 +5,7 @@ import { openLive } from '../live.js';
 import { startPractice, startRecordSong } from '../play.js';
 import { assignGear, soundChange } from '../gear.js';
 import { trendBadge } from './charts.js';
+import { stage } from '../figure.js';
 import { bar, confirmDialog, duration, esc, fmt0, fmt1, fmt2, fmtGain, money, openModal, percent, promptDialog, timeAgo, toast } from '../ui.js';
 
 /** Untermenü einer Band: [Pfad, Icon, Bezeichnung] */
@@ -92,6 +93,7 @@ function overview(b, members) {
     <div class="page-head">
       <div><div class="eyebrow">${b.title ? esc(b.title) : 'Band'}</div><h1>${esc(b.name)} <button class="icon-btn" data-act="bandRename" data-id="${b.id}" title="${b.released ? 'Namensänderung beantragen' : 'Umbenennen'}">✎</button></h1></div>
     </div>
+    ${members.length ? stage(members, { className: runningFor(b.id) ? '' : 'paused' }) : ''}
     <div class="stat-grid">
       <div class="tile" data-flash="sound-${b.id}"><span>Sound</span><b>${fmt1(b.sound)}</b>
         <small>Ruhm pro Auftritt <em>× ${fmt2(fx.soundFame)}</em></small>

@@ -1,7 +1,7 @@
 import { HAIR_BACK, HAIR_FRONT, HATS, HAT_COLORS } from './avatar.js';
 
 /**
- * Niedliche Ganzkörper-Figur eines Musikers (Probe): großer Kopf aus denselben Merkmalen wie das Kartenbild,
+ * Niedliche Ganzkörper-Figur eines Musikers: großer Kopf aus denselben Merkmalen wie das Kartenbild,
  * kleiner Körper, Instrument. Bewegt wird nur mit CSS (Drehen, Verschieben) – leicht genug fürs iPad.
  * Das Tempo kommt über die CSS-Variable --beat (Sekunden pro Schlag).
  */
@@ -18,7 +18,7 @@ const pivot = (x, y, cls, inner) => `<g transform="translate(${x} ${y})"><g clas
 export function figure(look = {}, instrument = 'guitar') {
   const skin = look.skin || '#d9a27e';
   const shirt = look.shirt || '#4a6fa5';
-  const pose = POSES[instrument] ? instrument : 'guitar';
+  const pose = POSES[instrument] ? instrument : instrument === 'synth' ? 'keys' : 'guitar';
   const sing = pose === 'vocals';
   return `
     <svg class="fig fig-${pose}" viewBox="0 0 120 150" aria-hidden="true">
@@ -142,4 +142,73 @@ const POSES = {
       <g class="fig-key-l">${arm('M45 80 Q38 92 42 101', [42, 101], skin, shirt)}</g>
       <g class="fig-key-r">${arm('M75 80 Q82 92 78 101', [78, 101], skin, shirt)}</g>`,
   },
+  turntables: {
+    back: () => '',
+    front: (skin, shirt) => `
+      <g ${STROKE}>
+        <path d="M34 112 L32 140 M86 112 L88 140" fill="none"/>
+        <rect x="22" y="100" width="76" height="12" rx="3" fill="#2b2d42"/>
+        <ellipse cx="40" cy="100" rx="13" ry="3.5" fill="#111"/><ellipse cx="80" cy="100" rx="13" ry="3.5" fill="#111"/>
+        <ellipse cx="40" cy="100" rx="3" ry="1" fill="#ff4f8b" stroke-width="0.6"/><ellipse cx="80" cy="100" rx="3" ry="1" fill="#4fd1ff" stroke-width="0.6"/>
+      </g>
+      ${arm('M45 80 Q50 92 58 99', [58, 99], skin, shirt)}
+      ${arm('M75 80 Q86 88 80 98', [80, 98], skin, shirt, 'fig-scratch')}`,
+  },
+  sax: {
+    back: () => '',
+    front: (skin, shirt) => pivot(60, 62, 'fig-horn', `
+      <path d="M61 62 Q66 66 64 74 L64 98 Q66 108 76 104 L82 94" fill="none" stroke="${INK}" stroke-width="9" stroke-linecap="round"/>
+      <path d="M61 62 Q66 66 64 74 L64 98 Q66 108 76 104 L82 94" fill="none" stroke="#f2c14e" stroke-width="6" stroke-linecap="round"/>
+      <path d="M78 96 L88 88 L90 96 Z" fill="#f2c14e" ${STROKE}/>
+      ${arm('M45 80 Q56 78 63 80', [63, 80], skin, shirt)}
+      ${arm('M75 80 Q76 92 67 94', [67, 94], skin, shirt)}`),
+  },
+  trumpet: {
+    back: () => '',
+    front: (skin, shirt) => pivot(60, 62, 'fig-horn', `
+      <path d="M62 62 L88 57" stroke="${INK}" stroke-width="6" stroke-linecap="round"/>
+      <path d="M62 62 L88 57" stroke="#f2c14e" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M86 57 L97 50 L99 64 Z" fill="#f2c14e" ${STROKE}/>
+      <rect x="70" y="56" width="10" height="6" rx="1.5" fill="#f2c14e" ${STROKE} stroke-width="1.2"/>
+      ${arm('M45 80 Q58 76 68 64', [68, 64], skin, shirt)}
+      <g class="fig-key-r">${arm('M75 80 Q80 72 77 63', [77, 63], skin, shirt)}</g>`),
+  },
+  flute: {
+    back: () => '',
+    front: (skin, shirt) => pivot(60, 62, 'fig-horn', `
+      <path d="M62 61 L22 69" stroke="${INK}" stroke-width="5" stroke-linecap="round"/>
+      <path d="M62 61 L22 69" stroke="#d6d9e0" stroke-width="2.6" stroke-linecap="round"/>
+      ${arm('M45 80 Q36 76 32 67', [32, 67], skin, shirt)}
+      <g class="fig-key-r">${arm('M75 80 Q64 76 50 64', [50, 64], skin, shirt)}</g>`),
+  },
+  violin: {
+    back: () => '',
+    front: (skin, shirt) => `
+      <g ${STROKE}>
+        <path d="M44 70 L20 58" stroke="${INK}" stroke-width="5" stroke-linecap="round"/>
+        <path d="M44 70 L20 58" stroke="#5b3a21" stroke-width="2.5" stroke-linecap="round"/>
+        <g transform="rotate(28 44 72)"><ellipse cx="44" cy="72" rx="9" ry="6.5" fill="#b5651d"/><ellipse cx="53" cy="72" rx="7" ry="5.5" fill="#b5651d"/></g>
+      </g>
+      ${arm('M45 80 Q28 80 22 61', [22, 61], skin, shirt)}
+      ${pivot(75, 80, 'fig-bow', `${arm('M75 80 Q78 72 62 70', [62, 70], skin, shirt)}
+        <path d="M44 60 L86 80" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>`)}`,
+  },
 };
+
+/** Instrument, das ein Musiker in der Band spielt (wie BandCalc::instrument). */
+export function playedInstrument(m) {
+  const slot = m.bandSlot === 2 && m.instruments[1] ? 1 : 0;
+  return m.instruments[slot].type;
+}
+
+/**
+ * Bühne mit Figuren. bpm setzt das Tempo; mood: 'hype' (Publikum tobt – die Band springt), 'calm' oder ''.
+ * names: Vornamen unter den Figuren zeigen.
+ */
+export function stage(members, { bpm = 120, names = true, className = '' } = {}) {
+  return `<div class="fig-stage ${className}" style="--beat:${(60 / bpm).toFixed(3)}s">${members.map((m) => `
+    <div class="fig-member">${figure(m.look, playedInstrument(m))}${names ? `<b>${escapeHtml(m.firstName)}</b>` : ''}</div>`).join('')}
+  </div>`;
+}
+
+const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

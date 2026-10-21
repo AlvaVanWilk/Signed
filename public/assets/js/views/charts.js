@@ -1,6 +1,7 @@
 import { api } from '../api.js';
 import { genreTag, musicianCard } from '../cards.js';
 import { app, cat, defineActions, navigate, rerender } from '../core.js';
+import { stage } from '../figure.js';
 import { loadStems, playStems } from '../music.js';
 import { esc, fmt0, fmt1, fmtGain, openModal, toast } from '../ui.js';
 
@@ -106,6 +107,7 @@ async function openBandView(id) {
     clearTimeout(timer);
     player?.stop();
     player = null;
+    modal?.body.querySelector('.fig-stage')?.classList.add('paused');
   };
   const modal = openModal({
     wide: true,
@@ -118,6 +120,7 @@ async function openBandView(id) {
         <button class="btn primary" data-listen>▶ Anhören</button>
         ${band.own ? `<button class="btn" data-goto>Zur Band</button>` : ''}
       </div>
+      ${stage(band.members, { bpm: cat().genres[band.genres[0] ?? band.members[0]?.genres[0]]?.bpm ?? 120, className: 'paused' })}
       <div class="tcg-grid">${band.members.map((m) => musicianCard(m, { act: null, showStatus: false })).join('')}</div>
       ${band.records.length ? `<h3>Platten</h3>
         <ul class="history">${band.records.map((r) => `
@@ -125,6 +128,7 @@ async function openBandView(id) {
         </ul>` : ''}`,
   });
   const button = modal.body.querySelector('[data-listen]');
+  const stageEl = modal.body.querySelector('.fig-stage');
   modal.body.querySelector('[data-goto]')?.addEventListener('click', () => {
     modal.close();
     navigate(`#/band/${band.id}`);
@@ -145,6 +149,7 @@ async function openBandView(id) {
       return;
     }
     player = playStems(stems, 0);
+    stageEl.classList.remove('paused');
     button.textContent = '■ Stopp';
     timer = setTimeout(() => {
       stop();

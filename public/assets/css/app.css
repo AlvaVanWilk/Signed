@@ -1000,3 +1000,46 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
   100% { opacity: 0; transform: rotate(var(--a)) translateY(-70px) scale(1); }
 }
 @media (prefers-reduced-motion: reduce) { .coin-burst { display: none; } }
+
+/* ---------- Musiker-Figuren (figure.js): Bewegung nur über transform, leicht fürs iPad ---------- */
+:root { --beat: 0.5s; }
+.fig { width: 100%; height: auto; overflow: visible; }
+/* Drehpunkte setzt figure.js als feste Koordinaten (pivot) – hier immer um 0/0 drehen. */
+.fig g { transform-box: view-box; transform-origin: 0 0; }
+.fig-body { animation: fig-bounce var(--beat) ease-in-out infinite; }
+.fig-head { animation: fig-nod calc(var(--beat) * 2) ease-in-out infinite; }
+.fig-eyes { animation: fig-blink 3.7s infinite; }
+.fig-tap { animation: fig-tap var(--beat) ease-in-out infinite; }
+.fig-strum { animation: fig-strum calc(var(--beat) / 2) ease-in-out infinite alternate; }
+.fig-wave { animation: fig-wave calc(var(--beat) * 2) ease-in-out infinite alternate; }
+.fig-mouth { animation: fig-sing var(--beat) ease-in-out infinite; }
+.fig-mic-arm { animation: fig-nod calc(var(--beat) * 2) ease-in-out infinite; }
+.fig-hit-l { animation: fig-hit var(--beat) ease-in infinite; }
+.fig-hit-r { animation: fig-hit var(--beat) ease-in infinite; animation-delay: calc(var(--beat) / -2); }
+.fig-cymbal { animation: fig-cymbal calc(var(--beat) * 2) ease-out infinite; }
+.fig-key-l { animation: fig-key var(--beat) ease-in-out infinite; }
+.fig-key-r { animation: fig-key var(--beat) ease-in-out infinite; animation-delay: calc(var(--beat) / -2); }
+@keyframes fig-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(1.8px); } }
+@keyframes fig-nod { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+@keyframes fig-blink { 0%, 94%, 100% { transform: scaleY(1); } 96% { transform: scaleY(0.1); } }
+@keyframes fig-tap { 0%, 60%, 100% { transform: rotate(0); } 25% { transform: rotate(-14deg); } }
+@keyframes fig-strum { from { transform: rotate(-6deg); } to { transform: rotate(12deg); } }
+@keyframes fig-wave { from { transform: rotate(-12deg); } to { transform: rotate(14deg); } }
+@keyframes fig-sing { 0%, 100% { transform: scaleY(0.5); } 40% { transform: scaleY(1.25); } }
+@keyframes fig-hit { 0%, 100% { transform: rotate(-16deg); } 40% { transform: rotate(6deg); } }
+@keyframes fig-cymbal { 0% { transform: rotate(-6deg); } 30% { transform: rotate(5deg); } 100% { transform: rotate(0); } }
+@keyframes fig-key { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(2.5px); } }
+@media (prefers-reduced-motion: reduce) { .fig * { animation: none !important; } }
+.fig-horn { animation: fig-nod calc(var(--beat) * 2) ease-in-out infinite; }
+.fig-bow { animation: fig-bow calc(var(--beat) / 2) ease-in-out infinite alternate; }
+.fig-scratch { animation: fig-bow calc(var(--beat) / 2) ease-in-out infinite alternate; }
+@keyframes fig-bow { from { transform: rotate(-9deg); } to { transform: rotate(7deg); } }
+/* Bühne: Publikum tobt – die Band springt; pausiert (z. B. bis „Anhören“) steht sie still und blinzelt nur. */
+.fig-stage { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-end; gap: 2px; padding: 18px 10px 8px; margin-bottom: 14px; border-radius: var(--radius);
+  background: radial-gradient(ellipse at 50% 0%, rgba(255, 214, 120, 0.22), transparent 60%), linear-gradient(180deg, #241b33, #15111e 72%, #3a2a1f 72%, #2a1e16); }
+.fig-member { width: min(22%, 130px); min-width: 74px; text-align: center; font-size: 0.85rem; }
+.fig-member b { display: block; margin-top: -2px; }
+.fig-stage.hype .fig-body { animation-name: fig-jump; }
+@keyframes fig-jump { 0%, 100% { transform: translateY(0); } 45% { transform: translateY(-7px); } }
+.fig-stage.paused .fig g { animation-play-state: paused; }
+.fig-stage.paused .fig-eyes { animation-play-state: running; }

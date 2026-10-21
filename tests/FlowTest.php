@@ -452,8 +452,8 @@ test('Platte produzieren, dann Gigs spielen, dann die nächste Platte', function
 
     checkApiError(fn () => $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'gig', 'songs' => 4]), '3 Lieder');
     checkApiError(fn () => $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'gig', 'songs' => 2]), '3 Lieder');
-    // EP mit 3 Liedern: 6 Lieder live, also 2 Gigs à 3 Lieder.
-    $gigs = 3 * Balance::LIVE_SONGS_PER_RECORD_SONG / 3;
+    // Zwischen zwei Platten eine feste Zahl Gigs, egal wie lang die Platte war.
+    $gigs = Balance::RECORD_GIGS_BETWEEN;
     for ($i = 0; $i < $gigs; $i++) {
         check(str_contains((string) bandById($p->get('state'), $band['id'])['record']['blocker'], 'live'));
         $gig = $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'gig', 'songs' => 3])['activity'];
@@ -849,4 +849,21 @@ test('Band anderer Labels ansehen: Mitglieder, Genre, Platten und Spuren zum Anh
     check(!isset($view['members'][0]['value']), 'Kein Marktwert');
     check($a->post('bandView', ['bandId' => $band['id']])['own']);
     checkApiError(fn () => $b->post('bandView', ['bandId' => 99999]), 'gibt es nicht');
+});
+
+test('Charts: Pro Band zählen höchstens zwei Platten', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Flut');
+    $band = foundBand($p);
+    $labelId = (int) $db->value('SELECT label_id FROM bands WHERE id = ?', [$band['id']]);
+    foreach (['Eins' => 80, 'Zwei' => 60, 'Drei' => 40] as $title => $points) {
+        $db->insert('records', [
+            'label_id' => $labelId, 'band_id' => $band['id'], 'title' => $title, 'songs_total' => 3, 'songs_done' => 3,
+            'song_results' => '[]', 'status' => 'done', 'created_at' => Clock::now(), 'finished_at' => Clock::now(),
+            'chart_points' => $points, 'royalties_until' => Clock::now(),
+        ]);
+    }
+    Signed\Game\Charts::markDirty($db);
+    $placed = array_column(array_filter($p->get('charts')['albums'], static fn ($a) => $a['placed']), 'title');
+    checkEquals(['Eins', 'Zwei'], $placed);
 });

@@ -358,7 +358,6 @@ final class Activities
             if ($row['type'] === 'gig') {
                 $updates['gigs_played'] = $band['gigs_played'] + 1;
                 $updates['gigs_since_record'] = $band['gigs_since_record'] + 1;
-                $updates['live_songs_needed'] = max(0, $band['live_songs_needed'] - (int) $data['songs']);
                 if ($band['gigs_played'] === 0) {
                     $repo->log('gig', sprintf('%s spielt den ersten richtigen Gig.', $band['name']), $bandId);
                 }

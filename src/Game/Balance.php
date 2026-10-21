@@ -246,7 +246,11 @@ final class Balance
     public const RECORD_MIN_SONGS = 3;
     public const RECORD_MAX_SONGS = 12;
     /** Vor der nächsten Platte spielt die Band die letzte live: so viele Lieder pro Lied der Platte, auf Gigs. */
-    public const LIVE_SONGS_PER_RECORD_SONG = 2;
+    /**
+     * Zwischen zwei Platten spielt die Band so viele Gigs – egal wie lang die Platte war. (Früher: 2 Lieder live pro
+     * Plattenlied; dann waren kurze EPs am schnellsten, und wenige Bands haben die Charts mit EPs geflutet.)
+     */
+    public const RECORD_GIGS_BETWEEN = 5;
     public const RECORD_SONG_SKILL = 0.12;
     public const RECORD_SONG_COHESION = 2.0;
     /** Erstverkauf beim Erscheinen; das eigentliche Einkommen sind die Tantiemen, solange die Platte chartet. */
@@ -312,6 +316,8 @@ final class Balance
     public const CHART_BOOST_HALF = 3 * 3600;
     /** Unter dieser Punktzahl fällt eine Platte aus den Charts. */
     public const CHART_MIN_POINTS = 1.0;
+    /** Pro Band zählen höchstens so viele Platten in den Charts (die mit den meisten Punkten); die übrigen verkaufen sich weiter. */
+    public const CHART_PER_BAND = 2;
     public const CHART_SIZE = 10;
     /** Platz 1 bringt einen Scout-Gutschein erst, wenn so viele Labels Platten in den Charts haben. */
     public const CHART_TOP_MIN_LABELS = 3;

@@ -26,9 +26,9 @@ final class Studio
         if ($memberCount < Balance::MIN_MEMBERS) {
             return sprintf('Die Band braucht mindestens %d Musiker.', Balance::MIN_MEMBERS);
         }
-        $missing = $band['live_songs_needed'];
+        $missing = $band['records'] > 0 ? Balance::RECORD_GIGS_BETWEEN - $band['gigs_since_record'] : 0;
         if ($missing > 0) {
-            return sprintf('Erst die letzte Platte live spielen: noch %d %s auf Gigs.', $missing, $missing === 1 ? 'Lied' : 'Lieder');
+            return sprintf('Erst die letzte Platte live spielen: noch %d %s.', $missing, $missing === 1 ? 'Gig' : 'Gigs');
         }
         return null;
     }
@@ -184,8 +184,8 @@ final class Studio
         $this->repo->earn($money, sprintf('Erstverkauf „%s“', $record['title']));
 
         $db->exec(
-            'UPDATE bands SET records = records + 1, songs_recorded = songs_recorded + ?, gigs_since_record = 0, live_songs_needed = ?, perfect_records = perfect_records + ? WHERE id = ?',
-            [$songs, $songs * Balance::LIVE_SONGS_PER_RECORD_SONG, $perfect ? 1 : 0, $band['id']]
+            'UPDATE bands SET records = records + 1, songs_recorded = songs_recorded + ?, gigs_since_record = 0, live_songs_needed = 0, perfect_records = perfect_records + ? WHERE id = ?',
+            [$songs, $perfect ? 1 : 0, $band['id']]
         );
         $fameGain = round(array_sum($gains), 1);
         $firstRecord = (int) $db->value("SELECT COUNT(*) FROM records WHERE label_id = ? AND status = 'done'", [$this->repo->labelId]) === 0;

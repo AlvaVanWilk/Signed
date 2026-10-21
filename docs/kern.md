@@ -204,8 +204,8 @@ Nur die Gewinne sind klein; wie oft man etwas hintereinander spielt, ist nicht b
 - Fertig: Erstverkauf = Lieder × 60 ₲ × (0,3 + Qualität²) × LP-Bonus × Perfekt-Bonus × Verkäufe,
   Ruhm = Lieder × 0,6 × Soundfaktor × (0,3 + Qualität^1,5) × LP-Bonus × Perfekt-Bonus.
   - LP-Bonus: +4 % pro Lied über 3. Perfekt (kein einziger Fehler): × 1,5. Verkäufe: 1 + Bandruhm/400, höchstens × 5.
-- Vor der nächsten Platte spielt die Band die letzte live: 2 Lieder pro Lied der Platte auf Gigs
-  (EP mit 3 Liedern: 6 Lieder, also 2 Gigs; LP mit 10 Liedern: 20 Lieder).
+- Vor der nächsten Platte spielt die Band die letzte live: 5 Gigs, egal wie lang die Platte ist. Eine LP lohnt sich
+  also mehr als viele kleine EPs (früher: 2 Lieder live pro Plattenlied – kurze EPs fluteten die Charts).
 
 ### Album-Charts
 
@@ -219,7 +219,7 @@ Nur die Gewinne sind klein; wie oft man etwas hintereinander spielt, ist nicht b
   Gig = Lieder × √(Grund-Ruhm des Ortes) × 4 % × Publikum, Band-Promo +10 %, Promo-Mission eines Mitglieds +4 %.
   Höchstens +60 %, halbiert sich alle 3 Stunden. Weil der Schub nur die fallenden Punkte vervielfacht, hält
   Dauer-Promo eine Platte nicht in den Charts.
-- Unter 1 Punkt verkauft sich eine Platte nicht mehr, nach 7 Tagen zählt sie nicht mehr. Die Charts zeigen die Top 10.
+- Unter 1 Punkt verkauft sich eine Platte nicht mehr, nach 7 Tagen zählt sie nicht mehr. Die Charts zeigen die Top 10; pro Band zählen höchstens ihre 2 stärksten Platten (die übrigen verkaufen sich weiter, ohne Platz).
 - Die Plätze werden alle 3 Stunden neu vergeben (Chartwoche) – sofort, wenn eine Platte erscheint oder Schub bekommt.
   Dazwischen bleiben sie stehen. „Vorher“ ist der Platz zu Beginn der Chartwoche; dazu Trend (▲ ▼ – NEU),
   Stunden in den Charts und bester Platz. Nachrichten: Einstieg in die Top 10, Platz 1 (mit Feier), aus den Top 10 gefallen.

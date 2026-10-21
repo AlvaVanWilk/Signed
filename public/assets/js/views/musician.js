@@ -2,7 +2,7 @@ import { abilityInfo, bandIdentity, emptySlot, fullName, gearCard, gearModel, ge
 import { app, bandById, cat, defineActions, isBusy, musicianById, mutate, navigate } from '../core.js';
 import { openLive } from '../live.js';
 import { chip } from '../cards.js';
-import { closeAllModals, duration, esc, fmt0, money, openModal, timeAgo, toast } from '../ui.js';
+import { closeAllModals, duration, esc, fmt0, fmt1, money, openModal, timeAgo, toast } from '../ui.js';
 import { buskingHat, cancelButton, chemistryLabel, promoOf, practiceTile, promoTile, suggestName } from './bands.js';
 import { catalogList } from './catalog.js';
 
@@ -69,8 +69,8 @@ function profile(m) {
         ${statusNotice(m)}
         ${m.abilityChoice ? `<div class="notice choice"><span>⭐ ${esc(m.firstName)} ist jetzt ${esc(cat().levelWords[3])} und darf eine dritte Fähigkeit wählen.</span><button class="btn primary small" data-act="chooseAbility" data-id="${m.id}">Wählen</button></div>` : ''}
         <div class="stat-grid">
-          <div class="tile"><span>Können</span><b>${esc(cat().levelNames[m.level])}</b><small>${nextSkill ? `${esc(cat().levelNames[m.level + 1])} ab Können <em>${nextSkill}</em>` : 'Höchste Stufe'}</small></div>
-          <div class="tile"><span>Bekanntheit</span><b>${esc(cat().fameNames[m.fameLevel])}</b><small>${nextFame ? `${esc(cat().fameNames[m.fameLevel + 1])} ab <em>${nextFame}</em>` : 'Höchste Stufe'}</small></div>
+          <div class="tile"><span>Können</span><b>${esc(cat().levelNames[m.level])}</b><small>Jetzt <em>${fmt1(Math.max(...m.instruments.map((i) => i.skill)))}</em>${nextSkill ? ` · ${esc(cat().levelNames[m.level + 1])} ab ${nextSkill}` : ' · höchste Stufe'}</small></div>
+          <div class="tile"><span>Bekanntheit</span><b>${esc(cat().fameNames[m.fameLevel])}</b><small>Jetzt <em>${fmt1(m.fame)}</em>${nextFame ? ` · ${esc(cat().fameNames[m.fameLevel + 1])} ab ${nextFame}` : ' · höchste Stufe'}</small></div>
           <div class="tile"><span>Band</span><b class="small-b">${band ? `<a href="#/band/${band.id}">${esc(band.name)}</a>` : '–'}</b>
             ${band ? '' : `<button class="btn small ${m.favorite ? 'primary' : ''}" data-act="toggleFavorite" data-id="${m.id}">${m.favorite ? '★ Favorit' : '☆ Favorit'}</button>`}
           </div>

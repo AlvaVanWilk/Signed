@@ -155,8 +155,8 @@ Ein Lied dauert 24 Sekunden: 12 Takte 4/4 (oder 16 Takte 3/4) bei 120 BPM – al
 
 - **Rhythmus** (Solo-Probe für alle außer Gesang und Geige): vier Spuren, Tasten D F J K oder Tippen.
   Die Noten kommen aus der Aufnahme (noten.json) der eigenen Spur: Schlagzeug nur Bassdrum (links) und Snare (rechts),
-  die Hi-Hat bleibt im Klang; andere Instrumente Spur nach Tonhöhe (tief links), Akkorde als bis zu drei Noten
-  zugleich, Töne ab 1,5 Schlägen werden gehalten (bis kurz vor dem nächsten Anschlag). Haltenote: ab 85 % gehalten
+  die Hi-Hat bleibt im Klang; andere Instrumente Spur nach Tonhöhe (tief links), Akkorde als zwei Noten
+  zugleich (tiefster und höchster Ton), Töne ab 1,5 Schlägen werden gehalten (bis kurz vor dem nächsten Anschlag). Haltenote: ab 85 % gehalten
   zählt die Wertung des Anschlags, ab 40 % „Gut“, sonst „Daneben“.
   Die Schwierigkeit steckt in der Spur der Stufe. Bei Treffern hört man die eigene Spur, bei Fehlern wird sie leise.
   Man übt allein: Dazu tickt nur ein Metronom. Ohne Aufnahme: Zufallsnoten, Dichte 0,25–0,55 je nach Können. Zeitfenster Perfekt 60–75 ms, Gut 135–185 ms, Absolutes Gehör +20 ms.

@@ -452,7 +452,7 @@ button.card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
 .mg-canvas { width: 100%; height: 100%; display: block; }
 .mg-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; padding: 20px; background: rgba(14, 12, 20, 0.75); }
 .mg-keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-.mg-key { background: var(--panel-2); border: 2px solid color-mix(in srgb, var(--lane) 60%, transparent); color: var(--text); border-radius: var(--radius-sm); padding: 10px 4px; font: inherit; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+.mg-key { background: var(--panel-2); border: 2px solid color-mix(in srgb, var(--lane) 60%, transparent); color: var(--text); border-radius: var(--radius-sm); padding: 10px 4px; font: inherit; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .mg-key b { font-size: 1.2rem; color: var(--lane); }
 .mg-key small { color: var(--muted); font-size: 0.72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .mg-key.down { background: color-mix(in srgb, var(--lane) 35%, var(--panel-2)); }
@@ -978,3 +978,6 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .fame-step-1 { --step: #e0a800; }
 .fame-step-2 { --step: #f08c00; box-shadow: 0 0 1.2cqi rgba(255, 190, 40, 0.8); }
 .fame-step-3 { --step: linear-gradient(135deg, #ffd24a, #ff8a00, #ff4d8d); box-shadow: 0 0 1.6cqi rgba(255, 190, 40, 0.9); }
+
+/* Minispiele: keine Zoom-, Scroll- oder Markier-Gesten (mehrere Finger gleichzeitig für Akkorde). */
+.mg, .mg * { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }

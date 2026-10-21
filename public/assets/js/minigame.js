@@ -264,6 +264,7 @@ function createRhythmGame(container, game) {
   function onPointer(e) {
     const rect = canvas.getBoundingClientRect();
     const lane = Math.max(0, Math.min(3, Math.floor(((e.clientX - rect.left) / rect.width) * 4)));
+    canvas.setPointerCapture?.(e.pointerId);
     pointerLanes.set(e.pointerId, lane);
     held[lane] = true;
     judge(lane);
@@ -303,11 +304,17 @@ function createRhythmGame(container, game) {
   keyButtons.forEach((button, lane) => {
     button.addEventListener('pointerdown', (e) => {
       e.preventDefault();
+      // Der Finger bleibt bei der Taste, auch wenn er beim Halten etwas verrutscht.
+      button.setPointerCapture?.(e.pointerId);
       held[lane] = true;
       judge(lane);
     });
-    for (const type of ['pointerup', 'pointercancel', 'pointerleave']) button.addEventListener(type, () => release(lane));
+    for (const type of ['pointerup', 'pointercancel']) button.addEventListener(type, () => release(lane));
   });
+  // Safari: Mehrfinger-Gesten (Zoom) im Spiel abfangen, sonst bleibt bei Akkorden das Bild stehen.
+  const stopGesture = (e) => e.preventDefault();
+  const stage = container.querySelector('.mg');
+  for (const type of ['gesturestart', 'gesturechange', 'touchmove']) stage.addEventListener(type, stopGesture, { passive: false });
   shell.el('.mg-start').addEventListener('click', start);
   shell.el('.mg-abort').addEventListener('click', () => {
     if (!shell.resultShown()) finish({ aborted: true });

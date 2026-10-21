@@ -96,7 +96,7 @@ final class Music
     /**
      * Rhythmus-Noten aus der Aufnahme, damit jede Spur ähnlich viel zu tun gibt. Schlagzeug: nur Bassdrum
      * (Spur 1–2) und Snare (Spur 3–4), die Hi-Hat bleibt nur im Klang. Andere Instrumente: Spur nach Tonhöhe
-     * (tief links), Akkorde als mehrere Noten zugleich (höchstens drei), lange Töne werden gehalten (d > 0).
+     * (tief links), Akkorde als zwei Noten zugleich, lange Töne werden gehalten (d > 0).
      * @return array{notes: list<array{t: float, l: int, d: float}>, laneNames: list<string>}
      */
     public static function rhythmChart(array $source, string $type, int $duration): array
@@ -154,7 +154,10 @@ final class Music
         return ['notes' => $out, 'laneNames' => $names];
     }
 
-    /** Höchstens drei verschiedene Töne eines Akkords: der tiefste und die beiden höchsten, aufsteigend. */
+    /**
+     * Höchstens zwei Töne eines Akkords: der tiefste und der höchste. Drei Finger gleichzeitig lösen auf dem
+     * iPad Systemgesten aus und sind für Kinder schwer.
+     */
     private static function chordNotes(array $chord): array
     {
         $byPitch = [];
@@ -163,7 +166,7 @@ final class Music
         }
         ksort($byPitch);
         $list = array_values($byPitch);
-        return count($list) <= 3 ? $list : [$list[0], ...array_slice($list, -2)];
+        return count($list) <= 2 ? $list : [$list[0], end($list)];
     }
 
     /**

@@ -1,5 +1,4 @@
-import { createVoice, getAudio, scaleMidi, scheduleBacking } from './audio.js';
-import { loadStems, playStems } from './music.js';
+import { createVoice, getAudio, scaleMidi, scheduleMetronome } from './audio.js';
 import { judgeRatio, mountShell } from './mg-shell.js';
 import { duration, percent } from './ui.js';
 
@@ -62,17 +61,6 @@ export function createPitchGame(container, game) {
   let stopBacking = () => {};
   let resolvePlay;
   let streak = 0;
-  // Aufnahmen: Die Band spielt, die eigene Stimme ist man selbst (die eigene Spur bleibt stumm).
-  let buffers = null;
-  let player = null;
-  if (game.music?.backing.length) {
-    const startButton = shell.el('.mg-start');
-    startButton.disabled = true;
-    loadStems(game.music.backing.map((s) => [s])).then((loaded) => {
-      buffers = loaded;
-      startButton.disabled = false;
-    });
-  }
 
   const clock = () => (audio ? audio.currentTime : performance.now() / 1000);
 
@@ -225,8 +213,8 @@ export function createPitchGame(container, game) {
     voice = createVoice(game.instrument);
     t0 = clock() + 0.15 + 4 * beat;
     last = clock();
-    stopBacking = scheduleBacking({ genre: game.genre, bpm: game.bpm, start: t0, duration: game.duration, drums: !buffers, bass: !buffers });
-    if (buffers) player = playStems(buffers, t0, { volume: 0.8 });
+    // Allein üben: nur das Metronom tickt mit.
+    stopBacking = scheduleMetronome({ bpm: game.bpm, start: t0, duration: game.duration });
     running = true;
     raf = requestAnimationFrame(frame);
   }
@@ -236,8 +224,6 @@ export function createPitchGame(container, game) {
     setHolding(false);
     cancelAnimationFrame(raf);
     stopBacking();
-    player?.stop();
-    player = null;
     voice?.stop();
     voice = null;
     resolvePlay?.(result);
@@ -270,7 +256,6 @@ export function createPitchGame(container, game) {
       running = false;
       cancelAnimationFrame(raf);
       stopBacking();
-      player?.stop();
       voice?.stop();
       window.removeEventListener('keydown', onKeyDown, true);
       window.removeEventListener('keyup', onKeyUp, true);

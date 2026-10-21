@@ -309,6 +309,22 @@ export function scheduleBacking({ genre, bpm, start, duration, drums = true, bas
   };
 }
 
+/** Metronom für die Solo-Probe: Vorzähler und ein Klick auf jeden Schlag, betont auf der Eins. */
+export function scheduleMetronome({ bpm, start, duration, countIn = 4 }) {
+  if (!ctx) return () => {};
+  const bus = ctx.createGain();
+  bus.gain.value = 0.45;
+  bus.connect(master);
+  const beat = 60 / bpm;
+  for (let i = -countIn; i * beat < duration; i++) {
+    hat(bus, start + i * beat, (i + countIn) % 4 === 0 ? 1.6 : 0.9);
+  }
+  return () => {
+    bus.gain.setTargetAtTime(0, ctx.currentTime, 0.05);
+    setTimeout(() => bus.disconnect(), 400);
+  };
+}
+
 // ---------- Tonhöhen-Spiel ----------
 
 /** Natürliche Moll-Tonleiter (passend zu Am – F – C – G), Stufen 0–7. */

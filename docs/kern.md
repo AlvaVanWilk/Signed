@@ -151,11 +151,13 @@ Ein Lied dauert 24 Sekunden: 12 Takte 4/4 (oder 16 Takte 3/4) bei 120 BPM – al
 
 - **Rhythmus** (Solo-Probe für alle außer Gesang und Geige): vier Spuren, Tasten D F J K oder Tippen.
   Die Noten kommen aus der Aufnahme (noten.json) der eigenen Spur: Schlagzeug nur Bassdrum (links) und Snare (rechts),
-  die Hi-Hat bleibt im Klang; andere Instrumente ein Anschlag pro Zeitpunkt, Spur nach Tonhöhe (tief links).
+  die Hi-Hat bleibt im Klang; andere Instrumente Spur nach Tonhöhe (tief links), Akkorde als bis zu drei Noten
+  zugleich, Töne ab 1,5 Schlägen werden gehalten (bis kurz vor dem nächsten Anschlag). Haltenote: ab 85 % gehalten
+  zählt die Wertung des Anschlags, ab 40 % „Gut“, sonst „Daneben“.
   Die Schwierigkeit steckt in der Spur der Stufe. Bei Treffern hört man die eigene Spur, bei Fehlern wird sie leise.
-  Die Band (ohne Band: Schlagzeug, Bass, Keyboard) spielt dazu. Ohne Aufnahme: Zufallsnoten, Dichte 0,25–0,55 je nach Können. Zeitfenster Perfekt 60–75 ms, Gut 135–185 ms, Absolutes Gehör +20 ms.
+  Man übt allein: Dazu tickt nur ein Metronom. Ohne Aufnahme: Zufallsnoten, Dichte 0,25–0,55 je nach Können. Zeitfenster Perfekt 60–75 ms, Gut 135–185 ms, Absolutes Gehör +20 ms.
 - **Tonhöhe** (Solo-Probe für Gesang und Geige): Gedrückt halten lässt den Ton steigen, Loslassen sinken.
-  Melodie aus der Aufnahme, Tonleiter ab ihrem tiefsten Ton; die eigene Spur bleibt stumm, die Band spielt.
+  Melodie aus der Aufnahme, Tonleiter ab ihrem tiefsten Ton; die eigene Spur bleibt stumm, ein Metronom tickt.
   Wie schnell der Ton steigt, richtet sich nach den Sprüngen der Melodie (0,5–1 Tonleiter pro Sekunde).
   Jeder Ton der Melodie zählt als Perfekt ab 70 % der Zeit im richtigen Bereich, als Gut ab 40 %.
   Der Bereich ist ±7–13 % der Tonleiter, mit Absolutem Gehör +3 %.
@@ -258,7 +260,7 @@ Instrumente sind zufällig. Im Music Store hat der Verkäufer mit 25 % Chance ei
 - Jeder Musiker spielt die Spur seines Instruments, seiner Stufe und eines Genres: das Genre der Band, sonst eines
   seiner Lieblingsgenres. Akustisch oder elektrisch richtet sich nach seinem Instrument.
 - Fehlt eine Spur, nimmt das Spiel die nächste Stufe, dann die andere Variante, dann Pop. Gibt es gar keine, bleibt der Synthesizer.
-- Zu hören am Mischpult (jeder Regler steuert seine Spuren), bei der Solo-Probe und in der Live-Ansicht von Auftritten.
+- Zu hören am Mischpult (jeder Regler steuert seine Spuren), bei der Solo-Probe (nur die eigene Spur) und in der Live-Ansicht von Auftritten.
 
 ## Vorläufige Entscheidungen zu offenen Fragen
 

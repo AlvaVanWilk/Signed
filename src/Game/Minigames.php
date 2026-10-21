@@ -39,14 +39,10 @@ final class Minigames
                 $genre = $m['genres'][0];
                 $bpm = Catalog::GENRES[$genre]['bpm'];
                 $perfectPitch = Levels::has($m, 'gehoer');
-                // Die eigene Spur aus den Aufnahmen; die Band (oder ohne Band eine Begleitung) spielt dazu.
-                [$own, $backing] = $this->practiceStems(['band_slot' => $slot] + $m);
-                $resolved = Music::resolve($own);
+                // Allein üben: die eigene Spur aus den Aufnahmen, dazu nur ein Metronom.
+                $resolved = Music::resolve($this->practiceStem(['band_slot' => $slot] + $m));
                 $source = $resolved === null ? null : Music::notes($resolved);
-                $music = $resolved === null ? null : [
-                    'own' => sprintf('assets/music/%s/%s.mp3', $resolved['folder'], $resolved['file']),
-                    'backing' => $backing,
-                ];
+                $music = $resolved === null ? null : ['own' => sprintf('assets/music/%s/%s.mp3', $resolved['folder'], $resolved['file'])];
                 // Gesang und Geige spielen nach Tonhöhe, alle anderen nach Rhythmus.
                 if (in_array($instrument, Catalog::PITCH_INSTRUMENTS, true)) {
                     $melody = $source === null ? null : Music::melodyChart($source, Balance::SONG_SECONDS);
@@ -196,33 +192,16 @@ final class Minigames
         });
     }
 
-    /**
-     * Spuren für die Solo-Probe: die eigene und die Begleitung. In einer Band spielen die anderen Mitglieder,
-     * ohne Band begleiten Schlagzeug, Bass und Keyboard im selben Genre und auf derselben Stufe.
-     * @return array{0: array, 1: list<array>}
-     */
-    private function practiceStems(array $m): array
+    /** Die eigene Spur für die Solo-Probe: in der Band im Genre der Band, sonst in einem Lieblingsgenre. */
+    private function practiceStem(array $m): array
     {
         $gear = $this->repo->gearByMusician();
-        $type = BandCalc::instrument($m);
-        if ($m['band_id'] !== null) {
-            $band = $this->repo->band($m['band_id']);
-            $members = $this->repo->members($band['id']);
-            $identity = BandCalc::identity($members, $band['genre'], $band['genre2']);
-            $genres = array_values(array_filter([$identity['primary'], $identity['second']]));
-            $own = Music::stem($m, $gear, $genres);
-            $backing = array_map(static fn ($o) => Music::stem($o, $gear, $genres ?: [$own['genre']]),
-                array_values(array_filter($members, static fn ($o) => $o['id'] !== $m['id'])));
-            return [$own, $backing];
+        if ($m['band_id'] === null) {
+            return Music::stem($m, $gear);
         }
-        $own = Music::stem($m, $gear);
-        $backing = [];
-        foreach (['drums', 'bass', 'keys'] as $i => $other) {
-            if ($other !== $type) {
-                $backing[] = ['type' => $other, 'level' => $m['level'], 'genre' => $own['genre'], 'electric' => ($m['id'] + $i) % 2 === 1];
-            }
-        }
-        return [$own, $backing];
+        $band = $this->repo->band($m['band_id']);
+        $identity = BandCalc::identity($this->repo->members($band['id']), $band['genre'], $band['genre2']);
+        return Music::stem($m, $gear, array_values(array_filter([$identity['primary'], $identity['second']])));
     }
 
     private function practiceResult(array $session, int $perfect, int $good, int $miss): array

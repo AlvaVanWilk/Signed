@@ -52,6 +52,8 @@ final class Music
     private const MAJOR = [0, 2, 4, 5, 7, 9, 11];
     private const KICK = [35, 36];
     private const SNARE = [37, 38, 40];
+    /** Töne ab dieser Länge (in Schlägen) werden im Rhythmus-Spiel gehalten. */
+    private const HOLD_BEATS = 1.5;
 
     /**
      * Ordner und Spurname der Aufnahme – dieselbe Reihenfolge wie stemUrl() im Browser:
@@ -92,16 +94,16 @@ final class Music
     }
 
     /**
-     * Rhythmus-Noten aus der Aufnahme. Schlagzeug: nur Bassdrum (Spur 1–2) und Snare (Spur 3–4), die Hi-Hat
-     * bleibt nur im Klang. Andere Instrumente: ein Anschlag pro Zeitpunkt (bei Akkorden der höchste Ton),
-     * Spur nach Tonhöhe – tiefe Töne links, hohe rechts.
-     * @return array{notes: list<array{t: float, l: int}>, laneNames: list<string>}
+     * Rhythmus-Noten aus der Aufnahme, damit jede Spur ähnlich viel zu tun gibt. Schlagzeug: nur Bassdrum
+     * (Spur 1–2) und Snare (Spur 3–4), die Hi-Hat bleibt nur im Klang. Andere Instrumente: Spur nach Tonhöhe
+     * (tief links), Akkorde als mehrere Noten zugleich (höchstens drei), lange Töne werden gehalten (d > 0).
+     * @return array{notes: list<array{t: float, l: int, d: float}>, laneNames: list<string>}
      */
     public static function rhythmChart(array $source, string $type, int $duration): array
     {
         $beat = 60 / $source['bpm'];
         $notes = $source['notes'];
-        usort($notes, static fn ($a, $b) => $a[0] <=> $b[0] ?: $b[2] <=> $a[2]);
+        usort($notes, static fn ($a, $b) => $a[0] <=> $b[0] ?: $a[2] <=> $b[2]);
         $out = [];
         if ($type === 'drums') {
             $count = ['kick' => 0, 'snare' => 0];
@@ -111,30 +113,57 @@ final class Music
                     continue;
                 }
                 $lane = ($kind === 'kick' ? 0 : 2) + $count[$kind]++ % 2;
-                $out[] = ['t' => round($at * $beat, 3), 'l' => $lane];
+                $out[] = ['t' => round($at * $beat, 3), 'l' => $lane, 'd' => 0.0];
             }
             $names = ['Bassdrum', 'Bassdrum', 'Snare', 'Snare'];
         } else {
-            $onsets = [];
-            foreach ($notes as [$at, , $pitch]) {
-                $last = end($onsets);
-                if ($last !== false && $at - $last[0] < 0.1) {
-                    continue;
+            // Gleichzeitige Töne zu Akkorden zusammenfassen.
+            $chords = [];
+            foreach ($notes as $note) {
+                $last = count($chords) - 1;
+                if ($last >= 0 && $note[0] - $chords[$last][0][0] < 0.1) {
+                    $chords[$last][] = $note;
+                } else {
+                    $chords[] = [$note];
                 }
-                $onsets[] = [$at, $pitch];
             }
-            $pitches = array_values(array_unique(array_column($onsets, 1)));
+            $pitches = array_values(array_unique(array_column($notes, 2)));
             sort($pitches);
-            foreach ($onsets as [$at, $pitch]) {
-                $rank = array_search($pitch, $pitches, true);
-                $lane = count($pitches) <= 1 ? 1 : min(Chart::LANES - 1, intdiv($rank * Chart::LANES, count($pitches)));
-                $out[] = ['t' => round($at * $beat, 3), 'l' => $lane];
+            $lanes = Chart::LANES;
+            foreach ($chords as $c => $chord) {
+                $chord = self::chordNotes($chord);
+                // Gehalten wird höchstens bis kurz vor dem nächsten Anschlag.
+                $next = isset($chords[$c + 1]) ? $chords[$c + 1][0][0] - 0.25 : INF;
+                $k = count($chord);
+                $prev = -1;
+                foreach ($chord as $i => [$at, $length, $pitch]) {
+                    $rank = array_search($pitch, $pitches, true);
+                    $lane = count($pitches) <= 1 ? 1 : intdiv($rank * $lanes, count($pitches));
+                    $lane = min(max($lane, $prev + 1), $lanes - $k + $i);
+                    $prev = $lane;
+                    $t = $at * $beat;
+                    $length = min($length, $next - $at);
+                    $hold = $length >= self::HOLD_BEATS ? min($length * $beat, $duration - 0.3 - $t) : 0.0;
+                    $out[] = ['t' => round($t, 3), 'l' => $lane, 'd' => round(max(0.0, $hold), 3)];
+                }
             }
             $names = ['tief', '', '', 'hoch'];
         }
         $out = array_values(array_filter($out, static fn ($n) => $n['t'] < $duration - 0.3));
-        usort($out, static fn ($a, $b) => $a['t'] <=> $b['t']);
+        usort($out, static fn ($a, $b) => $a['t'] <=> $b['t'] ?: $a['l'] <=> $b['l']);
         return ['notes' => $out, 'laneNames' => $names];
+    }
+
+    /** Höchstens drei verschiedene Töne eines Akkords: der tiefste und die beiden höchsten, aufsteigend. */
+    private static function chordNotes(array $chord): array
+    {
+        $byPitch = [];
+        foreach ($chord as $note) {
+            $byPitch[$note[2]] ??= $note;
+        }
+        ksort($byPitch);
+        $list = array_values($byPitch);
+        return count($list) <= 3 ? $list : [$list[0], ...array_slice($list, -2)];
     }
 
     /**

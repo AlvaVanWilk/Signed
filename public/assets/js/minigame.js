@@ -1,4 +1,4 @@
-import { getAudio, playLane, playMiss, scheduleBacking } from './audio.js';
+import { getAudio, playLane, playMiss, scheduleMetronome } from './audio.js';
 import { loadStems, playStems } from './music.js';
 import { instrumentIcon } from './cards.js';
 import { COLORS, mountShell } from './mg-shell.js';
@@ -24,7 +24,7 @@ export function createMinigame(container, game) {
 function createRhythmGame(container, game) {
   const shell = mountShell(container, game, {
     hud: '<span>Treffer <b class="mg-acc">–</b></span><span class="mg-combo"></span><span>Zeit <b class="mg-time"></b></span>',
-    hint: 'Drück <b>D F J K</b> (oder tipp auf die Felder), wenn eine Note die Linie erreicht.',
+    hint: 'Drück <b>D F J K</b> (oder tipp auf die Felder), wenn eine Note die Linie erreicht. Lange Noten gedrückt halten, bis sie vorbei sind.',
     below: `<div class="mg-keys">${KEY_LABELS.map((k, i) => `
       <button class="mg-key" data-lane="${i}" style="--lane:${COLORS[i]}">
         <b>${k}</b><small>${instrumentIcon(game.lanes[i])} ${esc(game.laneNames[i])}</small>
@@ -37,12 +37,14 @@ function createRhythmGame(container, game) {
   const keyButtons = [...container.querySelectorAll('.mg-key')];
   timeEl.textContent = duration(game.duration);
 
-  const notes = game.notes.map((n) => ({ t: n.t, l: n.l, judged: null }));
+  // d > 0: Haltenote. press = Wertung des Anschlags, solange sie noch gehalten wird.
+  const notes = game.notes.map((n) => ({ t: n.t, l: n.l, d: n.d ?? 0, judged: null, press: null }));
   const perfectWin = game.windows.perfect / 1000;
   const goodWin = game.windows.good / 1000;
   const beat = 60 / game.bpm;
   const counts = { perfect: 0, good: 0, miss: 0 };
   const pressed = [0, 0, 0, 0];
+  const held = [false, false, false, false];
   const popups = [];
   let combo = 0;
   let audio = null;
@@ -51,13 +53,13 @@ function createRhythmGame(container, game) {
   let running = false;
   let stopBacking = () => {};
   let resolvePlay;
-  // Aufnahmen: eigene Spur (Gruppe 0) und Begleitung. Bei Treffern hört man sich, bei Fehlern wird die eigene Spur leise.
+  // Aufnahme der eigenen Spur: Bei Treffern hört man sich, bei Fehlern wird sie leise. Dazu tickt ein Metronom.
   let buffers = null;
   let player = null;
   const startButton = shell.el('.mg-start');
   if (game.music) {
     startButton.disabled = true;
-    loadStems([[game.music.own], ...game.music.backing.map((s) => [s])]).then((loaded) => {
+    loadStems([[game.music.own]]).then((loaded) => {
       buffers = loaded;
       startButton.disabled = false;
     });
@@ -77,7 +79,7 @@ function createRhythmGame(container, game) {
     let bestDiff = Infinity;
     for (const note of notes) {
       if (note.t - now > goodWin) break;
-      if (note.judged || note.l !== lane) continue;
+      if (note.judged || note.press || note.l !== lane) continue;
       const diff = Math.abs(note.t - now);
       if (diff < bestDiff) {
         best = note;
@@ -85,25 +87,55 @@ function createRhythmGame(container, game) {
       }
     }
     if (best && bestDiff <= goodWin) {
-      best.judged = bestDiff <= perfectWin ? 'perfect' : 'good';
-      counts[best.judged]++;
-      combo++;
-      popups.push({ lane, text: best.judged === 'perfect' ? 'Perfekt!' : 'Gut', color: COLORS[lane], at: clock() });
+      const grade = bestDiff <= perfectWin ? 'perfect' : 'good';
       if (player) ownLevel(1);
       else playLane(game.lanes[lane], lane, now, game.bpm);
+      if (best.d > 0) {
+        best.press = grade;
+        popups.push({ lane, text: 'Halten!', color: COLORS[lane], at: clock() });
+        return;
+      }
+      score(best, grade);
+    }
+  }
+
+  function score(note, grade) {
+    note.judged = grade;
+    counts[grade]++;
+    if (grade === 'miss') {
+      combo = 0;
+      if (player) ownLevel(0.12);
+      popups.push({ lane: note.l, text: 'Daneben', color: '#8b839f', at: clock() });
+      playMiss();
+      return;
+    }
+    combo++;
+    popups.push({ lane: note.l, text: grade === 'perfect' ? 'Perfekt!' : 'Gut', color: COLORS[note.l], at: clock() });
+  }
+
+  /** Haltenote zu Ende: lange genug gehalten behält die Wertung des Anschlags, halb gehalten ist „Gut“. */
+  function endHold(note, until) {
+    const ratio = (until - note.t) / note.d;
+    score(note, ratio >= 0.85 ? note.press : ratio >= 0.4 ? 'good' : 'miss');
+  }
+
+  function release(lane) {
+    held[lane] = false;
+    if (!running) return;
+    const now = songTime();
+    for (const note of notes) {
+      if (note.l === lane && note.press && !note.judged) endHold(note, now);
     }
   }
 
   function markMisses(now) {
     for (const note of notes) {
       if (note.t > now) break;
-      if (!note.judged && now - note.t > goodWin) {
-        note.judged = 'miss';
-        counts.miss++;
-        combo = 0;
-        popups.push({ lane: note.l, text: 'Daneben', color: '#8b839f', at: clock() });
-        if (player) ownLevel(0.12);
-        playMiss();
+      if (note.judged) continue;
+      if (note.press) {
+        if (now >= note.t + note.d) endHold(note, note.t + note.d);
+      } else if (now - note.t > goodWin) {
+        score(note, 'miss');
       }
     }
   }
@@ -128,7 +160,7 @@ function createRhythmGame(container, game) {
     for (let l = 0; l < 4; l++) {
       draw.fillStyle = l % 2 ? 'rgba(255,255,255,0.025)' : 'rgba(255,255,255,0.05)';
       draw.fillRect(l * laneW, 0, laneW, h);
-      const glow = Math.max(0, 1 - (clock() - pressed[l]) / 0.18);
+      const glow = held[l] ? 0.8 : Math.max(0, 1 - (clock() - pressed[l]) / 0.18);
       if (glow > 0) {
         const gradient = draw.createLinearGradient(0, hitY - 120, 0, hitY);
         gradient.addColorStop(0, 'rgba(0,0,0,0)');
@@ -147,15 +179,23 @@ function createRhythmGame(container, game) {
     draw.fillStyle = 'rgba(255,255,255,0.35)';
     draw.fillRect(0, hitY - 1, w, 2);
 
+    const yAt = (t) => hitY - ((t - now) / TRAVEL) * (hitY + 20);
     for (const note of notes) {
       if (note.judged === 'perfect' || note.judged === 'good') continue;
-      const y = hitY - ((note.t - now) / TRAVEL) * (hitY + 20);
+      const y = note.press ? hitY : yAt(note.t);
       if (y < -20) break;
-      if (y > h + 20) continue;
+      const tail = note.d > 0 ? Math.max(-20, yAt(note.t + note.d)) : y;
+      if (tail > h + 20) continue;
       const x = note.l * laneW + laneW / 2;
       const nw = Math.min(64, laneW * 0.62);
       draw.globalAlpha = note.judged === 'miss' ? 0.25 : 1;
       draw.fillStyle = COLORS[note.l];
+      if (note.d > 0 && tail < y) {
+        // Haltenote: ein Band bis zum Ende des Tons; beim Halten leuchtet es.
+        draw.globalAlpha *= note.press ? 0.75 : 0.4;
+        roundRect(x - nw * 0.28, tail, nw * 0.56, y - tail, nw * 0.28);
+        draw.globalAlpha = note.judged === 'miss' ? 0.25 : 1;
+      }
       roundRect(x - nw / 2, y - 9, nw, 18, 9);
       draw.globalAlpha = 1;
     }
@@ -208,12 +248,28 @@ function createRhythmGame(container, game) {
     const lane = KEYS[e.key.toLowerCase()];
     if (lane === undefined) return;
     e.preventDefault();
+    held[lane] = true;
     judge(lane);
   }
 
+  function onKeyUp(e) {
+    const lane = KEYS[e.key.toLowerCase()];
+    if (lane !== undefined) release(lane);
+  }
+
+  // Finger auf dem Spielfeld: Welche Spur hält welcher Finger?
+  const pointerLanes = new Map();
   function onPointer(e) {
     const rect = canvas.getBoundingClientRect();
-    judge(Math.max(0, Math.min(3, Math.floor(((e.clientX - rect.left) / rect.width) * 4))));
+    const lane = Math.max(0, Math.min(3, Math.floor(((e.clientX - rect.left) / rect.width) * 4)));
+    pointerLanes.set(e.pointerId, lane);
+    held[lane] = true;
+    judge(lane);
+  }
+  function onPointerUp(e) {
+    if (!pointerLanes.has(e.pointerId)) return;
+    release(pointerLanes.get(e.pointerId));
+    pointerLanes.delete(e.pointerId);
   }
 
   function start() {
@@ -221,14 +277,7 @@ function createRhythmGame(container, game) {
     shell.resize();
     audio = getAudio();
     t0 = clock() + 0.15 + 4 * beat;
-    stopBacking = scheduleBacking({
-      genre: game.genre,
-      bpm: game.bpm,
-      start: t0,
-      duration: game.duration,
-      drums: !buffers && !game.lanes.every((l) => l === 'drums'),
-      bass: !buffers && !game.lanes.every((l) => l === 'bass'),
-    });
+    stopBacking = scheduleMetronome({ bpm: game.bpm, start: t0, duration: game.duration });
     if (buffers) player = playStems(buffers, t0, { volume: 0.9 });
     running = true;
     raf = requestAnimationFrame(frame);
@@ -244,12 +293,18 @@ function createRhythmGame(container, game) {
   }
 
   window.addEventListener('keydown', onKey, true);
+  window.addEventListener('keyup', onKeyUp, true);
   window.addEventListener('resize', shell.resize);
   canvas.addEventListener('pointerdown', onPointer);
-  keyButtons.forEach((button, lane) => button.addEventListener('pointerdown', (e) => {
-    e.preventDefault();
-    judge(lane);
-  }));
+  for (const type of ['pointerup', 'pointercancel', 'pointerleave']) canvas.addEventListener(type, onPointerUp);
+  keyButtons.forEach((button, lane) => {
+    button.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      held[lane] = true;
+      judge(lane);
+    });
+    for (const type of ['pointerup', 'pointercancel', 'pointerleave']) button.addEventListener(type, () => release(lane));
+  });
   shell.el('.mg-start').addEventListener('click', start);
   shell.el('.mg-abort').addEventListener('click', () => {
     if (!shell.resultShown()) finish({ aborted: true });
@@ -270,6 +325,7 @@ function createRhythmGame(container, game) {
       stopBacking();
       player?.stop();
       window.removeEventListener('keydown', onKey, true);
+      window.removeEventListener('keyup', onKeyUp, true);
       window.removeEventListener('resize', shell.resize);
     },
   };

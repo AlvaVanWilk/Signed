@@ -16,7 +16,7 @@ Der Kernkreislauf: **Musiker und Instrumente finden → Bands zusammenstellen �
 | Instrumente | 44 Modelle (11 Arten × 4 Seltenheiten); jedes Exemplar weicht pro Wert um bis zu ±12 vom Modell ab; frei tauschbar |
 | Manager | Stufe 1–5, 1–2 Fähigkeiten, bis zu 3 Bands mit geteilter Leistung |
 | Bands | Bis zu 3 Bands (freigeschaltet über Label-Ruhm), Genre ergibt sich aus der Besetzung, Sound, Zusammenspiel, Chemie, Ruhm |
-| Aktivitäten | Band: Bandprobe, Band-Promo, Straßenmusik, Open Stage, Gig (erst mit Platte), Platte (Mischpult pro Lied). Einzeln: Solo-Probe (Rhythmus oder Tonhöhe), Promo-Mission. Ohne Band: Jam-Café (Mitmusiker für die erste Band), Straßenmusik |
+| Aktivitäten | Band: Bandprobe, Band-Promo, Straßenmusik, Open Stage, Gig (erst mit Platte), Platte (gemischte Minispiele, eins pro Lied). Einzeln: Solo-Probe (Rhythmus oder Tonhöhe), Promo-Mission. Ohne Band: Jam-Café (Mitmusiker für die erste Band), Straßenmusik |
 | Live | Live-Ticker mit Publikumsleiste für alle Auftritte |
 | Charts | Gemeinsame Album-Charts aller Spieler mit täglichen Tantiemen, dazu eine Label-Gesamtliste |
 | Einführung und Hilfe | Kurze Tour beim ersten Mal (5 Schritte, ein Satz je Schritt, auch für Kinder), danach die Hilfeseite (?) für alle, die tiefer einsteigen wollen |
@@ -172,6 +172,11 @@ Ein Lied dauert 24 Sekunden: 12 Takte 4/4 (oder 16 Takte 3/4) bei 120 BPM – al
   Bis zu 4 Musiker haben eigene Spuren; größere Bands werden zu Gruppen (Rhythmus, Harmonie, Melodie) mit
   dem durchschnittlichen Können zusammengefasst. Jede Spur hat 6 Abschnitte à 4 Sekunden (2 Takte), bewertet wie oben.
   Der grüne Bereich ist ±11–19 %, je nach Sound der Band.
+- **Master-Mix** (letzte Aufnahme einer Platte): Die ganze Band läuft durch einen Klangregler mit Bässen (250 Hz),
+  Mitten (1 kHz) und Höhen (4 kHz). Jeder Regler hat eine richtige Stellung (15–85 %); Abweichung klingt mit 24 dB
+  pro voller Reglerlänge daneben. Eine Lampe pro Regler: grün im Bereich (±11–19 % wie am Mischpult), gelb bis zum
+  2,2-fachen, sonst rot – ohne Richtung. 4 Abschnitte à 6 Sekunden; nach der Hälfte verschiebt sich jede Stellung
+  um 15–35 %. Bewertet pro Regler und Abschnitt wie am Mischpult (12 Wertungen).
 - Solo-Probe: Können + 0,8 × Trefferquote^1,5 × Talent × Lernkurve.
 - Lernkurve (alle Können-Gewinne): (1 − Können/110)^2,5. Je besser jemand ist, desto langsamer geht es.
 
@@ -187,8 +192,13 @@ Nur die Gewinne sind klein; wie oft man etwas hintereinander spielt, ist nicht b
 
 ### Platte
 
-- 3 (EP) bis 12 Lieder (LP), Studiozeit 150 ₲ + 80 ₲ pro Lied. Pro Lied ein Minispiel, in Etappen spielbar.
-- Jedes Lied: Können 0,12 × Trefferquote für alle Mitglieder (Lernkurve), Zusammenspiel.
+- 3 (EP) bis 12 Lieder (LP), Studiozeit 150 ₲ + 80 ₲ pro Lied. So viele Minispiele (Aufnahmen) wie Lieder, in Etappen spielbar.
+  Angezeigt als „Aufnahme y/x“ – eine Aufnahme ist nicht ein bestimmtes Lied.
+- Reihenfolge wird beim Start festgelegt (`Studio::plan`). Im Topf: pro Instrument der Band einmal **Einspielen**
+  (das Spiel der Solo-Probe für einen Musiker mit diesem Instrument) und **Mischpult**-Runden mit 2–3 zufälligen
+  Mitgliedern (eine bei 2 Musikern, sonst mindestens 2, etwa halb so viele wie Instrumente). Gezogen wird gemischt;
+  ist der Topf leer, wird er neu gefüllt. Nie zweimal dasselbe direkt hintereinander. Die letzte Aufnahme ist immer der **Master-Mix**.
+- Jede Aufnahme: Können 0,12 × Trefferquote für alle Mitglieder (Lernkurve), Zusammenspiel – egal, welches Minispiel.
 - Fertig: Erstverkauf = Lieder × 60 ₲ × (0,3 + Qualität²) × LP-Bonus × Perfekt-Bonus × Verkäufe,
   Ruhm = Lieder × 0,6 × Soundfaktor × (0,3 + Qualität^1,5) × LP-Bonus × Perfekt-Bonus.
   - LP-Bonus: +4 % pro Lied über 3. Perfekt (kein einziger Fehler): × 1,5. Verkäufe: 1 + Bandruhm/400, höchstens × 5.

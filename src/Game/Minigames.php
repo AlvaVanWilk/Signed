@@ -34,43 +34,11 @@ final class Minigames
                 if ($m['band_id'] !== null && $this->repo->band($m['band_id'])['busy_until'] > $now) {
                     throw new ApiError(sprintf('Die Band von %s ist gerade beschäftigt.', $m['first_name']));
                 }
-                $instrument = $slot === 2 ? $m['instr2'] : $m['instr1'];
-                $skill = BandCalc::skill($m, $slot);
                 $genre = $m['genres'][0];
                 $bpm = Catalog::GENRES[$genre]['bpm'];
-                $perfectPitch = Levels::has($m, 'gehoer');
                 // Allein üben: die eigene Spur aus den Aufnahmen, dazu nur ein Metronom.
-                $resolved = Music::resolve($this->practiceStem(['band_slot' => $slot] + $m));
-                $source = $resolved === null ? null : Music::notes($resolved);
-                $music = $resolved === null ? null : ['own' => sprintf('assets/music/%s/%s.mp3', $resolved['folder'], $resolved['file'])];
-                // Gesang und Geige spielen nach Tonhöhe, alle anderen nach Rhythmus – Rap ebenfalls nach Rhythmus.
-                $rap = $instrument === 'vocals' && $resolved !== null && in_array(explode('-', $resolved['folder'])[0], Catalog::RAP_GENRES, true);
-                if (in_array($instrument, Catalog::PITCH_INSTRUMENTS, true) && !$rap) {
-                    $melody = $source === null ? null : Music::melodyChart($source, Balance::SONG_SECONDS);
-                    $chart = [
-                        'mode' => 'pitch',
-                        'notes' => $melody['notes'] ?? Chart::melody($bpm, Balance::SONG_SECONDS),
-                        'tolerance' => Chart::pitchTolerance($skill, $perfectPitch),
-                        'instrument' => $instrument,
-                    ];
-                    if ($melody !== null) {
-                        $chart['tonality'] = $melody['tonality'];
-                        $chart['music'] = $music;
-                    }
-                } else {
-                    $rhythm = $source === null ? null : Music::rhythmChart($source, $instrument, Balance::SONG_SECONDS);
-                    $chart = [
-                        'mode' => 'rhythm',
-                        'notes' => $rhythm['notes'] ?? Chart::generate($bpm, Chart::density($skill), Balance::SONG_SECONDS),
-                        'windows' => Chart::windows($skill, $perfectPitch),
-                        'lanes' => array_fill(0, Chart::LANES, $instrument),
-                        'laneNames' => $rhythm['laneNames'] ?? array_fill(0, Chart::LANES, $m['first_name']),
-                    ];
-                    if ($rhythm !== null) {
-                        $chart['music'] = $music;
-                    }
-                }
-                $chart['count'] = count($chart['notes']);
+                $chart = $this->soloChart($m, $slot, $this->practiceStem(['band_slot' => $slot] + $m), $bpm);
+                $instrument = $chart['instrument'];
 
                 $db->update('musicians', ['busy_until' => $expires], ['id' => $m['id']]);
                 $row = ['musician_id' => $m['id'], 'band_id' => null, 'record_id' => null, 'slot' => $slot];
@@ -92,25 +60,52 @@ final class Minigames
                 $genre = $identity['music'];
                 $bandGenres = array_values(array_filter([$identity['primary'], $identity['second']]));
                 $bpm = Catalog::GENRES[$genre]['bpm'];
-                // Am Mischpult: Die Spuren schwanken je nach Können, der Sound bestimmt, wie viel verziehen wird.
                 $gearMap = $this->repo->gearByMusician();
-                $tracks = Chart::mixerTracks(array_map(static fn ($m) => [
-                    'name' => $m['first_name'], 'instrument' => BandCalc::instrument($m), 'skill' => BandCalc::skill($m),
-                    'stem' => Music::stem($m, $gearMap, $bandGenres),
-                ], $members));
-                $chart = [
-                    'mode' => 'mixer',
-                    'tracks' => array_map(static fn ($t) => ['name' => $t['name'], 'instruments' => $t['instruments'], 'stems' => $t['stems']], $tracks),
-                    'drifts' => Chart::mixerDrifts(array_column($tracks, 'skill'), Balance::SONG_SECONDS),
-                    'zone' => Chart::mixerZone($sound) + (array_filter($members, static fn ($m) => Levels::has($m, 'studiofuchs')) ? 0.04 : 0),
-                    'segments' => Chart::MIXER_SEGMENTS,
-                    'count' => count($tracks) * Chart::MIXER_SEGMENTS,
-                ];
+                $plan = (new Studio($this->repo))->planFor($record, $members);
+                $step = $plan[$record['songs_done']] ?? ['type' => 'master'];
+                $byId = array_column($members, null, 'id');
+                $studiofuchs = array_filter($members, static fn ($m) => Levels::has($m, 'studiofuchs')) ? 0.04 : 0;
+                if ($step['type'] === 'take' && isset($byId[$step['musician']])) {
+                    // Einspielen: ein Musiker nimmt seine Spur auf – dasselbe Spiel wie bei der Solo-Probe.
+                    $m = $byId[$step['musician']];
+                    $chart = $this->soloChart($m, $m['band_slot'], Music::stem($m, $gearMap, $bandGenres), $bpm);
+                    $what = sprintf('%s – %s', Catalog::INSTRUMENTS[$chart['instrument']]['name'], $m['first_name']);
+                } elseif ($step['type'] === 'master') {
+                    // Master-Mix: die richtige EQ-Einstellung für die ganze Platte finden.
+                    $chart = [
+                        'mode' => 'master',
+                        'stems' => array_map(static fn ($m) => Music::stem($m, $gearMap, $bandGenres), $members),
+                        'targets' => Chart::masterTargets(),
+                        'zone' => Chart::mixerZone($sound) + $studiofuchs,
+                        'segments' => Chart::MASTER_SEGMENTS,
+                        'count' => count(Chart::MASTER_BANDS) * Chart::MASTER_SEGMENTS,
+                    ];
+                    $what = 'Master-Mix';
+                } else {
+                    // Am Mischpult: Die Spuren schwanken je nach Können, der Sound bestimmt, wie viel verziehen wird.
+                    $players = array_values(array_filter(array_map(static fn ($id) => $byId[$id] ?? null, $step['musicians'] ?? [])));
+                    if (count($players) < 2) {
+                        $players = $members;
+                    }
+                    $tracks = Chart::mixerTracks(array_map(static fn ($m) => [
+                        'name' => $m['first_name'], 'instrument' => BandCalc::instrument($m), 'skill' => BandCalc::skill($m),
+                        'stem' => Music::stem($m, $gearMap, $bandGenres),
+                    ], $players));
+                    $chart = [
+                        'mode' => 'mixer',
+                        'tracks' => array_map(static fn ($t) => ['name' => $t['name'], 'instruments' => $t['instruments'], 'stems' => $t['stems']], $tracks),
+                        'drifts' => Chart::mixerDrifts(array_column($tracks, 'skill'), Balance::SONG_SECONDS),
+                        'zone' => Chart::mixerZone($sound) + $studiofuchs,
+                        'segments' => Chart::MIXER_SEGMENTS,
+                        'count' => count($tracks) * Chart::MIXER_SEGMENTS,
+                    ];
+                    $what = 'Mischpult: ' . implode(', ', array_column($players, 'first_name'));
+                }
 
                 $db->update('bands', ['busy_until' => $expires], ['id' => $band['id']]);
                 $row = ['musician_id' => null, 'band_id' => $band['id'], 'record_id' => $record['id'], 'slot' => null];
                 $title = sprintf('Studio: „%s“', $record['title']);
-                $subtitle = sprintf('%s – Lied %d von %d', $band['name'], $record['songs_done'] + 1, $record['songs_total']);
+                $subtitle = sprintf('Aufnahme %d/%d · %s', $record['songs_done'] + 1, $record['songs_total'], $what);
             } else {
                 throw new ApiError('Unbekanntes Minispiel.');
             }
@@ -191,6 +186,47 @@ final class Minigames
                 $this->close($session, 'aborted');
             }
         });
+    }
+
+    /**
+     * Spiel für einen einzelnen Musiker (Solo-Probe, Einspielen im Studio): seine Spur aus den Aufnahmen, dazu ein Metronom.
+     * Gesang und Geige spielen nach Tonhöhe, alle anderen nach Rhythmus – Rap ebenfalls nach Rhythmus.
+     */
+    private function soloChart(array $m, int $slot, array $stem, int $bpm): array
+    {
+        $instrument = $slot === 2 && $m['instr2'] !== null ? $m['instr2'] : $m['instr1'];
+        $skill = BandCalc::skill($m, $slot);
+        $perfectPitch = Levels::has($m, 'gehoer');
+        $resolved = Music::resolve($stem);
+        $source = $resolved === null ? null : Music::notes($resolved);
+        $music = $resolved === null ? null : ['own' => sprintf('assets/music/%s/%s.mp3', $resolved['folder'], $resolved['file'])];
+        $rap = $instrument === 'vocals' && $resolved !== null && in_array(explode('-', $resolved['folder'])[0], Catalog::RAP_GENRES, true);
+        if (in_array($instrument, Catalog::PITCH_INSTRUMENTS, true) && !$rap) {
+            $melody = $source === null ? null : Music::melodyChart($source, Balance::SONG_SECONDS);
+            $chart = [
+                'mode' => 'pitch',
+                'notes' => $melody['notes'] ?? Chart::melody($bpm, Balance::SONG_SECONDS),
+                'tolerance' => Chart::pitchTolerance($skill, $perfectPitch),
+                'instrument' => $instrument,
+            ];
+            if ($melody !== null) {
+                $chart['tonality'] = $melody['tonality'];
+                $chart['music'] = $music;
+            }
+        } else {
+            $rhythm = $source === null ? null : Music::rhythmChart($source, $instrument, Balance::SONG_SECONDS);
+            $chart = [
+                'mode' => 'rhythm',
+                'notes' => $rhythm['notes'] ?? Chart::generate($bpm, Chart::density($skill), Balance::SONG_SECONDS),
+                'windows' => Chart::windows($skill, $perfectPitch),
+                'lanes' => array_fill(0, Chart::LANES, $instrument),
+                'laneNames' => $rhythm['laneNames'] ?? array_fill(0, Chart::LANES, $m['first_name']),
+            ];
+            if ($rhythm !== null) {
+                $chart['music'] = $music;
+            }
+        }
+        return $chart + ['instrument' => $instrument, 'count' => count($chart['notes'])];
     }
 
     /** Die eigene Spur für die Solo-Probe: in der Band im Genre der Band, sonst in einem Lieblingsgenre. */

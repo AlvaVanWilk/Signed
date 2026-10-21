@@ -279,6 +279,19 @@ function gigs(b, members) {
 
 // ---------- Studio ----------
 
+/** Was als Nächstes im Studio dran ist: ein Instrument einspielen, am Mischpult oder der Master-Mix. */
+function nextStep(step, members) {
+  const name = (id) => members.find((m) => m.id === id)?.firstName;
+  if (step?.type === 'master') return 'Master-Mix';
+  if (step?.type === 'take' && name(step.musician)) {
+    const m = members.find((x) => x.id === step.musician);
+    const slot = m.bandSlot === 2 && m.instruments[1] ? 1 : 0;
+    return `${cat().instruments[m.instruments[slot].type].name} – ${m.firstName}`;
+  }
+  const names = (step?.musicians ?? []).map(name).filter(Boolean);
+  return names.length >= 2 ? `Mischpult: ${names.join(', ')}` : 'Mischpult';
+}
+
 function studio(b, members) {
   const rules = cat().rules;
   const open = b.record.open;
@@ -286,12 +299,12 @@ function studio(b, members) {
   let record;
   if (open) {
     record = actionTile({
-      icon: '💿', title: `„${open.title}“`, meta: `${open.songsDone} von ${open.songsTotal} Liedern`,
+      icon: '💿', title: `„${open.title}“`, meta: `Aufnahme ${open.songsDone + 1}/${open.songsTotal}: ${esc(nextStep(open.next, members))}`,
       body: `<span class="song-dots">${Array.from({ length: open.songsTotal }, (_, i) => {
         const r = open.songResults[i];
         return `<span class="song-dot ${r ? (r.miss === 0 ? 'perfect' : r.accuracy >= 0.75 ? 'good' : 'weak') : ''}"></span>`;
       }).join('')}</span>`,
-      button: `<button class="btn primary" data-act="recordSong" data-id="${b.id}" ${blocked ? 'disabled' : ''}>Lied ${open.songsDone + 1}</button>`,
+      button: `<button class="btn primary" data-act="recordSong" data-id="${b.id}" ${blocked ? 'disabled' : ''}>Aufnehmen</button>`,
     });
   } else if (b.record.blocker) {
     record = actionTile({ icon: '💿', title: 'Neue Platte', meta: esc(b.record.blocker) });

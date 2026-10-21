@@ -140,6 +140,26 @@ final class Chart
         return $drifts;
     }
 
+    /** Master-Mix: Bässe, Mitten, Höhen. */
+    public const MASTER_BANDS = ['Bässe', 'Mitten', 'Höhen'];
+
+    /** Bewertungsabschnitte im Master-Mix; nach der Hälfte ändert sich die richtige Einstellung einmal. */
+    public const MASTER_SEGMENTS = 4;
+
+    /**
+     * Master-Mix: richtige Reglerstellung (0–1) pro Abschnitt und Frequenzband. Zur Mitte des Liedes
+     * verschiebt sich jedes Band ein Stück, damit man noch einmal nachhören muss.
+     * @return list<list<float>>
+     */
+    public static function masterTargets(): array
+    {
+        $first = array_map(static fn () => Rng::float(0.15, 0.85), self::MASTER_BANDS);
+        $second = array_map(static fn ($v) => max(0.15, min(0.85, $v + (Rng::chance(0.5) ? 1 : -1) * Rng::float(0.15, 0.35))), $first);
+        $round = static fn ($list) => array_map(static fn ($v) => round($v, 3), $list);
+        $half = intdiv(self::MASTER_SEGMENTS, 2);
+        return array_merge(array_fill(0, $half, $round($first)), array_fill(0, self::MASTER_SEGMENTS - $half, $round($second)));
+    }
+
     /** Halbe Breite des grünen Bereichs am Mischpult. Ein besserer Sound verzeiht mehr. */
     public static function mixerZone(float $sound): float
     {

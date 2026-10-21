@@ -57,13 +57,13 @@ export async function loadStems(groups) {
 
 /**
  * Spielt geladene Spuren ab Zeitpunkt when (AudioContext-Zeit), ab Sekunde offset der Aufnahme.
- * Jede Gruppe hängt an einem eigenen Lautstärkeregler. Liefert { gains, stop }.
+ * Jede Gruppe hängt an einem eigenen Lautstärkeregler; destination z. B. für einen Klangregler. Liefert { gains, stop }.
  */
-export function playStems(groups, when, { offset = 0, loop = false, volume = 0.9 } = {}) {
+export function playStems(groups, when, { offset = 0, loop = false, volume = 0.9, destination = null } = {}) {
   const ctx = getAudio();
   const bus = ctx.createGain();
   bus.gain.value = volume;
-  bus.connect(ctx.destination);
+  bus.connect(destination ?? ctx.destination);
   const sources = [];
   const gains = groups.map((list) => {
     const gain = ctx.createGain();

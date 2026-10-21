@@ -609,7 +609,7 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 }
 .mg-hold { width: 100%; padding: 16px; border-radius: var(--radius-sm); border: 2px solid rgba(255, 79, 139, 0.6); background: var(--panel-2); color: var(--text); font: inherit; font-weight: 700; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; }
 .mg-hold.down { background: rgba(255, 79, 139, 0.35); }
-.mg-mixer .mg-stage { touch-action: none; }
+.mg-mixer .mg-stage, .mg-master .mg-stage { touch-action: none; }
 .scout-grid .tcg-wrap .btn { align-self: stretch; }
 
 /* ---------- Musikerkarten: Farbe nach Können-Stufe, Funkeln nach Bekanntheit (statisch, ohne Animation) ---------- */

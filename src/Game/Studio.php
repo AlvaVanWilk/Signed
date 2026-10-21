@@ -5,8 +5,12 @@ namespace Signed\Game;
 
 use Signed\ApiError;
 use Signed\Clock;
+use Signed\Rng;
 
-/** Platte produzieren: Pauschalpreis, ein Minispiel pro Lied, Belohnung erst bei Fertigstellung. */
+/**
+ * Platte produzieren: Pauschalpreis, so viele Minispiele wie Lieder, Belohnung erst bei Fertigstellung.
+ * Die Minispiele kommen gemischt (siehe plan()): Einspielen einzelner Instrumente, Mischpult, zum Schluss der Master-Mix.
+ */
 final class Studio
 {
     public function __construct(private Repo $repo)
@@ -34,6 +38,59 @@ final class Studio
         return Balance::RECORD_COST + Balance::RECORD_COST_PER_SONG * $songs;
     }
 
+    /**
+     * Reihenfolge der Minispiele einer Platte. Im Topf: pro Instrument der Band einmal Einspielen („take“) und einige
+     * Mischpult-Runden mit 2–3 zufälligen Mitgliedern („mix“). Daraus wird gemischt gezogen, nie zweimal dasselbe
+     * direkt hintereinander; ist der Topf leer, wird er neu gefüllt. Das letzte ist immer der Master-Mix.
+     * @return list<array{type: string, musician?: int, musicians?: list<int>}>
+     */
+    public static function plan(array $members, int $songs): array
+    {
+        $byInstrument = [];
+        foreach ($members as $m) {
+            $byInstrument[BandCalc::instrument($m)][] = $m['id'];
+        }
+        $pool = [];
+        foreach ($byInstrument as $ids) {
+            $pool[] = ['type' => 'take', 'musician' => Rng::pick($ids)];
+        }
+        $ids = array_column($members, 'id');
+        $mixes = [];
+        $wanted = count($ids) <= 2 ? 1 : max(2, (int) ceil(count($pool) / 2));
+        for ($try = 0; count($mixes) < $wanted && $try < 30; $try++) {
+            $pick = Rng::sample($ids, min(count($ids), Rng::int(2, 3)));
+            sort($pick);
+            $mixes[implode(',', $pick)] = ['type' => 'mix', 'musicians' => $pick];
+        }
+        $pool = array_merge($pool, array_values($mixes));
+
+        $plan = [];
+        $bag = [];
+        while (count($plan) < $songs - 1) {
+            if (!$bag) {
+                $bag = Rng::sample($pool, count($pool));
+                // Nie dasselbe Minispiel direkt hintereinander, auch nicht über die Neufüllung hinweg.
+                if ($plan && count($bag) > 1 && $bag[0] == end($plan)) {
+                    [$bag[0], $bag[1]] = [$bag[1], $bag[0]];
+                }
+            }
+            $plan[] = array_shift($bag);
+        }
+        $plan[] = ['type' => 'master'];
+        return $plan;
+    }
+
+    /** Der Plan einer offenen Platte; ältere Produktionen ohne Plan bekommen jetzt einen. */
+    public function planFor(array $record, array $members): array
+    {
+        $plan = $record['plan'];
+        if (!is_array($plan) || count($plan) < $record['songs_total']) {
+            $plan = self::plan($members, $record['songs_total']);
+            $this->repo->db->update('records', ['plan' => json_encode($plan)], ['id' => $record['id']]);
+        }
+        return $plan;
+    }
+
     public function start(int $bandId, string $title, int $songs): void
     {
         $title = Bands::cleanName($title, 'Der Plattentitel', 60);
@@ -42,7 +99,8 @@ final class Studio
         }
         $this->repo->db->transaction(function () use ($bandId, $title, $songs): void {
             $band = $this->repo->band($bandId);
-            $blocker = self::blocker($band, count($this->repo->members($bandId)), $this->repo->openRecord($bandId));
+            $members = $this->repo->members($bandId);
+            $blocker = self::blocker($band, count($members), $this->repo->openRecord($bandId));
             if ($blocker !== null) {
                 throw new ApiError($blocker);
             }
@@ -54,6 +112,7 @@ final class Studio
                 'songs_total' => $songs,
                 'songs_done' => 0,
                 'song_results' => '[]',
+                'plan' => json_encode(self::plan($members, $songs)),
                 'status' => 'open',
                 'created_at' => Clock::now(),
             ]);

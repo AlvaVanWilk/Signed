@@ -322,3 +322,29 @@ test('Musik: Die Stimme zählt nur beim Gesang – andere Instrumente finden ihr
     checkEquals('saxophon', Signed\Game\Music::resolve($stem('sax', false))['file']);
     checkEquals('gesang-weiblich', Signed\Game\Music::resolve($stem('vocals', false))['file']);
 });
+
+test('Platte: gemischte Minispiele, so viele wie Lieder, nie zweimal dasselbe hintereinander, Master-Mix zuletzt', function () {
+    $band = [
+        musician(['id' => 1, 'instr1' => 'guitar']),
+        musician(['id' => 2, 'instr1' => 'drums']),
+        musician(['id' => 3, 'instr1' => 'vocals']),
+        musician(['id' => 4, 'instr1' => 'guitar']),
+    ];
+    foreach ([[$band, 12], [$band, 3], [array_slice($band, 0, 2), 12], [[$band[0], $band[3]], 7]] as [$members, $songs]) {
+        for ($run = 0; $run < 20; $run++) {
+            $plan = Signed\Game\Studio::plan($members, $songs);
+            checkEquals($songs, count($plan));
+            checkEquals(['type' => 'master'], end($plan));
+            for ($i = 1; $i < count($plan); $i++) {
+                check($plan[$i] != $plan[$i - 1], 'Zweimal dasselbe Minispiel hintereinander');
+            }
+            foreach (array_slice($plan, 0, -1) as $step) {
+                check($step['type'] === 'take' || ($step['type'] === 'mix' && count($step['musicians']) >= 2 && count($step['musicians']) <= 3));
+            }
+        }
+    }
+    // Lang genug, dass alles aus dem Topf drankommt: jedes Instrument wird eingespielt (Gitarre nur einmal im Topf).
+    $plan = Signed\Game\Studio::plan($band, 12);
+    $takes = array_unique(array_column(array_filter($plan, static fn ($s) => $s['type'] === 'take'), 'musician'));
+    checkEquals(3, count($takes));
+});

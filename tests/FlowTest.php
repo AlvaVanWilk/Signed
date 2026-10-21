@@ -412,7 +412,8 @@ test('Platte produzieren, dann Gigs spielen, dann die nächste Platte', function
     $first = playSong($p, ['kind' => 'record', 'bandId' => $band['id']]);
     checkEquals(1, $first['result']['songsDone']);
     checkEquals(null, $first['result']['completed']);
-    playSong($p, ['kind' => 'record', 'bandId' => $band['id']]);
+    $second = playSong($p, ['kind' => 'record', 'bandId' => $band['id']]);
+    checkEquals('master', bandById($second['state'], $band['id'])['record']['open']['next']['type'], 'Zum Schluss der Master-Mix');
     $last = playSong($p, ['kind' => 'record', 'bandId' => $band['id']]);
     $completed = $last['result']['completed'];
     check($completed !== null, 'Platte nach drei Liedern fertig');

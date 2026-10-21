@@ -390,6 +390,7 @@ final class Repo
             'songs_total' => (int) $r['songs_total'],
             'songs_done' => (int) $r['songs_done'],
             'song_results' => json_decode($r['song_results'], true) ?: [],
+            'plan' => json_decode((string) ($r['plan'] ?? ''), true) ?: null,
             'status' => $r['status'],
         ];
     }

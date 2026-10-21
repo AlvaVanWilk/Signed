@@ -71,6 +71,7 @@ final class Present
             'songsTotal' => $r['songs_total'],
             'songsDone' => $r['songs_done'],
             'songResults' => $r['song_results'],
+            'next' => $r['plan'][$r['songs_done']] ?? null,
         ];
     }
 

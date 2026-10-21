@@ -2,6 +2,7 @@ import { getAudio, latency, playLane, playMiss, scheduleMetronome } from './audi
 import { loadStems, playStems } from './music.js';
 import { instrumentIcon } from './cards.js';
 import { COLORS, mountShell } from './mg-shell.js';
+import { createMasterGame } from './master.js';
 import { createMixerGame } from './mixer.js';
 import { createPitchGame } from './pitch.js';
 import { duration, esc, percent } from './ui.js';
@@ -12,12 +13,13 @@ const KEY_LABELS = ['D', 'F', 'J', 'K'];
 const TRAVEL = 1.8;
 
 /**
- * Startet das passende Minispiel: Rhythmus (Tasten im Takt), Tonhöhe (Gesang, Geige) oder Mischpult (Studio).
+ * Startet das passende Minispiel: Rhythmus (Tasten im Takt), Tonhöhe (Gesang, Geige), Mischpult oder Master-Mix (Studio).
  * Alle liefern über play() {perfect, good, miss} oder {aborted: true}.
  */
 export function createMinigame(container, game) {
   if (game.mode === 'pitch') return createPitchGame(container, game);
   if (game.mode === 'mixer') return createMixerGame(container, game);
+  if (game.mode === 'master') return createMasterGame(container, game);
   return createRhythmGame(container, game);
 }
 

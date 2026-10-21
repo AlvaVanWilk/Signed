@@ -324,6 +324,10 @@ final class Schema
                 'ALTER TABLE records ADD COLUMN rank_hour INTEGER NOT NULL DEFAULT 0',
                 'ALTER TABLE records ADD COLUMN rank_best INTEGER NULL',
             ],
+            // 11: Platten bestehen aus gemischten Minispielen (Einspielen, Mischpult, Master-Mix)
+            [
+                'ALTER TABLE records ADD COLUMN plan TEXT NULL',
+            ],
         ];
     }
 }

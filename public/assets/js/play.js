@@ -49,7 +49,7 @@ async function runMinigame(request) {
   const more = !result.completed && band?.record.open;
   mg.showResult(recordSummary(result), [
     { label: 'Schließen', onClick: close },
-    ...(more ? [{ label: 'Nächstes Lied', cls: 'primary', onClick: () => { close(); startRecordSong(request.bandId); } }] : []),
+    ...(more ? [{ label: 'Nächste Aufnahme', cls: 'primary', onClick: () => { close(); startRecordSong(request.bandId); } }] : []),
   ]);
 }
 
@@ -83,7 +83,7 @@ function levelProgress(skill) {
 
 function recordSummary(r) {
   const head = `
-    <h3>Lied ${r.songsDone} von ${r.songsTotal} im Kasten – Trefferquote ${percent(r.accuracy)}</h3>
+    <h3>Aufnahme ${r.songsDone}/${r.songsTotal} im Kasten – Trefferquote ${percent(r.accuracy)}</h3>
     ${counts(r)}
     <p class="muted">Zusammenspiel +${fmt1(r.cohesion)}</p>
     ${levelUpBanners(r.levelUps)}`;

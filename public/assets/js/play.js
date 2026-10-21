@@ -31,12 +31,24 @@ async function runMinigame(request) {
     return;
   }
 
-  // Der Server erwartet, dass das Lied wirklich gespielt wurde.
-  const fin = await mutate('minigameFinish', { sessionId: game.sessionId, ...outcome });
-  if (!fin) {
-    mg.showResult('<p class="muted">Das Ergebnis konnte nicht gespeichert werden.</p>', [{ label: 'Schließen', onClick: close }]);
-    return;
-  }
+  // Der Server erwartet, dass das Lied wirklich gespielt wurde. Klappt das Senden nicht (Verbindung weg), kann man es
+  // nochmal versuchen, statt das Ergebnis zu verlieren.
+  const fin = await new Promise((resolve) => {
+    let sending = false;
+    const send = async () => {
+      if (sending) return;
+      sending = true;
+      const res = await mutate('minigameFinish', { sessionId: game.sessionId, ...outcome });
+      sending = false;
+      if (res) return resolve(res);
+      mg.showResult('<p class="muted">Das Ergebnis konnte nicht gespeichert werden. Ist das WLAN da?</p>', [
+        { label: 'Schließen', onClick: () => { close(); resolve(null); } },
+        { label: 'Nochmal senden', cls: 'primary', onClick: send },
+      ]);
+    };
+    send();
+  });
+  if (!fin) return;
   const result = fin.result;
   if (result.kind === 'practice') {
     mg.showResult(practiceSummary(result), [

@@ -15,7 +15,7 @@ const STROKE = `stroke="${INK}" stroke-width="2" stroke-linejoin="round"`;
  */
 const pivot = (x, y, cls, inner) => `<g transform="translate(${x} ${y})"><g class="${cls}"><g transform="translate(${-x} ${-y})">${inner}</g></g></g>`;
 
-export function figure(look = {}, instrument = 'guitar') {
+export function figure(look = {}, instrument = 'guitar', { electric = false } = {}) {
   const skin = look.skin || '#d9a27e';
   const shirt = look.shirt || '#4a6fa5';
   const pose = POSES[instrument] ? instrument : instrument === 'synth' ? 'keys' : 'guitar';
@@ -33,7 +33,7 @@ export function figure(look = {}, instrument = 'guitar') {
         </g>
         ${POSES[pose].back(skin, shirt)}
         ${pivot(60, 74, 'fig-head', head(look, skin, sing))}
-        ${POSES[pose].front(skin, shirt)}
+        ${POSES[pose].front(skin, shirt, electric)}
       </g>
     </svg>`;
 }
@@ -91,25 +91,31 @@ const arm = (d, hand, skin, shirt, cls = '') => {
 };
 
 /** Gitarre/Bass: Korpus vor dem Bauch, Hals schräg nach links oben. reach = wie weit der Hals reicht. */
-const guitarLike = (color, reach) => (skin, shirt) => {
+const guitarLike = (color, reach, eColor) => (skin, shirt, electric) => {
   const end = [36 - reach, 84 - reach * 0.45];
   const grip = [end[0] + 8, end[1] + 4];
+  // Akustisch: runder Holzkorpus mit Schallloch. Elektrisch: schmaler, geschwungener Korpus mit Schlagbrett und Tonabnehmern.
+  const body = electric ? `
+    <path d="M58 94 C62 91 67 93 67 97 C71 96 75 98 74 102 C79 104 81 109 77 113 C73 118 64 117 60 112 C55 112 52 107 55 103 C53 99 55 96 58 94 Z" fill="${eColor}"/>
+    <path d="M59 103 C62 101 67 104 68 108 C64 112 58 110 57 107 Z" fill="#fff"/>
+    <path d="M61 99 L65 103 M64 96.5 L68 100.5" stroke="${INK}" stroke-width="2.2"/>` : `
+    <circle cx="61" cy="99" r="9" fill="${color}"/><circle cx="71" cy="105" r="11" fill="${color}"/>
+    <path d="M60 99 Q66 96 71 105" fill="none" stroke="${color}" stroke-width="6"/>
+    <circle cx="65" cy="101" r="3" fill="${INK}"/>`;
   return `
   <g ${STROKE}>
     <path d="M60 97 L${end[0]} ${end[1]}" stroke="${INK}" stroke-width="7" stroke-linecap="round"/>
-    <path d="M60 97 L${end[0]} ${end[1]}" stroke="#a06a3b" stroke-width="4" stroke-linecap="round"/>
-    <rect x="${end[0] - 5}" y="${end[1] - 4}" width="9" height="7" rx="2" fill="#5b3a21" transform="rotate(25 ${end[0]} ${end[1]})"/>
-    <circle cx="61" cy="99" r="9" fill="${color}"/><circle cx="71" cy="105" r="11" fill="${color}"/>
-    <path d="M60 99 Q66 96 71 105" fill="none" stroke="${color}" stroke-width="6"/>
-    <circle cx="65" cy="101" r="3" fill="${INK}"/>
+    <path d="M60 97 L${end[0]} ${end[1]}" stroke="${electric ? '#d9b38c' : '#a06a3b'}" stroke-width="4" stroke-linecap="round"/>
+    <rect x="${end[0] - 5}" y="${end[1] - 4}" width="9" height="7" rx="2" fill="${electric ? INK : '#5b3a21'}" transform="rotate(25 ${end[0]} ${end[1]})"/>
+    ${body}
   </g>
   ${arm(`M45 80 Q${grip[0] + 4} ${grip[1] - 6} ${grip[0]} ${grip[1]}`, grip, skin, shirt)}
   ${arm('M75 80 Q84 92 72 102', [72, 102], skin, shirt, 'fig-strum')}`;
 };
 
 const POSES = {
-  guitar: { back: () => '', front: guitarLike('#e4572e', 6) },
-  bass: { back: () => '', front: guitarLike('#3a86ff', 14) },
+  guitar: { back: () => '', front: guitarLike('#e9a24b', 6, '#e4572e') },
+  bass: { back: () => '', front: guitarLike('#c98a4b', 14, '#3a86ff') },
   vocals: {
     back: () => '',
     front: (skin, shirt) => `
@@ -202,12 +208,12 @@ export function playedInstrument(m) {
 }
 
 /**
- * Bühne mit Figuren. bpm setzt das Tempo; mood: 'hype' (Publikum tobt – die Band springt), 'calm' oder ''.
+ * Bühne mit Figuren. electricOf(m): spielt er elektrisch (E-Gitarre, E-Bass)? bpm setzt das Tempo; mood: 'hype' (Publikum tobt – die Band springt), 'calm' oder ''.
  * names: Vornamen unter den Figuren zeigen.
  */
-export function stage(members, { bpm = 120, names = true, className = '' } = {}) {
+export function stage(members, { bpm = 120, names = true, className = '', electricOf = () => false } = {}) {
   return `<div class="fig-stage ${className}" style="--beat:${(60 / bpm).toFixed(3)}s">${members.map((m) => `
-    <div class="fig-member" style="--d:${(-((m.id * 7919) % 4300) / 1000).toFixed(2)}s">${figure(m.look, playedInstrument(m))}${names ? `<b>${escapeHtml(m.firstName)}</b>` : ''}</div>`).join('')}
+    <div class="fig-member" style="--d:${(-((m.id * 7919) % 4300) / 1000).toFixed(2)}s">${figure(m.look, playedInstrument(m), { electric: electricOf(m) })}${names ? `<b>${escapeHtml(m.firstName)}</b>` : ''}</div>`).join('')}
   </div>`;
 }
 

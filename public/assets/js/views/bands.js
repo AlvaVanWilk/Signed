@@ -1,11 +1,12 @@
 import { api } from '../api.js';
-import { bandGenreTags, bandIdentity, emptySlot, face, fullName, gearCard, gearModel, genreIcon, genreTag, instrumentIcon, instrumentName, managerCard, musicianCard } from '../cards.js';
+import { bandGenreTags, bandIdentity, emptySlot, face, fullName, gearCard, gearModel, genreIcon, genreTag, instrumentEmoji, instrumentIcon, instrumentName, managerCard, musicianCard } from '../cards.js';
 import { app, bandById, cat, defineActions, isBusy, managerById, musicianById, mutate, navigate, rerender, runningFor } from '../core.js';
 import { openLive } from '../live.js';
 import { startPractice, startRecordSong } from '../play.js';
 import { assignGear, soundChange } from '../gear.js';
 import { trendBadge } from './charts.js';
 import { stage } from '../figure.js';
+import { bandStems, stemUrl } from '../music.js';
 import { bar, confirmDialog, duration, esc, fmt0, fmt1, fmt2, fmtGain, money, openModal, percent, promptDialog, timeAgo, toast } from '../ui.js';
 
 /** Untermenü einer Band: [Pfad, Icon, Bezeichnung] */
@@ -85,6 +86,13 @@ const songsMeta = (songs) => `${songs} ${songs === 1 ? 'Lied' : 'Lieder'} · ${d
 
 // ---------- Band ----------
 
+/** Spielt ein Mitglied eine E-Aufnahme? Danach richtet sich, ob seine Figur eine E-Gitarre hält. */
+function electricByStem(members, b) {
+  const stems = bandStems(members, b);
+  const map = new Map(members.map((m, i) => [m.id, /elektrisch/.test(stemUrl(stems[i]) ?? '')]));
+  return (m) => map.get(m.id);
+}
+
 function overview(b, members) {
   const gig = b.options.gig;
   const fx = b.effects;
@@ -93,7 +101,7 @@ function overview(b, members) {
     <div class="page-head">
       <div><div class="eyebrow">${b.title ? esc(b.title) : 'Band'}</div><h1>${esc(b.name)} <button class="icon-btn" data-act="bandRename" data-id="${b.id}" title="${b.released ? 'Namensänderung beantragen' : 'Umbenennen'}">✎</button></h1></div>
     </div>
-    ${members.length ? stage(members, { className: runningFor(b.id) ? '' : 'idle' }) : ''}
+    ${members.length ? stage(members, { className: runningFor(b.id) ? '' : 'idle', electricOf: electricByStem(members, b) }) : ''}
     <div class="stat-grid">
       <div class="tile" data-flash="sound-${b.id}"><span>Sound</span><b>${fmt1(b.sound)}</b>
         <small>Ruhm pro Auftritt <em>× ${fmt2(fx.soundFame)}</em></small>
@@ -176,7 +184,7 @@ function memberTile(b, m, place) {
       <div class="lineup-controls">
         ${m.instruments.length > 1 ? `
           <select data-change="bandSetSlot" data-band="${b.id}" data-musician="${m.id}">
-            ${m.instruments.map((i, idx) => `<option value="${idx + 1}" ${idx === slotIndex ? 'selected' : ''}>${instrumentIcon(i.type)} ${esc(instrumentName(i.type))}</option>`).join('')}
+            ${m.instruments.map((i, idx) => `<option value="${idx + 1}" ${idx === slotIndex ? 'selected' : ''}>${instrumentEmoji(i.type)} ${esc(instrumentName(i.type))}</option>`).join('')}
           </select>` : '<span></span>'}
         ${gear ? '' : '<span class="bad small">ohne Instrument</span>'}
         <button class="icon-btn" data-act="removeMember" data-band="${b.id}" data-musician="${m.id}" title="Aus der Band nehmen">✕</button>
@@ -490,7 +498,7 @@ function pickRow(m, { checkbox = true, button = '', note = '' } = {}) {
       </label>
       ${m.instruments.length > 1 ? `
         <select data-slot>
-          ${m.instruments.map((i, idx) => `<option value="${idx + 1}">${instrumentIcon(i.type)} ${esc(instrumentName(i.type))} ${fmt1(i.skill)}</option>`).join('')}
+          ${m.instruments.map((i, idx) => `<option value="${idx + 1}">${instrumentEmoji(i.type)} ${esc(instrumentName(i.type))} ${fmt1(i.skill)}</option>`).join('')}
         </select>` : `<span class="pick-instr">${instrumentIcon(m.instruments[0].type)} ${esc(instrumentName(m.instruments[0].type))} <b>${fmt1(m.instruments[0].skill)}</b></span>`}
       ${button}
     </div>`;

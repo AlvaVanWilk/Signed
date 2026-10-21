@@ -2,7 +2,7 @@ import { api } from '../api.js';
 import { genreTag, musicianCard } from '../cards.js';
 import { app, cat, defineActions, navigate, rerender } from '../core.js';
 import { stage } from '../figure.js';
-import { loadStems, playStems } from '../music.js';
+import { loadStems, playStems, stemUrl } from '../music.js';
 import { esc, fmt0, fmt1, fmtGain, openModal, toast } from '../ui.js';
 
 let loading = false;
@@ -120,7 +120,7 @@ async function openBandView(id) {
         <button class="btn primary" data-listen>▶ Anhören</button>
         ${band.own ? `<button class="btn" data-goto>Zur Band</button>` : ''}
       </div>
-      ${stage(band.members, { bpm: cat().genres[band.genres[0] ?? band.members[0]?.genres[0]]?.bpm ?? 120, className: 'idle' })}
+      ${stage(band.members, { bpm: cat().genres[band.genres[0] ?? band.members[0]?.genres[0]]?.bpm ?? 120, className: 'idle', electricOf: (m) => /elektrisch/.test(stemUrl(m.stem) ?? '') })}
       <div class="tcg-grid">${band.members.map((m) => musicianCard(m, { act: null, showStatus: false })).join('')}</div>
       ${band.records.length ? `<h3>Platten</h3>
         <ul class="history">${band.records.map((r) => `

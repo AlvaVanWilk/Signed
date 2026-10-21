@@ -1,7 +1,7 @@
 import { app, bandById, cat, musicianById, serverNow } from './core.js';
 import { duration, esc, openModal } from './ui.js';
 import { getAudio } from './audio.js';
-import { bandStems, loadStems, playStems } from './music.js';
+import { bandStems, loadStems, playStems, stemUrl } from './music.js';
 import { stage } from './figure.js';
 
 const ICONS = { song: '🎵', mistake: '😬', highlight: '🔥', crowd: '👥' };
@@ -30,7 +30,10 @@ export function openLive(activityId) {
   const songSeconds = cat().rules.songSeconds;
   const total = activity.endsAt - activity.startedAt;
   const players = band ? band.memberIds.map(musicianById).filter(Boolean) : solo ? [solo] : [];
-  const groups = bandStems(players, band, activity.id).map((stem) => [stem]);
+  const stems = bandStems(players, band, activity.id);
+  const groups = stems.map((stem) => [stem]);
+  // Wer eine E-Gitarren-Aufnahme spielt, hält auch eine E-Gitarre.
+  const electric = new Map(players.map((m, i) => [m.id, /elektrisch/.test(stemUrl(stems[i]) ?? '')]));
 
   // Die Aufnahmen laufen in Schleife mit, passend zur Serverzeit: Wer später zuschaut, hört mitten im Lied.
   loadStems(groups).then((buffers) => {
@@ -47,7 +50,7 @@ export function openLive(activityId) {
       <div><div class="eyebrow">${crowd ? 'Live' : 'Probenraum'}</div><h2>${esc(activity.title)}</h2><div class="muted">${esc(who)}</div></div>
       <div class="live-clock"><span class="live-song"></span><b class="live-left"></b></div>
     </div>
-    ${stage(players, { bpm: cat().genres[band?.genres[0] ?? players[0]?.genres[0]]?.bpm ?? 120 })}
+    ${stage(players, { bpm: cat().genres[band?.genres[0] ?? players[0]?.genres[0]]?.bpm ?? 120, electricOf: (m) => electric.get(m.id) })}
     ${crowd ? `<div class="meter">
       <div class="meter-labels"><span>Buhrufe</span><span>Publikum</span><span>Ekstase</span></div>
       <div class="meter-track"><div class="meter-fill"></div><div class="meter-needle"></div></div>

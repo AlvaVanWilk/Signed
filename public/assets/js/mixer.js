@@ -1,6 +1,6 @@
 import { getAudio, playTrackBeat, scheduleBacking } from './audio.js';
 import { loadStems, playStems } from './music.js';
-import { instrumentIcon } from './cards.js';
+import { instrumentEmoji } from './cards.js';
 import { COLORS, judgeRatio, mountShell } from './mg-shell.js';
 import { duration, percent } from './ui.js';
 
@@ -133,7 +133,7 @@ export function createMixerGame(container, game) {
       draw.fillStyle = '#f3eefc';
       draw.font = '600 13px system-ui, sans-serif';
       draw.textAlign = 'center';
-      draw.fillText(`${track.instruments.map(instrumentIcon).join('')} ${track.name}`, cx, h - 30);
+      draw.fillText(`${track.instruments.map(instrumentEmoji).join('')} ${track.name}`, cx, h - 30);
       draw.fillStyle = '#a49bbd';
       draw.font = '600 11px system-ui, sans-serif';
       draw.fillText(KEYS[k].map((key) => key.toUpperCase()).join(' / '), cx, h - 12);

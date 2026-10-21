@@ -822,7 +822,7 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .tcg-genres { display: flex; gap: 1.2cqi; flex: none; }
 .genre-icon { width: 7cqi; height: 7cqi; fill: none; stroke: #3a3247; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
 .tcg .tcg-text { display: flex; flex-direction: column; gap: 1.6cqi; padding-top: 0.5cqi; }
-.skill-row { display: grid; grid-template-columns: 34% minmax(0, 1fr) auto auto; align-items: center; gap: 1.6cqi; font-size: 4cqi; }
+.skill-row { display: grid; grid-template-columns: 37% minmax(0, 1fr) auto; align-items: center; gap: 1.6cqi; font-size: 4cqi; }
 .skill-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #3a3247; }
 .skill-row > b { font-size: 4.6cqi; min-width: 5cqi; text-align: right; }
 .skill-cells { display: grid; grid-template-columns: repeat(10, 1fr); gap: 0.8cqi; }
@@ -839,7 +839,7 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .ledger .bad { color: var(--bad); }
 @container (max-width: 170px) {
   .skill-name span { display: none; }
-  .skill-row { grid-template-columns: auto 1fr auto auto; }
+  .skill-row { grid-template-columns: auto 1fr auto; }
 }
 
 /* Rückweg und Blättern auf der Musikerseite */
@@ -974,7 +974,6 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .skill-step-3 { --step: #b03ad6; }
 .skill-cells[class*='skill-step-'] i { background: linear-gradient(90deg, var(--step) var(--f), rgba(0, 0, 0, 0.1) var(--f)); }
 .step-badge { display: inline-grid; place-items: center; width: 5.6cqi; height: 5.6cqi; border-radius: 50%; font-size: 3.6cqi !important; font-weight: 800; color: #fff; background: var(--step); text-align: center !important; min-width: 0 !important; }
-.bar-value { font-size: 3.2cqi !important; color: rgba(0, 0, 0, 0.6); font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; min-width: 0 !important; }
 .fame-step-0 { --step: #b9ad8e; }
 .fame-step-1 { --step: #e0a800; }
 .fame-step-2 { --step: #f08c00; box-shadow: 0 0 1.2cqi rgba(255, 190, 40, 0.8); }

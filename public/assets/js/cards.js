@@ -162,7 +162,7 @@ export function fameBar(fame) {
   return `<span class="fame-stars" title="${esc(title)}">${Array.from({ length: 10 }, (_, i) => {
     const fill = Math.max(0, Math.min(1, progress * 10 - i));
     return `<i style="--f:${Math.round(fill * 100)}%">★</i>`;
-  }).join('')}</span><small class="bar-value">${fmt0(Math.floor(fame))}${next ? `/${fmt0(next)}` : ''}</small><b class="step-badge fame-step-${level}" title="${esc(title)}">${level}</b>`;
+  }).join('')}</span><b class="step-badge fame-step-${level}" title="${esc(title)}">${level}</b>`;
 }
 
 /** Können als 10 Kästchen für den Weg zur nächsten Stufe, in der Farbe der Stufe; dahinter die Stufe. */
@@ -172,7 +172,7 @@ export function skillBar(skill) {
   return `<span class="skill-cells skill-step-${level}" title="${esc(title)}">${Array.from({ length: 10 }, (_, i) => {
     const fill = Math.max(0, Math.min(1, progress * 10 - i));
     return `<i style="--f:${Math.round(fill * 100)}%"></i>`;
-  }).join('')}</span><small class="bar-value">${fmt0(Math.floor(skill))}${next ? `/${fmt0(next)}` : ''}</small><b class="step-badge skill-step-${level}" title="${esc(title)}">${level}</b>`;
+  }).join('')}</span><b class="step-badge skill-step-${level}" title="${esc(title)}">${level}</b>`;
 }
 
 /**

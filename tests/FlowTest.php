@@ -851,7 +851,7 @@ test('Band anderer Labels ansehen: Mitglieder, Genre, Platten und Spuren zum Anh
     checkApiError(fn () => $b->post('bandView', ['bandId' => 99999]), 'gibt es nicht');
 });
 
-test('Charts: Pro Band zählen höchstens zwei Platten', function () {
+test('Charts: Pro Band zählt nur ihre stärkste Platte', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Flut');
     $band = foundBand($p);
@@ -865,5 +865,5 @@ test('Charts: Pro Band zählen höchstens zwei Platten', function () {
     }
     Signed\Game\Charts::markDirty($db);
     $placed = array_column(array_filter($p->get('charts')['albums'], static fn ($a) => $a['placed']), 'title');
-    checkEquals(['Eins', 'Zwei'], $placed);
+    checkEquals(['Eins'], $placed);
 });

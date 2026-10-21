@@ -19,18 +19,19 @@
 
     /* ---- Bewegung: nur transform (iPad) ---- */
     .fig { width: 100%; height: auto; overflow: visible; --beat: 0.5s; }
-    .fig g, .fig ellipse, .fig rect { transform-box: fill-box; }
+    /* Drehpunkte setzt figure.js als feste Koordinaten (pivot) – hier immer um 0/0 drehen. */
+    .fig g { transform-box: view-box; transform-origin: 0 0; }
     .fig-body { animation: fig-bounce var(--beat) ease-in-out infinite; }
-    .fig-head { transform-origin: 50% 95%; animation: fig-nod calc(var(--beat) * 2) ease-in-out infinite; }
-    .fig-eyes { transform-origin: center; animation: fig-blink 3.7s infinite; }
-    .fig-tap { transform-origin: 20% 100%; animation: fig-tap var(--beat) ease-in-out infinite; }
-    .fig-strum { transform-origin: 10% 5%; animation: fig-strum calc(var(--beat) / 2) ease-in-out infinite alternate; }
-    .fig-wave { transform-origin: 95% 95%; animation: fig-wave calc(var(--beat) * 2) ease-in-out infinite alternate; }
-    .fig-mouth { transform-origin: center; animation: fig-sing var(--beat) ease-in-out infinite; }
-    .fig-mic-arm { transform-origin: 20% 90%; animation: fig-nod calc(var(--beat) * 2) ease-in-out infinite; }
-    .fig-hit-l { transform-origin: 0% 0%; animation: fig-hit var(--beat) ease-in infinite; }
-    .fig-hit-r { transform-origin: 0% 0%; animation: fig-hit var(--beat) ease-in infinite; animation-delay: calc(var(--beat) / -2); }
-    .fig-cymbal { transform-origin: center; animation: fig-cymbal calc(var(--beat) * 2) ease-out infinite; }
+    .fig-head { animation: fig-nod calc(var(--beat) * 2) ease-in-out infinite; }
+    .fig-eyes { animation: fig-blink 3.7s infinite; }
+    .fig-tap { animation: fig-tap var(--beat) ease-in-out infinite; }
+    .fig-strum { animation: fig-strum calc(var(--beat) / 2) ease-in-out infinite alternate; }
+    .fig-wave { animation: fig-wave calc(var(--beat) * 2) ease-in-out infinite alternate; }
+    .fig-mouth { animation: fig-sing var(--beat) ease-in-out infinite; }
+    .fig-mic-arm { animation: fig-nod calc(var(--beat) * 2) ease-in-out infinite; }
+    .fig-hit-l { animation: fig-hit var(--beat) ease-in infinite; }
+    .fig-hit-r { animation: fig-hit var(--beat) ease-in infinite; animation-delay: calc(var(--beat) / -2); }
+    .fig-cymbal { animation: fig-cymbal calc(var(--beat) * 2) ease-out infinite; }
     .fig-key-l { animation: fig-key var(--beat) ease-in-out infinite; }
     .fig-key-r { animation: fig-key var(--beat) ease-in-out infinite; animation-delay: calc(var(--beat) / -2); }
     @keyframes fig-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(1.8px); } }

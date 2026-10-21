@@ -9,6 +9,12 @@ const INK = '#2a2233';
 const PANTS = '#2f3a56';
 const STROKE = `stroke="${INK}" stroke-width="2" stroke-linejoin="round"`;
 
+/**
+ * Bewegliches Teil mit festem Drehpunkt (x/y): verschoben, gedreht um 0/0, zurückgeschoben. So dreht Safari genauso
+ * wie Chrome – Drehpunkte in Prozent (transform-box) rechnet Safari anders, dann schweben die Köpfe.
+ */
+const pivot = (x, y, cls, inner) => `<g transform="translate(${x} ${y})"><g class="${cls}"><g transform="translate(${-x} ${-y})">${inner}</g></g></g>`;
+
 export function figure(look = {}, instrument = 'guitar') {
   const skin = look.skin || '#d9a27e';
   const shirt = look.shirt || '#4a6fa5';
@@ -22,11 +28,11 @@ export function figure(look = {}, instrument = 'guitar') {
           <rect x="46" y="104" width="11" height="30" rx="5" fill="${PANTS}"/>
           <rect x="63" y="104" width="11" height="30" rx="5" fill="${PANTS}"/>
           <ellipse cx="50" cy="136" rx="8" ry="4.5" fill="${INK}"/>
-          <ellipse class="fig-tap" cx="70" cy="136" rx="8" ry="4.5" fill="${INK}"/>
+          ${pivot(63, 138, 'fig-tap', `<ellipse cx="70" cy="136" rx="8" ry="4.5" fill="${INK}"/>`)}
           <path d="M43 76 Q60 68 77 76 L81 108 Q60 115 39 108 Z" fill="${shirt}"/>
         </g>
         ${POSES[pose].back(skin, shirt)}
-        <g class="fig-head">${head(look, skin, sing)}</g>
+        ${pivot(60, 74, 'fig-head', head(look, skin, sing))}
         ${POSES[pose].front(skin, shirt)}
       </g>
     </svg>`;
@@ -43,11 +49,11 @@ function head(look, skin, sing) {
   p.push(`<g stroke="${INK}" stroke-width="1.2"><ellipse cx="31.5" cy="45" rx="3.5" ry="4.5" fill="${skin}"/><ellipse cx="68.5" cy="45" rx="3.5" ry="4.5" fill="${skin}"/>`);
   p.push(`<ellipse cx="50" cy="43" rx="19" ry="18" fill="${skin}"/></g>`);
   // Gesicht: Punktaugen mit Glanz, rote Bäckchen, Lächeln – beim Singen ein runder Mund.
-  p.push(`<g class="fig-eyes"><ellipse cx="43" cy="45" rx="2.3" ry="2.8" fill="${INK}"/><ellipse cx="57" cy="45" rx="2.3" ry="2.8" fill="${INK}"/>
-    <circle cx="43.8" cy="44" r="0.8" fill="#fff"/><circle cx="57.8" cy="44" r="0.8" fill="#fff"/></g>`);
+  p.push(pivot(50, 45, 'fig-eyes', `<ellipse cx="43" cy="45" rx="2.3" ry="2.8" fill="${INK}"/><ellipse cx="57" cy="45" rx="2.3" ry="2.8" fill="${INK}"/>
+    <circle cx="43.8" cy="44" r="0.8" fill="#fff"/><circle cx="57.8" cy="44" r="0.8" fill="#fff"/>`));
   p.push('<ellipse cx="38" cy="51" rx="3.2" ry="1.9" fill="#ff8fa3" opacity="0.6"/><ellipse cx="62" cy="51" rx="3.2" ry="1.9" fill="#ff8fa3" opacity="0.6"/>');
   p.push(sing
-    ? `<ellipse class="fig-mouth" cx="50" cy="53.5" rx="2.6" ry="2.4" fill="#7a2338" stroke="${INK}" stroke-width="0.8"/>`
+    ? pivot(50, 53.5, 'fig-mouth', `<ellipse cx="50" cy="53.5" rx="2.6" ry="2.4" fill="#7a2338" stroke="${INK}" stroke-width="0.8"/>`)
     : `<path d="M46.5 52 Q50 55 53.5 52" fill="none" stroke="${INK}" stroke-width="1.2" stroke-linecap="round"/>`);
   if (look.freckles) {
     for (const [x, y] of [[40, 49], [42.5, 50.5], [57.5, 50.5], [60, 49]]) p.push(`<circle cx="${x}" cy="${y}" r="0.6" fill="#8a4b2a" opacity="0.6"/>`);
@@ -75,10 +81,14 @@ function head(look, skin, sing) {
 }
 
 /** Arm als dicker Strich im Hemd, mit Hand am Ende. */
-const arm = (d, hand, skin, shirt, cls = '') => `
-  <g class="${cls}"><path d="${d}" fill="none" stroke="${INK}" stroke-width="10" stroke-linecap="round"/>
+const arm = (d, hand, skin, shirt, cls = '') => {
+  const inner = `<path d="${d}" fill="none" stroke="${INK}" stroke-width="10" stroke-linecap="round"/>
   <path d="${d}" fill="none" stroke="${shirt}" stroke-width="7" stroke-linecap="round"/>
-  <circle cx="${hand[0]}" cy="${hand[1]}" r="4.2" fill="${skin}" stroke="${INK}" stroke-width="1.6"/></g>`;
+  <circle cx="${hand[0]}" cy="${hand[1]}" r="4.2" fill="${skin}" stroke="${INK}" stroke-width="1.6"/>`;
+  if (!cls) return inner;
+  const [x, y] = d.match(/M\s*([\d.]+)\s+([\d.]+)/).slice(1).map(Number);
+  return pivot(x, y, cls, inner);
+};
 
 /** Gitarre/Bass: Korpus vor dem Bauch, Hals schräg nach links oben. reach = wie weit der Hals reicht. */
 const guitarLike = (color, reach) => (skin, shirt) => {
@@ -104,21 +114,21 @@ const POSES = {
     back: () => '',
     front: (skin, shirt) => `
       ${arm('M45 80 Q34 72 29 60', [29, 60], skin, shirt, 'fig-wave')}
-      <g class="fig-mic-arm">${arm('M75 80 Q84 76 73 70', [73, 70], skin, shirt)}
+      ${pivot(75, 80, 'fig-mic-arm', `${arm('M75 80 Q84 76 73 70', [73, 70], skin, shirt)}
         <rect x="70" y="58" width="5" height="12" rx="2" transform="rotate(-25 72 64)" fill="#444" stroke="${INK}" stroke-width="1.4"/>
-        <circle cx="69.5" cy="59" r="4" fill="#9a9aa8" stroke="${INK}" stroke-width="1.4"/></g>`,
+        <circle cx="69.5" cy="59" r="4" fill="#9a9aa8" stroke="${INK}" stroke-width="1.4"/>`)}`,
   },
   drums: {
     back: () => `
-      <g ${STROKE}><path d="M98 140 L98 96" fill="none"/><ellipse class="fig-cymbal" cx="98" cy="94" rx="14" ry="3.5" fill="#f2c14e"/></g>`,
+      <g ${STROKE}><path d="M98 140 L98 96" fill="none"/>${pivot(98, 94, 'fig-cymbal', '<ellipse cx="98" cy="94" rx="14" ry="3.5" fill="#f2c14e"/>')}</g>`,
     front: (skin, shirt) => `
       <g ${STROKE}>
         <rect x="36" y="112" width="48" height="16" rx="3" fill="#e4572e"/>
         <ellipse cx="60" cy="112" rx="24" ry="6" fill="#f4efe6"/>
         <path d="M38 120 L82 120" stroke="#fff" stroke-width="2"/>
       </g>
-      <g class="fig-hit-l">${arm('M45 80 Q38 94 47 102', [47, 102], skin, shirt)}<path d="M47 102 L62 109" stroke="#c8a165" stroke-width="3" stroke-linecap="round"/></g>
-      <g class="fig-hit-r">${arm('M75 80 Q84 90 82 98', [82, 98], skin, shirt)}<path d="M82 98 L96 92" stroke="#c8a165" stroke-width="3" stroke-linecap="round"/></g>`,
+      ${pivot(45, 80, 'fig-hit-l', `${arm('M45 80 Q38 94 47 102', [47, 102], skin, shirt)}<path d="M47 102 L62 109" stroke="#c8a165" stroke-width="3" stroke-linecap="round"/>`)}
+      ${pivot(75, 80, 'fig-hit-r', `${arm('M75 80 Q84 90 82 98', [82, 98], skin, shirt)}<path d="M82 98 L96 92" stroke="#c8a165" stroke-width="3" stroke-linecap="round"/>`)}`,
   },
   keys: {
     back: () => '',

@@ -6,11 +6,20 @@ namespace Signed\Game;
 /** Wandelt interne Daten in das JSON-Format für den Browser (camelCase). */
 final class Present
 {
+    /**
+     * Abgerundet auf eine Stelle: 34,96 zeigt 34,9 und nicht 35,0 – sonst stünde die Schwelle einer Stufe da,
+     * obwohl der Musiker sie noch nicht erreicht hat.
+     */
+    public static function down(float $value): float
+    {
+        return floor($value * 10 + 1e-9) / 10;
+    }
+
     public static function musician(array $m, array $gearIds = []): array
     {
-        $instruments = [['type' => $m['instr1'], 'skill' => round($m['skill1'], 1)]];
+        $instruments = [['type' => $m['instr1'], 'skill' => self::down($m['skill1'])]];
         if ($m['instr2'] !== null) {
-            $instruments[] = ['type' => $m['instr2'], 'skill' => round((float) $m['skill2'], 1)];
+            $instruments[] = ['type' => $m['instr2'], 'skill' => self::down((float) $m['skill2'])];
         }
         return [
             'id' => $m['id'],
@@ -18,7 +27,7 @@ final class Present
             'lastName' => $m['last_name'],
             'rarity' => $m['rarity'],
             'instruments' => $instruments,
-            'fame' => round($m['fame'], 1),
+            'fame' => self::down($m['fame']),
             'genres' => $m['genres'],
             'level' => $m['level'],
             'fameLevel' => Levels::forFame($m['fame']),

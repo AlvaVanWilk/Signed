@@ -79,7 +79,8 @@ function practiceSummary(r) {
 }
 
 /** Kleine Zuwächse mit zwei Nachkommastellen, damit nicht „+0,0“ dasteht. */
-const fmtSkill = (value, gain) => (gain < 0.1 ? fmt2(value) : fmt1(value));
+/** Abgerundet: 34,96 zeigt 34,9 – nicht 35,0, solange die Stufe noch nicht erreicht ist. */
+const fmtSkill = (value, gain) => (gain < 0.1 ? fmt2(Math.floor(value * 100 + 1e-6) / 100) : fmt1(Math.floor(value * 10 + 1e-6) / 10));
 
 /** Wie weit es bis zur nächsten Stufe ist – so sieht man auch kleine Schritte. */
 function levelProgress(skill) {

@@ -348,3 +348,9 @@ test('Platte: gemischte Minispiele, so viele wie Lieder, nie zweimal dasselbe hi
     $takes = array_unique(array_column(array_filter($plan, static fn ($s) => $s['type'] === 'take'), 'musician'));
     checkEquals(3, count($takes));
 });
+
+test('Anzeige rundet ab: Wer knapp unter einer Stufe ist, sieht nicht schon die Schwelle', function () {
+    checkEquals(34.9, Signed\Game\Present::down(34.96));
+    checkEquals(35.0, Signed\Game\Present::down(35.0));
+    checkEquals(0.3, Signed\Game\Present::down(0.3));
+});

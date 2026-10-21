@@ -227,13 +227,13 @@ test('Bandprobe und Band-Promo', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Probe');
     $band = foundBand($p);
-    $before = array_column($p->get('state')['musicians'], 'instruments', 'id');
+    $before = array_column($db->all('SELECT id, skill1 FROM musicians'), 'skill1', 'id');
     $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'rehearsal']);
     Clock::advance(Balance::REHEARSAL['songs'] * Balance::SONG_SECONDS);
     $state = $p->get('state');
     check(bandById($state, $band['id'])['cohesion'] > 0);
-    foreach ($state['musicians'] as $m) {
-        check($m['instruments'][0]['skill'] > $before[$m['id']][0]['skill'], 'Probe bringt Können');
+    foreach ($db->all('SELECT id, skill1 FROM musicians') as $m) {
+        check((float) $m['skill1'] > (float) $before[$m['id']], 'Probe bringt Können');
     }
     $p->post('bandPromo', ['bandId' => $band['id']]);
     checkApiError(fn () => $p->post('promoStart', ['musicianId' => $band['memberIds'][0]]), 'beschäftigt');
@@ -390,7 +390,8 @@ test('Solo-Probe verbessert das Können, Schummeln wird abgelehnt', function () 
 
     $result = $p->post('minigameFinish', ['sessionId' => $game['sessionId'], 'perfect' => $count, 'good' => 0, 'miss' => 0])['result'];
     check($result['gain'] > 0.2, 'Perfekte Probe bringt spürbar Können');
-    checkEquals(round($m['instruments'][0]['skill'] + $result['gain'], 1), $result['skillAfter']);
+    check(abs($result['skillBefore'] + $result['gain'] - $result['skillAfter']) <= 0.11, 'Vorher + Zuwachs = nachher');
+    check($result['skillAfter'] <= (float) $db->value('SELECT skill1 FROM musicians WHERE id = ?', [$m['id']]), 'Nie aufgerundet');
     checkApiError(fn () => $p->post('minigameFinish', ['sessionId' => $game['sessionId'], 'perfect' => $count, 'good' => 0, 'miss' => 0]), 'nicht mehr aktiv');
 
     // Abbrechen gibt den Musiker frei.
@@ -409,7 +410,7 @@ test('Promo-Mission steigert die Bekanntheit nach Ablauf, bei Bekannten weniger'
     $state = $p->get('state');
     $after = array_values(array_filter($state['musicians'], static fn ($x) => $x['id'] === $m['id']))[0];
     check($after['fame'] > $m['fame']);
-    checkEquals(round($after['fame'] - $m['fame'], 1), $state['results'][0]['result']['fame']);
+    check(abs(($after['fame'] - $m['fame']) - $state['results'][0]['result']['fame']) <= 0.1, 'Anzeige passt zum Zuwachs');
 
     $db->exec('UPDATE musicians SET fame = 400 WHERE id = ?', [$m['id']]);
     $p->post('promoStart', ['musicianId' => $m['id']]);

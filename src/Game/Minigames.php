@@ -258,8 +258,8 @@ final class Minigames
             'accuracy' => round($accuracy, 3),
             'musicianId' => $m['id'],
             'instrument' => $slot === 2 ? $m['instr2'] : $m['instr1'],
-            'skillBefore' => round($skill, 1),
-            'skillAfter' => round($after, 1),
+            'skillBefore' => floor($skill * 100) / 100,
+            'skillAfter' => floor($after * 100) / 100,
             'gain' => round($after - $skill, 1),
             'levelUps' => $levelUp === null ? [] : [$levelUp],
         ];

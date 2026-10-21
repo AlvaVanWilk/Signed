@@ -54,6 +54,8 @@ final class Music
     private const SNARE = [37, 38, 40];
     /** Töne ab dieser Länge (in Schlägen) werden im Rhythmus-Spiel gehalten. */
     private const HOLD_BEATS = 1.5;
+    /** Kürzester Ton (Sekunden), der im Tonhöhen-Spiel zählt. */
+    private const MELODY_MIN = 0.2;
 
     /**
      * Ordner und Spurname der Aufnahme – dieselbe Reihenfolge wie stemUrl() im Browser:
@@ -177,7 +179,8 @@ final class Music
     public static function melodyChart(array $source, int $duration): array
     {
         $beat = 60 / $source['bpm'];
-        $notes = $source['notes'];
+        // Ganz kurze Töne (Ansätze, Schleifer – typisch für MIDI aus echtem Gesang) zählen nicht.
+        $notes = array_values(array_filter($source['notes'], static fn ($n) => $n[1] * $beat >= self::MELODY_MIN));
         usort($notes, static fn ($a, $b) => $a[0] <=> $b[0]);
         $steps = array_map(static fn ($n) => self::diatonic($n[2]), $notes);
         $low = $steps ? min($steps) : 0;
@@ -193,8 +196,8 @@ final class Music
             }
             $t = $at * $beat;
             $d = min($length * $beat, $duration - 0.3 - $t);
-            if ($d < 0.2) {
-                break;
+            if ($d < self::MELODY_MIN) {
+                continue;
             }
             $out[] = ['t' => round($t, 3), 'd' => round($d, 3), 'p' => $degree];
             $end = $at + $length;

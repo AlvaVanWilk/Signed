@@ -30,6 +30,7 @@ final class Bands
         $gear = $repo->gearByMusician();
         $identity = BandCalc::identity($members, $band['genre'], $band['genre2']);
         $genres = array_values(array_filter([$identity['primary'], $identity['second']]));
+        $stems = Music::bandStems($members, $gear, $genres);
         $records = $db->all(
             "SELECT title, songs_total, perfect, rank_best, finished_at FROM records WHERE band_id = ? AND status = 'done' ORDER BY finished_at DESC LIMIT 5",
             [$bandId]
@@ -48,11 +49,11 @@ final class Bands
                 'perfect' => (bool) $r['perfect'],
                 'best' => $r['rank_best'] === null ? null : (int) $r['rank_best'],
             ], $records),
-            'members' => array_map(static function ($m) use ($gear, $genres) {
+            'members' => array_map(static function ($m) use ($stems) {
                 $out = Present::musician($m);
                 unset($out['busyUntil'], $out['value'], $out['favorite'], $out['abilityChoice']);
                 $out['bandId'] = null;
-                $out['stem'] = Music::stem($m, $gear, $genres);
+                $out['stem'] = $stems[$m['id']];
                 return $out;
             }, $members),
         ];

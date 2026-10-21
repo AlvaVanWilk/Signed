@@ -307,6 +307,8 @@ Instrumente sind zufällig. Im Music Store hat der Verkäufer mit 25 % Chance ei
   Hip-Hop 0 (Schlagzeug, Bass, Gesang).
 - Fehlt eine Spur, nimmt das Spiel die nächste Stufe, dann die andere Variante, dann Pop. Gibt es gar keine, bleibt der Synthesizer.
 - Zu hören am Mischpult (jeder Regler steuert seine Spuren), bei der Solo-Probe (nur die eigene Spur) und in der Live-Ansicht von Auftritten.
+- Spielen zwei Mitglieder dasselbe Instrument (z. B. zwei Gitarren im Metal), nimmt der zweite die Aufnahme eines anderen
+  Genres (erst Pop, dann Rock, dann die übrigen) – man hört nie zweimal dieselbe Spur.
 
 ### Platten und Gigs im Gleichgewicht
 

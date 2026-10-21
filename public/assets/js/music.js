@@ -96,6 +96,28 @@ export function playStems(groups, when, { offset = 0, loop = false, volume = 0.9
  * Spur eines Musikers aus dem Spielstand (wie Music::stem auf dem Server). Folgt die Band einem Genre, spielen alle
  * darin, sonst jeder eins seiner Lieblingsgenres – fest gewählt über seed, damit es nicht bei jedem Aufruf wechselt.
  */
+/** Spuren einer Besetzung wie Music::bandStems: Wer dasselbe Instrument spielt, bekommt eine andere Aufnahme. */
+export function bandStems(members, band = null, seed = 0) {
+  const genres = [...new Set(['pop', 'rock', ...Object.keys(cat().music || {}).map((f) => f.split('-')[0])])];
+  const used = new Set();
+  return members.map((m) => {
+    const stem = memberStem(m, band, seed);
+    let url = stemUrl(stem);
+    if (url && used.has(url)) {
+      for (const genre of genres) {
+        const tryUrl = stemUrl({ ...stem, genre });
+        if (tryUrl && !used.has(tryUrl)) {
+          stem.genre = genre;
+          url = tryUrl;
+          break;
+        }
+      }
+    }
+    if (url) used.add(url);
+    return stem;
+  });
+}
+
 export function memberStem(m, band = null, seed = 0) {
   const slot = m.bandSlot === 2 && m.instruments[1] ? 1 : 0;
   const type = m.instruments[slot].type;

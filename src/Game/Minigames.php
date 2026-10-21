@@ -65,16 +65,17 @@ final class Minigames
                 $step = $plan[$record['songs_done']] ?? ['type' => 'master'];
                 $byId = array_column($members, null, 'id');
                 $studiofuchs = array_filter($members, static fn ($m) => Levels::has($m, 'studiofuchs')) ? 0.04 : 0;
+                $stems = Music::bandStems($members, $gearMap, $bandGenres);
                 if ($step['type'] === 'take' && isset($byId[$step['musician']])) {
                     // Einspielen: ein Musiker nimmt seine Spur auf – dasselbe Spiel wie bei der Solo-Probe.
                     $m = $byId[$step['musician']];
-                    $chart = $this->soloChart($m, $m['band_slot'], Music::stem($m, $gearMap, $bandGenres), $bpm);
+                    $chart = $this->soloChart($m, $m['band_slot'], $stems[$m['id']], $bpm);
                     $what = sprintf('%s – %s', Catalog::INSTRUMENTS[$chart['instrument']]['name'], $m['first_name']);
                 } elseif ($step['type'] === 'master') {
                     // Master-Mix: die richtige EQ-Einstellung für die ganze Platte finden.
                     $chart = [
                         'mode' => 'master',
-                        'stems' => array_map(static fn ($m) => Music::stem($m, $gearMap, $bandGenres), $members),
+                        'stems' => array_values($stems),
                         'targets' => Chart::masterTargets(),
                         'zone' => Chart::mixerZone($sound) + $studiofuchs,
                         'segments' => Chart::MASTER_SEGMENTS,
@@ -89,7 +90,7 @@ final class Minigames
                     }
                     $tracks = Chart::mixerTracks(array_map(static fn ($m) => [
                         'name' => $m['first_name'], 'instrument' => BandCalc::instrument($m), 'skill' => BandCalc::skill($m),
-                        'stem' => Music::stem($m, $gearMap, $bandGenres),
+                        'stem' => $stems[$m['id']],
                     ], $players));
                     $chart = [
                         'mode' => 'mixer',
@@ -237,8 +238,15 @@ final class Minigames
             return Music::stem($m, $gear);
         }
         $band = $this->repo->band($m['band_id']);
-        $identity = BandCalc::identity($this->repo->members($band['id']), $band['genre'], $band['genre2']);
-        return Music::stem($m, $gear, array_values(array_filter([$identity['primary'], $identity['second']])));
+        $members = $this->repo->members($band['id']);
+        $identity = BandCalc::identity($members, $band['genre'], $band['genre2']);
+        $genres = array_values(array_filter([$identity['primary'], $identity['second']]));
+        // Übt er sein Band-Instrument, dieselbe Aufnahme wie in der Band (zweite Gitarre: die andere).
+        $own = array_values(array_filter($members, static fn ($x) => $x['id'] === $m['id']))[0] ?? null;
+        if ($own !== null && BandCalc::instrument($own) === BandCalc::instrument($m)) {
+            return Music::bandStems($members, $gear, $genres)[$m['id']];
+        }
+        return Music::stem($m, $gear, $genres);
     }
 
     private function practiceResult(array $session, int $perfect, int $good, int $miss): array

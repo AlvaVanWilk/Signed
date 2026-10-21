@@ -1,7 +1,7 @@
 import { app, bandById, cat, musicianById, serverNow } from './core.js';
 import { duration, esc, openModal } from './ui.js';
 import { getAudio } from './audio.js';
-import { loadStems, memberStem, playStems } from './music.js';
+import { bandStems, loadStems, playStems } from './music.js';
 import { stage } from './figure.js';
 
 const ICONS = { song: '🎵', mistake: '😬', highlight: '🔥', crowd: '👥' };
@@ -30,7 +30,7 @@ export function openLive(activityId) {
   const songSeconds = cat().rules.songSeconds;
   const total = activity.endsAt - activity.startedAt;
   const players = band ? band.memberIds.map(musicianById).filter(Boolean) : solo ? [solo] : [];
-  const groups = players.map((m) => [memberStem(m, band, activity.id)]);
+  const groups = bandStems(players, band, activity.id).map((stem) => [stem]);
 
   // Die Aufnahmen laufen in Schleife mit, passend zur Serverzeit: Wer später zuschaut, hört mitten im Lied.
   loadStems(groups).then((buffers) => {

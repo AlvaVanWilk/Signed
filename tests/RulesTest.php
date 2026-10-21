@@ -360,3 +360,13 @@ test('Anzeige rundet ab: Wer knapp unter einer Stufe ist, sieht nicht schon die 
     checkEquals(35.0, Signed\Game\Present::down(35.0));
     checkEquals(0.3, Signed\Game\Present::down(0.3));
 });
+
+test('Musik: Zwei Gitarren in einer Band spielen verschiedene Aufnahmen (Metal: Metal und Pop)', function () {
+    $g1 = musician(['id' => 501, 'instr1' => 'guitar', 'genres' => ['metal']]);
+    $g2 = musician(['id' => 503, 'instr1' => 'guitar', 'genres' => ['metal']]);
+    $stems = Signed\Game\Music::bandStems([$g1, $g2], [], ['metal']);
+    $a = Signed\Game\Music::resolve($stems[501]);
+    $b = Signed\Game\Music::resolve($stems[503]);
+    checkEquals('metal-0/gitarre-elektrisch', $a['folder'] . '/' . $a['file']);
+    checkEquals('pop-0/gitarre-elektrisch', $b['folder'] . '/' . $b['file']);
+});

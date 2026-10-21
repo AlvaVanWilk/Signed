@@ -49,6 +49,43 @@ final class Music
     }
 
     /** Gesang: Musikerinnen singen mit der Frauenstimme, Musiker mit der Männerstimme, diverse je nach ID. */
+    /**
+     * Spuren einer ganzen Besetzung (Mitglieds-ID → Stem). Spielen zwei dasselbe Instrument – im Metal zwei Gitarren –,
+     * soll man nicht zweimal dieselbe Aufnahme hören: Der zweite nimmt die Aufnahme eines anderen Genres
+     * (erst Pop, dann Rock, dann die übrigen), solange es eine noch nicht benutzte gibt.
+     * @return array<int, array> Stems wie stem(), ggf. mit anderem Genre
+     */
+    public static function bandStems(array $members, array $gear, array $bandGenres = []): array
+    {
+        $alternatives = array_values(array_unique(array_merge(['pop', 'rock'], array_map(
+            static fn ($folder) => explode('-', $folder)[0],
+            array_keys(self::manifest())
+        ))));
+        $used = [];
+        $out = [];
+        foreach ($members as $m) {
+            $stem = self::stem($m, $gear, $bandGenres);
+            $resolved = self::resolve($stem);
+            $key = $resolved === null ? null : $resolved['folder'] . '/' . $resolved['file'];
+            if ($key !== null && isset($used[$key])) {
+                foreach ($alternatives as $genre) {
+                    $try = self::resolve(['genre' => $genre] + $stem);
+                    $tryKey = $try === null ? null : $try['folder'] . '/' . $try['file'];
+                    if ($tryKey !== null && !isset($used[$tryKey])) {
+                        $stem['genre'] = $genre;
+                        $key = $tryKey;
+                        break;
+                    }
+                }
+            }
+            if ($key !== null) {
+                $used[$key] = true;
+            }
+            $out[$m['id']] = $stem;
+        }
+        return $out;
+    }
+
     public static function voice(array $m): string
     {
         $gender = $m['look']['gender'] ?? null;

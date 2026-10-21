@@ -1,4 +1,5 @@
 import { createVoice, getAudio, scaleMidi, scheduleMetronome } from './audio.js';
+import { loadStems, playStems } from './music.js';
 import { judgeRatio, mountShell } from './mg-shell.js';
 import { duration, percent } from './ui.js';
 
@@ -61,6 +62,19 @@ export function createPitchGame(container, game) {
   let stopBacking = () => {};
   let resolvePlay;
   let streak = 0;
+  // Die echte Spur (Gesang, Geige) ist zu hören, solange man den Ton trifft; daneben wird sie leise
+  // und man hört stattdessen den eigenen, falschen Ton. Gesungen wird nicht – man steuert mit Halten.
+  let buffers = null;
+  let player = null;
+  let ownLevel = 1;
+  if (game.music) {
+    const startButton = shell.el('.mg-start');
+    startButton.disabled = true;
+    loadStems([[game.music.own]]).then((loaded) => {
+      buffers = loaded;
+      startButton.disabled = false;
+    });
+  }
 
   const clock = () => (audio ? audio.currentTime : performance.now() / 1000);
 
@@ -82,12 +96,16 @@ export function createPitchGame(container, game) {
     while (trail.length && now - trail[0].t > BEHIND) trail.shift();
 
     let active = null;
+    let inTune = false;
     for (const note of notes) {
       if (note.judged) continue;
       if (now >= note.t && now < note.t + note.d) {
         active = note;
         note.total += dt;
-        if (Math.abs(pos - note.level) <= tolerance) note.inTune += dt;
+        if (Math.abs(pos - note.level) <= tolerance) {
+          note.inTune += dt;
+          inTune = true;
+        }
       } else if (now >= note.t + note.d) {
         note.judged = judgeRatio(note.total ? note.inTune / note.total : 0);
         counts[note.judged]++;
@@ -96,7 +114,12 @@ export function createPitchGame(container, game) {
     }
     if (voice) {
       voice.setPitch(scaleMidi(game.instrument, pos * 7, game.tonality));
-      voice.setLevel(active ? 1 : 0);
+      voice.setLevel(active && (!player || !inTune) ? 1 : 0);
+    }
+    const level = !active || inTune ? 1 : 0.12;
+    if (player && level !== ownLevel) {
+      ownLevel = level;
+      player.gains[0].gain.setTargetAtTime(level, audio.currentTime, 0.04);
     }
     return active;
   }
@@ -215,6 +238,7 @@ export function createPitchGame(container, game) {
     last = clock();
     // Allein üben: nur das Metronom tickt mit.
     stopBacking = scheduleMetronome({ bpm: game.bpm, start: t0, duration: game.duration });
+    if (buffers) player = playStems(buffers, t0, { volume: 0.9 });
     running = true;
     raf = requestAnimationFrame(frame);
   }
@@ -224,6 +248,8 @@ export function createPitchGame(container, game) {
     setHolding(false);
     cancelAnimationFrame(raf);
     stopBacking();
+    player?.stop();
+    player = null;
     voice?.stop();
     voice = null;
     resolvePlay?.(result);
@@ -256,6 +282,7 @@ export function createPitchGame(container, game) {
       running = false;
       cancelAnimationFrame(raf);
       stopBacking();
+      player?.stop();
       voice?.stop();
       window.removeEventListener('keydown', onKeyDown, true);
       window.removeEventListener('keyup', onKeyUp, true);

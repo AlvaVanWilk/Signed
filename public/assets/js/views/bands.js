@@ -212,7 +212,7 @@ function promo(b, members) {
     ${blockerNotice(b, members)}
     <div class="action-grid">
       ${actionTile({
-        icon: '📣', title: 'Band-Promo', meta: `${duration(cat().rules.bandPromoSeconds)} · Ruhm`,
+        icon: '📣', title: 'Band-Promo', meta: `${duration(cat().rules.bandPromoSeconds)} · Ruhm${chartPush(b)}`,
         button: `<button class="btn primary" data-act="bandPromo" data-id="${b.id}" ${blocked ? 'disabled' : ''}>Losschicken</button>`,
       })}
       ${members.map((m) => promoTile(m, isBusy(m.busyUntil) || isBusy(b.busyUntil))).join('')}
@@ -223,12 +223,18 @@ export function promoTile(m, busy) {
   return actionTile({
     icon: face(m, 'md'),
     title: fullName(m),
-    meta: `Promo-Mission · ${duration(cat().rules.promoSeconds)} · Bekanntheit ${fmt1(m.fame)}`,
+    meta: `Promo-Mission · ${duration(cat().rules.promoSeconds)} · Bekanntheit ${fmt1(m.fame)}${m.bandId ? chartPush(bandById(m.bandId)) : ''}`,
     button: `<button class="btn" data-act="promo" data-id="${m.id}" ${busy ? 'disabled' : ''}>Los</button>`,
   });
 }
 
 // ---------- Auftritte ----------
+
+/** Gigs und Promo schieben die neueste Platte in den Charts an – sagen, welche. */
+function chartPush(b) {
+  const record = b?.discography.find((r) => r.charting);
+  return record ? ` · Schub in den Charts für „${esc(record.title)}“` : ' · Schub in den Charts, sobald eine Platte chartet';
+}
 
 /** Studiozeit: Grundpreis plus pro Lied. */
 export const recordCost = (songs) => cat().rules.recordCost + cat().rules.recordCostPerSong * songs;
@@ -252,7 +258,7 @@ function gigs(b, members) {
     <div class="action-grid">
       ${actionTile({
         icon: '🎤', title: `Gig · ${gig.venue}`,
-        meta: gig.available ? `${money(gig.gagePerSong)} pro Lied${gigDraw(gig)}` : 'Erst mit der ersten Platte',
+        meta: gig.available ? `${money(gig.gagePerSong)} pro Lied${chartPush(b)}${gigDraw(gig)}` : 'Erst mit der ersten Platte',
         body: gig.available ? `
           <span class="small"><label class="inline-select">Lieder
             <select data-change="gigSongs" data-id="${b.id}">${Array.from({ length: gig.maxSongs - gig.minSongs + 1 }, (_, i) => gig.minSongs + i).map((n) => `<option value="${n}" ${n === songs ? 'selected' : ''}>${n}</option>`).join('')}</select>

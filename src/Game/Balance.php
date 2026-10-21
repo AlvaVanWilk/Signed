@@ -285,9 +285,14 @@ final class Balance
     public const CHART_GIG_BONUS = 0.4;
     public const CHART_PEAK = 8 * 3600;
     public const CHART_MAX_AGE = 7 * 86400;
-    /** Schub für die neueste Platte der Band: Gig pro Lied × Grund-Ruhm des Ortes × diesem Wert, Promo fest. Halbiert sich alle 3 Stunden. */
-    public const CHART_GIG_BOOST = 4.0;
-    public const CHART_PROMO_BOOST = ['band' => 4.0, 'solo' => 1.5];
+    /**
+     * Schub für die neueste Platte der Band, als Aufschlag auf ihre Punkte: Gig pro Lied × √(Grund-Ruhm des Ortes)
+     * × diesem Wert × Publikum, Promo fest. Höchstens CHART_BOOST_MAX, halbiert sich alle 3 Stunden.
+     * Weil der Schub nur die aktuellen Punkte vervielfacht, hält Promo eine Platte nicht ewig in den Charts.
+     */
+    public const CHART_GIG_BOOST = 0.04;
+    public const CHART_PROMO_BOOST = ['band' => 0.1, 'solo' => 0.04];
+    public const CHART_BOOST_MAX = 0.6;
     public const CHART_BOOST_HALF = 3 * 3600;
     /** Unter dieser Punktzahl fällt eine Platte aus den Charts. */
     public const CHART_MIN_POINTS = 1.0;

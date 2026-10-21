@@ -160,7 +160,9 @@ Ein Lied dauert 24 Sekunden: 12 Takte 4/4 (oder 16 Takte 3/4) bei 120 BPM – al
   Die Schwierigkeit steckt in der Spur der Stufe. Bei Treffern hört man die eigene Spur, bei Fehlern wird sie leise.
   Man übt allein: Dazu tickt nur ein Metronom. Ohne Aufnahme: Zufallsnoten, Dichte 0,25–0,55 je nach Können. Zeitfenster Perfekt 60–75 ms, Gut 135–185 ms, Absolutes Gehör +20 ms.
 - **Tonhöhe** (Solo-Probe für Gesang und Geige): Gedrückt halten lässt den Ton steigen, Loslassen sinken.
-  Melodie aus der Aufnahme, Tonleiter ab ihrem tiefsten Ton; die eigene Spur bleibt stumm, ein Metronom tickt.
+  Melodie aus der Aufnahme, Tonleiter ab ihrem tiefsten Ton. Gesteuert wird mit Halten, nicht mit der Stimme.
+  Die echte Spur ist zu hören, solange man den Ton trifft; daneben wird sie leise und man hört den eigenen, falschen Ton.
+  Dazu tickt ein Metronom.
   Wie schnell der Ton steigt, richtet sich nach den Sprüngen der Melodie (0,5–1 Tonleiter pro Sekunde).
   Jeder Ton der Melodie zählt als Perfekt ab 70 % der Zeit im richtigen Bereich, als Gut ab 40 %.
   Der Bereich ist ±7–13 % der Tonleiter, mit Absolutem Gehör +3 %.
@@ -197,8 +199,10 @@ Nur die Gewinne sind klein; wie oft man etwas hintereinander spielt, ist nicht b
   (x + 0,5) / 1,5 × e^((1 − x) / 1,5) – Einstieg mit 65 %, Höhepunkt nach 8 Stunden, nach gut 3 Tagen fast null.
   Eine starke Platte kann gegen schwache Konkurrenz direkt auf Platz 1 einsteigen.
   Weil jede Platte ihren eigenen Verlauf hat, überholen sich Platten; es gibt Bewegung.
-- Schub für die neueste Platte der Band, solange sie chartet: Gig = Lieder × Grund-Ruhm des Ortes × 4 × Publikum,
-  Band-Promo 4, Promo-Mission eines Mitglieds 1,5. Der Schub halbiert sich alle 3 Stunden.
+- Schub für die neueste Platte der Band, solange sie chartet, als Aufschlag auf ihre Punkte:
+  Gig = Lieder × √(Grund-Ruhm des Ortes) × 4 % × Publikum, Band-Promo +10 %, Promo-Mission eines Mitglieds +4 %.
+  Höchstens +60 %, halbiert sich alle 3 Stunden. Weil der Schub nur die fallenden Punkte vervielfacht, hält
+  Dauer-Promo eine Platte nicht in den Charts.
 - Unter 1 Punkt verkauft sich eine Platte nicht mehr, nach 7 Tagen zählt sie nicht mehr. Die Charts zeigen die Top 10.
 - Die Plätze werden alle 3 Stunden neu vergeben (Chartwoche) – sofort, wenn eine Platte erscheint oder Schub bekommt.
   Dazwischen bleiben sie stehen. „Vorher“ ist der Platz zu Beginn der Chartwoche; dazu Trend (▲ ▼ – NEU),
@@ -291,8 +295,8 @@ Platten bringen über die Charts mehr, Gigs schieben die Platte an, und eine Pla
 
 ### Nachrichten
 
-Wer mindestens 15 Minuten weg war, bekommt beim Wiederkommen die Neuigkeiten aus der Chronik: Charts, Wechselbörse,
-Scout-Gutscheine, Aufstiege.
+Backstage-News: Wer mindestens 15 Minuten nicht im Spiel war, bekommt beim nächsten Aufruf die Neuigkeiten aus der
+Chronik: Charts, Wechselbörse, Scout-Gutscheine, Aufstiege.
 
 ## Vorläufige Entscheidungen zu offenen Fragen
 

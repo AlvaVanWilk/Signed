@@ -53,13 +53,18 @@ final class Charts
         return ($x + 0.5) / 1.5 * exp((1 - $x) / 1.5);
     }
 
-    /** Chartpunkte einer Platte zum Zeitpunkt $t: Verlauf × Grundpunkte + nachlassender Schub aus Gigs und Promo. */
+    /** Chartpunkte einer Platte zum Zeitpunkt $t: Grundpunkte × Verlauf × (1 + nachlassender Schub aus Gigs und Promo). */
     public static function pointsAt(array $row, int $t): float
+    {
+        return (float) $row['chart_points'] * self::curve($t - (int) $row['finished_at']) * (1 + self::push($row, $t));
+    }
+
+    /** Schub zum Zeitpunkt $t (Anteil, höchstens CHART_BOOST_MAX). */
+    private static function push(array $row, int $t): float
     {
         $boost = (float) ($row['boost'] ?? 0);
         $boostAt = (int) ($row['boost_at'] ?? 0);
-        $push = $boost > 0 && $t >= $boostAt ? $boost * 0.5 ** (($t - $boostAt) / Balance::CHART_BOOST_HALF) : 0.0;
-        return (float) $row['chart_points'] * self::curve($t - (int) $row['finished_at']) + $push;
+        return $boost > 0 && $t >= $boostAt ? $boost * 0.5 ** (($t - $boostAt) / Balance::CHART_BOOST_HALF) : 0.0;
     }
 
     /**
@@ -232,8 +237,8 @@ final class Charts
             return;
         }
         self::payRoyalties($repo->db, $repo->labelId);
-        $left = (float) $row['boost'] > 0 ? (float) $row['boost'] * 0.5 ** (($now - (int) $row['boost_at']) / Balance::CHART_BOOST_HALF) : 0.0;
-        $repo->db->update('records', ['boost' => $left + $amount, 'boost_at' => $now], ['id' => (int) $row['id']]);
+        $boost = min(Balance::CHART_BOOST_MAX, self::push($row, $now) + $amount);
+        $repo->db->update('records', ['boost' => $boost, 'boost_at' => $now], ['id' => (int) $row['id']]);
         self::markDirty($repo->db);
     }
 

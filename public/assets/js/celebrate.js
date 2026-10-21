@@ -14,7 +14,7 @@ const queue = [];
 let current = null;
 
 onStateChange((before, after) => {
-  // Nachrichten, wenn man eine Weile weg war; Platz 1 bekommt zusätzlich seinen großen Auftritt.
+  // Backstage-News nach einer Pause; Platz 1 bekommt zusätzlich seinen großen Auftritt.
   if (after.news?.length) showNews(after);
   const fresh = before ? after.history.filter((h) => h.id > (before.history[0]?.id ?? 0)) : after.news ?? [];
   for (const h of fresh) {
@@ -76,8 +76,8 @@ function showNews(state) {
   newsShownFor = latest;
   const modal = openModal({
     html: `
-      <div class="eyebrow">Während du weg warst</div>
-      <h2>Neuigkeiten</h2>
+      <div class="eyebrow">Backstage-News</div>
+      <h2>Das ist inzwischen passiert</h2>
       <ul class="history news">${state.news.map((n) => `
         <li class="${n.kind === 'chart1' ? 'news-top' : ''}"><span>${NEWS_ICONS[n.kind] ?? '•'} ${esc(n.text)}</span><time>${timeAgo(n.createdAt, state.now)}</time></li>`).join('')}
       </ul>

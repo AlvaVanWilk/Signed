@@ -1,130 +1,233 @@
 /**
- * Gezeichnete Instrumenten-Symbole statt Emojis: Gitarre, E-Gitarre und Bass sehen verschieden aus.
- * Für Stellen, die nur Text können (Auswahllisten, Canvas), bleibt das Emoji aus dem Katalog.
- * Gezeichnet auf 48 × 48; Gitarren, Bass und Geige stehen aufrecht und werden schräg gestellt.
+ * Gezeichnete Instrumenten-Symbole statt Emojis, illustriert mit Verläufen und Glanz: Gitarre, E-Gitarre und Bass
+ * sehen verschieden aus. Für Stellen, die nur Text können (Auswahllisten, Canvas), bleibt das Emoji aus dem Katalog.
+ * Gezeichnet auf 64 × 64; Gitarren, Bass und Geige stehen aufrecht und werden schräg gestellt.
  */
-const INK = '#2a2233';
-const S = `stroke="${INK}" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"`;
-const GOLD = '#f2c14e';
-const GOLD_DARK = '#c99528';
+const LINE = 'stroke-linejoin="round" stroke-linecap="round"';
 
-/** Aufrechtes Instrument schräg stellen und etwas verkleinern, damit es ins Quadrat passt. */
-const tilt = (inner, angle = 38, scale = 0.92) => `<g transform="rotate(${angle} 24 24) translate(24 24) scale(${scale}) translate(-24 -24)">${inner}</g>`;
+/** Aufrechtes Instrument schräg stellen und verkleinern, damit es ins Quadrat passt. */
+const tilt = (inner, angle, scale) => `<g transform="rotate(${angle} 32 32) translate(32 32) scale(${scale}) translate(-32 -32)">${inner}</g>`;
+
+/** Bünde und Saiten eines Griffbretts (aufrecht, x = Mitte). */
+function fretboard(x, top, bottom, width, strings, inlay = '#e9e2d0') {
+  const frets = [];
+  for (let y = top + 3, step = 3.2; y < bottom - 1; y += step, step *= 0.97) frets.push(y);
+  const half = width / 2 - 0.5;
+  return `
+    ${frets.map((y) => `<path d="M${x - half} ${y.toFixed(1)} H${x + half}" stroke="#c9c2b4" stroke-width="0.35"/>`).join('')}
+    ${[2, 4, 6].map((i) => frets[i] ? `<circle cx="${x}" cy="${(frets[i] + 1.4).toFixed(1)}" r="0.5" fill="${inlay}"/>` : '').join('')}
+    ${Array.from({ length: strings }, (_, i) => {
+      const sx = x - half + 0.4 + (i * (width - 1.8)) / (strings - 1);
+      return `<path d="M${sx.toFixed(2)} ${top} V${bottom}" stroke="#eef0f4" stroke-width="${strings === 4 ? 0.45 : 0.28}"/>`;
+    }).join('')}`;
+}
 
 const acousticGuitar = tilt(`
-  <rect x="22.4" y="5" width="3.2" height="16" fill="#8a5a33" ${S}/>
-  <path d="M21.2 0.8 h5.6 v6 h-5.6 Z" fill="#5b3a21" ${S}/>
-  <g fill="#e6e1d6" stroke="${INK}" stroke-width="0.6"><circle cx="20.4" cy="2.2" r="0.9"/><circle cx="20.4" cy="5.2" r="0.9"/><circle cx="27.6" cy="2.2" r="0.9"/><circle cx="27.6" cy="5.2" r="0.9"/></g>
-  <path d="M24 14 C18.6 14 16.6 17.4 17.4 20.8 C17.9 22.8 18.8 24 17.8 25.6 C14.4 27.8 13.2 31 14 35 C15.4 41 19.8 44 24 44 C28.2 44 32.6 41 34 35 C34.8 31 33.6 27.8 30.2 25.6 C29.2 24 30.1 22.8 30.6 20.8 C31.4 17.4 29.4 14 24 14 Z" fill="#e9a24b" ${S}/>
-  <circle cx="24" cy="25.6" r="3.4" fill="${INK}"/>
-  <rect x="20.6" y="35.2" width="6.8" height="2" rx="0.8" fill="#5b3a21"/>
-  <path d="M23.2 6 V36 M24.8 6 V36" stroke="#f4efe6" stroke-width="0.4"/>`);
+  <defs>
+    <radialGradient id="ag-top" cx="45%" cy="62%" r="62%"><stop offset="0" stop-color="#f8d79c"/><stop offset="0.65" stop-color="#e2a456"/><stop offset="1" stop-color="#a8611f"/></radialGradient>
+    <linearGradient id="ag-neck" x1="0" x2="1"><stop offset="0" stop-color="#3a2416"/><stop offset="0.5" stop-color="#5a3a22"/><stop offset="1" stop-color="#3a2416"/></linearGradient>
+  </defs>
+  <path d="M29.4 1 H34.6 L35.6 9.4 H28.4 Z" fill="#4a2c18"/>
+  <g fill="#d9dbe2" stroke="#6b6f7a" stroke-width="0.3"><circle cx="27.6" cy="3" r="1"/><circle cx="27.4" cy="5.4" r="1"/><circle cx="27.2" cy="7.8" r="1"/><circle cx="36.4" cy="3" r="1"/><circle cx="36.6" cy="5.4" r="1"/><circle cx="36.8" cy="7.8" r="1"/></g>
+  <rect x="29.9" y="9.2" width="4.2" height="21" fill="url(#ag-neck)"/>
+  ${fretboard(32, 9.6, 30, 4.2, 6)}
+  <path d="M32 21 C25.4 21 23 25 24 29.4 C24.6 31.8 25.6 33.2 24.4 35.2 C20.2 38 18.6 42 19.6 47 C21.4 55 26.8 59 32 59 C37.2 59 42.6 55 44.4 47 C45.4 42 43.8 38 39.6 35.2 C38.4 33.2 39.4 31.8 40 29.4 C41 25 38.6 21 32 21 Z" fill="url(#ag-top)" stroke="#6b3a12" stroke-width="0.9"/>
+  <path d="M32 22.4 C26.6 22.4 24.8 25.6 25.6 29.2 C26.2 31.6 27 33.4 25.8 35.6 C22 38.4 20.8 42 21.6 46.6 C23.2 53.8 27.8 57.4 32 57.4 C36.2 57.4 40.8 53.8 42.4 46.6 C43.2 42 42 38.4 38.2 35.6 C37 33.4 37.8 31.6 38.4 29.2 C39.2 25.6 37.4 22.4 32 22.4 Z" fill="none" stroke="#f4e6c6" stroke-width="0.5" opacity="0.8"/>
+  <path d="M36.4 33.6 C40 34.4 41.2 37.8 39.4 40.4 C37.6 42.6 35.2 41.4 35 39 Z" fill="#5a2c14" opacity="0.85"/>
+  <circle cx="32" cy="36.2" r="4.6" fill="#3a2a1c" stroke="#7a4a1c" stroke-width="0.8"/>
+  <circle cx="32" cy="36.2" r="3.4" fill="#1e140c"/>
+  <circle cx="32" cy="36.2" r="5.6" fill="none" stroke="#5a3a20" stroke-width="0.5"/>
+  <rect x="27.4" y="47" width="9.2" height="2.6" rx="1.2" fill="#3a2416"/>
+  <path d="M28.6 47.8 H35.4" stroke="#efe6d2" stroke-width="0.6"/>
+  ${Array.from({ length: 6 }, (_, i) => `<path d="M${(30.3 + i * 0.68).toFixed(2)} 30 V48" stroke="#eef0f4" stroke-width="0.28"/>`).join('')}
+  <path d="M25.6 44 C26.6 50 29.4 53.4 32 54" fill="none" stroke="#fff" stroke-width="1" opacity="0.25"/>`, 40, 0.98);
 
 const electricGuitar = tilt(`
-  <rect x="22.5" y="5" width="3" height="20" fill="#d9b38c" ${S}/>
-  <g fill="${INK}"><circle cx="24" cy="11" r="0.6"/><circle cx="24" cy="15" r="0.6"/><circle cx="24" cy="19" r="0.6"/></g>
-  <path d="M22.6 0.6 L27 1.6 L28.2 6.6 L22.6 6.6 Z" fill="${INK}"/>
-  <path d="M18.6 22.4 C17 19.4 13.2 19.8 13.8 23.6 C14.2 26.2 15.2 27.4 13.6 30 C11 34.2 12 41 17.4 43 C21.6 44.4 27 44.4 30.8 43 C36 41 37 34.6 34.6 30.8 C33.2 28.6 33.8 26.6 35 24.4 C36.6 21 33.8 18.6 31.6 21 C29.8 23 27.6 23.8 24 23.8 C21.4 23.8 19.8 23.4 18.6 22.4 Z" fill="#e4572e" ${S}/>
-  <path d="M18.2 25.4 C20 26.2 22 26.4 24.6 26.4 L27.6 38.6 C24.6 40.6 19.4 40.2 17.2 37.4 C15.6 35.2 16.4 31.6 17.6 29.4 C18.4 28 18.6 26.8 18.2 25.4 Z" fill="#fff" ${S}/>
-  <g fill="${INK}"><rect x="20.4" y="28" width="7.2" height="2" rx="0.8"/><rect x="20.4" y="32.4" width="7.2" height="2" rx="0.8"/><rect x="20.8" y="36.8" width="6.4" height="1.6" rx="0.6"/></g>
-  <path d="M23.2 6 V37 M24.8 6 V37" stroke="#f4efe6" stroke-width="0.4"/>
-  <g fill="#e6e1d6" stroke="${INK}" stroke-width="0.5"><circle cx="30.6" cy="36.6" r="1.1"/><circle cx="31.4" cy="39.6" r="1.1"/></g>`);
+  <defs>
+    <radialGradient id="eg-burst" cx="46%" cy="62%" r="60%"><stop offset="0" stop-color="#ffd25a"/><stop offset="0.45" stop-color="#f08a24"/><stop offset="0.8" stop-color="#b8321a"/><stop offset="1" stop-color="#4a160c"/></radialGradient>
+    <linearGradient id="eg-maple" x1="0" x2="1"><stop offset="0" stop-color="#e8c896"/><stop offset="0.5" stop-color="#f6dfb4"/><stop offset="1" stop-color="#d9b37c"/></linearGradient>
+    <linearGradient id="eg-guard" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e2e0da"/></linearGradient>
+  </defs>
+  <path d="M29.6 0.6 C31.4 0.2 33.6 0.6 34.6 1.8 L35.4 10.6 L30.6 10.6 C29.4 7.6 28.6 4 29.6 0.6 Z" fill="url(#eg-maple)" stroke="#9a7444" stroke-width="0.5"/>
+  <g fill="#d9dbe2" stroke="#6b6f7a" stroke-width="0.3">${[1.8, 3.4, 5, 6.6, 8.2, 9.8].map((y) => `<circle cx="${(29 + (y - 1.8) * 0.06).toFixed(2)}" cy="${y}" r="0.75"/>`).join('')}</g>
+  <rect x="30.1" y="10.4" width="3.8" height="22" fill="url(#eg-maple)" stroke="#9a7444" stroke-width="0.4"/>
+  ${fretboard(32, 10.6, 32, 3.8, 6, '#2a2233')}
+  <path d="M25 30.2 C22.6 25.4 17.2 26 18.2 31.4 C18.8 34.6 20 36 18 39.4 C14.6 45 16 53.6 23.2 56.4 C28.6 58.4 35.6 58.4 40.6 56.4 C47.6 53.6 48.6 45.2 45.6 40.2 C43.8 37.4 44.4 34.8 46 31.8 C48.2 27.4 44.4 24.6 41.6 27.8 C39.4 30.4 36.6 31.6 32 31.6 C28.8 31.6 26.6 31.2 25 30.2 Z" fill="url(#eg-burst)" stroke="#3a0e06" stroke-width="0.9"/>
+  <path d="M24.4 33.6 C26.8 34.6 29.6 34.8 33 34.8 L35.8 34.6 L37 44 L36.4 50.4 C32.6 53.4 25.6 53 22.6 49.4 C20.6 46.8 21.4 42 23 39 C24 37.2 24.6 35.4 24.4 33.6 Z" fill="url(#eg-guard)" stroke="#a9a59a" stroke-width="0.5"/>
+  ${[37.4, 41.6, 46.2].map((y, i) => `<g transform="rotate(${i === 2 ? -10 : 0} 32 ${y + 0.9})"><rect x="28.4" y="${y}" width="7.2" height="1.9" rx="0.9" fill="#fbfaf6" stroke="#8e8a80" stroke-width="0.4"/>${[29.4, 30.4, 31.4, 32.6, 33.6, 34.6].map((x) => `<circle cx="${x}" cy="${y + 0.95}" r="0.28" fill="#8e8a80"/>`).join('')}</g>`).join('')}
+  <rect x="28.2" y="49.6" width="7.6" height="2.4" rx="0.6" fill="#c9ccd4" stroke="#6b6f7a" stroke-width="0.4"/>
+  <g fill="#fbfaf6" stroke="#8e8a80" stroke-width="0.4"><circle cx="38.8" cy="47.6" r="1.3"/><circle cx="38" cy="51" r="1.3"/><circle cx="36.4" cy="54" r="1.3"/></g>
+  ${Array.from({ length: 6 }, (_, i) => `<path d="M${(30.4 + i * 0.64).toFixed(2)} 32 V50" stroke="#eef0f4" stroke-width="0.28"/>`).join('')}
+  <path d="M42.6 33.6 C44 36 43.6 38.6 42.2 40.6" fill="none" stroke="#fff" stroke-width="1" opacity="0.35"/>`, 40, 0.98);
 
 const bassGuitar = tilt(`
-  <rect x="22.6" y="2" width="2.8" height="24" fill="#8a5a33" ${S}/>
-  <g fill="#f4efe6"><circle cx="24" cy="9" r="0.55"/><circle cx="24" cy="14" r="0.55"/><circle cx="24" cy="19" r="0.55"/></g>
-  <path d="M22.4 -3.6 h3.2 l1.6 6.4 h-4.8 Z" fill="${INK}"/>
-  <g fill="#d6d9e0" stroke="${INK}" stroke-width="0.5"><circle cx="28" cy="-2.4" r="1.2"/><circle cx="28" cy="0.8" r="1.2"/><circle cx="20" cy="-2.4" r="1.2"/><circle cx="20" cy="0.8" r="1.2"/></g>
-  <path d="M19 25 C17.6 22.4 14.4 22.8 15 26 C15.4 28.4 16 29.4 14.6 31.6 C12.4 35.4 13.4 41.6 18.2 43.2 C21.8 44.4 26.6 44.4 30 43.2 C34.8 41.4 35.6 35.4 33.4 31.8 C32 29.6 32.6 28 33.6 26 C35 23.2 32.4 21.4 30.4 23.4 C28.8 25.2 27 25.8 24 25.8 C21.6 25.8 20.2 25.6 19 25 Z" fill="#3a86ff" ${S}/>
-  <path d="M19.2 28.4 C21 29 22.6 29.2 24.6 29.2 L26.6 39.6 C23.8 41.2 20 40.8 18.4 38.6 C17 36.6 17.8 33.6 18.8 31.6 C19.4 30.6 19.6 29.4 19.2 28.4 Z" fill="#1f2a44" ${S}/>
-  <rect x="20.6" y="32" width="6.8" height="2.4" rx="1" fill="${INK}"/>
-  <rect x="21" y="38.4" width="6" height="1.6" rx="0.6" fill="${INK}"/>
-  <path d="M22.9 -1 V39 M23.7 -1 V39 M24.4 -1 V39 M25.1 -1 V39" stroke="#f4efe6" stroke-width="0.3"/>`, 38, 0.84);
+  <defs>
+    <linearGradient id="bs-body" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#5fa8ff"/><stop offset="0.55" stop-color="#2463d6"/><stop offset="1" stop-color="#0f2a66"/></linearGradient>
+    <linearGradient id="bs-neck" x1="0" x2="1"><stop offset="0" stop-color="#3a2416"/><stop offset="0.5" stop-color="#5a3a22"/><stop offset="1" stop-color="#3a2416"/></linearGradient>
+    <radialGradient id="bs-tort" cx="40%" cy="40%" r="70%"><stop offset="0" stop-color="#8a4a1c"/><stop offset="0.5" stop-color="#4a2210"/><stop offset="1" stop-color="#2a1208"/></radialGradient>
+  </defs>
+  <path d="M29.6 -5 C31.6 -5.6 34.2 -5 35 -3.6 L35.4 4 H30.6 C29.6 1 29 -2 29.6 -5 Z" fill="#e2c08a" stroke="#9a7444" stroke-width="0.5"/>
+  <g fill="#d9dbe2" stroke="#6b6f7a" stroke-width="0.35">${[-3.8, -1.2, 1.4, 4].map((y, i) => `<circle cx="${(28.4 + i * 0.2).toFixed(1)}" cy="${y}" r="1.25"/>`).join('')}</g>
+  <rect x="30.2" y="3.8" width="3.6" height="30" fill="url(#bs-neck)"/>
+  ${fretboard(32, 4, 34, 3.6, 4)}
+  <path d="M25.4 33.2 C23.6 29.4 19 29.8 19.8 34.4 C20.4 37.4 21.2 38.8 19.4 41.8 C16.4 46.8 17.6 54.6 24 57 C28.8 58.8 35.2 58.8 39.6 57 C45.8 54.6 46.8 47.2 44 42.6 C42.4 40 43 37.8 44.4 35.2 C46.4 31.4 43 29 40.6 31.8 C38.6 34 36.2 35 32 35 C29 35 27 34.4 25.4 33.2 Z" fill="url(#bs-body)" stroke="#0a1838" stroke-width="0.9"/>
+  <path d="M25.2 36.6 C27.4 37.4 29.6 37.6 32.4 37.6 L35 51 C31.8 53.4 26.6 53 24 50 C22 47.6 22.8 43.4 24.2 40.8 C25 39.4 25.4 38 25.2 36.6 Z" fill="url(#bs-tort)" stroke="#1a0a04" stroke-width="0.4"/>
+  <rect x="28.6" y="41.6" width="4" height="2.4" rx="0.8" fill="#1a1a20" transform="rotate(-6 30.6 42.8)"/>
+  <rect x="31.6" y="43.4" width="4" height="2.4" rx="0.8" fill="#1a1a20" transform="rotate(-6 33.6 44.6)"/>
+  <rect x="28.4" y="51.2" width="7.2" height="2.6" rx="0.6" fill="#c9ccd4" stroke="#6b6f7a" stroke-width="0.4"/>
+  <g fill="#d9dbe2" stroke="#6b6f7a" stroke-width="0.35"><circle cx="38.4" cy="49.6" r="1.4"/><circle cx="37" cy="53.2" r="1.4"/></g>
+  ${Array.from({ length: 4 }, (_, i) => `<path d="M${(30.7 + i * 0.86).toFixed(2)} 34 V52" stroke="#eef0f4" stroke-width="0.45"/>`).join('')}
+  <path d="M41.4 37 C43 39.4 42.8 42 41.4 44" fill="none" stroke="#fff" stroke-width="1" opacity="0.4"/>`, 40, 0.88);
 
 const ICONS = {
   guitar: acousticGuitar,
   eguitar: electricGuitar,
   bass: bassGuitar,
   drums: `
-    <path d="M37 9 L37 40" stroke="${INK}" stroke-width="1.4"/>
-    <ellipse cx="37" cy="9" rx="9" ry="2.4" fill="${GOLD}" ${S}/>
-    <ellipse cx="12" cy="20" rx="8" ry="2.6" fill="#f4efe6" ${S}/>
-    <path d="M4 20 V25 C4 28.4 20 28.4 20 25 V20" fill="#e4572e" ${S}/>
-    <ellipse cx="12" cy="20" rx="8" ry="2.6" fill="#f4efe6" ${S}/>
-    <circle cx="25" cy="31" r="12" fill="#e4572e" ${S}/>
-    <circle cx="25" cy="31" r="8.4" fill="#f4efe6" ${S}/>
-    <rect x="19.4" y="29" width="11.2" height="4" rx="2" fill="#2b2d42"/>
-    <path d="M22 31 h6" stroke="${GOLD}" stroke-width="1.2" stroke-linecap="round"/>
-    <path d="M17 41.6 L15 44.6 M33 41.6 L35 44.6" stroke="${INK}" stroke-width="1.6" stroke-linecap="round"/>
-    <path d="M9 6 L16 17 M20 5 L14.6 17" stroke="#c8a165" stroke-width="2.2" stroke-linecap="round"/>
-    <path d="M9 6 L16 17 M20 5 L14.6 17" stroke="${INK}" stroke-width="0.6" stroke-linecap="round" opacity="0.4"/>`,
+    <defs>
+      <radialGradient id="dr-cym" cx="45%" cy="40%" r="60%"><stop offset="0" stop-color="#fff2b0"/><stop offset="0.5" stop-color="#e8b84a"/><stop offset="1" stop-color="#a87a1a"/></radialGradient>
+      <linearGradient id="dr-shell" x1="0" x2="1"><stop offset="0" stop-color="#8e1f12"/><stop offset="0.35" stop-color="#e4572e"/><stop offset="0.7" stop-color="#f08a5a"/><stop offset="1" stop-color="#8e1f12"/></linearGradient>
+      <radialGradient id="dr-head" cx="45%" cy="40%" r="65%"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#ddd6c8"/></radialGradient>
+    </defs>
+    <g stroke="#55585f" stroke-width="0.9" ${LINE}><path d="M51 15 V58 M47 58 L51 52 L55 58"/><path d="M11 27 V58 M7.4 58 L11 52 L14.6 58"/></g>
+    <ellipse cx="51" cy="14" rx="11.6" ry="2.8" fill="url(#dr-cym)" stroke="#7a5410" stroke-width="0.5" transform="rotate(-8 51 14)"/>
+    <ellipse cx="11" cy="24.4" rx="8.4" ry="1.8" fill="url(#dr-cym)" stroke="#7a5410" stroke-width="0.4"/>
+    <ellipse cx="11" cy="26.6" rx="8.4" ry="1.8" fill="url(#dr-cym)" stroke="#7a5410" stroke-width="0.4"/>
+    <path d="M24 17 V24 C24 26.4 38 26.4 38 24 V17" fill="url(#dr-shell)" stroke="#5a1408" stroke-width="0.6"/>
+    <ellipse cx="31" cy="17" rx="7" ry="2.2" fill="url(#dr-head)" stroke="#8e8a80" stroke-width="0.5"/>
+    <circle cx="31" cy="42" r="16" fill="url(#dr-shell)" stroke="#5a1408" stroke-width="0.8"/>
+    <circle cx="31" cy="42" r="13.2" fill="url(#dr-head)" stroke="#c9ccd4" stroke-width="1.6"/>
+    <g fill="#c9ccd4">${Array.from({ length: 8 }, (_, i) => {
+      const a = (i / 8) * Math.PI * 2;
+      return `<circle cx="${(31 + Math.cos(a) * 14.6).toFixed(1)}" cy="${(42 + Math.sin(a) * 14.6).toFixed(1)}" r="0.9"/>`;
+    }).join('')}</g>
+    <circle cx="31" cy="42" r="6" fill="#2b2d42"/>
+    <path d="M27.4 42 L29.6 39.6 L31.6 43.4 L34.6 40" fill="none" stroke="#ffd25a" stroke-width="1.2" ${LINE}/>
+    <path d="M22 35.6 C24.4 32.6 28 31 31.6 31" fill="none" stroke="#fff" stroke-width="1.2" opacity="0.6"/>
+    <g ${LINE}><path d="M18 5 L28 19" stroke="#8a5a2c" stroke-width="2"/><path d="M18 5 L28 19" stroke="#e6c48a" stroke-width="1.1"/><path d="M41 4 L33 18.6" stroke="#8a5a2c" stroke-width="2"/><path d="M41 4 L33 18.6" stroke="#e6c48a" stroke-width="1.1"/></g>`,
   keys: `
-    <rect x="2" y="12" width="44" height="24" rx="3" fill="#2b2d42" ${S}/>
-    <circle cx="8" cy="17" r="1.6" fill="#ff4f8b"/><circle cx="13" cy="17" r="1.6" fill="#4fd1ff"/>
-    <rect x="22" y="15.6" width="18" height="2.8" rx="1" fill="#3ddc97"/>
-    <rect x="5" y="21" width="38" height="12" fill="#fff" stroke="${INK}" stroke-width="1"/>
-    <path d="M10.4 21 V33 M15.8 21 V33 M21.2 21 V33 M26.6 21 V33 M32 21 V33 M37.4 21 V33" stroke="${INK}" stroke-width="0.8"/>
-    <g fill="${INK}"><rect x="8.9" y="21" width="3" height="7"/><rect x="14.3" y="21" width="3" height="7"/><rect x="25.1" y="21" width="3" height="7"/><rect x="30.5" y="21" width="3" height="7"/><rect x="35.9" y="21" width="3" height="7"/></g>`,
+    <defs>
+      <linearGradient id="ky-case" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#4a4d62"/><stop offset="1" stop-color="#1c1d28"/></linearGradient>
+      <linearGradient id="ky-white" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e2e0da"/></linearGradient>
+    </defs>
+    <path d="M2 22 L8 15 H56 L62 22 Z" fill="#5a5d74"/>
+    <rect x="2" y="22" width="60" height="26" rx="2.4" fill="url(#ky-case)"/>
+    <rect x="5" y="25" width="6" height="8" rx="1.2" fill="#2b2d42"/><rect x="6.2" y="27.6" width="3.6" height="2.4" rx="1" fill="#9a9aa8"/>
+    <circle cx="16" cy="28" r="1.8" fill="#ff4f8b"/><circle cx="21" cy="28" r="1.8" fill="#4fd1ff"/><circle cx="26" cy="28" r="1.8" fill="#ffd25a"/>
+    <rect x="32" y="25.8" width="20" height="4.6" rx="1" fill="#0f2a1e"/><path d="M34 28 H46" stroke="#3ddc97" stroke-width="1.4" stroke-linecap="round"/>
+    <rect x="5" y="33.6" width="54" height="12.4" fill="#111"/>
+    ${Array.from({ length: 14 }, (_, i) => `<rect x="${(5.4 + i * 3.84).toFixed(2)}" y="34" width="3.5" height="11.6" rx="0.5" fill="url(#ky-white)"/>`).join('')}
+    ${[0, 1, 3, 4, 5, 7, 8, 10, 11, 12].map((i) => `<rect x="${(8.1 + i * 3.84).toFixed(2)}" y="34" width="2.3" height="7" rx="0.4" fill="#1a1a1e"/>`).join('')}
+    <path d="M3.6 23.4 H60.4" stroke="#fff" stroke-width="0.6" opacity="0.25"/>`,
   vocals: `
-    <path d="M27.4 23.6 L40 41.4 C41 42.8 39.6 44.4 38.2 43.4 L22.6 28" fill="#3b3245" ${S}/>
-    <path d="M29.6 26.8 L25.8 30.6" stroke="#9a9aa8" stroke-width="1.6"/>
-    <circle cx="19" cy="17.6" r="11" fill="#b8b9c6" ${S}/>
-    <path d="M10 13.6 C14 16 22 9 26.8 10 M9 19 C14 21.6 24 13.4 29.6 15.2 M11.2 24.4 C16 26 24.6 19 29 21.6" fill="none" stroke="${INK}" stroke-width="0.7" opacity="0.6"/>
-    <path d="M12.6 9.6 C15 7.6 18.6 7 21.6 7.8" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>`,
+    <defs>
+      <radialGradient id="mc-ball" cx="38%" cy="32%" r="70%"><stop offset="0" stop-color="#ffffff"/><stop offset="0.35" stop-color="#cfd2da"/><stop offset="1" stop-color="#6b6f7a"/></radialGradient>
+      <linearGradient id="mc-body" x1="0" x2="1"><stop offset="0" stop-color="#1c1d24"/><stop offset="0.45" stop-color="#4a4d5a"/><stop offset="1" stop-color="#15161c"/></linearGradient>
+      <pattern id="mc-mesh" width="2" height="2" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0 H2 M0 0 V2" stroke="#5a5d68" stroke-width="0.35"/></pattern>
+    </defs>
+    <g transform="rotate(-38 32 32)">
+      <path d="M26.4 30 L37.6 30 L35 60 C34.8 62 29.2 62 29 60 Z" fill="url(#mc-body)"/>
+      <rect x="25.6" y="27.6" width="12.8" height="3.6" rx="1" fill="#c9ccd4"/>
+      <path d="M26 29 H38" stroke="#fff" stroke-width="0.6" opacity="0.7"/>
+      <circle cx="32" cy="16" r="13" fill="url(#mc-ball)"/>
+      <circle cx="32" cy="16" r="13" fill="url(#mc-mesh)" opacity="0.55"/>
+      <path d="M19.4 18.4 H44.6" stroke="#8e929c" stroke-width="1.2"/>
+      <ellipse cx="27" cy="9.6" rx="4.4" ry="2.4" fill="#fff" opacity="0.7" transform="rotate(-30 27 9.6)"/>
+    </g>`,
   sax: `
-    <path d="M15.4 6.4 C16.8 4.4 19.6 4 21.4 5.6 L22 6.4" fill="none" stroke="${INK}" stroke-width="4.6" stroke-linecap="round"/>
-    <path d="M15.4 6.4 C16.8 4.4 19.6 4 21.4 5.6 L22 6.4" fill="none" stroke="${GOLD}" stroke-width="2.6" stroke-linecap="round"/>
-    <path d="M12.4 9.6 L15.8 6" stroke="${INK}" stroke-width="3" stroke-linecap="round"/>
-    <path d="M20 7 L23.6 7 L25.4 32 C25.8 36.4 28.6 38.4 31.4 37.4 C33.2 36.6 33.4 34.4 33 31.4 L32.2 27.4 L39.8 21.4 L41.6 30.8 L37.4 31.8 C38.4 38.6 35.4 44 29.6 44.4 C23 44.8 19.4 40 19.6 33.6 Z" fill="${GOLD}" ${S}/>
-    <ellipse cx="36" cy="24.6" rx="4.4" ry="2" transform="rotate(-38 36 24.6)" fill="${GOLD_DARK}" ${S}/>
-    <g fill="#f4efe6" stroke="${INK}" stroke-width="0.8"><circle cx="22.2" cy="13" r="1.4"/><circle cx="22.6" cy="18" r="1.4"/><circle cx="23" cy="23" r="1.4"/><circle cx="23.4" cy="28" r="1.4"/></g>
-    <path d="M26.6 38.2 C28.6 40.6 33 40.4 35 37.6" fill="none" stroke="${GOLD_DARK}" stroke-width="1"/>`,
+    <defs>
+      <linearGradient id="sx-brass" x1="0" x2="1"><stop offset="0" stop-color="#a87418"/><stop offset="0.3" stop-color="#ffe08a"/><stop offset="0.6" stop-color="#e9b53c"/><stop offset="1" stop-color="#9a6a12"/></linearGradient>
+      <radialGradient id="sx-bell" cx="50%" cy="50%" r="55%"><stop offset="0" stop-color="#5a3a08"/><stop offset="0.7" stop-color="#b8861e"/><stop offset="1" stop-color="#ffe08a"/></radialGradient>
+    </defs>
+    <path d="M14 7.6 C17 3.8 23 3.4 26.6 6.4 L28.4 8.2 L26.2 10.4 C24 8.4 20.4 8 17.6 10.4 Z" fill="url(#sx-brass)" stroke="#7a5410" stroke-width="0.5"/>
+    <path d="M9.6 12.6 L14.6 7.4 L17.2 10 L12.2 15.2 Z" fill="#1a1a1e"/><rect x="13.6" y="9" width="2.6" height="1.2" fill="#c9ccd4" transform="rotate(45 14.9 9.6)"/>
+    <path d="M25 8.6 L30.4 8.6 L32.6 42 C33 47.6 36.2 50.4 39.8 49.4 C42.2 48.6 42.8 46 42.2 42.4 L41.4 37.4 L51.4 28.6 L54.6 41.6 L49.8 43 C51 52.6 46.8 59.8 39.2 60.4 C30.8 61 25.8 55 26 46.8 Z" fill="url(#sx-brass)" stroke="#7a5410" stroke-width="0.7"/>
+    <ellipse cx="47.4" cy="33.6" rx="5.6" ry="2.8" transform="rotate(-42 47.4 33.6)" fill="url(#sx-bell)" stroke="#7a5410" stroke-width="0.6"/>
+    <path d="M28.2 12 L29.6 44" stroke="#fff3c4" stroke-width="0.9" opacity="0.7"/>
+    <g>${[15, 20.4, 25.8, 31.2, 36.6].map((y, i) => `<circle cx="${(30.2 + i * 0.18).toFixed(2)}" cy="${y}" r="1.9" fill="#f7f1e2" stroke="#7a5410" stroke-width="0.6"/><circle cx="${(29.8 + i * 0.18).toFixed(2)}" cy="${y - 0.5}" r="0.6" fill="#fff"/>`).join('')}</g>
+    <path d="M33 16 C35 17 35.4 24 33.6 26 M33.8 29 C36 30.4 36.2 36 34.4 38" fill="none" stroke="#7a5410" stroke-width="0.9" ${LINE}/>
+    <path d="M30.4 50 C33 54.4 39.4 55 42.4 51.4" fill="none" stroke="#7a5410" stroke-width="0.9"/>
+    <circle cx="44.6" cy="45.6" r="1.6" fill="#f7f1e2" stroke="#7a5410" stroke-width="0.5"/>`,
   trumpet: `
-    <path d="M30 20.4 L41.6 13 C44.4 11.6 46.4 17 46.4 23.2 C46.4 29.4 44.4 34.6 41.6 33.2 L30 26 Z" fill="${GOLD}" ${S}/>
-    <ellipse cx="44" cy="23.2" rx="2.2" ry="9.6" fill="${GOLD_DARK}" ${S}/>
-    <path d="M14 25.6 C9 25.6 9 34 14 34 L30 34 C35 34 35 25.6 30 25.6" fill="none" stroke="${INK}" stroke-width="4" />
-    <path d="M14 25.6 C9 25.6 9 34 14 34 L30 34 C35 34 35 25.6 30 25.6" fill="none" stroke="${GOLD}" stroke-width="2.2"/>
-    <rect x="6" y="20.6" width="25" height="4.6" rx="2.2" fill="${GOLD}" ${S}/>
-    <path d="M1.6 21 L1.6 24.8 L6 23.6 L6 22.2 Z" fill="#d6d9e0" ${S}/>
-    <g fill="${GOLD}" ${S}><rect x="15" y="13" width="3.4" height="12" rx="1"/><rect x="19.6" y="13" width="3.4" height="12" rx="1"/><rect x="24.2" y="13" width="3.4" height="12" rx="1"/></g>
-    <g fill="#f4efe6" ${S}><rect x="14.4" y="9.6" width="4.6" height="2.6" rx="1.2"/><rect x="19" y="9.6" width="4.6" height="2.6" rx="1.2"/><rect x="23.6" y="9.6" width="4.6" height="2.6" rx="1.2"/></g>
-    <path d="M16.7 12.2 V13 M21.3 12.2 V13 M25.9 12.2 V13" stroke="${INK}" stroke-width="1.6"/>`,
+    <defs>
+      <linearGradient id="tp-brass" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#ffe08a"/><stop offset="0.5" stop-color="#e9b53c"/><stop offset="1" stop-color="#9a6a12"/></linearGradient>
+      <radialGradient id="tp-bell" cx="40%" cy="50%" r="60%"><stop offset="0" stop-color="#5a3a08"/><stop offset="0.75" stop-color="#c9921e"/><stop offset="1" stop-color="#ffe08a"/></radialGradient>
+    </defs>
+    <path d="M40 26 L54 16.6 C58.6 14.6 61.6 22 61.6 31 C61.6 40 58.6 47.4 54 45.4 L40 36 Z" fill="url(#tp-brass)" stroke="#7a5410" stroke-width="0.6"/>
+    <ellipse cx="58.4" cy="31" rx="3.2" ry="13.6" fill="url(#tp-bell)" stroke="#7a5410" stroke-width="0.6"/>
+    <path d="M18 34.4 C11.6 34.4 11.6 45 18 45 H40 C46.4 45 46.4 34.4 40 34.4" fill="none" stroke="#7a5410" stroke-width="4.4"/>
+    <path d="M18 34.4 C11.6 34.4 11.6 45 18 45 H40 C46.4 45 46.4 34.4 40 34.4" fill="none" stroke="url(#tp-brass)" stroke-width="3"/>
+    <rect x="7" y="27.4" width="35" height="5.8" rx="2.9" fill="url(#tp-brass)" stroke="#7a5410" stroke-width="0.6"/>
+    <path d="M1.6 27.8 C3.6 27.8 4.6 28.8 5 29.4 H7.4 V31.2 H5 C4.6 31.8 3.6 32.8 1.6 32.8 Z" fill="#d9dbe2" stroke="#6b6f7a" stroke-width="0.5"/>
+    <g>${[20, 26, 32].map((x) => `
+      <rect x="${x}" y="17" width="4.4" height="17" rx="1.2" fill="url(#tp-brass)" stroke="#7a5410" stroke-width="0.6"/>
+      <rect x="${x + 1.4}" y="12.6" width="1.6" height="4.6" fill="#c9ccd4"/>
+      <ellipse cx="${x + 2.2}" cy="12" rx="2.8" ry="1.4" fill="#f7f1e2" stroke="#7a5410" stroke-width="0.5"/>`).join('')}</g>
+    <path d="M9 28.6 H40" stroke="#fff3c4" stroke-width="0.8" opacity="0.8"/>`,
   violin: `
+    <defs>
+      <radialGradient id="vl-wood" cx="45%" cy="55%" r="65%"><stop offset="0" stop-color="#f0a24e"/><stop offset="0.6" stop-color="#b8571a"/><stop offset="1" stop-color="#5a2208"/></radialGradient>
+    </defs>
     ${tilt(`
-      <rect x="22.6" y="5" width="2.8" height="24" rx="1" fill="${INK}"/>
-      <path d="M24 1 C26.6 1 26.8 4.4 24.8 4.6 L24.8 6.6 H23.2 V3.6 C23.2 2.4 23.6 1 24 1 Z" fill="#8a4f1c" ${S}/>
-      <path d="M24 13.6 C19.4 13.6 17 15.4 17 18.8 C17 21 18.8 22 18.4 23.4 L17.4 24.4 C18.8 25.8 18.8 26.8 17.4 28.2 C15.4 30.2 14.8 33.2 15.8 36 C17.2 40.8 21 42.6 24 42.6 C27 42.6 30.8 40.8 32.2 36 C33.2 33.2 32.6 30.2 30.6 28.2 C29.2 26.8 29.2 25.8 30.6 24.4 L29.6 23.4 C29.2 22 31 21 31 18.8 C31 15.4 28.6 13.6 24 13.6 Z" fill="#b5651d" ${S}/>
-      <rect x="22.6" y="14" width="2.8" height="15" rx="1" fill="${INK}"/>
-      <path d="M19.4 26.6 C18.4 28.4 19.8 30.2 18.8 32 M28.6 26.6 C29.6 28.4 28.2 30.2 29.2 32" fill="none" stroke="${INK}" stroke-width="1.1"/>
-      <path d="M22.2 34 H25.8 L25 40.6 H23 Z" fill="${INK}"/>
-      <path d="M23.4 4 V35 M24.6 4 V35" stroke="#e6e1d6" stroke-width="0.35"/>`, -32, 0.86)}
-    <path d="M6 40 L43 7" stroke="#8a4f1c" stroke-width="1.8" stroke-linecap="round"/>
-    <path d="M7.6 41.6 L44.4 8.6" stroke="#f4efe6" stroke-width="0.9" stroke-linecap="round"/>
-    <path d="M5 39 L8.6 42.4" stroke="${INK}" stroke-width="2.2" stroke-linecap="round"/>`,
+      <path d="M32 1.4 C35.4 1.4 35.8 5.6 33.4 6 C33 6.2 33 7 33.2 8.2 H30.8 V4.4 C30.8 2.6 31.4 1.4 32 1.4 Z" fill="#7a3510"/>
+      <circle cx="32.6" cy="3.4" r="1.2" fill="none" stroke="#3a1606" stroke-width="0.5"/>
+      <g fill="#2a1208"><rect x="28.6" y="5.4" width="2.4" height="1.2" rx="0.5"/><rect x="33" y="5.4" width="2.4" height="1.2" rx="0.5"/></g>
+      <path d="M32 17.4 C26.2 17.4 23.2 19.6 23.2 23.8 C23.2 26.6 25.4 27.8 24.8 29.6 L23.6 30.8 C25.4 32.6 25.4 33.8 23.6 35.6 C21.2 38.2 20.4 41.8 21.6 45.4 C23.4 51.4 28.2 53.6 32 53.6 C35.8 53.6 40.6 51.4 42.4 45.4 C43.6 41.8 42.8 38.2 40.4 35.6 C38.6 33.8 38.6 32.6 40.4 30.8 L39.2 29.6 C38.6 27.8 40.8 26.6 40.8 23.8 C40.8 19.6 37.8 17.4 32 17.4 Z" fill="url(#vl-wood)" stroke="#3a1606" stroke-width="0.8"/>
+      <path d="M32 18.6 C27 18.6 24.4 20.4 24.4 23.8 C24.4 26.4 26.4 27.6 25.8 29.8 M32 52.4 C28.6 52.4 24.4 50.4 22.8 45.2" fill="none" stroke="#ffd29a" stroke-width="0.4" opacity="0.7"/>
+      <rect x="30.4" y="7.6" width="3.2" height="30" rx="1.2" fill="#14100c"/>
+      <path d="M27.4 33.2 C26 35.4 28 37.4 26.6 39.8 M36.6 33.2 C38 35.4 36 37.4 37.4 39.8" fill="none" stroke="#2a1208" stroke-width="1"/>
+      <rect x="28.4" y="41.4" width="7.2" height="1.4" rx="0.5" fill="#e6c48a"/>
+      <path d="M29.6 44.4 H34.4 L33.4 51.4 H30.6 Z" fill="#14100c"/>
+      ${Array.from({ length: 4 }, (_, i) => `<path d="M${(31.1 + i * 0.6).toFixed(2)} 7 V45" stroke="#eef0f4" stroke-width="0.25"/>`).join('')}
+      <ellipse cx="27.6" cy="24" rx="2.4" ry="3.4" fill="#fff" opacity="0.2"/>`, -34, 0.95)}
+    <path d="M8 54 L56 8" stroke="#5a2a0c" stroke-width="1.6" stroke-linecap="round"/>
+    <path d="M9.8 55.8 L57.6 10" stroke="#f4efe6" stroke-width="0.9" stroke-linecap="round"/>
+    <path d="M6.4 52.4 L10.6 56.6" stroke="#1a1a1e" stroke-width="2.6" stroke-linecap="round"/>
+    <circle cx="56.6" cy="8.6" r="1" fill="#1a1a1e"/>`,
   flute: `
-    <g transform="rotate(-28 24 24)">
-      <rect x="1" y="21.6" width="46" height="4.8" rx="2.4" fill="#d6d9e0" ${S}/>
-      <path d="M1 24 H47" stroke="#fff" stroke-width="1" opacity="0.8"/>
-      <ellipse cx="8" cy="22.6" rx="2.4" ry="1.2" fill="#b8b9c6" ${S}/>
-      <g fill="#b8b9c6" ${S}><circle cx="19" cy="24" r="1.7"/><circle cx="24" cy="24" r="1.7"/><circle cx="29" cy="24" r="1.7"/><circle cx="34" cy="24" r="1.7"/><circle cx="39" cy="24" r="1.7"/></g>
-      <path d="M17 24 H41" stroke="${INK}" stroke-width="0.6" opacity="0.5"/>
+    <defs>
+      <linearGradient id="fl-tube" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="0.45" stop-color="#c9ccd4"/><stop offset="1" stop-color="#7a7e88"/></linearGradient>
+    </defs>
+    <g transform="rotate(-30 32 32)">
+      <rect x="1" y="29" width="62" height="6" rx="3" fill="url(#fl-tube)" stroke="#5a5d68" stroke-width="0.5"/>
+      <rect x="8" y="27.6" width="6.4" height="2.4" rx="1.2" fill="url(#fl-tube)" stroke="#5a5d68" stroke-width="0.4"/>
+      <ellipse cx="11.2" cy="28" rx="1.4" ry="0.6" fill="#2a2233"/>
+      <path d="M17 29 V35 M45 29 V35" stroke="#7a7e88" stroke-width="0.6"/>
+      <g>${[22, 27, 32, 37, 42, 51, 56].map((x) => `<circle cx="${x}" cy="32" r="2" fill="url(#fl-tube)" stroke="#5a5d68" stroke-width="0.5"/><circle cx="${x - 0.5}" cy="31.4" r="0.6" fill="#fff"/>`).join('')}</g>
+      <path d="M20 33.8 H58" stroke="#5a5d68" stroke-width="0.5"/>
     </g>`,
   turntables: `
-    <rect x="2" y="9" width="44" height="30" rx="3.6" fill="#2b2d42" ${S}/>
-    <circle cx="20" cy="24" r="12.4" fill="#4a4a5a" ${S}/>
-    <circle cx="20" cy="24" r="11" fill="#141218"/>
-    <g fill="none" stroke="#3a3842" stroke-width="0.6"><circle cx="20" cy="24" r="9"/><circle cx="20" cy="24" r="7"/></g>
-    <circle cx="20" cy="24" r="4.2" fill="#ff4f8b"/><circle cx="20" cy="24" r="0.9" fill="#f4efe6"/>
-    <circle cx="38.4" cy="14.4" r="2.6" fill="#b8b9c6" ${S}/>
-    <path d="M38.4 14.4 L39.6 26 L33.6 31" fill="none" stroke="#d6d9e0" stroke-width="1.6" stroke-linecap="round"/>
-    <rect x="31" y="30" width="4" height="2.6" rx="0.6" transform="rotate(-40 33 31.3)" fill="#d6d9e0" ${S}/>
-    <rect x="41" y="25" width="2" height="10" rx="1" fill="#141218"/><rect x="40.4" y="28" width="3.2" height="2" rx="0.6" fill="#4fd1ff"/>`,
+    <defs>
+      <linearGradient id="tt-base" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#4a4d62"/><stop offset="1" stop-color="#1c1d28"/></linearGradient>
+      <radialGradient id="tt-vinyl" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#2a2830"/><stop offset="0.5" stop-color="#121016"/><stop offset="0.85" stop-color="#2a2830"/><stop offset="1" stop-color="#0c0a0e"/></radialGradient>
+    </defs>
+    <rect x="2" y="10" width="60" height="44" rx="4" fill="url(#tt-base)"/>
+    <path d="M4 12 H60" stroke="#fff" stroke-width="0.6" opacity="0.2"/>
+    <circle cx="26" cy="32" r="18.6" fill="#8e929c"/>
+    <circle cx="26" cy="32" r="17" fill="url(#tt-vinyl)"/>
+    <g fill="none" stroke="#3a3842" stroke-width="0.4">${[15, 13, 11, 9].map((r) => `<circle cx="26" cy="32" r="${r}"/>`).join('')}</g>
+    <path d="M14.6 22.4 C18 19 23 17.6 27.6 18.4" fill="none" stroke="#fff" stroke-width="1.2" opacity="0.25"/>
+    <circle cx="26" cy="32" r="6" fill="#ff4f8b"/><circle cx="26" cy="32" r="3" fill="#ff8fb4"/><circle cx="26" cy="32" r="1" fill="#e6e6ea"/>
+    <circle cx="52" cy="17.6" r="3.6" fill="#c9ccd4" stroke="#5a5d68" stroke-width="0.5"/><circle cx="52" cy="17.6" r="1.4" fill="#6b6f7a"/>
+    <path d="M52 17.6 L53.6 38 L44.4 46" fill="none" stroke="#e6e6ea" stroke-width="1.6" ${LINE}/>
+    <rect x="41" y="44.4" width="5.6" height="3.6" rx="0.8" fill="#2b2d42" stroke="#c9ccd4" stroke-width="0.5" transform="rotate(-40 43.8 46.2)"/>
+    <rect x="56" y="34" width="2.6" height="15" rx="1.2" fill="#0c0a0e"/><rect x="55" y="39" width="4.6" height="2.8" rx="0.8" fill="#4fd1ff"/>
+    <circle cx="8" cy="49" r="2" fill="#3ddc97"/>`,
 };
 ICONS.synth = ICONS.keys;
 
-/** Symbol eines Instruments als kleines SVG; electric unterscheidet Gitarre und E-Gitarre. */
+let serial = 0;
+
+/**
+ * Symbol eines Instruments als kleines SVG; electric unterscheidet Gitarre und E-Gitarre.
+ * Jede Kopie bekommt eigene Kennungen für ihre Farbverläufe – sonst verweisen alle auf die erste,
+ * und liegt die versteckt (z. B. in einem geschlossenen Fenster), bleiben die anderen farblos.
+ */
 export function instrumentSvg(type, electric = false) {
   const key = type === 'guitar' && electric ? 'eguitar' : type;
   const body = ICONS[key];
-  return body ? `<svg class="ico" viewBox="0 0 48 48" aria-hidden="true">${body}</svg>` : null;
+  if (!body) return null;
+  const n = ++serial;
+  const unique = body.replace(/id="([\w-]+)"/g, `id="$1-${n}"`).replace(/url\(#([\w-]+)\)/g, `url(#$1-${n})`);
+  return `<svg class="ico" viewBox="0 0 64 64" aria-hidden="true">${unique}</svg>`;
 }

@@ -728,7 +728,13 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .action-icon { font-size: 1.8rem; width: 48px; height: 48px; display: grid; place-items: center; border-radius: 12px; background: var(--panel-2); flex: none; }
 .action-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .tile-buttons { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
-.record-form { align-items: flex-start; }
+.record-form { align-items: flex-start; grid-column: 1 / -1; }
+.record-form .input-dice { max-width: 520px; }
+.record-form input[type=range] { width: 100%; max-width: 520px; }
+@media (max-width: 600px) {
+  .record-form { flex-wrap: wrap; }
+  .record-form > .btn { width: 100%; }
+}
 .record-form .action-main label { display: flex; flex-direction: column; gap: 4px; }
 
 .award-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }

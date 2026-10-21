@@ -313,6 +313,7 @@ final class Schema
             [
                 'ALTER TABLE records ADD COLUMN royalty_carry REAL NOT NULL DEFAULT 0',
                 'ALTER TABLE gear ADD COLUMN perks TEXT NULL',
+                [Migrations::class, 'gearPerks'],
             ],
         ];
     }

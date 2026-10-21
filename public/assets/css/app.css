@@ -927,3 +927,13 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 /* Kacheln: was der Wert konkret bewirkt; der veränderliche Teil hervorgehoben. */
 .tile small em { font-style: normal; font-weight: 700; color: #ffd36e; }
 .stat-tiles .tile { flex: 1 1 150px; max-width: 240px; }
+
+/* Instrumente nach Design: Farbe, Sonderlackierung, Gold-Edition (Farbton --hue je Instrument). */
+.gear-bg.finish-1 { --art: radial-gradient(circle at 50% 40%, hsl(var(--hue) 70% 92%), hsl(var(--hue) 45% 68%) 75%); }
+.gear-bg.finish-1 .tcg-icon { filter: hue-rotate(calc(var(--hue) * 1deg)) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4)); }
+.gear-bg.finish-2 { --art: linear-gradient(135deg, hsl(var(--hue) 75% 70%), hsl(calc(var(--hue) + 40) 70% 38%) 55%, hsl(var(--hue) 80% 62%)); }
+.gear-bg.finish-2 .tcg-icon { filter: hue-rotate(calc(var(--hue) * 1deg)) saturate(1.4) drop-shadow(0 0 6px rgba(255, 255, 255, 0.7)) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4)); }
+.gear-bg.finish-3 { --art: linear-gradient(135deg, #fff3b0, #e0a800 40%, #fff0a0 60%, #b07800); }
+.gear-bg.finish-3 .tcg-icon { filter: sepia(1) saturate(3) hue-rotate(-12deg) brightness(1.05) drop-shadow(0 0 8px rgba(255, 230, 140, 0.9)); }
+.gear-bg.finish-3 { box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5), 0 0 0 2px #f2b600, 0 0 22px rgba(255, 200, 80, 0.6); }
+.perk-list { margin: 0 0 12px; padding-left: 0; list-style: none; display: grid; gap: 4px; }

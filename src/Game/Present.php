@@ -41,6 +41,8 @@ final class Present
         return [
             'id' => $g['id'], 'model' => $g['model'], 'musicianId' => $g['musician_id'],
             'klang' => $g['klang'], 'spielbarkeit' => $g['spielbarkeit'], 'design' => $g['design'],
+            'perks' => $g['perks'] ?? [],
+            'sellPrice' => Bands::sellPrice($g),
         ];
     }
 
@@ -127,6 +129,7 @@ final class Present
             'personalities' => Catalog::PERSONALITIES,
             'managerSkills' => Catalog::MANAGER_SKILLS,
             'gear' => Catalog::GEAR,
+            'gearPerks' => Catalog::GEAR_PERKS,
             'music' => Music::manifest(),
             'musicStems' => Music::STEMS,
             'packs' => $packs,

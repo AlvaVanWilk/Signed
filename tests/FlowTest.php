@@ -151,16 +151,20 @@ test('Nachnamen wiederholen sich im eigenen Label nicht', function () {
     $p = registerPlayer($db, 'Namen');
     $db->exec('UPDATE labels SET money = 100000');
     $names = [];
-    for ($i = 0; $i < 12; $i++) {
+    // Mitgenommen werden Musiker und Manager; innerhalb einer Auswahl und gegenüber dem Label keine Doppelten.
+    for ($i = 0; $i < 30; $i++) {
         $offer = $p->post('buyPack', ['pack' => 'backstage'])['offer'];
+        $inOffer = [];
         foreach ($offer['cards'] as $card) {
             if ($card['kind'] !== 'gear') {
-                $names[] = $card[$card['kind']]['lastName'];
+                $inOffer[] = $card[$card['kind']]['lastName'];
             }
         }
-        $p->post('packPick', ['offerId' => $offer['id'], 'index' => 0]);
+        checkEquals(count($inOffer), count(array_unique($inOffer)));
+        check(!array_intersect($inOffer, $names), 'Kein Nachname, den das Label schon hat');
+        $picked = $p->post('packPick', ['offerId' => $offer['id'], 'index' => $i % 3])['card'];
+        $names[] = $picked[$picked['kind']]['lastName'];
     }
-    check(count($names) > 30, 'genug Karten gezogen');
     checkEquals(count($names), count(array_unique($names)));
 });
 
@@ -689,4 +693,24 @@ test('Namensänderung: vor dem ersten Auftritt frei, danach mit Gebühr und ohne
     checkEquals($money - Balance::RENAME_COST, $state['label']['money']);
     checkEquals(0.0, (float) bandById($state, $band['id'])['fameOwn']);
     checkEquals('Zweiter Versuch', bandById($state, $band['id'])['name']);
+});
+
+test('Instrumente: Eigenschaften ab episch, Verkauf an den Second-Hand-Laden', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Verkaeufer');
+    $db->exec('UPDATE labels SET money = 100000');
+    $offer = $p->post('buyPack', ['pack' => 'werkstatt', 'type' => 'guitar'])['offer'];
+    foreach ($offer['cards'] as $card) {
+        $rarity = Signed\Game\Catalog::GEAR[$card['gear']['model']]['rarity'];
+        checkEquals(Balance::GEAR_PERKS[$rarity], count($card['gear']['perks']));
+    }
+    $state = $p->post('packPick', ['offerId' => $offer['id'], 'index' => 0])['state'];
+    $gear = end($state['gear']);
+    check(count($gear['perks']) >= 1, 'Gespeichert');
+    $money = $state['label']['money'];
+    $res = $p->post('gearSell', ['gearId' => $gear['id']]);
+    checkEquals($gear['sellPrice'], $res['price']);
+    checkEquals($money + $res['price'], $res['state']['label']['money']);
+    check(!in_array($gear['id'], array_column($res['state']['gear'], 'id'), true));
+    checkApiError(fn () => $p->post('gearSell', ['gearId' => $gear['id']]), 'gibt es nicht');
 });

@@ -234,6 +234,27 @@ final class Bands
         });
     }
 
+    /** Was der Second-Hand-Laden für ein Instrument zahlt. */
+    public static function sellPrice(array $item): int
+    {
+        $rarity = Catalog::GEAR[$item['model']]['rarity'] ?? 'common';
+        return (int) round(Balance::GEAR_SELL[$rarity] * (1 + Balance::GEAR_SELL_PERK * count($item['perks'] ?? [])));
+    }
+
+    /** Instrument an den Second-Hand-Laden verkaufen; wer es spielt, steht danach ohne da. */
+    public function sellGear(int $gearId): int
+    {
+        return $this->repo->db->transaction(function () use ($gearId): int {
+            $item = $this->repo->gear()[$gearId] ?? throw new ApiError('Dieses Instrument gibt es nicht.', 404);
+            if ($this->repo->db->exec('DELETE FROM gear WHERE id = ? AND label_id = ?', [$gearId, $this->repo->labelId]) === 0) {
+                throw new ApiError('Dieses Instrument gibt es nicht mehr.');
+            }
+            $price = self::sellPrice($item);
+            $this->repo->earn($price, sprintf('Verkauf: %s', Catalog::GEAR[$item['model']]['name']));
+            return $price;
+        });
+    }
+
     /** Fan-Karte: kleiner Ruhm-Bonus, verteilt auf alle Mitglieder der Band. */
     public function useItem(int $itemId, int $bandId): float
     {

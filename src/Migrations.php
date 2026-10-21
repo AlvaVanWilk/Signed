@@ -76,4 +76,14 @@ final class Migrations
             }
         }
     }
+
+    /** 9: Epische und legendäre Instrumente, die es schon gibt, bekommen ihre Eigenschaften. */
+    public static function gearPerks(Db $db): void
+    {
+        foreach ($db->all('SELECT id, model FROM gear') as $row) {
+            $rarity = Catalog::GEAR[$row['model']]['rarity'] ?? 'common';
+            $perks = \Signed\Rng::sample(array_keys(Catalog::GEAR_PERKS), \Signed\Game\Balance::GEAR_PERKS[$rarity]);
+            $db->update('gear', ['perks' => json_encode($perks)], ['id' => (int) $row['id']]);
+        }
+    }
 }

@@ -66,7 +66,7 @@ final class Studio
 
         $levelUps = [];
         foreach ($members as $m) {
-            $gain = BandCalc::trainingGain($m, Balance::RECORD_SONG_SKILL * $accuracy);
+            $gain = BandCalc::trainingGain($m, Balance::RECORD_SONG_SKILL * $accuracy, null, BandCalc::gearOf($m, $gear));
             $column = $m['band_slot'] === 2 && $m['instr2'] !== null ? 'skill2' : 'skill1';
             $db->update('musicians', [$column => min((float) Balance::MAX_STAT, BandCalc::skill($m) + $gain)], ['id' => $m['id']]);
             $levelUp = Levels::check($this->repo, $m['id']);
@@ -125,7 +125,8 @@ final class Studio
         );
         $fameGain = round(array_sum($gains), 1);
         $firstRecord = (int) $db->value("SELECT COUNT(*) FROM records WHERE label_id = ? AND status = 'done'", [$this->repo->labelId]) === 0;
-        $chartPoints = Charts::points($songs, $quality, $sound, $perfect, BandCalc::bandFame($band, $members));
+        $studio = count(array_filter($members, static fn ($m) => BandCalc::hasPerk(BandCalc::gearOf($m, $gear), 'studio')));
+        $chartPoints = round(Charts::points($songs, $quality, $sound, $perfect, BandCalc::bandFame($band, $members)) * (1 + Balance::PERK_STUDIO * $studio), 1);
         $now = Clock::now();
         $db->update('records', [
             'status' => 'done',

@@ -1,6 +1,6 @@
-import { bandById, defineActions, gearById, musicianById, mutate } from './core.js';
+import { bandById, cat, defineActions, gearById, musicianById, mutate } from './core.js';
 import { fullName, gearCard, gearModel } from './cards.js';
-import { esc, fmt0, fmt1, openModal, toast } from './ui.js';
+import { confirmDialog, esc, fmt0, fmt1, money, openModal, toast } from './ui.js';
 
 /** Sound vorher → nachher, wie ihn der Server für ein freies Instrument ausgerechnet hat. */
 export function soundChange(u) {
@@ -63,8 +63,11 @@ export function openGear(gearId) {
               <button class="btn small" data-unassign>Ins Lager legen</button>` : `
               <h3>Wer damit besser klingt</h3>
               ${rows ? `<ul class="gear-upgrades">${rows}</ul>` : '<p class="muted">Im Moment würde niemand damit besser klingen.</p>'}`}
+            ${(g.perks ?? []).length ? `<h3>Eigenschaften</h3><ul class="perk-list">${g.perks.map((p) => cat().gearPerks[p]).filter(Boolean)
+              .map((p) => `<li>${p.icon} <b>${esc(p.name)}</b> – ${esc(p.desc)}</li>`).join('')}</ul>` : ''}
             <p class="muted small">Klang: wie viel das Instrument zum Sound beiträgt. Spielbarkeit: ab welchem Können der volle Klang kommt
-              (grün = erreicht, rot = noch nicht). Design: mehr Ruhm bei Auftritten.</p>
+              (grün = erreicht, rot = noch nicht). Design: mehr Ruhm bei Auftritten und ein besonderes Aussehen.</p>
+            <div class="dialog-actions"><button class="btn ghost small" data-sell>An den Second-Hand-Laden verkaufen · ${money(g.sellPrice)}</button></div>
           </div>
         </div>`;
     },
@@ -73,6 +76,15 @@ export function openGear(gearId) {
     const assign = e.target.closest('[data-assign]');
     if (assign && await assignGear(gearId, Number(assign.dataset.assign))) modal.close();
     if (e.target.closest('[data-unassign]') && await assignGear(gearId, null)) modal.close();
+    if (e.target.closest('[data-sell]')) {
+      const g = gearById(gearId);
+      const holder = g.musicianId ? musicianById(g.musicianId) : null;
+      const ok = await confirmDialog(`${gearModel(g.model).name} für ${money(g.sellPrice)} verkaufen?${holder ? ` ${holder.firstName} spielt danach ohne eigenes Instrument.` : ''}`, { ok: 'Verkaufen', danger: true });
+      if (ok && await mutate('gearSell', { gearId })) {
+        modal.close();
+        toast(`Verkauft für ${money(g.sellPrice)}.`, 'ok');
+      }
+    }
   });
 }
 

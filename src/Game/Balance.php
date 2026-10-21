@@ -110,6 +110,14 @@ final class Balance
     public const NO_GEAR_FACTOR = 0.5;
     /** Jedes Instrument weicht pro Wert bis zu so viel vom Modell ab. */
     public const GEAR_VARIANCE = 12;
+    /** Eigenschaften je Seltenheit (siehe Catalog::GEAR_PERKS) und ihre Stärke. */
+    public const GEAR_PERKS = ['common' => 0, 'rare' => 0, 'epic' => 1, 'legendary' => 2];
+    public const PERK_STAGE = 0.15;
+    public const PERK_TEACHER = 1.3;
+    public const PERK_STUDIO = 0.06;
+    /** Verkauf an den Second-Hand-Laden: Grundpreis je Seltenheit, je Eigenschaft +25 %. */
+    public const GEAR_SELL = ['common' => 25, 'rare' => 80, 'epic' => 260, 'legendary' => 750];
+    public const GEAR_SELL_PERK = 0.25;
     /** +5 % je weiterem unterschiedlichen Instrument, höchstens für 4 weitere. */
     public const LINEUP_BONUS = 0.05;
     public const LINEUP_BONUS_MAX_TYPES = 4;

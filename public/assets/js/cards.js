@@ -175,10 +175,9 @@ export function skillBar(skill) {
  * hängen fest an der Musiker-ID, damit sie beim Neuzeichnen nicht springen. Nur Deckkraft und Verschiebung.
  */
 const SPARKLE_COUNT = [0, 5, 8, 12];
-function sparkles(m) {
-  const count = SPARKLE_COUNT[m.fameLevel] ?? 0;
+function sparkles(count, id) {
   if (!count) return '';
-  let seed = (m.id * 2654435761) >>> 0;
+  let seed = (id * 2654435761) >>> 0;
   const rnd = () => {
     seed = (seed * 1664525 + 1013904223) >>> 0;
     return seed / 4294967296;
@@ -212,7 +211,7 @@ export function musicianCard(m, { act = 'openMusician', size = '', extra = '', s
         ? abilities.map((a) => `<b>${esc(a.name)}</b>`).join(' · ')
         : `<i>${m.personality.map((p) => esc(c.personalities[p])).join(' · ')}</i>`}</span>`,
     foot: status,
-    overlay: sparkles(m),
+    overlay: sparkles(SPARKLE_COUNT[m.fameLevel] ?? 0, m.id),
     act,
     data: { id: m.id },
     size,
@@ -229,6 +228,17 @@ export function gearModel(key) {
  * wird grün, wenn er sie erreicht, sonst rot. Ohne skill nimmt die Karte ihren aktuellen Besitzer.
  * Ein grüner Pfeil zeigt, dass ein freies Instrument jemandem in einer Band helfen würde.
  */
+/**
+ * Aussehen nach Design: ab 30 eine eigene Farbe, ab 60 Sonderlackierung mit Metallic-Hintergrund,
+ * ab 85 Gold-Edition mit Glitzern. Der Farbton hängt fest an den Werten des einzelnen Instruments.
+ */
+const FINISH_NAMES = ['', 'Farbvariante', 'Sonderlackierung', 'Gold-Edition'];
+function gearFinish(model) {
+  const tier = model.design >= 85 ? 3 : model.design >= 60 ? 2 : model.design >= 30 ? 1 : 0;
+  const hue = (model.klang * 31 + model.design * 17 + model.spielbarkeit * 7) % 360;
+  return { tier, hue };
+}
+
 export function gearCard(g, { act = null, data = {}, size = '', extra = '', skill = null, up = null } = {}) {
   const model = { ...gearModel(g.model), ...(g.klang ? { klang: g.klang, spielbarkeit: g.spielbarkeit, design: g.design } : {}) };
   const needed = 100 - model.spielbarkeit;
@@ -238,14 +248,19 @@ export function gearCard(g, { act = null, data = {}, size = '', extra = '', skil
     : `<b class="${skill >= needed ? 'ok' : 'bad'}" title="${skill >= needed ? 'Erreicht' : 'Noch nicht erreicht'}: Können ${fmt0(skill)}">${fmt0(needed)}</b>`;
   const arrow = (up ?? g.upgrades?.some((u) => u.bandId))
     ? `<span class="tcg-up" title="${up ? 'Im Lager liegt ein besseres Instrument' : 'Jemand in deiner Band klingt damit besser'}">▲</span>` : '';
+  const finish = gearFinish(model);
+  const perks = (g.perks ?? []).map((p) => cat().gearPerks[p]).filter(Boolean);
   return tcg({
     rarity: model.rarity,
-    theme: 'gear-bg',
+    theme: `gear-bg finish-${finish.tier}`,
+    style: `--hue:${finish.hue}`,
     name: model.name,
-    art: `<span class="tcg-icon">${instrumentIcon(model.type)}</span>${arrow}`,
-    type: `Instrument<em>${esc(instrumentName(model.type))}</em>`,
-    text: `Voller Klang ab Können ${threshold}`,
+    art: `<span class="tcg-icon">${instrumentIcon(model.type)}</span>${arrow}
+      ${perks.length ? `<span class="tcg-abilities">${perks.map((p) => `<i title="${esc(p.name)}: ${esc(p.desc)}">${p.icon}</i>`).join('')}</span>` : ''}`,
+    type: `Instrument<em>${esc(instrumentName(model.type))}${finish.tier ? ` · ${FINISH_NAMES[finish.tier]}` : ''}</em>`,
+    text: `Voller Klang ab Können ${threshold}${perks.length ? `<br>${perks.map((p) => `<b>${esc(p.name)}</b>`).join(' · ')}` : ''}`,
     stats: [[model.klang, 'Klang'], [model.spielbarkeit, 'Spielb.'], [model.design, 'Design']],
+    overlay: finish.tier === 3 ? sparkles(6, model.klang * 7 + model.design) : '',
     act,
     data,
     size,

@@ -90,6 +90,7 @@ Ein schwacher Musiker zieht den Sound runter, und vier Musiker sind höchstens 2
 - Ohne Genre-Einheit spielt die Musik im Genre, das die meisten Mitglieder mögen (ohne Bonus).
 - Wechsel kommen in die Chronik; beim Aufnehmen zeigt das Spiel vorher, ob die Band ihr Genre verliert oder gewinnt.
 - **Band-Plätze:** die erste Band sofort, die zweite ab 150, die dritte ab 800 Label-Ruhm. Genres dürfen sich wiederholen.
+- **Namensänderung:** vor dem ersten Auftritt frei; danach kostet sie 300 ₲ und der Ruhm am alten Namen geht verloren.
 
 ### Zusammenspiel und Chemie
 
@@ -220,6 +221,11 @@ Jam-Café für den Gastgeber vorbei. Lehnt man alle ab, verfällt die Auswahl un
 
 - Jedes Exemplar: Klang, Spielbarkeit und Design je Modellwert ± bis zu 12.
 - Ohne eigenes Instrument zählt ein Musiker im Sound nur halb (× 0,5).
+- Eigenschaften: epische Instrumente haben eine, legendäre zwei. Bühnenmagnet: Anteil am Auftrittsruhm +0,15.
+  Lehrmeister: Können-Gewinn × 1,3. Studioklang: Chartpunkte einer Platte +6 % pro Mitglied mit so einem Instrument.
+- Aussehen nach Design: ab 30 eigene Farbe, ab 60 Sonderlackierung, ab 85 Gold-Edition mit Glitzern.
+- Verkauf an den Second-Hand-Laden: 25 / 80 / 260 / 750 ₲ je Seltenheit, +25 % pro Eigenschaft.
+- Die Instrumentenarten kommen so oft wie die Musiker, die sie spielen (gleiche Gewichte).
 
 ### Läden
 

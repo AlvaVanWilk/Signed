@@ -46,6 +46,7 @@ final class Api
         'bandSetManager' => ['POST', true],
         'bandDisband' => ['POST', true],
         'gearAssign' => ['POST', true],
+        'gearSell' => ['POST', true],
         'itemUse' => ['POST', true],
         'activityStart' => ['POST', true],
         'activityAck' => ['POST', true],
@@ -218,6 +219,12 @@ final class Api
     private function nameSuggest(array $in, Repo $repo): array
     {
         return ['name' => ($in['kind'] ?? '') === 'band' ? Names::band($this->db) : Names::record()];
+    }
+
+    private function gearSell(array $in, Repo $repo): array
+    {
+        $price = (new Bands($repo))->sellGear(self::int($in, 'gearId'));
+        return ['price' => $price, 'state' => State::build($repo)];
     }
 
     private function gearAssign(array $in, Repo $repo): array

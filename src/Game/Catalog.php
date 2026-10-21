@@ -153,6 +153,13 @@ final class Catalog
      * Instrumentenmodelle. klang = maximaler Sound-Bonus, spielbarkeit = hoch heißt leicht spielbar
      * (entfaltet sich schon bei wenig Können), design = Bonus auf Ruhm.
      */
+    /** Besondere Eigenschaften epischer und legendärer Instrumente; Stärke in Balance (PERK_*). */
+    public const GEAR_PERKS = [
+        'stage' => ['name' => 'Bühnenmagnet', 'icon' => '✨', 'desc' => 'Wer es spielt, bekommt bei Auftritten mehr Bekanntheit.'],
+        'teacher' => ['name' => 'Lehrmeister', 'icon' => '📚', 'desc' => 'Wer darauf übt, lernt schneller (Können).'],
+        'studio' => ['name' => 'Studioklang', 'icon' => '🎚', 'desc' => 'Platten der Band bekommen mehr Chartpunkte.'],
+    ];
+
     public const GEAR = [
         'mic_basic' => ['type' => 'vocals', 'name' => 'Standardmikro', 'rarity' => 'common', 'klang' => 10, 'spielbarkeit' => 90, 'design' => 5],
         'mic_condenser' => ['type' => 'vocals', 'name' => 'Studio-Kondensator', 'rarity' => 'rare', 'klang' => 35, 'spielbarkeit' => 70, 'design' => 15],

@@ -66,7 +66,7 @@ final class Activities
                 $songs = Balance::REHEARSAL['songs'];
                 $cohesionPerSong = Balance::REHEARSAL['cohesion'];
                 foreach ($members as $m) {
-                    $skill[$m['id']] = round(BandCalc::trainingGain($m, Balance::REHEARSAL['skill'] * $songs), 2);
+                    $skill[$m['id']] = round(BandCalc::trainingGain($m, Balance::REHEARSAL['skill'] * $songs, null, BandCalc::gearOf($m, $gear)), 2);
                 }
                 $title = 'Bandprobe';
                 $sim = ['timeline' => self::rehearsalTimeline($members, $songs), 'meter' => 0.0, 'perf' => 0.0];

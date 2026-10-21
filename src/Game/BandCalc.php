@@ -126,10 +126,22 @@ final class BandCalc
         return str_contains($name, '-') ? $name . '-Band' : $name . 'band';
     }
 
-    /** Können-Zuwachs: Talent beschleunigt, je besser jemand schon ist, desto langsamer geht es. */
-    public static function trainingGain(array $m, float $base, ?int $slot = null): float
+    /** Hat das Instrument diese Eigenschaft (Catalog::GEAR_PERKS)? */
+    public static function hasPerk(?array $model, string $perk): bool
+    {
+        return $model !== null && in_array($perk, $model['perks'] ?? [], true);
+    }
+
+    /**
+     * Können-Zuwachs: Talent und ein Lehrmeister-Instrument beschleunigen, je besser jemand schon ist,
+     * desto langsamer geht es.
+     */
+    public static function trainingGain(array $m, float $base, ?int $slot = null, ?array $model = null): float
     {
         $talent = Levels::has($m, 'talent') ? Balance::TALENT_FACTOR : 1.0;
+        if (self::hasPerk($model, 'teacher')) {
+            $talent *= Balance::PERK_TEACHER;
+        }
         return $base * $talent * max(0.003, max(0.0, 1 - self::skill($m, $slot) / 110) ** Balance::TRAINING_CURVE);
     }
 
@@ -211,6 +223,9 @@ final class BandCalc
         }
         if ($model !== null) {
             $factor += $model['design'] / 100 * $p['design'];
+        }
+        if (self::hasPerk($model, 'stage')) {
+            $factor += Balance::PERK_STAGE;
         }
         return $factor;
     }

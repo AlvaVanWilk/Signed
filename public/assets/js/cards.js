@@ -85,7 +85,7 @@ export function musicianStatus(m) {
  * Gemeinsamer Aufbau aller Karten: Kopf mit Name und Seltenheit, Bildfeld, Typzeile, Textfeld, Werte.
  * opts: act/data (Klick-Aktion), size ('' | 'sm'), extra (HTML unter der Karte), tag ('button' | 'div')
  */
-function tcg({ rarity = '', frame = '', theme = '', style = '', name, badge = '', art, type = '', text, stats = [], minis = '', foot = '', act = null, data = {}, size = '', extra = '' }) {
+function tcg({ rarity = '', frame = '', theme = '', style = '', name, badge = '', art, type = '', text, stats = [], minis = '', foot = '', overlay = '', act = null, data = {}, size = '', extra = '' }) {
   const tag = act ? 'button' : 'div';
   const attrs = act ? ` data-act="${act}" ${Object.entries(data).map(([k, v]) => `data-${k}="${esc(v)}"`).join(' ')}` : '';
   const card = `
@@ -102,6 +102,7 @@ function tcg({ rarity = '', frame = '', theme = '', style = '', name, badge = ''
         ${minis ? `<span class="tcg-minis">${minis}</span>` : ''}
         ${foot ? `<span class="tcg-foot">${foot}</span>` : ''}
       </span>
+      ${overlay}
     </${tag}>`;
   return extra ? `<div class="tcg-wrap ${size}">${card}${extra}</div>` : card;
 }
@@ -169,6 +170,27 @@ export function skillBar(skill) {
   }).join('')}</span>`;
 }
 
+/**
+ * Glitzern bekannter Musiker: Funkel, die nacheinander an je drei Stellen aufblitzen. Stellen und Takt
+ * hängen fest an der Musiker-ID, damit sie beim Neuzeichnen nicht springen. Nur Deckkraft und Verschiebung.
+ */
+const SPARKLE_COUNT = [0, 5, 8, 12];
+function sparkles(m) {
+  const count = SPARKLE_COUNT[m.fameLevel] ?? 0;
+  if (!count) return '';
+  let seed = (m.id * 2654435761) >>> 0;
+  const rnd = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+  const pos = () => `${Math.round(8 + rnd() * 84)}%`;
+  return `<span class="sparkles" aria-hidden="true">${Array.from({ length: count }, () => {
+    const vars = [1, 2, 3].map((n) => `--x${n}:${pos()};--y${n}:${pos()}`).join(';');
+    const duration = 3.5 + rnd() * 2.5;
+    return `<i style="${vars};--t:${duration.toFixed(2)}s;--d:-${(rnd() * duration).toFixed(2)}s"></i>`;
+  }).join('')}</span>`;
+}
+
 export function musicianCard(m, { act = 'openMusician', size = '', extra = '', showStatus = true } = {}) {
   const c = cat();
   const band = m.bandId ? bandById(m.bandId) : null;
@@ -190,6 +212,7 @@ export function musicianCard(m, { act = 'openMusician', size = '', extra = '', s
         ? abilities.map((a) => `<b>${esc(a.name)}</b>`).join(' · ')
         : `<i>${m.personality.map((p) => esc(c.personalities[p])).join(' · ')}</i>`}</span>`,
     foot: status,
+    overlay: sparkles(m),
     act,
     data: { id: m.id },
     size,

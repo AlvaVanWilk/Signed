@@ -1130,3 +1130,19 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .cover-thumb .cover-frame { padding: 2px; border-radius: 5px; }
 .cover-thumb .cover { border-radius: 3px; }
 .chart-record { display: inline-flex; align-items: center; gap: 8px; }
+
+/* Gig: eigene, breite Kachel über den anderen Auftritten */
+.gig-tile { margin-bottom: 12px; flex-wrap: wrap; }
+.gig-tile .action-main { gap: 6px; }
+.gig-pay { font-size: 1.05rem; }
+.gig-pay b { color: var(--gold, #ffd36e); }
+.gig-notes { display: flex; flex-wrap: wrap; gap: 6px; }
+.gig-notes .chip.bad { color: #ff8a8a; }
+.gig-notes .chip.ok { color: #6fe3a8; }
+.gig-controls { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; font-size: 0.9rem; color: var(--muted); }
+.gig-controls b { color: var(--text); }
+.stat-tile { cursor: pointer; }
+@media (max-width: 600px) {
+  .gig-tile .action-main { flex-basis: calc(100% - 62px); }
+  .gig-tile > .btn { width: 100%; }
+}

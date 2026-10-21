@@ -99,32 +99,17 @@ function electricByStem(members, b) {
 
 function overview(b, members) {
   const gig = b.options.gig;
-  const fx = b.effects;
-  const royalty = app.state.finance.bands[b.id];
   return `
     <div class="page-head">
       <div><div class="eyebrow">${b.title ? esc(b.title) : 'Band'}</div><h1>${esc(b.name)} <button class="icon-btn" data-act="bandRename" data-id="${b.id}" title="${b.released ? 'Namensänderung beantragen' : 'Umbenennen'}">✎</button></h1></div>
     </div>
     ${members.length ? stage(members, { className: runningFor(b.id) ? '' : 'idle', electricOf: electricByStem(members, b), hueOf: (m) => ownGear(m, playedInstrument(m)).hue }) : ''}
     <div class="stat-grid">
-      <div class="tile" data-flash="sound-${b.id}"><span>Sound ${infoBtn('sound', b)}</span><b>${fmt1(b.sound)}</b>
-        <small>Ruhm aus Auftritten und Platten <em>× ${fmt2(fx.soundFame)}</em></small>
-        <small>${esc(fx.venue)} erwartet <em>${fmt0(fx.expect)}</em></small></div>
-      <div class="tile"><span>Ruhm ${infoBtn('fame', b)}</span><b>${fmt1(b.fame)}</b>
-        <small title="Am Bandnamen · bei den Mitgliedern">Name ${fmt1(b.fameOwn)} · Musiker ${fmt1(b.fame - b.fameOwn)}</small>
-        <small>Gigs: <em>${esc(fx.venue)}</em>, <em>${money(fx.gage)}</em> pro Lied</small>
-        <small>Plattenverkauf <em>+${percent(fx.sales)}</em> · Charts <em>+${percent(fx.chart)}</em></small>
-        ${gig.nextVenue ? `<small>${esc(gig.nextVenue)} ab ${fmt0(gig.nextFame)}</small>${bar(gig.progress, 1, 'thin')}` : ''}</div>
-      <div class="tile"><span>Zusammenspiel ${infoBtn('cohesion', b)}</span><b>${fmt0(b.cohesion)}<small> / 100</small></b>${bar(b.cohesion, 100, 'thin')}
-        <small>Sound <em>× ${fmt2(fx.cohesionSound)}</em> (bei 100: × 1)</small></div>
-      <div class="tile"><span>Chemie ${infoBtn('chemistry', b)}</span><b>${chemistryLabel(b.chemistry)}</b>
-        <small>Zusammenspiel wächst <em>× ${fmt2(fx.chemistry)}</em></small>
-        ${b.chemistryNotes.length
-          ? b.chemistryNotes.map((n) => `<small class="${n.good ? 'ok' : 'bad'}">${n.good ? '＋' : '−'} ${esc(n.text)}</small>`).join('')
-          : '<small>Keine Reibung, aber auch niemand, der hilft</small>'}</div>
-      <div class="tile"><span>Platten ${infoBtn('records', b)}</span><b>${fmt0(b.records)}</b><small>${fmt0(b.songsRecorded)} Lieder</small>
-        ${royalty ? `<small>Tantiemen <em>+${fmtGain(royalty.moneyPerHour / 60)} ₲</em> pro Minute</small>
-        <small>Ruhm aus den Charts <em>+${fmtGain(royalty.famePerHour)}</em> pro Std.</small>` : '<small>Gerade nicht in den Charts</small>'}</div>
+      ${statTile('sound', b, fmt1(b.sound), { flash: `sound-${b.id}` })}
+      ${statTile('fame', b, fmt1(b.fame), { extra: gig.nextVenue ? bar(gig.progress, 1, 'thin') : '' })}
+      ${statTile('cohesion', b, `${fmt0(b.cohesion)}<small> / 100</small>`, { extra: bar(b.cohesion, 100, 'thin') })}
+      ${statTile('chemistry', b, chemistryLabel(b.chemistry))}
+      ${statTile('records', b, fmt0(b.records))}
     </div>
     <div class="lineup-grid">
       ${members.map((m, i) => memberTile(b, m, i + 1)).join('')}
@@ -187,17 +172,24 @@ const STAT_INFO = {
         <ul>
           <li>Ruhm bei jedem Auftritt: × ${fmt2(fx.soundFame)}</li>
           <li>Jede neue <b>Platte</b>: Ruhm und Chartpunkte × ${fmt2(fx.soundFame)} – besserer Sound, bessere Platte.</li>
-          <li>Das Publikum vergleicht den Sound mit dem, was es erwartet (${esc(fx.venue)}: ${fmt0(fx.expect)}).</li>
+          <li>Das Publikum vergleicht den Sound mit dem, was es erwartet: In der ${esc(fx.venue)} erwartet es <b>${fmt0(fx.expect)}</b>.
+            ${b.sound >= fx.expect ? 'Ihr klingt besser – die Stimmung steigt.' : 'Ihr klingt schwächer – die Stimmung sinkt eher.'}</li>
         </ul>`;
     },
   },
   fame: {
     title: 'Ruhm',
-    text: (b) => `<p>Wie bekannt die Band ist: die Bekanntheit der Mitglieder plus der Ruhm am Bandnamen.</p>
+    text: (b) => {
+      const fx = b.effects;
+      const gig = b.options.gig;
+      return `<p>Wie bekannt die Band ist: die Bekanntheit der Mitglieder plus der Ruhm am Bandnamen.</p>
+      <h3>Gerade</h3>
+      <ul><li>Am Bandnamen <b>${fmt1(b.fameOwn)}</b>, bei den Musikern <b>${fmt1(b.fame - b.fameOwn)}</b>.</li>
+        <li>Gigs in der <b>${esc(fx.venue)}</b> für <b>${money(fx.gage)}</b> pro Lied.${gig.nextVenue ? ` ${esc(gig.nextVenue)} ab ${fmt0(gig.nextFame)} Ruhm.` : ''}</li>
+        <li>Platten verkaufen sich <b>+${percent(fx.sales)}</b> besser und bekommen <b>+${percent(fx.chart)}</b> Chartpunkte.</li></ul>
       <h3>Woher er kommt</h3>
-      <ul><li>Auftritte, Platten, Charts und Promo.</li><li>Geht jemand, nimmt er seine Bekanntheit mit. Der Ruhm am Namen bleibt.</li></ul>
-      <h3>Was er bewirkt</h3>
-      <ul><li>Größere Bühnen und mehr Gage pro Lied.</li><li>Platten verkaufen sich besser und steigen höher in die Charts.</li></ul>`,
+      <ul><li>Auftritte, Platten, Charts und Promo.</li><li>Geht jemand, nimmt er seine Bekanntheit mit. Der Ruhm am Namen bleibt.</li></ul>`;
+    },
   },
   cohesion: {
     title: 'Zusammenspiel',
@@ -210,7 +202,12 @@ const STAT_INFO = {
   },
   chemistry: {
     title: 'Chemie',
-    text: () => `<p>Wie gut sich die Charaktere in der Band verstehen.</p>
+    text: (b) => `<p>Wie gut sich die Charaktere in der Band verstehen.</p>
+      <h3>Gerade: ${chemistryLabel(b.chemistry)}</h3>
+      <ul>${b.chemistryNotes.length
+        ? b.chemistryNotes.map((n) => `<li class="${n.good ? 'ok' : 'bad'}">${n.good ? '＋' : '−'} ${esc(n.text)}</li>`).join('')
+        : '<li>Keine Reibung, aber auch niemand, der hilft.</li>'}
+        <li>Zusammenspiel wächst <b>× ${fmt2(b.effects.chemistry)}</b>.</li></ul>
       <h3>Woraus sie sich zusammensetzt</h3>
       <ul><li>Die Eigenschaften der Mitglieder: Manche reiben sich (z. B. zwei Diven), andere helfen (Teamplayer, Ruhepol).</li></ul>
       <h3>Was sie bewirkt</h3>
@@ -218,13 +215,25 @@ const STAT_INFO = {
   },
   records: {
     title: 'Platten',
-    text: () => `<p>Alle Platten der Band.</p>
+    text: (b) => {
+      const royalty = app.state.finance.bands[b.id];
+      return `<p>Alle Platten der Band: <b>${fmt0(b.records)}</b> mit zusammen ${fmt0(b.songsRecorded)} Liedern.</p>
+      <h3>Gerade</h3>
+      <ul>${royalty ? `<li>Tantiemen <b>+${fmtGain(royalty.moneyPerHour / 60)} ₲</b> pro Minute</li>
+        <li>Ruhm aus den Charts <b>+${fmtGain(royalty.famePerHour)}</b> pro Stunde</li>` : '<li>Gerade nicht in den Charts.</li>'}</ul>
       <h3>Was sie bringen</h3>
       <ul><li>Geld und Ruhm beim Erscheinen. Wie viel, hängt von den Minispielen im Studio, vom Sound und vom Ruhm ab.</li>
       <li>In den Charts: laufend Tantiemen und Ruhm. Jede Platte verkauft sich danach für immer ein wenig weiter.</li>
-      <li>Neue Lieder für Auftritte.</li></ul>`,
+      <li>Neue Lieder für Auftritte.</li></ul>`;
+    },
   },
 };
+
+/** Wert-Kachel der Bandseite: nur Name und Wert; antippen (oder das i) zeigt, woraus er kommt und was er bewirkt. */
+function statTile(key, b, value, { flash = '', extra = '' } = {}) {
+  return `<div class="tile stat-tile" data-act="bandStatInfo" data-key="${key}" data-id="${b.id}"${flash ? ` data-flash="${flash}"` : ''}>
+    <span>${STAT_INFO[key].title} ${infoBtn(key, b)}</span><b>${value}</b>${extra}</div>`;
+}
 
 function infoBtn(key, b) {
   return `<button class="info-btn" data-act="bandStatInfo" data-key="${key}" data-id="${b.id}" title="Was ist ${STAT_INFO[key].title}?" aria-label="Info">i</button>`;
@@ -394,32 +403,70 @@ export async function confirmSpend(amount) {
   return confirmDialog(`Danach reicht dein Geld nicht mehr für eine Platte (${money(floor)}). Trotzdem?`, { ok: 'Trotzdem', danger: true });
 }
 
-/** Warum ein Gig gerade mehr oder weniger bringt: frisches Material und eine Platte in den Charts. */
+/** Warum ein Gig gerade mehr oder weniger bringt – kurz, als Hinweise unter der Gage. */
 function gigDraw(gig) {
   const parts = [];
-  if (gig.fresh < 1) parts.push(`Das Publikum kennt eure Lieder schon: <em>× ${fmt2(gig.fresh)}</em> – eine neue Platte bringt frisches Material`);
-  if (gig.chartRank) parts.push(`Platz ${gig.chartRank} in den Charts: <em>+${percent(gig.chartBonus - 1)}</em>`);
-  return parts.length ? `<br><span class="small">${parts.join('<br>')}</span>` : '';
+  if (gig.fresh < 1) parts.push(`<span class="chip bad">Lieder schon bekannt: −${percent(1 - gig.fresh)}</span>`);
+  if (gig.chartRank) parts.push(`<span class="chip ok">Platz ${gig.chartRank} in den Charts: +${percent(gig.chartBonus - 1)}</span>`);
+  return parts.length ? `<span class="gig-notes">${parts.join('')}</span>` : '';
+}
+
+/** Gig: breite Kachel – Gage, Hinweise, Liederzahl. Die Erklärung steckt im i. */
+function gigTile(b, gig, disabled) {
+  const songs = Math.max(gig.minSongs, Math.min(app.ui.gigSongs[b.id] || gig.maxSongs, gig.maxSongs));
+  return `
+    <div class="action-tile gig-tile">
+      <div class="action-icon">🎤</div>
+      <div class="action-main">
+        <b>Gig in der ${esc(gig.venue)} <button class="info-btn" data-act="gigInfo" data-id="${b.id}" aria-label="Info">i</button></b>
+        ${gig.available ? `
+          <span class="gig-pay"><b>${money(gig.gagePerSong)}</b> pro Lied</span>
+          ${gigDraw(gig)}
+          <span class="gig-controls"><label class="inline-select">Lieder
+            <select data-change="gigSongs" data-id="${b.id}">${Array.from({ length: gig.maxSongs - gig.minSongs + 1 }, (_, i) => gig.minSongs + i).map((n) => `<option value="${n}" ${n === songs ? 'selected' : ''}>${n}</option>`).join('')}</select>
+          </label><span>${duration(songs * cat().rules.songSeconds)}</span><span>zusammen <b>${money(gig.gagePerSong * songs)}</b></span>${setlist(b)}</span>`
+        : '<span class="muted small">Erst mit der ersten Platte.</span>'}
+      </div>
+      <button class="btn primary" data-act="startActivity" data-id="${b.id}" data-type="gig" ${gig.available ? disabled : 'disabled'}>Spielen</button>
+    </div>`;
+}
+
+/** Was hinter dem Gig steckt (das i der Gig-Kachel). */
+function openGigInfo(b) {
+  const gig = b.options.gig;
+  const record = b.discography.find((r) => r.promoted);
+  const modal = openModal({ html: `<div class="eyebrow">Auftritte</div><h2>Gig in der ${esc(gig.venue)}</h2>
+    <h3>Gage</h3>
+    <ul>
+      <li>Wo ihr spielt, hängt vom Ruhm der Band ab: Kneipe, Club, Konzertsaal, Halle, Arena. Größere Bühnen zahlen mehr.${gig.nextVenue ? ` Nächste Stufe: <b>${esc(gig.nextVenue)}</b> ab ${fmt0(gig.nextFame)} Ruhm.` : ''}</li>
+      <li>Gerade <b>${money(gig.gagePerSong)}</b> pro Lied. Ein Manager mit „Verhandler“ bringt mehr.</li>
+      <li>Ein Gig hat ${gig.minSongs} bis ${gig.maxSongs} Lieder. Mehr Lieder gibt es mit neuen Platten und einem Manager.</li>
+    </ul>
+    <h3>Frische Lieder</h3>
+    <ul>
+      <li>Nach jeder Platte sind die Lieder neu. Mit jedem Gig kennt das Publikum sie besser, es kommen weniger: Gage und Ruhm sinken bis auf ${percent(cat().rules.gigFreshMin)}.</li>
+      <li>Gerade: <b>${gig.fresh < 1 ? `−${percent(1 - gig.fresh)}` : 'alles frisch'}</b>. Eine neue Platte macht die Lieder wieder frisch.</li>
+    </ul>
+    <h3>Charts</h3>
+    <ul>
+      <li>Steht eine Platte der Band in den Charts, kommen mehr Leute${gig.chartRank ? `: Platz ${gig.chartRank} bringt <b>+${percent(gig.chartBonus - 1)}</b>` : ''}.</li>
+      <li>${record ? `Jeder Gig schiebt „${esc(record.title)}“ in den Charts an.` : 'Jeder Gig schiebt die Platte an, die ihr spielt – sobald eine chartet.'}</li>
+    </ul>
+    <h3>Ruhm</h3>
+    <ul><li>Je größer die Bühne, je besser der Sound und je besser die Stimmung im Publikum, desto mehr Ruhm.</li></ul>
+    <div class="dialog-actions"><button class="btn primary" data-close>OK</button></div>` });
+  modal.body.querySelector('[data-close]').addEventListener('click', () => modal.close());
 }
 
 function gigs(b, members) {
   const disabled = blocker(b, members) ? 'disabled' : '';
   const o = b.options;
   const gig = o.gig;
-  const songs = Math.max(gig.minSongs, Math.min(app.ui.gigSongs[b.id] || gig.maxSongs, gig.maxSongs));
   return `
     ${head('Auftritte', b)}
     ${blockerNotice(b, members)}
+    ${gigTile(b, gig, disabled)}
     <div class="action-grid">
-      ${actionTile({
-        icon: '🎤', title: `Gig · ${gig.venue}`,
-        meta: gig.available ? `${money(gig.gagePerSong)} pro Lied${chartPush(b)}${gigDraw(gig)}` : 'Erst mit der ersten Platte',
-        body: gig.available ? `
-          <span class="small"><label class="inline-select">Lieder
-            <select data-change="gigSongs" data-id="${b.id}">${Array.from({ length: gig.maxSongs - gig.minSongs + 1 }, (_, i) => gig.minSongs + i).map((n) => `<option value="${n}" ${n === songs ? 'selected' : ''}>${n}</option>`).join('')}</select>
-          </label> · ${duration(songs * cat().rules.songSeconds)} · <b>${money(gig.gagePerSong * songs)}</b></span>${setlist(b)}` : '',
-        button: `<button class="btn primary" data-act="startActivity" data-id="${b.id}" data-type="gig" ${gig.available ? disabled : 'disabled'}>Spielen</button>`,
-      })}
       ${actionTile({
         icon: '🎙️', title: 'Open Stage', meta: `${songsMeta(o.openstage.songs)} · Ruhm, Chance auf eine Karte`,
         button: `<button class="btn" data-act="startActivity" data-id="${b.id}" data-type="openstage" ${disabled}>Spielen</button>`,
@@ -791,6 +838,9 @@ defineActions({
       if (!ok) return;
     }
     await mutate('bandRemoveMember', { bandId: b.id, musicianId: m.id });
+  },
+  gigInfo({ id }) {
+    openGigInfo(bandById(Number(id)));
   },
   bandStatInfo({ key, id }) {
     const info = STAT_INFO[key];

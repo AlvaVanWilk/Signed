@@ -163,6 +163,7 @@ final class Present
                 'gearMaxBonus' => Balance::GEAR_MAX_BONUS,
                 'noGearFactor' => Balance::NO_GEAR_FACTOR,
                 'negotiatorBonus' => Balance::NEGOTIATOR_BONUS,
+                'gigFreshMin' => Balance::GIG_FRESH['min'],
                 'prBonus' => Balance::PR_BONUS,
                 'scoutShift' => Balance::SCOUT_SHIFT,
                 'managerSongsPerLevel' => Balance::MANAGER_SONGS_PER_LEVEL,

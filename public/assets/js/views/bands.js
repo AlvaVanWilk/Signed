@@ -107,22 +107,22 @@ function overview(b, members) {
     </div>
     ${members.length ? stage(members, { className: runningFor(b.id) ? '' : 'idle', electricOf: electricByStem(members, b), hueOf: (m) => ownGear(m, playedInstrument(m)).hue }) : ''}
     <div class="stat-grid">
-      <div class="tile" data-flash="sound-${b.id}"><span>Sound</span><b>${fmt1(b.sound)}</b>
-        <small>Ruhm pro Auftritt <em>× ${fmt2(fx.soundFame)}</em></small>
+      <div class="tile" data-flash="sound-${b.id}"><span>Sound ${infoBtn('sound', b)}</span><b>${fmt1(b.sound)}</b>
+        <small>Ruhm aus Auftritten und Platten <em>× ${fmt2(fx.soundFame)}</em></small>
         <small>${esc(fx.venue)} erwartet <em>${fmt0(fx.expect)}</em></small></div>
-      <div class="tile"><span>Ruhm</span><b>${fmt1(b.fame)}</b>
+      <div class="tile"><span>Ruhm ${infoBtn('fame', b)}</span><b>${fmt1(b.fame)}</b>
         <small title="Am Bandnamen · bei den Mitgliedern">Name ${fmt1(b.fameOwn)} · Musiker ${fmt1(b.fame - b.fameOwn)}</small>
         <small>Gigs: <em>${esc(fx.venue)}</em>, <em>${money(fx.gage)}</em> pro Lied</small>
         <small>Plattenverkauf <em>+${percent(fx.sales)}</em> · Charts <em>+${percent(fx.chart)}</em></small>
         ${gig.nextVenue ? `<small>${esc(gig.nextVenue)} ab ${fmt0(gig.nextFame)}</small>${bar(gig.progress, 1, 'thin')}` : ''}</div>
-      <div class="tile"><span>Zusammenspiel</span><b>${fmt0(b.cohesion)}<small> / 100</small></b>${bar(b.cohesion, 100, 'thin')}
+      <div class="tile"><span>Zusammenspiel ${infoBtn('cohesion', b)}</span><b>${fmt0(b.cohesion)}<small> / 100</small></b>${bar(b.cohesion, 100, 'thin')}
         <small>Sound <em>× ${fmt2(fx.cohesionSound)}</em> (bei 100: × 1)</small></div>
-      <div class="tile"><span>Chemie</span><b>${chemistryLabel(b.chemistry)}</b>
+      <div class="tile"><span>Chemie ${infoBtn('chemistry', b)}</span><b>${chemistryLabel(b.chemistry)}</b>
         <small>Zusammenspiel wächst <em>× ${fmt2(fx.chemistry)}</em></small>
         ${b.chemistryNotes.length
           ? b.chemistryNotes.map((n) => `<small class="${n.good ? 'ok' : 'bad'}">${n.good ? '＋' : '−'} ${esc(n.text)}</small>`).join('')
           : '<small>Keine Reibung, aber auch niemand, der hilft</small>'}</div>
-      <div class="tile"><span>Platten</span><b>${fmt0(b.records)}</b><small>${fmt0(b.songsRecorded)} Lieder</small>
+      <div class="tile"><span>Platten ${infoBtn('records', b)}</span><b>${fmt0(b.records)}</b><small>${fmt0(b.songsRecorded)} Lieder</small>
         ${royalty ? `<small>Tantiemen <em>+${fmtGain(royalty.moneyPerHour / 60)} ₲</em> pro Minute</small>
         <small>Ruhm aus den Charts <em>+${fmtGain(royalty.famePerHour)}</em> pro Std.</small>` : '<small>Gerade nicht in den Charts</small>'}</div>
     </div>
@@ -165,6 +165,69 @@ function genrePanel(b, members) {
         </div>`).join('')}
       </div>
     </section>`;
+}
+
+/** Kleines i an den Werten der Bandseite: Woraus sich der Wert zusammensetzt und was er bewirkt. */
+const STAT_INFO = {
+  sound: {
+    title: 'Sound',
+    text: (b) => {
+      const r = cat().rules;
+      const fx = b.effects;
+      return `<p>Wie gut die Band zusammen klingt.</p>
+        <h3>Woraus er sich zusammensetzt</h3>
+        <ul>
+          <li>Jeder Musiker: sein <b>Können</b> × sein <b>Instrument</b>. Ein gutes Instrument bringt bis +${Math.round(r.gearMaxBonus * 100)} %, ohne eigenes Instrument zählt nur ${Math.round(r.noGearFactor * 100)} %.</li>
+          <li>Der Durchschnitt zählt ${Math.round(r.soundMeanWeight * 100)} %, der <b>Schwächste</b> ${Math.round((1 - r.soundMeanWeight) * 100)} %: Eine schwache Stelle zieht runter.</li>
+          <li>Verschiedene Instrumente: +${Math.round(r.lineupBonus * 100)} % je weiterem, höchstens +${Math.round(r.lineupBonus * r.lineupBonusMaxTypes * 100)} %.</li>
+          <li><b>Zusammenspiel</b>: × ${fmt2(r.cohesionFloor)} bis × 1 – gerade × ${fmt2(fx.cohesionSound)}.</li>
+          <li><b>Genre-Band</b>: +${Math.round((r.genreBonus - 1) * 100)} %${b.genreBonus > 1 ? ' – hat sie' : ''}.</li>
+        </ul>
+        <h3>Was er bewirkt</h3>
+        <ul>
+          <li>Ruhm bei jedem Auftritt: × ${fmt2(fx.soundFame)}</li>
+          <li>Jede neue <b>Platte</b>: Ruhm und Chartpunkte × ${fmt2(fx.soundFame)} – besserer Sound, bessere Platte.</li>
+          <li>Das Publikum vergleicht den Sound mit dem, was es erwartet (${esc(fx.venue)}: ${fmt0(fx.expect)}).</li>
+        </ul>`;
+    },
+  },
+  fame: {
+    title: 'Ruhm',
+    text: (b) => `<p>Wie bekannt die Band ist: die Bekanntheit der Mitglieder plus der Ruhm am Bandnamen.</p>
+      <h3>Woher er kommt</h3>
+      <ul><li>Auftritte, Platten, Charts und Promo.</li><li>Geht jemand, nimmt er seine Bekanntheit mit. Der Ruhm am Namen bleibt.</li></ul>
+      <h3>Was er bewirkt</h3>
+      <ul><li>Größere Bühnen und mehr Gage pro Lied.</li><li>Platten verkaufen sich besser und steigen höher in die Charts.</li></ul>`,
+  },
+  cohesion: {
+    title: 'Zusammenspiel',
+    text: (b) => `<p>Wie gut die Band eingespielt ist (0 bis 100).</p>
+      <h3>Woher es kommt</h3>
+      <ul><li>Bandproben, Auftritte und Aufnahmen im Studio. Die Chemie bestimmt, wie schnell es wächst.</li>
+      <li>Neue Mitglieder, Rauswürfe und neue Rollen kosten etwas. Wer zurück aufs alte Instrument wechselt, bekommt es zurück.</li></ul>
+      <h3>Was es bewirkt</h3>
+      <ul><li>Sound × ${fmt2(cat().rules.cohesionFloor)} bei 0 bis × 1 bei 100 – gerade × ${fmt2(b.effects.cohesionSound)}.</li></ul>`,
+  },
+  chemistry: {
+    title: 'Chemie',
+    text: () => `<p>Wie gut sich die Charaktere in der Band verstehen.</p>
+      <h3>Woraus sie sich zusammensetzt</h3>
+      <ul><li>Die Eigenschaften der Mitglieder: Manche reiben sich (z. B. zwei Diven), andere helfen (Teamplayer, Ruhepol).</li></ul>
+      <h3>Was sie bewirkt</h3>
+      <ul><li>Wie schnell das Zusammenspiel wächst. Eine Grenze setzt sie nicht.</li></ul>`,
+  },
+  records: {
+    title: 'Platten',
+    text: () => `<p>Alle Platten der Band.</p>
+      <h3>Was sie bringen</h3>
+      <ul><li>Geld und Ruhm beim Erscheinen. Wie viel, hängt von den Minispielen im Studio, vom Sound und vom Ruhm ab.</li>
+      <li>In den Charts: laufend Tantiemen und Ruhm. Jede Platte verkauft sich danach für immer ein wenig weiter.</li>
+      <li>Neue Lieder für Auftritte.</li></ul>`,
+  },
+};
+
+function infoBtn(key, b) {
+  return `<button class="info-btn" data-act="bandStatInfo" data-key="${key}" data-id="${b.id}" title="Was ist ${STAT_INFO[key].title}?" aria-label="Info">i</button>`;
 }
 
 export function chemistryLabel(chemistry) {
@@ -726,6 +789,12 @@ defineActions({
       if (!ok) return;
     }
     await mutate('bandRemoveMember', { bandId: b.id, musicianId: m.id });
+  },
+  bandStatInfo({ key, id }) {
+    const info = STAT_INFO[key];
+    const modal = openModal({ html: `<div class="eyebrow">Band</div><h2>${info.title}</h2>${info.text(bandById(Number(id)))}
+      <div class="dialog-actions"><button class="btn primary" data-close>OK</button></div>` });
+    modal.body.querySelector('[data-close]').addEventListener('click', () => modal.close());
   },
   async bandSetSlot(value, el) {
     const b = bandById(Number(el.dataset.band));

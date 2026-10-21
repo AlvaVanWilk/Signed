@@ -108,8 +108,13 @@ final class Music
     {
         $path = dirname(__DIR__, 2) . self::DIR . '/' . $resolved['folder'] . '/noten.json';
         $data = is_file($path) ? json_decode((string) file_get_contents($path), true) : null;
-        // Beide Stimmen singen dieselbe Melodie: Noten liegen unter dem Namen ohne Stimme.
-        $notes = $data['tracks'][$resolved['file']] ?? $data['tracks'][preg_replace('/-(weiblich|maennlich)$/', '', $resolved['file'])] ?? null;
+        // Beide Stimmen singen dieselbe Melodie, akustisch und elektrisch spielen denselben Part:
+        // Fehlen die Noten unter dem genauen Namen, zählen die der anderen Stimme bzw. Variante.
+        $base = preg_replace('/-(weiblich|maennlich|akustisch|elektrisch)$/', '', $resolved['file']);
+        $notes = null;
+        foreach ([$resolved['file'], $base, "$base-akustisch", "$base-elektrisch"] as $key) {
+            $notes ??= $data['tracks'][$key] ?? null;
+        }
         return $notes ? ['bpm' => (int) $data['bpm'], 'notes' => $notes] : null;
     }
 

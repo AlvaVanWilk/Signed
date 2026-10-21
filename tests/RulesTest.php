@@ -307,3 +307,10 @@ test('Gesang: Musikerinnen singen mit der Frauenstimme, Musiker mit der Männers
     checkEquals('weiblich', Signed\Game\Music::voice(['id' => 7, 'look' => ['gender' => 'f']]));
     checkEquals('maennlich', Signed\Game\Music::voice(['id' => 8, 'look' => ['gender' => 'm']]));
 });
+
+test('Musik: Noten der anderen Variante zählen, wenn die eigene fehlt (Rock-Schlagzeug)', function () {
+    $r = Signed\Game\Music::resolve(['type' => 'drums', 'level' => 0, 'genre' => 'rock', 'electric' => true]);
+    checkEquals(['folder' => 'rock-0', 'file' => 'schlagzeug-elektrisch'], $r);
+    check(Signed\Game\Music::notes($r) !== null, 'Noten aus „schlagzeug-akustisch“');
+    checkEquals('pop-0', Signed\Game\Music::resolve(['type' => 'guitar', 'level' => 0, 'genre' => 'rock', 'electric' => true])['folder'], 'Fehlt im Genre: Pop');
+});

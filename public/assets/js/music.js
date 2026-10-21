@@ -104,6 +104,9 @@ export function bandStems(members, band = null, seed = 0) {
     const stem = memberStem(m, band, seed);
     let url = stemUrl(stem);
     if (url && used.has(url)) {
+      // Der Ersatz behält die Variante, die eigentlich klingen würde (Metal: E-Gitarre → Pop-E-Gitarre).
+      const variant = url.match(/-(elektrisch|akustisch)\.mp3$/);
+      if (variant) stem.electric = variant[1] === 'elektrisch';
       for (const genre of genres) {
         const tryUrl = stemUrl({ ...stem, genre });
         if (tryUrl && !used.has(tryUrl)) {

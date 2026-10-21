@@ -68,6 +68,10 @@ final class Music
             $resolved = self::resolve($stem);
             $key = $resolved === null ? null : $resolved['folder'] . '/' . $resolved['file'];
             if ($key !== null && isset($used[$key])) {
+                // Der Ersatz behält die Variante, die eigentlich klingen würde (Metal: E-Gitarre → Pop-E-Gitarre).
+                if (preg_match('/-(elektrisch|akustisch)$/', $resolved['file'], $variant)) {
+                    $stem['electric'] = $variant[1] === 'elektrisch';
+                }
                 foreach ($alternatives as $genre) {
                     $try = self::resolve(['genre' => $genre] + $stem);
                     $tryKey = $try === null ? null : $try['folder'] . '/' . $try['file'];

@@ -30,6 +30,14 @@ export function mountShell(container, game, { hud, hint, below = '' }) {
   const draw = canvas.getContext('2d');
   const resultEl = el('.mg-result');
 
+  // Langes Drücken (Halten-Knopf, Tasten, Spielfeld) soll auf dem iPad kein Menü, keine Lupe und keine Textauswahl öffnen.
+  const block = (e) => e.preventDefault();
+  container.addEventListener('contextmenu', block);
+  container.addEventListener('selectstart', block);
+  container.addEventListener('touchstart', (e) => {
+    if (e.target.closest('.mg-hold, .mg-key, .mg-stage') && !e.target.closest('.mg-overlay')) e.preventDefault();
+  }, { passive: false });
+
   // Steht die Audio-Uhr still (iPad), läuft das Spiel nicht los: Hinweis zeigen, bis sie wieder tickt.
   let watchdog = 0;
   function watchClock() {

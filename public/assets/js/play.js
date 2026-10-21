@@ -1,7 +1,7 @@
 import { instrumentName, levelUpBanners } from './cards.js';
-import { bandById, mutate } from './core.js';
+import { bandById, cat, mutate } from './core.js';
 import { createMinigame } from './minigame.js';
-import { esc, fmt1, fmtGain, money, openModal, percent } from './ui.js';
+import { bar, esc, fmt0, fmt1, fmt2, fmtGain, money, openModal, percent } from './ui.js';
 
 /** Solo-Probe: ein Musiker übt sein Instrument. */
 export function startPractice(musicianId, slot = 1) {
@@ -61,8 +61,24 @@ function practiceSummary(r) {
   return `
     <h3>Trefferquote ${percent(r.accuracy)}</h3>
     ${counts(r)}
-    <p class="big-number">${esc(instrumentName(r.instrument))}: ${fmt1(r.skillBefore)} → <b>${fmt1(r.skillAfter)}</b> <span class="ok">+${fmt1(r.gain)}</span></p>
+    <p class="big-number">${esc(instrumentName(r.instrument))}: ${fmtSkill(r.skillBefore, r.gain)} → <b>${fmtSkill(r.skillAfter, r.gain)}</b> <span class="ok">+${fmtSkill(r.gain, r.gain)}</span></p>
+    ${levelProgress(r.skillAfter)}
     ${levelUpBanners(r.levelUps)}`;
+}
+
+/** Kleine Zuwächse mit zwei Nachkommastellen, damit nicht „+0,0“ dasteht. */
+const fmtSkill = (value, gain) => (gain < 0.1 ? fmt2(value) : fmt1(value));
+
+/** Wie weit es bis zur nächsten Stufe ist – so sieht man auch kleine Schritte. */
+function levelProgress(skill) {
+  const levels = cat().rules.skillLevels;
+  const level = levels.filter((l) => skill >= l).length;
+  if (level >= levels.length) return '';
+  const from = [0, ...levels][level];
+  const share = (skill - from) / (levels[level] - from);
+  return `
+    <p class="small muted">Weg zu „${esc(cat().levelNames[level + 1])}“ (ab ${fmt0(levels[level])}): <b>${percent(share)}</b>${level >= 1 ? ' · ab hier geht es langsamer voran' : ''}</p>
+    ${bar(share, 1, 'thin')}`;
 }
 
 function recordSummary(r) {

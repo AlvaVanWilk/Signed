@@ -119,7 +119,7 @@ Ein schwacher Musiker zieht den Sound runter, und vier Musiker sind höchstens 2
 | | Lieder | Geld | Ruhm pro Lied | Besonderheit |
 |---|---|---|---|---|
 | Straßenmusik | 3 | Notgroschen: 20–45 ₲ in den Hut, nur solange das Label keine EP (390 ₲) bezahlen kann | 0,06 × (1 − Ruhm/150), mindestens 10 %; Erwartung 25 | auch einzeln ohne Band |
-| Bandprobe | 2 | – | – | Zusammenspiel × 2,5; Können 0,08 pro Lied (Lernkurve wie unten) |
+| Bandprobe | 2 | – | – | Zusammenspiel × 2,5; Können 0,05 pro Lied für jedes Mitglied (Lernkurve wie unten) – eine Solo-Probe bringt einem Musiker 5- bis 15-mal so viel; beides steht im Spiel an den Knöpfen |
 | Open Stage | 2 | – | 0,18 × (1 − Ruhm/120) | 7 % Manager-Karte, sonst 15 % Fan-Karte (+1–2 Ruhm) |
 | Gig | 1 bis Maximum | Gage des Ortes pro Lied, vorher bekannt | je nach Ort | erst mit Platte |
 

@@ -207,19 +207,26 @@ function practice(b, members) {
     ${blockerNotice(b, members)}
     <div class="action-grid">
       ${actionTile({
-        icon: '🥁', title: 'Bandprobe', meta: `${songsMeta(b.options.rehearsal.songs)} · Zusammenspiel, Können`,
+        icon: '🥁', title: 'Bandprobe', meta: `${songsMeta(b.options.rehearsal.songs)} · Zusammenspiel · Können für alle: <b>${gainRange(members.map((m) => m.gains?.rehearsal ?? 0))}</b> je Musiker`,
         button: `<button class="btn primary" data-act="startActivity" data-id="${b.id}" data-type="rehearsal" ${blocked ? 'disabled' : ''}>Proben</button>`,
       })}
       ${members.map((m) => practiceTile(m, isBusy(m.busyUntil) || isBusy(b.busyUntil))).join('')}
     </div>`;
 }
 
+/** Spanne der Zuwächse, z. B. „+0,04–0,10“ (wer schon gut ist, lernt langsamer). */
+function gainRange(values) {
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  return Math.abs(max - min) < 0.005 ? `+${fmtGain(max)}` : `+${fmtGain(min)}–${fmtGain(max)}`;
+}
+
 export function practiceTile(m, busy) {
   return actionTile({
     icon: face(m, 'md'),
     title: fullName(m),
-    meta: 'Solo-Probe',
-    body: `<span class="tile-buttons">${m.instruments.map((i, idx) => `<button class="btn small" data-act="practice" data-id="${m.id}" data-slot="${idx + 1}" ${busy ? 'disabled' : ''}>${instrumentIcon(i.type)} ${esc(instrumentName(i.type))} ${fmt0(i.skill)}</button>`).join('')}</span>`,
+    meta: 'Solo-Probe · Können bei 100 % Treffern',
+    body: `<span class="tile-buttons">${m.instruments.map((i, idx) => `<button class="btn small" data-act="practice" data-id="${m.id}" data-slot="${idx + 1}" ${busy ? 'disabled' : ''}>${instrumentIcon(i.type)} ${esc(instrumentName(i.type))} ${fmt0(i.skill)} · <b>bis +${fmtGain(m.gains?.practice?.[idx] ?? 0)}</b></button>`).join('')}</span>`,
   });
 }
 

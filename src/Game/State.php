@@ -201,7 +201,19 @@ final class State
             'market' => (new Transfers($repo))->market(),
             'packOffer' => $packOffer,
             'finance' => Charts::income($db, $repo->labelId, $albums),
-            'musicians' => array_values(array_map(static fn ($m) => Present::musician($m, $gearIds[$m['id']] ?? []), $musicians)),
+            'musicians' => array_values(array_map(static function ($m) use ($gearIds, $gearMap) {
+                // Was Üben bringt, damit man entscheiden kann: Solo-Probe (bei 100 % Treffern) je Instrument, Bandprobe fürs Band-Instrument.
+                $practice = [];
+                foreach ([1 => $m['instr1'], 2 => $m['instr2']] as $slot => $type) {
+                    if ($type !== null) {
+                        $practice[] = round(BandCalc::practiceGain($m, $slot, 1.0, $gearMap[$m['id']][$type] ?? null), 3);
+                    }
+                }
+                return Present::musician($m, $gearIds[$m['id']] ?? []) + ['gains' => [
+                    'practice' => $practice,
+                    'rehearsal' => $m['band_id'] === null ? null : round(BandCalc::rehearsalGain($m, BandCalc::gearOf($m, $gearMap)), 3),
+                ]];
+            }, $musicians)),
             'gear' => $gearOut,
             'managers' => array_values(array_map(static fn ($m) => Present::manager($m, $managerBands[$m['id']] ?? []), $managers)),
             'items' => array_map(static fn ($i) => ['id' => (int) $i['id'], 'kind' => $i['kind'], 'value' => (float) $i['value']], $items),

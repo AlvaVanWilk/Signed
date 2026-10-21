@@ -370,3 +370,12 @@ test('Musik: Zwei Gitarren in einer Band spielen verschiedene Aufnahmen (Metal: 
     checkEquals('metal-0/gitarre-elektrisch', $a['folder'] . '/' . $a['file']);
     checkEquals('rock-0/gitarre-elektrisch', $b['folder'] . '/' . $b['file']);
 });
+
+test('Üben: Eine Solo-Probe bringt einem Musiker deutlich mehr Können als eine Bandprobe', function () {
+    foreach ([20.0, 40.0, 70.0] as $skill) {
+        $m = musician(['skill1' => $skill, 'band_slot' => 1]);
+        $solo = BandCalc::practiceGain($m, 1, 0.85, null);
+        $band = BandCalc::rehearsalGain($m, null);
+        check($solo >= 5 * $band, "Können $skill: Solo $solo, Band $band");
+    }
+});

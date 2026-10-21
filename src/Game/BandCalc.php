@@ -136,6 +136,19 @@ final class BandCalc
      * Können-Zuwachs: Talent und ein Lehrmeister-Instrument beschleunigen, je besser jemand schon ist,
      * desto langsamer geht es.
      */
+    /** Können-Zuwachs einer Solo-Probe bei dieser Trefferquote (0–1). Auf Stufe 0 doppelt (PRACTICE_BEGINNER_BOOST). */
+    public static function practiceGain(array $m, int $slot, float $accuracy, ?array $model): float
+    {
+        $boost = Levels::forSkill(self::skill($m, $slot)) === 0 ? Balance::PRACTICE_BEGINNER_BOOST : 1.0;
+        return self::trainingGain($m, Balance::PRACTICE_GAIN * $boost * $accuracy ** 1.5, $slot, $model);
+    }
+
+    /** Können-Zuwachs einer Bandprobe für ein Mitglied (sein Band-Instrument). */
+    public static function rehearsalGain(array $m, ?array $model): float
+    {
+        return self::trainingGain($m, Balance::REHEARSAL['skill'] * Balance::REHEARSAL['songs'], null, $model);
+    }
+
     public static function trainingGain(array $m, float $base, ?int $slot = null, ?array $model = null): float
     {
         $talent = Levels::has($m, 'talent') ? Balance::TALENT_FACTOR : 1.0;

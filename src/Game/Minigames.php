@@ -257,8 +257,7 @@ final class Minigames
         $accuracy = Chart::accuracy($perfect, $good, $miss);
         $type = $slot === 2 ? $m['instr2'] : $m['instr1'];
         $model = $this->repo->gearByMusician()[$m['id']][$type] ?? null;
-        $boost = Levels::forSkill($skill) === 0 ? Balance::PRACTICE_BEGINNER_BOOST : 1.0;
-        $gain = BandCalc::trainingGain($m, Balance::PRACTICE_GAIN * $boost * $accuracy ** 1.5, $slot, $model);
+        $gain = BandCalc::practiceGain($m, $slot, $accuracy, $model);
         $after = min((float) Balance::MAX_STAT, $skill + $gain);
         $this->repo->db->update('musicians', [$slot === 2 ? 'skill2' : 'skill1' => $after], ['id' => $m['id']]);
         $levelUp = Levels::check($this->repo, $m['id']);

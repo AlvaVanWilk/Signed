@@ -728,7 +728,21 @@ defineActions({
     await mutate('bandRemoveMember', { bandId: b.id, musicianId: m.id });
   },
   async bandSetSlot(value, el) {
-    await mutate('bandSetSlot', { bandId: Number(el.dataset.band), musicianId: Number(el.dataset.musician), slot: Number(value) });
+    const b = bandById(Number(el.dataset.band));
+    const m = musicianById(Number(el.dataset.musician));
+    const after = b.slotPreview?.[m.id];
+    const back = b.slotReturn?.includes(String(m.id));
+    const penalty = back ? ' Mit diesem Instrument ist die Band eingespielt: Das Zusammenspiel kommt zurück.'
+      : b.released ? ` Neue Rolle: Zusammenspiel −${cat().rules.cohesionSwitchPenalty}, bis ${m.firstName} zurückwechselt.` : '';
+    const ok = await confirmDialog(
+      `${m.firstName} spielt ${instrumentName(m.instruments[Number(value) - 1].type)}: Sound ${fmt1(b.sound)} → ${after == null ? '?' : fmt1(after)}.${penalty}`,
+      { ok: 'Wechseln', danger: !!b.released && !back },
+    );
+    if (!ok) {
+      el.value = String(m.bandSlot);
+      return;
+    }
+    await mutate('bandSetSlot', { bandId: b.id, musicianId: m.id, slot: Number(value) });
   },
   async bandRename({ id }) {
     const b = bandById(id);

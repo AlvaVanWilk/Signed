@@ -91,6 +91,24 @@ final class State
             $open = $openRecords[$band['id']] ?? null;
             $chartRank = Charts::bandRank($db, $band['id']);
             $draw = BandCalc::freshness($band['gigs_since_record']) * Charts::rankFactor($chartRank, Balance::CHART_GIG_BONUS);
+            // Vorschau für Instrumentwechsel: Sound danach (samt Zusammenspiel-Abzug), null = Besetzung geht so nicht.
+            $slotPreview = [];
+            foreach ($list as $i => $m) {
+                if ($m['instr2'] === null) {
+                    continue;
+                }
+                $try = $list;
+                $try[$i]['band_slot'] = $m['band_slot'] === 2 ? 1 : 2;
+                $back = $band['slot_return'][$m['id']] ?? null;
+                $cohesion = $back !== null && $back[0] === $try[$i]['band_slot'] ? min(100.0, $band['cohesion'] + $back[1])
+                    : ($band['released'] ? max(0.0, $band['cohesion'] - Balance::COHESION_SWITCH_PENALTY) : $band['cohesion']);
+                $slotPreview[$m['id']] = BandCalc::lineupProblems(array_values($try)) ? null : BandCalc::sound(
+                    $try,
+                    $cohesion,
+                    $gearMap,
+                    BandCalc::identity($try, $band['genre'], $band['genre2'])['bonus']
+                );
+            }
 
             $bandsOut[] = [
                 'id' => $band['id'],
@@ -103,6 +121,8 @@ final class State
                 'managerLevel' => $level,
                 'memberIds' => array_map(static fn ($m) => $m['id'], $list),
                 'sound' => $sound,
+                'slotPreview' => $slotPreview,
+                'slotReturn' => array_map('strval', array_keys($band['slot_return'])),
                 'fame' => $fame,
                 'fameOwn' => round($band['fame_own'], 1),
                 'cohesion' => round($band['cohesion'], 1),

@@ -1010,3 +1010,27 @@ test('Tageskurs: nie zweimal hintereinander dasselbe Instrument', function () {
     }
     check(($kinds['Kurs'] ?? 0) > ($kinds['Meisterklasse'] ?? 0) && ($kinds['Meisterklasse'] ?? 0) > 5, 'Kursarten gewichtet: ' . json_encode($kinds));
 });
+
+test('Instrumentwechsel: Vorschau stimmt, neue Rolle kostet Zusammenspiel, Zurückwechseln gibt es zurück', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Wechsel');
+    $band = foundBand($p);
+    $db->exec('UPDATE bands SET cohesion = 60, released = 1');
+    $drummer = (int) $db->value("SELECT id FROM musicians WHERE instr1 = 'drums'");
+    $db->exec("UPDATE musicians SET instr2 = 'bass', skill2 = 30 WHERE id = ?", [$drummer]);
+    $preview = bandById($p->get('state'), $band['id'])['slotPreview'][$drummer];
+    $after = bandById($p->post('bandSetSlot', ['bandId' => $band['id'], 'musicianId' => $drummer, 'slot' => 2])['state'], $band['id']);
+    checkEquals($preview, $after['sound']);
+    checkEquals(60 - Balance::COHESION_SWITCH_PENALTY, $after['cohesion']);
+
+    // Zurück aufs alte Instrument: Damit ist die Band eingespielt, nichts geht verloren.
+    $preview = $after['slotPreview'][$drummer];
+    $back = bandById($p->post('bandSetSlot', ['bandId' => $band['id'], 'musicianId' => $drummer, 'slot' => 1])['state'], $band['id']);
+    checkEquals(60.0, $back['cohesion']);
+    checkEquals($preview, $back['sound']);
+    checkEquals(60.0, bandById($p->get('state'), $band['id'])['cohesion']);
+    // Hin und her bleibt beim selben Stand.
+    $p->post('bandSetSlot', ['bandId' => $band['id'], 'musicianId' => $drummer, 'slot' => 2]);
+    $again = bandById($p->post('bandSetSlot', ['bandId' => $band['id'], 'musicianId' => $drummer, 'slot' => 1])['state'], $band['id']);
+    checkEquals(60.0, $again['cohesion']);
+});

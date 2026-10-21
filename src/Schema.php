@@ -353,6 +353,10 @@ final class Schema
             [
                 [Migrations::class, 'personalityContradictions'],
             ],
+            // 16: Instrumentwechsel merken – wer zurückwechselt, ist wieder eingespielt
+            [
+                'ALTER TABLE bands ADD COLUMN slot_return TEXT NULL',
+            ],
         ];
     }
 }

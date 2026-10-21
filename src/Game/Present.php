@@ -167,6 +167,7 @@ final class Present
                 'promoSeconds' => Balance::PROMO_SECONDS,
                 'autoPracticeSeconds' => Balance::AUTO_PRACTICE['seconds'],
                 'cohesionRemovePenalty' => Balance::COHESION_REMOVE_PENALTY,
+                'cohesionSwitchPenalty' => Balance::COHESION_SWITCH_PENALTY,
                 'scoutPrice' => Balance::SCOUT_PRICE,
                 'skillLevels' => Balance::SKILL_LEVELS,
                 'fameLevels' => Balance::FAME_LEVELS,

@@ -357,6 +357,8 @@ final class Repo
             'gigs_since_record' => (int) $r['gigs_since_record'],
             'live_songs_needed' => (int) $r['live_songs_needed'],
             'promo_record_id' => isset($r['promo_record_id']) ? (int) $r['promo_record_id'] : null,
+            // Musiker-ID => [Instrument von vorher, Zusammenspiel-Abzug], siehe Bands::setSlot()
+            'slot_return' => json_decode((string) ($r['slot_return'] ?? ''), true) ?: [],
             'released' => (bool) $r['released'],
             'fame_own' => (float) $r['fame_own'],
             'busy_until' => (int) $r['busy_until'],

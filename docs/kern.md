@@ -101,6 +101,8 @@ Ein schwacher Musiker zieht den Sound runter, und vier Musiker sind höchstens 2
   ein Ruhepol halbiert das; Teamplayer +0,04 pro Paar, Partytier+Partytier +0,06.
 - Höchstwert des Zusammenspiels ist immer 100; Chemie bremst nur das Wachstum (× Chemie). Die Chemie-Kachel nennt, wer sich reibt und wer hilft.
 - Nach der Freigabe (erster Auftritt) kostet: neues Mitglied −5, Instrumentwechsel −5, Rauswurf −30.
+  Wer aufs Instrument von vorher zurückwechselt, ist wieder eingespielt: Der Wechsel-Abzug kommt zurück (`bands.slot_return`).
+  Vor dem Wechsel zeigt das Spiel den Sound danach.
 
 ### Ruhm
 

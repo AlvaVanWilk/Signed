@@ -169,6 +169,9 @@ final class Bands
                 throw new ApiError('Eine Band braucht mindestens 2 Musiker. Löse die Band stattdessen auf.');
             }
             $this->repo->db->update('musicians', ['band_id' => null, 'band_slot' => 1], ['id' => $m['id']]);
+            $return = $band['slot_return'];
+            unset($return[$m['id']]);
+            $this->saveSlotReturn($bandId, $return);
             if ($band['released']) {
                 $this->lowerCohesion($band, Balance::COHESION_REMOVE_PENALTY);
                 $this->repo->log('lineup', sprintf(
@@ -182,7 +185,10 @@ final class Bands
         });
     }
 
-    /** Ein Multi-Instrumentalist wechselt das Instrument, das er in der Band spielt. */
+    /**
+     * Ein Multi-Instrumentalist wechselt das Instrument, das er in der Band spielt. Die neue Rolle kostet Zusammenspiel;
+     * wechselt er zurück, ist die Band mit ihm wieder eingespielt und bekommt den Abzug zurück.
+     */
     public function setSlot(int $bandId, int $musicianId, int $slot): void
     {
         $this->repo->db->transaction(function () use ($bandId, $musicianId, $slot): void {
@@ -199,9 +205,17 @@ final class Bands
             $members[$index]['band_slot'] = $slot;
             self::assertLineup($members);
             $this->repo->db->update('musicians', ['band_slot' => $slot], ['id' => $musicianId]);
-            if ($band['released']) {
-                $this->lowerCohesion($band, Balance::COHESION_SWITCH_PENALTY);
+            $return = $band['slot_return'];
+            $back = $return[$musicianId] ?? null;
+            if ($back !== null && $back[0] === $slot) {
+                $this->repo->db->update('bands', ['cohesion' => min(100.0, $band['cohesion'] + $back[1])], ['id' => $bandId]);
+                unset($return[$musicianId]);
+            } elseif ($band['released']) {
+                $lost = min($band['cohesion'], (float) Balance::COHESION_SWITCH_PENALTY);
+                $this->lowerCohesion($band, $lost);
+                $return[$musicianId] = [3 - $slot, $lost];
             }
+            $this->saveSlotReturn($bandId, $return);
             $this->syncIdentity($band);
         });
     }
@@ -367,6 +381,11 @@ final class Bands
             throw new ApiError('Die Band ist gerade beschäftigt. Warte, bis sie fertig ist.');
         }
         return $band;
+    }
+
+    private function saveSlotReturn(int $bandId, array $return): void
+    {
+        $this->repo->db->update('bands', ['slot_return' => $return ? json_encode($return) : null], ['id' => $bandId]);
     }
 
     private function lowerCohesion(array $band, float $amount): void

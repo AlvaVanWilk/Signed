@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Signed – Probe: Cover-Automat</title>
+  <style>
+    :root { --gold: #ffc23d; --blue: #4f8bff; --green: #3ddc97; }
+    body { margin: 0; font-family: system-ui, sans-serif; color: #f3eefc; background: #0e0c14; }
+    main { max-width: 900px; margin: 0 auto; padding: 16px; }
+    h1 { font-size: 1.2rem; margin: 0 0 4px; }
+    h2 { font-size: 1rem; margin: 24px 0 8px; color: #a49bbd; text-transform: uppercase; letter-spacing: 0.06em; }
+    p { color: #a49bbd; margin: 4px 0; }
+    button { font: inherit; font-weight: 800; padding: 12px 22px; border-radius: 999px; border: 0; background: #ff4f8b; color: #fff; touch-action: manipulation; }
+    button.ghost { background: #2a2338; }
+    .machine { background: linear-gradient(180deg, #2a1f3d, #1a1424); border-radius: 22px; padding: 16px; box-shadow: inset 0 0 0 2px #3a2f52; user-select: none; -webkit-user-select: none; }
+    .reel-row { display: grid; grid-template-columns: 92px 1fr; gap: 10px; align-items: center; margin: 8px 0; opacity: 0.45; }
+    .reel-row.active { opacity: 1; }
+    .reel-row.done { opacity: 0.9; }
+    .reel-label { font-weight: 800; font-size: 0.9rem; }
+    .reel-label small { display: block; font-weight: 600; color: #a49bbd; }
+    .reel { position: relative; height: 92px; overflow: hidden; border-radius: 14px; background: #0b0910; touch-action: manipulation; }
+    .reel::after { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 88px; transform: translateX(-50%); border: 3px solid #fff; border-radius: 12px; pointer-events: none; box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.35); }
+    .strip { position: absolute; top: 6px; left: 0; display: flex; will-change: transform; }
+    .cell { flex: 0 0 80px; height: 80px; margin: 0 4px; border-radius: 10px; display: grid; place-items: center; background: #221b2e; box-sizing: border-box; border: 3px solid #3a3446; overflow: hidden; }
+    .cell svg { width: 100%; height: 100%; display: block; }
+    .cell.r1 { border-color: var(--green); }
+    .cell.r2 { border-color: var(--blue); box-shadow: inset 0 0 10px rgba(79, 139, 255, 0.6); }
+    .cell.r3 { border-color: var(--gold); box-shadow: inset 0 0 14px rgba(255, 194, 61, 0.8); background: #3a2c10; }
+    .cell .motif { width: 64px; height: 64px; }
+    .swatch { display: grid; grid-template-rows: 2fr 1fr 1fr; width: 100%; height: 100%; }
+    .cell.picked { outline: 3px solid #fff; }
+    .controls { display: flex; gap: 10px; align-items: center; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
+    .stop { font-size: 1.3rem; padding: 16px 48px; }
+    .result { display: grid; grid-template-columns: minmax(200px, 320px) 1fr; gap: 20px; align-items: center; margin-top: 18px; }
+    @media (max-width: 600px) { .result { grid-template-columns: 1fr; } .reel-row { grid-template-columns: 1fr; } }
+    .cover { width: 100%; height: auto; display: block; border-radius: 6px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); }
+    .cover-frame { padding: 8px; border-radius: 10px; background: #2a2338; }
+    .cover-frame.q1 { background: var(--green); }
+    .cover-frame.q2 { background: var(--blue); }
+    .cover-frame.q3 { background: linear-gradient(135deg, #fff1b8, var(--gold), #b8860b, var(--gold)); }
+    .chips span { display: inline-block; margin: 2px 4px 2px 0; padding: 3px 10px; border-radius: 999px; background: #2a2338; font-size: 0.85rem; font-weight: 700; }
+    .chips .r1 { box-shadow: inset 0 0 0 2px var(--green); }
+    .chips .r2 { box-shadow: inset 0 0 0 2px var(--blue); }
+    .chips .r3 { box-shadow: inset 0 0 0 2px var(--gold); color: var(--gold); }
+    .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+    .gallery figure { margin: 0; }
+    .gallery figcaption { font-size: 0.8rem; color: #a49bbd; margin-top: 4px; }
+    .tune { display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.85rem; color: #a49bbd; margin-top: 10px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Probe: Cover-Automat</h1>
+  <p>Vier Bänder laufen nacheinander. Tippe aufs Band oder auf „Stopp!“ (oder Leertaste), wenn das Feld im weißen Rahmen ist.
+    Nicht genau getroffen? Dann rutscht es noch ein, zwei Felder weiter. <b style="color:var(--green)">Grün</b>, <b style="color:var(--blue)">blau</b> und
+    <b style="color:var(--gold)">gold</b> umrandete Felder machen das Cover wertvoller.</p>
+
+  <div class="machine">
+    <div class="reels"></div>
+    <div class="controls">
+      <button class="stop" data-stop>Stopp!</button>
+      <button class="ghost" data-restart>Neu</button>
+    </div>
+    <div class="tune">
+      <label>Tempo <input type="range" min="0.6" max="1.6" step="0.1" value="1" data-speed> <b data-speed-out>1,0</b></label>
+      <label>Treffgenauigkeit <input type="range" min="0.05" max="0.35" step="0.01" value="0.14" data-window> <b data-window-out>0,14</b></label>
+    </div>
+  </div>
+
+  <div class="result" hidden></div>
+
+  <h2>Zufällige Cover – von gewöhnlich bis gold</h2>
+  <div class="gallery"></div>
+  <p><button class="ghost" data-more>Andere Cover</button></p>
+</main>
+<script type="module">
+  import { LAYOUTS, MOTIFS, PALETTES, RARITY_NAMES, STYLES, coverQuality, coverSvg } from './assets/js/cover.js';
+
+  const CELLS = 14;
+  const CELL_W = 88;
+  const RARITY_COUNTS = [8, 3, 2, 1];
+  const BASE_SPEED = [4.5, 5.5, 6.5, 7.5];
+  const pick = (list) => list[Math.floor(Math.random() * list.length)];
+  const shuffle = (list) => list.map((x) => [Math.random(), x]).sort((a, b) => a[0] - b[0]).map((x) => x[1]);
+
+  const REELS = [
+    { key: 'motif', name: 'Motiv', options: Object.keys(MOTIFS),
+      cell: (k) => `<svg class="motif" viewBox="0 0 100 100"><path d="${MOTIFS[k].d}" fill-rule="evenodd" fill="#f3eefc"/></svg>`, label: (k) => MOTIFS[k].name },
+    { key: 'palette', name: 'Farben', options: Object.keys(PALETTES),
+      cell: (k) => { const p = PALETTES[k]; return `<div class="swatch"><div style="background:${p.bg}"></div><div style="background:${p.main}"></div><div style="background:${p.accent}"></div></div>`; }, label: (k) => PALETTES[k].name },
+    { key: 'style', name: 'Stil', options: Object.keys(STYLES),
+      cell: (k) => coverSvg({ motif: 'stern', palette: 'neon', style: k, layout: 'mitte', rarity: [2, 2, 2, 2] }), label: (k) => STYLES[k].name },
+    { key: 'layout', name: 'Anordnung', options: Object.keys(LAYOUTS),
+      cell: (k) => coverSvg({ motif: 'herz', palette: 'mono', style: 'popart', layout: k, rarity: [2, 2, 2, 2] }), label: (k) => LAYOUTS[k].name },
+  ];
+
+  const $ = (s) => document.querySelector(s);
+  let state;
+
+  function buildReel(reel) {
+    const rarity = shuffle(RARITY_COUNTS.flatMap((n, r) => Array(n).fill(r)));
+    let pool = [];
+    const items = rarity.map((r) => {
+      if (!pool.length) pool = shuffle(reel.options);
+      return { key: pool.pop(), rarity: r };
+    });
+    return { ...reel, items, pos: Math.random() * CELLS, phase: Math.random() * 6, target: null, stopped: false };
+  }
+
+  function start() {
+    state = { reels: REELS.map(buildReel), current: 0, last: performance.now(), t: 0 };
+    $('.reels').innerHTML = state.reels.map((r, i) => `
+      <div class="reel-row ${i === 0 ? 'active' : ''}" data-row="${i}">
+        <div class="reel-label">${r.name}<small data-pick></small></div>
+        <div class="reel" data-reel="${i}"><div class="strip">${[0, 1, 2].map(() => r.items.map((it) => `<div class="cell r${it.rarity}">${r.cell(it.key)}</div>`).join('')).join('')}</div></div>
+      </div>`).join('');
+    $('.result').hidden = true;
+    $('[data-stop]').disabled = false;
+    requestAnimationFrame(frame);
+  }
+
+  function frame(now) {
+    const dt = Math.min(0.05, (now - state.last) / 1000);
+    state.last = now;
+    state.t += dt;
+    const speedFactor = Number($('[data-speed]').value);
+    state.reels.forEach((r, i) => {
+      if (r.stopped) return;
+      if (r.target !== null) {
+        // Ausrollen bis zum Zielfeld.
+        const d = r.target - r.pos;
+        r.pos += d * Math.min(1, 7 * dt) + Math.sign(d) * Math.min(Math.abs(d), 0.4 * dt);
+        if (Math.abs(r.target - r.pos) < 0.005) { r.pos = r.target; r.stopped = true; landed(i); }
+      } else if (i >= state.current) {
+        // Das Tempo schwankt etwas, damit man den Takt nicht auswendig lernt.
+        r.pos += BASE_SPEED[i] * speedFactor * (1 + 0.22 * Math.sin(state.t * 2.1 + r.phase)) * dt;
+      }
+      const strip = document.querySelector(`[data-reel="${i}"] .strip`);
+      const width = document.querySelector(`[data-reel="${i}"]`).clientWidth;
+      const x = width / 2 - ((r.pos % CELLS) + CELLS) * CELL_W - CELL_W / 2;
+      strip.style.transform = `translateX(${x}px)`;
+    });
+    if (state.reels.some((r) => !r.stopped)) requestAnimationFrame(frame);
+  }
+
+  function stop() {
+    const i = state.current;
+    const r = state.reels[i];
+    if (!r || r.target !== null) return;
+    const nearest = Math.round(r.pos);
+    const off = Math.abs(r.pos - nearest);
+    const exact = Number($('[data-window]').value);
+    // Genau getroffen bleibt es stehen, sonst rutscht es ein oder zwei Felder weiter.
+    const slip = off <= exact ? 0 : off <= 0.32 ? 1 : 2;
+    r.target = nearest + slip;
+    state.current++;
+    document.querySelector(`[data-row="${i}"]`).classList.replace('active', 'done');
+    document.querySelector(`[data-row="${i + 1}"]`)?.classList.add('active');
+    if (state.current >= state.reels.length) $('[data-stop]').disabled = true;
+  }
+
+  function itemAt(r) {
+    return r.items[((Math.round(r.pos) % CELLS) + CELLS) % CELLS];
+  }
+
+  function landed(i) {
+    const r = state.reels[i];
+    const it = itemAt(r);
+    document.querySelector(`[data-row="${i}"] [data-pick]`).innerHTML = `${r.label(it.key)}${it.rarity ? ` · <span style="color:var(--${['', 'green', 'blue', 'gold'][it.rarity]})">${RARITY_NAMES[it.rarity]}</span>` : ''}`;
+    if (state.reels.every((x) => x.stopped)) showResult();
+  }
+
+  function showResult() {
+    const picks = state.reels.map(itemAt);
+    const spec = { motif: picks[0].key, palette: picks[1].key, style: picks[2].key, layout: picks[3].key, rarity: picks.map((p) => p.rarity) };
+    const q = coverQuality(spec.rarity);
+    const tier = spec.rarity.includes(3) ? 3 : q >= 0.3 ? 2 : q > 0 ? 1 : 0;
+    $('.result').hidden = false;
+    $('.result').innerHTML = `
+      <div class="cover-frame q${tier}">${coverSvg(spec, { band: 'Die Kellerkinder', title: pick(['Laut im Keller', 'Mondsüchtig', 'Funkenflug', 'Zuckerwatte', 'Nachtschicht']) })}</div>
+      <div>
+        <h2 style="margin-top:0">Dein Cover</h2>
+        <div class="chips">${state.reels.map((r, i) => `<span class="r${picks[i].rarity}">${r.label(picks[i].key)}</span>`).join('')}</div>
+        <p>Cover-Güte <b style="color:#fff">${Math.round(q * 100)} %</b> → Verkauf <b style="color:#fff">+${Math.round(q * 10)} %</b></p>
+        <p>${q === 0 ? 'Lauter gewöhnliche Felder: Das Cover sieht blass und etwas verwaschen aus.' : tier === 3 ? 'Gold! Glänzende Folie.' : tier === 2 ? 'Schön klar und mit Glanz.' : 'Schon etwas kräftiger.'}</p>
+        <p><button data-again>Nochmal</button></p>
+      </div>`;
+  }
+
+  function gallery() {
+    const combos = [];
+    for (let i = 0; i < 12; i++) {
+      const level = Math.floor(i / 3);
+      const rarity = [0, 1, 2, 3].map(() => Math.max(0, Math.min(3, level + Math.floor(Math.random() * 3) - 1 - (level === 0 ? 1 : 0))));
+      if (level === 0) rarity.fill(0);
+      combos.push({ motif: pick(Object.keys(MOTIFS)), palette: pick(Object.keys(PALETTES)), style: pick(Object.keys(STYLES)), layout: pick(Object.keys(LAYOUTS)), rarity });
+    }
+    combos.sort((a, b) => coverQuality(a.rarity) - coverQuality(b.rarity));
+    $('.gallery').innerHTML = combos.map((c) => `<figure>${coverSvg(c, { band: pick(['Kellerkinder', 'Neon Hasen', 'Die Wolken', 'Blech & Bass']), title: pick(['Laut im Keller', 'Mondsüchtig', 'Funkenflug']) })}
+      <figcaption>${STYLES[c.style].name} · ${PALETTES[c.palette].name} · Güte ${Math.round(coverQuality(c.rarity) * 100)} %</figcaption></figure>`).join('');
+  }
+
+  document.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('[data-reel], [data-stop]')) { e.preventDefault(); stop(); }
+  });
+  document.addEventListener('keydown', (e) => { if (e.code === 'Space') { e.preventDefault(); stop(); } });
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('[data-restart], [data-again]')) start();
+    if (e.target.closest('[data-more]')) gallery();
+  });
+  document.addEventListener('contextmenu', (e) => e.preventDefault());
+  const fmt = (v) => String(v).replace('.', ',');
+  $('[data-speed]').addEventListener('input', (e) => { $('[data-speed-out]').textContent = fmt(Number(e.target.value).toFixed(1)); });
+  $('[data-window]').addEventListener('input', (e) => { $('[data-window-out]').textContent = fmt(Number(e.target.value).toFixed(2)); });
+  start();
+  gallery();
+</script>
+</body>
+</html>

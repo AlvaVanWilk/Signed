@@ -829,7 +829,11 @@ defineActions({
   },
   async bandDisband({ id }) {
     const b = bandById(id);
-    const ok = await confirmDialog(`${b.name} auflösen? Eine laufende Produktion geht verloren.`, { ok: 'Auflösen', danger: true });
+    const members = b.memberIds.map(musicianById).filter(Boolean);
+    // Besteht die Band nur aus Jam-Café-Musikern, sollen die nicht glauben, sie könnten gleich wieder jammen.
+    const jamOnly = members.length > 0 && members.every((m) => m.jammed);
+    const ok = await confirmDialog(`${b.name} auflösen? Eine laufende Produktion geht verloren.${jamOnly
+      ? ` ${members.map((m) => m.firstName).join(' und ')} haben sich im Jam-Café gefunden – ins Jam-Café können sie danach nicht noch einmal.` : ''}`, { ok: 'Auflösen', danger: true });
     if (!ok) return;
     if (await mutate('bandDisband', { bandId: b.id })) navigate('#/');
   },

@@ -176,7 +176,7 @@ final class Activities
             if ($type === 'jam') {
                 // Im Jam-Café geht es ums Gründen: ohne freien Band-Platz gar nicht erst hin.
                 (new Bands($this->repo))->assertSlotFree();
-                Jam::assertOpen($this->repo);
+                Jam::assertNotJammed($m);
                 $songs = Balance::JAM['songs'];
                 $fameTotal = Balance::JAM['fame'] * $songs;
                 $expect = Balance::JAM['expect'];

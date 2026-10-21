@@ -184,8 +184,6 @@ final class Balance
             'high' => ['common' => 35, 'rare' => 45, 'epic' => 20, 'legendary' => 0],
         ],
         'minSkill' => [5.0, 26.0],
-        // Höchstens eine Band-Gründung pro Tag und Label – sonst: gründen, auflösen, wieder jammen, gratis Musiker sammeln.
-        'cooldown' => 24 * 3600,
     ];
     public const OPENSTAGE = [
         'songs' => 2, 'fame' => 0.18, 'expect' => 12, 'falloff' => 120,

@@ -1053,21 +1053,19 @@ test('Fan will einsteigen: selten nach begeistertem Gig, passendes fehlendes Ins
     checkEquals(4, count(bandById($state, $band['id'])['memberIds']));
 });
 
-test('Jam-Café: Gründen, Auflösen, wieder Jammen geht höchstens einmal am Tag', function () {
+test('Jam-Café: Wer darüber eine Band gegründet hat, kann nicht noch einmal hin – auch nach dem Auflösen', function () {
     $db = freshDb();
     $p = player($db);
     $p->post('register', ['username' => 'sammler', 'password' => 'geheim123', 'labelName' => 'Sammel Records']);
     $offer = $p->post('scoutOpen', ['voucher' => true])['offer'];
     $m = $p->post('scoutPick', ['offerId' => $offer['id'], 'index' => 0])['musician'];
-    $jam = function () use ($p, $m): array {
-        $p->post('soloStart', ['musicianId' => $m['id'], 'type' => 'jam']);
-        Clock::advance(Balance::JAM['songs'] * Balance::SONG_SECONDS);
-        return $p->get('state')['jamOffers'][0];
-    };
-    $res = $p->post('jamPick', ['offerId' => $jam()['id'], 'index' => 0, 'name' => 'Eintagsfliege']);
-    $p->post('bandDisband', ['bandId' => $res['bandId']]);
-    checkApiError(fn () => $p->post('soloStart', ['musicianId' => $m['id'], 'type' => 'jam']), 'schon eine Band');
-    check($p->get('state')['jamNextAt'] > Clock::now());
-    Clock::advance(Balance::JAM['cooldown']);
-    check(count($jam()['cards']) > 0, 'Am nächsten Tag wieder');
+    $p->post('soloStart', ['musicianId' => $m['id'], 'type' => 'jam']);
+    Clock::advance(Balance::JAM['songs'] * Balance::SONG_SECONDS);
+    $offer = $p->get('state')['jamOffers'][0];
+    $res = $p->post('jamPick', ['offerId' => $offer['id'], 'index' => 0, 'name' => 'Eintagsfliege']);
+    $state = $p->post('bandDisband', ['bandId' => $res['bandId']])['state'];
+    checkEquals(2, count(array_filter($state['musicians'], static fn ($x) => $x['jammed'])), 'Gastgeber und neuer Musiker sind markiert');
+    foreach ($state['musicians'] as $x) {
+        checkApiError(fn () => $p->post('soloStart', ['musicianId' => $x['id'], 'type' => 'jam']), 'nicht noch einmal');
+    }
 });

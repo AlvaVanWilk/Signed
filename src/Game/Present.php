@@ -34,6 +34,8 @@ final class Present
             'abilities' => $m['abilities'],
             'abilityChoice' => $m['ability_choice'],
             'favorite' => $m['favorite'],
+            // Hat über das Jam-Café schon eine Band gegründet (kann nicht noch einmal hin).
+            'jammed' => ($m['jam_at'] ?? 0) > 0,
             'personality' => $m['personality'],
             'unusual' => $m['unusual'],
             'look' => (object) $m['look'],

@@ -1,5 +1,5 @@
 import { abilityInfo, bandIdentity, emptySlot, fullName, gearCard, gearModel, genreName, genreTag, instrumentIcon, instrumentName, musicianCard, musicianStatus } from '../cards.js';
-import { app, bandById, cat, defineActions, isBusy, musicianById, mutate, navigate, serverNow } from '../core.js';
+import { app, bandById, cat, defineActions, isBusy, musicianById, mutate, navigate } from '../core.js';
 import { openLive } from '../live.js';
 import { chip } from '../cards.js';
 import { closeAllModals, duration, esc, fmt0, fmt1, money, openModal, timeAgo, toast } from '../ui.js';
@@ -143,8 +143,7 @@ function jam(m) {
   }
   const slots = app.state.label.bandSlots;
   const full = app.state.bands.length >= slots.open;
-  const wait = Math.max(0, (app.state.jamNextAt ?? 0) - serverNow());
-  const note = wait > 0 ? `Heute hat das Jam-Café schon eine Band zusammengebracht. Wieder in ${duration(wait)}.`
+  const note = m.jammed ? `${m.firstName} hat über das Jam-Café schon eine Band gefunden. Noch einmal geht nicht.`
     : !full ? '2 Lieder · Musiker für eine Band finden'
     : slots.next === null ? 'Dein Label führt schon so viele Bands, wie es kann.'
     : `Erst ab ${fmt0(slots.next)} Label-Ruhm: Dann ist Platz für eine weitere Band.`;
@@ -155,7 +154,7 @@ function jam(m) {
       <div class="action-tile">
         <div class="action-icon">☕</div>
         <div class="action-main"><b>Jam-Session</b><span class="muted small">${esc(note)}</span></div>
-        <button class="btn primary" data-act="solo" data-id="${m.id}" data-type="jam" ${busyOf(m) || full || wait > 0 ? 'disabled' : ''}>Jammen</button>
+        <button class="btn primary" data-act="solo" data-id="${m.id}" data-type="jam" ${busyOf(m) || full || m.jammed ? 'disabled' : ''}>Jammen</button>
       </div>
     </div>`;
 }

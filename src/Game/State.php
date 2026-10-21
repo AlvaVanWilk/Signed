@@ -220,7 +220,6 @@ final class State
             'scout' => (new Scout($repo))->status(),
             'course' => (new Courses($repo))->status($musicians),
             'jamOffers' => (new Jam($repo))->open(),
-            'jamNextAt' => Jam::nextAt($repo),
             'market' => (new Transfers($repo))->market(),
             'packOffer' => $packOffer,
             'finance' => Charts::income($db, $repo->labelId, $albums),

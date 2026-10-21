@@ -357,6 +357,10 @@ final class Schema
             [
                 'ALTER TABLE bands ADD COLUMN slot_return TEXT NULL',
             ],
+            // 17: Jam-Café nur einmal – wer darüber schon eine Band gegründet hat, ist markiert
+            [
+                "UPDATE musicians SET jam_at = created_at WHERE jam_at = 0 AND (origin = 'jam' OR id IN (SELECT musician_id FROM jam_offers WHERE status = 'done'))",
+            ],
         ];
     }
 }

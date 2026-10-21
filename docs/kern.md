@@ -259,8 +259,9 @@ Nur die Gewinne sind klein; wie oft man etwas hintereinander spielt, ist nicht b
 
 ### Jam-Café
 
-Nur für Musiker ohne Band, 2 Lieder, beliebig oft – aber höchstens eine Band-Gründung pro Tag und Label (`JAM['cooldown']`),
-sonst könnte man gründen, auflösen und wieder jammen und so gratis Musiker sammeln. Im Publikum sitzen Musiker: Erwartung 35 (Straßenmusik 25,
+Nur für Musiker ohne Band, 2 Lieder, beliebig oft – bis jemand eine Band gründet: Gastgeber und neuer Musiker sind dann
+markiert (`musicians.jam_at`) und können nie wieder ins Jam-Café. Sonst könnte man gründen, auflösen, wieder jammen und
+so gratis Musiker sammeln. Löst man eine Band auf, die nur aus solchen Musikern besteht, warnt das Spiel. Im Publikum sitzen Musiker: Erwartung 35 (Straßenmusik 25,
 Open Stage 12). Danach stellen sich 3 Musiker vor, die zum Gastgeber passen. Wie gut sie sind, hängt von der
 Session ab (Publikumsleiste 0 → 100 %): Seltenheit von 85/14/1 % auf 35/45/20 % (gewöhnlich/selten/episch),
 Mindest-Können von 5 auf 26.

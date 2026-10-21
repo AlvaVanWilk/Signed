@@ -98,7 +98,7 @@ export function playStems(groups, when, { offset = 0, loop = false, volume = 0.9
  */
 /** Spuren einer Besetzung wie Music::bandStems: Wer dasselbe Instrument spielt, bekommt eine andere Aufnahme. */
 export function bandStems(members, band = null, seed = 0) {
-  const genres = [...new Set(['rock', 'pop', ...Object.keys(cat().music || {}).map((f) => f.split('-')[0])])];
+  const genres = [...new Set(['pop', 'rock', ...Object.keys(cat().music || {}).map((f) => f.split('-')[0])])];
   const used = new Set();
   return members.map((m) => {
     const stem = memberStem(m, band, seed);

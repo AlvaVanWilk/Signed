@@ -117,9 +117,32 @@ const guitarLike = (baseColor, reach, baseE, baseHue) => (skin, shirt, electric,
   ${arm('M75 80 Q84 92 72 102', [72, 102], skin, shirt, 'fig-strum')}`;
 };
 
+/**
+ * Bass: deutlich anders als die Gitarre – viel längerer, dickerer Hals, der weit über die Schulter ragt,
+ * großer Kopf mit vier dicken Mechaniken, größerer, länglicher Korpus mit dunklem Schlagbrett.
+ */
+const bassLike = (skin, shirt, electric, hue) => {
+  const body = hue === null ? (electric ? '#3a86ff' : '#c98a4b') : `hsl(${hue} 72% 50%)`;
+  const end = [10, 66];
+  const grip = [30, 80];
+  return `
+  <g ${STROKE}>
+    <path d="M62 100 L${end[0]} ${end[1]}" stroke="${INK}" stroke-width="8.5" stroke-linecap="round"/>
+    <path d="M62 100 L${end[0]} ${end[1]}" stroke="${electric ? '#d9b38c' : '#7a4a22'}" stroke-width="5.4" stroke-linecap="round"/>
+    <path d="M${end[0] + 2} ${end[1] + 1} L${end[0] - 8} ${end[1] - 6} L${end[0] - 10} ${end[1] - 2} L${end[0] - 1} ${end[1] + 5} Z" fill="${INK}"/>
+    ${[0, 1, 2, 3].map((i) => `<circle cx="${end[0] - 3 - i * 2.4}" cy="${end[1] - 5.4 + i * 1.2}" r="1.7" fill="#d6d9e0" stroke-width="1"/>`).join('')}
+    <path d="M55 96 C60 91 68 93 69 98 C74 96 80 99 79 104 C85 107 87 114 82 119 C76 125 63 124 58 117 C52 117 48 111 52 106 C49 101 51 97 55 96 Z" fill="${body}"/>
+    <path d="M56 104 C60 101 67 104 68 109 C64 115 56 113 54 110 Z" fill="#2a2233" opacity="0.85"/>
+    ${electric ? '' : `<circle cx="66" cy="107" r="3.4" fill="${INK}"/>`}
+    <path d="M60 102 L67 108" stroke="${INK}" stroke-width="2.6"/>
+  </g>
+  ${arm(`M45 80 Q${grip[0] + 6} ${grip[1] - 6} ${grip[0]} ${grip[1]}`, grip, skin, shirt)}
+  ${arm('M75 80 Q86 94 70 106', [70, 106], skin, shirt, 'fig-strum')}`;
+};
+
 const POSES = {
   guitar: { back: () => '', front: guitarLike('#e9a24b', 6, '#e4572e') },
-  bass: { back: () => '', front: guitarLike('#c98a4b', 14, '#3a86ff') },
+  bass: { back: () => '', front: bassLike },
   vocals: {
     back: () => '',
     front: (skin, shirt) => `

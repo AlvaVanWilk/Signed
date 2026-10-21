@@ -1,6 +1,6 @@
 import { avatar } from './avatar.js';
 import { app, bandById, cat, isBusy, musicianById } from './core.js';
-import { esc, fmt0, fmt1 } from './ui.js';
+import { esc, fmt0, fmt1, percent } from './ui.js';
 
 export const instrumentName = (type) => cat().instruments[type]?.name ?? type;
 export const instrumentIcon = (type) => cat().instruments[type]?.icon ?? '🎵';
@@ -246,6 +246,13 @@ export function gearCard(g, { act = null, data = {}, size = '', extra = '', skil
   skill ??= holder?.instruments.find((i) => i.type === model.type)?.skill ?? null;
   const threshold = skill === null ? fmt0(needed)
     : `<b class="${skill >= needed ? 'ok' : 'bad'}" title="${skill >= needed ? 'Erreicht' : 'Noch nicht erreicht'}: Können ${fmt0(skill)}">${fmt0(needed)}</b>`;
+  // Wie viel Klang das Instrument bringt: voll erst ab dem nötigen Können, darunter deutlich weniger.
+  const rules = cat().rules;
+  const full = (model.klang / 100) * rules.gearMaxBonus;
+  const now = skill === null ? null : full * Math.min(1, needed <= 0 ? 1 : skill / needed) ** rules.gearUnlockCurve;
+  const klangText = now === null || now >= full - 0.001
+    ? `Klang <em>+${percent(full)}</em> ab Können ${threshold}`
+    : `Klang jetzt <em>+${percent(now)}</em> · voll <b>+${percent(full)}</b> ab Können ${threshold}`;
   const arrow = (up ?? g.upgrades?.some((u) => u.bandId))
     ? `<span class="tcg-up" title="${up ? 'Im Lager liegt ein besseres Instrument' : 'Jemand in deiner Band klingt damit besser'}">▲</span>` : '';
   const finish = gearFinish(model);
@@ -258,7 +265,7 @@ export function gearCard(g, { act = null, data = {}, size = '', extra = '', skil
     art: `<span class="tcg-icon">${instrumentIcon(model.type)}</span>${arrow}
       ${perks.length ? `<span class="tcg-abilities">${perks.map((p) => `<i title="${esc(p.name)}: ${esc(p.desc)}">${p.icon}</i>`).join('')}</span>` : ''}`,
     type: `Instrument<em>${esc(instrumentName(model.type))}${finish.tier ? ` · ${FINISH_NAMES[finish.tier]}` : ''}</em>`,
-    text: `Voller Klang ab Können ${threshold}${perks.length ? `<br>${perks.map((p) => `<b>${esc(p.name)}</b>`).join(' · ')}` : ''}`,
+    text: `<span>${klangText}</span>${perks.length ? `<span>${perks.map((p) => `<b>${esc(p.name)}</b>`).join(' · ')}</span>` : ''}`,
     stats: [[model.klang, 'Klang'], [model.spielbarkeit, 'Spielb.'], [model.design, 'Design']],
     overlay: finish.tier === 3 ? sparkles(6, model.klang * 7 + model.design) : '',
     act,

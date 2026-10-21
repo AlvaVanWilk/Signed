@@ -106,6 +106,8 @@ final class Balance
     public const HYBRID_BONUS = 1.25;
     /** Maximaler Bonus eines Instruments mit Klang 100 (+50 %). */
     public const GEAR_MAX_BONUS = 0.5;
+    /** Wie schnell sich der Klang mit dem Können entfaltet: (Können / nötiges Können) hoch diesem Wert. */
+    public const GEAR_UNLOCK_CURVE = 2.0;
     /** Ohne eigenes Instrument spielt man auf irgendwas Geliehenem – das klingt nach nichts. */
     public const NO_GEAR_FACTOR = 0.5;
     /** Jedes Instrument weicht pro Wert bis zu so viel vom Modell ab. */
@@ -194,6 +196,8 @@ final class Balance
     public const GIG_SONG_CAP = 3;
     /** Ein richtiger Gig hat mindestens so viele Lieder. */
     public const GIG_MIN_SONGS = 3;
+    /** Frisches Material: Jeder Gig seit der letzten Platte senkt Gage und Ruhm um diesen Anteil, höchstens bis min. */
+    public const GIG_FRESH = ['decay' => 0.08, 'min' => 0.45];
     public const MANAGER_SONGS_PER_LEVEL = 1.4;
     public const NEGOTIATOR_BONUS = 0.08;
     public const PR_BONUS = 0.08;
@@ -220,7 +224,9 @@ final class Balance
     public const ATTRACTIVE_FACTOR = 1.5;
 
     // ---------- Platte ----------
-    public const RECORD_COST = 500;
+    /** Studiozeit: Grundpreis plus pro Lied. */
+    public const RECORD_COST = 150;
+    public const RECORD_COST_PER_SONG = 80;
     public const RECORD_MIN_SONGS = 3;
     public const RECORD_MAX_SONGS = 12;
     /** Vor der nächsten Platte spielt die Band die letzte live: so viele Lieder pro Lied der Platte, auf Gigs. */
@@ -267,8 +273,17 @@ final class Balance
     /**
      * Verlauf: Einstieg mit 65 % der Punkte, Höhepunkt nach CHART_PEAK Sekunden, danach fallend
      * (nach etwa 10 × CHART_PEAK ist eine durchschnittliche Platte draußen). Älter als CHART_MAX_AGE zählt nicht mehr.
+     * Die Plätze werden alle CHART_INTERVAL Sekunden neu vergeben – oder sofort, wenn eine Platte einsteigt oder Schub bekommt.
      */
-    public const CHART_PEAK = 4 * 3600;
+    public const CHART_INTERVAL = 3 * 3600;
+    /** Nachrichten beim Wiederkommen: nach so langer Pause, diese Arten aus der Chronik. */
+    public const NEWS_AWAY = 900;
+    public const NEWS_KINDS = ['chart1', 'chart', 'transfer', 'scout', 'level', 'fame'];
+    /** Tantiemen und Chart-Ruhm nach Platz: Platz 1 × (1 + CHART_RANK_BONUS), dann gleichmäßig weniger bis Platz 10. */
+    public const CHART_RANK_BONUS = 1.0;
+    /** Eine Platte in den Top 10 macht die Gigs der Band voller: Platz 1 Gage und Ruhm + 40 %, abnehmend bis Platz 10. */
+    public const CHART_GIG_BONUS = 0.4;
+    public const CHART_PEAK = 8 * 3600;
     public const CHART_MAX_AGE = 7 * 86400;
     /** Schub für die neueste Platte der Band: Gig pro Lied × Grund-Ruhm des Ortes × diesem Wert, Promo fest. Halbiert sich alle 3 Stunden. */
     public const CHART_GIG_BOOST = 4.0;
@@ -276,10 +291,10 @@ final class Balance
     public const CHART_BOOST_HALF = 3 * 3600;
     /** Unter dieser Punktzahl fällt eine Platte aus den Charts. */
     public const CHART_MIN_POINTS = 1.0;
-    public const CHART_SIZE = 50;
+    public const CHART_SIZE = 10;
     /** Platz 1 bringt einen Scout-Gutschein erst, wenn so viele Labels Platten in den Charts haben. */
     public const CHART_TOP_MIN_LABELS = 3;
-    /** Tantiemen pro Chartpunkt und Stunde. */
-    public const ROYALTY_MONEY = 1.0;
-    public const ROYALTY_FAME = 0.025;
+    /** Tantiemen pro Chartpunkt und Stunde (vor dem Platz-Bonus). */
+    public const ROYALTY_MONEY = 0.5;
+    public const ROYALTY_FAME = 0.0125;
 }

@@ -29,6 +29,11 @@ final class Studio
         return null;
     }
 
+    public static function cost(int $songs): int
+    {
+        return Balance::RECORD_COST + Balance::RECORD_COST_PER_SONG * $songs;
+    }
+
     public function start(int $bandId, string $title, int $songs): void
     {
         $title = Bands::cleanName($title, 'Der Plattentitel', 60);
@@ -41,7 +46,7 @@ final class Studio
             if ($blocker !== null) {
                 throw new ApiError($blocker);
             }
-            $this->repo->spend(Balance::RECORD_COST, 'Studiozeit');
+            $this->repo->spend(self::cost($songs), 'Studiozeit');
             $this->repo->db->insert('records', [
                 'label_id' => $this->repo->labelId,
                 'band_id' => $bandId,
@@ -137,6 +142,7 @@ final class Studio
             'chart_points' => $chartPoints,
             'royalties_until' => $now,
         ], ['id' => $record['id']]);
+        Charts::markDirty($db);
 
         $format = $songs >= Balance::CHART_LP_SONGS ? 'LP' : 'EP';
         $this->repo->log('record', sprintf(

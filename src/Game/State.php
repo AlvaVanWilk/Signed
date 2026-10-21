@@ -82,6 +82,8 @@ final class State
             $level = BandCalc::managerLevel($manager, count($managerBands[$band['manager_id']] ?? []));
             $venue = BandCalc::venue($fame);
             $open = $openRecords[$band['id']] ?? null;
+            $chartRank = Charts::bandRank($db, $band['id']);
+            $draw = BandCalc::freshness($band['gigs_since_record']) * Charts::rankFactor($chartRank, Balance::CHART_GIG_BONUS);
 
             $bandsOut[] = [
                 'id' => $band['id'],
@@ -123,7 +125,10 @@ final class State
                         'maxSongs' => BandCalc::maxGigSongs($band['songs_recorded'], $level),
                         'minSongs' => min(Balance::GIG_MIN_SONGS, BandCalc::maxGigSongs($band['songs_recorded'], $level)),
                         'songCap' => BandCalc::gigSongCap($level),
-                        'gagePerSong' => BandCalc::gagePerSong($venue, BandCalc::managerBonus($manager, $level, 'verhandler', Balance::NEGOTIATOR_BONUS)),
+                        'gagePerSong' => (int) round(BandCalc::gagePerSong($venue, BandCalc::managerBonus($manager, $level, 'verhandler', Balance::NEGOTIATOR_BONUS)) * $draw),
+                        'fresh' => round(BandCalc::freshness($band['gigs_since_record']), 2),
+                        'chartRank' => $chartRank,
+                        'chartBonus' => round(Charts::rankFactor($chartRank, Balance::CHART_GIG_BONUS), 2),
                     ],
                 ],
                 'record' => [
@@ -136,7 +141,7 @@ final class State
                     'soundFame' => round(BandCalc::soundFactor($sound), 2),
                     'expect' => $venue['expect'],
                     'venue' => $venue['name'],
-                    'gage' => BandCalc::gagePerSong($venue, BandCalc::managerBonus($manager, $level, 'verhandler', Balance::NEGOTIATOR_BONUS)),
+                    'gage' => (int) round(BandCalc::gagePerSong($venue, BandCalc::managerBonus($manager, $level, 'verhandler', Balance::NEGOTIATOR_BONUS)) * $draw),
                     'sales' => round(min(Balance::RECORD_FAME_SALES_MAX, $fame / Balance::RECORD_FAME_SALES), 3),
                     'chart' => round(min(Balance::CHART_FAME_MAX, $fame / Balance::CHART_FAME), 3),
                     'cohesionSound' => round(Balance::COHESION_FLOOR + (1 - Balance::COHESION_FLOOR) * $band['cohesion'] / 100, 3),
@@ -150,6 +155,17 @@ final class State
         $history = $db->all('SELECT id, band_id, musician_id, kind, text, created_at FROM history WHERE label_id = ? ORDER BY id DESC LIMIT 80', [$repo->labelId]);
         $items = $db->all('SELECT id, kind, value FROM items WHERE label_id = ? ORDER BY id', [$repo->labelId]);
 
+        // Nachrichten: Was ist passiert, während man weg war (ab einer Viertelstunde Pause)?
+        $lastSeen = (int) $db->value('SELECT last_seen FROM labels WHERE id = ?', [$repo->labelId]);
+        $news = [];
+        if ($lastSeen > 0 && $now - $lastSeen >= Balance::NEWS_AWAY) {
+            $kinds = Balance::NEWS_KINDS;
+            $placeholders = implode(', ', array_fill(0, count($kinds), '?'));
+            $news = $db->all(
+                "SELECT id, kind, text, created_at FROM history WHERE label_id = ? AND created_at > ? AND kind IN ($placeholders) ORDER BY id DESC LIMIT 30",
+                array_merge([$repo->labelId, $lastSeen], $kinds)
+            );
+        }
         $db->update('labels', ['last_seen' => $now], ['id' => $repo->labelId]);
 
         // Freie Instrumente (Lager und offene Ladenauswahl): wem würden sie helfen?
@@ -185,6 +201,7 @@ final class State
             'bands' => $bandsOut,
             'running' => array_map([Present::class, 'activity'], $running),
             'results' => array_map([Present::class, 'result'], $results),
+            'news' => array_map(static fn ($h) => ['id' => (int) $h['id'], 'kind' => $h['kind'], 'text' => $h['text'], 'createdAt' => (int) $h['created_at']], $news),
             'history' => array_map(static fn ($h) => [
                 'id' => (int) $h['id'],
                 'bandId' => $h['band_id'] === null ? null : (int) $h['band_id'],

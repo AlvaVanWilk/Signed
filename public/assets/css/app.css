@@ -944,3 +944,8 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .trend.down { color: var(--bad); }
 .trend.same { color: var(--muted); }
 .trend.new { color: #ffd36e; }
+.action-main em, .tcg-text em { font-style: normal; font-weight: 700; color: #ffd36e; }
+.tcg-text em { color: #b8860b; }
+
+.celebrate-trophy { font-size: min(34vw, 150px); line-height: 1; filter: drop-shadow(0 0 30px rgba(255, 200, 60, 0.9)); animation: celebrate-pop 0.8s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
+.news .news-top { font-weight: 700; color: #ffd36e; }

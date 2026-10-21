@@ -1,7 +1,7 @@
 import { cat, onStateChange } from './core.js';
 import { genreIcon } from './cards.js';
 import { avatar } from './avatar.js';
-import { esc } from './ui.js';
+import { esc, openModal, timeAgo } from './ui.js';
 
 /**
  * Feiern nach einem neuen Spielstand: Band wird Genre-Band oder Hybrid, Musiker steigt im Können
@@ -14,6 +14,16 @@ const queue = [];
 let current = null;
 
 onStateChange((before, after) => {
+  // Nachrichten, wenn man eine Weile weg war; Platz 1 bekommt zusätzlich seinen großen Auftritt.
+  if (after.news?.length) showNews(after);
+  const fresh = before ? after.history.filter((h) => h.id > (before.history[0]?.id ?? 0)) : after.news ?? [];
+  for (const h of fresh) {
+    if (h.kind === 'chart1') queue.push(chartHtml(h.text));
+  }
+  if (!before) {
+    if (!current) next();
+    return;
+  }
   const oldBands = new Map(before.bands.map((b) => [b.id, b.title]));
   for (const b of after.bands) {
     if (b.title && b.title !== oldBands.get(b.id)) queue.push(bandHtml(b));
@@ -48,6 +58,32 @@ function fameHtml(m) {
     <div class="celebrate-face fame">${avatar(m.look)}<span class="celebrate-stars">★ ★ ★</span></div>
     <div class="celebrate-text">${esc(m.firstName)} ist jetzt ${FAME_WORDS[m.fameLevel]}!</div>
     <div class="celebrate-sub">Bekanntheit ${m.fameLevel} · ${esc(cat().fameNames[m.fameLevel])}</div>`;
+}
+
+function chartHtml(text) {
+  return `
+    <div class="celebrate-trophy">🏆</div>
+    <div class="celebrate-text">${esc(text)}</div>
+    <div class="celebrate-sub">Platz 1: doppelte Tantiemen und volle Gigs</div>`;
+}
+
+const NEWS_ICONS = { chart1: '🏆', chart: '📈', transfer: '🔁', scout: '🎟️', level: '⭐', fame: '✨' };
+let newsShownFor = 0;
+
+function showNews(state) {
+  const latest = state.news[0].id;
+  if (latest <= newsShownFor) return;
+  newsShownFor = latest;
+  const modal = openModal({
+    html: `
+      <div class="eyebrow">Während du weg warst</div>
+      <h2>Neuigkeiten</h2>
+      <ul class="history news">${state.news.map((n) => `
+        <li class="${n.kind === 'chart1' ? 'news-top' : ''}"><span>${NEWS_ICONS[n.kind] ?? '•'} ${esc(n.text)}</span><time>${timeAgo(n.createdAt, state.now)}</time></li>`).join('')}
+      </ul>
+      <div class="dialog-actions"><button class="btn primary" data-close>Weiter</button></div>`,
+  });
+  modal.body.querySelector('[data-close]').addEventListener('click', () => modal.close());
 }
 
 function next() {

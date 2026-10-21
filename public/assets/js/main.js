@@ -1,5 +1,5 @@
 import { api } from './api.js';
-import { actions, app, bandById, defineActions, liveMoney, musicianById, navigate, onRender, refresh, rerender, serverNow } from './core.js';
+import { actions, app, bandById, cat, defineActions, liveMoney, musicianById, navigate, onRender, refresh, rerender, serverNow } from './core.js';
 import { bandFill, genreGlyph, levelUpBanners, musicianCard } from './cards.js';
 import { closeAllModals, duration, esc, fmt1, fmtGain, money, openModal, percent, timeAgo, topModal } from './ui.js';
 import './celebrate.js';
@@ -242,14 +242,15 @@ function financeHtml() {
     <div class="eyebrow">Groove Coins</div>
     <h2 data-live-money>${money(liveMoney())}</h2>
     <div class="reward-grid">
-      ${reward('Tantiemen pro Stunde', money(f.moneyPerHour))}
+      ${reward('Tantiemen pro Minute', `${fmtGain(f.moneyPerHour / 60)} ₲`)}
+      ${reward('Ruhm aus den Charts pro Stunde', `+${fmtGain(f.famePerHour)}`)}
       ${reward('Platten in den Charts', String(f.records.length))}
     </div>
     ${f.records.length ? `
-      <p class="muted small">Tantiemen laufen, solange eine Platte chartet. Gigs und Promo schieben sie in den Charts nach oben.</p>
+      <p class="muted small">Tantiemen laufen, solange eine Platte sich verkauft. In den Top ${cat().rules.chartSize} gibt es mehr: Platz 1 doppelt so viel. Gigs und Promo schieben die neueste Platte nach oben.</p>
       <table class="charts finance-table">
-        <thead><tr><th>Platte</th><th>Band</th><th>Platz</th><th>Punkte</th><th>pro Std.</th></tr></thead>
-        <tbody>${f.records.map((r) => `<tr><td>„${esc(r.title)}“</td><td>${esc(r.band)}</td><td>${r.rank} ${trendBadge(r)}</td><td>${fmt1(r.points)}</td><td>${money(r.perHour)}</td></tr>`).join('')}</tbody>
+        <thead><tr><th>Platte</th><th>Band</th><th>Platz</th><th>Punkte</th><th>pro Minute</th></tr></thead>
+        <tbody>${f.records.map((r) => `<tr><td>„${esc(r.title)}“</td><td>${esc(r.band)}</td><td>${r.placed ? `${r.rank} ${trendBadge(r)}` : `<span class="muted">${r.rank} (nicht in den Top ${cat().rules.chartSize})</span>`}</td><td>${fmt1(r.points)}</td><td>${fmtGain(r.perHour / 60)} ₲</td></tr>`).join('')}</tbody>
       </table>` : '<p class="muted">Noch keine Platte in den Charts – regelmäßige Einnahmen kommen über Tantiemen.</p>'}
     <h3>Kontoauszug</h3>
     ${f.ledger.length ? `<ul class="history ledger">${f.ledger.map((l) => `
@@ -314,7 +315,9 @@ document.addEventListener('input', (e) => {
   const key = e.target.dataset?.ui;
   if (!key) return;
   app.ui.form[key] = e.target.value;
-  for (const out of document.querySelectorAll(`[data-output="${key}"]`)) out.textContent = e.target.value;
+  for (const out of document.querySelectorAll(`[data-output="${key}"]`)) {
+    out.textContent = 'recordCost' in out.dataset ? money(bands.recordCost(Number(e.target.value))) : e.target.value;
+  }
 });
 
 window.addEventListener('hashchange', () => {

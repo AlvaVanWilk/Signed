@@ -1,6 +1,6 @@
 import { api } from '../api.js';
 import { app, cat, defineActions, rerender } from '../core.js';
-import { esc, fmt0, fmt1, money, toast } from '../ui.js';
+import { esc, fmt0, fmt1, fmtGain, toast } from '../ui.js';
 
 let loading = false;
 
@@ -27,7 +27,7 @@ export function render() {
       <div>
         <h1>Charts</h1>
         <p class="muted">${tab === 'albums'
-          ? `Die Top ${rules.chartSize} der Platten aller Labels, jede Stunde neu. Eine Platte steigt ein, erreicht nach etwa ${fmt0(rules.chartPeakHours)} Stunden ihren Höhepunkt und fällt dann. Gigs und Promo der Band schieben die neueste Platte nach oben (der Schub halbiert sich alle ${fmt0(rules.chartBoostHalfHours)} Stunden). Solange eine Platte chartet, laufen Tantiemen. Platz 1 gibt einen Scout-Gutschein.`
+          ? `Die Top ${rules.chartSize} der Platten aller Labels. Die Plätze werden alle ${fmt0(rules.chartIntervalHours)} Stunden neu vergeben – sofort, wenn eine Platte einsteigt oder Gigs und Promo sie anschieben. Eine Platte erreicht nach etwa ${fmt0(rules.chartPeakHours)} Stunden ihren Höhepunkt und fällt dann. Je höher der Platz, desto mehr Tantiemen und Ruhm (Platz 1 doppelt), und Gigs der Band werden voller. Platz 1 gibt einen Scout-Gutschein.`
           : 'Die erfolgreichsten Labels nach dem Ruhm all ihrer Bands.'}</p>
       </div>
       <button class="btn ghost small" data-act="chartsReload">Aktualisieren</button>
@@ -39,7 +39,9 @@ export function render() {
     ${!charts ? '<div class="empty">Charts werden geladen …</div>' : tab === 'albums' ? albums(charts.albums) : labels(charts.labels)}`;
 }
 
-function albums(list) {
+function albums(all) {
+  const list = all.filter((e) => e.placed);
+  const outside = all.filter((e) => !e.placed);
   if (!list.length) return '<div class="empty">Noch keine Platte in den Charts. Die erste fertige Platte steigt hier ein.</div>';
   return `
     <table class="charts">
@@ -52,10 +54,12 @@ function albums(list) {
           <td>${esc(e.band)}<br><span class="muted small">${esc(e.label)}</span></td>
           <td>${fmt0(e.hours)}</td>
           <td>${fmt0(e.best)}</td>
-          <td><b>${fmt1(e.points)}</b>${e.own ? `<br><span class="muted small">${money(e.perHour)} / Std.</span>` : ''}</td>
+          <td><b>${fmt1(e.points)}</b>${e.own ? `<br><span class="muted small">${fmtGain(e.perHour / 60)} ₲ / Min.</span>` : ''}</td>
         </tr>`).join('')}
       </tbody>
-    </table>`;
+    </table>
+    ${outside.length ? `<h3>Deine Platten außerhalb der Top ${cat().rules.chartSize}</h3>
+      <ul class="history">${outside.map((e) => `<li><span>„${esc(e.title)}“ · ${esc(e.band)}</span><span class="muted">Platz ${e.rank} · ${fmt1(e.points)} Punkte</span></li>`).join('')}</ul>` : ''}`;
 }
 
 /** Auf- oder Abstieg seit der letzten Chartstunde, wie in echten Charts. */

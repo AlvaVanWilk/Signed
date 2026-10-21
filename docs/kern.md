@@ -59,7 +59,8 @@ Tournee bzw. ausgeschriebenen Gigs (im Spiel ausgegraut markiert).
 
 ```
 Beitrag    = Können × (1 + Instrumentbonus), ohne eigenes Instrument × 0,5
-Instrument = Klang/100 × 0,5 × min(1, Können / (100 − Spielbarkeit))
+Instrument = Klang/100 × 0,5 × min(1, Können / (100 − Spielbarkeit))²   (darunter entfaltet es sich deutlich weniger,
+             ein einfaches Instrument ist für Anfänger oft besser als ein gutes)
 Sound      = (0,75 × Durchschnitt + 0,25 × schwächster Beitrag) × Genre-Bonus (1 / 1,15 / 1,25)
              × (1 + 0,05 × weitere Instrumentenarten, höchstens +20 %)
              × (0,7 + 0,3 × Zusammenspiel/100)
@@ -126,6 +127,8 @@ Grund-Ruhm pro Lied: 0,25 / 0,5 / 1 / 2 / 4.
 Das Stadion bleibt der Tournee vorbehalten.
 
 - Ein Gig hat mindestens 3 Lieder, höchstens so viele, wie die Band produziert hat, und ohne Manager höchstens 3.
+- Frisches Material: Jeder Gig seit der letzten Platte senkt Gage und Ruhm um 8 %, höchstens auf 45 %. Eine neue Platte
+  macht die Gigs wieder voll. Eine Platte der Band in den Top 10 bringt + 40 % (Platz 1) bis + 4 % (Platz 10).
   Ein Manager erlaubt 3 + ⌈Stufe × 1,4⌉ Lieder (Stufe 5: 10 Lieder = 4 Minuten).
 - Verhandler: +8 % Gage pro Stufe. PR-Profi: +8 % Ruhm pro Stufe. Scout: weniger gewöhnliche Karten in Läden.
   Managt einer mehrere Bands, wird seine Stufe durch die Zahl der Bands geteilt.
@@ -178,7 +181,7 @@ Nur die Gewinne sind klein; wie oft man etwas hintereinander spielt, ist nicht b
 
 ### Platte
 
-- 3 (EP) bis 12 Lieder (LP), Pauschalpreis 500 ₲. Pro Lied ein Minispiel, in Etappen spielbar.
+- 3 (EP) bis 12 Lieder (LP), Studiozeit 150 ₲ + 80 ₲ pro Lied. Pro Lied ein Minispiel, in Etappen spielbar.
 - Jedes Lied: Können 0,12 × Trefferquote für alle Mitglieder (Lernkurve), Zusammenspiel.
 - Fertig: Erstverkauf = Lieder × 60 ₲ × (0,3 + Qualität²) × LP-Bonus × Perfekt-Bonus × Verkäufe,
   Ruhm = Lieder × 0,6 × Soundfaktor × (0,3 + Qualität^1,5) × LP-Bonus × Perfekt-Bonus.
@@ -190,15 +193,19 @@ Nur die Gewinne sind klein; wie oft man etwas hintereinander spielt, ist nicht b
 
 - Chartpunkte = 100 × Qualität² × Soundfaktor × Format × Perfekt (× 1,3) × (1 + Bandruhm/500, höchstens × 3).
   Format: EP × 0,6, LP (ab 7 Liedern) × 1 + 4 % pro Lied über 7.
-- Die Charts rechnen in Stunden. Punkte jetzt = Chartpunkte × Verlauf + Schub. Verlauf mit x = Alter / 4 Stunden:
-  (x + 0,5) / 1,5 × e^((1 − x) / 1,5) – Einstieg mit 65 %, Höhepunkt nach 4 Stunden, nach etwa 40 Stunden fast null.
+- Die Charts rechnen in Stunden. Punkte jetzt = Chartpunkte × Verlauf + Schub. Verlauf mit x = Alter / 8 Stunden:
+  (x + 0,5) / 1,5 × e^((1 − x) / 1,5) – Einstieg mit 65 %, Höhepunkt nach 8 Stunden, nach gut 3 Tagen fast null.
+  Eine starke Platte kann gegen schwache Konkurrenz direkt auf Platz 1 einsteigen.
   Weil jede Platte ihren eigenen Verlauf hat, überholen sich Platten; es gibt Bewegung.
 - Schub für die neueste Platte der Band, solange sie chartet: Gig = Lieder × Grund-Ruhm des Ortes × 4 × Publikum,
   Band-Promo 4, Promo-Mission eines Mitglieds 1,5. Der Schub halbiert sich alle 3 Stunden.
-- Unter 1 Punkt ist eine Platte draußen, nach 7 Tagen zählt sie nicht mehr. Gezeigt werden die Top 50 mit Platz vorher
-  (zuletzt gesehener Platz in der vorigen Chartstunde), Trend (▲ ▼ – NEU), Stunden in den Charts und bestem Platz.
-- Tantiemen laufen ständig (sekundengenau abgerechnet, Bruchteile werden aufgehoben): pro Punkt und Stunde 1 ₲ und 0,025 Ruhm,
-  Ruhm verteilt auf die aktuellen Mitglieder. Eine Platte mit 60 Punkten bringt über ihre Chartzeit etwa 900 ₲.
+- Unter 1 Punkt verkauft sich eine Platte nicht mehr, nach 7 Tagen zählt sie nicht mehr. Die Charts zeigen die Top 10.
+- Die Plätze werden alle 3 Stunden neu vergeben (Chartwoche) – sofort, wenn eine Platte erscheint oder Schub bekommt.
+  Dazwischen bleiben sie stehen. „Vorher“ ist der Platz zu Beginn der Chartwoche; dazu Trend (▲ ▼ – NEU),
+  Stunden in den Charts und bester Platz. Nachrichten: Einstieg in die Top 10, Platz 1 (mit Feier), aus den Top 10 gefallen.
+- Tantiemen laufen ständig (sekundengenau abgerechnet, Bruchteile werden aufgehoben): pro Punkt und Stunde 0,5 ₲ und
+  0,0125 Ruhm, mal Platz-Bonus: Platz 1 × 2, abnehmend bis Platz 10 × 1,1, außerhalb × 1. Ruhm an die aktuellen Mitglieder.
+  Eine Platte mit 60 Punkten bringt über ihre Chartzeit etwa 950–1.900 ₲ je nach Platz.
   Das Geld zählt im Browser sichtbar mit; im Kontoauszug eine Zeile pro Platte und Tag.
 
 ### Promo
@@ -268,6 +275,24 @@ Instrumente sind zufällig. Im Music Store hat der Verkäufer mit 25 % Chance ei
   seiner Lieblingsgenres. Akustisch oder elektrisch richtet sich nach seinem Instrument.
 - Fehlt eine Spur, nimmt das Spiel die nächste Stufe, dann die andere Variante, dann Pop. Gibt es gar keine, bleibt der Synthesizer.
 - Zu hören am Mischpult (jeder Regler steuert seine Spuren), bei der Solo-Probe (nur die eigene Spur) und in der Live-Ansicht von Auftritten.
+
+### Platten und Gigs im Gleichgewicht
+
+Rechnung pro Stunde Spielzeit (Gig = 3 Lieder ≈ 1,5 Minuten, Plattenlied ≈ 1 Minute, Qualität 75 %, EP alle 4 Gigs):
+
+| Band | nur Gigs | Platten + Gigs (sofort + Tantiemen) |
+|---|---|---|
+| Anfänger (Sound 12) | ~1.500 ₲ | ~850 + ~2.100 ₲ |
+| Mittel (Sound 30, Ruhm 100) | ~3.600 ₲ | ~4.400 + ~6.200 ₲ |
+| Gut (Sound 55, Ruhm 600) | ~19.500 ₲ | ~31.500 + ~20.800 ₲ |
+
+Nur Gigs lohnt sich immer weniger (das Publikum kennt die Lieder), nur Platten geht nicht (Live-Pflicht vor der nächsten).
+Platten bringen über die Charts mehr, Gigs schieben die Platte an, und eine Platte in den Charts macht Gigs voller.
+
+### Nachrichten
+
+Wer mindestens 15 Minuten weg war, bekommt beim Wiederkommen die Neuigkeiten aus der Chronik: Charts, Wechselbörse,
+Scout-Gutscheine, Aufstiege.
 
 ## Vorläufige Entscheidungen zu offenen Fragen
 

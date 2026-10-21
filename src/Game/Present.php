@@ -142,6 +142,9 @@ final class Present
                 'maxPerInstrument' => Balance::MAX_PER_INSTRUMENT,
                 'managerMaxBands' => Balance::MANAGER_MAX_BANDS,
                 'recordCost' => Balance::RECORD_COST,
+                'recordCostPerSong' => Balance::RECORD_COST_PER_SONG,
+                'gearMaxBonus' => Balance::GEAR_MAX_BONUS,
+                'gearUnlockCurve' => Balance::GEAR_UNLOCK_CURVE,
                 'recordMinSongs' => Balance::RECORD_MIN_SONGS,
                 'recordMaxSongs' => Balance::RECORD_MAX_SONGS,
                 'gigMinSongs' => Balance::GIG_MIN_SONGS,
@@ -158,6 +161,7 @@ final class Present
                 'chartLpSongs' => Balance::CHART_LP_SONGS,
                 'chartSize' => Balance::CHART_SIZE,
                 'chartPeakHours' => Balance::CHART_PEAK / 3600,
+                'chartIntervalHours' => Balance::CHART_INTERVAL / 3600,
                 'chartBoostHalfHours' => Balance::CHART_BOOST_HALF / 3600,
             ],
         ];

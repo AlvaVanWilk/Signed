@@ -405,7 +405,7 @@ test('Platte produzieren, dann Gigs spielen, dann die nächste Platte', function
 
     checkApiError(fn () => $p->post('recordStart', ['bandId' => $band['id'], 'title' => 'Debüt', 'songs' => 2]), 'Lieder');
     $state = $p->post('recordStart', ['bandId' => $band['id'], 'title' => 'Debüt', 'songs' => 3])['state'];
-    checkEquals($money - Balance::RECORD_COST, $state['label']['money']);
+    checkEquals($money - Signed\Game\Studio::cost(3), $state['label']['money']);
     checkEquals('Debüt', bandById($state, $band['id'])['record']['open']['title']);
     checkApiError(fn () => $p->post('recordStart', ['bandId' => $band['id'], 'title' => 'Noch eine', 'songs' => 3]), 'Produktion');
 
@@ -549,6 +549,9 @@ test('Album-Charts: Platten aller Labels, Platz 1 gibt einen Gutschein, Tantieme
     for ($t = $from; $t < Clock::now(); $t += 10) {
         $expected += Signed\Game\Charts::pointsAt($row, $t) * 10 / 3600 * Balance::ROYALTY_MONEY;
     }
+    // Platz 1: doppelte Tantiemen.
+    checkEquals(1, (int) $db->value("SELECT rank_last FROM records WHERE title = 'Alpha EP'"));
+    $expected *= Signed\Game\Charts::rankFactor(1, Balance::CHART_RANK_BONUS);
     $state = $a->get('state');
     check(abs($state['label']['money'] - $money - $expected) <= 1.5, sprintf('Tantiemen nach zwei Stunden: %d statt %.1f', $state['label']['money'] - $money, $expected));
     check(str_starts_with($state['finance']['ledger'][0]['text'], 'Tantiemen'));
@@ -729,4 +732,34 @@ test('Instrumente: Eigenschaften ab episch, Verkauf an den Second-Hand-Laden', f
     checkEquals($money + $res['price'], $res['state']['label']['money']);
     check(!in_array($gear['id'], array_column($res['state']['gear'], 'id'), true));
     checkApiError(fn () => $p->post('gearSell', ['gearId' => $gear['id']]), 'gibt es nicht');
+});
+
+test('Charts: Plätze bleiben eine Chartwoche stehen, Nachrichten bei Einstieg und Platz 1', function () {
+    $db = freshDb();
+    $a = registerPlayer($db, 'Erster');
+    $b = registerPlayer($db, 'Zweiter');
+    $bandA = foundBand($a, 'Erste Band');
+    $bandB = foundBand($b, 'Zweite Band');
+    foreach ([[$a, $bandA, 'Vorn'], [$b, $bandB, 'Hinten']] as [$p, $band, $title]) {
+        $p->post('recordStart', ['bandId' => $band['id'], 'title' => $title, 'songs' => 3]);
+        for ($i = 0; $i < 3; $i++) {
+            playSong($p, ['kind' => 'record', 'bandId' => $band['id']], $title === 'Vorn' ? 1.0 : 0.5);
+        }
+    }
+    $charts = $a->get('charts')['albums'];
+    checkEquals(['Vorn', 'Hinten'], array_column($charts, 'title'));
+    $news = array_column($a->get('state')['history'], 'kind');
+    check(in_array('chart1', $news, true), 'Platz 1 ist eine Nachricht');
+    check(in_array('chart', array_column($b->get('state')['history'], 'kind'), true), 'Einstieg ist eine Nachricht');
+
+    // „Hinten“ hat plötzlich viel mehr Punkte – ohne Einstieg oder Schub bleiben die Plätze bis zur nächsten Chartwoche.
+    $db->exec("UPDATE records SET chart_points = chart_points * 50 WHERE title = 'Hinten'");
+    Clock::advance(60);
+    checkEquals(['Vorn', 'Hinten'], array_column($a->get('charts')['albums'], 'title'));
+    Clock::advance(Balance::CHART_INTERVAL);
+    $charts = $a->get('charts')['albums'];
+    checkEquals(['Hinten', 'Vorn'], array_column($charts, 'title'));
+    checkEquals('up', $charts[0]['trend']);
+    checkEquals(2, $charts[0]['prev']);
+    check(in_array('chart1', array_column($b->get('state')['history'], 'kind'), true));
 });

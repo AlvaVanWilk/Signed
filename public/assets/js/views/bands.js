@@ -97,7 +97,7 @@ function overview(b, members) {
         <small>Zusammenspiel wächst <em>× ${fmt2(fx.chemistry)}</em></small>
         <small>höchstens <em>${fmt0(b.maxCohesion)}</em></small></div>
       <div class="tile"><span>Platten</span><b>${fmt0(b.records)}</b><small>${fmt0(b.songsRecorded)} Lieder</small>
-        ${royalty ? `<small>Tantiemen <em>+${fmtGain(royalty.moneyPerHour)} ₲</em> pro Std.</small>
+        ${royalty ? `<small>Tantiemen <em>+${fmtGain(royalty.moneyPerHour / 60)} ₲</em> pro Minute</small>
         <small>Ruhm aus den Charts <em>+${fmtGain(royalty.famePerHour)}</em> pro Std.</small>` : '<small>Gerade nicht in den Charts</small>'}</div>
     </div>
     <div class="lineup-grid">
@@ -230,6 +230,17 @@ export function promoTile(m, busy) {
 
 // ---------- Auftritte ----------
 
+/** Studiozeit: Grundpreis plus pro Lied. */
+export const recordCost = (songs) => cat().rules.recordCost + cat().rules.recordCostPerSong * songs;
+
+/** Warum ein Gig gerade mehr oder weniger bringt: frisches Material und eine Platte in den Charts. */
+function gigDraw(gig) {
+  const parts = [];
+  if (gig.fresh < 1) parts.push(`Das Publikum kennt eure Lieder schon: <em>× ${fmt2(gig.fresh)}</em> – eine neue Platte bringt frisches Material`);
+  if (gig.chartRank) parts.push(`Platz ${gig.chartRank} in den Charts: <em>+${percent(gig.chartBonus - 1)}</em>`);
+  return parts.length ? `<br><span class="small">${parts.join('<br>')}</span>` : '';
+}
+
 function gigs(b, members) {
   const disabled = blocker(b, members) ? 'disabled' : '';
   const o = b.options;
@@ -241,7 +252,7 @@ function gigs(b, members) {
     <div class="action-grid">
       ${actionTile({
         icon: '🎤', title: `Gig · ${gig.venue}`,
-        meta: gig.available ? `${money(gig.gagePerSong)} pro Lied` : 'Erst mit der ersten Platte',
+        meta: gig.available ? `${money(gig.gagePerSong)} pro Lied${gigDraw(gig)}` : 'Erst mit der ersten Platte',
         body: gig.available ? `
           <span class="small"><label class="inline-select">Lieder
             <select data-change="gigSongs" data-id="${b.id}">${Array.from({ length: gig.maxSongs - gig.minSongs + 1 }, (_, i) => gig.minSongs + i).map((n) => `<option value="${n}" ${n === songs ? 'selected' : ''}>${n}</option>`).join('')}</select>
@@ -293,7 +304,7 @@ function studio(b, members) {
             <input type="range" name="songs" min="${rules.recordMinSongs}" max="${rules.recordMaxSongs}" value="${songs}" data-ui="${songsKey}">
           </label>
         </div>
-        <button class="btn primary" ${app.state.label.money < rules.recordCost ? 'disabled' : ''}>${money(rules.recordCost)}</button>
+        <button class="btn primary" ${app.state.label.money < recordCost(rules.recordMinSongs) ? 'disabled' : ''}><span data-output="${songsKey}" data-record-cost>${money(recordCost(songs))}</span></button>
       </form>`;
   }
   return `

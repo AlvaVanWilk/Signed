@@ -27,7 +27,7 @@ export function render() {
       </div>
       <div class="stat-tiles">
         ${tile('Geld', `<span data-live-money>${money(liveMoney())}</span>`,
-          s.finance.moneyPerHour ? `Tantiemen <em>+${fmtGain(s.finance.moneyPerHour)} ₲</em> pro Std.` : 'Tantiemen gibt es, sobald eine Platte chartet')}
+          s.finance.moneyPerHour ? `Tantiemen <em>+${fmtGain(s.finance.moneyPerHour / 60)} ₲</em> pro Minute` : 'Tantiemen gibt es, sobald eine Platte chartet')}
         ${tile('Musiker', fmt0(s.musicians.length), `davon <em>${fmt0(s.musicians.filter((m) => !m.bandId).length)}</em> ohne Band`)}
         ${tile('Bands', `${fmt0(s.bands.length)}<small> / ${fmt0(slots.open)}</small>`,
           slots.next === null ? 'Alle Band-Plätze freigeschaltet' : `Nächster Band-Platz ab <em>${fmt0(slots.next)}</em> Label-Ruhm`)}

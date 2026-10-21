@@ -27,6 +27,22 @@ final class Charts
             * ($perfect ? Balance::CHART_PERFECT : 1) * $fame, 1);
     }
 
+    /** Bester aktueller Platz einer Band in den Top 10 oder null. */
+    public static function bandRank(Db $db, int $bandId): ?int
+    {
+        $rank = $db->value(
+            "SELECT MIN(rank_last) FROM records WHERE band_id = ? AND status = 'done' AND rank_last IS NOT NULL AND rank_last <= ? AND finished_at >= ?",
+            [$bandId, Balance::CHART_SIZE, Clock::now() - Balance::CHART_MAX_AGE]
+        );
+        return $rank === null ? null : (int) $rank;
+    }
+
+    /** Bonus nach Platz: Platz 1 × (1 + $bonus), gleichmäßig weniger bis Platz 10, außerhalb × 1. */
+    public static function rankFactor(?int $rank, float $bonus): float
+    {
+        return $rank === null || $rank > Balance::CHART_SIZE ? 1.0 : 1 + $bonus * (Balance::CHART_SIZE + 1 - $rank) / Balance::CHART_SIZE;
+    }
+
     /** Verlauf ohne Schub: Einstieg bei 65 %, Höhepunkt nach CHART_PEAK, danach fallend. */
     public static function curve(int $age): float
     {
@@ -47,44 +63,38 @@ final class Charts
     }
 
     /**
-     * Alle Platten, die gerade charten, mit Platz, Platz vorher (zur letzten vollen Stunde), bestem Platz und Trend.
-     * Merkt sich die Plätze in der Datenbank, damit man Auf- und Abstieg sieht.
+     * Alle Platten, die gerade charten, nach Platz. Die Plätze werden alle CHART_INTERVAL Sekunden neu vergeben
+     * (eine „Chartwoche“) – oder sofort, wenn eine Platte einsteigt oder Schub bekommt. Dazwischen bleiben sie stehen,
+     * die Punkte laufen weiter. „Vorher“ ist der Platz zu Beginn der laufenden Chartwoche.
      */
     public static function albums(Db $db, ?int $labelId = null): array
     {
         $now = Clock::now();
         $rows = $db->all(
             "SELECT r.id, r.title, r.songs_total, r.perfect, r.chart_points, r.finished_at, r.boost, r.boost_at, r.topped,
-                    r.label_id, r.band_id, r.rank_last, r.rank_prev, r.rank_hour, r.rank_best, b.name AS band_name, l.name AS label_name
+                    r.label_id, r.band_id, r.rank_last, r.rank_prev, r.rank_best, b.name AS band_name, l.name AS label_name
              FROM records r
              JOIN labels l ON l.id = r.label_id
              LEFT JOIN bands b ON b.id = r.band_id
              WHERE r.status = 'done' AND r.chart_points > 0 AND r.finished_at >= ?",
             [$now - Balance::CHART_MAX_AGE]
         );
-        $albums = [];
-        foreach ($rows as $row) {
-            $points = self::pointsAt($row, $now);
-            if ($points >= Balance::CHART_MIN_POINTS) {
-                $albums[] = ['row' => $row, 'points' => $points];
-            }
+        $epoch = intdiv($now, Balance::CHART_INTERVAL);
+        $stored = (int) self::meta($db, 'chart_epoch');
+        if ($stored !== $epoch && self::claimMeta($db, 'chart_epoch', (string) $stored, (string) $epoch)) {
+            self::rerank($db, $rows, $now, true);
+        } elseif (self::claimMeta($db, 'chart_dirty', '1', '0')) {
+            self::rerank($db, $rows, $now, false);
         }
-        usort($albums, static fn ($a, $b) => $b['points'] <=> $a['points']);
-        $hour = intdiv($now, self::HOUR);
+
         $out = [];
-        foreach ($albums as $index => $album) {
-            $row = $album['row'];
-            $rank = $index + 1;
+        foreach ($rows as $row) {
+            if ($row['rank_last'] === null) {
+                continue;
+            }
+            $rank = (int) $row['rank_last'];
             $prev = $row['rank_prev'] === null ? null : (int) $row['rank_prev'];
-            $last = $row['rank_last'] === null ? null : (int) $row['rank_last'];
-            if ((int) $row['rank_hour'] < $hour) {
-                // Neue Chartstunde: der zuletzt gesehene Platz wird zum Platz „vorher“.
-                $prev = $last;
-            }
-            $best = $row['rank_best'] === null ? $rank : min((int) $row['rank_best'], $rank);
-            if ($last !== $rank || $prev !== ($row['rank_prev'] === null ? null : (int) $row['rank_prev']) || (int) $row['rank_hour'] !== $hour || (int) $row['rank_best'] !== $best) {
-                $db->update('records', ['rank_last' => $rank, 'rank_prev' => $prev, 'rank_hour' => $hour, 'rank_best' => $best], ['id' => (int) $row['id']]);
-            }
+            $points = self::pointsAt($row, $now);
             $out[] = [
                 'recordId' => (int) $row['id'],
                 'bandId' => $row['band_id'] === null ? null : (int) $row['band_id'],
@@ -94,18 +104,92 @@ final class Charts
                 'format' => (int) $row['songs_total'] >= Balance::CHART_LP_SONGS ? 'LP' : 'EP',
                 'perfect' => (bool) $row['perfect'],
                 'hours' => intdiv($now - (int) $row['finished_at'], self::HOUR),
-                'points' => round($album['points'], 1),
+                'points' => round($points, 1),
                 'rank' => $rank,
+                'placed' => $rank <= Balance::CHART_SIZE,
                 'prev' => $prev,
-                'best' => $best,
-                'trend' => $prev === null ? 'new' : ($rank < $prev ? 'up' : ($rank > $prev ? 'down' : 'same')),
-                'perHour' => round($album['points'] * Balance::ROYALTY_MONEY, 1),
+                'best' => $row['rank_best'] === null ? $rank : (int) $row['rank_best'],
+                'trend' => $prev === null || $prev > Balance::CHART_SIZE ? 'new' : ($rank < $prev ? 'up' : ($rank > $prev ? 'down' : 'same')),
+                'perHour' => round($points * Balance::ROYALTY_MONEY * self::rankFactor($rank, Balance::CHART_RANK_BONUS), 1),
                 'own' => $labelId !== null && (int) $row['label_id'] === $labelId,
                 'topped' => (bool) $row['topped'],
                 'labelId' => (int) $row['label_id'],
             ];
         }
+        usort($out, static fn ($a, $b) => $a['rank'] <=> $b['rank']);
         return $out;
+    }
+
+    /** Beim nächsten Aufruf neu sortieren (neue Platte, Schub). */
+    public static function markDirty(Db $db): void
+    {
+        self::setMeta($db, 'chart_dirty', '1');
+    }
+
+    /**
+     * Plätze neu vergeben und Nachrichten schreiben: Einstieg in die Top 10, Platz 1, aus den Top 10 gefallen.
+     * @param list<array> $rows werden mit den neuen Plätzen aktualisiert
+     */
+    private static function rerank(Db $db, array &$rows, int $now, bool $newWeek): void
+    {
+        $points = [];
+        foreach ($rows as $i => $row) {
+            $p = self::pointsAt($row, $now);
+            if ($p >= Balance::CHART_MIN_POINTS) {
+                $points[$i] = $p;
+            }
+        }
+        arsort($points);
+        $ranks = [];
+        $rank = 0;
+        foreach (array_keys($points) as $i) {
+            $ranks[$i] = ++$rank;
+        }
+        $size = Balance::CHART_SIZE;
+        foreach ($rows as $i => &$row) {
+            $old = $row['rank_last'] === null ? null : (int) $row['rank_last'];
+            $new = $ranks[$i] ?? null;
+            $prev = $newWeek ? $old : ($row['rank_prev'] === null ? null : (int) $row['rank_prev']);
+            $best = $row['rank_best'] === null ? $new : ($new === null ? (int) $row['rank_best'] : min((int) $row['rank_best'], $new));
+            if ($old !== $new || $newWeek) {
+                $db->update('records', ['rank_last' => $new, 'rank_prev' => $prev, 'rank_best' => $best], ['id' => (int) $row['id']]);
+            }
+            $repo = new Repo($db, (int) $row['label_id']);
+            $bandId = $row['band_id'] === null ? null : (int) $row['band_id'];
+            if ($new === 1 && $old !== 1) {
+                $repo->log('chart1', sprintf('„%s“ steht auf Platz 1 der Charts!', $row['title']), $bandId);
+            } elseif ($new !== null && $new <= $size && ($old === null || $old > $size)) {
+                $repo->log('chart', sprintf('„%s“ steigt auf Platz %d der Charts ein.', $row['title'], $new), $bandId);
+            } elseif ($old !== null && $old <= $size && ($new === null || $new > $size)) {
+                $repo->log('chart', sprintf('„%s“ ist aus den Top %d gefallen.', $row['title'], $size), $bandId);
+            }
+            $row['rank_last'] = $new;
+            $row['rank_prev'] = $prev;
+            $row['rank_best'] = $best;
+        }
+        unset($row);
+    }
+
+    private static function meta(Db $db, string $name): ?string
+    {
+        $value = $db->value('SELECT v FROM meta WHERE k = ?', [$name]);
+        return $value === null ? null : (string) $value;
+    }
+
+    private static function setMeta(Db $db, string $name, string $value): void
+    {
+        if ($db->exec('UPDATE meta SET v = ? WHERE k = ?', [$value, $name]) === 0 && self::meta($db, $name) === null) {
+            $db->insert('meta', ['k' => $name, 'v' => $value]);
+        }
+    }
+
+    /** Setzt den Wert nur, wenn er noch $from ist – so sortiert bei gleichzeitigen Aufrufen nur einer neu. */
+    private static function claimMeta(Db $db, string $name, string $from, string $to): bool
+    {
+        if (self::meta($db, $name) === null) {
+            $db->insert('meta', ['k' => $name, 'v' => $from]);
+        }
+        return $db->exec('UPDATE meta SET v = ? WHERE k = ? AND v = ?', [$to, $name, $from]) > 0;
     }
 
     public static function build(Db $db, int $labelId): array
@@ -114,7 +198,7 @@ final class Charts
 
         // Platz 1 gibt einmalig einen Scout-Gutschein – aber nur, wenn es Konkurrenz gibt.
         $competitors = count(array_unique(array_column($albums, 'labelId')));
-        if ($albums && !$albums[0]['topped'] && $competitors >= Balance::CHART_TOP_MIN_LABELS) {
+        if ($albums && $albums[0]['rank'] === 1 && !$albums[0]['topped'] && $competitors >= Balance::CHART_TOP_MIN_LABELS) {
             $top = $albums[0];
             if ($db->exec('UPDATE records SET topped = 1 WHERE id = ? AND topped = 0', [$top['recordId']]) > 0) {
                 Scout::grant(new Repo($db, $top['labelId']), sprintf('„%s“ steht auf Platz 1 der Charts!', $top['title']));
@@ -124,7 +208,7 @@ final class Charts
             unset($album['topped'], $album['labelId'], $album['bandId']);
         }
         unset($album);
-        $albums = array_values(array_filter($albums, static fn ($a) => $a['rank'] <= Balance::CHART_SIZE || $a['own']));
+        $albums = array_values(array_filter($albums, static fn ($a) => $a['placed'] || $a['own']));
 
         return ['albums' => $albums, 'labels' => self::rank(self::labels($db, $labelId))];
     }
@@ -150,6 +234,7 @@ final class Charts
         self::payRoyalties($repo->db, $repo->labelId);
         $left = (float) $row['boost'] > 0 ? (float) $row['boost'] * 0.5 ** (($now - (int) $row['boost_at']) / Balance::CHART_BOOST_HALF) : 0.0;
         $repo->db->update('records', ['boost' => $left + $amount, 'boost_at' => $now], ['id' => (int) $row['id']]);
+        self::markDirty($repo->db);
     }
 
     /**
@@ -161,7 +246,7 @@ final class Charts
     {
         $now = Clock::now();
         $rows = $db->all(
-            "SELECT id, band_id, title, chart_points, finished_at, boost, boost_at, royalties_until, royalty_carry FROM records
+            "SELECT id, band_id, title, chart_points, finished_at, boost, boost_at, rank_last, royalties_until, royalty_carry FROM records
              WHERE label_id = ? AND status = 'done' AND chart_points > 0 AND royalties_until < ? AND finished_at >= ?",
             [$labelId, $now, $now - Balance::CHART_MAX_AGE - self::HOUR]
         );
@@ -172,7 +257,9 @@ final class Charts
                 if ($claimed === 0) {
                     return;
                 }
-                $pointHours = self::pointSeconds($row, $from, $now) / self::HOUR;
+                // Höhere Platzierung, mehr Tantiemen: Platz 1 doppelt, bis Platz 10 abnehmend (Platz zum Abrechnungszeitpunkt).
+                $rank = $row['rank_last'] === null ? null : (int) $row['rank_last'];
+                $pointHours = self::pointSeconds($row, $from, $now) / self::HOUR * self::rankFactor($rank, Balance::CHART_RANK_BONUS);
                 if ($pointHours <= 0) {
                     return;
                 }
@@ -221,8 +308,9 @@ final class Charts
             }
             if ($album['bandId'] !== null) {
                 $band = &$bands[$album['bandId']];
-                $band['moneyPerHour'] = ($band['moneyPerHour'] ?? 0) + $album['points'] * Balance::ROYALTY_MONEY;
-                $band['famePerHour'] = ($band['famePerHour'] ?? 0) + $album['points'] * Balance::ROYALTY_FAME;
+                $factor = self::rankFactor($album['rank'], Balance::CHART_RANK_BONUS);
+                $band['moneyPerHour'] = ($band['moneyPerHour'] ?? 0) + $album['points'] * Balance::ROYALTY_MONEY * $factor;
+                $band['famePerHour'] = ($band['famePerHour'] ?? 0) + $album['points'] * Balance::ROYALTY_FAME * $factor;
                 unset($band);
             }
             $records[] = [
@@ -232,9 +320,11 @@ final class Charts
                 'rank' => $album['rank'],
                 'trend' => $album['trend'],
                 'perHour' => $album['perHour'],
+                'placed' => $album['placed'],
+                'factor' => self::rankFactor($album['rank'], Balance::CHART_RANK_BONUS),
             ];
         }
-        $points = array_sum(array_column($records, 'points'));
+        $points = array_sum(array_map(static fn ($r) => $r['points'] * $r['factor'], $records));
         $ledger = $db->all('SELECT amount, text, created_at FROM ledger WHERE label_id = ? ORDER BY id DESC LIMIT 40', [$labelId]);
         return [
             // Für die laufende Anzeige im Browser (Geld tickt zwischen zwei Abrufen weiter).

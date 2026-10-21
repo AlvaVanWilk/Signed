@@ -41,7 +41,7 @@ final class BandCalc
             return 0.0;
         }
         $required = 100 - $model['spielbarkeit'];
-        $unlock = $required <= 0 ? 1.0 : min(1.0, $skill / $required);
+        $unlock = $required <= 0 ? 1.0 : min(1.0, $skill / $required) ** Balance::GEAR_UNLOCK_CURVE;
         return $model['klang'] / 100 * Balance::GEAR_MAX_BONUS * $unlock;
     }
 
@@ -301,6 +301,12 @@ final class BandCalc
     public static function gagePerSong(array $venue, float $negotiatorBonus): int
     {
         return (int) round($venue['gage'] * (0.9 + 0.2 * $venue['progress']) * (1 + $negotiatorBonus));
+    }
+
+    /** Gigs seit der letzten Platte: Mit jedem kennt das Publikum die Lieder besser, Gage und Ruhm sinken. */
+    public static function freshness(int $gigsSinceRecord): float
+    {
+        return max(Balance::GIG_FRESH['min'], 1 - Balance::GIG_FRESH['decay'] * $gigsSinceRecord);
     }
 
     /** Open Stage und Straßenmusik verlieren mit wachsendem Ruhm ihren Reiz. */

@@ -135,16 +135,34 @@ final class State
 
         $db->update('labels', ['last_seen' => $now], ['id' => $repo->labelId]);
 
+        // Freie Instrumente (Lager und offene Ladenauswahl): wem würden sie helfen?
+        $advice = static fn (string $model, array $stats) => GearAdvice::upgrades($model, $stats, $musicians, $bands, $members, $gearMap);
+        $gearOut = [];
+        foreach ($gear as $item) {
+            $out = Present::gear($item);
+            if ($item['musician_id'] === null) {
+                $out['upgrades'] = $advice($item['model'], ['klang' => $item['klang'], 'spielbarkeit' => $item['spielbarkeit'], 'design' => $item['design']]);
+            }
+            $gearOut[] = $out;
+        }
+        $packOffer = (new Packs($repo))->open();
+        foreach ($packOffer['cards'] ?? [] as $i => $card) {
+            if ($card['kind'] === 'gear') {
+                $g = $card['gear'];
+                $packOffer['cards'][$i]['gear']['upgrades'] = $advice($g['model'], ['klang' => $g['klang'], 'spielbarkeit' => $g['spielbarkeit'], 'design' => $g['design']]);
+            }
+        }
+
         return [
             'now' => $now,
             'label' => $label + ['bandSlots' => Bands::slots($repo->labelFame())],
             'scout' => (new Scout($repo))->status(),
             'jamOffers' => (new Jam($repo))->open(),
             'market' => (new Transfers($repo))->market(),
-            'packOffer' => (new Packs($repo))->open(),
+            'packOffer' => $packOffer,
             'finance' => Charts::income($db, $repo->labelId),
             'musicians' => array_values(array_map(static fn ($m) => Present::musician($m, $gearIds[$m['id']] ?? []), $musicians)),
-            'gear' => array_values(array_map([Present::class, 'gear'], $gear)),
+            'gear' => $gearOut,
             'managers' => array_values(array_map(static fn ($m) => Present::manager($m, $managerBands[$m['id']] ?? []), $managers)),
             'items' => array_map(static fn ($i) => ['id' => (int) $i['id'], 'kind' => $i['kind'], 'value' => (float) $i['value']], $items),
             'bands' => $bandsOut,

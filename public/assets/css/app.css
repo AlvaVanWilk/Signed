@@ -641,9 +641,17 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
   radial-gradient(circle at 8% 70%, #fff 0 0.9cqi, rgba(255, 230, 150, 0.6) 1.6cqi, transparent 3.6cqi),
   radial-gradient(circle at 50% 95%, #fff 0 0.9cqi, rgba(255, 230, 150, 0.6) 1.6cqi, transparent 3.6cqi),
   linear-gradient(135deg, rgba(255, 240, 180, 0.18), transparent 40%, rgba(255, 240, 180, 0.14) 70%, transparent); }
+/* Goldener Lichtstreif, der über bekannte Karten wandert (nur transform, läuft auf der Grafikkarte). */
+.tcg.fame-1::before, .tcg.fame-2::before, .tcg.fame-3::before { content: ''; position: absolute; z-index: 3; top: -20%; bottom: -20%; left: 0; width: 45%; pointer-events: none;
+  background: linear-gradient(100deg, transparent, rgba(255, 236, 160, 0.15) 30%, rgba(255, 250, 220, 0.75) 50%, rgba(255, 236, 160, 0.15) 70%, transparent);
+  transform: translateX(-120%) skewX(-12deg); animation: fame-shine var(--shine, 6s) ease-in-out infinite; }
+.tcg.fame-2 { --shine: 4.5s; }
+.tcg.fame-3 { --shine: 3s; }
+@keyframes fame-shine { 0%, 55% { transform: translateX(-120%) skewX(-12deg); } 100% { transform: translateX(330%) skewX(-12deg); } }
+@media (prefers-reduced-motion: reduce) { .tcg.fame-1::before, .tcg.fame-2::before, .tcg.fame-3::before { animation: none; opacity: 0; } }
 .tcg.fame-1 { box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5), 0 0 12px rgba(255, 210, 120, 0.25); }
-.tcg.fame-2 { box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(255, 220, 140, 0.4), 0 0 22px rgba(255, 210, 120, 0.4); }
-.tcg.fame-3 { box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5), 0 0 0 3px rgba(255, 225, 150, 0.7), 0 0 34px rgba(255, 200, 90, 0.6); }
+.tcg.fame-2 { box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(242, 182, 0, 0.75), 0 0 22px rgba(255, 200, 80, 0.5); }
+.tcg.fame-3 { box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5), 0 0 0 3px #f2b600, 0 0 34px rgba(255, 200, 80, 0.75); }
 .tcg.legend { background: linear-gradient(135deg, #ff4d6d, #ff9f1c, #ffe14d, #3ddc84, #3a86ff, #8f5cff, #ff4dd8); }
 .tcg.legend .tcg-frame { background: linear-gradient(160deg, #ffe3ea, #fff1d6, #fffbd6, #dcf8e8, #dceaff, #ece2ff, #ffe0f7); }
 .tcg-abilities { position: absolute; right: 4%; bottom: 5%; display: flex; flex-direction: column; gap: 3%; }
@@ -859,7 +867,7 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 
 /* ---------- Bekanntheit als Sternchen-Leiste neben dem Können ---------- */
 .fame-stars { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 0; font-size: 4.1cqi; line-height: 1; min-width: 0; overflow: hidden; }
-.fame-stars i { font-style: normal; text-align: center; background: linear-gradient(90deg, #e09f00 var(--f), rgba(0, 0, 0, 0.18) var(--f)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.fame-stars i { font-style: normal; text-align: center; background: linear-gradient(90deg, transparent var(--f), rgba(0, 0, 0, 0.18) var(--f)), linear-gradient(180deg, #fff1a8, #f2b600 55%, #b87a00); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .tile .bar { flex: none; }
 
 /* Musikerkarte: Hintergrund in allen Lieblingsgenres, mit etwas Licht und Schatten darüber. */
@@ -886,12 +894,39 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .tcg[class*='lvl-']:has(.skill-row + .skill-row + .skill-row) .tcg-art { flex-basis: 50%; }
 
 /* Genre-Band geworden */
-.celebrate { position: fixed; inset: 0; z-index: 200; display: grid; place-content: center; justify-items: center; gap: 14px; padding: 16px; text-align: center; background: rgba(10, 8, 20, 0.55); animation: celebrate-out 0.5s ease-in 3.2s forwards; cursor: pointer; }
+.celebrate { position: fixed; inset: 0; z-index: 200; display: grid; place-content: center; justify-items: center; gap: 14px; padding: 16px; text-align: center; background: rgba(10, 8, 20, 0.78); animation: celebrate-out 0.5s ease-in 3.2s forwards; cursor: pointer; }
 .celebrate-icons { display: flex; gap: 12px; animation: celebrate-pop 0.7s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
 .celebrate-icons .genre-badge { width: min(38vw, 170px); height: min(38vw, 170px); box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.85), 0 0 40px var(--g); }
 .celebrate-text { color: #fff; font-size: clamp(22px, 5vw, 36px); font-weight: 800; text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5); animation: celebrate-rise 0.5s ease-out 0.35s both; }
-.celebrate-bonus { color: #fff; opacity: 0.85; font-weight: 600; animation: celebrate-rise 0.5s ease-out 0.55s both; }
+.celebrate-sub { color: #fff; opacity: 0.85; font-weight: 600; animation: celebrate-rise 0.5s ease-out 0.55s both; }
+.celebrate-face { position: relative; width: min(42vw, 180px); aspect-ratio: 1; border-radius: 50%; overflow: hidden; background: #e9e6f0; box-shadow: 0 0 0 6px var(--ring, #fff), 0 0 48px var(--ring, #fff); animation: celebrate-pop 0.7s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
+.celebrate-face svg { width: 100%; height: 100%; display: block; padding-top: 8%; }
+.celebrate-face.lvl-1 { --ring: #2fa84f; }
+.celebrate-face.lvl-2 { --ring: #2f7fe0; }
+.celebrate-face.lvl-3 { --ring: #b03ad6; }
+.celebrate-face.fame { --ring: #f5c542; overflow: visible; }
+.celebrate-face.fame svg { border-radius: 50%; }
+.celebrate-stars { position: absolute; left: 50%; bottom: -14px; transform: translateX(-50%); color: #f5c542; font-size: 22px; letter-spacing: 4px; white-space: nowrap; text-shadow: 0 0 10px rgba(245, 197, 66, 0.9); }
 @keyframes celebrate-pop { from { transform: scale(0.2) rotate(-25deg); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes celebrate-rise { from { transform: translateY(16px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes celebrate-out { to { opacity: 0; visibility: hidden; } }
-@media (prefers-reduced-motion: reduce) { .celebrate-icons, .celebrate-text, .celebrate-bonus { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .celebrate-icons, .celebrate-text, .celebrate-sub { animation: none; } }
+
+/* Instrumente: Schwelle erreicht (grün) oder nicht (rot), Pfeil wenn jemand in der Band profitiert. */
+.tcg-text .ok { color: #1d8a3a; }
+.tcg-text .bad { color: #c62828; }
+.tcg-up { position: absolute; top: 5%; right: 5%; display: grid; place-items: center; width: 17cqi; height: 17cqi; border-radius: 50%; background: #2fa84f; color: #fff; font-size: 9cqi; font-style: normal; box-shadow: 0 0 0 1cqi rgba(255, 255, 255, 0.85), 0 2px 8px rgba(0, 0, 0, 0.35); }
+.gear-upgrades { display: grid; gap: 8px; margin: 0 0 14px; padding: 0; list-style: none; }
+.gear-upgrades li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 10px 12px; border-radius: 10px; background: var(--panel-2, rgba(255, 255, 255, 0.05)); }
+.gear-upgrades li > span:first-child { flex: 1 1 180px; }
+.gear-detail { display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 560px) { .gear-detail { grid-template-columns: 1fr; } .gear-detail > .tcg, .gear-detail > .tcg-wrap { max-width: 220px; margin: 0 auto; } }
+.sound-change { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.sound-change b { color: var(--ok); }
+/* Wert hat sich gerade verbessert: kurzes Aufglimmen. */
+.flash-up { animation: flash-up 1.6s ease-out; }
+@keyframes flash-up { 0% { box-shadow: 0 0 0 0 rgba(47, 168, 79, 0); } 15% { box-shadow: 0 0 0 3px rgba(47, 168, 79, 0.9), 0 0 24px rgba(47, 168, 79, 0.8); } 100% { box-shadow: 0 0 0 0 rgba(47, 168, 79, 0); } }
+.flash-up b { animation: flash-text 1.6s ease-out; }
+@keyframes flash-text { 15% { color: #3ddc84; } }
+.tcg-slot { position: relative; }
+.tcg-slot .tcg-up { top: 8px; right: 8px; width: 26px; height: 26px; font-size: 13px; box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.85); }

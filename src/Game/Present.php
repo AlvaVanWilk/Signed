@@ -116,7 +116,7 @@ final class Present
             'rarities' => Catalog::RARITIES,
             'genres' => Catalog::GENRES,
             'instruments' => array_map(
-                static fn ($i) => ['name' => $i['name'], 'icon' => $i['icon'], 'genres' => $i['genres'], 'techniques' => $i['techniques']],
+                static fn ($i) => ['name' => $i['name'], 'at' => $i['at'], 'icon' => $i['icon'], 'genres' => $i['genres'], 'techniques' => $i['techniques']],
                 Catalog::INSTRUMENTS
             ),
             'abilities' => Catalog::ABILITIES,

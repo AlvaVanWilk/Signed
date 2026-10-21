@@ -1,5 +1,5 @@
 import { avatar } from './avatar.js';
-import { app, bandById, cat, isBusy } from './core.js';
+import { app, bandById, cat, isBusy, musicianById } from './core.js';
 import { esc, fmt0, fmt1 } from './ui.js';
 
 export const instrumentName = (type) => cat().instruments[type]?.name ?? type;
@@ -201,15 +201,27 @@ export function gearModel(key) {
   return cat().gear[key];
 }
 
-export function gearCard(g, { act = null, data = {}, size = '', extra = '' } = {}) {
+/**
+ * Instrumentenkarte. skill = Können dessen, der es spielt (oder spielen soll): Die Schwelle für vollen Klang
+ * wird grün, wenn er sie erreicht, sonst rot. Ohne skill nimmt die Karte ihren aktuellen Besitzer.
+ * Ein grüner Pfeil zeigt, dass ein freies Instrument jemandem in einer Band helfen würde.
+ */
+export function gearCard(g, { act = null, data = {}, size = '', extra = '', skill = null, up = null } = {}) {
   const model = { ...gearModel(g.model), ...(g.klang ? { klang: g.klang, spielbarkeit: g.spielbarkeit, design: g.design } : {}) };
+  const needed = 100 - model.spielbarkeit;
+  const holder = g.musicianId ? musicianById(g.musicianId) : null;
+  skill ??= holder?.instruments.find((i) => i.type === model.type)?.skill ?? null;
+  const threshold = skill === null ? fmt0(needed)
+    : `<b class="${skill >= needed ? 'ok' : 'bad'}" title="${skill >= needed ? 'Erreicht' : 'Noch nicht erreicht'}: Können ${fmt0(skill)}">${fmt0(needed)}</b>`;
+  const arrow = (up ?? g.upgrades?.some((u) => u.bandId))
+    ? `<span class="tcg-up" title="${up ? 'Im Lager liegt ein besseres Instrument' : 'Jemand in deiner Band klingt damit besser'}">▲</span>` : '';
   return tcg({
     rarity: model.rarity,
     theme: 'gear-bg',
     name: model.name,
-    art: `<span class="tcg-icon">${instrumentIcon(model.type)}</span>`,
+    art: `<span class="tcg-icon">${instrumentIcon(model.type)}</span>${arrow}`,
     type: `Instrument<em>${esc(instrumentName(model.type))}</em>`,
-    text: `Voller Klang ab Können ${fmt0(100 - model.spielbarkeit)}`,
+    text: `Voller Klang ab Können ${threshold}`,
     stats: [[model.klang, 'Klang'], [model.spielbarkeit, 'Spielb.'], [model.design, 'Design']],
     act,
     data,
@@ -243,10 +255,11 @@ export function managerCard(m, { act = null, data = {}, size = '', extra = '' } 
 }
 
 /** Leerer Kartenplatz, z. B. für ein fehlendes Instrument oder einen Manager. */
-export function emptySlot(label, { act = null, data = {}, size = '', icon = '+' } = {}) {
+export function emptySlot(label, { act = null, data = {}, size = '', icon = '+', up = false } = {}) {
   const attrs = act ? ` data-act="${act}" ${Object.entries(data).map(([k, v]) => `data-${k}="${esc(v)}"`).join(' ')}` : '';
   const tag = act ? 'button' : 'div';
-  return `<${tag} class="tcg-slot ${size}"${attrs}><span class="tcg-slot-icon">${icon}</span><span>${esc(label)}</span></${tag}>`;
+  const arrow = up ? '<span class="tcg-up" title="Im Lager liegt ein passendes Instrument">▲</span>' : '';
+  return `<${tag} class="tcg-slot ${size}"${attrs}>${arrow}<span class="tcg-slot-icon">${icon}</span><span>${esc(label)}</span></${tag}>`;
 }
 
 /** Meldung, wenn Musiker eine Können-Stufe aufsteigen. */

@@ -3,6 +3,7 @@ import { bandGenreTags, bandIdentity, emptySlot, face, fullName, gearCard, gearM
 import { app, bandById, cat, defineActions, isBusy, managerById, musicianById, mutate, navigate, rerender, runningFor } from '../core.js';
 import { openLive } from '../live.js';
 import { startPractice, startRecordSong } from '../play.js';
+import { assignGear, soundChange } from '../gear.js';
 import { bar, confirmDialog, duration, esc, fmt0, fmt1, money, openModal, percent, promptDialog, timeAgo, toast } from '../ui.js';
 
 /** Untermenü einer Band: [Pfad, Icon, Bezeichnung] */
@@ -79,7 +80,7 @@ function overview(b, members) {
       <div><div class="eyebrow">${b.title ? esc(b.title) : 'Band'}</div><h1>${esc(b.name)} <button class="icon-btn" data-act="bandRename" data-id="${b.id}" title="Umbenennen">✎</button></h1></div>
     </div>
     <div class="stat-grid">
-      <div class="tile"><span>Sound</span><b>${fmt1(b.sound)}</b></div>
+      <div class="tile" data-flash="sound-${b.id}"><span>Sound</span><b>${fmt1(b.sound)}</b></div>
       <div class="tile"><span>Ruhm</span><b>${fmt1(b.fame)}</b><small title="Am Bandnamen · bei den Mitgliedern">Name ${fmt1(b.fameOwn)} · Musiker ${fmt1(b.fame - b.fameOwn)}</small>${gig.nextVenue ? `<small>${esc(gig.nextVenue)} ab ${fmt0(gig.nextFame)}</small>${bar(gig.progress, 1, 'thin')}` : ''}</div>
       <div class="tile"><span>Zusammenspiel</span><b>${fmt0(b.cohesion)}<small> / ${fmt0(b.maxCohesion)}</small></b>${bar(b.cohesion, 100, 'thin')}</div>
       <div class="tile"><span>Chemie</span><b>${chemistryLabel(b.chemistry)}</b></div>
@@ -138,12 +139,13 @@ function memberTile(b, m, place) {
   const played = m.instruments[slotIndex];
   const gear = app.state.gear.find((g) => g.musicianId === m.id && gearModel(g.model).type === played.type);
   const gearData = { musician: m.id, type: played.type };
+  const better = app.state.gear.some((g) => g.upgrades?.some((u) => u.musicianId === m.id));
   return `
     <div class="lineup-tile">
       <div class="lineup-head"><span class="slot-label">Platz ${place}</span><span class="small">${instrumentIcon(played.type)} ${esc(instrumentName(played.type))}</span></div>
       <div class="lineup-pair">
         ${musicianCard(m, { size: 'sm' })}
-        ${gear ? gearCard(gear, { act: 'pickGear', data: gearData, size: 'sm' }) : emptySlot(instrumentName(played.type), { act: 'pickGear', data: gearData, icon: instrumentIcon(played.type) })}
+        ${gear ? gearCard(gear, { act: 'pickGear', data: gearData, size: 'sm', up: better }) : emptySlot(instrumentName(played.type), { act: 'pickGear', data: gearData, icon: instrumentIcon(played.type), up: better })}
       </div>
       <div class="lineup-controls">
         ${m.instruments.length > 1 ? `
@@ -343,22 +345,28 @@ function openGearPicker(musicianId, type) {
     render: () => {
       const options = app.state.gear.filter((g) => gearModel(g.model).type === type && (!g.musicianId || g.musicianId === m.id));
       const current = options.find((g) => g.musicianId === m.id);
+      const played = m.instruments.find((i) => i.type === type)?.skill ?? 0;
       return `
         <h2>${esc(instrumentName(type))} für ${esc(m.firstName)}</h2>
-        ${options.length ? `<div class="tcg-grid">${options.map((g) => gearCard(g, {
-          extra: g === current
-            ? '<button class="btn small" data-gear-remove>Herausnehmen</button>'
-            : `<button class="btn primary small" data-gear="${g.id}">Einlegen</button>`,
-        })).join('')}</div>` : '<div class="empty">Kein freies Instrument dieser Art im Lager.</div>'}`;
+        ${options.length ? `<div class="tcg-grid">${options.map((g) => {
+          const upgrade = g.upgrades?.find((u) => u.musicianId === m.id);
+          return gearCard(g, {
+            skill: played,
+            extra: g === current
+              ? '<button class="btn small" data-gear-remove>Herausnehmen</button>'
+              : `${upgrade ? soundChange(upgrade) : '<span class="small muted">Klingt damit nicht besser</span>'}
+                 <button class="btn primary small" data-gear="${g.id}">Einlegen</button>`,
+          });
+        }).join('')}</div>` : '<div class="empty">Kein freies Instrument dieser Art im Lager.</div>'}`;
     },
   });
   modal.body.addEventListener('click', async (e) => {
     const add = e.target.closest('[data-gear]');
     const remove = e.target.closest('[data-gear-remove]');
-    if (add && await mutate('gearAssign', { gearId: Number(add.dataset.gear), musicianId: m.id })) modal.close();
+    if (add && await assignGear(Number(add.dataset.gear), m.id)) modal.close();
     if (remove) {
       const current = app.state.gear.find((g) => g.musicianId === m.id && gearModel(g.model).type === type);
-      if (current && await mutate('gearAssign', { gearId: current.id, musicianId: null })) modal.close();
+      if (current && await assignGear(current.id, null)) modal.close();
     }
   });
 }

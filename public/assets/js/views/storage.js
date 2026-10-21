@@ -1,5 +1,6 @@
 import { fullName, gearCard, gearModel, instrumentName, managerCard } from '../cards.js';
 import { app, bandById, cat, defineActions, mutate } from '../core.js';
+import { assignGear } from '../gear.js';
 import { esc, fmt0, toast } from '../ui.js';
 
 export function render() {
@@ -18,7 +19,7 @@ export function render() {
       <h2>Instrumente</h2>
       ${s.gear.length ? Object.entries(byType).map(([type, items]) => `
         <h3>${esc(instrumentName(type))}</h3>
-        <div class="tcg-grid">${items.map((g) => gearCard(g, { extra: assignSelect(g, type) })).join('')}</div>`).join('') : '<div class="empty">Noch keine Instrumente.</div>'}
+        <div class="tcg-grid">${items.map((g) => gearCard(g, { act: 'openGear', data: { id: g.id }, extra: assignSelect(g, type) })).join('')}</div>`).join('') : '<div class="empty">Noch keine Instrumente.</div>'}
     </section>
 
     <section>
@@ -62,7 +63,7 @@ function itemCard(item) {
 
 defineActions({
   async assignGearFromStorage(value, el) {
-    await mutate('gearAssign', { gearId: Number(el.dataset.gear), musicianId: value ? Number(value) : null });
+    await assignGear(Number(el.dataset.gear), value ? Number(value) : null);
   },
   async useItem(value, el) {
     if (!value) return;

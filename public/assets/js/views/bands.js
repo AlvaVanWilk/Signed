@@ -93,7 +93,7 @@ function overview(b, members) {
     <div class="page-head">
       <div><div class="eyebrow">${b.title ? esc(b.title) : 'Band'}</div><h1>${esc(b.name)} <button class="icon-btn" data-act="bandRename" data-id="${b.id}" title="${b.released ? 'Namensänderung beantragen' : 'Umbenennen'}">✎</button></h1></div>
     </div>
-    ${members.length ? stage(members, { className: runningFor(b.id) ? '' : 'paused' }) : ''}
+    ${members.length ? stage(members, { className: runningFor(b.id) ? '' : 'idle' }) : ''}
     <div class="stat-grid">
       <div class="tile" data-flash="sound-${b.id}"><span>Sound</span><b>${fmt1(b.sound)}</b>
         <small>Ruhm pro Auftritt <em>× ${fmt2(fx.soundFame)}</em></small>

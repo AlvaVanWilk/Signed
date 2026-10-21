@@ -85,7 +85,7 @@ export function openLive(activityId) {
     if (elapsed >= total) {
       clearInterval(timer);
       stopMusic();
-      stageEl.classList.add('paused');
+      stageEl.classList.add('idle');
       setTimeout(() => modal.close(), 1500);
     }
   }

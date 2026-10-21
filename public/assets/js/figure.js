@@ -207,7 +207,7 @@ export function playedInstrument(m) {
  */
 export function stage(members, { bpm = 120, names = true, className = '' } = {}) {
   return `<div class="fig-stage ${className}" style="--beat:${(60 / bpm).toFixed(3)}s">${members.map((m) => `
-    <div class="fig-member">${figure(m.look, playedInstrument(m))}${names ? `<b>${escapeHtml(m.firstName)}</b>` : ''}</div>`).join('')}
+    <div class="fig-member" style="--d:${(-((m.id * 7919) % 4300) / 1000).toFixed(2)}s">${figure(m.look, playedInstrument(m))}${names ? `<b>${escapeHtml(m.firstName)}</b>` : ''}</div>`).join('')}
   </div>`;
 }
 

@@ -107,7 +107,7 @@ async function openBandView(id) {
     clearTimeout(timer);
     player?.stop();
     player = null;
-    modal?.body.querySelector('.fig-stage')?.classList.add('paused');
+    modal?.body.querySelector('.fig-stage')?.classList.add('idle');
   };
   const modal = openModal({
     wide: true,
@@ -120,7 +120,7 @@ async function openBandView(id) {
         <button class="btn primary" data-listen>▶ Anhören</button>
         ${band.own ? `<button class="btn" data-goto>Zur Band</button>` : ''}
       </div>
-      ${stage(band.members, { bpm: cat().genres[band.genres[0] ?? band.members[0]?.genres[0]]?.bpm ?? 120, className: 'paused' })}
+      ${stage(band.members, { bpm: cat().genres[band.genres[0] ?? band.members[0]?.genres[0]]?.bpm ?? 120, className: 'idle' })}
       <div class="tcg-grid">${band.members.map((m) => musicianCard(m, { act: null, showStatus: false })).join('')}</div>
       ${band.records.length ? `<h3>Platten</h3>
         <ul class="history">${band.records.map((r) => `
@@ -149,7 +149,7 @@ async function openBandView(id) {
       return;
     }
     player = playStems(stems, 0);
-    stageEl.classList.remove('paused');
+    stageEl.classList.remove('idle');
     button.textContent = '■ Stopp';
     timer = setTimeout(() => {
       stop();

@@ -1041,5 +1041,12 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .fig-member b { display: block; margin-top: -2px; }
 .fig-stage.hype .fig-body { animation-name: fig-jump; }
 @keyframes fig-jump { 0%, 100% { transform: translateY(0); } 45% { transform: translateY(-7px); } }
-.fig-stage.paused .fig g { animation-play-state: paused; }
-.fig-stage.paused .fig-eyes { animation-play-state: running; }
+/* Warten: Instrumente ruhen, aber alle atmen, schauen umher, verlagern das Gewicht und blinzeln – jede Figur in eigenem Takt. */
+.fig-stage.idle .fig g { animation: none; }
+.fig-stage.idle .fig g.fig-eyes { animation: fig-blink 4.3s infinite; animation-delay: var(--d, 0s); }
+.fig-stage.idle .fig g.fig-body { animation: fig-breathe 3.4s ease-in-out infinite; animation-delay: var(--d, 0s); }
+.fig-stage.idle .fig g.fig-head { animation: fig-look 6.5s ease-in-out infinite; animation-delay: var(--d, 0s); }
+.fig-stage.idle .fig g.fig-tap { animation: fig-shift 9s ease-in-out infinite; animation-delay: var(--d, 0s); }
+@keyframes fig-breathe { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(1.2px); } }
+@keyframes fig-look { 0%, 30%, 100% { transform: rotate(0); } 40%, 55% { transform: rotate(-6deg); } 70%, 85% { transform: rotate(5deg); } }
+@keyframes fig-shift { 0%, 80%, 100% { transform: rotate(0); } 86%, 92% { transform: rotate(-12deg); } }

@@ -833,9 +833,13 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .skill-row { display: grid; grid-template-columns: 37% minmax(0, 1fr) auto; align-items: center; gap: 1.6cqi; font-size: 4cqi; }
 .skill-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #3a3247; }
 .skill-row > b { font-size: 4.6cqi; min-width: 5cqi; text-align: right; }
-.skill-cells { display: grid; grid-template-columns: repeat(var(--cells, 25), 1fr); column-gap: 0.25cqi; }
-.skill-cells i:nth-child(5n):not(:last-child) { margin-right: 0.7cqi; }
-.skill-cells i { height: 3cqi; border-radius: 0.6cqi; background: linear-gradient(90deg, #2a2238 var(--f), rgba(0, 0, 0, 0.1) var(--f)); box-shadow: inset 0 0 0 0.25cqi rgba(0, 0, 0, 0.25); }
+/* Messleiste: Füllung, kurze Striche pro Punkt, lange alle 5 Punkte */
+.skill-meter { position: relative; display: block; height: 3.6cqi; border-radius: 0.8cqi; overflow: hidden;
+  background: linear-gradient(90deg, var(--step, #2a2238) var(--f), rgba(0, 0, 0, 0.1) var(--f)); box-shadow: inset 0 0 0 0.25cqi rgba(0, 0, 0, 0.25); }
+.skill-meter::after { content: ''; position: absolute; inset: 0;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 calc(500% / var(--units) - 0.45cqi), rgba(0, 0, 0, 0.55) calc(500% / var(--units) - 0.45cqi) calc(500% / var(--units))) 0 0 / 100% 100% no-repeat,
+    repeating-linear-gradient(90deg, transparent 0 calc(100% / var(--units) - 0.22cqi), rgba(0, 0, 0, 0.3) calc(100% / var(--units) - 0.22cqi) calc(100% / var(--units))) 0 100% / 100% 45% no-repeat; }
 .tcg-traits { font-size: 4.2cqi; color: #3a3247; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tcg-minis { display: flex; justify-content: space-around; padding: 1.6% 0; border-radius: 6px; background: #1b1626; color: #fff; font-size: 4.4cqi; font-weight: 700; }
 .tcg-minis span { opacity: 0.9; }
@@ -981,7 +985,7 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .skill-step-1 { --step: #2fa84f; }
 .skill-step-2 { --step: #2f7fe0; }
 .skill-step-3 { --step: #b03ad6; }
-.skill-cells[class*='skill-step-'] i { background: linear-gradient(90deg, var(--step) var(--f), rgba(0, 0, 0, 0.1) var(--f)); }
+
 .step-badge { display: inline-grid; place-items: center; width: 5.6cqi; height: 5.6cqi; border-radius: 50%; font-size: 3.6cqi !important; font-weight: 800; color: #fff; background: var(--step); text-align: center !important; min-width: 0 !important; }
 .fame-step-0 { --step: #b9ad8e; }
 .fame-step-1 { --step: #e0a800; }

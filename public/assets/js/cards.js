@@ -185,20 +185,17 @@ export function fameBar(fame) {
 }
 
 /**
- * Können als Kästchen: eins pro Können-Punkt der Stufe (25 je Stufe, in Fünfergruppen), in der Farbe der Stufe;
- * dahinter die Stufe. So entspricht ein Punkt Zuwachs genau einem Kästchen.
+ * Können als Messleiste für den Weg zur nächsten Stufe: gefüllt bis zum aktuellen Können, ein kurzer Strich pro
+ * Können-Punkt, ein langer alle 5 Punkte (Stufe 0 ist 35 Punkte lang, die übrigen 25). Dahinter die Stufe.
  */
 export function skillBar(skill) {
   const levels = cat().rules.skillLevels;
   const { level, next } = stepOf(skill, levels);
   const from = [0, ...levels][level];
-  const width = next === null ? levels[1] - levels[0] : next - from;
-  const filled = next === null ? width : skill - from;
+  const width = next === null ? 15 : next - from;
+  const filled = next === null ? 1 : (skill - from) / width;
   const title = `${cat().levelNames[level]} · Können ${fmt0(skill)}${next ? ` · nächste Stufe ab ${fmt0(next)}` : ''}`;
-  return `<span class="skill-cells skill-step-${level}" style="--cells:${width}" title="${esc(title)}">${Array.from({ length: width }, (_, i) => {
-    const fill = Math.max(0, Math.min(1, filled - i));
-    return `<i style="--f:${Math.round(fill * 100)}%"></i>`;
-  }).join('')}</span><b class="step-badge skill-step-${level}" title="${esc(title)}">${level}</b>`;
+  return `<span class="skill-meter skill-step-${level}" style="--units:${width};--f:${(filled * 100).toFixed(1)}%" title="${esc(title)}"></span><b class="step-badge skill-step-${level}" title="${esc(title)}">${level}</b>`;
 }
 
 /**

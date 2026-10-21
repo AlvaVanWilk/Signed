@@ -1088,3 +1088,8 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .info-btn:hover, .info-btn:focus-visible { opacity: 1; color: var(--text, #f3eefc); }
 .info-btn::before { content: ''; position: absolute; inset: -10px; }
 .info-btn { position: relative; }
+
+/* Fan will einsteigen (Ergebnis nach einem Gig) */
+.fan-drop { display: grid; gap: 10px; justify-items: center; text-align: center; }
+.fan-drop p { margin: 0; }
+.fan-drop-card { width: min(180px, 60vw); }

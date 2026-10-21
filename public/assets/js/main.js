@@ -1,5 +1,5 @@
 import { api } from './api.js';
-import { actions, app, bandById, cat, defineActions, liveMoney, musicianById, navigate, onRender, refresh, rerender, serverNow } from './core.js';
+import { actions, app, bandById, cat, defineActions, liveMoney, musicianById, mutate, navigate, onRender, refresh, rerender, serverNow } from './core.js';
 import { bandFill, genreGlyph, levelUpBanners, musicianCard } from './cards.js';
 import { closeAllModals, duration, esc, fmt1, fmtGain, money, openModal, percent, timeAgo, topModal } from './ui.js';
 import './celebrate.js';
@@ -241,9 +241,11 @@ function resultHtml(r) {
         ${musician.jamOfferHtml(jamOffer, true)}` : ''}`;
   }
   const band = bandById(r.bandId);
-  const drops = (res.drops || []).map((d) => d.kind === 'manager'
-    ? `<div class="banner">🎴 Neue Karte: <b>${esc(d.name)}</b> will dein Manager werden (Stufe ${d.level}). Du findest ihn im Lager.</div>`
-    : `<div class="banner">💌 Fan-Karte erhalten: +${fmt1(d.value)} Ruhm, einsetzbar im Lager.</div>`).join('');
+  const drops = (res.drops || []).map((d) => {
+    if (d.kind === 'manager') return `<div class="banner">🎴 Neue Karte: <b>${esc(d.name)}</b> will dein Manager werden (Stufe ${d.level}). Du findest ihn im Lager.</div>`;
+    if (d.kind === 'musician') return fanDrop(d, band);
+    return `<div class="banner">💌 Fan-Karte erhalten: +${fmt1(d.value)} Ruhm, einsetzbar im Lager.</div>`;
+  }).join('');
   return `
     <div class="eyebrow">${esc(band?.name ?? '')}</div>
     <h2>${esc(r.title)}</h2>
@@ -258,6 +260,21 @@ function resultHtml(r) {
     ${levelUpBanners(res.levelUps)}
     ${res.venueUp ? `<div class="banner">⭐ Neue Stufe! Ab jetzt spielt die Band Gigs in: <b>${esc(res.venueUp)}</b>.</div>` : ''}
     ${drops}`;
+}
+
+/** Fan will einsteigen: Er ist schon im Label; in die Band holt man ihn mit einem Tipp, solange Platz ist. */
+function fanDrop(d, band) {
+  const m = musicianById(d.id);
+  if (!m) return '';
+  const inBand = m.bandId !== null;
+  return `<div class="banner fan-drop">
+    <p>💖 Nach dem Gig wartet <b>${esc(m.firstName)}</b> am Bühnenausgang: großer Fan von ${esc(band?.name ?? 'euch')} und will unbedingt mitspielen!
+      ${esc(m.firstName)} ist jetzt in deinem Label.</p>
+    <div class="fan-drop-card">${musicianCard(m, { size: 'sm' })}</div>
+    ${inBand ? '' : d.canJoin && band
+      ? `<button class="btn primary" data-act="fanJoinBand" data-band="${band.id}" data-musician="${m.id}">In die Band holen</button>`
+      : '<p class="muted small">In der Band ist gerade kein Platz – vielleicht für eine neue Band?</p>'}
+  </div>`;
 }
 
 /** Ein kaputtes Ergebnis darf nie das ganze Spiel blockieren. */
@@ -323,6 +340,11 @@ function financeHtml() {
 // ---------- Ereignisse ----------
 
 defineActions({
+  async fanJoinBand({ band, musician: id }, el) {
+    if (await mutate('bandAddMember', { bandId: Number(band), musicianId: Number(id), slot: 1 })) {
+      el.outerHTML = `<p class="ok"><b>${esc(musicianById(Number(id))?.firstName ?? '')}</b> spielt jetzt in der Band!</p>`;
+    }
+  },
   async logout() {
     await api('logout', {}).catch(() => {});
     closeAllModals();

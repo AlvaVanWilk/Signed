@@ -142,6 +142,11 @@ Das Stadion bleibt der Tournee vorbehalten.
   (Chance 24 % minus 0,26 % pro Können-Punkt) oder glänzen (steigt mit Können, Spezialtechnik und Bühnentier),
   jeweils ±7–13 Punkte. Dazu pro Abschnitt Grundstimmung, Vergleich Sound zu Erwartung des Ortes und Zufall;
   ab dem zweiten Lied rückt die Leiste jedes Mal 8 % Richtung Mitte. Schwache Bands landen im Schnitt bei etwa 30 %, starke bei etwa 85 %.
+- **Fan will einsteigen** (`FanMusician`, `Balance::FAN_MUSICIAN`): Nach einem Gig mit Publikum im Schnitt ab 75 % wartet mit 1,5 %
+  ein Fan am Bühnenausgang – höchstens einmal pro Woche und Label (Gigs gibt es viele). Er mag das Genre der Band, spielt ein
+  Instrument, das ihr fehlt (passend zum Genre bevorzugt), verträgt sich mit allen und kann höchstens 90 % des Bandschnitts.
+  Er kommt kostenlos ins Label; in die Band holt man ihn per Knopf (normale Regeln, Zusammenspiel −5).
+  Seltenheit nach Bühne: Kneipe 90/10/0/0 % … Arena 30/40/22/8 % (gewöhnlich/selten/episch/legendär).
 
 ### Talent-Scout
 
@@ -201,6 +206,7 @@ heutigen Mitteln kaum weiter: Ab Stufe 1 wirken alle Können- und Bekanntheitsge
 nur noch zu 3 %. Profi bzw. Szenegröße dauert so rund 40 Stunden Spielzeit, Virtuose bzw. Star weit über 1.000 –
 praktisch unerreichbar, bis Tourneen und Manager dazukommen.
 **Tageskurse** öffnen diesen Weg als erste: ohne Bremse, aber selten und teuer (eine Stufe allein durch Kurse in rund zwei Monaten).
+**Fans** großer Bühnen sind ein zweiter, kleiner Weg: In Halle und Arena kommen auch epische und legendäre Musiker, so gut wie fast die Band.
 **Für neue Inhalte:** Tourneen, Manager und Co. sollen genau diese Stufen erreichbar machen (eigene, ungebremste
 Gewinne oder eine gelockerte Bremse) – nicht einfach dem heutigen Tempo unterliegen. Lokal bekannt ist man nach einigen Stunden Auftritten.
 Nur die Gewinne sind klein; wie oft man etwas hintereinander spielt, ist nicht begrenzt.
@@ -253,7 +259,8 @@ Nur die Gewinne sind klein; wie oft man etwas hintereinander spielt, ist nicht b
 
 ### Jam-Café
 
-Nur für Musiker ohne Band, 2 Lieder, beliebig oft. Im Publikum sitzen Musiker: Erwartung 35 (Straßenmusik 25,
+Nur für Musiker ohne Band, 2 Lieder, beliebig oft – aber höchstens eine Band-Gründung pro Tag und Label (`JAM['cooldown']`),
+sonst könnte man gründen, auflösen und wieder jammen und so gratis Musiker sammeln. Im Publikum sitzen Musiker: Erwartung 35 (Straßenmusik 25,
 Open Stage 12). Danach stellen sich 3 Musiker vor, die zum Gastgeber passen. Wie gut sie sind, hängt von der
 Session ab (Publikumsleiste 0 → 100 %): Seltenheit von 85/14/1 % auf 35/45/20 % (gewöhnlich/selten/episch),
 Mindest-Können von 5 auf 26.

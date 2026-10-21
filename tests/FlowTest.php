@@ -1034,3 +1034,40 @@ test('Instrumentwechsel: Vorschau stimmt, neue Rolle kostet Zusammenspiel, Zurü
     $again = bandById($p->post('bandSetSlot', ['bandId' => $band['id'], 'musicianId' => $drummer, 'slot' => 1])['state'], $band['id']);
     checkEquals(60.0, $again['cohesion']);
 });
+
+test('Fan will einsteigen: selten nach begeistertem Gig, passendes fehlendes Instrument, höchstens einmal pro Woche', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Fans');
+    $band = foundBand($p);
+    $repo = new Signed\Game\Repo($db, (int) $db->value('SELECT id FROM labels'));
+    $row = Signed\Game\Repo::hydrateBand($db->one('SELECT * FROM bands WHERE id = ?', [$band['id']]));
+    $fan = Signed\Game\FanMusician::join($repo, $row, 'arena');
+    check($fan !== null, 'Fan kommt');
+    $m = $repo->musician($fan['id']);
+    check(!in_array($m['instr1'], ['vocals', 'guitar', 'drums'], true), 'spielt ein Instrument, das der Band fehlt');
+    check($m['band_id'] === null && $fan['canJoin'], 'ist im Label und könnte in die Band');
+    checkEquals(null, Signed\Game\FanMusician::join($repo, $row, 'arena'), 'zweiter Fan in derselben Woche');
+    Clock::advance(Balance::FAN_MUSICIAN['cooldown'] + 1);
+    check(Signed\Game\FanMusician::join($repo, $row, 'kneipe') !== null, 'nach einer Woche wieder möglich');
+    $state = $p->post('bandAddMember', ['bandId' => $band['id'], 'musicianId' => $fan['id'], 'slot' => 1])['state'];
+    checkEquals(4, count(bandById($state, $band['id'])['memberIds']));
+});
+
+test('Jam-Café: Gründen, Auflösen, wieder Jammen geht höchstens einmal am Tag', function () {
+    $db = freshDb();
+    $p = player($db);
+    $p->post('register', ['username' => 'sammler', 'password' => 'geheim123', 'labelName' => 'Sammel Records']);
+    $offer = $p->post('scoutOpen', ['voucher' => true])['offer'];
+    $m = $p->post('scoutPick', ['offerId' => $offer['id'], 'index' => 0])['musician'];
+    $jam = function () use ($p, $m): array {
+        $p->post('soloStart', ['musicianId' => $m['id'], 'type' => 'jam']);
+        Clock::advance(Balance::JAM['songs'] * Balance::SONG_SECONDS);
+        return $p->get('state')['jamOffers'][0];
+    };
+    $res = $p->post('jamPick', ['offerId' => $jam()['id'], 'index' => 0, 'name' => 'Eintagsfliege']);
+    $p->post('bandDisband', ['bandId' => $res['bandId']]);
+    checkApiError(fn () => $p->post('soloStart', ['musicianId' => $m['id'], 'type' => 'jam']), 'schon eine Band');
+    check($p->get('state')['jamNextAt'] > Clock::now());
+    Clock::advance(Balance::JAM['cooldown']);
+    check(count($jam()['cards']) > 0, 'Am nächsten Tag wieder');
+});

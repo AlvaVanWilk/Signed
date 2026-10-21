@@ -118,6 +118,10 @@ final class Activities
             }
 
             $drops = [];
+            if ($type === 'gig' && $sim['meter'] >= Balance::FAN_MUSICIAN['minMeter']
+                && Rng::chance(Balance::FAN_MUSICIAN['chance']) && !FanMusician::onCooldown($this->repo)) {
+                $drops[] = ['kind' => 'musician', 'venue' => $venueKey];
+            }
             if ($type === 'openstage') {
                 if (Rng::chance(Balance::OPENSTAGE['managerChance'])) {
                     $drops[] = ['kind' => 'manager'];
@@ -172,6 +176,7 @@ final class Activities
             if ($type === 'jam') {
                 // Im Jam-Café geht es ums Gründen: ohne freien Band-Platz gar nicht erst hin.
                 (new Bands($this->repo))->assertSlotFree();
+                Jam::assertOpen($this->repo);
                 $songs = Balance::JAM['songs'];
                 $fameTotal = Balance::JAM['fame'] * $songs;
                 $expect = Balance::JAM['expect'];
@@ -420,6 +425,11 @@ final class Activities
                 $manager = $repo->manager($repo->insertManager(Generator::manager('common', $repo->lastNames())));
                 $result['drops'][] = ['kind' => 'manager', 'name' => $manager['first_name'] . ' ' . $manager['last_name'], 'level' => $manager['level'], 'skills' => $manager['skills']];
                 $repo->log('card', sprintf('Nach der Open Stage bietet sich %s %s als Manager an.', $manager['first_name'], $manager['last_name']), $bandId);
+            } elseif ($drop['kind'] === 'musician') {
+                $fan = $bandRow === null ? null : FanMusician::join($repo, Repo::hydrateBand($bandRow), (string) $drop['venue']);
+                if ($fan !== null) {
+                    $result['drops'][] = $fan;
+                }
             } elseif ($drop['kind'] === 'fan') {
                 $db->insert('items', ['label_id' => $repo->labelId, 'kind' => 'fan', 'value' => (float) $drop['value'], 'created_at' => Clock::now()]);
                 $result['drops'][] = ['kind' => 'fan', 'value' => $drop['value']];

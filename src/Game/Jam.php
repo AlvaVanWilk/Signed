@@ -18,6 +18,28 @@ final class Jam
     {
     }
 
+    /** Ab wann das Jam-Café wieder eine Band zusammenbringt (0 = jetzt). Gilt fürs ganze Label. */
+    public static function nextAt(Repo $repo): int
+    {
+        $last = (int) $repo->db->value(
+            "SELECT COALESCE(MAX(created_at), 0) FROM jam_offers WHERE label_id = ? AND status = 'done'",
+            [$repo->labelId]
+        );
+        return $last > 0 ? $last + Balance::JAM['cooldown'] : 0;
+    }
+
+    public static function assertOpen(Repo $repo): void
+    {
+        $next = self::nextAt($repo);
+        if ($next > Clock::now()) {
+            $hours = (int) ceil(($next - Clock::now()) / 3600);
+            throw new ApiError(sprintf(
+                'Das Jam-Café hat heute schon eine Band zusammengebracht. Wieder in %s.',
+                $hours <= 1 ? 'einer Stunde' : "$hours Stunden"
+            ));
+        }
+    }
+
     /** Nach der Session: drei passende Musiker zur Auswahl. */
     public static function createOffer(Repo $repo, int $musicianId, float $meter): ?array
     {
@@ -55,13 +77,15 @@ final class Jam
     {
         return $this->repo->db->transaction(function () use ($offerId, $index, $bandName): int {
             $offer = $this->offer($offerId);
+            self::assertOpen($this->repo);
             $cards = json_decode($offer['cards'], true);
             if (!isset($cards[$index])) {
                 throw new ApiError('Diesen Musiker gibt es in der Auswahl nicht.');
             }
             $host = $this->repo->musician((int) $offer['musician_id']);
             $id = $this->repo->insertMusician($cards[$index], 'jam');
-            $this->repo->db->update('jam_offers', ['status' => 'done'], ['id' => $offerId]);
+            // Zeitpunkt der Gründung zählt für die Tagessperre (nextAt).
+            $this->repo->db->update('jam_offers', ['status' => 'done', 'created_at' => Clock::now()], ['id' => $offerId]);
             return (new Bands($this->repo))->create($bandName, [
                 ['id' => $host['id'], 'slot' => 1],
                 ['id' => $id, 'slot' => 1],

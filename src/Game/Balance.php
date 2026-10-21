@@ -184,10 +184,28 @@ final class Balance
             'high' => ['common' => 35, 'rare' => 45, 'epic' => 20, 'legendary' => 0],
         ],
         'minSkill' => [5.0, 26.0],
+        // Höchstens eine Band-Gründung pro Tag und Label – sonst: gründen, auflösen, wieder jammen, gratis Musiker sammeln.
+        'cooldown' => 24 * 3600,
     ];
     public const OPENSTAGE = [
         'songs' => 2, 'fame' => 0.18, 'expect' => 12, 'falloff' => 120,
         'managerChance' => 0.07, 'fanChance' => 0.15, 'fanValue' => [1, 2],
+    ];
+    /**
+     * Fan will einsteigen: Nach einem Gig mit begeistertem Publikum (Durchschnitt ab minMeter) wartet ganz selten
+     * ein Musiker am Bühnenausgang – höchstens einmal pro cooldown und Label. Gigs gibt es viele, darum so selten.
+     * Je größer die Bühne, desto besser die Fans (odds je Auftrittsort); Können höchstens skillShare × Bandschnitt.
+     * Ein Weg nach oben: In Halle und Arena kommen auch epische und legendäre Fans.
+     */
+    public const FAN_MUSICIAN = [
+        'minMeter' => 75, 'chance' => 0.015, 'cooldown' => 7 * 24 * 3600, 'skillShare' => 0.9,
+        'odds' => [
+            'kneipe' => ['common' => 90, 'rare' => 10, 'epic' => 0, 'legendary' => 0],
+            'club' => ['common' => 78, 'rare' => 20, 'epic' => 2, 'legendary' => 0],
+            'saal' => ['common' => 62, 'rare' => 30, 'epic' => 8, 'legendary' => 0],
+            'halle' => ['common' => 45, 'rare' => 37, 'epic' => 15, 'legendary' => 3],
+            'arena' => ['common' => 30, 'rare' => 40, 'epic' => 22, 'legendary' => 8],
+        ],
     ];
     /** Auftrittsorte für Gigs nach Bandruhm. gage und fame gelten pro Lied, expect = erwarteter Sound. */
     public const VENUES = [
@@ -316,7 +334,7 @@ final class Balance
     public const CHART_INTERVAL = 3 * 3600;
     /** Nachrichten beim Wiederkommen: nach so langer Pause, diese Arten aus der Chronik. */
     public const NEWS_AWAY = 900;
-    public const NEWS_KINDS = ['chart1', 'chart', 'transfer', 'scout', 'level', 'fame'];
+    public const NEWS_KINDS = ['chart1', 'chart', 'transfer', 'scout', 'level', 'fame', 'fanjoin'];
     /** Tantiemen und Chart-Ruhm nach Platz: Platz 1 × (1 + CHART_RANK_BONUS), dann gleichmäßig weniger bis Platz 10. */
     public const CHART_RANK_BONUS = 1.0;
     /** Eine Platte in den Top 10 macht die Gigs der Band voller: Platz 1 Gage und Ruhm + 40 %, abnehmend bis Platz 10. */

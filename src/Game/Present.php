@@ -164,6 +164,7 @@ final class Present
                 'hybridBonus' => Balance::HYBRID_BONUS,
                 'bandSlots' => Balance::BAND_SLOTS,
                 'promoSeconds' => Balance::PROMO_SECONDS,
+                'autoPracticeSeconds' => Balance::AUTO_PRACTICE['seconds'],
                 'cohesionRemovePenalty' => Balance::COHESION_REMOVE_PENALTY,
                 'scoutPrice' => Balance::SCOUT_PRICE,
                 'skillLevels' => Balance::SKILL_LEVELS,

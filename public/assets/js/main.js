@@ -202,8 +202,24 @@ function celebrateResult(body, res, audience) {
   if (audience && res.meter !== null && res.meter !== undefined) playApplause((res.meter - 35) / 60, moneyTile ? duration / 1000 : 0);
 }
 
+/** „+0,05“ oder „+0,01–0,07“ – wer schon gut ist, lernt langsamer. */
+function skillSpan(values) {
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  return max - min < 0.005 ? `+${fmtGain(max)}` : `+${fmtGain(min)}–${fmtGain(max)}`;
+}
+
 function resultHtml(r) {
   const res = r.result;
+  if (r.type === 'practice') {
+    const m = musicianById(r.musicianId);
+    return `
+      <div class="eyebrow">Allein geübt</div>
+      <h2>${esc(m ? m.firstName : 'Übung')} ist fertig</h2>
+      <div class="reward-grid">${reward(`Können ${esc(cat().instruments[res.instrument]?.name ?? '')}`, `+${fmtGain(res.skill)}`)}${reward('Jetzt', fmt1(res.skillAfter))}</div>
+      ${levelUpBanners(res.levelUps)}
+      <p class="muted small">Selbst mitspielen bringt bis zum Vierfachen.</p>`;
+  }
   if (r.type === 'promo') {
     const m = musicianById(r.musicianId);
     return `
@@ -234,7 +250,8 @@ function resultHtml(r) {
     <div class="reward-grid">
       ${res.money ? reward(r.type === 'busking' ? 'Im Hut' : 'Gage', `+${money(0)}`, { to: res.money, kind: 'money' }) : ''}
       ${res.fame ? reward('Ruhm', `+${fmtGain(0)}`, { to: res.fame, kind: 'fame' }) : ''}
-      ${res.cohesion ? reward('Zusammenspiel', `+${fmt1(res.cohesion)}`) : ''}
+      ${res.cohesion ? reward('Zusammenspiel', `+${fmt1(res.cohesion)}`) : res.cohesionFull ? reward('Zusammenspiel', 'schon voll (100)') : ''}
+      ${res.skill?.length ? reward('Können je Musiker', skillSpan(res.skill)) : ''}
       ${res.meter ? reward('Publikum', percent(res.meter / 100)) : ''}
     </div>
     ${levelUpBanners(res.levelUps)}

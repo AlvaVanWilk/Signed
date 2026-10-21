@@ -222,6 +222,11 @@ final class Balance
     public const LEVEL_PACE = [1.0, 0.25, 0.03];
     public const PRACTICE_GAIN = 0.8;
     /**
+     * Allein üben lassen (ohne Minispiel): dauert länger und bringt nur diesen Anteil einer perfekten Solo-Probe.
+     * Wer selbst mitspielt, bekommt je nach Treffern bis zum Vierfachen – ab etwa 40 % Treffern lohnt sich Mitspielen.
+     */
+    public const AUTO_PRACTICE = ['seconds' => 120, 'share' => 0.25];
+    /**
      * Solo-Probe auf Stufe 0 (Einsteiger) zählt so viel mehr: Der erste Aufstieg soll sich schnell anfühlen.
      * Ab Stufe 1 gilt wieder das normale Tempo – die höheren Stufen bleiben genauso schwer.
      */

@@ -55,6 +55,7 @@ final class Api
         'promoStart' => ['POST', true],
         'bandPromo' => ['POST', true],
         'promoCancel' => ['POST', true],
+        'practiceAuto' => ['POST', true],
         'soloStart' => ['POST', true],
         'jamPick' => ['POST', true],
         'transferList' => ['POST', true],
@@ -311,6 +312,12 @@ final class Api
     {
         (new Activities($repo))->ack(self::int($in, 'activityId'));
         return [];
+    }
+
+    private function practiceAuto(array $in, Repo $repo): array
+    {
+        $activity = (new Activities($repo))->autoPractice(self::int($in, 'musicianId'), self::int($in, 'slot'));
+        return ['activity' => $activity, 'state' => State::build($repo)];
     }
 
     private function promoStart(array $in, Repo $repo): array

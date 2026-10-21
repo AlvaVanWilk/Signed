@@ -825,7 +825,7 @@ test('Promo lässt sich abbrechen: sofort wieder frei, ohne Belohnung', function
 
     // Band-Promo genauso; Auftritte lassen sich nicht abbrechen.
     $gig = $p->get('state')['running'][0];
-    checkApiError(fn () => $p->post('promoCancel', ['activityId' => $gig['id']]), 'Promo');
+    checkApiError(fn () => $p->post('promoCancel', ['activityId' => $gig['id']]), 'läuft nicht mehr');
     Clock::advance(Balance::BUSKING['songs'] * Balance::SONG_SECONDS);
     $activity = $p->post('bandPromo', ['bandId' => $band['id']])['activity'];
     $fame = $db->value('SELECT SUM(fame) FROM musicians');
@@ -942,4 +942,26 @@ test('Charts: Pro Label höchstens drei Platten, auch mit vielen Bands', functio
     $placed = array_column(array_filter($p->get('charts')['albums'], static fn ($a) => $a['placed']), 'title');
     checkEquals(['Platte 5', 'Platte 4', 'Platte 3'], $placed);
     checkEquals(8, count(Signed\Game\Balance::BAND_SLOTS));
+});
+
+test('Allein üben lassen: läuft von selbst, bringt ein Viertel einer perfekten Solo-Probe', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Auto');
+    $m = $p->get('state')['musicians'][0];
+    $before = (float) $db->value('SELECT skill1 FROM musicians WHERE id = ?', [$m['id']]);
+    $expected = $m['gains']['auto'][0];
+    check($expected > 0 && abs($expected - $m['gains']['practice'][0] * Balance::AUTO_PRACTICE['share']) < 0.002);
+    $p->post('practiceAuto', ['musicianId' => $m['id'], 'slot' => 1]);
+    checkApiError(fn () => $p->post('minigameStart', ['kind' => 'practice', 'musicianId' => $m['id']]), 'beschäftigt');
+    Clock::advance(Balance::AUTO_PRACTICE['seconds']);
+    $state = $p->get('state');
+    $after = (float) $db->value('SELECT skill1 FROM musicians WHERE id = ?', [$m['id']]);
+    check(abs(($after - $before) - $expected) < 0.002, 'Zuwachs wie angezeigt');
+    checkEquals('practice', $state['results'][0]['type']);
+    // Zurückholen geht auch hier, dann gibt es nichts.
+    $activity = $p->post('practiceAuto', ['musicianId' => $m['id'], 'slot' => 1])['activity'];
+    $p->post('promoCancel', ['activityId' => $activity['id']]);
+    Clock::advance(Balance::AUTO_PRACTICE['seconds']);
+    $p->get('state');
+    checkEquals($after, (float) $db->value('SELECT skill1 FROM musicians WHERE id = ?', [$m['id']]));
 });

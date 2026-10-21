@@ -47,7 +47,10 @@ function blocker(b, members) {
   if (running) return { text: running.title, running };
   if (isBusy(b.busyUntil)) return { text: 'Die Band ist gerade beschäftigt.' };
   const away = members.find((m) => isBusy(m.busyUntil));
-  if (away) return { text: `${away.firstName} ist gerade unterwegs.`, promo: promoOf(away) };
+  if (away) {
+    const what = promoOf(away);
+    return { text: what?.type === 'practice' ? `${away.firstName} übt gerade allein.` : `${away.firstName} ist gerade unterwegs.`, promo: what };
+  }
   if (members.length < cat().rules.minMembers) return { text: 'Die Band braucht mindestens zwei Musiker.' };
   return null;
 }
@@ -64,7 +67,7 @@ function blockerNotice(b, members) {
 }
 
 /** Laufende Promo-Mission eines Musikers, falls er gerade auf einer ist. */
-export const promoOf = (m) => app.state.running.find((a) => (a.type === 'promo' && a.musicianId === m.id)
+export const promoOf = (m) => app.state.running.find((a) => ((a.type === 'promo' || a.type === 'practice') && a.musicianId === m.id)
   || (a.type === 'bandpromo' && m.bandId && a.bandId === m.bandId)) ?? null;
 
 /** Knopf zum Abbrechen einer Promo (aus Versehen gestartet); null ergibt nichts. */
@@ -209,7 +212,8 @@ function practice(b, members) {
     ${blockerNotice(b, members)}
     <div class="action-grid">
       ${actionTile({
-        icon: '🥁', title: 'Bandprobe', meta: `${songsMeta(b.options.rehearsal.songs)} · Zusammenspiel · Können für alle: <b>${gainRange(members.map((m) => m.gains?.rehearsal ?? 0))}</b> je Musiker`,
+        icon: '🥁', title: 'Bandprobe', meta: `${songsMeta(b.options.rehearsal.songs)} · ${b.cohesion >= 100 ? 'Zusammenspiel ist schon voll' : 'Zusammenspiel'} · Können für alle: <b>${gainRange(members.map((m) => m.gains?.rehearsal ?? 0))}</b> je Musiker`,
+        body: b.cohesion >= 100 ? '<span class="small muted">Die Band ist eingespielt. Für mehr Können lohnt sich jetzt Solo-Üben mehr.</span>' : '',
         button: `<button class="btn primary" data-act="startActivity" data-id="${b.id}" data-type="rehearsal" ${blocked ? 'disabled' : ''}>Proben</button>`,
       })}
       ${members.map((m) => practiceTile(m, isBusy(m.busyUntil) || isBusy(b.busyUntil))).join('')}
@@ -227,8 +231,11 @@ export function practiceTile(m, busy) {
   return actionTile({
     icon: face(m, 'md'),
     title: fullName(m),
-    meta: 'Solo-Probe · Können bei 100 % Treffern',
-    body: `<span class="tile-buttons">${m.instruments.map((i, idx) => `<button class="btn small" data-act="practice" data-id="${m.id}" data-slot="${idx + 1}" ${busy ? 'disabled' : ''}>${instrumentIcon(i.type)} ${esc(instrumentName(i.type))} ${fmt0(i.skill)} · <b>bis +${fmtGain(m.gains?.practice?.[idx] ?? 0)}</b></button>`).join('')}</span>`,
+    meta: `Selbst spielen: Können je nach Treffern · oder allein üben lassen (${duration(cat().rules.autoPracticeSeconds)}, weniger)`,
+    body: m.instruments.map((i, idx) => `<span class="tile-buttons">
+      <button class="btn small primary" data-act="practice" data-id="${m.id}" data-slot="${idx + 1}" ${busy ? 'disabled' : ''}>${instrumentIcon(i.type)} ${esc(instrumentName(i.type))} ${fmt0(i.skill)} · <b>bis +${fmtGain(m.gains?.practice?.[idx] ?? 0)}</b></button>
+      <button class="btn small ghost" data-act="practiceAuto" data-id="${m.id}" data-slot="${idx + 1}" ${busy ? 'disabled' : ''}>Allein üben lassen · +${fmtGain(m.gains?.auto?.[idx] ?? 0)}</button>
+    </span>`).join(''),
   });
 }
 
@@ -742,9 +749,12 @@ defineActions({
   async promoRecord(value, el) {
     await mutate('bandPromoRecord', { bandId: Number(el.dataset.id), recordId: Number(value) });
   },
+  async practiceAuto({ id, slot }) {
+    if (await mutate('practiceAuto', { musicianId: Number(id), slot: Number(slot) })) toast(`${musicianById(id).firstName} übt jetzt allein.`, 'ok');
+  },
   async promoCancel({ id }) {
-    const ok = await confirmDialog('Promo beenden? Dann gibt es keine Bekanntheit dafür.', { ok: 'Promo beenden', danger: true });
-    if (ok && await mutate('promoCancel', { activityId: Number(id) })) toast('Promo beendet – alle sind wieder da.', 'ok');
+    const ok = await confirmDialog('Jetzt zurückholen? Dann gibt es dafür nichts.', { ok: 'Zurückholen', danger: true });
+    if (ok && await mutate('promoCancel', { activityId: Number(id) })) toast('Alle sind wieder da.', 'ok');
   },
   async promo({ id }) {
     if (await mutate('promoStart', { musicianId: Number(id) })) toast(`${musicianById(id).firstName} ist auf Promo-Tour.`, 'ok');

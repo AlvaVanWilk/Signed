@@ -207,6 +207,34 @@ final class Activities
     }
 
     /** Promo-Mission: ein Musiker ist eine Weile unterwegs und wird bekannter. Läuft offline. */
+    /** Allein üben lassen: läuft von selbst (auch offline), bringt aber nur einen Teil einer Solo-Probe. */
+    public function autoPractice(int $musicianId, int $slot): array
+    {
+        $db = $this->repo->db;
+        return $db->transaction(function () use ($db, $musicianId, $slot): array {
+            $now = Clock::now();
+            $m = $this->repo->musician($musicianId);
+            $slot = $slot === 2 && $m['instr2'] !== null ? 2 : 1;
+            if ($m['busy_until'] > $now) {
+                throw new ApiError(sprintf('%s ist gerade beschäftigt.', $m['first_name']));
+            }
+            if ($m['band_id'] !== null && $this->repo->band($m['band_id'])['busy_until'] > $now) {
+                throw new ApiError(sprintf('Die Band von %s ist gerade beschäftigt.', $m['first_name']));
+            }
+            $type = $slot === 2 ? $m['instr2'] : $m['instr1'];
+            $gain = BandCalc::practiceGain($m, $slot, 1.0, $this->repo->gearByMusician()[$m['id']][$type] ?? null) * Balance::AUTO_PRACTICE['share'];
+            $endsAt = $now + Balance::AUTO_PRACTICE['seconds'];
+            if ($db->exec('UPDATE musicians SET busy_until = ? WHERE id = ? AND busy_until <= ?', [$endsAt, $musicianId, $now]) === 0) {
+                throw new ApiError(sprintf('%s ist gerade beschäftigt.', $m['first_name']));
+            }
+            return $this->insert(null, $musicianId, 'practice', $now, $endsAt, [
+                'title' => sprintf('Übt allein: %s – %s', Bands::fullName($m), Catalog::INSTRUMENTS[$type]['name']),
+                'songs' => 0,
+                'reward' => ['slot' => $slot, 'skill' => round($gain, 4)],
+            ]);
+        });
+    }
+
     public function promo(int $musicianId): array
     {
         $db = $this->repo->db;
@@ -274,11 +302,11 @@ final class Activities
         $db = $this->repo->db;
         $db->transaction(function () use ($db, $activityId): void {
             $row = $db->one(
-                "SELECT * FROM activities WHERE id = ? AND label_id = ? AND settled = 0 AND type IN ('promo', 'bandpromo')",
+                "SELECT * FROM activities WHERE id = ? AND label_id = ? AND settled = 0 AND type IN ('promo', 'bandpromo', 'practice')",
                 [$activityId, $this->repo->labelId]
             );
             if ($row === null) {
-                throw new ApiError('Diese Promo läuft nicht mehr.');
+                throw new ApiError('Das läuft nicht mehr.');
             }
             $endsAt = (int) $row['ends_at'];
             $db->update('activities', ['settled' => 1, 'seen' => 1, 'ends_at' => Clock::now(), 'result' => json_encode(['cancelled' => true])], ['id' => (int) $row['id']]);
@@ -320,6 +348,7 @@ final class Activities
                 $data = json_decode($row['data'], true) ?: [];
                 $result = match (true) {
                     $row['type'] === 'promo' => self::applyPromo($repo, $row, $data),
+                    $row['type'] === 'practice' => self::applyPractice($repo, $row, $data),
                     $row['band_id'] === null => self::applySolo($repo, $row, $data),
                     default => self::applyBand($repo, $row, $data),
                 };
@@ -346,6 +375,9 @@ final class Activities
             'drops' => [],
             'venueUp' => null,
             'levelUps' => self::applySkill($repo, $reward['skill'] ?? []),
+            // Können je Mitglied (Bandprobe), damit das Ergebnis zeigt, was sie gebracht hat.
+            'skill' => array_values(array_map(static fn ($g) => (float) $g, $reward['skill'] ?? [])),
+            'cohesionFull' => false,
         ];
 
         $bandRow = $db->one('SELECT * FROM bands WHERE id = ?', [$bandId]);
@@ -364,6 +396,7 @@ final class Activities
             }
             $db->update('bands', $updates, ['id' => $bandId]);
             $result['cohesion'] = round($cohesion - $band['cohesion'], 1);
+            $result['cohesionFull'] = $cohesion >= (float) $reward['maxCohesion'];
 
             $fameNow = (float) $db->value('SELECT COALESCE(SUM(fame), 0) FROM musicians WHERE band_id = ?', [$bandId]);
             $before = BandCalc::venue($fameNow - $fameGain);
@@ -400,6 +433,23 @@ final class Activities
             $result['jamOffer'] = Jam::createOffer($repo, (int) $row['musician_id'], (float) ($reward['meter'] ?? 50));
         }
         return $result;
+    }
+
+    private static function applyPractice(Repo $repo, array $row, array $data): array
+    {
+        $m = $repo->musician((int) $row['musician_id']);
+        $slot = (int) $data['reward']['slot'];
+        $column = $slot === 2 ? 'skill2' : 'skill1';
+        $before = BandCalc::skill($m, $slot);
+        $after = min((float) Balance::MAX_STAT, $before + (float) $data['reward']['skill']);
+        $repo->db->update('musicians', [$column => $after], ['id' => $m['id']]);
+        $levelUp = Levels::check($repo, $m['id']);
+        return [
+            'instrument' => $slot === 2 ? $m['instr2'] : $m['instr1'],
+            'skill' => round($after - $before, 3),
+            'skillAfter' => Present::down($after),
+            'levelUps' => $levelUp === null ? [] : [$levelUp],
+        ];
     }
 
     private static function applyPromo(Repo $repo, array $row, array $data): array

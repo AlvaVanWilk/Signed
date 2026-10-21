@@ -78,8 +78,9 @@ export function musicianStatus(m) {
   const listing = app.state.market?.mine.find((t) => t.musician.id === m.id);
   if (listing) return `Auf der Wechselbörse · <span data-until="${listing.endsAt}"></span>`;
   if (isBusy(m.busyUntil)) {
-    const promo = app.state.running.find((a) => a.type === 'promo' && a.musicianId === m.id);
-    return promo ? `Promo-Tour · <span data-until="${promo.endsAt}"></span>` : 'Beschäftigt';
+    const away = app.state.running.find((a) => (a.type === 'promo' || a.type === 'practice') && a.musicianId === m.id);
+    if (away) return `${away.type === 'promo' ? 'Promo-Tour' : 'Übt allein'} · <span data-until="${away.endsAt}"></span>`;
+    return 'Beschäftigt';
   }
   if (m.bandId) {
     const band = bandById(m.bandId);

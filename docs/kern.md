@@ -178,6 +178,8 @@ Ein Lied dauert 24 Sekunden: 12 Takte 4/4 (oder 16 Takte 3/4) bei 120 BPM – al
   pro voller Reglerlänge daneben. Eine Lampe pro Regler: grün im Bereich (±11–19 % wie am Mischpult), gelb bis zum
   2,2-fachen, sonst rot – ohne Richtung. 4 Abschnitte à 6 Sekunden; nach der Hälfte verschiebt sich jede Stellung
   um 15–35 %. Bewertet pro Regler und Abschnitt wie am Mischpult (12 Wertungen).
+- Allein üben lassen (statt Minispiel): 2 Minuten, läuft auch offline, bringt ¼ einer perfekten Solo-Probe. Wer selbst
+  spielt, bekommt je nach Treffern bis zum Vierfachen. Beim Platte-Aufnehmen gibt es diese Wahl nicht.
 - Solo-Probe: Können + 0,8 × Trefferquote^1,5 × Talent × Lernkurve; auf Stufe 0 (unter 35) doppelt –
   von 15 auf 35 sind es so rund 28 Proben (~20 Minuten), danach normales Tempo.
 - Lernkurve (alle Können-Gewinne): (1 − Können/110)^2,5. Je besser jemand ist, desto langsamer geht es.

@@ -212,6 +212,7 @@ final class State
                 }
                 return Present::musician($m, $gearIds[$m['id']] ?? []) + ['gains' => [
                     'practice' => $practice,
+                    'auto' => array_map(static fn ($g) => round($g * Balance::AUTO_PRACTICE['share'], 3), $practice),
                     'rehearsal' => $m['band_id'] === null ? null : round(BandCalc::rehearsalGain($m, BandCalc::gearOf($m, $gearMap)), 3),
                 ]];
             }, $musicians)),

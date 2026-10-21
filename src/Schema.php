@@ -365,6 +365,10 @@ final class Schema
             [
                 'ALTER TABLE records ADD COLUMN cover TEXT NULL',
             ],
+            // 19: Eine Band darf wieder mehrere Platten in den Charts haben – Plätze sofort neu vergeben
+            [
+                [Migrations::class, 'chartsRerank'],
+            ],
         ];
     }
 }

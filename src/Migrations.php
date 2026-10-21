@@ -78,6 +78,12 @@ final class Migrations
     }
 
     /** 9: Epische und legendäre Instrumente, die es schon gibt, bekommen ihre Eigenschaften. */
+    /** 19: Plätze sofort neu vergeben, damit Platten, die bisher nur wegen „eine pro Band“ fehlten, gleich einsteigen. */
+    public static function chartsRerank(Db $db): void
+    {
+        \Signed\Game\Charts::markDirty($db);
+    }
+
     /** 15: Widersprüchliche Eigenschaften (z. B. Teamplayer und Diva) – die zweite fällt weg. */
     public static function personalityContradictions(Db $db): void
     {

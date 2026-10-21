@@ -9,11 +9,13 @@ import { getAudio } from './audio.js';
 const buffers = new Map();
 
 /** Pfad zur passenden Aufnahme für { type, level, genre, electric } oder null, wenn es (noch) keine gibt. */
-export function stemUrl({ type, level, genre, electric }) {
+export function stemUrl({ type, level, genre, electric, voice = null }) {
   const music = cat().music || {};
   const [name, variants] = cat().musicStems[type] || [];
   if (!name) return null;
-  const names = variants ? [`${name}-${electric ? 'elektrisch' : 'akustisch'}`, `${name}-${electric ? 'akustisch' : 'elektrisch'}`] : [name];
+  let names = variants ? [`${name}-${electric ? 'elektrisch' : 'akustisch'}`, `${name}-${electric ? 'akustisch' : 'elektrisch'}`] : [name];
+  // Gesang: eigene Stimme, dann die andere, dann eine Spur ohne Stimme (wie Music::resolve).
+  if (voice) names = [`${name}-${voice}`, `${name}-${voice === 'weiblich' ? 'maennlich' : 'weiblich'}`, name];
   const levels = [0, 1, 2, 3].sort((a, b) => Math.abs(a - level) - Math.abs(b - level) || b - a);
   for (const g of genre === 'pop' ? ['pop'] : [genre, 'pop']) {
     for (const file of names) {
@@ -104,5 +106,6 @@ export function memberStem(m, band = null, seed = 0) {
     level: m.level,
     genre: genres[(m.id + seed) % genres.length],
     electric: gear ? !!cat().gear[gear.model].electric : m.id % 2 === 1,
+    voice: { f: 'weiblich', m: 'maennlich' }[m.look?.gender] ?? (m.id % 2 === 0 ? 'weiblich' : 'maennlich'),
   };
 }

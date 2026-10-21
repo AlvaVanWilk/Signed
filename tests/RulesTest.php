@@ -297,3 +297,13 @@ test('Über Stufe 1 geht es kaum weiter: Gewinne wirken je nach Stufe nur noch z
     check(abs($gain(70) - Balance::LEVEL_PACE[2]) < 1e-9);
     checkEquals(Balance::LEVEL_PACE[2], Signed\Game\Levels::pace(3));
 });
+
+test('Gesang: Musikerinnen singen mit der Frauenstimme, Musiker mit der Männerstimme, gleiche Noten', function () {
+    $stem = static fn (string $voice) => ['type' => 'vocals', 'level' => 0, 'genre' => 'rock', 'electric' => false, 'voice' => $voice];
+    checkEquals(['folder' => 'pop-0', 'file' => 'gesang-weiblich'], Signed\Game\Music::resolve($stem('weiblich')));
+    checkEquals(['folder' => 'pop-0', 'file' => 'gesang-maennlich'], Signed\Game\Music::resolve($stem('maennlich')));
+    $notes = Signed\Game\Music::notes(Signed\Game\Music::resolve($stem('weiblich')));
+    check($notes !== null && count($notes['notes']) > 20, 'Noten aus der gemeinsamen MIDI-Spur');
+    checkEquals('weiblich', Signed\Game\Music::voice(['id' => 7, 'look' => ['gender' => 'f']]));
+    checkEquals('maennlich', Signed\Game\Music::voice(['id' => 8, 'look' => ['gender' => 'm']]));
+});

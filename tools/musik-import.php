@@ -13,6 +13,10 @@ declare(strict_types=1);
  *   als MP3 → public/assets/music/<ordner>/<spur>.mp3.
  *
  * Spurnamen aus Logic wie „Pop Guitar E“ werden zu „gitarre-elektrisch“, „Pop Guitar“ zu „gitarre-akustisch“.
+ * Gesang mit „female“/„weiblich“ bzw. „male“/„männlich“ im Namen wird „gesang-weiblich“ bzw. „gesang-maennlich“;
+ * beide Stimmen teilen sich die Noten der MIDI-Spur „gesang“.
+ * Die MIDI-Datei darf nur einen Teil der Spuren enthalten: Vorhandene Noten anderer Spuren bleiben erhalten.
+ * Statt WAV gehen auch MP3 oder andere Formate, die ffmpeg lesen kann.
  */
 
 const BARS = 12;
@@ -53,6 +57,11 @@ function trackName(string $label): ?string
     foreach ($words as $word) {
         if (isset(NAMES[$word])) {
             [$name, $variants] = NAMES[$word];
+            if ($name === 'gesang') {
+                $voice = array_intersect($words, ['female', 'weiblich', 'frau']) ? '-weiblich'
+                    : (array_intersect($words, ['male', 'maennlich', 'männlich', 'mann']) ? '-maennlich' : '');
+                return $name . $voice;
+            }
             return $variants ? $name . ($electric ? '-elektrisch' : '-akustisch') : $name;
         }
     }
@@ -144,7 +153,9 @@ foreach ($tracks as $name => &$notes) {
     echo sprintf("  MIDI %-22s %3d Noten\n", $name, count($notes));
 }
 unset($notes);
-file_put_contents("$out/noten.json", json_encode(['bpm' => 120, 'bars' => BARS, 'tracks' => $tracks], JSON_UNESCAPED_UNICODE));
+// Mit den vorhandenen Noten zusammenführen: Nur die Spuren aus dieser MIDI-Datei werden ersetzt.
+$existing = is_file("$out/noten.json") ? (json_decode((string) file_get_contents("$out/noten.json"), true)['tracks'] ?? []) : [];
+file_put_contents("$out/noten.json", json_encode(['bpm' => 120, 'bars' => BARS, 'tracks' => $tracks + $existing], JSON_UNESCAPED_UNICODE));
 
 // ---------- Audio ----------
 

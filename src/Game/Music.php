@@ -44,7 +44,19 @@ final class Music
             'level' => $m['level'],
             'genre' => (string) Rng::pick($bandGenres ?: $m['genres']),
             'electric' => $model === null ? $m['id'] % 2 === 1 : (bool) ($model['electric'] ?? false),
+            'voice' => self::voice($m),
         ];
+    }
+
+    /** Gesang: Musikerinnen singen mit der Frauenstimme, Musiker mit der Männerstimme, diverse je nach ID. */
+    public static function voice(array $m): string
+    {
+        $gender = $m['look']['gender'] ?? null;
+        return match ($gender) {
+            'f' => 'weiblich',
+            'm' => 'maennlich',
+            default => $m['id'] % 2 === 0 ? 'weiblich' : 'maennlich',
+        };
     }
 
     private const DIR = '/public/assets/music';
@@ -55,7 +67,7 @@ final class Music
     /** Töne ab dieser Länge (in Schlägen) werden im Rhythmus-Spiel gehalten. */
     private const HOLD_BEATS = 1.5;
     /** Kürzester Ton (Sekunden), der im Tonhöhen-Spiel zählt. */
-    private const MELODY_MIN = 0.2;
+    private const MELODY_MIN = 0.15;
 
     /**
      * Ordner und Spurname der Aufnahme – dieselbe Reihenfolge wie stemUrl() im Browser:
@@ -71,6 +83,11 @@ final class Music
         $electric = $stem['electric'] ? 'elektrisch' : 'akustisch';
         $other = $stem['electric'] ? 'akustisch' : 'elektrisch';
         $names = $variants ? ["$name-$electric", "$name-$other"] : [$name];
+        if (isset($stem['voice'])) {
+            // Stimmen: erst die eigene, dann die andere, zuletzt eine Spur ohne Stimme.
+            $otherVoice = $stem['voice'] === 'weiblich' ? 'maennlich' : 'weiblich';
+            $names = ["$name-{$stem['voice']}", "$name-$otherVoice", $name];
+        }
         $levels = [0, 1, 2, 3];
         usort($levels, static fn ($a, $b) => abs($a - $stem['level']) <=> abs($b - $stem['level']) ?: $b <=> $a);
         $manifest = self::manifest();
@@ -91,7 +108,8 @@ final class Music
     {
         $path = dirname(__DIR__, 2) . self::DIR . '/' . $resolved['folder'] . '/noten.json';
         $data = is_file($path) ? json_decode((string) file_get_contents($path), true) : null;
-        $notes = $data['tracks'][$resolved['file']] ?? null;
+        // Beide Stimmen singen dieselbe Melodie: Noten liegen unter dem Namen ohne Stimme.
+        $notes = $data['tracks'][$resolved['file']] ?? $data['tracks'][preg_replace('/-(weiblich|maennlich)$/', '', $resolved['file'])] ?? null;
         return $notes ? ['bpm' => (int) $data['bpm'], 'notes' => $notes] : null;
     }
 
@@ -185,10 +203,14 @@ final class Music
         $steps = array_map(static fn ($n) => self::diatonic($n[2]), $notes);
         $low = $steps ? min($steps) : 0;
         $out = [];
-        $end = -1.0;
         foreach ($notes as $i => [$at, $length]) {
-            if ($at < $end - 0.05) {
-                continue;
+            // Gebundener Gesang: Ein Ton, der in den nächsten hineinragt, endet dort, wo der nächste beginnt.
+            $last = count($out) - 1;
+            if ($last >= 0 && $out[$last]['t'] + $out[$last]['d'] > $at * $beat) {
+                $out[$last]['d'] = round($at * $beat - $out[$last]['t'], 3);
+                if ($out[$last]['d'] < self::MELODY_MIN) {
+                    array_pop($out);
+                }
             }
             $degree = $steps[$i] - $low;
             while ($degree > 7) {
@@ -200,7 +222,6 @@ final class Music
                 continue;
             }
             $out[] = ['t' => round($t, 3), 'd' => round($d, 3), 'p' => $degree];
-            $end = $at + $length;
         }
         $root = self::midiOf($low);
         return [

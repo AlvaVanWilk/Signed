@@ -281,6 +281,10 @@ Instrumente sind zufällig. Im Music Store hat der Verkäufer mit 25 % Chance ei
   Gesang −17 LUFS, Bass und Schlagzeug −19, Keyboard und Turntables −21, Bläser/Geige/Flöte −22, Gitarre −23.
 - Jeder Musiker spielt die Spur seines Instruments, seiner Stufe und eines Genres: das Genre der Band, sonst eines
   seiner Lieblingsgenres. Akustisch oder elektrisch richtet sich nach seinem Instrument.
+- Gesang gibt es mit Frauen- und Männerstimme (`gesang-weiblich`, `gesang-maennlich`): Musikerinnen singen mit der
+  Frauenstimme, Musiker mit der Männerstimme, diverse je nach Karte. Beide teilen sich die Noten der MIDI-Spur „gesang“.
+  Die MIDI-Spur kann aus echtem Gesang kommen (Logic: Flex Pitch → MIDI-Spur); sehr kurze Töne (unter 0,15 s) zählen
+  nicht, ineinander gebundene Töne enden, wo der nächste beginnt.
 - Fehlt eine Spur, nimmt das Spiel die nächste Stufe, dann die andere Variante, dann Pop. Gibt es gar keine, bleibt der Synthesizer.
 - Zu hören am Mischpult (jeder Regler steuert seine Spuren), bei der Solo-Probe (nur die eigene Spur) und in der Live-Ansicht von Auftritten.
 

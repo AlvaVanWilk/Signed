@@ -15,7 +15,7 @@ const STROKE = `stroke="${INK}" stroke-width="2" stroke-linejoin="round"`;
  */
 const pivot = (x, y, cls, inner) => `<g transform="translate(${x} ${y})"><g class="${cls}"><g transform="translate(${-x} ${-y})">${inner}</g></g></g>`;
 
-export function figure(look = {}, instrument = 'guitar', { electric = false } = {}) {
+export function figure(look = {}, instrument = 'guitar', { electric = false, hue = null } = {}) {
   const skin = look.skin || '#d9a27e';
   const shirt = look.shirt || '#4a6fa5';
   const pose = POSES[instrument] ? instrument : instrument === 'synth' ? 'keys' : 'guitar';
@@ -33,7 +33,7 @@ export function figure(look = {}, instrument = 'guitar', { electric = false } = 
         </g>
         ${POSES[pose].back(skin, shirt)}
         ${pivot(60, 74, 'fig-head', head(look, skin, sing))}
-        ${POSES[pose].front(skin, shirt, electric)}
+        ${POSES[pose].front(skin, shirt, electric, hue)}
       </g>
     </svg>`;
 }
@@ -91,7 +91,9 @@ const arm = (d, hand, skin, shirt, cls = '') => {
 };
 
 /** Gitarre/Bass: Korpus vor dem Bauch, Hals schräg nach links oben. reach = wie weit der Hals reicht. */
-const guitarLike = (color, reach, eColor) => (skin, shirt, electric) => {
+const guitarLike = (baseColor, reach, baseE, baseHue) => (skin, shirt, electric, hue) => {
+  const color = hue === null ? baseColor : `hsl(${hue} 62% 52%)`;
+  const eColor = hue === null ? baseE : `hsl(${hue} 80% 50%)`;
   const end = [36 - reach, 84 - reach * 0.45];
   const grip = [end[0] + 8, end[1] + 4];
   // Akustisch: runder Holzkorpus mit Schallloch. Elektrisch: schmaler, geschwungener Korpus mit Schlagbrett und Tonabnehmern.
@@ -127,9 +129,9 @@ const POSES = {
   drums: {
     back: () => `
       <g ${STROKE}><path d="M98 140 L98 96" fill="none"/>${pivot(98, 94, 'fig-cymbal', '<ellipse cx="98" cy="94" rx="14" ry="3.5" fill="#f2c14e"/>')}</g>`,
-    front: (skin, shirt) => `
+    front: (skin, shirt, electric, hue) => `
       <g ${STROKE}>
-        <rect x="36" y="112" width="48" height="16" rx="3" fill="#e4572e"/>
+        <rect x="36" y="112" width="48" height="16" rx="3" fill="${hue === null ? '#e4572e' : `hsl(${hue} 72% 50%)`}"/>
         <ellipse cx="60" cy="112" rx="24" ry="6" fill="#f4efe6"/>
         <path d="M38 120 L82 120" stroke="#fff" stroke-width="2"/>
       </g>
@@ -211,9 +213,9 @@ export function playedInstrument(m) {
  * Bühne mit Figuren. electricOf(m): spielt er elektrisch (E-Gitarre, E-Bass)? bpm setzt das Tempo; mood: 'hype' (Publikum tobt – die Band springt), 'calm' oder ''.
  * names: Vornamen unter den Figuren zeigen.
  */
-export function stage(members, { bpm = 120, names = true, className = '', electricOf = () => false } = {}) {
+export function stage(members, { bpm = 120, names = true, className = '', electricOf = () => false, hueOf = () => null } = {}) {
   return `<div class="fig-stage ${className}" style="--beat:${(60 / bpm).toFixed(3)}s">${members.map((m) => `
-    <div class="fig-member" style="--d:${(-((m.id * 7919) % 4300) / 1000).toFixed(2)}s">${figure(m.look, playedInstrument(m), { electric: electricOf(m) })}${names ? `<b>${escapeHtml(m.firstName)}</b>` : ''}</div>`).join('')}
+    <div class="fig-member" style="--d:${(-((m.id * 7919) % 4300) / 1000).toFixed(2)}s">${figure(m.look, playedInstrument(m), { electric: electricOf(m), hue: hueOf(m) })}${names ? `<b>${escapeHtml(m.firstName)}</b>` : ''}</div>`).join('')}
   </div>`;
 }
 

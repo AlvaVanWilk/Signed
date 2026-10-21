@@ -1,11 +1,11 @@
 import { api } from '../api.js';
-import { bandGenreTags, bandIdentity, emptySlot, face, fullName, gearCard, gearModel, genreIcon, genreTag, instrumentEmoji, instrumentIcon, instrumentName, managerCard, musicianCard } from '../cards.js';
+import { bandGenreTags, bandIdentity, emptySlot, face, fullName, gearCard, gearModel, genreIcon, genreTag, instrumentEmoji, instrumentIcon, instrumentName, ownGear, managerCard, musicianCard } from '../cards.js';
 import { app, bandById, cat, defineActions, isBusy, managerById, musicianById, mutate, navigate, rerender, runningFor } from '../core.js';
 import { openLive } from '../live.js';
 import { startPractice, startRecordSong } from '../play.js';
 import { assignGear, soundChange } from '../gear.js';
 import { trendBadge } from './charts.js';
-import { stage } from '../figure.js';
+import { playedInstrument, stage } from '../figure.js';
 import { bandStems, stemUrl } from '../music.js';
 import { bar, confirmDialog, duration, esc, fmt0, fmt1, fmt2, fmtGain, money, openModal, percent, promptDialog, timeAgo, toast } from '../ui.js';
 
@@ -104,7 +104,7 @@ function overview(b, members) {
     <div class="page-head">
       <div><div class="eyebrow">${b.title ? esc(b.title) : 'Band'}</div><h1>${esc(b.name)} <button class="icon-btn" data-act="bandRename" data-id="${b.id}" title="${b.released ? 'Namensänderung beantragen' : 'Umbenennen'}">✎</button></h1></div>
     </div>
-    ${members.length ? stage(members, { className: runningFor(b.id) ? '' : 'idle', electricOf: electricByStem(members, b) }) : ''}
+    ${members.length ? stage(members, { className: runningFor(b.id) ? '' : 'idle', electricOf: electricByStem(members, b), hueOf: (m) => ownGear(m, playedInstrument(m)).hue }) : ''}
     <div class="stat-grid">
       <div class="tile" data-flash="sound-${b.id}"><span>Sound</span><b>${fmt1(b.sound)}</b>
         <small>Ruhm pro Auftritt <em>× ${fmt2(fx.soundFame)}</em></small>

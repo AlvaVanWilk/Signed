@@ -22,9 +22,11 @@ function fretboard(x, top, bottom, width, strings, inlay = '#e9e2d0') {
     }).join('')}`;
 }
 
-const acousticGuitar = tilt(`
+const acousticGuitar = (hue) => tilt(`
   <defs>
-    <radialGradient id="ag-top" cx="45%" cy="62%" r="62%"><stop offset="0" stop-color="#f8d79c"/><stop offset="0.65" stop-color="#e2a456"/><stop offset="1" stop-color="#a8611f"/></radialGradient>
+    <radialGradient id="ag-top" cx="45%" cy="62%" r="62%">${hue === null
+      ? '<stop offset="0" stop-color="#f8d79c"/><stop offset="0.65" stop-color="#e2a456"/><stop offset="1" stop-color="#a8611f"/>'
+      : `<stop offset="0" stop-color="hsl(${hue} 75% 78%)"/><stop offset="0.65" stop-color="hsl(${hue} 62% 52%)"/><stop offset="1" stop-color="hsl(${hue} 60% 26%)"/>`}</radialGradient>
     <linearGradient id="ag-neck" x1="0" x2="1"><stop offset="0" stop-color="#3a2416"/><stop offset="0.5" stop-color="#5a3a22"/><stop offset="1" stop-color="#3a2416"/></linearGradient>
   </defs>
   <path d="M29.4 1 H34.6 L35.6 9.4 H28.4 Z" fill="#4a2c18"/>
@@ -42,27 +44,31 @@ const acousticGuitar = tilt(`
   ${Array.from({ length: 6 }, (_, i) => `<path d="M${(30.3 + i * 0.68).toFixed(2)} 30 V48" stroke="#eef0f4" stroke-width="0.28"/>`).join('')}
   <path d="M25.6 44 C26.6 50 29.4 53.4 32 54" fill="none" stroke="#fff" stroke-width="1" opacity="0.25"/>`, 40, 0.98);
 
-const electricGuitar = tilt(`
+const electricGuitar = (hue = 18) => tilt(`
   <defs>
-    <radialGradient id="eg-burst" cx="46%" cy="62%" r="60%"><stop offset="0" stop-color="#ffd25a"/><stop offset="0.45" stop-color="#f08a24"/><stop offset="0.8" stop-color="#b8321a"/><stop offset="1" stop-color="#4a160c"/></radialGradient>
+    <radialGradient id="eg-burst" cx="46%" cy="62%" r="60%"><stop offset="0" stop-color="hsl(${hue + 30} 95% 66%)"/><stop offset="0.45" stop-color="hsl(${hue} 86% 54%)"/><stop offset="0.8" stop-color="hsl(${hue - 6} 76% 40%)"/><stop offset="1" stop-color="hsl(${hue - 10} 72% 16%)"/></radialGradient>
     <linearGradient id="eg-maple" x1="0" x2="1"><stop offset="0" stop-color="#e8c896"/><stop offset="0.5" stop-color="#f6dfb4"/><stop offset="1" stop-color="#d9b37c"/></linearGradient>
     <linearGradient id="eg-guard" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e2e0da"/></linearGradient>
   </defs>
+  <g transform="translate(0 -5)">
   <path d="M29.6 0.6 C31.4 0.2 33.6 0.6 34.6 1.8 L35.4 10.6 L30.6 10.6 C29.4 7.6 28.6 4 29.6 0.6 Z" fill="url(#eg-maple)" stroke="#9a7444" stroke-width="0.5"/>
   <g fill="#d9dbe2" stroke="#6b6f7a" stroke-width="0.3">${[1.8, 3.4, 5, 6.6, 8.2, 9.8].map((y) => `<circle cx="${(29 + (y - 1.8) * 0.06).toFixed(2)}" cy="${y}" r="0.75"/>`).join('')}</g>
-  <rect x="30.1" y="10.4" width="3.8" height="22" fill="url(#eg-maple)" stroke="#9a7444" stroke-width="0.4"/>
-  ${fretboard(32, 10.6, 32, 3.8, 6, '#2a2233')}
+  <rect x="30.1" y="10.4" width="3.8" height="27" fill="url(#eg-maple)" stroke="#9a7444" stroke-width="0.4"/>
+  ${fretboard(32, 10.6, 36, 3.8, 6, '#2a2233')}
+  </g>
+  <g transform="translate(32 44) scale(0.8 0.9) translate(-32 -44)">
   <path d="M25 30.2 C22.6 25.4 17.2 26 18.2 31.4 C18.8 34.6 20 36 18 39.4 C14.6 45 16 53.6 23.2 56.4 C28.6 58.4 35.6 58.4 40.6 56.4 C47.6 53.6 48.6 45.2 45.6 40.2 C43.8 37.4 44.4 34.8 46 31.8 C48.2 27.4 44.4 24.6 41.6 27.8 C39.4 30.4 36.6 31.6 32 31.6 C28.8 31.6 26.6 31.2 25 30.2 Z" fill="url(#eg-burst)" stroke="#3a0e06" stroke-width="0.9"/>
   <path d="M24.4 33.6 C26.8 34.6 29.6 34.8 33 34.8 L35.8 34.6 L37 44 L36.4 50.4 C32.6 53.4 25.6 53 22.6 49.4 C20.6 46.8 21.4 42 23 39 C24 37.2 24.6 35.4 24.4 33.6 Z" fill="url(#eg-guard)" stroke="#a9a59a" stroke-width="0.5"/>
   ${[37.4, 41.6, 46.2].map((y, i) => `<g transform="rotate(${i === 2 ? -10 : 0} 32 ${y + 0.9})"><rect x="28.4" y="${y}" width="7.2" height="1.9" rx="0.9" fill="#fbfaf6" stroke="#8e8a80" stroke-width="0.4"/>${[29.4, 30.4, 31.4, 32.6, 33.6, 34.6].map((x) => `<circle cx="${x}" cy="${y + 0.95}" r="0.28" fill="#8e8a80"/>`).join('')}</g>`).join('')}
   <rect x="28.2" y="49.6" width="7.6" height="2.4" rx="0.6" fill="#c9ccd4" stroke="#6b6f7a" stroke-width="0.4"/>
   <g fill="#fbfaf6" stroke="#8e8a80" stroke-width="0.4"><circle cx="38.8" cy="47.6" r="1.3"/><circle cx="38" cy="51" r="1.3"/><circle cx="36.4" cy="54" r="1.3"/></g>
   ${Array.from({ length: 6 }, (_, i) => `<path d="M${(30.4 + i * 0.64).toFixed(2)} 32 V50" stroke="#eef0f4" stroke-width="0.28"/>`).join('')}
-  <path d="M42.6 33.6 C44 36 43.6 38.6 42.2 40.6" fill="none" stroke="#fff" stroke-width="1" opacity="0.35"/>`, 40, 0.98);
+  <path d="M42.6 33.6 C44 36 43.6 38.6 42.2 40.6" fill="none" stroke="#fff" stroke-width="1" opacity="0.35"/>  </g>
+`, 40, 0.98);
 
-const bassGuitar = tilt(`
+const bassGuitar = (hue = 218) => tilt(`
   <defs>
-    <linearGradient id="bs-body" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#5fa8ff"/><stop offset="0.55" stop-color="#2463d6"/><stop offset="1" stop-color="#0f2a66"/></linearGradient>
+    <linearGradient id="bs-body" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="hsl(${hue} 100% 69%)"/><stop offset="0.55" stop-color="hsl(${hue} 72% 49%)"/><stop offset="1" stop-color="hsl(${hue} 74% 23%)"/></linearGradient>
     <linearGradient id="bs-neck" x1="0" x2="1"><stop offset="0" stop-color="#3a2416"/><stop offset="0.5" stop-color="#5a3a22"/><stop offset="1" stop-color="#3a2416"/></linearGradient>
     <radialGradient id="bs-tort" cx="40%" cy="40%" r="70%"><stop offset="0" stop-color="#8a4a1c"/><stop offset="0.5" stop-color="#4a2210"/><stop offset="1" stop-color="#2a1208"/></radialGradient>
   </defs>
@@ -79,14 +85,15 @@ const bassGuitar = tilt(`
   ${Array.from({ length: 4 }, (_, i) => `<path d="M${(30.7 + i * 0.86).toFixed(2)} 34 V52" stroke="#eef0f4" stroke-width="0.45"/>`).join('')}
   <path d="M41.4 37 C43 39.4 42.8 42 41.4 44" fill="none" stroke="#fff" stroke-width="1" opacity="0.4"/>`, 40, 0.88);
 
+/** Jedes Symbol als Funktion des Farbtons (null = Grundfarbe); nur Korpus bzw. Kessel werden eingefärbt. */
 const ICONS = {
-  guitar: acousticGuitar,
-  eguitar: electricGuitar,
-  bass: bassGuitar,
-  drums: `
+  guitar: (hue) => acousticGuitar(hue),
+  eguitar: (hue) => electricGuitar(hue ?? 18),
+  bass: (hue) => bassGuitar(hue ?? 218),
+  drums: (hue) => `
     <defs>
       <radialGradient id="dr-cym" cx="45%" cy="40%" r="60%"><stop offset="0" stop-color="#fff2b0"/><stop offset="0.5" stop-color="#e8b84a"/><stop offset="1" stop-color="#a87a1a"/></radialGradient>
-      <linearGradient id="dr-shell" x1="0" x2="1"><stop offset="0" stop-color="#8e1f12"/><stop offset="0.35" stop-color="#e4572e"/><stop offset="0.7" stop-color="#f08a5a"/><stop offset="1" stop-color="#8e1f12"/></linearGradient>
+      <linearGradient id="dr-shell" x1="0" x2="1">${[[0, 76, 31], [0.35, 77, 54], [0.7, 83, 65], [1, 76, 31]].map(([o, sat, l]) => `<stop offset="${o}" stop-color="hsl(${hue ?? 12} ${sat}% ${l}%)"/>`).join('')}</linearGradient>
       <radialGradient id="dr-head" cx="45%" cy="40%" r="65%"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#ddd6c8"/></radialGradient>
     </defs>
     <g stroke="#55585f" stroke-width="0.9" ${LINE}><path d="M51 15 V58 M47 58 L51 52 L55 58"/><path d="M11 27 V58 M7.4 58 L11 52 L14.6 58"/></g>
@@ -105,7 +112,7 @@ const ICONS = {
     <path d="M27.4 42 L29.6 39.6 L31.6 43.4 L34.6 40" fill="none" stroke="#ffd25a" stroke-width="1.2" ${LINE}/>
     <path d="M22 35.6 C24.4 32.6 28 31 31.6 31" fill="none" stroke="#fff" stroke-width="1.2" opacity="0.6"/>
     <g ${LINE}><path d="M18 5 L28 19" stroke="#8a5a2c" stroke-width="2"/><path d="M18 5 L28 19" stroke="#e6c48a" stroke-width="1.1"/><path d="M41 4 L33 18.6" stroke="#8a5a2c" stroke-width="2"/><path d="M41 4 L33 18.6" stroke="#e6c48a" stroke-width="1.1"/></g>`,
-  keys: `
+  keys: () => `
     <defs>
       <linearGradient id="ky-case" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#4a4d62"/><stop offset="1" stop-color="#1c1d28"/></linearGradient>
       <linearGradient id="ky-white" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e2e0da"/></linearGradient>
@@ -119,13 +126,13 @@ const ICONS = {
     ${Array.from({ length: 14 }, (_, i) => `<rect x="${(5.4 + i * 3.84).toFixed(2)}" y="34" width="3.5" height="11.6" rx="0.5" fill="url(#ky-white)"/>`).join('')}
     ${[0, 1, 3, 4, 5, 7, 8, 10, 11, 12].map((i) => `<rect x="${(8.1 + i * 3.84).toFixed(2)}" y="34" width="2.3" height="7" rx="0.4" fill="#1a1a1e"/>`).join('')}
     <path d="M3.6 23.4 H60.4" stroke="#fff" stroke-width="0.6" opacity="0.25"/>`,
-  vocals: `
+  vocals: () => `
     <defs>
       <radialGradient id="mc-ball" cx="38%" cy="32%" r="70%"><stop offset="0" stop-color="#ffffff"/><stop offset="0.35" stop-color="#cfd2da"/><stop offset="1" stop-color="#6b6f7a"/></radialGradient>
       <linearGradient id="mc-body" x1="0" x2="1"><stop offset="0" stop-color="#1c1d24"/><stop offset="0.45" stop-color="#4a4d5a"/><stop offset="1" stop-color="#15161c"/></linearGradient>
       <pattern id="mc-mesh" width="2" height="2" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0 H2 M0 0 V2" stroke="#5a5d68" stroke-width="0.35"/></pattern>
     </defs>
-    <g transform="rotate(-38 32 32)">
+    <g transform="translate(32 32) scale(0.78) translate(-32 -32) rotate(-38 32 32)">
       <path d="M26.4 30 L37.6 30 L35 60 C34.8 62 29.2 62 29 60 Z" fill="url(#mc-body)"/>
       <rect x="25.6" y="27.6" width="12.8" height="3.6" rx="1" fill="#c9ccd4"/>
       <path d="M26 29 H38" stroke="#fff" stroke-width="0.6" opacity="0.7"/>
@@ -134,7 +141,7 @@ const ICONS = {
       <path d="M19.4 18.4 H44.6" stroke="#8e929c" stroke-width="1.2"/>
       <ellipse cx="27" cy="9.6" rx="4.4" ry="2.4" fill="#fff" opacity="0.7" transform="rotate(-30 27 9.6)"/>
     </g>`,
-  sax: `
+  sax: () => `
     <defs>
       <linearGradient id="sx-brass" x1="0" x2="1"><stop offset="0" stop-color="#a87418"/><stop offset="0.3" stop-color="#ffe08a"/><stop offset="0.6" stop-color="#e9b53c"/><stop offset="1" stop-color="#9a6a12"/></linearGradient>
       <radialGradient id="sx-bell" cx="50%" cy="50%" r="55%"><stop offset="0" stop-color="#5a3a08"/><stop offset="0.7" stop-color="#b8861e"/><stop offset="1" stop-color="#ffe08a"/></radialGradient>
@@ -148,7 +155,7 @@ const ICONS = {
     <path d="M33 16 C35 17 35.4 24 33.6 26 M33.8 29 C36 30.4 36.2 36 34.4 38" fill="none" stroke="#7a5410" stroke-width="0.9" ${LINE}/>
     <path d="M30.4 50 C33 54.4 39.4 55 42.4 51.4" fill="none" stroke="#7a5410" stroke-width="0.9"/>
     <circle cx="44.6" cy="45.6" r="1.6" fill="#f7f1e2" stroke="#7a5410" stroke-width="0.5"/>`,
-  trumpet: `
+  trumpet: () => `<g transform="translate(32 32) scale(0.8) translate(-32 -32)">
     <defs>
       <linearGradient id="tp-brass" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#ffe08a"/><stop offset="0.5" stop-color="#e9b53c"/><stop offset="1" stop-color="#9a6a12"/></linearGradient>
       <radialGradient id="tp-bell" cx="40%" cy="50%" r="60%"><stop offset="0" stop-color="#5a3a08"/><stop offset="0.75" stop-color="#c9921e"/><stop offset="1" stop-color="#ffe08a"/></radialGradient>
@@ -163,8 +170,8 @@ const ICONS = {
       <rect x="${x}" y="17" width="4.4" height="17" rx="1.2" fill="url(#tp-brass)" stroke="#7a5410" stroke-width="0.6"/>
       <rect x="${x + 1.4}" y="12.6" width="1.6" height="4.6" fill="#c9ccd4"/>
       <ellipse cx="${x + 2.2}" cy="12" rx="2.8" ry="1.4" fill="#f7f1e2" stroke="#7a5410" stroke-width="0.5"/>`).join('')}</g>
-    <path d="M9 28.6 H40" stroke="#fff3c4" stroke-width="0.8" opacity="0.8"/>`,
-  violin: `
+    <path d="M9 28.6 H40" stroke="#fff3c4" stroke-width="0.8" opacity="0.8"/></g>`,
+  violin: () => `
     <defs>
       <radialGradient id="vl-wood" cx="45%" cy="55%" r="65%"><stop offset="0" stop-color="#f0a24e"/><stop offset="0.6" stop-color="#b8571a"/><stop offset="1" stop-color="#5a2208"/></radialGradient>
     </defs>
@@ -184,7 +191,7 @@ const ICONS = {
     <path d="M9.8 55.8 L57.6 10" stroke="#f4efe6" stroke-width="0.9" stroke-linecap="round"/>
     <path d="M6.4 52.4 L10.6 56.6" stroke="#1a1a1e" stroke-width="2.6" stroke-linecap="round"/>
     <circle cx="56.6" cy="8.6" r="1" fill="#1a1a1e"/>`,
-  flute: `
+  flute: () => `
     <defs>
       <linearGradient id="fl-tube" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="0.45" stop-color="#c9ccd4"/><stop offset="1" stop-color="#7a7e88"/></linearGradient>
     </defs>
@@ -196,7 +203,7 @@ const ICONS = {
       <g>${[22, 27, 32, 37, 42, 51, 56].map((x) => `<circle cx="${x}" cy="32" r="2" fill="url(#fl-tube)" stroke="#5a5d68" stroke-width="0.5"/><circle cx="${x - 0.5}" cy="31.4" r="0.6" fill="#fff"/>`).join('')}</g>
       <path d="M20 33.8 H58" stroke="#5a5d68" stroke-width="0.5"/>
     </g>`,
-  turntables: `
+  turntables: () => `
     <defs>
       <linearGradient id="tt-base" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#4a4d62"/><stop offset="1" stop-color="#1c1d28"/></linearGradient>
       <radialGradient id="tt-vinyl" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#2a2830"/><stop offset="0.5" stop-color="#121016"/><stop offset="0.85" stop-color="#2a2830"/><stop offset="1" stop-color="#0c0a0e"/></radialGradient>
@@ -219,14 +226,14 @@ ICONS.synth = ICONS.keys;
 let serial = 0;
 
 /**
- * Symbol eines Instruments als kleines SVG; electric unterscheidet Gitarre und E-Gitarre.
+ * Symbol eines Instruments als kleines SVG; electric unterscheidet Gitarre und E-Gitarre, hue färbt den Korpus (Farbvariante).
  * Jede Kopie bekommt eigene Kennungen für ihre Farbverläufe – sonst verweisen alle auf die erste,
  * und liegt die versteckt (z. B. in einem geschlossenen Fenster), bleiben die anderen farblos.
  */
-export function instrumentSvg(type, electric = false) {
+export function instrumentSvg(type, electric = false, hue = null) {
   const key = type === 'guitar' && electric ? 'eguitar' : type;
-  const body = ICONS[key];
-  if (!body) return null;
+  if (!ICONS[key]) return null;
+  const body = ICONS[key](hue);
   const n = ++serial;
   const unique = body.replace(/id="([\w-]+)"/g, `id="$1-${n}"`).replace(/url\(#([\w-]+)\)/g, `url(#$1-${n})`);
   return `<svg class="ico" viewBox="0 0 64 64" aria-hidden="true">${unique}</svg>`;

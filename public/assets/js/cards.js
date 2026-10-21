@@ -7,12 +7,21 @@ export const instrumentName = (type) => cat().instruments[type]?.name ?? type;
 /** Emoji für Stellen, die nur Text können (Auswahllisten, Canvas). */
 export const instrumentEmoji = (type) => cat().instruments[type]?.icon ?? '🎵';
 /** Gezeichnetes Symbol; electric zeigt die E-Gitarre. */
-export const instrumentIcon = (type, electric = false) => instrumentSvg(type, electric) ?? instrumentEmoji(type);
-/** Spielt der Musiker dieses Instrument elektrisch (eigenes Instrument im Lager)? Bei fremden Musikern unbekannt. */
-export function playsElectric(m, type) {
-  const g = app.state?.gear?.find((x) => x.musicianId === m.id && cat().gear[x.model]?.type === type);
-  return !!(g && cat().gear[g.model].electric);
+export const instrumentIcon = (type, electric = false, hue = null) => instrumentSvg(type, electric, hue) ?? instrumentEmoji(type);
+
+/** Farbe eines Instruments für Symbole und Figuren: Farbvariante und Sonderlackierung färben, sonst Grundfarbe. */
+export function gearHue(g) {
+  const model = { ...gearModel(g.model), ...(g.klang ? { klang: g.klang, spielbarkeit: g.spielbarkeit, design: g.design } : {}) };
+  const finish = gearFinish(model);
+  return finish.tier === 1 || finish.tier === 2 ? finish.hue : null;
 }
+
+/** Wie das eigene Instrument eines Musikers aussieht: elektrisch? welche Farbe? Bei fremden Musikern unbekannt. */
+export function ownGear(m, type) {
+  const g = app.state?.gear?.find((x) => x.musicianId === m.id && cat().gear[x.model]?.type === type);
+  return g ? { electric: !!cat().gear[g.model].electric, hue: gearHue(g) } : { electric: false, hue: null };
+}
+export const playsElectric = (m, type) => ownGear(m, type).electric;
 export const genreName = (key) => cat().genres[key]?.name ?? key;
 export const rarityName = (key) => cat().rarities[key]?.name ?? key;
 export const fullName = (p) => `${p.firstName} ${p.lastName}`;
@@ -217,10 +226,10 @@ export function musicianCard(m, { act = 'openMusician', size = '', extra = '', s
     name: fullName(m),
     badge: `<span class="tcg-genres">${m.genres.map(genreIcon).join('')}</span>`,
     art: `${avatar(m.look)}
-      <span class="tcg-badge">${m.instruments.map((i) => instrumentIcon(i.type, playsElectric(m, i.type))).join('')}</span>
+      <span class="tcg-badge">${m.instruments.map((i) => instrumentIcon(i.type, ownGear(m, i.type).electric, ownGear(m, i.type).hue)).join('')}</span>
       ${abilities.length ? `<span class="tcg-abilities">${abilities.map((a) => `<i title="${esc(a.name)}">${a.icon}</i>`).join('')}</span>` : ''}`,
     text: `
-      ${m.instruments.map((i) => `<span class="skill-row"><span class="skill-name">${instrumentIcon(i.type, playsElectric(m, i.type))}<span> ${esc(instrumentName(i.type))}</span></span>${skillBar(i.skill)}</span>`).join('')}
+      ${m.instruments.map((i) => `<span class="skill-row"><span class="skill-name">${instrumentIcon(i.type, ownGear(m, i.type).electric, ownGear(m, i.type).hue)}<span> ${esc(instrumentName(i.type))}</span></span>${skillBar(i.skill)}</span>`).join('')}
       <span class="skill-row fame-row"><span class="skill-name">⭐<span> Bekanntheit</span></span>${fameBar(m.fame)}</span>
       <span class="tcg-traits">${abilities.length
         ? abilities.map((a) => `<b>${esc(a.name)}</b>`).join(' · ')
@@ -277,7 +286,7 @@ export function gearCard(g, { act = null, data = {}, size = '', extra = '', skil
     theme: `gear-bg finish-${finish.tier}`,
     style: `--hue:${finish.hue}`,
     name: model.name,
-    art: `<span class="tcg-icon">${instrumentIcon(model.type, model.electric)}</span>${arrow}
+    art: `<span class="tcg-icon">${instrumentIcon(model.type, model.electric, finish.tier === 1 || finish.tier === 2 ? finish.hue : null)}</span>${arrow}
       ${perks.length ? `<span class="tcg-abilities">${perks.map((p) => `<i title="${esc(p.name)}: ${esc(p.desc)}">${p.icon}</i>`).join('')}</span>` : ''}`,
     type: `Instrument<em>${esc(instrumentName(model.type))}${finish.tier ? ` · ${FINISH_NAMES[finish.tier]}` : ''}</em>`,
     text: `<span>${klangText}</span>${perks.length ? `<span>${perks.map((p) => `<b>${esc(p.name)}</b>`).join(' · ')}</span>` : ''}`,

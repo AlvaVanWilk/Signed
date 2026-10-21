@@ -2,7 +2,8 @@ import { app, bandById, cat, musicianById, serverNow } from './core.js';
 import { duration, esc, openModal } from './ui.js';
 import { getAudio } from './audio.js';
 import { bandStems, loadStems, playStems, stemUrl } from './music.js';
-import { stage } from './figure.js';
+import { playedInstrument, stage } from './figure.js';
+import { ownGear } from './cards.js';
 
 const ICONS = { song: '🎵', mistake: '😬', highlight: '🔥', crowd: '👥' };
 
@@ -50,7 +51,7 @@ export function openLive(activityId) {
       <div><div class="eyebrow">${crowd ? 'Live' : 'Probenraum'}</div><h2>${esc(activity.title)}</h2><div class="muted">${esc(who)}</div></div>
       <div class="live-clock"><span class="live-song"></span><b class="live-left"></b></div>
     </div>
-    ${stage(players, { bpm: cat().genres[band?.genres[0] ?? players[0]?.genres[0]]?.bpm ?? 120, electricOf: (m) => electric.get(m.id) })}
+    ${stage(players, { bpm: cat().genres[band?.genres[0] ?? players[0]?.genres[0]]?.bpm ?? 120, electricOf: (m) => electric.get(m.id), hueOf: (m) => ownGear(m, playedInstrument(m)).hue })}
     ${crowd ? `<div class="meter">
       <div class="meter-labels"><span>Buhrufe</span><span>Publikum</span><span>Ekstase</span></div>
       <div class="meter-track"><div class="meter-fill"></div><div class="meter-needle"></div></div>

@@ -39,7 +39,7 @@
     const HAIR = ['#1f1a17', '#3b2a20', '#6b4423', '#a0522d', '#d8b26e', '#e8d9a8', '#ff4f8b', '#4fd1ff', '#9b7bff'];
     const SHIRTS = ['#4a6fa5', '#e4572e', '#3ddc97', '#9b7bff', '#ffb547', '#2b2d42', '#ff4f8b'];
     const NAMES = { f: ['Mia', 'Leni', 'Nika', 'Ada', 'Hira'], m: ['Ben', 'Oskar', 'Jonas', 'Leon', 'Kenji'] };
-    const BAND = [['vocals', 'Gesang'], ['guitar', 'Gitarre'], ['guitar', 'E-Gitarre', true], ['bass', 'Bass'], ['bass', 'E-Bass', true], ['keys', 'Keyboard'], ['drums', 'Schlagzeug'], ['violin', 'Geige'], ['sax', 'Saxophon'], ['trumpet', 'Trompete'], ['flute', 'Flöte'], ['turntables', 'Turntables']];
+    const BAND = [['vocals', 'Gesang'], ['guitar', 'Gitarre'], ['guitar', 'E-Gitarre', true], ['guitar', 'E-Gitarre grün', true, 140], ['bass', 'Bass'], ['bass', 'E-Bass', true], ['bass', 'E-Bass lila', true, 280], ['keys', 'Keyboard'], ['drums', 'Schlagzeug'], ['violin', 'Geige'], ['sax', 'Saxophon'], ['trumpet', 'Trompete'], ['flute', 'Flöte'], ['turntables', 'Turntables']];
 
     function look() {
       const gender = pick(['f', 'm']);
@@ -59,9 +59,9 @@
 
     const stage = document.querySelector('.stage');
     function draw() {
-      stage.innerHTML = BAND.map(([type, label, electric]) => {
+      stage.innerHTML = BAND.map(([type, label, electric, hue = null]) => {
         const l = look();
-        return `<div class="member">${figure(l, type, { electric })}<b>${l.name}</b><small>${instrumentSvg(type, electric) ?? ''} ${label}</small></div>`;
+        return `<div class="member">${figure(l, type, { electric, hue })}<b>${l.name}</b><small>${instrumentSvg(type, electric, hue) ?? ''} ${label}</small></div>`;
       }).join('');
       setTempo();
     }

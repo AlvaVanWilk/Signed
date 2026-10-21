@@ -236,5 +236,5 @@ export function instrumentSvg(type, electric = false, hue = null) {
   const body = ICONS[key](hue);
   const n = ++serial;
   const unique = body.replace(/id="([\w-]+)"/g, `id="$1-${n}"`).replace(/url\(#([\w-]+)\)/g, `url(#$1-${n})`);
-  return `<svg class="ico" viewBox="0 0 64 64" aria-hidden="true">${unique}</svg>`;
+  return `<svg class="ico ico-${key}" viewBox="0 0 64 64" aria-hidden="true">${unique}</svg>`;
 }

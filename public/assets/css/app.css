@@ -1071,8 +1071,11 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .chem-notes { margin-top: 10px; display: grid; gap: 4px; font-size: 0.9rem; }
 
 /* Instrumentenkarten: das Instrument füllt das Bild, wie auf einem Foto */
-.gear-bg .tcg-icon { position: absolute; inset: 5%; font-size: 0; display: block; }
-.gear-bg .tcg-icon .ico { width: 100%; height: 100%; display: block; }
+.gear-bg .tcg-art { container-type: size; }
+.gear-bg .tcg-icon { font-size: 0; line-height: 0; }
+.gear-bg .tcg-icon .ico { width: 92cqmin; height: 92cqmin; display: block; }
+/* Lange Instrumente liegen auf der breiten Bildfläche flacher und größer, wie auf einem Produktfoto. */
+.gear-bg .tcg-icon :is(.ico-guitar, .ico-eguitar, .ico-bass, .ico-violin, .ico-flute) { transform: rotate(30deg) scale(1.45); }
 
 /* Sänger: beim Warten Arme unten und Mund zu, beim Spielen Mikro hoch und singen */
 .fig .fig-resting { display: none; }

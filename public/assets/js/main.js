@@ -10,6 +10,7 @@ import * as catalog from './views/catalog.js';
 import * as charts from './views/charts.js';
 import * as help from './views/help.js';
 import { trendBadge } from './views/charts.js';
+import { playApplause, playCoin } from './audio.js';
 import * as market from './views/market.js';
 import * as musician from './views/musician.js';
 import * as overview from './views/overview.js';
@@ -161,8 +162,43 @@ function moodText(meter) {
   return 'Das lief nicht gut.';
 }
 
-function reward(label, value) {
-  return `<div class="reward"><span>${esc(label)}</span><b>${value}</b></div>`;
+/** count: {to, kind} lässt den Wert beim Öffnen hochzählen (kind 'money' klimpert dabei). */
+function reward(label, value, count = null) {
+  const attrs = count ? ` data-count="${count.to}" data-kind="${count.kind}"` : '';
+  return `<div class="reward${count?.kind === 'money' ? ' reward-money' : ''}"><span>${esc(label)}</span><b${attrs}>${value}</b></div>`;
+}
+
+/**
+ * Nach einem Auftritt: Gage und Ruhm zählen hoch, das Geld klimpert, ein paar Münzen springen,
+ * und das Publikum klatscht – so begeistert, wie es war.
+ */
+function celebrateResult(body, res, audience) {
+  const els = [...body.querySelectorAll('[data-count]')];
+  const start = performance.now();
+  const duration = 1300;
+  let coins = 0;
+  const moneyTile = body.querySelector('.reward-money');
+  if (moneyTile) {
+    const burst = document.createElement('div');
+    burst.className = 'coin-burst';
+    burst.innerHTML = Array.from({ length: 8 }, (_, i) => `<i style="--a:${-80 + i * 22}deg;--d:${i * 60}ms">🪙</i>`).join('');
+    moneyTile.append(burst);
+  }
+  function tick(now) {
+    const p = Math.min(1, (now - start) / duration);
+    const eased = 1 - (1 - p) ** 3;
+    for (const el of els) {
+      const value = Number(el.dataset.count) * eased;
+      el.textContent = el.dataset.kind === 'money' ? `+${money(Math.round(value))}` : `+${fmtGain(value)}`;
+    }
+    if (moneyTile && coins < Math.floor(p * 9)) {
+      coins++;
+      playCoin(1 + coins * 0.03);
+    }
+    if (p < 1) requestAnimationFrame(tick);
+  }
+  if (els.length) requestAnimationFrame(tick);
+  if (audience && res.meter !== null && res.meter !== undefined) playApplause((res.meter - 35) / 60);
 }
 
 function resultHtml(r) {
@@ -195,8 +231,8 @@ function resultHtml(r) {
     <h2>${esc(r.title)}</h2>
     ${res.meter ? `<p class="muted">${moodText(res.meter)}</p>` : ''}
     <div class="reward-grid">
-      ${res.money ? reward('Gage', `+${money(res.money)}`) : ''}
-      ${res.fame ? reward('Ruhm', `+${fmtGain(res.fame)}`) : ''}
+      ${res.money ? reward('Gage', `+${money(0)}`, { to: res.money, kind: 'money' }) : ''}
+      ${res.fame ? reward('Ruhm', `+${fmtGain(0)}`, { to: res.fame, kind: 'fame' }) : ''}
       ${res.cohesion ? reward('Zusammenspiel', `+${fmt1(res.cohesion)}`) : ''}
       ${res.meter ? reward('Publikum', percent(res.meter / 100)) : ''}
     </div>
@@ -235,6 +271,7 @@ function showResults() {
     },
   });
   resultModal.body.querySelector('[data-close]').addEventListener('click', () => resultModal?.close());
+  if (r.type !== 'promo') celebrateResult(resultModal.body, r.result, r.type !== 'rehearsal');
 }
 
 // ---------- Konto ----------

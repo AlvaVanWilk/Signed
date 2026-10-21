@@ -309,6 +309,52 @@ export function scheduleBacking({ genre, bpm, start, duration, drums = true, bas
   };
 }
 
+// ---------- Nach dem Auftritt ----------
+
+/**
+ * Applaus aus vielen kurzen Klatschern (gefiltertes Rauschen). strength 0–1: wie begeistert das Publikum ist.
+ * Bei wenig Begeisterung klatschen nur ein paar Leute.
+ */
+export function playApplause(strength) {
+  const c = getAudio();
+  if (!c) return;
+  const s = Math.max(0, Math.min(1, strength));
+  const bus = c.createGain();
+  bus.gain.value = 0.25 + 0.35 * s;
+  bus.connect(master);
+  const length = 1.6 + 2.4 * s;
+  const claps = Math.round(12 + 320 * s * s);
+  const start = c.currentTime + 0.05;
+  for (let i = 0; i < claps; i++) {
+    // Dichter am Anfang, dann ausklingend.
+    const t = start + length * Math.random() ** 1.6;
+    const n = noise();
+    const band = filter('bandpass', 900 + Math.random() * 1800, 1.2);
+    const g = c.createGain();
+    envelope(g, t, 0.002, (0.25 + Math.random() * 0.35) * (1 - (t - start) / (length + 0.4)), 0.03 + Math.random() * 0.04);
+    n.connect(band).connect(g).connect(bus);
+    n.start(t, Math.random() * 0.9, 0.12);
+  }
+  setTimeout(() => bus.disconnect(), (length + 1) * 1000);
+}
+
+/** Ein Münzklimpern: zwei helle, kurz ausklingende Töne. */
+export function playCoin(pitch = 1) {
+  const c = getAudio();
+  if (!c) return;
+  const t = c.currentTime;
+  for (const [f, v] of [[2093 * pitch, 0.12], [3136 * pitch, 0.07]]) {
+    const osc = c.createOscillator();
+    const g = c.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = f;
+    envelope(g, t, 0.002, v, 0.18);
+    osc.connect(g).connect(master);
+    osc.start(t);
+    osc.stop(t + 0.25);
+  }
+}
+
 // ---------- Verzögerung (Bluetooth-Kopfhörer) ----------
 
 const LATENCY_KEY = 'signed.latency';

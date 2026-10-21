@@ -981,3 +981,14 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 
 /* Minispiele: keine Zoom-, Scroll- oder Markier-Gesten (mehrere Finger gleichzeitig für Akkorde). */
 .mg, .mg * { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+
+/* Nach dem Auftritt: Münzen springen aus der Gage (nur transform/opacity). */
+.reward-money { position: relative; overflow: visible; }
+.coin-burst { position: absolute; left: 50%; top: 40%; pointer-events: none; }
+.coin-burst i { position: absolute; font-style: normal; font-size: 20px; opacity: 0; animation: coin-fly 0.9s ease-out var(--d) forwards; }
+@keyframes coin-fly {
+  0% { opacity: 0; transform: rotate(var(--a)) translateY(0) scale(0.6); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(var(--a)) translateY(-70px) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) { .coin-burst { display: none; } }

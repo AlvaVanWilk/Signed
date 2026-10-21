@@ -107,6 +107,6 @@ function courseNotice(s) {
   const c = s.course;
   if (!c) return '';
   const open = c.candidates.filter((x) => !x.visited).map((x) => s.musicians.find((m) => m.id === x.musicianId)).filter(Boolean);
-  return `<div class="notice course-notice"><span>🎓 Heute: <b>${esc(c.prefix)}-Tag</b> mit ${esc(c.teacher)} – Kurs, Workshop und Meisterklasse.
+  return `<div class="notice course-notice"><span>🎓 Heute: <b>${esc(c.prefix)}-${esc(c.name)}</b> mit ${esc(c.teacher)} (+${fmt1(c.gain)} Können) – für Anfänger, Fortgeschrittene und Profis.
     ${open.length ? `Hin können: ${open.map((m) => `<a href="#/musician/${m.id}/uebung">${esc(m.firstName)}</a>`).join(', ')}.` : 'Heute ist niemand von dir dabei.'}</span></div>`;
 }

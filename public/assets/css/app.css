@@ -1056,6 +1056,6 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .tcg-icon .ico { width: 1em; height: 1em; vertical-align: 0; }
 
 /* Tageskurs: farblich abgesetzt, nur heute */
-.course-tile { border-color: #f2c14e; background: linear-gradient(135deg, rgba(242, 193, 78, 0.16), rgba(255, 79, 139, 0.08)), var(--panel); grid-column: 1 / -1; }
+.course-tile { border-color: #f2c14e; background: linear-gradient(135deg, rgba(242, 193, 78, 0.16), rgba(255, 79, 139, 0.08)), var(--panel); margin-bottom: 12px; }
 .course-notice { border-color: #f2c14e; background: linear-gradient(135deg, rgba(242, 193, 78, 0.16), rgba(255, 79, 139, 0.08)); }
 .course-notice a { color: #ffd36e; font-weight: 700; }

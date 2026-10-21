@@ -97,7 +97,7 @@ function gearSlot(m, type) {
 }
 
 function practice(m) {
-  return `${head('Übung', m)}${statusNotice(m)}<div class="action-grid">${courseTiles([m])}${practiceTile(m, busyOf(m))}</div>`;
+  return `${head('Übung', m)}${statusNotice(m)}${courseTiles([m])}<div class="action-grid">${practiceTile(m, busyOf(m))}</div>`;
 }
 
 function promo(m) {

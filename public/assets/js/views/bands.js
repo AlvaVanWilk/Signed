@@ -211,8 +211,8 @@ function practice(b, members) {
   return `
     ${head('Übung', b)}
     ${blockerNotice(b, members)}
+    ${courseTiles(members)}
     <div class="action-grid">
-      ${courseTiles(members)}
       ${actionTile({
         icon: '🥁', title: 'Bandprobe', meta: `${songsMeta(b.options.rehearsal.songs)} · ${b.cohesion >= 100 ? 'Zusammenspiel ist schon voll' : 'Zusammenspiel'} · Können für alle: <b>${gainRange(members.map((m) => m.gains?.rehearsal ?? 0))}</b> je Musiker`,
         body: b.cohesion >= 100 ? '<span class="small muted">Die Band ist eingespielt. Für mehr Können lohnt sich jetzt Solo-Üben mehr.</span>' : '',
@@ -223,24 +223,23 @@ function practice(b, members) {
 }
 
 /**
- * Kacheln für den Tageskurs: je Stufe (Kurs, Workshop, Meisterklasse) eine, sofern einer der Musiker passt.
- * Ohne passenden Musiker erscheint nichts.
+ * Kacheln für den Tageskurs: je Schwierigkeit (Anfänger, Fortgeschrittene, Profis) eine, sofern einer der Musiker
+ * passt. Ohne passenden Musiker erscheint nichts.
  */
 export function courseTiles(members) {
   const c = app.state.course;
   if (!c) return '';
   const ids = new Set(members.map((m) => m.id));
   const candidates = c.candidates.filter((x) => ids.has(x.musicianId));
-  const audience = ['für Anfänger', 'für Fortgeschrittene', 'ab Profi'];
-  return c.kinds.map((kind, k) => {
-    const list = candidates.filter((x) => x.kind === k);
+  return c.levels.map((level, k) => {
+    const list = candidates.filter((x) => x.level === k);
     if (!list.length) return '';
     return `
       <div class="action-tile course-tile">
         <div class="action-icon">${instrumentIcon(c.instrument)}</div>
         <div class="action-main">
-          <b>🎓 ${esc(c.prefix)}-${esc(kind.name)} bei ${esc(c.teacher)}</b>
-          <span class="muted small">Nur heute · ${audience[k]} · <em>+${fmt1(kind.gain)} Können</em> · ${money(kind.price)} je Musiker · ${duration(c.seconds)}</span>
+          <b>🎓 ${esc(c.prefix)}-${esc(c.name)} für ${esc(level.name)} bei ${esc(c.teacher)}</b>
+          <span class="muted small">Nur heute · <em>+${fmt1(c.gain)} Können</em> · ${money(level.price)} je Musiker · ${duration(c.seconds)}</span>
           <span class="tile-buttons">${list.map((x) => {
             const m = musicianById(x.musicianId);
             return x.visited
@@ -784,7 +783,7 @@ defineActions({
   async courseAttend({ id }) {
     const c = app.state.course;
     const x = c.candidates.find((y) => y.musicianId === Number(id));
-    if (!x || !(await confirmSpend(c.kinds[x.kind].price))) return;
+    if (!x || !(await confirmSpend(c.levels[x.level].price))) return;
     if (await mutate('courseAttend', { musicianId: Number(id) })) toast(`${musicianById(id).firstName} ist im Kurs.`, 'ok');
   },
   async practiceAuto({ id, slot }) {

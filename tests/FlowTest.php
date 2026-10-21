@@ -867,12 +867,12 @@ test('Band anderer Labels ansehen: Mitglieder, Genre, Platten und Spuren zum Anh
     checkApiError(fn () => $b->post('bandView', ['bandId' => 99999]), 'gibt es nicht');
 });
 
-test('Charts: Pro Band zählt nur ihre stärkste Platte', function () {
+test('Charts: Eine Band darf mehrere Platten in den Charts haben, pro Label höchstens drei', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Flut');
     $band = foundBand($p);
     $labelId = (int) $db->value('SELECT label_id FROM bands WHERE id = ?', [$band['id']]);
-    foreach (['Eins' => 80, 'Zwei' => 60, 'Drei' => 40] as $title => $points) {
+    foreach (['Eins' => 80, 'Zwei' => 60, 'Drei' => 40, 'Vier' => 20] as $title => $points) {
         $db->insert('records', [
             'label_id' => $labelId, 'band_id' => $band['id'], 'title' => $title, 'songs_total' => 3, 'songs_done' => 3,
             'song_results' => '[]', 'status' => 'done', 'created_at' => Clock::now(), 'finished_at' => Clock::now(),
@@ -881,7 +881,7 @@ test('Charts: Pro Band zählt nur ihre stärkste Platte', function () {
     }
     Signed\Game\Charts::markDirty($db);
     $placed = array_column(array_filter($p->get('charts')['albums'], static fn ($a) => $a['placed']), 'title');
-    checkEquals(['Eins'], $placed);
+    checkEquals(['Eins', 'Zwei', 'Drei'], $placed);
 });
 
 test('Gigs: Die Band wählt, welches Album sie spielt – Gigs schieben dieses an', function () {
@@ -916,7 +916,8 @@ test('Tantiemen: Platten ohne Chartplatz verkaufen sich weiter, ältere bringen 
     $p = registerPlayer($db, 'Katalog');
     $band = foundBand($p);
     $labelId = (int) $db->value('SELECT label_id FROM bands WHERE id = ?', [$band['id']]);
-    foreach (['Alt' => 80, 'Neu' => 40] as $title => $points) {
+    // Vier Platten, pro Label stehen höchstens drei in den Charts: eine verkauft sich ohne Chartplatz.
+    foreach (['Alt' => 50, 'Mitte' => 40, 'Neu' => 20, 'Klein' => 10] as $title => $points) {
         $db->insert('records', [
             'label_id' => $labelId, 'band_id' => $band['id'], 'title' => $title, 'songs_total' => 3, 'songs_done' => 3,
             'song_results' => '[]', 'status' => 'done', 'created_at' => Clock::now(), 'finished_at' => Clock::now(),
@@ -926,8 +927,8 @@ test('Tantiemen: Platten ohne Chartplatz verkaufen sich weiter, ältere bringen 
     }
     Signed\Game\Charts::markDirty($db);
     $finance = $p->get('state')['finance'];
-    checkEquals(2, count($finance['records']), 'Beide verkaufen sich, auch die ohne Chartplatz');
-    checkEquals(1, count(array_filter($finance['records'], static fn ($r) => $r['placed'])));
+    checkEquals(4, count($finance['records']), 'Alle verkaufen sich, auch die ohne Chartplatz');
+    checkEquals(3, count(array_filter($finance['records'], static fn ($r) => $r['placed'])));
     check($finance['catalogPerHour'] > 1.1 && $finance['catalogPerHour'] < 1.3, 'Katalog: 120 Punkte × 0,01');
 
     // Nach den Charts: Katalog läuft weiter.

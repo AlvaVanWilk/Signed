@@ -359,8 +359,6 @@ final class Balance
     public const CHART_BOOST_HALF = 3 * 3600;
     /** Unter dieser Punktzahl fällt eine Platte aus den Charts. */
     public const CHART_MIN_POINTS = 1.0;
-    /** Pro Band zählt nur ihre stärkste Platte in den Charts; die übrigen verkaufen sich weiter. Bei höchstens 3 Bands also höchstens 3 Platten pro Label. */
-    public const CHART_PER_BAND = 1;
     /** Und pro Label höchstens so viele (seine stärksten) – mit vielen Bands soll niemand die Top 10 allein füllen. */
     public const CHART_PER_LABEL = 3;
     public const CHART_SIZE = 10;

@@ -78,7 +78,7 @@ const HEADS = {
   record: ['Platte', 'Platte', (r) => `<ul><li><b>EP</b>: bis ${r.chartLpSongs - 1} Lieder, <b>LP</b>: ab ${r.chartLpSongs} Liedern – LPs bekommen mehr Punkte.</li>
     <li><b>perfekt</b>: ohne einen einzigen Fehler aufgenommen – Punkte × ${fmt1(r.chartPerfect)}.</li>
     <li>Das Bild ist das Cover aus dem Cover-Automaten.</li></ul>`],
-  band: ['Band · Label', 'Band und Label', (r) => `<ul><li>Von jeder Band steht nur ihre <b>stärkste Platte</b> in den Charts, von jedem Label höchstens <b>${r.chartPerLabel}</b>.</li>
+  band: ['Band · Label', 'Band und Label', (r) => `<ul><li>Von jedem Label stehen höchstens <b>${r.chartPerLabel}</b> Platten in den Charts – die stärksten.</li>
     <li>Tippe auf eine Band, um sie anzuschauen und anzuhören.</li></ul>`],
   hours: ['Std.', 'Std. – Stunden', (r) => `<p>Wie viele Stunden die Platte schon draußen ist.</p>
     <ul><li>Die Punkte steigen bis etwa <b>${fmt0(r.chartPeakHours)} Stunden</b> nach dem Erscheinen, danach sinken sie langsam.</li>

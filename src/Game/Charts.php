@@ -148,19 +148,13 @@ final class Charts
         arsort($points);
         $ranks = [];
         $rank = 0;
-        $perBand = [];
         $perLabel = [];
         foreach (array_keys($points) as $i) {
-            // Niemand soll die Charts fluten: pro Band und pro Label zählen nur die stärksten Platten.
-            $band = $rows[$i]['band_id'] ?? null;
-            if ($band !== null && ($perBand[$band] ?? 0) >= Balance::CHART_PER_BAND) {
-                continue;
-            }
+            // Niemand soll die Charts fluten: pro Label zählen nur die stärksten Platten.
             $label = (int) $rows[$i]['label_id'];
             if (($perLabel[$label] ?? 0) >= Balance::CHART_PER_LABEL) {
                 continue;
             }
-            $perBand[$band] = ($perBand[$band] ?? 0) + 1;
             $perLabel[$label] = ($perLabel[$label] ?? 0) + 1;
             $ranks[$i] = ++$rank;
         }

@@ -307,8 +307,8 @@ test('Bandregeln: weitere Bands erst mit Label-Ruhm, niemand in zwei Bands, Genr
     $state = $p->get('state');
     $m = $state['musicians'][0];
     checkEquals(1, $state['label']['bandSlots']['open']);
-    checkApiError(fn () => $p->post('bandCreate', ['name' => 'Zweite', 'members' => []]), '150 Label-Ruhm');
-    $db->exec('UPDATE bands SET fame_own = 200');
+    checkApiError(fn () => $p->post('bandCreate', ['name' => 'Zweite', 'members' => []]), '50 Label-Ruhm');
+    $db->exec('UPDATE bands SET fame_own = 80');
     checkEquals(2, $p->get('state')['label']['bandSlots']['open']);
     checkApiError(fn () => $p->post('bandCreate', ['name' => 'Zweite', 'members' => [['id' => $m['id']]]]), 'schon in einer Band');
     checkApiError(fn () => $p->post('bandCreate', ['name' => '   ', 'members' => []]), 'Bandname');

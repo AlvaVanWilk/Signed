@@ -90,7 +90,7 @@ final class Balance
 
     // ---------- Band ----------
     /** Band-Plätze: die erste sofort, jede weitere ab diesem Label-Ruhm (Summe des Ruhms aller eigenen Bands). */
-    public const BAND_SLOTS = [0, 150, 800];
+    public const BAND_SLOTS = [0, 50, 150];
     /** Namensänderung nach dem ersten Auftritt: Gebühr; der Ruhm am alten Namen geht verloren. */
     public const RENAME_COST = 300;
     public const MIN_MEMBERS = 2;

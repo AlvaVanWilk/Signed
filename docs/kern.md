@@ -91,7 +91,7 @@ Ein schwacher Musiker zieht den Sound runter, und vier Musiker sind höchstens 2
 - Kommen mehrere Genres in Frage, bleibt die Band bei ihrem bisherigen; sonst gilt die Reihenfolge oben.
 - Ohne Genre-Einheit spielt die Musik im Genre, das die meisten Mitglieder mögen (ohne Bonus).
 - Wechsel kommen in die Chronik; beim Aufnehmen zeigt das Spiel vorher, ob die Band ihr Genre verliert oder gewinnt.
-- **Band-Plätze:** die erste Band sofort, die zweite ab 150, die dritte ab 800 Label-Ruhm. Genres dürfen sich wiederholen.
+- **Band-Plätze:** die erste Band sofort, die zweite ab 50, die dritte ab 150 Label-Ruhm. Genres dürfen sich wiederholen.
 - **Namensänderung:** vor dem ersten Auftritt frei; danach kostet sie 300 ₲ und der Ruhm am alten Namen geht verloren.
 
 ### Zusammenspiel und Chemie

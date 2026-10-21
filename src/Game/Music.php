@@ -39,11 +39,12 @@ final class Music
     {
         $type = BandCalc::instrument($m);
         $model = $gear[$m['id']][$type] ?? null;
+        $genre = (string) Rng::pick($bandGenres ?: $m['genres']);
         return [
             'type' => $type,
             'level' => $m['level'],
-            'genre' => (string) Rng::pick($bandGenres ?: $m['genres']),
-            'electric' => $model === null ? $m['id'] % 2 === 1 : (bool) ($model['electric'] ?? false),
+            'genre' => $genre,
+            'electric' => Catalog::soundsElectric($genre, $type, $model === null ? null : (bool) ($model['electric'] ?? false)),
             'voice' => self::voice($m),
         ];
     }

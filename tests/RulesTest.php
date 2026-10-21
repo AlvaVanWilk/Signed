@@ -403,3 +403,12 @@ test('Musik: Doppelte Instrumente spielen verschiedene Parts – gleiche Noten i
     $got = array_map(static fn ($s) => $parts[implode('/', Signed\Game\Music::resolve($s))], $stems);
     checkEquals(3, count(array_unique($got)), 'Drei Bassisten, drei verschiedene Parts (Rock, Pop, Hip-Hop)');
 });
+
+test('Musik: Elektro-Keyboard klingt immer elektrisch, ohne eigenes Instrument entscheidet das Genre', function () {
+    $keys = musician(['id' => 702, 'instr1' => 'keys', 'genres' => ['elektro']]);
+    $piano = ['electric' => false];
+    checkEquals(true, Signed\Game\Music::stem($keys, [702 => ['keys' => $piano]], ['elektro'])['electric'], 'Elektro: auch mit Klavier elektrisch');
+    checkEquals(false, Signed\Game\Music::stem($keys, [702 => ['keys' => $piano]], ['pop'])['electric'], 'Pop: das eigene Klavier zählt');
+    checkEquals(true, Signed\Game\Music::stem($keys, [], ['pop'])['electric'], 'Pop ohne Instrument: elektrisch');
+    checkEquals(false, Signed\Game\Music::stem($keys, [], ['jazz'])['electric'], 'Jazz ohne Instrument: akustisch');
+});

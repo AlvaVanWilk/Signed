@@ -14,16 +14,30 @@ final class Catalog
     ];
 
     /** Alle Spuren haben dasselbe Tempo und dieselbe Tonart, damit sich jedes Genre mit jedem mischen lässt. */
+    /**
+     * electric = Klang ohne eigenes Instrument (elektrisch oder akustisch);
+     * alwaysElectric = Instrumente, die in diesem Genre immer elektrisch klingen, egal was der Musiker in der Hand hat.
+     */
     public const GENRES = [
-        'pop' => ['name' => 'Pop', 'bpm' => Balance::BPM],
-        'rock' => ['name' => 'Rock', 'bpm' => Balance::BPM],
-        'metal' => ['name' => 'Metal', 'bpm' => Balance::BPM],
-        'punk' => ['name' => 'Punk', 'bpm' => Balance::BPM],
-        'jazz' => ['name' => 'Jazz', 'bpm' => Balance::BPM],
-        'elektro' => ['name' => 'Elektro', 'bpm' => Balance::BPM],
-        'hiphop' => ['name' => 'Hip-Hop', 'bpm' => Balance::BPM],
-        'folk' => ['name' => 'Folk', 'bpm' => Balance::BPM],
+        'pop' => ['name' => 'Pop', 'bpm' => Balance::BPM, 'electric' => true],
+        'rock' => ['name' => 'Rock', 'bpm' => Balance::BPM, 'electric' => true],
+        'metal' => ['name' => 'Metal', 'bpm' => Balance::BPM, 'electric' => true, 'alwaysElectric' => ['guitar', 'bass']],
+        'punk' => ['name' => 'Punk', 'bpm' => Balance::BPM, 'electric' => true],
+        'jazz' => ['name' => 'Jazz', 'bpm' => Balance::BPM, 'electric' => false],
+        'elektro' => ['name' => 'Elektro', 'bpm' => Balance::BPM, 'electric' => true, 'alwaysElectric' => ['keys', 'drums', 'bass']],
+        'hiphop' => ['name' => 'Hip-Hop', 'bpm' => Balance::BPM, 'electric' => true],
+        'folk' => ['name' => 'Folk', 'bpm' => Balance::BPM, 'electric' => false],
     ];
+
+    /** Klingt dieses Instrument elektrisch? Genre-Pflicht vor eigenem Instrument vor Genre-Gewohnheit. */
+    public static function soundsElectric(string $genre, string $type, ?bool $own): bool
+    {
+        $g = self::GENRES[$genre] ?? null;
+        if ($g !== null && in_array($type, $g['alwaysElectric'] ?? [], true)) {
+            return true;
+        }
+        return $own ?? ($g['electric'] ?? true);
+    }
 
     /** genres = typische Genres (Klischee). Ein Musiker außerhalb davon ist „ungewöhnlich“. at = „ist … jetzt Profi“. */
     public const INSTRUMENTS = [

@@ -335,6 +335,9 @@ Instrumente sind zufällig. Im Music Store hat der Verkäufer mit 25 % Chance ei
   im Takt (Noten aus derselben MIDI-Spur wie Pop). Vorhanden: Pop 0 komplett, Rock 0 (Schlagzeug, Bass, Keyboard),
   Hip-Hop 0 (Schlagzeug, Bass, Gesang).
 - Fehlt eine Spur, nimmt das Spiel die nächste Stufe, dann die andere Variante, dann Pop. Gibt es gar keine, bleibt der Synthesizer.
+- Elektrisch oder akustisch (`Catalog::soundsElectric`): Manche Genres verlangen es (Metal: Gitarre und Bass, Elektro: Keyboard,
+  Schlagzeug und Bass immer elektrisch). Sonst zählt das eigene Instrument; ohne eigenes Instrument die Gewohnheit des Genres
+  (Jazz und Folk akustisch, die übrigen elektrisch).
 - Zu hören am Mischpult (jeder Regler steuert seine Spuren), bei der Solo-Probe (nur die eigene Spur) und in der Live-Ansicht von Auftritten.
 - Spielen zwei Mitglieder dasselbe Instrument (z. B. zwei Gitarren im Metal), nimmt der zweite die Aufnahme eines anderen
   Genres (erst Pop, dann Rock, dann die übrigen) in der Variante, die eigentlich klingen würde (Metal: Pop-E-Gitarre).

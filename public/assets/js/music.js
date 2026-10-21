@@ -131,11 +131,15 @@ export function memberStem(m, band = null, seed = 0) {
   const type = m.instruments[slot].type;
   const gear = app.state.gear.find((g) => g.musicianId === m.id && cat().gear[g.model].type === type);
   const genres = band?.genres?.length ? band.genres : m.genres;
+  const genre = genres[(m.id + seed) % genres.length];
+  // Wie Catalog::soundsElectric: Genre-Pflicht (Metal-Gitarre, Elektro-Keyboard) vor eigenem Instrument vor Genre-Gewohnheit.
+  const g = cat().genres[genre] ?? {};
+  const electric = (g.alwaysElectric ?? []).includes(type) || (gear ? !!cat().gear[gear.model].electric : g.electric ?? true);
   return {
     type,
     level: m.level,
-    genre: genres[(m.id + seed) % genres.length],
-    electric: gear ? !!cat().gear[gear.model].electric : m.id % 2 === 1,
+    genre,
+    electric,
     voice: { f: 'weiblich', m: 'maennlich' }[m.look?.gender] ?? (m.id % 2 === 0 ? 'weiblich' : 'maennlich'),
   };
 }

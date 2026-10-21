@@ -1146,3 +1146,8 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
   .gig-tile .action-main { flex-basis: calc(100% - 62px); }
   .gig-tile > .btn { width: 100%; }
 }
+
+/* Spaltenköpfe der Charts: antippen erklärt die Spalte */
+.th-info { font: inherit; color: inherit; text-transform: inherit; letter-spacing: inherit; background: none; border: 0; padding: 0;
+  cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
+.th-info:hover, .th-info:focus-visible { color: var(--text); }

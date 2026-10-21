@@ -192,6 +192,13 @@ final class Present
                 'chartPeakHours' => Balance::CHART_PEAK / 3600,
                 'chartIntervalHours' => Balance::CHART_INTERVAL / 3600,
                 'chartBoostHalfHours' => Balance::CHART_BOOST_HALF / 3600,
+                'chartBoostMax' => Balance::CHART_BOOST_MAX,
+                'chartMaxAgeDays' => Balance::CHART_MAX_AGE / 86400,
+                'chartPerfect' => Balance::CHART_PERFECT,
+                'chartPerLabel' => Balance::CHART_PER_LABEL,
+                'chartGigBonus' => Balance::CHART_GIG_BONUS,
+                'chartFameMax' => Balance::CHART_FAME_MAX,
+                'chartTopMinLabels' => Balance::CHART_TOP_MIN_LABELS,
             ],
         ];
     }

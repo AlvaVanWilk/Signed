@@ -62,7 +62,16 @@ final class Bands
         if (Names::bandTaken($this->repo->db, $name, $band['id'])) {
             throw new ApiError(sprintf('Den Bandnamen „%s“ gibt es schon.', $name));
         }
-        $this->repo->db->update('bands', ['name' => $name, 'name_key' => Names::key($name)], ['id' => $band['id']]);
+        $this->repo->db->transaction(function () use ($band, $name): void {
+            if ($band['released']) {
+                // Nach dem ersten Auftritt kennt man die Band unter ihrem Namen: Der Ruhm am Namen geht verloren.
+                $this->repo->spend(Balance::RENAME_COST, sprintf('Namensänderung %s', $band['name']));
+                $this->repo->db->update('bands', ['fame_own' => 0], ['id' => $band['id']]);
+                $this->repo->log('band', sprintf('%s heißt jetzt %s. Der Ruhm des alten Namens (%s) ist weg.',
+                    $band['name'], $name, number_format($band['fame_own'], 1, ',', '.')), $band['id']);
+            }
+            $this->repo->db->update('bands', ['name' => $name, 'name_key' => Names::key($name)], ['id' => $band['id']]);
+        });
     }
 
     public function addMember(int $bandId, int $musicianId, int $slot): void

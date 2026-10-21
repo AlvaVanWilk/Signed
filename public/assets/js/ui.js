@@ -7,6 +7,8 @@ const nf1 = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 1, maximumFr
 
 export const fmt0 = (n) => nf0.format(n);
 export const fmt1 = (n) => nf1.format(n);
+const nf2fix = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+export const fmt2 = (n) => nf2fix.format(n);
 const nf2 = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
 /** Kleine Gewinne (unter 1) mit zwei Nachkommastellen, damit nicht „+0,0“ dasteht. */
 export const fmtGain = (n) => (Math.abs(n) < 1 ? nf2 : nf1).format(n);

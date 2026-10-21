@@ -309,6 +309,11 @@ final class Schema
                 'ALTER TABLE bands ADD COLUMN genre2 VARCHAR(16) NULL',
                 [Migrations::class, 'keysAndGenres'],
             ],
+            // 9: Tantiemen laufen ständig (Bruchteile eines ₲ werden aufgehoben); Instrumente mit Eigenschaften
+            [
+                'ALTER TABLE records ADD COLUMN royalty_carry REAL NOT NULL DEFAULT 0',
+                'ALTER TABLE gear ADD COLUMN perks TEXT NULL',
+            ],
         ];
     }
 }

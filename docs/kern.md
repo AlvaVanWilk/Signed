@@ -183,7 +183,8 @@ Nur die Gewinne sind klein; wie oft man etwas hintereinander spielt, ist nicht b
 - Chartpunkte = 100 × Qualität² × Soundfaktor × Format × Perfekt (× 1,3) × (1 + Bandruhm/500, höchstens × 3).
   Format: EP × 0,6, LP (ab 7 Liedern) × 1 + 4 % pro Lied über 7.
 - Die Punkte schrumpfen jeden Tag auf 88 %. Unter 1 Punkt fällt die Platte heraus. Gezeigt werden die Top 50.
-- Tantiemen pro Tag in den Charts: 2 ₲ und 0,05 Ruhm pro Punkt, Ruhm verteilt auf die aktuellen Mitglieder.
+- Tantiemen laufen ständig (sekundengenau abgerechnet, Bruchteile werden aufgehoben): pro Punkt und Tag 2 ₲ und 0,05 Ruhm,
+  Ruhm verteilt auf die aktuellen Mitglieder. Das Geld zählt im Browser sichtbar mit; im Kontoauszug eine Zeile pro Platte und Tag.
 
 ### Promo
 

@@ -1,5 +1,5 @@
 import { api } from './api.js';
-import { actions, app, bandById, defineActions, musicianById, navigate, onRender, refresh, rerender, serverNow } from './core.js';
+import { actions, app, bandById, defineActions, liveMoney, musicianById, navigate, onRender, refresh, rerender, serverNow } from './core.js';
 import { bandFill, genreGlyph, levelUpBanners, musicianCard } from './cards.js';
 import { closeAllModals, duration, esc, fmt1, fmtGain, money, openModal, percent, timeAgo, topModal } from './ui.js';
 import './celebrate.js';
@@ -106,7 +106,7 @@ function layout(content, route) {
       <nav class="nav">${NAV.map(([key, label]) => `<a href="#/${key}" class="${key === active ? 'active' : ''}">${label}</a>`).join('')}</nav>
       <div class="label-info">
         <span class="label-name" title="Dein Label">${esc(s.label.name)}</span>
-        <button class="money-pill" data-act="openFinance" title="Konto und Einnahmen">${money(s.label.money)}</button>
+        <button class="money-pill" data-act="openFinance" data-live-money title="Konto und Einnahmen">${money(liveMoney())}</button>
         <button class="btn ghost small" data-act="logout">Abmelden</button>
       </div>
       ${subnav(route)}
@@ -136,6 +136,11 @@ function updateCountdowns() {
   const now = serverNow();
   for (const el of document.querySelectorAll('[data-until]')) {
     el.textContent = duration(Number(el.dataset.until) - now);
+  }
+  // Tantiemen laufen ständig: das Geld zählt sichtbar mit.
+  const cash = money(liveMoney());
+  for (const el of document.querySelectorAll('[data-live-money]')) {
+    if (el.textContent !== cash) el.textContent = cash;
   }
 }
 
@@ -234,8 +239,9 @@ function financeHtml() {
   const now = app.state.now;
   return `
     <div class="eyebrow">Groove Coins</div>
-    <h2>${money(app.state.label.money)}</h2>
+    <h2 data-live-money>${money(liveMoney())}</h2>
     <div class="reward-grid">
+      ${reward('Tantiemen pro Stunde', `${fmtGain(f.moneyPerHour)} ₲`)}
       ${reward('Tantiemen pro Tag', money(f.perDay))}
       ${reward('Platten in den Charts', String(f.records.length))}
     </div>

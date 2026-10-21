@@ -43,6 +43,24 @@ final class Repo
         }
     }
 
+    /** Laufende Einnahmen (Tantiemen): eine Zeile pro Grund und Tag im Kontoauszug statt vieler kleiner. */
+    public function earnDaily(int $amount, string $reason): void
+    {
+        if ($amount <= 0) {
+            return;
+        }
+        $this->db->exec('UPDATE labels SET money = money + ? WHERE id = ?', [$amount, $this->labelId]);
+        $now = Clock::now();
+        $text = mb_substr($reason, 0, 120);
+        $updated = $this->db->exec(
+            'UPDATE ledger SET amount = amount + ?, created_at = ? WHERE label_id = ? AND text = ? AND created_at >= ?',
+            [$amount, $now, $this->labelId, $text, $now - $now % 86400]
+        );
+        if ($updated === 0) {
+            $this->book($amount, $reason);
+        }
+    }
+
     /** Kontoauszug: jede Einnahme und Ausgabe mit Grund. */
     private function book(int $amount, string $reason): void
     {

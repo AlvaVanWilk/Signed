@@ -1,10 +1,11 @@
 import { bandGenreTags, face } from '../cards.js';
-import { app, bandById, isBusy, musicianById, runningFor, serverNow } from '../core.js';
-import { esc, fmt0, fmt1, money, timeAgo } from '../ui.js';
+import { app, bandById, isBusy, liveMoney, musicianById, runningFor, serverNow } from '../core.js';
+import { esc, fmt0, fmt1, fmtGain, money, timeAgo } from '../ui.js';
 
 export function render() {
   const s = app.state;
   const fame = s.bands.reduce((sum, b) => sum + b.fame, 0);
+  const slots = s.label.bandSlots;
   const firstFavorite = s.musicians.find((m) => m.favorite && !m.bandId);
   const choices = s.musicians.filter((m) => m.abilityChoice);
   const steps = [
@@ -25,10 +26,13 @@ export function render() {
         <h1>${esc(s.label.name)}</h1>
       </div>
       <div class="stat-tiles">
-        ${tile('Geld', money(s.label.money))}
-        ${tile('Musiker', fmt0(s.musicians.length))}
-        ${tile('Bands', fmt0(s.bands.length))}
-        ${tile('Label-Ruhm', fmt1(fame))}
+        ${tile('Geld', `<span data-live-money>${money(liveMoney())}</span>`,
+          s.finance.moneyPerHour ? `Tantiemen <em>+${fmtGain(s.finance.moneyPerHour)} ₲</em> pro Std.` : 'Tantiemen gibt es, sobald eine Platte chartet')}
+        ${tile('Musiker', fmt0(s.musicians.length), `davon <em>${fmt0(s.musicians.filter((m) => !m.bandId).length)}</em> ohne Band`)}
+        ${tile('Bands', `${fmt0(s.bands.length)}<small> / ${fmt0(slots.open)}</small>`,
+          slots.next === null ? 'Alle Band-Plätze freigeschaltet' : `Nächster Band-Platz ab <em>${fmt0(slots.next)}</em> Label-Ruhm`)}
+        ${tile('Label-Ruhm', fmt1(fame),
+          s.finance.famePerHour ? `aus den Charts <em>+${fmtGain(s.finance.famePerHour)}</em> pro Std.` : 'Summe des Ruhms aller Bands')}
       </div>
     </section>
 
@@ -61,8 +65,9 @@ export function render() {
     </section>`;
 }
 
-function tile(label, value) {
-  return `<div class="tile"><span>${esc(label)}</span><b>${value}</b></div>`;
+/** Kachel; note erklärt, was der Wert bewirkt (darf <em> für den veränderlichen Teil enthalten). */
+function tile(label, value, note = '') {
+  return `<div class="tile"><span>${esc(label)}</span><b>${value}</b>${note ? `<small>${note}</small>` : ''}</div>`;
 }
 
 export function runningItem(a) {

@@ -4,7 +4,7 @@ import { app, bandById, cat, defineActions, isBusy, managerById, musicianById, m
 import { openLive } from '../live.js';
 import { startPractice, startRecordSong } from '../play.js';
 import { assignGear, soundChange } from '../gear.js';
-import { bar, confirmDialog, duration, esc, fmt0, fmt1, money, openModal, percent, promptDialog, timeAgo, toast } from '../ui.js';
+import { bar, confirmDialog, duration, esc, fmt0, fmt1, fmt2, fmtGain, money, openModal, percent, promptDialog, timeAgo, toast } from '../ui.js';
 
 /** Untermenü einer Band: [Pfad, Icon, Bezeichnung] */
 export const BAND_SECTIONS = [
@@ -75,16 +75,29 @@ const songsMeta = (songs) => `${songs} ${songs === 1 ? 'Lied' : 'Lieder'} · ${d
 
 function overview(b, members) {
   const gig = b.options.gig;
+  const fx = b.effects;
+  const royalty = app.state.finance.bands[b.id];
   return `
     <div class="page-head">
-      <div><div class="eyebrow">${b.title ? esc(b.title) : 'Band'}</div><h1>${esc(b.name)} <button class="icon-btn" data-act="bandRename" data-id="${b.id}" title="Umbenennen">✎</button></h1></div>
+      <div><div class="eyebrow">${b.title ? esc(b.title) : 'Band'}</div><h1>${esc(b.name)} <button class="icon-btn" data-act="bandRename" data-id="${b.id}" title="${b.released ? 'Namensänderung beantragen' : 'Umbenennen'}">✎</button></h1></div>
     </div>
     <div class="stat-grid">
-      <div class="tile" data-flash="sound-${b.id}"><span>Sound</span><b>${fmt1(b.sound)}</b></div>
-      <div class="tile"><span>Ruhm</span><b>${fmt1(b.fame)}</b><small title="Am Bandnamen · bei den Mitgliedern">Name ${fmt1(b.fameOwn)} · Musiker ${fmt1(b.fame - b.fameOwn)}</small>${gig.nextVenue ? `<small>${esc(gig.nextVenue)} ab ${fmt0(gig.nextFame)}</small>${bar(gig.progress, 1, 'thin')}` : ''}</div>
-      <div class="tile"><span>Zusammenspiel</span><b>${fmt0(b.cohesion)}<small> / ${fmt0(b.maxCohesion)}</small></b>${bar(b.cohesion, 100, 'thin')}</div>
-      <div class="tile"><span>Chemie</span><b>${chemistryLabel(b.chemistry)}</b></div>
-      <div class="tile"><span>Platten</span><b>${fmt0(b.records)}</b><small>${fmt0(b.songsRecorded)} Lieder</small></div>
+      <div class="tile" data-flash="sound-${b.id}"><span>Sound</span><b>${fmt1(b.sound)}</b>
+        <small>Ruhm pro Auftritt <em>× ${fmt2(fx.soundFame)}</em></small>
+        <small>${esc(fx.venue)} erwartet <em>${fmt0(fx.expect)}</em></small></div>
+      <div class="tile"><span>Ruhm</span><b>${fmt1(b.fame)}</b>
+        <small title="Am Bandnamen · bei den Mitgliedern">Name ${fmt1(b.fameOwn)} · Musiker ${fmt1(b.fame - b.fameOwn)}</small>
+        <small>Gigs: <em>${esc(fx.venue)}</em>, <em>${money(fx.gage)}</em> pro Lied</small>
+        <small>Plattenverkauf <em>+${percent(fx.sales)}</em> · Charts <em>+${percent(fx.chart)}</em></small>
+        ${gig.nextVenue ? `<small>${esc(gig.nextVenue)} ab ${fmt0(gig.nextFame)}</small>${bar(gig.progress, 1, 'thin')}` : ''}</div>
+      <div class="tile"><span>Zusammenspiel</span><b>${fmt0(b.cohesion)}<small> / ${fmt0(b.maxCohesion)}</small></b>${bar(b.cohesion, 100, 'thin')}
+        <small>Sound <em>× ${fmt2(fx.cohesionSound)}</em> (bei 100: × 1)</small></div>
+      <div class="tile"><span>Chemie</span><b>${chemistryLabel(b.chemistry)}</b>
+        <small>Zusammenspiel wächst <em>× ${fmt2(fx.chemistry)}</em></small>
+        <small>höchstens <em>${fmt0(b.maxCohesion)}</em></small></div>
+      <div class="tile"><span>Platten</span><b>${fmt0(b.records)}</b><small>${fmt0(b.songsRecorded)} Lieder</small>
+        ${royalty ? `<small>Tantiemen <em>+${fmtGain(royalty.moneyPerHour)} ₲</em> pro Std.</small>
+        <small>Ruhm aus den Charts <em>+${fmtGain(royalty.famePerHour)}</em> pro Std.</small>` : '<small>Gerade nicht in den Charts</small>'}</div>
     </div>
     <div class="lineup-grid">
       ${members.map((m, i) => memberTile(b, m, i + 1)).join('')}
@@ -596,6 +609,14 @@ defineActions({
   },
   async bandRename({ id }) {
     const b = bandById(id);
+    if (b.released) {
+      const ok = await confirmDialog(
+        `Namensänderung beantragen? Unter „${b.name}“ kennt man die Band schon: Der Ruhm am Namen (${fmt1(b.fameOwn)}) geht verloren, `
+        + `die Band hat danach ${fmt1(b.fame - b.fameOwn)} statt ${fmt1(b.fame)} Ruhm. Die Änderung kostet ${money(cat().rules.renameCost)}.`,
+        { ok: 'Beantragen', danger: true },
+      );
+      if (!ok) return;
+    }
     const name = await promptDialog('Neuer Bandname', b.name);
     if (name && name !== b.name) await mutate('bandRename', { bandId: b.id, name });
   },

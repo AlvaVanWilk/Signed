@@ -530,11 +530,20 @@ test('Album-Charts: Platten aller Labels, Platz 1 gibt einen Gutschein, Tantieme
     $b->get('charts');
     checkEquals(Balance::SCOUT_START_VOUCHERS + 2, $a->get('state')['scout']['vouchers'], 'Nur einmal pro Platte');
 
+    // Tantiemen laufen ständig: in kleinen Schritten genauso viel wie in einem großen.
     $money = $a->get('state')['label']['money'];
-    Clock::advance(2 * 86400 + 60);
+    $start = (float) $db->value("SELECT chart_points FROM records WHERE title = 'Alpha EP'")
+        * Balance::CHART_DECAY ** ((Clock::now() - (int) $db->value("SELECT finished_at FROM records WHERE title = 'Alpha EP'")) / 86400);
+    for ($i = 0; $i < 8; $i++) {
+        Clock::advance(3 * 3600);
+        $a->get('state');
+    }
+    Clock::advance(2 * 86400 - 24 * 3600 + 60);
     $state = $a->get('state');
-    check($state['label']['money'] > $money, 'Tantiemen nach zwei Tagen');
-    check(str_starts_with($state['history'][0]['text'], 'Tantiemen'));
+    $expected = Balance::ROYALTY_MONEY * $start * (1 - Balance::CHART_DECAY ** (2 + 60 / 86400)) / -log(Balance::CHART_DECAY);
+    check(abs($state['label']['money'] - $money - $expected) <= 1.5, sprintf('Tantiemen nach zwei Tagen: %d statt %.1f', $state['label']['money'] - $money, $expected));
+    check(str_starts_with($state['finance']['ledger'][0]['text'], 'Tantiemen'));
+    check(count(array_filter($state['finance']['ledger'], static fn ($l) => str_starts_with($l['text'], 'Tantiemen'))) <= 3, 'Eine Zeile pro Tag');
     $points = bandById($state, $bandA['id'])['discography'][0]['points'];
     $before = $charts['albums'][0]['points'];
     check(abs($points - $before * Balance::CHART_DECAY ** 2) < 0.5, 'Punkte schrumpfen täglich');
@@ -662,4 +671,22 @@ test('Ein Teil des Ruhms bleibt am Bandnamen, auch wenn Mitglieder gehen', funct
     $state = $p->post('bandRemoveMember', ['bandId' => $band['id'], 'musicianId' => $after['memberIds'][0]])['state'];
     $left = bandById($state, $band['id']);
     check($left['fame'] < 20.0 && $left['fame'] > 20.0 * Balance::BAND_FAME_SHARE, 'Wer geht, nimmt seine Bekanntheit mit, der Name behält seinen Teil');
+});
+
+test('Namensänderung: vor dem ersten Auftritt frei, danach mit Gebühr und ohne den Ruhm des alten Namens', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Umbenenner');
+    $band = foundBand($p);
+    $money = $p->get('state')['label']['money'];
+    $p->post('bandRename', ['bandId' => $band['id'], 'name' => 'Erster Versuch']);
+    checkEquals($money, $p->get('state')['label']['money'], 'Vor dem ersten Auftritt kostenlos');
+
+    $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'busking']);
+    Clock::advance(Balance::BUSKING['songs'] * Balance::SONG_SECONDS);
+    $db->exec('UPDATE bands SET fame_own = 12 WHERE id = ?', [$band['id']]);
+    $money = $p->get('state')['label']['money'];
+    $state = $p->post('bandRename', ['bandId' => $band['id'], 'name' => 'Zweiter Versuch'])['state'];
+    checkEquals($money - Balance::RENAME_COST, $state['label']['money']);
+    checkEquals(0.0, (float) bandById($state, $band['id'])['fameOwn']);
+    checkEquals('Zweiter Versuch', bandById($state, $band['id'])['name']);
 });

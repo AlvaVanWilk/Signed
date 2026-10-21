@@ -56,6 +56,12 @@ export function serverNow() {
   return Date.now() / 1000 + app.offset;
 }
 
+/** Geld mit den seit dem letzten Abruf angefallenen Tantiemen (der Server rechnet beim nächsten Abruf genauso ab). */
+export function liveMoney() {
+  const s = app.state;
+  return Math.floor(s.label.money + (s.finance.moneyPerHour / 3600) * Math.max(0, serverNow() - s.now));
+}
+
 export async function refresh() {
   try {
     setState(await api('state'));

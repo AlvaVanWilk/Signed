@@ -131,6 +131,7 @@ final class Present
             'musicStems' => Music::STEMS,
             'packs' => $packs,
             'rules' => [
+                'renameCost' => Balance::RENAME_COST,
                 'startMoney' => Balance::START_MONEY,
                 'songSeconds' => Balance::SONG_SECONDS,
                 'minMembers' => Balance::MIN_MEMBERS,

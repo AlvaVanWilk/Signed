@@ -83,52 +83,57 @@ final class Charts
     }
 
     /**
-     * Zahlt die Tantiemen aller vollen Tage seit der letzten Abrechnung: Geld ans Label,
-     * Ruhm gleichmäßig an die aktuellen Mitglieder der Band.
+     * Tantiemen laufen ständig: Bei jedem Aufruf wird abgerechnet, was seit dem letzten Mal angefallen ist
+     * (Integral der schrumpfenden Chartpunkte). Geld ans Label, Ruhm an die aktuellen Mitglieder der Band.
+     * Bruchteile eines ₲ werden aufgehoben, bis ein ganzer zusammenkommt.
      */
     public static function payRoyalties(Db $db, int $labelId): void
     {
         $now = Clock::now();
         $rows = $db->all(
-            "SELECT id, band_id, title, chart_points, finished_at, royalties_until FROM records
-             WHERE label_id = ? AND status = 'done' AND chart_points > 0 AND royalties_until <= ?",
-            [$labelId, $now - self::DAY]
+            "SELECT id, band_id, title, chart_points, finished_at, royalties_until, royalty_carry FROM records
+             WHERE label_id = ? AND status = 'done' AND chart_points > 0 AND royalties_until < ?",
+            [$labelId, $now]
         );
         foreach ($rows as $row) {
             $db->transaction(static function () use ($db, $labelId, $row, $now): void {
                 $from = (int) $row['royalties_until'];
-                $days = intdiv($now - $from, self::DAY);
-                $claimed = $db->exec('UPDATE records SET royalties_until = ? WHERE id = ? AND royalties_until = ?', [$from + $days * self::DAY, $row['id'], $from]);
-                if ($days < 1 || $claimed === 0) {
+                $claimed = $db->exec('UPDATE records SET royalties_until = ? WHERE id = ? AND royalties_until = ?', [$now, $row['id'], $from]);
+                if ($claimed === 0) {
                     return;
                 }
-                $money = 0.0;
-                $fame = 0.0;
-                for ($day = 1; $day <= $days; $day++) {
-                    $points = self::current((float) $row['chart_points'], $from + $day * self::DAY - (int) $row['finished_at']);
-                    if ($points < Balance::CHART_MIN_POINTS) {
-                        break;
-                    }
-                    $money += $points * Balance::ROYALTY_MONEY;
-                    $fame += $points * Balance::ROYALTY_FAME;
-                }
-                if ($money < 1) {
+                $finished = (int) $row['finished_at'];
+                $integral = self::pointSeconds((float) $row['chart_points'], max(0, $from - $finished), $now - $finished);
+                if ($integral <= 0) {
                     return;
                 }
+                $money = $integral / self::DAY * Balance::ROYALTY_MONEY + (float) $row['royalty_carry'];
+                $paid = (int) floor($money);
+                $db->update('records', ['royalty_carry' => $money - $paid], ['id' => (int) $row['id']]);
                 $repo = new Repo($db, $labelId);
-                $repo->earn((int) round($money), sprintf('Tantiemen „%s“', $row['title']));
+                $repo->earnDaily($paid, sprintf('Tantiemen „%s“', $row['title']));
                 $members = $row['band_id'] === null ? [] : $repo->members((int) $row['band_id']);
                 if ($members) {
+                    $fame = $integral / self::DAY * Balance::ROYALTY_FAME;
                     $repo->addBandFame((int) $row['band_id'], array_fill_keys(array_column($members, 'id'), $fame / count($members)));
                 }
-                $repo->log('royalty', sprintf(
-                    'Tantiemen für „%s“: +%s ₲%s.',
-                    $row['title'],
-                    number_format($money, 0, ',', '.'),
-                    $members ? sprintf(' und +%s Ruhm', number_format($fame, 1, ',', '.')) : ''
-                ), $row['band_id'] === null ? null : (int) $row['band_id']);
             });
         }
+    }
+
+    /** Chartpunkte × Sekunden zwischen $a und $b (Sekunden seit Erscheinen), nur solange die Platte chartet. */
+    private static function pointSeconds(float $points, int $a, int $b): float
+    {
+        $k = log(Balance::CHART_DECAY) / self::DAY;
+        if ($points < Balance::CHART_MIN_POINTS) {
+            return 0.0;
+        }
+        $end = log(Balance::CHART_MIN_POINTS / $points) / $k;
+        $b = min((float) $b, $end);
+        if ($b <= $a) {
+            return 0.0;
+        }
+        return $points / $k * (exp($k * $b) - exp($k * $a));
     }
 
     /** Regelmäßige Einnahmen: alle eigenen Platten, die gerade charten, und der Kontoauszug. */
@@ -136,14 +141,21 @@ final class Charts
     {
         $now = Clock::now();
         $records = [];
+        $bands = [];
         foreach ($db->all(
-            "SELECT r.title, r.chart_points, r.finished_at, b.name AS band_name FROM records r
+            "SELECT r.title, r.band_id, r.chart_points, r.finished_at, b.name AS band_name FROM records r
              LEFT JOIN bands b ON b.id = r.band_id
              WHERE r.label_id = ? AND r.status = 'done' AND r.chart_points > 0",
             [$labelId]
         ) as $row) {
             $points = self::current((float) $row['chart_points'], $now - (int) $row['finished_at']);
             if ($points >= Balance::CHART_MIN_POINTS) {
+                if ($row['band_id'] !== null) {
+                    $band = &$bands[(int) $row['band_id']];
+                    $band['moneyPerHour'] = ($band['moneyPerHour'] ?? 0) + $points * Balance::ROYALTY_MONEY / 24;
+                    $band['famePerHour'] = ($band['famePerHour'] ?? 0) + $points * Balance::ROYALTY_FAME / 24;
+                    unset($band);
+                }
                 $records[] = [
                     'title' => $row['title'],
                     'band' => $row['band_name'] ?? 'aufgelöste Band',
@@ -154,8 +166,13 @@ final class Charts
         }
         usort($records, static fn ($a, $b) => $b['perDay'] <=> $a['perDay']);
         $ledger = $db->all('SELECT amount, text, created_at FROM ledger WHERE label_id = ? ORDER BY id DESC LIMIT 40', [$labelId]);
+        $points = array_sum(array_column($records, 'points'));
         return [
             'perDay' => array_sum(array_column($records, 'perDay')),
+            // Für die laufende Anzeige im Browser (Geld tickt zwischen zwei Abrufen weiter).
+            'moneyPerHour' => round($points * Balance::ROYALTY_MONEY / 24, 2),
+            'famePerHour' => round($points * Balance::ROYALTY_FAME / 24, 3),
+            'bands' => (object) $bands,
             'decay' => Balance::CHART_DECAY,
             'records' => $records,
             'ledger' => array_map(static fn ($l) => ['amount' => (int) $l['amount'], 'text' => $l['text'], 'at' => (int) $l['created_at']], $ledger),

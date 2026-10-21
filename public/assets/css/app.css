@@ -923,3 +923,7 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 @keyframes flash-text { 15% { color: #3ddc84; } }
 .tcg-slot { position: relative; }
 .tcg-slot .tcg-up { top: 8px; right: 8px; width: 26px; height: 26px; font-size: 13px; box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.85); }
+
+/* Kacheln: was der Wert konkret bewirkt; der veränderliche Teil hervorgehoben. */
+.tile small em { font-style: normal; font-weight: 700; color: #ffd36e; }
+.stat-tiles .tile { flex: 1 1 150px; max-width: 240px; }

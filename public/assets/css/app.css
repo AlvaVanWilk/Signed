@@ -451,6 +451,8 @@ button.card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
 .mg-stage { position: relative; height: min(56vh, 440px); border-radius: var(--radius); overflow: hidden; background: linear-gradient(180deg, #120f1b, #1d1729); border: 1px solid var(--line); touch-action: none; }
 .mg-canvas { width: 100%; height: 100%; display: block; }
 .mg-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; padding: 20px; background: rgba(14, 12, 20, 0.75); }
+.mg-stalled { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); padding: 8px 14px; border-radius: 999px; background: rgba(255, 79, 139, 0.9); color: #fff; font-size: 0.9rem; pointer-events: none; white-space: nowrap; }
+.mg-stalled[hidden] { display: none; }
 .mg-keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .mg-key { background: var(--panel-2); border: 2px solid color-mix(in srgb, var(--lane) 60%, transparent); color: var(--text); border-radius: var(--radius-sm); padding: 10px 4px; font: inherit; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .mg-key b { font-size: 1.2rem; color: var(--lane); }

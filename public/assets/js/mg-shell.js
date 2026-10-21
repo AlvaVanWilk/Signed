@@ -1,3 +1,4 @@
+import { getAudio } from './audio.js';
 import { esc } from './ui.js';
 
 /**
@@ -14,6 +15,7 @@ export function mountShell(container, game, { hud, hint, below = '' }) {
       <div class="mg-hud">${hud}</div>
       <div class="mg-stage">
         <canvas class="mg-canvas"></canvas>
+        <div class="mg-stalled" hidden>Es geht nicht los? <b>Tipp einmal aufs Spielfeld.</b></div>
         <div class="mg-overlay">
           <p>${hint}</p>
           <button class="btn primary big mg-start">Los geht’s</button>
@@ -28,6 +30,22 @@ export function mountShell(container, game, { hud, hint, below = '' }) {
   const draw = canvas.getContext('2d');
   const resultEl = el('.mg-result');
 
+  // Steht die Audio-Uhr still (iPad), läuft das Spiel nicht los: Hinweis zeigen, bis sie wieder tickt.
+  let watchdog = 0;
+  function watchClock() {
+    const audio = getAudio();
+    if (!audio) return;
+    let lastTime = audio.currentTime;
+    let still = 0;
+    clearInterval(watchdog);
+    watchdog = setInterval(() => {
+      if (!container.isConnected) return clearInterval(watchdog);
+      still = audio.currentTime === lastTime ? still + 1 : 0;
+      lastTime = audio.currentTime;
+      el('.mg-stalled').hidden = still < 3;
+    }, 500);
+  }
+
   return {
     el,
     canvas,
@@ -40,10 +58,13 @@ export function mountShell(container, game, { hud, hint, below = '' }) {
     },
     hideOverlay() {
       el('.mg-overlay').hidden = true;
+      watchClock();
     },
     resultShown: () => !resultEl.hidden,
     /** buttons: [{label, cls, onClick}] */
     showResult(html, buttons = []) {
+      clearInterval(watchdog);
+      el('.mg-stalled').hidden = true;
       el('.mg-abort').hidden = true;
       resultEl.hidden = false;
       resultEl.innerHTML = `${html}<div class="dialog-actions"></div>`;

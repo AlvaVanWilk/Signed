@@ -7,6 +7,10 @@ let master = null;
 let noiseBuffer = null;
 
 export function getAudio() {
+  if (ctx?.state === 'closed') {
+    ctx = null;
+    noiseBuffer = null;
+  }
   if (!ctx) {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     if (!AudioContext) return null;
@@ -17,9 +21,29 @@ export function getAudio() {
     compressor.connect(volume).connect(ctx.destination);
     master = compressor;
   }
-  if (ctx.state === 'suspended') ctx.resume();
+  wake();
   return ctx;
 }
+
+/**
+ * Safari auf iPad/iPhone hält die Tonausgabe an („suspended“ oder „interrupted“, z. B. nach der Bildschirmsperre);
+ * dann steht auch die Uhr der Minispiele still. Bei jeder Berührung und beim Zurückkehren wird sie wieder angeworfen –
+ * mit einem stillen Ton, weil iOS das nur aus einer Berührung heraus zulässt.
+ */
+function wake() {
+  if (!ctx || ctx.state === 'running' || ctx.state === 'closed') return;
+  ctx.resume().catch(() => {});
+  try {
+    const silent = ctx.createBufferSource();
+    silent.buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
+    silent.connect(ctx.destination);
+    silent.start();
+  } catch { /* egal: nur zum Aufwecken */ }
+}
+for (const type of ['touchend', 'pointerup', 'keydown']) window.addEventListener(type, wake, { capture: true, passive: true });
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') wake();
+});
 
 const PROGRESSION = [{ root: 9, minor: true }, { root: 5 }, { root: 0 }, { root: 7 }];
 const OCTAVE = { vocals: 60, guitar: 48, bass: 36, keys: 60, synth: 60, turntables: 48, sax: 48, trumpet: 60, violin: 60, flute: 72 };

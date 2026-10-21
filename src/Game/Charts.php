@@ -144,25 +144,16 @@ final class Charts
                 $points[$i] = $p;
             }
         }
-        // Eine Band soll die Charts nicht mit vielen Platten fluten: Es zählt nur ihre neueste Platte –
-        // die, die sie gerade auf Gigs spielt und bewirbt. Eine neue Platte löst die alte ab.
-        $newest = [];
-        foreach (array_keys($points) as $i) {
-            $band = $rows[$i]['band_id'] ?? null;
-            if ($band !== null && (!isset($newest[$band]) || (int) $rows[$i]['finished_at'] > (int) $rows[$newest[$band]]['finished_at'])) {
-                $newest[$band] = $i;
-            }
-        }
-        foreach (array_keys($points) as $i) {
-            $band = $rows[$i]['band_id'] ?? null;
-            if ($band !== null && $newest[$band] !== $i) {
-                unset($points[$i]);
-            }
-        }
         arsort($points);
         $ranks = [];
         $rank = 0;
+        $perBand = [];
         foreach (array_keys($points) as $i) {
+            // Eine Band soll die Charts nicht mit vielen Platten fluten: nur ihre stärksten zählen.
+            $band = $rows[$i]['band_id'] ?? null;
+            if ($band !== null && ($perBand[$band] = ($perBand[$band] ?? 0) + 1) > Balance::CHART_PER_BAND) {
+                continue;
+            }
             $ranks[$i] = ++$rank;
         }
         $size = Balance::CHART_SIZE;
@@ -237,17 +228,32 @@ final class Charts
      * Gigs und Promo schieben die neueste Platte der Band an, solange sie chartet. Vorher werden die Tantiemen
      * bis jetzt abgerechnet, damit der Schub erst ab jetzt zählt.
      */
+    /**
+     * Die Platte, die die Band gerade auf Gigs spielt: die gewählte, solange sie sich noch verkauft, sonst die neueste.
+     */
+    public static function promoted(Db $db, int $bandId, ?int $now = null): ?array
+    {
+        $now ??= Clock::now();
+        $rows = $db->all(
+            "SELECT r.id, r.chart_points, r.finished_at, r.boost, r.boost_at, b.promo_record_id FROM records r JOIN bands b ON b.id = r.band_id
+             WHERE r.band_id = ? AND r.status = 'done' AND r.chart_points > 0 AND r.finished_at >= ? ORDER BY r.finished_at DESC",
+            [$bandId, $now - Balance::CHART_MAX_AGE]
+        );
+        foreach ($rows as $row) {
+            if ((int) $row['id'] === (int) $row['promo_record_id']) {
+                return $row;
+            }
+        }
+        return $rows[0] ?? null;
+    }
+
     public static function boost(Repo $repo, int $bandId, float $amount): void
     {
         if ($amount <= 0) {
             return;
         }
         $now = Clock::now();
-        $row = $repo->db->one(
-            "SELECT id, chart_points, finished_at, boost, boost_at FROM records
-             WHERE band_id = ? AND status = 'done' AND chart_points > 0 AND finished_at >= ? ORDER BY finished_at DESC",
-            [$bandId, $now - Balance::CHART_MAX_AGE]
-        );
+        $row = self::promoted($repo->db, $bandId, $now);
         if ($row === null || self::pointsAt($row, $now) < Balance::CHART_MIN_POINTS) {
             return;
         }

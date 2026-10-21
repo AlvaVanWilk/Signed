@@ -46,10 +46,17 @@ final class State
         $albums = Charts::albums($db, $repo->labelId);
         $chartEntry = array_column($albums, null, 'recordId');
         $discography = [];
+        $promoted = [];
+        foreach ($db->all("SELECT id FROM bands WHERE label_id = ?", [$repo->labelId]) as $b) {
+            $promoted[(int) $b['id']] = (int) (Charts::promoted($db, (int) $b['id'])['id'] ?? 0);
+        }
         foreach ($db->all("SELECT * FROM records WHERE label_id = ? AND status = 'done' ORDER BY finished_at DESC", [$repo->labelId]) as $row) {
             $results = json_decode($row['song_results'], true) ?: [];
             $entry = $chartEntry[(int) $row['id']] ?? null;
             $discography[(int) $row['band_id']][] = [
+                'id' => (int) $row['id'],
+                'promotable' => (float) $row['chart_points'] > 0 && (int) $row['finished_at'] >= Clock::now() - Balance::CHART_MAX_AGE,
+                'promoted' => ($promoted[(int) $row['band_id']] ?? 0) === (int) $row['id'],
                 'title' => $row['title'],
                 'songs' => (int) $row['songs_total'],
                 'format' => (int) $row['songs_total'] >= Balance::CHART_LP_SONGS ? 'LP' : 'EP',

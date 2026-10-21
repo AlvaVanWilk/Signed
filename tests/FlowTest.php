@@ -851,7 +851,7 @@ test('Band anderer Labels ansehen: Mitglieder, Genre, Platten und Spuren zum Anh
     checkApiError(fn () => $b->post('bandView', ['bandId' => 99999]), 'gibt es nicht');
 });
 
-test('Charts: Pro Band zählt nur ihre neueste Platte, auch wenn eine ältere mehr Punkte hat', function () {
+test('Charts: Pro Band zählt nur ihre stärkste Platte', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Flut');
     $band = foundBand($p);
@@ -862,9 +862,35 @@ test('Charts: Pro Band zählt nur ihre neueste Platte, auch wenn eine ältere me
             'song_results' => '[]', 'status' => 'done', 'created_at' => Clock::now(), 'finished_at' => Clock::now(),
             'chart_points' => $points, 'royalties_until' => Clock::now(),
         ]);
-        Clock::advance(60);
     }
     Signed\Game\Charts::markDirty($db);
     $placed = array_column(array_filter($p->get('charts')['albums'], static fn ($a) => $a['placed']), 'title');
-    checkEquals(['Drei'], $placed);
+    checkEquals(['Eins'], $placed);
+});
+
+test('Gigs: Die Band wählt, welches Album sie spielt – Gigs schieben dieses an', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Setlist');
+    $band = foundBand($p);
+    $labelId = (int) $db->value('SELECT label_id FROM bands WHERE id = ?', [$band['id']]);
+    $ids = [];
+    foreach (['Alt' => 80, 'Neu' => 40] as $title => $points) {
+        $ids[$title] = $db->insert('records', [
+            'label_id' => $labelId, 'band_id' => $band['id'], 'title' => $title, 'songs_total' => 3, 'songs_done' => 3,
+            'song_results' => '[]', 'status' => 'done', 'created_at' => Clock::now(), 'finished_at' => Clock::now(),
+            'chart_points' => $points, 'royalties_until' => Clock::now(),
+        ]);
+        Clock::advance(60);
+    }
+    $db->exec('UPDATE bands SET records = 2, songs_recorded = 6 WHERE id = ?', [$band['id']]);
+    $promoted = static fn ($state) => array_column(array_filter(bandById($state, $band['id'])['discography'], static fn ($r) => $r['promoted']), 'title');
+    checkEquals(['Neu'], $promoted($p->get('state')), 'Ohne Wahl: das neueste');
+    $state = $p->post('bandPromoRecord', ['bandId' => $band['id'], 'recordId' => $ids['Alt']])['state'];
+    checkEquals(['Alt'], $promoted($state));
+    $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'gig', 'songs' => 3]);
+    Clock::advance(3 * Balance::SONG_SECONDS);
+    $p->get('state');
+    check((float) $db->value('SELECT boost FROM records WHERE id = ?', [$ids['Alt']]) > 0, 'Gig schiebt das gewählte Album');
+    checkEquals(0.0, (float) $db->value('SELECT boost FROM records WHERE id = ?', [$ids['Neu']]));
+    checkApiError(fn () => $p->post('bandPromoRecord', ['bandId' => $band['id'], 'recordId' => 99999]), 'verkauft sich nicht');
 });

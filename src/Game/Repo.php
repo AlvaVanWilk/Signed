@@ -356,6 +356,7 @@ final class Repo
             'gigs_played' => (int) $r['gigs_played'],
             'gigs_since_record' => (int) $r['gigs_since_record'],
             'live_songs_needed' => (int) $r['live_songs_needed'],
+            'promo_record_id' => isset($r['promo_record_id']) ? (int) $r['promo_record_id'] : null,
             'released' => (bool) $r['released'],
             'fame_own' => (float) $r['fame_own'],
             'busy_until' => (int) $r['busy_until'],

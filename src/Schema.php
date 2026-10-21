@@ -328,6 +328,10 @@ final class Schema
             [
                 'ALTER TABLE records ADD COLUMN plan TEXT NULL',
             ],
+            // 12: Welche Platte die Band auf Gigs spielt (und Gigs und Promo damit anschieben)
+            [
+                'ALTER TABLE bands ADD COLUMN promo_record_id INTEGER NULL',
+            ],
         ];
     }
 }

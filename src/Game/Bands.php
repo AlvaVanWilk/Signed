@@ -58,6 +58,20 @@ final class Bands
         ];
     }
 
+    /** Welche Platte die Band auf Gigs spielt; Gigs und Promo schieben dann diese in den Charts an. */
+    public function setPromoRecord(int $bandId, int $recordId): void
+    {
+        $band = $this->repo->band($bandId);
+        $ok = $this->repo->db->value(
+            "SELECT id FROM records WHERE id = ? AND band_id = ? AND label_id = ? AND status = 'done' AND chart_points > 0 AND finished_at >= ?",
+            [$recordId, $band['id'], $this->repo->labelId, Clock::now() - Balance::CHART_MAX_AGE]
+        );
+        if ($ok === null) {
+            throw new ApiError('Diese Platte verkauft sich nicht mehr.');
+        }
+        $this->repo->db->update('bands', ['promo_record_id' => $recordId], ['id' => $band['id']]);
+    }
+
     /** @param list<array{id: int, slot?: int}> $entries */
     public function create(string $name, array $entries): int
     {

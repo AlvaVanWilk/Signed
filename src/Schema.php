@@ -361,6 +361,10 @@ final class Schema
             [
                 "UPDATE musicians SET jam_at = created_at WHERE jam_at = 0 AND (origin = 'jam' OR id IN (SELECT musician_id FROM jam_offers WHERE status = 'done'))",
             ],
+            // 18: Plattencover aus dem Cover-Automaten (Bänder, gewählte Felder, fertiges Cover)
+            [
+                'ALTER TABLE records ADD COLUMN cover TEXT NULL',
+            ],
         ];
     }
 }

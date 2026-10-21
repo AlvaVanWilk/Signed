@@ -205,6 +205,15 @@ final class Balance
             'arena' => ['common' => 30, 'rare' => 40, 'epic' => 22, 'legendary' => 8],
         ],
     ];
+    /**
+     * Cover-Automat (letzter Schritt jeder Platte): je Band 14 Felder, davon gewöhnlich/grün/blau/gold;
+     * speeds = Felder pro Sekunde je Band (Motiv, Farben, Stil, Anordnung). Punkte je Wertigkeit ergeben die
+     * Cover-Güte (0–1); sie bringt beim Erstverkauf bis salesMax mehr Geld. Chartpunkte bleiben bei Musik und Sound.
+     */
+    public const COVER = [
+        'cells' => 14, 'rarity' => [8, 3, 2, 1], 'points' => [0, 1, 2, 4],
+        'speeds' => [6.0, 7.5, 9.0, 10.5], 'salesMax' => 0.10,
+    ];
     /** Auftrittsorte für Gigs nach Bandruhm. gage und fame gelten pro Lied, expect = erwarteter Sound. */
     public const VENUES = [
         ['key' => 'kneipe', 'name' => 'Kneipe', 'minFame' => 0, 'gage' => 30, 'fame' => 0.25, 'expect' => 15],

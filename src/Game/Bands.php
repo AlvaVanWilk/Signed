@@ -32,7 +32,7 @@ final class Bands
         $genres = array_values(array_filter([$identity['primary'], $identity['second']]));
         $stems = Music::bandStems($members, $gear, $genres);
         $records = $db->all(
-            "SELECT title, songs_total, perfect, rank_best, finished_at FROM records WHERE band_id = ? AND status = 'done' ORDER BY finished_at DESC LIMIT 5",
+            "SELECT title, cover, songs_total, perfect, rank_best, finished_at FROM records WHERE band_id = ? AND status = 'done' ORDER BY finished_at DESC LIMIT 5",
             [$bandId]
         );
         return [
@@ -45,6 +45,7 @@ final class Bands
             'fame' => round(BandCalc::bandFame($band, $members), 1),
             'records' => array_map(static fn ($r) => [
                 'title' => $r['title'],
+                'cover' => (json_decode((string) ($r['cover'] ?? ''), true) ?: [])['spec'] ?? null,
                 'songs' => (int) $r['songs_total'],
                 'perfect' => (bool) $r['perfect'],
                 'best' => $r['rank_best'] === null ? null : (int) $r['rank_best'],

@@ -58,6 +58,7 @@ final class State
                 'promotable' => (float) $row['chart_points'] > 0 && (int) $row['finished_at'] >= Clock::now() - Balance::CHART_MAX_AGE,
                 'promoted' => ($promoted[(int) $row['band_id']] ?? 0) === (int) $row['id'],
                 'title' => $row['title'],
+                'cover' => (json_decode((string) ($row['cover'] ?? ''), true) ?: [])['spec'] ?? null,
                 'songs' => (int) $row['songs_total'],
                 'format' => (int) $row['songs_total'] >= Balance::CHART_LP_SONGS ? 'LP' : 'EP',
                 'quality' => $results ? round(array_sum(array_column($results, 'accuracy')) / count($results), 3) : 0,

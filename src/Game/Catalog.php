@@ -166,6 +166,14 @@ final class Catalog
         ['ehrgeizig', 'gelassen'],
     ];
 
+    /** Zutaten des Cover-Automaten, in der Reihenfolge der Bänder (Bilder dazu in public/assets/js/cover.js). */
+    public const COVER_PARTS = [
+        'motif' => ['blitz', 'herz', 'stern', 'mond', 'totenkopf', 'auge', 'welle', 'rakete', 'krone', 'katze', 'pilz', 'flamme', 'vinyl'],
+        'palette' => ['neon', 'pastell', 'schwarzrot', 'goldlila', 'ozean', 'wald', 'sonne', 'kaugummi', 'mono', 'gift'],
+        'style' => ['popart', 'neon', 'holzschnitt', 'aquarell', 'kaleido', 'retro', 'pixel', 'graffiti'],
+        'layout' => ['mitte', 'riesig', 'muster', 'schraeg'],
+    ];
+
     /** active = wirkt schon im Kern; die anderen brauchen spätere Features. */
     public const MANAGER_SKILLS = [
         'verhandler' => ['name' => 'Verhandler', 'desc' => 'Mehr Gage bei Gigs seiner Bands.', 'active' => true],

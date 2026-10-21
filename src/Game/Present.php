@@ -83,6 +83,7 @@ final class Present
             'songsDone' => $r['songs_done'],
             'songResults' => $r['song_results'],
             'next' => $r['plan'][$r['songs_done']] ?? null,
+            'coverNext' => $r['songs_done'] >= $r['songs_total'],
         ];
     }
 

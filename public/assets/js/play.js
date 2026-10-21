@@ -1,11 +1,47 @@
 import { instrumentName, levelUpBanners } from './cards.js';
 import { bandById, cat, mutate } from './core.js';
 import { createMinigame } from './minigame.js';
+import { createCoverMachine } from './cover-machine.js';
+import { coverSvg } from './cover.js';
 import { bar, esc, fmt0, fmt1, fmt2, fmtGain, money, openModal, percent } from './ui.js';
 
 /** Solo-Probe: ein Musiker übt sein Instrument. */
 export function startPractice(musicianId, slot = 1) {
   return runMinigame({ kind: 'practice', musicianId: Number(musicianId), slot: Number(slot) });
+}
+
+/**
+ * Studio, letzter Schritt: der Cover-Automat. Jedes angehaltene Band speichert der Server sofort;
+ * nach dem letzten ist die Platte fertig und das Ergebnis erscheint mit dem Cover.
+ */
+export async function startCover(bandId) {
+  const res = await mutate('coverStart', { bandId: Number(bandId) });
+  if (!res) return;
+  const cover = res.cover;
+  const band = bandById(Number(bandId));
+  const modal = openModal({ wide: true, dismissable: false, className: 'cover-modal', html: `
+    <div class="eyebrow">Studio · ${esc(band?.name ?? '')}</div>
+    <h2>Cover für „${esc(cover.title)}“</h2>
+    <p class="muted small">Tippe, wenn das Feld im weißen Rahmen ist, das du willst. <b style="color:#3ddc97">Grün</b>, <b style="color:#4f8bff">blau</b> und
+      <b style="color:#ffc23d">gold</b> umrandete Felder machen das Cover wertvoller – es verkauft sich dann besser.</p>
+    <div class="cover-machine"></div>` });
+  let completed = null;
+  const machine = createCoverMachine(modal.body.querySelector('.cover-machine'), {
+    reels: cover.reels,
+    speeds: cover.speeds,
+    picks: cover.picks,
+    onPick: async (reel, index) => {
+      const r = await mutate('coverPick', { bandId: Number(bandId), reel, index });
+      if (r?.completed) completed = r.completed;
+      return !!r;
+    },
+    onDone: () => {
+      machine.destroy();
+      modal.body.innerHTML = completed ? `${releaseHtml(completed, band)}<div class="dialog-actions"><button class="btn primary" data-close>Super!</button></div>`
+        : '<p>Fertig!</p><div class="dialog-actions"><button class="btn primary" data-close>OK</button></div>';
+      modal.body.querySelector('[data-close]').addEventListener('click', () => modal.close());
+    },
+  });
 }
 
 /** Studio: das nächste Lied der offenen Platte einspielen. */
@@ -58,10 +94,11 @@ async function runMinigame(request) {
     return;
   }
   const band = bandById(request.bandId);
-  const more = !result.completed && band?.record.open;
+  const more = !result.completed && !result.coverNext && band?.record.open;
   mg.showResult(recordSummary(result), [
     { label: 'Schließen', onClick: close },
     ...(more ? [{ label: 'Nächste Aufnahme', cls: 'primary', onClick: () => { close(); startRecordSong(request.bandId); } }] : []),
+    ...(result.coverNext ? [{ label: 'Cover gestalten', cls: 'primary', onClick: () => { close(); startCover(request.bandId); } }] : []),
   ]);
 }
 
@@ -100,15 +137,33 @@ function recordSummary(r) {
     ${counts(r)}
     <p class="muted">Zusammenspiel +${fmt1(r.cohesion)}</p>
     ${levelUpBanners(r.levelUps)}`;
-  if (!r.completed) return head;
-  const c = r.completed;
-  return `${head}
+  if (r.coverNext) return `${head}<p class="banner">🎨 Alle Lieder sind im Kasten! Jetzt fehlt nur noch das <b>Cover</b>.</p>`;
+  return head;
+}
+
+/** Rahmenfarbe eines Covers: grün, blau oder gold je nach Wertigkeit. */
+export function coverTier(spec) {
+  if (!spec) return 0;
+  return spec.rarity.includes(3) ? 3 : spec.quality >= 0.3 ? 2 : spec.quality > 0 ? 1 : 0;
+}
+
+/** Cover mit Rahmen (Diskografie, Charts, Ergebnis). */
+export function coverHtml(spec, { band = '', title = '' } = {}) {
+  if (!spec) return '<div class="cover-frame cover-none"><span>💿</span></div>';
+  return `<div class="cover-frame q${coverTier(spec)}">${coverSvg(spec, { band, title })}</div>`;
+}
+
+/** Die fertige Platte, mit Cover. */
+function releaseHtml(c, band) {
+  return `
     <div class="release ${c.perfect ? 'perfect' : ''}">
       <div class="release-title">„${esc(c.title)}“ ist fertig!</div>
+      ${c.cover ? `<div class="release-cover">${coverHtml(c.cover, { band: band?.name ?? '', title: c.title })}</div>` : ''}
       <div class="muted">${c.format} · ${c.songs} Lieder · Qualität ${percent(c.quality)}${c.perfect ? ' · <b>perfekte Platte!</b>' : ` · ${c.misses} Fehler`}</div>
       <div class="reward-grid">
         <div class="reward"><span>Verkäufe</span><b>+${money(c.money)}</b></div>
         <div class="reward"><span>Ruhm</span><b>+${fmtGain(c.fame)}</b></div>
+        ${c.cover ? `<div class="reward"><span>Cover</span><b>${percent(c.cover.quality)}</b><small>Verkauf +${percent(c.coverBonus)}</small></div>` : ''}
       </div>
       <p>Neu in den Album-Charts mit <b>${fmt1(c.chartPoints)} Punkten</b>.${c.vouchers ? ` Dazu ${c.vouchers === 1 ? 'ein Scout-Gutschein' : `${c.vouchers} Scout-Gutscheine`}!` : ''}</p>
     </div>`;

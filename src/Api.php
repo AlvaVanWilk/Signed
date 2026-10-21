@@ -8,6 +8,7 @@ use Signed\Game\Balance;
 use Signed\Game\Bands;
 use Signed\Game\Charts;
 use Signed\Game\Courses;
+use Signed\Game\Cover;
 use Signed\Game\Jam;
 use Signed\Game\Levels;
 use Signed\Game\Minigames;
@@ -60,6 +61,8 @@ final class Api
         'courseAttend' => ['POST', true],
         'soloStart' => ['POST', true],
         'jamPick' => ['POST', true],
+        'coverStart' => ['POST', true],
+        'coverPick' => ['POST', true],
         'transferList' => ['POST', true],
         'transferWithdraw' => ['POST', true],
         'transferBid' => ['POST', true],
@@ -350,6 +353,17 @@ final class Api
     {
         $activity = (new Activities($repo))->startSolo(self::int($in, 'musicianId'), self::str($in, 'type'));
         return ['activity' => $activity, 'state' => State::build($repo)];
+    }
+
+    private function coverStart(array $in, Repo $repo): array
+    {
+        return ['cover' => (new Cover($repo))->start(self::int($in, 'bandId'))];
+    }
+
+    private function coverPick(array $in, Repo $repo): array
+    {
+        $res = (new Cover($repo))->pick(self::int($in, 'bandId'), self::int($in, 'reel'), self::int($in, 'index'));
+        return $res + ['state' => State::build($repo)];
     }
 
     private function jamPick(array $in, Repo $repo): array

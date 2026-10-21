@@ -50,6 +50,9 @@ final class Minigames
                 if ($record === null) {
                     throw new ApiError('Diese Band hat keine Platte in Produktion.');
                 }
+                if ($record['songs_done'] >= $record['songs_total']) {
+                    throw new ApiError('Alle Lieder sind im Kasten – jetzt fehlt nur noch das Cover.');
+                }
                 $members = $this->repo->members($band['id']);
                 $blocker = Activities::blocker($band, $members, $now);
                 if ($blocker !== null) {

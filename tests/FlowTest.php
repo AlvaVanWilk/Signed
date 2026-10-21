@@ -33,7 +33,23 @@ function playSong(Player $p, array $start, float $hitRate = 1.0): array
     Clock::advance(Balance::SONG_SECONDS + 2);
     $count = $game['count'];
     $perfect = (int) floor($count * $hitRate);
-    return $p->post('minigameFinish', ['sessionId' => $game['sessionId'], 'perfect' => $perfect, 'good' => 0, 'miss' => $count - $perfect]);
+    $res = $p->post('minigameFinish', ['sessionId' => $game['sessionId'], 'perfect' => $perfect, 'good' => 0, 'miss' => $count - $perfect]);
+    // Letztes Lied: Den Cover-Automaten gleich mit durchspielen (jeweils das erste Feld), damit die Platte fertig wird.
+    if (!empty($res['result']['coverNext'])) {
+        $res['result']['completed'] = makeCover($p, (int) $start['bandId'])['completed'];
+        $res['state'] = $p->get('state');
+    }
+    return $res;
+}
+
+function makeCover(Player $p, int $bandId, array $picks = [0, 0, 0, 0]): array
+{
+    $p->post('coverStart', ['bandId' => $bandId]);
+    $res = [];
+    foreach ($picks as $reel => $index) {
+        $res = $p->post('coverPick', ['bandId' => $bandId, 'reel' => $reel, 'index' => $index]);
+    }
+    return $res;
 }
 
 function bandById(array $state, int $id): array
@@ -1068,4 +1084,39 @@ test('Jam-Café: Wer darüber eine Band gegründet hat, kann nicht noch einmal h
     foreach ($state['musicians'] as $x) {
         checkApiError(fn () => $p->post('soloStart', ['musicianId' => $x['id'], 'type' => 'jam']), 'nicht noch einmal');
     }
+});
+
+test('Cover-Automat: nach dem letzten Lied, jedes Band zählt sofort, wertvolle Felder verkaufen besser', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Cover');
+    $band = foundBand($p);
+    $db->exec('UPDATE labels SET money = 100000');
+    $p->post('recordStart', ['bandId' => $band['id'], 'title' => 'Bunt', 'songs' => 3]);
+    $start = ['kind' => 'record', 'bandId' => $band['id']];
+    for ($i = 0; $i < 3; $i++) {
+        $game = $p->post('minigameStart', $start)['game'];
+        Clock::advance(Balance::SONG_SECONDS + 2);
+        $res = $p->post('minigameFinish', ['sessionId' => $game['sessionId'], 'perfect' => $game['count'], 'good' => 0, 'miss' => 0]);
+    }
+    check($res['result']['coverNext'] && $res['result']['completed'] === null, 'Erst das Cover, dann ist die Platte fertig');
+    checkApiError(fn () => $p->post('minigameStart', $start), 'Cover');
+
+    $cover = $p->post('coverStart', ['bandId' => $band['id']])['cover'];
+    checkEquals(4, count($cover['reels']));
+    checkEquals(Balance::COVER['cells'], count($cover['reels'][0]['items']));
+    // Gold auf allen Bändern wählen.
+    $gold = array_map(static fn ($r) => array_search(3, array_column($r['items'], 'rarity'), true), $cover['reels']);
+    $p->post('coverPick', ['bandId' => $band['id'], 'reel' => 0, 'index' => $gold[0]]);
+    checkApiError(fn () => $p->post('coverPick', ['bandId' => $band['id'], 'reel' => 0, 'index' => 1]), 'schon angehalten');
+    $again = $p->post('coverStart', ['bandId' => $band['id']])['cover'];
+    checkEquals($cover['reels'], $again['reels'], 'Neu laden mischt nicht neu');
+    checkEquals([$gold[0]], $again['picks']);
+    $p->post('coverPick', ['bandId' => $band['id'], 'reel' => 1, 'index' => $gold[1]]);
+    $p->post('coverPick', ['bandId' => $band['id'], 'reel' => 2, 'index' => $gold[2]]);
+    $done = $p->post('coverPick', ['bandId' => $band['id'], 'reel' => 3, 'index' => $gold[3]]);
+    $c = $done['completed'];
+    checkEquals(1.0, $c['cover']['quality']);
+    checkEquals(Balance::COVER['salesMax'], $c['coverBonus']);
+    checkEquals(null, bandById($done['state'], $band['id'])['record']['open']);
+    checkEquals($c['cover'], bandById($done['state'], $band['id'])['discography'][0]['cover']);
 });

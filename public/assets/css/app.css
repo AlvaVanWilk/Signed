@@ -1123,3 +1123,10 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .cover-frame.q1 { background: #3ddc97; }
 .cover-frame.q2 { background: #4f8bff; }
 .cover-frame.q3 { background: linear-gradient(135deg, #fff1b8, #ffc23d, #b8860b, #ffc23d); }
+.record-tile .cover-frame { width: 100%; max-width: 180px; box-sizing: border-box; }
+.cover-none { display: grid; place-items: center; aspect-ratio: 1; font-size: 2.4rem; opacity: 0.5; }
+.release-cover { width: min(260px, 70vw); margin: 12px auto; }
+.cover-thumb { width: 40px; flex: 0 0 40px; }
+.cover-thumb .cover-frame { padding: 2px; border-radius: 5px; }
+.cover-thumb .cover { border-radius: 3px; }
+.chart-record { display: inline-flex; align-items: center; gap: 8px; }

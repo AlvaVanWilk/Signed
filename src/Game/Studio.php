@@ -154,16 +154,14 @@ final class Studio
             'cohesion' => round($cohesion - $band['cohesion'], 1),
             'levelUps' => $levelUps,
             'completed' => null,
+            // Alle Lieder im Kasten: Jetzt fehlt nur noch das Cover (Cover::start), dann ist die Platte fertig.
+            'coverNext' => count($results) >= $record['songs_total'],
         ];
-        if (count($results) >= $record['songs_total']) {
-            $record['song_results'] = $results;
-            $band['cohesion'] = $cohesion;
-            $out['completed'] = $this->complete($record, $band, $this->repo->members($band['id']), $gear);
-        }
         return $out;
     }
 
-    private function complete(array $record, array $band, array $members, array $gear): array
+    /** Platte fertig (nach dem Cover): Erstverkauf, Ruhm, Charts. */
+    public function complete(array $record, array $band, array $members, array $gear): array
     {
         $db = $this->repo->db;
         $results = $record['song_results'];
@@ -177,7 +175,9 @@ final class Studio
         $sales = 1 + min(Balance::RECORD_FAME_SALES_MAX, BandCalc::bandFame($band, $members) / Balance::RECORD_FAME_SALES);
         $sound = BandCalc::bandSound($band, $members, $gear);
 
-        $money = (int) round($songs * Balance::RECORD_MONEY_PER_SONG * (0.3 + $quality ** 2) * $lp * $perfectFactor * $sales);
+        $coverQuality = (float) ($record['cover']['spec']['quality'] ?? 0);
+        $coverBonus = 1 + Balance::COVER['salesMax'] * $coverQuality;
+        $money = (int) round($songs * Balance::RECORD_MONEY_PER_SONG * (0.3 + $quality ** 2) * $lp * $perfectFactor * $sales * $coverBonus);
         $fame = $songs * Balance::RECORD_FAME_PER_SONG * BandCalc::soundFactor($sound) * (0.3 + $quality ** 1.5) * $lp * $perfectFactor;
         $gains = BandCalc::splitFame($members, $fame, $gear);
         $this->repo->addBandFame($band['id'], $gains);
@@ -228,6 +228,8 @@ final class Studio
             'perfect' => $perfect,
             'money' => $money,
             'fame' => $fameGain,
+            'cover' => $record['cover']['spec'] ?? null,
+            'coverBonus' => round($coverBonus - 1, 3),
         ];
     }
 }

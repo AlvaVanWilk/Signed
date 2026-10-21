@@ -76,7 +76,7 @@ final class Charts
     {
         $now = Clock::now();
         $rows = $db->all(
-            "SELECT r.id, r.title, r.songs_total, r.perfect, r.chart_points, r.finished_at, r.boost, r.boost_at, r.topped,
+            "SELECT r.id, r.title, r.cover, r.songs_total, r.perfect, r.chart_points, r.finished_at, r.boost, r.boost_at, r.topped,
                     r.label_id, r.band_id, r.rank_last, r.rank_prev, r.rank_best, b.name AS band_name, l.name AS label_name
              FROM records r
              JOIN labels l ON l.id = r.label_id
@@ -104,6 +104,7 @@ final class Charts
                 'recordId' => (int) $row['id'],
                 'bandId' => $row['band_id'] === null ? null : (int) $row['band_id'],
                 'title' => $row['title'],
+                'cover' => (json_decode((string) ($row['cover'] ?? ''), true) ?: [])['spec'] ?? null,
                 'band' => $row['band_name'] ?? 'aufgelöste Band',
                 'label' => $row['label_name'],
                 'format' => (int) $row['songs_total'] >= Balance::CHART_LP_SONGS ? 'LP' : 'EP',

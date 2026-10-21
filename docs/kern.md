@@ -220,6 +220,12 @@ Nur die Gewinne sind klein; wie oft man etwas hintereinander spielt, ist nicht b
   Mitgliedern (eine bei 2 Musikern, sonst mindestens 2, etwa halb so viele wie Instrumente). Gezogen wird gemischt;
   ist der Topf leer, wird er neu gefüllt. Nie zweimal dasselbe direkt hintereinander. Die letzte Aufnahme ist immer der **Master-Mix**.
 - Jede Aufnahme: Können 0,12 × Trefferquote für alle Mitglieder (Lernkurve), Zusammenspiel – egal, welches Minispiel.
+- **Cover-Automat** (`Cover`, `Balance::COVER`): Nach der letzten Aufnahme fehlt nur noch das Cover; erst danach ist die Platte fertig.
+  Vier Bänder (Motiv, Farben, Stil, Anordnung) öffnen sich nacheinander, nur eins läuft (6 / 7,5 / 9 / 10,5 Felder pro Sekunde).
+  Tippen hält an – das Feld im Rahmen gilt, kein Nachrutschen. Je Band 14 Felder: 8 gewöhnlich, 3 grün, 2 blau, 1 gold
+  (0/1/2/4 Punkte). Güte = Punkte / 16; sie bringt beim Erstverkauf bis +10 % Geld, Chartpunkte bleiben bei Musik und Sound.
+  Lauter gewöhnliche Felder geben ein blasses, verwaschenes Cover, Gold eine Folie. Jedes angehaltene Band speichert der Server
+  sofort – Neuladen bringt keinen zweiten Versuch. Das Bild entsteht im Browser aus den gespeicherten Zutaten (`cover.js`).
 - Fertig: Erstverkauf = Lieder × 60 ₲ × (0,3 + Qualität²) × LP-Bonus × Perfekt-Bonus × Verkäufe,
   Ruhm = Lieder × 0,6 × Soundfaktor × (0,3 + Qualität^1,5) × LP-Bonus × Perfekt-Bonus.
   - LP-Bonus: +4 % pro Lied über 3. Perfekt (kein einziger Fehler): × 1,5. Verkäufe: 1 + Bandruhm/400, höchstens × 5.

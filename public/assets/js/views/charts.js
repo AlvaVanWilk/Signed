@@ -2,6 +2,7 @@ import { api } from '../api.js';
 import { genreTag, musicianCard } from '../cards.js';
 import { app, cat, defineActions, navigate, rerender } from '../core.js';
 import { stage } from '../figure.js';
+import { coverHtml } from '../play.js';
 import { loadStems, playStems, stemUrl } from '../music.js';
 import { esc, fmt0, fmt1, fmtGain, openModal, toast } from '../ui.js';
 
@@ -53,7 +54,7 @@ function albums(all) {
         <tr class="${e.own ? 'own' : ''}">
           <td class="rank">${e.rank}</td>
           <td>${trendBadge(e)}</td>
-          <td><b>${esc(e.title)}</b> <span class="chip">${e.format}</span>${e.perfect ? ' <span class="chip special" title="Ohne einen einzigen Fehler">perfekt</span>' : ''}</td>
+          <td><span class="chart-record"><span class="cover-thumb">${coverHtml(e.cover)}</span><span><b>${esc(e.title)}</b> <span class="chip">${e.format}</span>${e.perfect ? ' <span class="chip special" title="Ohne einen einzigen Fehler">perfekt</span>' : ''}</span></span></td>
           <td>${e.bandId ? `<button class="link" data-act="viewBand" data-id="${e.bandId}">${esc(e.band)}</button>` : esc(e.band)}<br><span class="muted small">${esc(e.label)}</span></td>
           <td>${fmt0(e.hours)}</td>
           <td>${fmt0(e.best)}</td>
@@ -124,7 +125,7 @@ async function openBandView(id) {
       <div class="tcg-grid">${band.members.map((m) => musicianCard(m, { act: null, showStatus: false })).join('')}</div>
       ${band.records.length ? `<h3>Platten</h3>
         <ul class="history">${band.records.map((r) => `
-          <li><span>„${esc(r.title)}“ · ${r.songs} Lieder${r.perfect ? ' · perfekt' : ''}</span><span class="muted">${r.best ? `bester Platz ${r.best}` : ''}</span></li>`).join('')}
+          <li><span class="chart-record"><span class="cover-thumb">${coverHtml(r.cover)}</span>„${esc(r.title)}“ · ${r.songs} Lieder${r.perfect ? ' · perfekt' : ''}</span><span class="muted">${r.best ? `bester Platz ${r.best}` : ''}</span></li>`).join('')}
         </ul>` : ''}`,
   });
   const button = modal.body.querySelector('[data-listen]');

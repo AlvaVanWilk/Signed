@@ -32,10 +32,11 @@ export function reelLabel(key, item) {
 }
 
 /**
- * reels: [{ key, items: [{ key, rarity }] }], speeds: Felder pro Sekunde je Band.
- * onDone(picks): picks = gewählter Feld-Index je Band.
+ * reels: [{ key, items: [{ key, rarity }] }], speeds: Felder pro Sekunde je Band, picks: schon angehaltene Bänder.
+ * onPick(reel, index): wird für jedes angehaltene Band aufgerufen; liefert (auch als Promise) false, wenn das Speichern
+ * nicht geklappt hat – dann gibt es „Nochmal senden“, das Band bleibt aber stehen. onDone(picks) nach dem letzten.
  */
-export function createCoverMachine(root, { reels, speeds, onDone }) {
+export function createCoverMachine(root, { reels, speeds, picks: given = [], onPick = () => true, onDone }) {
   root.innerHTML = `
     <div class="cm">
       ${reels.map((r, i) => `
@@ -43,11 +44,15 @@ export function createCoverMachine(root, { reels, speeds, onDone }) {
           <div class="cm-label">${REEL_NAMES[r.key]}<small data-pick>${i === 0 ? '' : '?'}</small></div>
           <div class="cm-reel" data-reel="${i}"><div class="cm-strip">${[0, 1, 2].map(() => r.items.map((it) => `<div class="cm-cell r${it.rarity}">${CELL[r.key](it.key)}</div>`).join('')).join('')}</div></div>
         </div>`).join('')}
-      <div class="cm-controls"><button class="btn primary cm-stop" data-cm-stop>Stopp!</button></div>
+      <div class="cm-controls"><button class="btn primary cm-stop" data-cm-stop>Stopp!</button><button class="btn cm-retry" data-cm-retry hidden>Nochmal senden</button></div>
+      <p class="cm-error bad small" hidden>Das hat nicht geklappt. Ist das WLAN da?</p>
     </div>`;
-  const state = reels.map((r) => ({ pos: Math.random() * r.items.length, target: null, stopped: false }));
+  const state = reels.map((r, i) => (given[i] !== undefined
+    ? { pos: given[i], target: given[i], stopped: true }
+    : { pos: Math.random() * r.items.length, target: null, stopped: false }));
   const picks = [];
   let current = 0;
+  let saving = false;
   let runningFrom = performance.now() + 300;
   let last = performance.now();
   let raf = 0;
@@ -75,22 +80,29 @@ export function createCoverMachine(root, { reels, speeds, onDone }) {
         s.pos += speeds[i] * dt;
       }
       draw(i);
-      if (s.target !== null && s.pos === s.target) land(i);
+      if (s.target !== null && s.pos === s.target && !s.stopped) land(i);
     }
     if (!done) raf = requestAnimationFrame(frame);
   }
 
   function stop() {
     const s = state[current];
-    if (!s || s.target !== null || performance.now() < runningFrom) return;
+    if (!s || s.target !== null || saving || performance.now() < runningFrom) return;
     s.target = Math.round(s.pos);
   }
 
-  function land(i) {
+  /** Band i steht: speichern (beim Fortsetzen nicht nötig), dann weiter. */
+  async function land(i, resumed = false) {
     const s = state[i];
     s.stopped = true;
     const n = reels[i].items.length;
     const index = ((Math.round(s.pos) % n) + n) % n;
+    if (!resumed) {
+      saving = true;
+      const ok = await save(i, index);
+      saving = false;
+      if (!ok) return;
+    }
     picks.push(index);
     const item = reels[i].items[index];
     root.querySelector(`[data-row="${i}"] [data-pick]`).innerHTML = `${LABEL[reels[i].key](item.key)}${item.rarity
@@ -111,6 +123,23 @@ export function createCoverMachine(root, { reels, speeds, onDone }) {
     draw(current);
   }
 
+  async function save(i, index) {
+    const retry = root.querySelector('[data-cm-retry]');
+    const error = root.querySelector('.cm-error');
+    const ok = (await onPick(i, index)) !== false;
+    retry.hidden = ok;
+    error.hidden = ok;
+    root.querySelector('[data-cm-stop]').hidden = !ok;
+    if (!ok) {
+      retry.onclick = async () => {
+        retry.disabled = true;
+        if (await save(i, index)) land(i, true);
+        retry.disabled = false;
+      };
+    }
+    return ok;
+  }
+
   const onPointer = (e) => {
     if (e.target.closest('[data-reel], [data-cm-stop]')) {
       e.preventDefault();
@@ -127,8 +156,10 @@ export function createCoverMachine(root, { reels, speeds, onDone }) {
   root.addEventListener('pointerdown', onPointer);
   root.addEventListener('contextmenu', onMenu);
   window.addEventListener('keydown', onKey);
+  // Beim Fortsetzen (Neu laden) stehen die schon gewählten Bänder fest.
+  given.forEach((_, i) => land(i, true));
   requestAnimationFrame(() => reels.forEach((_, i) => draw(i)));
-  raf = requestAnimationFrame(frame);
+  if (!done) raf = requestAnimationFrame(frame);
 
   return {
     destroy() {

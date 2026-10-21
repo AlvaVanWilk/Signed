@@ -2,7 +2,7 @@ import { api } from '../api.js';
 import { bandGenreTags, bandIdentity, emptySlot, face, fullName, gearCard, gearModel, genreIcon, genreTag, instrumentEmoji, instrumentIcon, instrumentName, ownGear, managerCard, musicianCard } from '../cards.js';
 import { app, bandById, cat, defineActions, isBusy, managerById, musicianById, mutate, navigate, rerender, runningFor } from '../core.js';
 import { openLive } from '../live.js';
-import { startPractice, startRecordSong } from '../play.js';
+import { coverHtml, startCover, startPractice, startRecordSong } from '../play.js';
 import { assignGear, soundChange } from '../gear.js';
 import { trendBadge } from './charts.js';
 import { playedInstrument, stage } from '../figure.js';
@@ -452,7 +452,12 @@ function studio(b, members) {
   const open = b.record.open;
   const blocked = !!blocker(b, members);
   let record;
-  if (open) {
+  if (open?.coverNext) {
+    record = actionTile({
+      icon: '🎨', title: `„${open.title}“`, meta: 'Alle Lieder sind im Kasten – jetzt fehlt nur noch das Cover.',
+      button: `<button class="btn primary" data-act="recordCover" data-id="${b.id}">Cover gestalten</button>`,
+    });
+  } else if (open) {
     record = actionTile({
       icon: '💿', title: `„${open.title}“`, meta: `Aufnahme ${open.songsDone + 1}/${open.songsTotal}: ${esc(nextStep(open.next, members))}`,
       body: `<span class="song-dots">${Array.from({ length: open.songsTotal }, (_, i) => {
@@ -493,6 +498,7 @@ function studio(b, members) {
       <h2>Diskografie</h2>
       <div class="tile-grid">${b.discography.map((r) => `
         <div class="panel record-tile">
+          ${coverHtml(r.cover, { band: b.name, title: r.title })}
           <b>„${esc(r.title)}“</b>
           <span class="muted small">${r.format} · ${r.songs} Lieder · ${percent(r.quality)}${r.perfect ? ' · perfekt' : ''}</span>
           ${r.charting ? `<span class="chip special">Charts · Platz ${r.rank}</span> ${trendBadge(r)}` : r.best ? `<span class="muted small">Bester Platz: ${r.best}</span>` : ''}
@@ -860,6 +866,9 @@ defineActions({
   },
   recordSong({ id }) {
     startRecordSong(id);
+  },
+  recordCover({ id }) {
+    startCover(id);
   },
   practice({ id, slot }) {
     startPractice(id, slot);

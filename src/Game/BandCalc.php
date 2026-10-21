@@ -239,23 +239,23 @@ final class BandCalc
                 $calm[] = $members[$i]['first_name'];
             }
             if (in_array('teamplayer', $members[$i]['personality'], true)) {
-                $notes[] = ['good' => true, 'text' => sprintf('%s ist Teamplayer: hilft allen', $members[$i]['first_name'])];
+                $notes[] = ['good' => true, 'ids' => [$members[$i]['id']], 'text' => sprintf('%s ist Teamplayer: hilft allen', $members[$i]['first_name'])];
             }
             for ($j = $i + 1; $j < count($members); $j++) {
                 foreach ($members[$i]['personality'] as $x) {
                     foreach ($members[$j]['personality'] as $y) {
                         if (self::clashes($x, $y)) {
-                            $notes[] = ['good' => false, 'text' => sprintf('%s und %s reiben sich', $name($members[$i], $x), $name($members[$j], $y))];
+                            $notes[] = ['good' => false, 'ids' => [$members[$i]['id'], $members[$j]['id']], 'text' => sprintf('%s und %s reiben sich', $name($members[$i], $x), $name($members[$j], $y))];
                         }
                         if ($x === 'partytier' && $y === 'partytier') {
-                            $notes[] = ['good' => true, 'text' => sprintf('%s und %s feiern zusammen', $members[$i]['first_name'], $members[$j]['first_name'])];
+                            $notes[] = ['good' => true, 'ids' => [$members[$i]['id'], $members[$j]['id']], 'text' => sprintf('%s und %s feiern zusammen', $members[$i]['first_name'], $members[$j]['first_name'])];
                         }
                     }
                 }
             }
         }
         if ($calm && array_filter($notes, static fn ($n) => !$n['good'])) {
-            $notes[] = ['good' => true, 'text' => sprintf('%s ist Ruhepol: halbiert die Reibung', implode(' und ', $calm))];
+            $notes[] = ['good' => true, 'ids' => [], 'text' => sprintf('%s ist Ruhepol: halbiert die Reibung', implode(' und ', $calm))];
         }
         return $notes;
     }

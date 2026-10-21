@@ -52,9 +52,11 @@ function head(look, skin, sing) {
   p.push(pivot(50, 45, 'fig-eyes', `<ellipse cx="43" cy="45" rx="2.3" ry="2.8" fill="${INK}"/><ellipse cx="57" cy="45" rx="2.3" ry="2.8" fill="${INK}"/>
     <circle cx="43.8" cy="44" r="0.8" fill="#fff"/><circle cx="57.8" cy="44" r="0.8" fill="#fff"/>`));
   p.push('<ellipse cx="38" cy="51" rx="3.2" ry="1.9" fill="#ff8fa3" opacity="0.6"/><ellipse cx="62" cy="51" rx="3.2" ry="1.9" fill="#ff8fa3" opacity="0.6"/>');
+  const smile = `<path d="M46.5 52 Q50 55 53.5 52" fill="none" stroke="${INK}" stroke-width="1.2" stroke-linecap="round"/>`;
+  // Sänger: singender Mund beim Spielen, Lächeln beim Warten (CSS blendet um).
   p.push(sing
-    ? pivot(50, 53.5, 'fig-mouth', `<ellipse cx="50" cy="53.5" rx="2.6" ry="2.4" fill="#7a2338" stroke="${INK}" stroke-width="0.8"/>`)
-    : `<path d="M46.5 52 Q50 55 53.5 52" fill="none" stroke="${INK}" stroke-width="1.2" stroke-linecap="round"/>`);
+    ? `<g class="fig-singing">${pivot(50, 53.5, 'fig-mouth', `<ellipse cx="50" cy="53.5" rx="2.6" ry="2.4" fill="#7a2338" stroke="${INK}" stroke-width="0.8"/>`)}</g><g class="fig-resting">${smile}</g>`
+    : smile);
   if (look.freckles) {
     for (const [x, y] of [[40, 49], [42.5, 50.5], [57.5, 50.5], [60, 49]]) p.push(`<circle cx="${x}" cy="${y}" r="0.6" fill="#8a4b2a" opacity="0.6"/>`);
   }
@@ -121,10 +123,18 @@ const POSES = {
   vocals: {
     back: () => '',
     front: (skin, shirt) => `
+      <g class="fig-resting">
+        ${arm('M45 80 Q40 92 42 103', [42, 103], skin, shirt)}
+        ${arm('M75 80 Q81 92 78 103', [78, 103], skin, shirt)}
+        <rect x="76.6" y="103" width="3.6" height="9" rx="1.6" fill="#444" stroke="${INK}" stroke-width="1.2" transform="rotate(12 78 106)"/>
+        <circle cx="79.6" cy="113.6" r="3.2" fill="#9a9aa8" stroke="${INK}" stroke-width="1.2"/>
+      </g>
+      <g class="fig-singing">
       ${arm('M45 80 Q34 72 29 60', [29, 60], skin, shirt, 'fig-wave')}
       ${pivot(75, 80, 'fig-mic-arm', `${arm('M75 80 Q84 76 73 70', [73, 70], skin, shirt)}
         <rect x="70" y="58" width="5" height="12" rx="2" transform="rotate(-25 72 64)" fill="#444" stroke="${INK}" stroke-width="1.4"/>
-        <circle cx="69.5" cy="59" r="4" fill="#9a9aa8" stroke="${INK}" stroke-width="1.4"/>`)}`,
+        <circle cx="69.5" cy="59" r="4" fill="#9a9aa8" stroke="${INK}" stroke-width="1.4"/>`)}
+      </g>`,
   },
   drums: {
     back: () => `

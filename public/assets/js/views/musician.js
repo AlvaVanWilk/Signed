@@ -85,9 +85,61 @@ function profile(m) {
           const info = abilityInfo(a);
           return `<div class="ability"><span class="ability-icon">${info.icon}</span><b>${esc(info.name)}</b><span class="muted small">${esc(info.desc)}</span></div>`;
         }).join('')}</div>` : ''}
-        <div class="chips">${m.genres.map(genreTag).join('')}${m.personality.map((p) => chip(cat().personalities[p], 'trait')).join('')}</div>
+        <div class="chips">${m.genres.map((g) => `<button class="chip-btn" data-act="genreInfo" data-genre="${g}" data-id="${m.id}" title="Was heißt das?">${genreTag(g)}</button>`).join('')}${m.personality.map((p) => `<button class="chip-btn" data-act="traitInfo" data-trait="${p}" data-id="${m.id}" title="Was heißt das?">${chip(cat().personalities[p], 'trait')}</button>`).join('')}</div>
+        ${chemistryWith(m)}
       </div>
     </div>`;
+}
+
+/** Wie sich der Musiker mit seiner Band versteht: wer sich mit ihm reibt, wer hilft – und was dagegen hilft. */
+function chemistryWith(m) {
+  const band = m.bandId ? bandById(m.bandId) : null;
+  if (!band) return '';
+  const notes = band.chemistryNotes.filter((n) => n.ids.includes(m.id));
+  if (!notes.length) return '';
+  const rub = notes.some((n) => !n.good);
+  return `<div class="chem-notes">${notes.map((n) => `<div class="${n.good ? 'ok' : 'bad'}">${n.good ? '＋' : '−'} ${esc(n.text)}</div>`).join('')}
+    ${rub ? '<div class="muted small">Was hilft: ein Ruhepol in der Band (halbiert jede Reibung) oder ein Teamplayer. Oder einer von beiden wechselt die Band.</div>' : ''}</div>`;
+}
+
+/** Infofenster: Eigenschaft erklären und zeigen, wie sie gerade wirkt. */
+function traitInfo(m, trait) {
+  const band = m.bandId ? bandById(m.bandId) : null;
+  const notes = band ? band.chemistryNotes.filter((n) => n.ids.includes(m.id)) : [];
+  const modal = openModal({ html: `
+    <div class="eyebrow">Eigenschaft</div>
+    <h2>${esc(cat().personalities[trait])}</h2>
+    <p>${esc(cat().personalityInfo[trait])}</p>
+    <h3>Gerade</h3>
+    ${!band ? `<p class="muted">${esc(m.firstName)} ist in keiner Band – Eigenschaften wirken erst in einer Band.</p>`
+      : notes.length ? notes.map((n) => `<p class="${n.good ? 'ok' : 'bad'}">${n.good ? '＋' : '−'} ${esc(n.text)}</p>`).join('')
+      : `<p class="muted">In ${esc(band.name)} wirkt das gerade weder gut noch schlecht.</p>`}
+    <div class="dialog-actions"><button class="btn primary" data-close>OK</button></div>` });
+  modal.body.querySelector('[data-close]').addEventListener('click', () => modal.close());
+}
+
+/** Infofenster: Genre erklären – wann eine Band zur Genre-Band wird und wie es gerade aussieht. */
+function genreInfo(m, genre) {
+  const c = cat();
+  const band = m.bandId ? bandById(m.bandId) : null;
+  const typical = Object.entries(c.instruments).filter(([, i]) => i.genres.includes(genre)).map(([type]) => instrumentName(type));
+  const check = band?.genreChecks?.[genre];
+  let now = `<p class="muted">${esc(m.firstName)} ist in keiner Band. In einer Band, in der alle ${esc(genreName(genre))} mögen und die Besetzung passt, gibt es den Bonus.</p>`;
+  if (band && band.genres.includes(genre)) {
+    now = `<p class="ok">＋ ${esc(band.name)} ist eine ${esc(band.title)}: Sound +${Math.round((band.genreBonus - 1) * 100)} %.</p>`;
+  } else if (band && check) {
+    const missing = check.requirements.filter((r) => !r.met).map((r) => `${r.need - r.have} × ${r.instruments.map(instrumentName).join(' oder ')}`);
+    now = `<p class="muted">${esc(band.name)} ist noch keine ${esc(genreName(genre))}-Band: ${!check.allFans ? `nicht alle mögen ${esc(genreName(genre))} (${check.fans} von ${band.memberIds.length})` : ''}${!check.allFans && missing.length ? ' und ' : ''}${missing.length ? `es fehlt ${esc(missing.join(', '))}` : ''}.</p>`;
+  }
+  const modal = openModal({ html: `
+    <div class="eyebrow">Genre</div>
+    <h2>${genreTag(genre)}</h2>
+    <p>${esc(m.firstName)} mag ${esc(genreName(genre))}. Mögen alle in einer Band dasselbe Genre und passt die Besetzung, wird sie eine Genre-Band: <b>Sound +${Math.round((c.rules.genreBonus - 1) * 100)} %</b>. Das Genre bestimmt auch, welche Musik die Band spielt.</p>
+    <p class="muted small">Typisch für ${esc(genreName(genre))}: ${esc(typical.join(', '))}.${m.unusual ? ` ${esc(m.firstName)} spielt ein ungewöhnliches Instrument für seine Genres – das fällt auf und bringt etwas mehr Bekanntheit.` : ''}</p>
+    <h3>Gerade</h3>
+    ${now}
+    <div class="dialog-actions"><button class="btn primary" data-close>OK</button></div>` });
+  modal.body.querySelector('[data-close]').addEventListener('click', () => modal.close());
 }
 
 function gearSlot(m, type) {
@@ -248,6 +300,12 @@ export function openAbilityChoice(id) {
 }
 
 defineActions({
+  traitInfo({ id, trait }) {
+    traitInfo(musicianById(id), trait);
+  },
+  genreInfo({ id, genre }) {
+    genreInfo(musicianById(id), genre);
+  },
   openMusician({ id }) {
     // Merken, woher wir kommen: Katalog, Band oder sonstwo – dorthin führt der Zurück-Knopf, und darin wird geblättert.
     const [, view, viewId] = location.hash.split('/');

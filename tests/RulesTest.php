@@ -381,3 +381,11 @@ test('Üben: Eine Solo-Probe bringt einem Musiker deutlich mehr Können als eine
         check($solo >= 5 * $band, "Können $skill: Solo $solo, Band $band");
     }
 });
+
+test('Charakter: keine widersprüchlichen Eigenschaften (z. B. Teamplayer und Diva)', function () {
+    for ($i = 0; $i < 400; $i++) {
+        $p = Generator::musician('common')['personality'];
+        check(count($p) < 2 || !Generator::contradicts($p[0], $p[1]), 'Widerspruch: ' . implode(' + ', $p));
+    }
+    check(Generator::contradicts('diva', 'teamplayer'));
+});

@@ -42,7 +42,7 @@ const acousticGuitar = (hue) => tilt(`
   <rect x="27.4" y="47" width="9.2" height="2.6" rx="1.2" fill="#3a2416"/>
   <path d="M28.6 47.8 H35.4" stroke="#efe6d2" stroke-width="0.6"/>
   ${Array.from({ length: 6 }, (_, i) => `<path d="M${(30.3 + i * 0.68).toFixed(2)} 30 V48" stroke="#eef0f4" stroke-width="0.28"/>`).join('')}
-  <path d="M25.6 44 C26.6 50 29.4 53.4 32 54" fill="none" stroke="#fff" stroke-width="1" opacity="0.25"/>`, 40, 0.98);
+  <path d="M25.6 44 C26.6 50 29.4 53.4 32 54" fill="none" stroke="#fff" stroke-width="1" opacity="0.25"/>`, 40, 0.8);
 
 const electricGuitar = (hue = 18) => tilt(`
   <defs>
@@ -64,7 +64,7 @@ const electricGuitar = (hue = 18) => tilt(`
   <g fill="#fbfaf6" stroke="#8e8a80" stroke-width="0.4"><circle cx="38.8" cy="47.6" r="1.3"/><circle cx="38" cy="51" r="1.3"/><circle cx="36.4" cy="54" r="1.3"/></g>
   ${Array.from({ length: 6 }, (_, i) => `<path d="M${(30.4 + i * 0.64).toFixed(2)} 32 V50" stroke="#eef0f4" stroke-width="0.28"/>`).join('')}
   <path d="M42.6 33.6 C44 36 43.6 38.6 42.2 40.6" fill="none" stroke="#fff" stroke-width="1" opacity="0.35"/>  </g>
-`, 40, 0.98);
+`, 40, 0.8);
 
 const bassGuitar = (hue = 218) => tilt(`
   <defs>
@@ -83,7 +83,7 @@ const bassGuitar = (hue = 218) => tilt(`
   <rect x="28.4" y="51.2" width="7.2" height="2.6" rx="0.6" fill="#c9ccd4" stroke="#6b6f7a" stroke-width="0.4"/>
   <g fill="#d9dbe2" stroke="#6b6f7a" stroke-width="0.35"><circle cx="38.4" cy="49.6" r="1.4"/><circle cx="37" cy="53.2" r="1.4"/></g>
   ${Array.from({ length: 4 }, (_, i) => `<path d="M${(30.7 + i * 0.86).toFixed(2)} 34 V52" stroke="#eef0f4" stroke-width="0.45"/>`).join('')}
-  <path d="M41.4 37 C43 39.4 42.8 42 41.4 44" fill="none" stroke="#fff" stroke-width="1" opacity="0.4"/>`, 40, 0.88);
+  <path d="M41.4 37 C43 39.4 42.8 42 41.4 44" fill="none" stroke="#fff" stroke-width="1" opacity="0.4"/>`, 40, 0.74);
 
 /** Jedes Symbol als Funktion des Farbtons (null = Grundfarbe); nur Korpus bzw. Kessel werden eingefärbt. */
 const ICONS = {

@@ -833,8 +833,9 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .skill-row { display: grid; grid-template-columns: 37% minmax(0, 1fr) auto; align-items: center; gap: 1.6cqi; font-size: 4cqi; }
 .skill-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #3a3247; }
 .skill-row > b { font-size: 4.6cqi; min-width: 5cqi; text-align: right; }
-.skill-cells { display: grid; grid-template-columns: repeat(10, 1fr); gap: 0.8cqi; }
-.skill-cells i { height: 3.2cqi; border-radius: 999px; background: linear-gradient(90deg, #2a2238 var(--f), rgba(0, 0, 0, 0.1) var(--f)); box-shadow: inset 0 0 0 0.25cqi rgba(0, 0, 0, 0.25); }
+.skill-cells { display: grid; grid-template-columns: repeat(var(--cells, 25), 1fr); column-gap: 0.25cqi; }
+.skill-cells i:nth-child(5n):not(:last-child) { margin-right: 0.7cqi; }
+.skill-cells i { height: 3cqi; border-radius: 0.6cqi; background: linear-gradient(90deg, #2a2238 var(--f), rgba(0, 0, 0, 0.1) var(--f)); box-shadow: inset 0 0 0 0.25cqi rgba(0, 0, 0, 0.25); }
 .tcg-traits { font-size: 4.2cqi; color: #3a3247; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tcg-minis { display: flex; justify-content: space-around; padding: 1.6% 0; border-radius: 6px; background: #1b1626; color: #fff; font-size: 4.4cqi; font-weight: 700; }
 .tcg-minis span { opacity: 0.9; }
@@ -1059,3 +1060,17 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .course-tile { border-color: #f2c14e; background: linear-gradient(135deg, rgba(242, 193, 78, 0.16), rgba(255, 79, 139, 0.08)), var(--panel); margin-bottom: 12px; }
 .course-notice { border-color: #f2c14e; background: linear-gradient(135deg, rgba(242, 193, 78, 0.16), rgba(255, 79, 139, 0.08)); }
 .course-notice a { color: #ffd36e; font-weight: 700; }
+
+/* Eigenschaften und Genres im Profil sind anklickbar (Infofenster) */
+.chip-btn { background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
+.chip-btn:hover > * { filter: brightness(1.15); }
+.chem-notes { margin-top: 10px; display: grid; gap: 4px; font-size: 0.9rem; }
+
+/* Instrumentenkarten: das Instrument füllt das Bild, wie auf einem Foto */
+.gear-bg .tcg-icon { position: absolute; inset: 5%; font-size: 0; display: block; }
+.gear-bg .tcg-icon .ico { width: 100%; height: 100%; display: block; }
+
+/* Sänger: beim Warten Arme unten und Mund zu, beim Spielen Mikro hoch und singen */
+.fig .fig-resting { display: none; }
+.fig-stage.idle .fig .fig-resting { display: inline; }
+.fig-stage.idle .fig .fig-singing { display: none; }

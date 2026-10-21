@@ -176,6 +176,17 @@ final class Generator
         return (string) Rng::weighted($weights);
     }
 
+    /** Zwei Eigenschaften, die nicht zusammen in einem Menschen vorkommen (Catalog::CONTRADICTIONS). */
+    public static function contradicts(string $a, string $b): bool
+    {
+        foreach (Catalog::CONTRADICTIONS as [$x, $y]) {
+            if (($a === $x && $b === $y) || ($a === $y && $b === $x)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** @param string[] $partner Charakterzüge, mit denen sich der neue Musiker vertragen soll */
     private static function personality(array $partner = []): array
     {
@@ -186,7 +197,7 @@ final class Generator
         if (!Rng::chance(0.35)) {
             return [$first];
         }
-        $options = array_filter($pool, static fn ($p) => $p !== $first && !BandCalc::clashes($first, $p));
+        $options = array_filter($pool, static fn ($p) => $p !== $first && !self::contradicts($first, $p));
         return [$first, Rng::pick(array_values($options))];
     }
 }

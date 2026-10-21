@@ -349,6 +349,10 @@ final class Schema
                 ){OPTS}',
                 'CREATE UNIQUE INDEX course_visits_once ON course_visits (musician_id, day)',
             ],
+            // 15: Keine widersprüchlichen Eigenschaften mehr (z. B. Teamplayer und Diva)
+            [
+                [Migrations::class, 'personalityContradictions'],
+            ],
         ];
     }
 }

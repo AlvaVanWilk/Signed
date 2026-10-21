@@ -136,6 +136,28 @@ final class Catalog
         'partytier' => 'Partytier',
     ];
 
+    /** Was eine Eigenschaft bedeutet und wie sie in der Band wirkt (Chemie). */
+    public const PERSONALITY_INFO = [
+        'ehrgeizig' => 'Will immer mehr erreichen. Reibt sich mit Gelassenen.',
+        'gelassen' => 'Nimmt alles locker. Reibt sich mit Ehrgeizigen.',
+        'perfektionist' => 'Alles muss genau sitzen. Reibt sich mit Chaoten.',
+        'chaot' => 'Kreativ, aber unordentlich. Reibt sich mit Perfektionisten.',
+        'rampensau' => 'Liebt die Bühne über alles. Zwei Rampensäue in einer Band reiben sich.',
+        'diva' => 'Will im Mittelpunkt stehen. Zwei Divas in einer Band reiben sich.',
+        'teamplayer' => 'Hilft allen in der Band: Die Chemie wird besser.',
+        'ruhepol' => 'Beruhigt alle: Jede Reibung in der Band zählt nur halb.',
+        'partytier' => 'Feiert gern. Zwei Partytiere in einer Band verstehen sich prächtig.',
+    ];
+
+    /** Eigenschaften, die nicht zusammen in einem Menschen vorkommen (wären widersprüchlich). */
+    public const CONTRADICTIONS = [
+        ['teamplayer', 'diva'],
+        ['ruhepol', 'chaot'],
+        ['ruhepol', 'rampensau'],
+        ['perfektionist', 'chaot'],
+        ['ehrgeizig', 'gelassen'],
+    ];
+
     /** Paare, die sich reiben. */
     public const CLASHES = [
         ['diva', 'diva'],

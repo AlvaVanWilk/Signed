@@ -184,12 +184,19 @@ export function fameBar(fame) {
   }).join('')}</span><b class="step-badge fame-step-${level}" title="${esc(title)}">${level}</b>`;
 }
 
-/** Können als 10 Kästchen für den Weg zur nächsten Stufe, in der Farbe der Stufe; dahinter die Stufe. */
+/**
+ * Können als Kästchen: eins pro Können-Punkt der Stufe (25 je Stufe, in Fünfergruppen), in der Farbe der Stufe;
+ * dahinter die Stufe. So entspricht ein Punkt Zuwachs genau einem Kästchen.
+ */
 export function skillBar(skill) {
-  const { level, progress, next } = stepOf(skill, cat().rules.skillLevels);
+  const levels = cat().rules.skillLevels;
+  const { level, next } = stepOf(skill, levels);
+  const from = [0, ...levels][level];
+  const width = next === null ? levels[1] - levels[0] : next - from;
+  const filled = next === null ? width : skill - from;
   const title = `${cat().levelNames[level]} · Können ${fmt0(skill)}${next ? ` · nächste Stufe ab ${fmt0(next)}` : ''}`;
-  return `<span class="skill-cells skill-step-${level}" title="${esc(title)}">${Array.from({ length: 10 }, (_, i) => {
-    const fill = Math.max(0, Math.min(1, progress * 10 - i));
+  return `<span class="skill-cells skill-step-${level}" style="--cells:${width}" title="${esc(title)}">${Array.from({ length: width }, (_, i) => {
+    const fill = Math.max(0, Math.min(1, filled - i));
     return `<i style="--f:${Math.round(fill * 100)}%"></i>`;
   }).join('')}</span><b class="step-badge skill-step-${level}" title="${esc(title)}">${level}</b>`;
 }

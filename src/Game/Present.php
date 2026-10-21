@@ -138,6 +138,7 @@ final class Present
             'genreLineup' => Catalog::GENRE_LINEUP,
             'fameNames' => Catalog::FAME_NAMES,
             'personalities' => Catalog::PERSONALITIES,
+            'personalityInfo' => Catalog::PERSONALITY_INFO,
             'managerSkills' => Catalog::MANAGER_SKILLS,
             'gear' => Catalog::GEAR,
             'gearPerks' => Catalog::GEAR_PERKS,

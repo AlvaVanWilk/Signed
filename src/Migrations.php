@@ -78,6 +78,17 @@ final class Migrations
     }
 
     /** 9: Epische und legendäre Instrumente, die es schon gibt, bekommen ihre Eigenschaften. */
+    /** 15: Widersprüchliche Eigenschaften (z. B. Teamplayer und Diva) – die zweite fällt weg. */
+    public static function personalityContradictions(Db $db): void
+    {
+        foreach ($db->all('SELECT id, personality FROM musicians') as $row) {
+            $traits = json_decode((string) $row['personality'], true) ?: [];
+            if (count($traits) === 2 && \Signed\Game\Generator::contradicts($traits[0], $traits[1])) {
+                $db->update('musicians', ['personality' => json_encode([$traits[0]])], ['id' => (int) $row['id']]);
+            }
+        }
+    }
+
     public static function gearPerks(Db $db): void
     {
         foreach ($db->all('SELECT id, model FROM gear') as $row) {

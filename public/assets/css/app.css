@@ -1093,3 +1093,33 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .fan-drop { display: grid; gap: 10px; justify-items: center; text-align: center; }
 .fan-drop p { margin: 0; }
 .fan-drop-card { width: min(180px, 60vw); }
+
+/* Cover-Automat (Studio): Bänder öffnen sich nacheinander, nur eins läuft */
+.cm { --cm-green: #3ddc97; --cm-blue: #4f8bff; --cm-gold: #ffc23d; user-select: none; -webkit-user-select: none; }
+.cm-row { display: grid; grid-template-columns: 92px 1fr; gap: 10px; align-items: center; margin: 6px 0; }
+.cm-label { font-weight: 800; font-size: 0.9rem; }
+.cm-label small { display: block; font-weight: 600; color: var(--muted); min-height: 1.2em; }
+.cm-reel { position: relative; height: 92px; overflow: hidden; border-radius: 14px; background: #0b0910; touch-action: manipulation;
+  transition: height 0.4s ease, opacity 0.4s ease; }
+.cm-reel::after { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 88px; transform: translateX(-50%); border: 3px solid #fff;
+  border-radius: 12px; pointer-events: none; box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.4); }
+.cm-closed { opacity: 0.45; }
+.cm-closed .cm-reel { height: 0; opacity: 0; }
+.cm-done .cm-reel { opacity: 0.75; }
+.cm-strip { position: absolute; top: 6px; left: 0; display: flex; will-change: transform; }
+.cm-cell { flex: 0 0 80px; height: 80px; margin: 0 4px; border-radius: 10px; display: grid; place-items: center; background: #221b2e;
+  box-sizing: border-box; border: 3px solid #3a3446; overflow: hidden; }
+.cm-cell svg { width: 100%; height: 100%; display: block; }
+.cm-cell .cm-motif { width: 64px; height: 64px; }
+.cm-cell.r1 { border-color: var(--cm-green); }
+.cm-cell.r2 { border-color: var(--cm-blue); box-shadow: inset 0 0 10px rgba(79, 139, 255, 0.6); }
+.cm-cell.r3 { border-color: var(--cm-gold); box-shadow: inset 0 0 14px rgba(255, 194, 61, 0.8); background: #3a2c10; }
+.cm-swatch { display: grid; grid-template-rows: 2fr 1fr 1fr; width: 100%; height: 100%; }
+.cm-controls { display: flex; justify-content: center; margin-top: 12px; }
+.cm-stop { font-size: 1.25rem; padding: 14px 48px; touch-action: manipulation; }
+@media (max-width: 600px) { .cm-row { grid-template-columns: 1fr; gap: 2px; } }
+.cover { width: 100%; height: auto; display: block; border-radius: 6px; }
+.cover-frame { padding: 6px; border-radius: 10px; background: #2a2338; }
+.cover-frame.q1 { background: #3ddc97; }
+.cover-frame.q2 { background: #4f8bff; }
+.cover-frame.q3 { background: linear-gradient(135deg, #fff1b8, #ffc23d, #b8860b, #ffc23d); }

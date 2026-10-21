@@ -118,29 +118,6 @@ function traitInfo(m, trait) {
   modal.body.querySelector('[data-close]').addEventListener('click', () => modal.close());
 }
 
-/** Infofenster: Genre erklären – wann eine Band zur Genre-Band wird und wie es gerade aussieht. */
-function genreInfo(m, genre) {
-  const c = cat();
-  const band = m.bandId ? bandById(m.bandId) : null;
-  const typical = Object.entries(c.instruments).filter(([, i]) => i.genres.includes(genre)).map(([type]) => instrumentName(type));
-  const check = band?.genreChecks?.[genre];
-  let now = `<p class="muted">${esc(m.firstName)} ist in keiner Band. In einer Band, in der alle ${esc(genreName(genre))} mögen und die Besetzung passt, gibt es den Bonus.</p>`;
-  if (band && band.genres.includes(genre)) {
-    now = `<p class="ok">＋ ${esc(band.name)} ist eine ${esc(band.title)}: Sound +${Math.round((band.genreBonus - 1) * 100)} %.</p>`;
-  } else if (band && check) {
-    const missing = check.requirements.filter((r) => !r.met).map((r) => `${r.need - r.have} × ${r.instruments.map(instrumentName).join(' oder ')}`);
-    now = `<p class="muted">${esc(band.name)} ist noch keine ${esc(genreName(genre))}-Band: ${!check.allFans ? `nicht alle mögen ${esc(genreName(genre))} (${check.fans} von ${band.memberIds.length})` : ''}${!check.allFans && missing.length ? ' und ' : ''}${missing.length ? `es fehlt ${esc(missing.join(', '))}` : ''}.</p>`;
-  }
-  const modal = openModal({ html: `
-    <div class="eyebrow">Genre</div>
-    <h2>${genreTag(genre)}</h2>
-    <p>${esc(m.firstName)} mag ${esc(genreName(genre))}. Mögen alle in einer Band dasselbe Genre und passt die Besetzung, wird sie eine Genre-Band: <b>Sound +${Math.round((c.rules.genreBonus - 1) * 100)} %</b>. Das Genre bestimmt auch, welche Musik die Band spielt.</p>
-    <p class="muted small">Typisch für ${esc(genreName(genre))}: ${esc(typical.join(', '))}.${m.unusual ? ` ${esc(m.firstName)} spielt ein ungewöhnliches Instrument für seine Genres – das fällt auf und bringt etwas mehr Bekanntheit.` : ''}</p>
-    <h3>Gerade</h3>
-    ${now}
-    <div class="dialog-actions"><button class="btn primary" data-close>OK</button></div>` });
-  modal.body.querySelector('[data-close]').addEventListener('click', () => modal.close());
-}
 
 function gearSlot(m, type) {
   const gear = app.state.gear.find((g) => g.musicianId === m.id && gearModel(g.model).type === type);
@@ -302,9 +279,6 @@ export function openAbilityChoice(id) {
 defineActions({
   traitInfo({ id, trait }) {
     traitInfo(musicianById(id), trait);
-  },
-  genreInfo({ id, genre }) {
-    genreInfo(musicianById(id), genre);
   },
   openMusician({ id }) {
     // Merken, woher wir kommen: Katalog, Band oder sonstwo – dorthin führt der Zurück-Knopf, und darin wird geblättert.

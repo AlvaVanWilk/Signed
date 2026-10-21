@@ -4,6 +4,7 @@ import { bandFill, genreGlyph, levelUpBanners, musicianCard } from './cards.js';
 import { closeAllModals, duration, esc, fmt1, fmtGain, money, openModal, percent, timeAgo, topModal } from './ui.js';
 import './celebrate.js';
 import './settings.js';
+import './genre-info.js';
 import * as auth from './views/auth.js';
 import * as bands from './views/bands.js';
 import * as catalog from './views/catalog.js';

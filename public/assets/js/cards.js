@@ -228,7 +228,7 @@ export function musicianCard(m, { act = 'openMusician', size = '', extra = '', s
     theme: 'genre-split',
     style: genreSplit(m.genres),
     name: fullName(m),
-    badge: `<span class="tcg-genres">${m.genres.map(genreIcon).join('')}</span>`,
+    badge: `<span class="tcg-genres">${m.genres.map((g) => `<span class="genre-hit" role="button" data-act="genreInfo" data-genre="${g}" data-id="${m.id}" title="${esc(genreName(g))}: Was heißt das?">${genreIcon(g)}</span>`).join('')}</span>`,
     art: `${avatar(m.look)}
       <span class="tcg-badge">${m.instruments.map((i) => instrumentIcon(i.type, ownGear(m, i.type).electric, ownGear(m, i.type).hue)).join('')}</span>
       ${abilities.length ? `<span class="tcg-abilities">${abilities.map((a) => `<i title="${esc(a.name)}">${a.icon}</i>`).join('')}</span>` : ''}`,

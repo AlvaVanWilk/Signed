@@ -1183,3 +1183,7 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .nav-badge { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; margin-left: 4px; border-radius: 999px;
   background: var(--panel-2); color: var(--muted); font-size: 0.7rem; font-weight: 800; vertical-align: middle; }
 .nav-badge.new { background: var(--accent, #ff4f8b); color: #fff; box-shadow: 0 0 10px rgba(255, 79, 139, 0.6); }
+
+/* Tonhöhen-Spiel: zwei Knöpfe nebeneinander, einer unter jedem Daumen */
+.mg-pitch-keys { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.mg-pitch-keys .mg-hold { font-size: 1.1rem; padding: 18px; }

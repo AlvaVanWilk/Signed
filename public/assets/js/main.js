@@ -5,6 +5,7 @@ import { closeAllModals, duration, esc, fmt1, fmtGain, money, openModal, percent
 import './celebrate.js';
 import './settings.js';
 import './genre-info.js';
+import './navdrag.js';
 import * as auth from './views/auth.js';
 import * as bands from './views/bands.js';
 import * as catalog from './views/catalog.js';
@@ -50,20 +51,29 @@ function subnav(route) {
   const s = app.state;
   const favorites = s.musicians.filter((m) => m.favorite && !m.bandId);
   const active = (kind, id) => route.name === kind && route.id === id;
+  // Eigene Reihenfolge (verschiebbar, navdrag.js); Neues hängt hinten an.
+  const order = s.label.navOrder ?? [];
+  const items = [
+    ...s.bands.map((b) => ({ key: `b${b.id}`, html: bandButton(b) })),
+    ...favorites.map((m) => ({ key: `m${m.id}`, html: `<a href="#/musician/${m.id}" data-nav="m${m.id}" draggable="false" class="subnav-btn fav ${active('musician', m.id) ? 'active' : ''}">★ ${esc(m.firstName)} ${esc(m.lastName)}</a>` })),
+  ];
+  const rank = (key, i) => (order.includes(key) ? order.indexOf(key) : order.length + i);
+  const sorted = items.map((it, i) => ({ ...it, rank: rank(it.key, i) })).sort((a, b) => a.rank - b.rank);
   return `
     <nav class="subnav">
-      ${s.bands.map((b) => {
-        const fill = bandFill(b);
-        // Beschäftigt: laufende Streifen – kräftig, wenn die ganze Band weg ist, zart, wenn nur ein Teil fehlt.
-        const members = s.musicians.filter((m) => m.bandId === b.id);
-        const away = members.filter((m) => isBusy(m.busyUntil)).length;
-        const busy = isBusy(b.busyUntil) || (away && away === members.length) ? 'busy-all' : away ? 'busy-some' : '';
-        const hint = busy === 'busy-all' ? ' title="Die Band ist beschäftigt"' : busy ? ` title="${away} ${away === 1 ? 'Mitglied ist' : 'Mitglieder sind'} unterwegs"` : '';
-        return `<a href="#/band/${b.id}" class="subnav-btn ${fill.cls} ${busy} ${active('band', b.id) ? 'active' : ''}" style="${fill.style}"${hint}>${b.genres.map(genreGlyph).join('')}${esc(b.name)}</a>`;
-      }).join('')}
-      ${favorites.map((m) => `<a href="#/musician/${m.id}" class="subnav-btn fav ${active('musician', m.id) ? 'active' : ''}">★ ${esc(m.firstName)} ${esc(m.lastName)}</a>`).join('')}
+      ${sorted.map((it) => it.html).join('')}
       <button class="subnav-btn add" data-act="newBand">+ Band</button>
     </nav>`;
+
+  function bandButton(b) {
+    const fill = bandFill(b);
+    // Beschäftigt: laufende Streifen – kräftig, wenn die ganze Band weg ist, zart, wenn nur ein Teil fehlt.
+    const members = s.musicians.filter((m) => m.bandId === b.id);
+    const away = members.filter((m) => isBusy(m.busyUntil)).length;
+    const busy = isBusy(b.busyUntil) || (away && away === members.length) ? 'busy-all' : away ? 'busy-some' : '';
+    const hint = busy === 'busy-all' ? ' title="Die Band ist beschäftigt"' : busy ? ` title="${away} ${away === 1 ? 'Mitglied ist' : 'Mitglieder sind'} unterwegs"` : '';
+    return `<a href="#/band/${b.id}" data-nav="b${b.id}" draggable="false" class="subnav-btn ${fill.cls} ${busy} ${active('band', b.id) ? 'active' : ''}" style="${fill.style}"${hint}>${b.genres.map(genreGlyph).join('')}${esc(b.name)}</a>`;
+  }
 }
 
 let lastSide = '';

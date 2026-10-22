@@ -1176,3 +1176,11 @@ test('Gesang: Vor einem großen Sprung wird der Ton hinten gekürzt', function (
     checkEquals(round(1 - 7 * 0.07, 3), $chart['notes'][0]['d']);
     checkEquals(1.0, (float) $chart['notes'][1]['d']);
 });
+
+test('Eigene Reihenfolge der Band- und Favoritenknöpfe', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Reihe');
+    checkEquals([], $p->get('state')['label']['navOrder']);
+    $res = $p->post('navOrder', ['order' => ['m5', 'b2', 'b2', 'x1', 7, 'b9']]);
+    checkEquals(['m5', 'b2', 'b9'], $res['state']['label']['navOrder']);
+});

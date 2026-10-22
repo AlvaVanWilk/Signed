@@ -72,6 +72,7 @@ final class Api
         'transferAccept' => ['POST', true],
         'jamDecline' => ['POST', true],
         'musicianFavorite' => ['POST', true],
+        'navOrder' => ['POST', true],
         'abilityChoose' => ['POST', true],
         'recordStart' => ['POST', true],
         'minigameStart' => ['POST', true],
@@ -417,6 +418,17 @@ final class Api
     {
         $m = $repo->musician(self::int($in, 'musicianId'));
         $this->db->update('musicians', ['favorite' => empty($in['favorite']) ? 0 : 1], ['id' => $m['id']]);
+        return ['state' => State::build($repo)];
+    }
+
+    /** Reihenfolge der Band- und Favoritenknöpfe: Liste wie ["b12", "m5"]; Unbekanntes wird verworfen. */
+    private function navOrder(array $in, Repo $repo): array
+    {
+        $order = array_values(array_unique(array_filter(
+            is_array($in['order'] ?? null) ? $in['order'] : [],
+            static fn ($key) => is_string($key) && preg_match('/^[bm]\d{1,9}$/', $key) === 1
+        )));
+        $this->db->update('labels', ['nav_order' => json_encode(array_slice($order, 0, 200))], ['id' => $repo->labelId]);
         return ['state' => State::build($repo)];
     }
 

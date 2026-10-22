@@ -379,6 +379,10 @@ final class Schema
             [
                 [Migrations::class, 'chartsRerank'],
             ],
+            // 22: Eigene Reihenfolge der Band- und Favoritenknöpfe (JSON-Liste wie ["b12", "m5"])
+            [
+                'ALTER TABLE labels ADD COLUMN nav_order TEXT NULL',
+            ],
         ];
     }
 }

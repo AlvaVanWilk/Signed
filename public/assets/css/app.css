@@ -682,6 +682,8 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
   opacity: 0.78;
 }
 .subnav-btn:hover { opacity: 1; text-decoration: none; }
+.subnav-btn[data-nav] { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
+.subnav-btn.dragging { opacity: 1; position: relative; z-index: 2; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5); transition: none; cursor: grabbing; }
 /* Band beschäftigt: schräge Streifen wandern durch den Knopf (ganz: kräftig, zum Teil: zart). */
 .subnav-btn.busy-all, .subnav-btn.busy-some { position: relative; overflow: hidden; }
 .subnav-btn.busy-all::after, .subnav-btn.busy-some::after {

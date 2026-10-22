@@ -53,7 +53,7 @@ final class FanMusician
             'genre' => $genre,
             'single' => true,
             'maxSkill' => max(5.0, array_sum($skills) / count($skills) * Balance::FAN_MUSICIAN['skillShare']),
-            'avoid' => $repo->lastNames(),
+            'avoid' => $repo->names(),
             'getsAlongWith' => $traits,
         ]);
         $id = $repo->insertMusician($card, 'fan');

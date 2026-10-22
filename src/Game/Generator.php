@@ -111,7 +111,7 @@ final class Generator
         return $stats;
     }
 
-    /** @param string[] $avoid Nachnamen, die im Label schon vorkommen */
+    /** @param string[] $avoid Vor- und Nachnamen, die im Label schon vorkommen */
     public static function manager(string $rarity, array $avoid = []): array
     {
         $look = self::look();
@@ -157,14 +157,15 @@ final class Generator
     }
 
     /**
-     * Nachnamen aus $avoid werden gemieden, solange noch andere frei sind.
+     * Vor- und Nachnamen aus $avoid (schon im Label) werden gemieden, solange noch andere frei sind.
      * @param string[] $avoid
      * @return array{0: string, 1: string}
      */
     private static function name(string $gender, array $avoid = []): array
     {
-        $free = array_values(array_diff(Catalog::LAST_NAMES, $avoid));
-        return [Rng::pick(Catalog::FIRST_NAMES[$gender]), Rng::pick($free ?: Catalog::LAST_NAMES)];
+        $first = array_values(array_diff(Catalog::FIRST_NAMES[$gender], $avoid));
+        $last = array_values(array_diff(Catalog::LAST_NAMES, $avoid));
+        return [Rng::pick($first ?: Catalog::FIRST_NAMES[$gender]), Rng::pick($last ?: Catalog::LAST_NAMES)];
     }
 
     private static function secondInstrument(string $first): string

@@ -53,10 +53,10 @@ final class Scout
             }
 
             $cards = [];
-            $avoid = $this->repo->lastNames();
+            $avoid = $this->repo->names();
             for ($i = 0; $i < Balance::SCOUT_CARDS; $i++) {
                 $card = Generator::musician(Generator::rarity(Balance::SCOUT_ODDS), ['minSkill' => Balance::SKILL_LEVELS[0], 'avoid' => $avoid]);
-                $avoid[] = $card['last_name'];
+                array_push($avoid, $card['first_name'], $card['last_name']);
                 $cards[] = $card;
             }
             $id = $db->insert('scout_offers', [

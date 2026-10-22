@@ -144,14 +144,14 @@ final class Repo
         return array_map([self::class, 'hydrateMusician'], $rows);
     }
 
-    /** Alle Nachnamen von Musikern und Managern des Labels. */
-    public function lastNames(): array
+    /** Alle Vor- und Nachnamen von Musikern und Managern des Labels. */
+    public function names(): array
     {
         $rows = $this->db->all(
-            'SELECT last_name FROM musicians WHERE label_id = ? UNION ALL SELECT last_name FROM managers WHERE label_id = ?',
+            'SELECT first_name, last_name FROM musicians WHERE label_id = ? UNION ALL SELECT first_name, last_name FROM managers WHERE label_id = ?',
             [$this->labelId, $this->labelId]
         );
-        return array_column($rows, 'last_name');
+        return array_merge(array_column($rows, 'first_name'), array_column($rows, 'last_name'));
     }
 
     public function insertMusician(array $m, string $origin): int

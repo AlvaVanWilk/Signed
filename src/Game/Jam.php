@@ -37,7 +37,7 @@ final class Jam
             return null;
         }
         $host = Repo::hydrateMusician($row);
-        $cards = self::matches($host, $repo->lastNames(), max(0.0, min(1.0, $meter / 100)));
+        $cards = self::matches($host, $repo->names(), max(0.0, min(1.0, $meter / 100)));
         $repo->db->exec("UPDATE jam_offers SET status = 'declined' WHERE musician_id = ? AND status = 'open'", [$musicianId]);
         $id = $repo->db->insert('jam_offers', [
             'label_id' => $repo->labelId,
@@ -139,7 +139,7 @@ final class Jam
                 'avoid' => $avoid,
                 'getsAlongWith' => $host['personality'],
             ]);
-            $avoid[] = $card['last_name'];
+            array_push($avoid, $card['first_name'], $card['last_name']);
             $cards[] = $card;
         }
         return $cards;

@@ -34,12 +34,12 @@ final class Packs
             $this->repo->spend($pack['price'], $pack['name']);
             $odds = $this->withScout($pack['odds']);
             $kinds = $pack['slots'] ?? array_map(static fn () => (string) Rng::weighted($pack['kinds']), range(1, $pack['choices']));
-            $avoid = $this->repo->lastNames();
+            $avoid = $this->repo->names();
             $cards = [];
             foreach ($kinds as $kind) {
                 $card = $this->draw($kind, Generator::rarity($odds), $key, $avoid, empty($pack['chooseType']) ? null : [$type => 1]);
                 if (isset($card['data']['last_name'])) {
-                    $avoid[] = $card['data']['last_name'];
+                    array_push($avoid, $card['data']['first_name'], $card['data']['last_name']);
                 }
                 $cards[] = $card;
             }

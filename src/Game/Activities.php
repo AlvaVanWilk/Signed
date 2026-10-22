@@ -428,7 +428,7 @@ final class Activities
 
         foreach ($reward['drops'] ?? [] as $drop) {
             if ($drop['kind'] === 'manager') {
-                $manager = $repo->manager($repo->insertManager(Generator::manager('common', $repo->lastNames())));
+                $manager = $repo->manager($repo->insertManager(Generator::manager('common', $repo->names())));
                 $result['drops'][] = ['kind' => 'manager', 'name' => $manager['first_name'] . ' ' . $manager['last_name'], 'level' => $manager['level'], 'skills' => $manager['skills']];
                 $repo->log('card', sprintf('Nach der Open Stage bietet sich %s %s als Manager an.', $manager['first_name'], $manager['last_name']), $bandId);
             } elseif ($drop['kind'] === 'musician') {

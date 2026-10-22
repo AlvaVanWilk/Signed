@@ -461,3 +461,15 @@ test('Etüden: alle Genres und Instrumente, mehr Können = mehr Noten, dieselbe 
     checkEquals(['root' => 10, 'minor' => false, 'tones' => [0, 4, 7]], array_diff_key(Signed\Game\Etude::chord('bVII', 'major'), ['name' => 1]));
     checkEquals([0, 3, 7, 10], Signed\Game\Etude::chord('ii7', 'major')['tones']);
 });
+
+test('Namen: Vornamen, die im Label schon vorkommen, werden gemieden', function (): void {
+    $keep = ['Lena', 'Finn', 'Kim'];
+    $avoid = array_values(array_diff(array_merge(...array_values(Signed\Game\Catalog::FIRST_NAMES)), $keep));
+    for ($i = 0; $i < 30; $i++) {
+        $card = Signed\Game\Generator::musician('common', ['avoid' => $avoid]);
+        check(in_array($card['first_name'], $keep, true), 'freier Vorname: ' . $card['first_name']);
+    }
+    foreach (Signed\Game\Catalog::FIRST_NAMES as $gender => $names) {
+        checkEquals(count($names), count(array_unique($names)), "$gender: keine doppelten Vornamen");
+    }
+});

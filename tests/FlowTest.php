@@ -820,7 +820,7 @@ test('Charts: Plätze bleiben eine Chartwoche stehen, Nachrichten bei Einstieg u
     $row = $db->one("SELECT chart_points, finished_at, boost, boost_at FROM records WHERE title = 'Hinten'");
     $row['boost'] = Balance::CHART_BOOST_MAX;
     $row['boost_at'] = Clock::now();
-    check(Signed\Game\Charts::pointsAt($row, (int) $row['finished_at'] + 12 * Balance::CHART_SCALE) < 0.05 * (float) $row['chart_points'], 'Auch mit vollem Schub fällt sie heraus');
+    check(Signed\Game\Charts::pointsAt($row, (int) $row['finished_at'] + 5 * 86400) < 0.05 * (float) $row['chart_points'], 'Auch mit vollem Schub fällt sie heraus');
 });
 
 test('Rap: Hip-Hop-Gesang übt im Rhythmus-Spiel (Etüde)', function () {

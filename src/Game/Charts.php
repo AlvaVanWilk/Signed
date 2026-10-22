@@ -7,8 +7,8 @@ use Signed\Clock;
 use Signed\Db;
 
 /**
- * Album-Charts über alle Spieler, gerechnet in Stunden: Eine Platte steigt mit ihren vollen Punkten ein und fällt dann
- * (erst kaum, dann deutlich); höher kommt sie nur durch Schub aus Gigs und Promo. Weil jede Platte ihren eigenen Verlauf hat,
+ * Album-Charts über alle Spieler, gerechnet in Stunden: Eine Platte steigt mit ihren vollen Punkten ein und verliert
+ * dann jede Stunde denselben Anteil; höher kommt sie nur durch Schub aus Gigs und Promo. Weil jede Platte ihren eigenen Verlauf hat,
  * überholen sie sich gegenseitig. Gigs und Promo der Band schieben die neueste Platte zusätzlich an (Schub, der
  * mit der Zeit nachlässt). Solange eine Platte chartet, laufen Tantiemen. Dazu eine Label-Gesamtliste nach Ruhm.
  */
@@ -43,14 +43,13 @@ final class Charts
         return $rank === null || $rank > Balance::CHART_SIZE ? 1.0 : 1 + $bonus * (Balance::CHART_SIZE + 1 - $rank) / Balance::CHART_SIZE;
     }
 
-    /** Verlauf ohne Schub: Einstieg mit den vollen Punkten, erst kaum, dann deutlich fallend – nie von selbst steigend. */
+    /** Verlauf ohne Schub: Einstieg mit den vollen Punkten, dann jede Stunde CHART_DECAY weniger – für jede Platte gleich. */
     public static function curve(int $age): float
     {
         if ($age < 0) {
             return 0.0;
         }
-        $x = $age / Balance::CHART_SCALE;
-        return ($x + 1.5) / 1.5 * exp(-$x / 1.5);
+        return (1 - Balance::CHART_DECAY) ** ($age / self::HOUR);
     }
 
     /** Chartpunkte einer Platte zum Zeitpunkt $t: Grundpunkte × Verlauf × (1 + nachlassender Schub aus Gigs und Promo). */

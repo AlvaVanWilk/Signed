@@ -214,13 +214,9 @@ test('Chartpunkte: Qualität zählt, LPs mehr als EPs; Verlauf steigt erst und f
     check(Signed\Game\Charts::points(3, 0.8, 30, true, 0) > Signed\Game\Charts::points(3, 0.8, 30, false, 0));
     $curve = [Signed\Game\Charts::class, 'curve'];
     checkEquals(1.0, $curve(0), 'Einstieg mit den vollen Punkten');
-    $last = 1.0;
-    foreach ([0.25, 0.5, 1, 2, 4, 8] as $x) {
-        check($curve((int) ($x * Balance::CHART_SCALE)) < $last, 'steigt nie von selbst');
-        $last = $curve((int) ($x * Balance::CHART_SCALE));
-    }
-    check($curve((int) (Balance::CHART_SCALE / 2)) > 0.95, 'die ersten Stunden fast gleich');
-    check($curve(10 * Balance::CHART_SCALE) < 0.02, 'nach gut drei Tagen fast draußen');
+    check(abs($curve(3600) - (1 - Balance::CHART_DECAY)) < 1e-9, 'jede Stunde derselbe Anteil weniger');
+    check(abs($curve(5 * 3600) / $curve(4 * 3600) - $curve(3600)) < 1e-9, 'jede Stunde derselbe Anteil weniger');
+    check($curve(4 * 86400) < 0.1, 'nach vier Tagen fast draußen');
 });
 
 test('Simulation: bessere Bands begeistern das Publikum mehr', function () {

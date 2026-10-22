@@ -340,8 +340,8 @@ final class Balance
     public const CHART_FAME = 500;
     public const CHART_FAME_MAX = 2;
     /**
-     * Verlauf: Einstieg mit den vollen Punkten, nach CHART_SCALE Sekunden noch 86 %, nach 2 × 62 %, nach 4 × 25 %
-     * (nach etwa 9 × CHART_SCALE ist eine durchschnittliche Platte draußen). Von selbst steigt sie nie, nur durch Schub. Älter als CHART_MAX_AGE zählt nicht mehr.
+     * Verlauf: Einstieg mit den vollen Punkten, dann verliert jede Platte jede Stunde CHART_DECAY ihrer Punkte
+     * (3 %: nach einem Tag noch knapp die Hälfte, nach drei Tagen gut ein Zehntel). Von selbst steigt sie nie, nur durch Schub. Älter als CHART_MAX_AGE zählt nicht mehr.
      * Die Plätze werden alle CHART_INTERVAL Sekunden neu vergeben – oder sofort, wenn eine Platte einsteigt oder Schub bekommt.
      */
     public const CHART_INTERVAL = 3 * 3600;
@@ -352,7 +352,7 @@ final class Balance
     public const CHART_RANK_BONUS = 1.0;
     /** Eine Platte in den Top 10 macht die Gigs der Band voller: Platz 1 Gage und Ruhm + 40 %, abnehmend bis Platz 10. */
     public const CHART_GIG_BONUS = 0.4;
-    public const CHART_SCALE = 10 * 3600;
+    public const CHART_DECAY = 0.03;
     public const CHART_MAX_AGE = 7 * 86400;
     /**
      * Schub für die neueste Platte der Band, als Aufschlag auf ihre Punkte: Gig pro Lied × √(Grund-Ruhm des Ortes)

@@ -189,7 +189,7 @@ final class Present
                 'scoutCards' => Balance::SCOUT_CARDS,
                 'chartLpSongs' => Balance::CHART_LP_SONGS,
                 'chartSize' => Balance::CHART_SIZE,
-                'chartScaleHours' => Balance::CHART_SCALE / 3600,
+                'chartDecay' => Balance::CHART_DECAY,
                 'chartIntervalHours' => Balance::CHART_INTERVAL / 3600,
                 'chartBoostHalfHours' => Balance::CHART_BOOST_HALF / 3600,
                 'chartBoostMax' => Balance::CHART_BOOST_MAX,

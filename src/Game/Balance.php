@@ -106,6 +106,8 @@ final class Balance
     public const GENRE_BONUS = 1.15;
     /** … und wenn sie dazu noch ein zweites Genre teilen (Hybrid, z. B. Punk-Rock). */
     public const HYBRID_BONUS = 1.25;
+    /** … und wenn alle sogar ein drittes teilen (Crossover, sehr selten). Zusammenspiel wie Hybrid. */
+    public const CROSSOVER_BONUS = 1.3;
     /** Maximaler Bonus eines Instruments mit Klang 100 (+50 %). */
     public const GEAR_MAX_BONUS = 0.5;
     /** Wie schnell sich der Klang mit dem Können entfaltet: (Können / nötiges Können) hoch diesem Wert. */

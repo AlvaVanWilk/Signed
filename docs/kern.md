@@ -62,7 +62,7 @@ Tournee bzw. ausgeschriebenen Gigs (im Spiel ausgegraut markiert).
 Beitrag    = Können × (1 + Instrumentbonus), ohne eigenes Instrument × 0,5
 Instrument = Klang/100 × 0,5 × min(1, Können / (100 − Spielbarkeit))²   (darunter entfaltet es sich deutlich weniger,
              ein einfaches Instrument ist für Anfänger oft besser als ein gutes)
-Sound      = (0,75 × Durchschnitt + 0,25 × schwächster Beitrag) × Genre (gemischt 0,8 / Genre-Band 1,15 / Hybrid 1,25)
+Sound      = (0,75 × Durchschnitt + 0,25 × schwächster Beitrag) × Genre (gemischt 0,8 / Genre-Band 1,15 / Hybrid 1,25 / Crossover 1,3)
              × (1 + 0,05 × weitere Instrumentenarten, höchstens +20 %)
              × (1 + 0,05 × Mitglieder über 2)            (volle Bühne: 6 Mitglieder × 1,2)
              × (0,7 + 0,3 × Zusammenspiel/100)             (Hybrid bis 120: × 1,06)
@@ -77,6 +77,8 @@ sind bis zu 44 % stärker als ein Duo (`MEMBER_SOUND_BONUS`). Dazu bekommen sie 
 - **Genre-Band** (z. B. „Rockband“): Alle Mitglieder mögen das Genre **und** die Besetzung passt. Sound × 1,15.
 - **Hybrid** (z. B. „Punk-Rock-Band“): Genre-Band, und alle mögen zusätzlich ein zweites Genre (ohne weitere
   Besetzungs-Bedingung). Sound × 1,25. Name: zweites Genre vor dem Bandgenre.
+- **Crossover** (z. B. „Rock-Crossover-Band“): Hybrid, und alle mögen sogar ein drittes Genre. Sound × 1,3,
+  Zusammenspiel wie Hybrid (bis 120). Sehr selten (nur rund 3 % der Musiker haben drei Genres) – ein Sammelziel.
 - Besetzungs-Bedingungen (gezählt wird das Instrument, das jemand in der Band spielt):
 
 | Genre | braucht |

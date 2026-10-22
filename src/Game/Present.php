@@ -172,6 +172,7 @@ final class Present
                 'lineupBonusMaxTypes' => Balance::LINEUP_BONUS_MAX_TYPES,
                 'memberSoundBonus' => Balance::MEMBER_SOUND_BONUS,
                 'mixedBonus' => Balance::MIXED_BONUS,
+                'crossoverBonus' => Balance::CROSSOVER_BONUS,
                 'cohesionByGenre' => Balance::COHESION_BY_GENRE,
                 'memberGageBonus' => Balance::MEMBER_GAGE_BONUS,
                 'minMembers' => Balance::MIN_MEMBERS,

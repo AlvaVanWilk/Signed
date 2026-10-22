@@ -114,7 +114,7 @@ final class State
             $bandsOut[] = [
                 'id' => $band['id'],
                 'name' => $band['name'],
-                'genres' => array_values(array_filter([$identity['primary'], $identity['second']])),
+                'genres' => array_values(array_filter([$identity['primary'], $identity['second'], $identity['third']])),
                 'title' => $identity['title'],
                 'genreBonus' => $identity['bonus'],
                 'genreChecks' => $identity['checks'],

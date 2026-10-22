@@ -29,7 +29,7 @@ final class Bands
         $members = $repo->members($bandId);
         $gear = $repo->gearByMusician();
         $identity = BandCalc::identity($members, $band['genre'], $band['genre2']);
-        $genres = array_values(array_filter([$identity['primary'], $identity['second']]));
+        $genres = array_values(array_filter([$identity['primary'], $identity['second'], $identity['third']]));
         $stems = Music::bandStems($members, $gear, $genres);
         $records = $db->all(
             "SELECT title, cover, songs_total, perfect, rank_best, finished_at FROM records WHERE band_id = ? AND status = 'done' ORDER BY finished_at DESC LIMIT 5",

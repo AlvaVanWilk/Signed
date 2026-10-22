@@ -56,11 +56,14 @@ export function bandIdentity(members, prefer = '', preferSecond = null) {
   const eligible = keys.filter((g) => allFans(g) && lineup(g));
   const primary = eligible.includes(prefer) ? prefer : eligible[0] ?? null;
   let second = null;
+  let third = null;
   if (primary) {
     const shared = keys.filter((g) => g !== primary && allFans(g));
     second = shared.includes(preferSecond) ? preferSecond : shared[0] ?? null;
+    third = shared.find((g) => g !== second) ?? null;
   }
-  return { primary, second, title: primary ? bandTitle(primary, second) : null, bonus: primary ? (second ? c.rules.hybridBonus : c.rules.genreBonus) : c.rules.mixedBonus };
+  const bonus = !primary ? c.rules.mixedBonus : !second ? c.rules.genreBonus : !third ? c.rules.hybridBonus : c.rules.crossoverBonus;
+  return { primary, second, third, title: primary ? bandTitle(primary, second, third) : null, bonus };
 }
 
 /** Die drei Genre-Stufen in einem Satz: Sound und Zusammenspiel. */
@@ -70,11 +73,13 @@ export function genreRuleText() {
   const pct = (x) => `${x >= 1 ? '+' : '−'}${Math.round(Math.abs(x - 1) * 100)} %`;
   return `Gemischte Band: Sound ${pct(r.mixedBonus)}, Zusammenspiel wächst halb so schnell, höchstens ${g.mixed.max}. `
     + `Genre-Band (alle mögen das Genre, die Besetzung passt): Sound ${pct(r.genreBonus)}, Zusammenspiel bis ${g.genre.max}. `
-    + `Hybrid (alle mögen noch ein zweites Genre): Sound ${pct(r.hybridBonus)}, Zusammenspiel bis ${g.hybrid.max}.`;
+    + `Hybrid (alle mögen noch ein zweites Genre): Sound ${pct(r.hybridBonus)}, Zusammenspiel bis ${g.hybrid.max}. `
+    + `Crossover (sogar ein drittes, sehr selten): Sound ${pct(r.crossoverBonus)}.`;
 }
 
-export function bandTitle(primary, second) {
+export function bandTitle(primary, second, third = null) {
   const name = genreName(primary);
+  if (third) return `${name}-Crossover-Band`;
   if (second) return `${genreName(second)}-${name}-Band`;
   return name.includes('-') ? `${name}-Band` : `${name}band`;
 }
@@ -87,6 +92,7 @@ export function bandGenreTags(b) {
 /** Farbe einer Band in Menü und Seitenleiste: Genre-Farbe, bei Hybriden beide, sonst neutral. */
 export function bandFill(b) {
   if (b.genres.length === 2) return { cls: 'genre-fill-split', style: `--fill: linear-gradient(110deg, var(--c-${b.genres[1]}) 0 50%, var(--c-${b.genres[0]}) 50% 100%)` };
+  if (b.genres.length === 3) return { cls: 'genre-fill-split', style: `--fill: linear-gradient(110deg, var(--c-${b.genres[1]}) 0 33%, var(--c-${b.genres[0]}) 33% 67%, var(--c-${b.genres[2]}) 67% 100%)` };
   return { cls: b.genres.length ? `genre-fill-${b.genres[0]}` : 'genre-fill-none', style: '' };
 }
 

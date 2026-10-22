@@ -480,3 +480,12 @@ test('Große Bands: mehr Sound und mehr Gage je Mitglied über zwei', function (
     $venue = Signed\Game\BandCalc::venue(0);
     checkEquals((int) round(Signed\Game\BandCalc::gagePerSong($venue, 0.0) * 1.4), Signed\Game\BandCalc::gagePerSong($venue, 0.0, 6));
 });
+
+test('Crossover: alle teilen drei Genres', function (): void {
+    $m = static fn ($id, $type) => musician(['id' => $id, 'instr1' => $type, 'genres' => ['pop', 'rock', 'folk']]);
+    $identity = BandCalc::identity([$m(1, 'guitar'), $m(2, 'drums'), $m(3, 'vocals')]);
+    check($identity['third'] !== null, 'drittes Genre erkannt');
+    checkEquals(Balance::CROSSOVER_BONUS, $identity['bonus']);
+    check(str_contains($identity['title'], 'Crossover'), $identity['title']);
+    checkEquals(120.0, BandCalc::maxCohesion($identity), 'Zusammenspiel wie Hybrid');
+});

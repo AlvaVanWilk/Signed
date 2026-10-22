@@ -75,9 +75,10 @@ final class BandCalc
 
     /**
      * Genre einer Band ergibt sich aus der Besetzung: Teilen alle Mitglieder ein Genre und passt die Besetzung dazu,
-     * ist es eine Genre-Band (z. B. Rockband). Teilen sie zusätzlich ein zweites Genre, wird sie hybrid (Punk-Rock-Band).
+     * ist es eine Genre-Band (z. B. Rockband). Teilen sie zusätzlich ein zweites Genre, wird sie hybrid (Punk-Rock-Band),
+     * bei einem dritten sogar Crossover (Rock-Crossover-Band; das dritte ergibt sich aus der festen Genre-Reihenfolge).
      * $prefer/$preferSecond halten die bisherige Ausrichtung, wenn mehrere Genres in Frage kommen.
-     * @return array{primary: ?string, second: ?string, title: ?string, bonus: float, music: string, checks: array<string, array>}
+     * @return array{primary: ?string, second: ?string, third: ?string, title: ?string, bonus: float, music: string, checks: array<string, array>}
      */
     public static function identity(array $members, string $prefer = '', ?string $preferSecond = null): array
     {
@@ -102,9 +103,11 @@ final class BandCalc
         $eligible = array_keys(array_filter($checks, static fn ($c) => $c['allFans'] && $c['lineup']));
         $primary = in_array($prefer, $eligible, true) ? $prefer : ($eligible[0] ?? null);
         $second = null;
+        $third = null;
         if ($primary !== null) {
             $shared = array_values(array_filter(array_keys($checks), static fn ($g) => $g !== $primary && $checks[$g]['allFans']));
             $second = in_array($preferSecond, $shared, true) ? $preferSecond : ($shared[0] ?? null);
+            $third = array_values(array_diff($shared, [$second]))[0] ?? null;
         }
         // Musik ohne Genre-Einheit: das Genre, das die meisten mögen.
         $music = $primary ?? array_keys($checks)[0];
@@ -116,17 +119,26 @@ final class BandCalc
         return [
             'primary' => $primary,
             'second' => $second,
-            'title' => $primary === null ? null : self::title($primary, $second),
-            'bonus' => $primary === null ? Balance::MIXED_BONUS : ($second === null ? Balance::GENRE_BONUS : Balance::HYBRID_BONUS),
+            'third' => $third,
+            'title' => $primary === null ? null : self::title($primary, $second, $third),
+            'bonus' => match (true) {
+                $primary === null => Balance::MIXED_BONUS,
+                $second === null => Balance::GENRE_BONUS,
+                $third === null => Balance::HYBRID_BONUS,
+                default => Balance::CROSSOVER_BONUS,
+            },
             'music' => $music,
             'checks' => $checks,
         ];
     }
 
-    /** „Rockband“, „Hip-Hop-Band“, „Punk-Rock-Band“. */
-    public static function title(string $primary, ?string $second): string
+    /** „Rockband“, „Hip-Hop-Band“, „Punk-Rock-Band“, „Rock-Crossover-Band“. */
+    public static function title(string $primary, ?string $second, ?string $third = null): string
     {
         $name = Catalog::GENRES[$primary]['name'];
+        if ($third !== null) {
+            return $name . '-Crossover-Band';
+        }
         if ($second !== null) {
             return Catalog::GENRES[$second]['name'] . '-' . $name . '-Band';
         }

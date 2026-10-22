@@ -74,8 +74,23 @@ const MOODS = {
   partytier: { mouth: 'teeth' },
 };
 
+/**
+ * Merkmale, die nicht im Aussehen gespeichert sind (Ohrringe, rote Lippen), fest aus dem Aussehen abgeleitet:
+ * dieselbe Musikerin sieht immer gleich aus, aber nicht alle haben sie.
+ */
+function trait(look, salt) {
+  let h = 2166136261;
+  for (const ch of `${salt}|${look.skin}|${look.hair}|${look.hairColor}|${look.shirt}|${look.glasses}|${look.hat}`) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  return ((h >>> 0) % 100) / 100;
+}
+
 function eyes(kind, skin) {
-  if (kind === 'happy') return line('M40.6 45.6 Q43 42.8 45.4 45.6', 1.4) + line('M54.6 45.6 Q57 42.8 59.4 45.6', 1.4);
+  const open = `<ellipse cx="43" cy="45" rx="2.3" ry="2.8" fill="${INK}"/><ellipse cx="57" cy="45" rx="2.3" ry="2.8" fill="${INK}"/>
+    <circle cx="43.8" cy="44" r="0.8" fill="#fff"/><circle cx="57.8" cy="44" r="0.8" fill="#fff"/>`;
+  // Zufrieden geschlossen – ab und zu gehen sie doch kurz auf (CSS blendet um, jede Figur in eigenem Takt).
+  if (kind === 'happy') {
+    return `<g class="fig-shut">${line('M40.6 45.6 Q43 42.8 45.4 45.6', 1.4) + line('M54.6 45.6 Q57 42.8 59.4 45.6', 1.4)}</g><g class="fig-open">${open}</g>`;
+  }
   const dots = `<ellipse cx="43" cy="45" rx="2.3" ry="2.8" fill="${INK}"/><ellipse cx="57" cy="45" rx="2.3" ry="2.8" fill="${INK}"/>
     <circle cx="43.8" cy="44" r="0.8" fill="#fff"/><circle cx="57.8" cy="44" r="0.8" fill="#fff"/>`;
   if (kind !== 'lidded') return dots;
@@ -93,12 +108,18 @@ function head(look, skin, sing, mood = null) {
   if (HAIR_BACK[style]) p.push(`<path d="${HAIR_BACK[style]}" fill="${hair}"/>`);
   p.push(`<g stroke="${INK}" stroke-width="1.2"><ellipse cx="31.5" cy="45" rx="3.5" ry="4.5" fill="${skin}"/><ellipse cx="68.5" cy="45" rx="3.5" ry="4.5" fill="${skin}"/>`);
   p.push(`<ellipse cx="50" cy="43" rx="19" ry="18" fill="${skin}"/></g>`);
+  if (look.gender === 'f' && trait(look, 'earrings') < 0.6) {
+    p.push(`<g fill="#f2c14e" stroke="${INK}" stroke-width="0.7"><circle cx="31" cy="50.4" r="1.2"/><circle cx="31" cy="53.6" r="2.2"/><circle cx="69" cy="50.4" r="1.2"/><circle cx="69" cy="53.6" r="2.2"/></g>`);
+  }
   // Gesicht: Augen, Brauen und Mund nach dem Charakter, rote Bäckchen – beim Singen ein runder Mund.
   const face = MOODS[mood] ?? {};
   p.push(pivot(50, 45, 'fig-eyes', eyes(face.eyes, skin)));
   if (BROWS[mood]) p.push(BROWS[mood]);
   p.push('<ellipse cx="38" cy="51" rx="3.2" ry="1.9" fill="#ff8fa3" opacity="0.6"/><ellipse cx="62" cy="51" rx="3.2" ry="1.9" fill="#ff8fa3" opacity="0.6"/>');
-  const smile = MOUTHS[face.mouth ?? 'smile'];
+  // Ein Teil der Musikerinnen hat rote Lippen: derselbe Mund, nur rot und etwas kräftiger.
+  const lips = look.gender === 'f' && trait(look, 'lips') < 0.4;
+  const mouth = MOUTHS[face.mouth ?? 'smile'];
+  const smile = lips ? mouth.replace(`stroke="${INK}" stroke-width="1.2"`, 'stroke="#c2405a" stroke-width="1.8"').replace('fill="#c2405a"', 'fill="#d23a5c"') : mouth;
   // Sänger: singender Mund beim Spielen, Lächeln beim Warten (CSS blendet um).
   p.push(sing
     ? `<g class="fig-singing">${pivot(50, 53.5, 'fig-mouth', `<ellipse cx="50" cy="53.5" rx="2.6" ry="2.4" fill="#7a2338" stroke="${INK}" stroke-width="0.8"/>`)}</g><g class="fig-resting">${smile}</g>`

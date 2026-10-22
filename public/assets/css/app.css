@@ -1248,3 +1248,8 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .file-side { text-align: right; font-size: 0.8rem; }
 .file-row.busy, .in-band .file-row { opacity: 0.65; }
 @media (max-width: 640px) { .file-row { grid-template-columns: 50px minmax(0, 1fr); } .file-skills, .file-side { grid-column: 2; text-align: left; } }
+/* Zufrieden geschlossene Augen gehen ab und zu kurz auf. */
+.fig .fig-open, .fig-stage.idle .fig g.fig-open { opacity: 0; animation: fig-peek 7.3s step-end infinite; animation-delay: var(--d, 0s); }
+.fig .fig-shut, .fig-stage.idle .fig g.fig-shut { animation: fig-peek-shut 7.3s step-end infinite; animation-delay: var(--d, 0s); }
+@keyframes fig-peek { 0%, 78% { opacity: 0; } 79%, 92% { opacity: 1; } 93%, 100% { opacity: 0; } }
+@keyframes fig-peek-shut { 0%, 78% { opacity: 1; } 79%, 92% { opacity: 0; } 93%, 100% { opacity: 1; } }

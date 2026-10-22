@@ -260,6 +260,12 @@ final class Balance
         'priceFactor' => [1, 3, 8],
     ];
     /**
+     * Etüden: Noten pro Sekunde je Rolle bei Können 0 und 100, dazwischen nach Können^ETUDE_CURVE.
+     * So ist jede Etüde bei gleichem Können gleich dicht, egal welches Muster, Tempo oder Genre gezogen wurde.
+     */
+    public const ETUDE_RATE = ['drums' => [1.4, 5.8], 'bass' => [0.55, 2.1], 'comp' => [0.55, 3.4], 'lead' => [0.55, 3.0]];
+    public const ETUDE_CURVE = 1.5;
+    /**
      * Allein üben lassen (ohne Minispiel): dauert länger und bringt nur diesen Anteil einer perfekten Solo-Probe.
      * Wer selbst mitspielt, bekommt je nach Treffern bis zum Vierfachen – ab etwa 40 % Treffern lohnt sich Mitspielen.
      */

@@ -452,6 +452,11 @@ test('Etüden: alle Genres und Instrumente, mehr Können = mehr Noten, dieselbe 
             }
         }
     }
+    // Gleiches Können, gleiche Dichte – egal welches Muster und Tempo die Nummer zieht.
+    foreach (['drums', 'bass', 'guitar'] as $instrument) {
+        $counts = array_map(static fn ($seed) => count(Signed\Game\Etude::build($instrument, 'rock', 40, $seed, 24)['notes']), range(1, 30));
+        check(min($counts) >= 0.85 * max($counts), "$instrument: Etüden gleich dicht");
+    }
     checkEquals(Signed\Game\Etude::build('keys', 'jazz', 40, 99, 24), Signed\Game\Etude::build('keys', 'jazz', 40, 99, 24));
     checkEquals(['root' => 10, 'minor' => false, 'tones' => [0, 4, 7]], array_diff_key(Signed\Game\Etude::chord('bVII', 'major'), ['name' => 1]));
     checkEquals([0, 3, 7, 10], Signed\Game\Etude::chord('ii7', 'major')['tones']);

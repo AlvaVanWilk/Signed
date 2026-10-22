@@ -176,15 +176,27 @@ function tone(type, midi, t, length, vel = 0.8, out = master) {
     gain.gain.setValueAtTime(peak, t + Math.max(attack, length));
     gain.gain.exponentialRampToValueAtTime(0.0001, t + Math.max(attack, length) + 0.15);
   };
+  // Gezupft/angeschlagen: klingt von selbst aus; ein gehaltener Ton (länger als das Ausklingen) bleibt leiser stehen bis zum Ende.
+  const pluck = (attack, peak, decay) => {
+    if (length <= decay) {
+      envelope(gain, t, attack, peak, decay);
+      return;
+    }
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(peak, t + attack);
+    gain.gain.exponentialRampToValueAtTime(peak * 0.45, t + attack + 0.3);
+    gain.gain.setValueAtTime(peak * 0.45, t + length);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + length + 0.25);
+  };
 
   switch (type) {
     case 'guitar': {
       const lp = ctx.createBiquadFilter();
       lp.type = 'lowpass';
       lp.frequency.setValueAtTime(3200, t);
-      lp.frequency.exponentialRampToValueAtTime(700, t + 0.4);
+      lp.frequency.exponentialRampToValueAtTime(length > 0.6 ? 1400 : 700, t + 0.4);
       osc('sawtooth', f).connect(lp).connect(gain);
-      envelope(gain, t, 0.003, 0.32 * vel, 0.6);
+      pluck(0.003, 0.32 * vel, 0.6);
       break;
     }
     case 'bass': {
@@ -196,7 +208,7 @@ function tone(type, midi, t, length, vel = 0.8, out = master) {
     case 'keys': {
       osc('triangle', f).connect(gain);
       osc('sine', f * 2).connect(gain);
-      envelope(gain, t, 0.004, 0.3 * vel, 0.9);
+      pluck(0.004, 0.3 * vel, 0.9);
       break;
     }
     case 'synth': {
@@ -207,7 +219,7 @@ function tone(type, midi, t, length, vel = 0.8, out = master) {
       osc('sawtooth', f, -8).connect(lp);
       osc('sawtooth', f, 8).connect(lp);
       lp.connect(gain);
-      envelope(gain, t, 0.01, 0.22 * vel, 0.45);
+      pluck(0.01, 0.22 * vel, 0.45);
       break;
     }
     case 'vocals': {
@@ -278,7 +290,7 @@ function tone(type, midi, t, length, vel = 0.8, out = master) {
     }
     default:
       osc('triangle', f).connect(gain);
-      envelope(gain, t, 0.005, 0.3 * vel, 0.5);
+      pluck(0.005, 0.3 * vel, 0.5);
   }
   for (const s of sources) {
     s.start(t);

@@ -163,8 +163,10 @@ Ein Lied dauert 24 Sekunden: 12 Takte 4/4 (oder 16 Takte 3/4) bei 120 BPM – al
 **Etüden (Solo-Probe, alle Instrumente):** Statt der Aufnahme spielt man eine Übung, die das Spiel aus typischen
 Genre-Bausteinen erzeugt (`Styles`: Akkordfolgen, Grooves, Bass-, Begleit- und Melodie-Rhythmen je Genre; `Etude`).
 Eigenes Tempo, Taktart (Folk 3/4) und Tonart, Swing bei Jazz und Hip-Hop, leise Synthesizer-Begleitung ohne die eigene Rolle.
-Muster tragen Wichtigkeiten (9 = Gerüst … 1 = Verzierung, zusätzlich durch die Taktposition gedeckelt); die Schwelle sinkt
-stufenlos mit dem Können (9 − 9 × (Können/100)²). Alles Zufällige hängt an einer Nummer: dieselbe Etüde wird mit mehr Können
+Muster tragen Wichtigkeiten (9 = Gerüst … 1 = Verzierung, zusätzlich durch die Taktposition gedeckelt). Das Können legt
+die Notendichte fest (`Balance::ETUDE_RATE`, Noten pro Sekunde je Rolle von Können 0 bis 100, dazwischen nach Können^1,5);
+genommen werden die wichtigsten Noten. So ist jede Etüde bei gleichem Können gleich schwer, egal welches Muster, Tempo oder
+Genre gezogen wurde (vorher schwankte die Dichte bis zum Vierfachen). Gehaltene Töne klingen auch so lange. Alles Zufällige hängt an einer Nummer: dieselbe Etüde wird mit mehr Können
 voller, bleibt aber dieselbe (Grundlage fürs spätere Notizbuch und Songwriting). Probe: `probe-etuede.html`.
 Gesang und Geige spielen die Etüde im Tonhöhen-Spiel (Steuerung unverändert), Rap im Hip-Hop im Rhythmus-Spiel. Vor großen
 Sprüngen (ab 3 Stufen) endet der Ton früher (0,07 s pro Stufe), damit Zeit zum Hinübergleiten bleibt – in Etüden und in

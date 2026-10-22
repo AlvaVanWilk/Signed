@@ -42,9 +42,6 @@ final class Etude
         $lead = $set($style['lead']);
 
         $d = max(0.0, min(1.0, $skill / 100));
-        // Stufenlos: Jede Note hat eine Wichtigkeit (Ziffer plus eigener Bruchteil); mit jedem Können-Punkt kommen
-        // einzelne dazu. Erst langsam, dann schneller: Können 35 ≈ ab 7,9, 50 ≈ ab 6,8, 70 ≈ ab 4,6, 85 ≈ ab 2,5, 100 = alles.
-        $threshold = 9 - 8.999 * $d ** 2;
         $steps = $style['meter'] * 4;
         $stepSec = 60 / $bpm / 4;
         $barSec = $steps * $stepSec;
@@ -115,10 +112,15 @@ final class Etude
             }
         }
 
-        // Jetzt erst nach Können ausdünnen – die Entscheidungen oben sind davon unabhängig.
-        // Singen und Geige: Anfänger nur das Gerüst, Profis deutlich mehr Töne (aber nie jede Verzierung).
-        $limit = $pitchGame ? max($threshold, 6 - 2 * $d) : $threshold;
-        $notes = array_values(array_filter($notes, static fn ($n) => $n['w'] >= $limit && $n['t'] < $duration - 0.3));
+        // Jetzt erst nach Können ausdünnen – die Entscheidungen oben sind davon unabhängig. Das Können legt fest, wie viele
+        // Noten pro Sekunde kommen (gleich für jedes Muster, Tempo und Genre); davon die wichtigsten. Mit mehr Können
+        // kommen also nur Noten dazu. Singen und Geige: nie die feinsten Verzierungen.
+        [$low, $high] = Balance::ETUDE_RATE[$role];
+        $count = (int) round(($low + ($high - $low) * $d ** Balance::ETUDE_CURVE) * $duration);
+        $floor = $pitchGame ? 6 - 2 * $d : 0;
+        $notes = array_values(array_filter($notes, static fn ($n) => $n['w'] >= $floor && $n['t'] < $duration - 0.3));
+        usort($notes, static fn ($a, $b) => $b['w'] <=> $a['w']);
+        $notes = array_slice($notes, 0, max(1, $count));
         usort($notes, static fn ($a, $b) => $a['t'] <=> $b['t'] ?: $a['l'] <=> $b['l']);
 
         $out = [

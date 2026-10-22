@@ -26,8 +26,6 @@ function speedFor(notes) {
   return Math.max(SPEED, Math.min(MAX_SPEED, typical * 2));
 }
 const HOLD_KEYS = [' ', 'arrowup', 'w', 'j'];
-/** Wie schnell der Ton auf Drücken und Loslassen reagiert (größer = schneller). */
-const RESPONSE = 14;
 /** So lange (Sekunden) schwebt der Ton nach dem Loslassen, bevor er fällt. */
 const HOVER = 0.13;
 
@@ -99,11 +97,11 @@ export function createPitchGame(container, game) {
   }
 
   function step(now, dt) {
-    // Schnelle Reaktion: Drücken steigt, Loslassen bremst fast sofort (sonst schießt man übers Ziel hinaus).
-    // Schweben: kurz nach dem Loslassen bleibt der Ton stehen – ruhiges Tippen hält ihn so auf einer Höhe.
+    // Ohne Schwung, damit es berechenbar bleibt: Drücken steigt mit festem Tempo, nach dem Loslassen schwebt der
+    // Ton kurz (ruhiges Tippen hält ihn auf einer Höhe) und fällt dann mit festem Tempo. Gleich langes Tippen
+    // bewegt ihn also immer gleich weit.
     const hovering = !holding && clock() - releasedAt < HOVER;
-    const target = holding ? speed : hovering ? 0 : -speed;
-    velocity += (target - velocity) * Math.min(1, dt * RESPONSE);
+    velocity = holding ? speed : hovering ? 0 : -speed;
     pos += velocity * dt;
     if (pos <= 0 || pos >= 1) {
       pos = Math.max(0, Math.min(1, pos));

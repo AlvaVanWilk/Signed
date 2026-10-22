@@ -91,7 +91,7 @@ sind bis zu 50 % stärker als ein Duo (`MEMBER_SOUND_BONUS`). Dazu bekommen sie 
 | Jazz | Bass, Saxophon oder Trompete |
 | Elektro | Keyboard oder Turntables |
 | Hip-Hop | Gesang, Turntables |
-| Folk | Geige, Flöte oder Gitarre |
+| Folk | Gitarre und Geige oder Flöte |
 
 - Kommen mehrere Genres in Frage, bleibt die Band bei ihrem bisherigen; sonst gilt die Reihenfolge oben.
 - Ohne Genre-Einheit (**gemischte Band**) spielt die Musik im Genre, das die meisten Mitglieder mögen – und keiner

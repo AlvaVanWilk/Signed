@@ -85,7 +85,7 @@ final class Catalog
         'jazz' => [[['bass'], 1], [['sax', 'trumpet'], 1]],
         'elektro' => [[['keys', 'turntables'], 1]],
         'hiphop' => [[['vocals'], 1], [['turntables'], 1]],
-        'folk' => [[['violin', 'flute', 'guitar'], 1]],
+        'folk' => [[['guitar'], 1], [['violin', 'flute'], 1]],
     ];
 
     /** Diese Instrumente üben im Tonhöhen-Spiel statt im Rhythmus-Spiel. */

@@ -1,5 +1,5 @@
 import { api } from '../api.js';
-import { bandGenreTags, bandIdentity, emptySlot, face, fullName, gearCard, gearModel, genreIcon, genreTag, instrumentEmoji, instrumentIcon, instrumentName, ownGear, managerCard, musicianCard, sortedGenres } from '../cards.js';
+import { bandGenreTags, bandIdentity, emptySlot, genreRuleText, face, fullName, gearCard, gearModel, genreIcon, genreTag, instrumentEmoji, instrumentIcon, instrumentName, ownGear, managerCard, musicianCard, sortedGenres } from '../cards.js';
 import { app, bandById, cat, defineActions, isBusy, managerById, musicianById, mutate, navigate, rerender, runningFor } from '../core.js';
 import { openLive } from '../live.js';
 import { coverHtml, startPractice, startRecordSong } from '../play.js';
@@ -114,7 +114,7 @@ function overview(b, members) {
     <div class="stat-grid">
       ${statTile('sound', b, fmt1(b.sound), { flash: `sound-${b.id}` })}
       ${statTile('fame', b, fmt1(b.fame), { extra: gig.nextVenue ? bar(gig.progress, 1, 'thin') : '' })}
-      ${statTile('cohesion', b, `${fmt0(b.cohesion)}<small> / 100</small>`, { extra: bar(b.cohesion, 100, 'thin') })}
+      ${statTile('cohesion', b, `${fmt0(b.cohesion)}<small> / ${fmt0(b.maxCohesion)}</small>`, { extra: bar(b.cohesion, b.maxCohesion, 'thin') })}
       ${statTile('chemistry', b, chemistryLabel(b.chemistry))}
       ${statTile('records', b, fmt0(b.records))}
     </div>
@@ -146,9 +146,9 @@ function genrePanel(b, members) {
   return `
     <section class="panel genre-panel">
       <div class="section-head"><h2>Genre</h2>
-        <span>${b.title ? `${bandGenreTags(b)} <b>${esc(b.title)}</b> · +${percent(b.genreBonus - 1)} Sound` : '<span class="muted">Noch kein gemeinsames Genre</span>'}</span>
+        <span>${b.title ? `${bandGenreTags(b)} <b>${esc(b.title)}</b> · +${percent(b.genreBonus - 1)} Sound` : `<span class="bad">Gemischte Band: −${percent(1 - b.genreBonus)} Sound</span>`}</span>
       </div>
-      <p class="muted small">Mögen alle Mitglieder ein Genre und passt die Besetzung, wird die Band eine Genre-Band (+${percent(cat().rules.genreBonus - 1)} Sound). Mögen alle noch ein zweites Genre, wird sie hybrid (+${percent(cat().rules.hybridBonus - 1)}).</p>
+      <p class="muted small">${genreRuleText()}</p>
       <div class="genre-rows">${rows.map(([genre, check]) => `
         <div class="genre-row ${b.genres.includes(genre) ? 'reached' : ''}">
           ${genreTag(genre)}
@@ -173,8 +173,8 @@ const STAT_INFO = {
           <li>Der Durchschnitt zählt ${Math.round(r.soundMeanWeight * 100)} %, der <b>Schwächste</b> ${Math.round((1 - r.soundMeanWeight) * 100)} %: Eine schwache Stelle zieht runter.</li>
           <li>Verschiedene Instrumente: +${Math.round(r.lineupBonus * 100)} % je weiterem, höchstens +${Math.round(r.lineupBonus * r.lineupBonusMaxTypes * 100)} %.</li>
           <li><b>Volle Bühne</b>: +${Math.round(r.memberSoundBonus * 100)} % für jedes Mitglied über ${r.minMembers}.</li>
-          <li><b>Zusammenspiel</b>: × ${fmt2(r.cohesionFloor)} bis × 1 – gerade × ${fmt2(fx.cohesionSound)}.</li>
-          <li><b>Genre-Band</b>: +${Math.round((r.genreBonus - 1) * 100)} %${b.genreBonus > 1 ? ' – hat sie' : ''}.</li>
+          <li><b>Zusammenspiel</b>: × ${fmt2(r.cohesionFloor)} bei 0, × 1 bei 100 – gerade × ${fmt2(fx.cohesionSound)}.</li>
+          <li><b>Genre</b>: gemischt −${Math.round((1 - r.mixedBonus) * 100)} %, Genre-Band +${Math.round((r.genreBonus - 1) * 100)} %, Hybrid +${Math.round((r.hybridBonus - 1) * 100)} % – gerade × ${fmt2(b.genreBonus)}.</li>
         </ul>
         <h3>Was er bewirkt</h3>
         <ul>
@@ -201,12 +201,13 @@ const STAT_INFO = {
   },
   cohesion: {
     title: 'Zusammenspiel',
-    text: (b) => `<p>Wie gut die Band eingespielt ist (0 bis 100).</p>
+    text: (b) => `<p>Wie gut die Band eingespielt ist – gerade höchstens <b>${fmt0(b.maxCohesion)}</b>.</p>
       <h3>Woher es kommt</h3>
       <ul><li>Bandproben, Auftritte und Aufnahmen im Studio. Die Chemie bestimmt, wie schnell es wächst.</li>
+      <li>Das Genre bestimmt, wie weit: Gemischte Bands verstehen sich schwer – halb so schnell, höchstens ${fmt0(cat().rules.cohesionByGenre.mixed.max)}. Genre-Bands bis ${fmt0(cat().rules.cohesionByGenre.genre.max)}, Hybrid-Bands sogar bis ${fmt0(cat().rules.cohesionByGenre.hybrid.max)}.</li>
       <li>Neue Mitglieder, Rauswürfe und neue Rollen kosten etwas. Wer zurück aufs alte Instrument wechselt, bekommt es zurück.</li></ul>
       <h3>Was es bewirkt</h3>
-      <ul><li>Sound × ${fmt2(cat().rules.cohesionFloor)} bei 0 bis × 1 bei 100 – gerade × ${fmt2(b.effects.cohesionSound)}.</li></ul>`,
+      <ul><li>Sound × ${fmt2(cat().rules.cohesionFloor)} bei 0, × 1 bei 100, darüber noch mehr – gerade × ${fmt2(b.effects.cohesionSound)}.</li></ul>`,
   },
   chemistry: {
     title: 'Chemie',
@@ -294,8 +295,8 @@ function practice(b, members) {
     ${courseTiles(members)}
     <div class="action-grid">
       ${actionTile({
-        icon: '🥁', title: 'Bandprobe', meta: `${songsMeta(b.options.rehearsal.songs)} · ${b.cohesion >= 100 ? 'Zusammenspiel ist schon voll' : 'Zusammenspiel'} · Können für alle: <b>${gainRange(members.map((m) => m.gains?.rehearsal ?? 0))}</b> je Musiker`,
-        body: b.cohesion >= 100 ? '<span class="small muted">Die Band ist eingespielt. Für mehr Können lohnt sich jetzt Solo-Üben mehr.</span>' : '',
+        icon: '🥁', title: 'Bandprobe', meta: `${songsMeta(b.options.rehearsal.songs)} · ${b.cohesion >= b.maxCohesion ? 'Zusammenspiel ist schon voll' : 'Zusammenspiel'} · Können für alle: <b>${gainRange(members.map((m) => m.gains?.rehearsal ?? 0))}</b> je Musiker`,
+        body: b.cohesion >= b.maxCohesion ? '<span class="small muted">Die Band ist eingespielt. Für mehr Können lohnt sich jetzt Solo-Üben mehr.</span>' : '',
         button: `<button class="btn primary" data-act="startActivity" data-id="${b.id}" data-type="rehearsal" ${blocked ? 'disabled' : ''}>Proben</button>`,
       })}
       ${members.map((m) => practiceTile(m, isBusy(m.busyUntil) || isBusy(b.busyUntil))).join('')}
@@ -743,7 +744,7 @@ function openCreateBand() {
     const identity = bandIdentity(picks().map((p) => ({ type: p.type, genres: musicianById(p.id).genres })));
     summary.innerHTML = problems.length
       ? `<span class="warn">${problems.map(esc).join(' ')}</span>`
-      : `<span class="ok">${selected.size} Musiker – ${identity.title ? `das wird eine ${esc(identity.title)} (+${percent(identity.bonus - 1)} Sound)` : 'noch ohne gemeinsames Genre'}.</span>`;
+      : `<span class="ok">${selected.size} Musiker – ${identity.title ? `das wird eine ${esc(identity.title)} (+${percent(identity.bonus - 1)} Sound)` : `noch ohne gemeinsames Genre (−${percent(1 - identity.bonus)} Sound, Zusammenspiel höchstens ${cat().rules.cohesionByGenre.mixed.max})`}.</span>`;
   };
   drawList();
   update();

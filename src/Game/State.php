@@ -79,6 +79,7 @@ final class State
         foreach ($bands as $band) {
             $list = $members[$band['id']] ?? [];
             $identity = (new Bands($repo))->syncIdentity($band, $list);
+            $band['cohesion'] = min($band['cohesion'], BandCalc::maxCohesion($identity));
             $sound = BandCalc::sound($list, $band['cohesion'], $gearMap, $identity['bonus']);
             if (abs($sound - $band['sound']) >= 0.05) {
                 // Zwischenspeicher für die Charts (Kritikerwertung).
@@ -100,7 +101,7 @@ final class State
                 $try = $list;
                 $try[$i]['band_slot'] = $m['band_slot'] === 2 ? 1 : 2;
                 $back = $band['slot_return'][$m['id']] ?? null;
-                $cohesion = $back !== null && $back[0] === $try[$i]['band_slot'] ? min(100.0, $band['cohesion'] + $back[1])
+                $cohesion = $back !== null && $back[0] === $try[$i]['band_slot'] ? min(BandCalc::maxCohesion($identity), $band['cohesion'] + $back[1])
                     : ($band['released'] ? max(0.0, $band['cohesion'] - Balance::COHESION_SWITCH_PENALTY) : $band['cohesion']);
                 $slotPreview[$m['id']] = BandCalc::lineupProblems(array_values($try)) ? null : BandCalc::sound(
                     $try,
@@ -126,7 +127,7 @@ final class State
                 'fame' => $fame,
                 'fameOwn' => round($band['fame_own'], 1),
                 'cohesion' => round($band['cohesion'], 1),
-                'maxCohesion' => BandCalc::maxCohesion($chemistry),
+                'maxCohesion' => BandCalc::maxCohesion($identity),
                 'chemistryNotes' => BandCalc::chemistryNotes($list),
                 'chemistry' => $chemistry,
                 'songsRecorded' => $band['songs_recorded'],

@@ -57,6 +57,7 @@ final class Activities
             $fame = BandCalc::bandFame($band, $members);
             [$manager, $level] = $this->repo->bandManager($band);
             $chemistry = BandCalc::chemistry($members);
+            $cohesionRule = BandCalc::cohesionRule(BandCalc::identity($members, $band['genre'], $band['genre2']));
             $venueKey = null;
             $gage = 0;
             $skill = [];
@@ -143,8 +144,8 @@ final class Activities
                     'money' => $gage,
                     'fameGains' => BandCalc::splitFame($members, $fameTotal, $gear),
                     'skill' => $skill,
-                    'cohesion' => round($cohesionPerSong * $songs * $chemistry, 2),
-                    'maxCohesion' => BandCalc::maxCohesion($chemistry),
+                    'cohesion' => round($cohesionPerSong * $songs * $chemistry * $cohesionRule['growth'], 2),
+                    'maxCohesion' => $cohesionRule['max'],
                     'meter' => $sim['meter'],
                     'drops' => $drops,
                     'venue' => $venueKey,

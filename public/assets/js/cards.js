@@ -60,7 +60,17 @@ export function bandIdentity(members, prefer = '', preferSecond = null) {
     const shared = keys.filter((g) => g !== primary && allFans(g));
     second = shared.includes(preferSecond) ? preferSecond : shared[0] ?? null;
   }
-  return { primary, second, title: primary ? bandTitle(primary, second) : null, bonus: primary ? (second ? c.rules.hybridBonus : c.rules.genreBonus) : 1 };
+  return { primary, second, title: primary ? bandTitle(primary, second) : null, bonus: primary ? (second ? c.rules.hybridBonus : c.rules.genreBonus) : c.rules.mixedBonus };
+}
+
+/** Die drei Genre-Stufen in einem Satz: Sound und Zusammenspiel. */
+export function genreRuleText() {
+  const r = cat().rules;
+  const g = r.cohesionByGenre;
+  const pct = (x) => `${x >= 1 ? '+' : '−'}${Math.round(Math.abs(x - 1) * 100)} %`;
+  return `Gemischte Band: Sound ${pct(r.mixedBonus)}, Zusammenspiel wächst halb so schnell, höchstens ${g.mixed.max}. `
+    + `Genre-Band (alle mögen das Genre, die Besetzung passt): Sound ${pct(r.genreBonus)}, Zusammenspiel bis ${g.genre.max}. `
+    + `Hybrid (alle mögen noch ein zweites Genre): Sound ${pct(r.hybridBonus)}, Zusammenspiel bis ${g.hybrid.max}.`;
 }
 
 export function bandTitle(primary, second) {

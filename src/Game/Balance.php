@@ -100,6 +100,8 @@ final class Balance
     // ---------- Sound ----------
     /** Sound = (Gewicht × Durchschnitt + Rest × schwächster Musiker) × Besetzung × Zusammenspiel. */
     public const SOUND_MEAN_WEIGHT = 0.75;
+    /** Gemischte Band (kein gemeinsames Genre): Keiner versteht so recht, was der andere macht – weniger Sound. */
+    public const MIXED_BONUS = 0.8;
     /** Sound-Bonus, wenn alle Mitglieder ein Genre teilen und die Besetzung dazu passt (Genre-Band) … */
     public const GENRE_BONUS = 1.15;
     /** … und wenn sie dazu noch ein zweites Genre teilen (Hybrid, z. B. Punk-Rock). */
@@ -129,7 +131,16 @@ final class Balance
      */
     public const MEMBER_SOUND_BONUS = 0.05;
     public const MEMBER_GAGE_BONUS = 0.10;
-    /** Sound-Faktor bei Zusammenspiel 0; bei 100 ist er 1. */
+    /**
+     * Zusammenspiel je nach Genre-Linie: Höchstwert und wie schnell es wächst. Gemischte Bands harmonieren kaum
+     * (halb so schnell, höchstens 70), Hybrid-Bands teilen sogar zwei Genres (bis 120, Sound dann × 1,06).
+     */
+    public const COHESION_BY_GENRE = [
+        'mixed' => ['max' => 70.0, 'growth' => 0.5],
+        'genre' => ['max' => 100.0, 'growth' => 1.0],
+        'hybrid' => ['max' => 120.0, 'growth' => 1.0],
+    ];
+    /** Sound-Faktor bei Zusammenspiel 0; bei 100 ist er 1 (darüber weiter steigend). */
     public const COHESION_FLOOR = 0.7;
 
     // ---------- Zusammenspiel & Chemie ----------

@@ -62,10 +62,10 @@ Tournee bzw. ausgeschriebenen Gigs (im Spiel ausgegraut markiert).
 Beitrag    = Können × (1 + Instrumentbonus), ohne eigenes Instrument × 0,5
 Instrument = Klang/100 × 0,5 × min(1, Können / (100 − Spielbarkeit))²   (darunter entfaltet es sich deutlich weniger,
              ein einfaches Instrument ist für Anfänger oft besser als ein gutes)
-Sound      = (0,75 × Durchschnitt + 0,25 × schwächster Beitrag) × Genre-Bonus (1 / 1,15 / 1,25)
+Sound      = (0,75 × Durchschnitt + 0,25 × schwächster Beitrag) × Genre (gemischt 0,8 / Genre-Band 1,15 / Hybrid 1,25)
              × (1 + 0,05 × weitere Instrumentenarten, höchstens +20 %)
              × (1 + 0,05 × Mitglieder über 2)            (volle Bühne: 6 Mitglieder × 1,2)
-             × (0,7 + 0,3 × Zusammenspiel/100)
+             × (0,7 + 0,3 × Zusammenspiel/100)             (Hybrid bis 120: × 1,06)
 ```
 
 Ein schwacher Musiker zieht den Sound runter. Große Bands klingen dafür voller: Sechs Musiker mit fünf Instrumentenarten
@@ -91,7 +91,11 @@ sind bis zu 44 % stärker als ein Duo (`MEMBER_SOUND_BONUS`). Dazu bekommen sie 
 | Folk | Geige, Flöte oder Gitarre |
 
 - Kommen mehrere Genres in Frage, bleibt die Band bei ihrem bisherigen; sonst gilt die Reihenfolge oben.
-- Ohne Genre-Einheit spielt die Musik im Genre, das die meisten Mitglieder mögen (ohne Bonus).
+- Ohne Genre-Einheit (**gemischte Band**) spielt die Musik im Genre, das die meisten Mitglieder mögen – und keiner
+  versteht so recht, was der andere macht: Sound × 0,8, Zusammenspiel wächst halb so schnell und höchstens bis 70.
+- Zusammenspiel je nach Linie (`COHESION_BY_GENRE`): gemischt höchstens 70 (halb so schnell), Genre-Band 100,
+  Hybrid 120. Verliert eine Band ihre Linie, sinkt das Zusammenspiel auf den neuen Höchstwert.
+- Bewusst kein eigener Verkaufs- oder Ruhm-Bonus fürs Genre: Der bessere Sound wirkt schon auf Ruhm, Platten und Charts.
 - Wechsel kommen in die Chronik; beim Aufnehmen zeigt das Spiel vorher, ob die Band ihr Genre verliert oder gewinnt.
 - **Band-Plätze:** bis zu 8 Bands – die erste sofort, weitere ab 50, 150, 300, 500, 750, 1.050 und 1.400 Label-Ruhm. Genres dürfen sich wiederholen.
 - **Namensänderung:** vor dem ersten Auftritt frei; danach kostet sie 300 ₲ und der Ruhm am alten Namen geht verloren.

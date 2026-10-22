@@ -163,10 +163,11 @@ final class Studio
         }
 
         $chemistry = BandCalc::chemistry($members);
-        $max = BandCalc::maxCohesion($chemistry);
+        $rule = BandCalc::cohesionRule(BandCalc::identity($members, $band['genre'], $band['genre2']));
+        $max = $rule['max'];
         $cohesion = $band['cohesion'] >= $max
             ? $band['cohesion']
-            : min($max, $band['cohesion'] + Balance::RECORD_SONG_COHESION * $accuracy * $chemistry);
+            : min($max, $band['cohesion'] + Balance::RECORD_SONG_COHESION * $accuracy * $chemistry * $rule['growth']);
         $db->update('bands', ['cohesion' => $cohesion, 'released' => 1], ['id' => $band['id']]);
         $db->update('records', ['songs_done' => count($results), 'song_results' => json_encode($results)], ['id' => $record['id']]);
 

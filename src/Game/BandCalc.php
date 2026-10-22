@@ -117,7 +117,7 @@ final class BandCalc
             'primary' => $primary,
             'second' => $second,
             'title' => $primary === null ? null : self::title($primary, $second),
-            'bonus' => $primary === null ? 1.0 : ($second === null ? Balance::GENRE_BONUS : Balance::HYBRID_BONUS),
+            'bonus' => $primary === null ? Balance::MIXED_BONUS : ($second === null ? Balance::GENRE_BONUS : Balance::HYBRID_BONUS),
             'music' => $music,
             'checks' => $checks,
         ];
@@ -223,12 +223,20 @@ final class BandCalc
     }
 
     /**
-     * Höchstwert des Zusammenspiels: immer 100. Chemie bremst nur, wie schnell es wächst (× Chemie);
-     * früher begrenzte sie den Höchstwert, dann blieben Bands mit Reibung für immer stecken.
+     * Zusammenspiel je nach Genre-Linie (COHESION_BY_GENRE): Höchstwert und Wachstum. Die Chemie bremst zusätzlich,
+     * wie schnell es wächst (× Chemie), begrenzt aber nicht den Höchstwert.
+     * @param array $identity siehe identity()
+     * @return array{max: float, growth: float}
      */
-    public static function maxCohesion(float $chemistry): float
+    public static function cohesionRule(array $identity): array
     {
-        return 100.0;
+        $kind = $identity['primary'] === null ? 'mixed' : ($identity['second'] === null ? 'genre' : 'hybrid');
+        return Balance::COHESION_BY_GENRE[$kind];
+    }
+
+    public static function maxCohesion(array $identity): float
+    {
+        return self::cohesionRule($identity)['max'];
     }
 
     /**

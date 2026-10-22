@@ -1,4 +1,4 @@
-import { genreName, genreTag, instrumentIcon, instrumentName } from './cards.js';
+import { genreName, genreRuleText, genreTag, instrumentIcon, instrumentName } from './cards.js';
 import { app, bandById, cat, defineActions, musicianById } from './core.js';
 import { closeAllModals, esc, openModal } from './ui.js';
 
@@ -22,7 +22,7 @@ export function openGenreInfo(genre, m = null) {
   const modal = openModal({ html: `
     <div class="eyebrow">Genre</div>
     <h2>${genreTag(genre)}</h2>
-    <p>Mögen alle in einer Band dasselbe Genre und passt die Besetzung, wird sie eine Genre-Band: <b>Sound +${Math.round((c.rules.genreBonus - 1) * 100)} %</b>. Das Genre bestimmt auch, welche Musik die Band spielt.</p>
+    <p>${genreRuleText()} Das Genre bestimmt auch, welche Musik die Band spielt.</p>
     <p><b>Voraussetzung für eine ${esc(genreName(genre))}-Band:</b> Alle mögen ${esc(genreName(genre))}, und dabei sind ${esc(needs)}.</p>
     ${now ? `<h3>Gerade</h3>${now}` : ''}
     <h3>Deine Musiker, die ${esc(genreName(genre))} mögen</h3>

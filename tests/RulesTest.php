@@ -28,7 +28,7 @@ test('Genre ergibt sich aus der Besetzung: alle mögen es und die Instrumente pa
     $rock = static fn (string $instrument, array $genres = ['rock']) => musician(['instr1' => $instrument, 'genres' => $genres]);
     $none = BandCalc::identity([$rock('guitar'), $rock('bass'), $rock('vocals', ['pop'])]);
     checkEquals(null, $none['primary']);
-    checkEquals(1.0, $none['bonus']);
+    checkEquals(Balance::MIXED_BONUS, $none['bonus'], 'gemischte Band: weniger Sound');
     checkEquals('rock', $none['music'], 'Ohne Genre spielt die Musik, die die meisten mögen');
 
     $noDrums = BandCalc::identity([$rock('guitar'), $rock('vocals')]);
@@ -87,7 +87,11 @@ test('Chemie: Divas reiben sich, ein Ruhepol dämpft', function () {
     check(BandCalc::chemistry($divas) < 1.0);
     check(BandCalc::chemistry($calm) > BandCalc::chemistry($divas));
     check(BandCalc::chemistry($team) > 1.0);
-    checkEquals(100.0, BandCalc::maxCohesion(BandCalc::chemistry($divas)), 'Chemie bremst nur, das Maximum bleibt 100');
+    // Höchstwert hängt an der Genre-Linie, nicht an der Chemie.
+    checkEquals(70.0, BandCalc::maxCohesion(['primary' => null, 'second' => null]), 'gemischt: höchstens 70');
+    checkEquals(100.0, BandCalc::maxCohesion(['primary' => 'rock', 'second' => null]));
+    checkEquals(120.0, BandCalc::maxCohesion(['primary' => 'rock', 'second' => 'punk']), 'Hybrid: über 100');
+    checkEquals(0.5, BandCalc::cohesionRule(['primary' => null, 'second' => null])['growth'], 'gemischt: halb so schnell');
     $notes = BandCalc::chemistryNotes($divas);
     check(count(array_filter($notes, static fn ($n) => !$n['good'] && str_contains($n['text'], 'reiben sich'))) > 0, 'Erklärt, wer sich reibt');
 });

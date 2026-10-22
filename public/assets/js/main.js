@@ -1,5 +1,5 @@
 import { api } from './api.js';
-import { actions, app, bandById, cat, defineActions, liveMoney, musicianById, mutate, navigate, onRender, refresh, rerender, serverNow } from './core.js';
+import { actions, app, bandById, cat, defineActions, isBusy, liveMoney, musicianById, mutate, navigate, onRender, refresh, rerender, serverNow } from './core.js';
 import { bandFill, genreGlyph, levelUpBanners, musicianCard } from './cards.js';
 import { closeAllModals, duration, esc, fmt1, fmtGain, money, openModal, percent, timeAgo, toast, topModal } from './ui.js';
 import './celebrate.js';
@@ -54,7 +54,12 @@ function subnav(route) {
     <nav class="subnav">
       ${s.bands.map((b) => {
         const fill = bandFill(b);
-        return `<a href="#/band/${b.id}" class="subnav-btn ${fill.cls} ${active('band', b.id) ? 'active' : ''}" style="${fill.style}">${b.genres.map(genreGlyph).join('')}${esc(b.name)}</a>`;
+        // Beschäftigt: laufende Streifen – kräftig, wenn die ganze Band weg ist, zart, wenn nur ein Teil fehlt.
+        const members = s.musicians.filter((m) => m.bandId === b.id);
+        const away = members.filter((m) => isBusy(m.busyUntil)).length;
+        const busy = isBusy(b.busyUntil) || (away && away === members.length) ? 'busy-all' : away ? 'busy-some' : '';
+        const hint = busy === 'busy-all' ? ' title="Die Band ist beschäftigt"' : busy ? ` title="${away} ${away === 1 ? 'Mitglied ist' : 'Mitglieder sind'} unterwegs"` : '';
+        return `<a href="#/band/${b.id}" class="subnav-btn ${fill.cls} ${busy} ${active('band', b.id) ? 'active' : ''}" style="${fill.style}"${hint}>${b.genres.map(genreGlyph).join('')}${esc(b.name)}</a>`;
       }).join('')}
       ${favorites.map((m) => `<a href="#/musician/${m.id}" class="subnav-btn fav ${active('musician', m.id) ? 'active' : ''}">★ ${esc(m.firstName)} ${esc(m.lastName)}</a>`).join('')}
       <button class="subnav-btn add" data-act="newBand">+ Band</button>

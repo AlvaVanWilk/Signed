@@ -682,6 +682,20 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
   opacity: 0.78;
 }
 .subnav-btn:hover { opacity: 1; text-decoration: none; }
+/* Band beschäftigt: schräge Streifen wandern durch den Knopf (ganz: kräftig, zum Teil: zart). */
+.subnav-btn.busy-all, .subnav-btn.busy-some { position: relative; overflow: hidden; }
+.subnav-btn.busy-all::after, .subnav-btn.busy-some::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.32) 0 7px, transparent 7px 14px);
+  background-size: 19.8px 19.8px;
+  animation: busy-stripes 0.9s linear infinite;
+}
+.subnav-btn.busy-some::after { background-image: repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.16) 0 5px, transparent 5px 14px); animation-duration: 1.6s; }
+@keyframes busy-stripes { to { background-position: 19.8px 0; } }
+@media (prefers-reduced-motion: reduce) { .subnav-btn.busy-all::after, .subnav-btn.busy-some::after { animation: none; } }
 .subnav-btn.active { opacity: 1; border-color: #fff; }
 .subnav-btn.fav { --fill: #3a3150; color: var(--accent-2); }
 .subnav-btn.add { background: transparent; border: 1px dashed var(--line); color: var(--muted); }

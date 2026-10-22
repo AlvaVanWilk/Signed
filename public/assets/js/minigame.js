@@ -286,7 +286,7 @@ function createRhythmGame(container, game) {
     t0 = clock() + 0.15 + 4 * beat;
     const stopTick = scheduleMetronome({ bpm: game.bpm, start: t0, duration: game.duration, meter: game.meter ?? 4 });
     // Etüde: leise Begleitung aus dem Synthesizer (Schlagzeug, Bass, Akkorde) zum Tick.
-    const stopEtude = game.backing ? scheduleEvents(game.backing, t0) : () => {};
+    const stopEtude = game.backing ? scheduleEvents(game.backing, t0, 0.6) : () => {};
     stopBacking = () => { stopTick(); stopEtude(); };
     if (buffers) player = playStems(buffers, t0, { volume: 0.9 });
     running = true;

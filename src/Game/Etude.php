@@ -324,14 +324,14 @@ final class Etude
             if ($role !== 'bass') {
                 foreach (self::hits($bass[$part], $meter) as [$step, $weight]) {
                     if ($weight >= 6) {
-                        $events[] = [round($time($b, $step), 3), 'bass', 36 + $key + $chord['root'], 0.3];
+                        // Eine Oktave über dem echten Bass: Tablet-Lautsprecher spielen so tiefe Töne kaum.
+                        $events[] = [round($time($b, $step), 3), 'bass', 48 + $key + $chord['root'], 0.3];
                     }
                 }
             }
-            if ($role !== 'comp') {
-                foreach ($chord['tones'] as $tone) {
-                    $events[] = [round($time($b, 0), 3), 'pad', 60 + $key + $chord['root'] + $tone, round($time($b + 1, 0) - $time($b, 0), 3)];
-                }
+            // Akkorde unter jeder Übung, auch unter der eigenen Begleitung: Erst sie machen die Begleitband hörbar.
+            foreach ($chord['tones'] as $tone) {
+                $events[] = [round($time($b, 0), 3), 'pad', 60 + $key + $chord['root'] + $tone, round($time($b + 1, 0) - $time($b, 0), 3)];
             }
         }
         return array_values(array_filter($events, static fn ($e) => $e[0] < $duration));

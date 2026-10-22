@@ -162,7 +162,7 @@ Ein Lied dauert 24 Sekunden: 12 Takte 4/4 (oder 16 Takte 3/4) bei 120 BPM – al
 
 **Etüden (Solo-Probe, alle Instrumente):** Statt der Aufnahme spielt man eine Übung, die das Spiel aus typischen
 Genre-Bausteinen erzeugt (`Styles`: Akkordfolgen, Grooves, Bass-, Begleit- und Melodie-Rhythmen je Genre; `Etude`).
-Eigenes Tempo, Taktart (Folk 3/4) und Tonart, Swing bei Jazz und Hip-Hop, leise Synthesizer-Begleitung ohne die eigene Rolle.
+Eigenes Tempo, Taktart (Folk 3/4) und Tonart, Swing bei Jazz und Hip-Hop, Synthesizer-Begleitung (Schlagzeug und Bass ohne die eigene Rolle, Akkorde immer; Bass eine Oktave höher, damit Tablet-Lautsprecher ihn spielen).
 Muster tragen Wichtigkeiten (9 = Gerüst … 1 = Verzierung, zusätzlich durch die Taktposition gedeckelt). Das Können legt
 die Notendichte fest (`Balance::ETUDE_RATE`, Noten pro Sekunde je Rolle von Können 0 bis 100, dazwischen nach Können^1,5);
 genommen werden die wichtigsten Noten. So ist jede Etüde bei gleichem Können gleich schwer, egal welches Muster, Tempo oder

@@ -251,7 +251,7 @@ export function createPitchGame(container, game) {
     last = clock();
     // Allein üben: Metronom, bei Etüden dazu die leise Begleitung (Schlagzeug, Bass, Akkorde).
     const stopTick = scheduleMetronome({ bpm: game.bpm, start: t0, duration: game.duration, meter: game.meter ?? 4 });
-    const stopEtude = game.backing ? scheduleEvents(game.backing, t0) : () => {};
+    const stopEtude = game.backing ? scheduleEvents(game.backing, t0, 0.45) : () => {};
     stopBacking = () => { stopTick(); stopEtude(); };
     if (buffers) player = playStems(buffers, t0, { volume: 0.9 });
     running = true;

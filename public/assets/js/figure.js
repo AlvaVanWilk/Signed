@@ -60,7 +60,8 @@ const MOUTHS = {
   flat: line('M47 53.2 L53 53.2'),
   grin: `<path d="M45 51.2 Q50 58.4 55 51.2 Z" fill="#7a2338" stroke="${INK}" stroke-width="1.1" stroke-linejoin="round"/>`,
   teeth: `<path d="M45 51.2 Q50 58.4 55 51.2 Z" fill="#7a2338" stroke="${INK}" stroke-width="1.1" stroke-linejoin="round"/><path d="M45.8 51.6 L54.2 51.6 L53.6 53 L46.4 53 Z" fill="#fff"/>`,
-  pout: '<ellipse cx="50.6" cy="53.2" rx="1.7" ry="1.4" fill="#c2405a"/>',
+  // Schmollmund in natürlichem Lippenton (dunkler als die Haut); rot nur bei roten Lippen.
+  pout: '<ellipse cx="50.6" cy="53.2" rx="1.7" ry="1.4" fill="rgba(90, 30, 40, 0.45)"/>',
 };
 const MOODS = {
   ehrgeizig: { mouth: 'smirk' },
@@ -82,6 +83,15 @@ function trait(look, salt) {
   let h = 2166136261;
   for (const ch of `${salt}|${look.skin}|${look.hair}|${look.hairColor}|${look.shirt}|${look.glasses}|${look.hat}`) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
   return ((h >>> 0) % 100) / 100;
+}
+
+/** Bäckchen passend zur Haut: auf heller Haut rosa, auf dunkler ein dezentes warmes Rotbraun. */
+function blush(skin) {
+  const n = parseInt(skin.slice(1), 16);
+  const light = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+  if (light < 0.4) return ['#b0504f', 0.32];
+  if (light < 0.6) return ['#d9687a', 0.38];
+  return ['#ff8fa3', 0.6];
 }
 
 function eyes(kind, skin) {
@@ -115,11 +125,12 @@ function head(look, skin, sing, mood = null) {
   const face = MOODS[mood] ?? {};
   p.push(pivot(50, 45, 'fig-eyes', eyes(face.eyes, skin)));
   if (BROWS[mood]) p.push(BROWS[mood]);
-  p.push('<ellipse cx="38" cy="51" rx="3.2" ry="1.9" fill="#ff8fa3" opacity="0.6"/><ellipse cx="62" cy="51" rx="3.2" ry="1.9" fill="#ff8fa3" opacity="0.6"/>');
+  const [cheek, alpha] = blush(skin);
+  p.push(`<ellipse cx="38" cy="51" rx="3.2" ry="1.9" fill="${cheek}" opacity="${alpha}"/><ellipse cx="62" cy="51" rx="3.2" ry="1.9" fill="${cheek}" opacity="${alpha}"/>`);
   // Ein Teil der Musikerinnen hat rote Lippen: derselbe Mund, nur rot und etwas kräftiger.
   const lips = look.gender === 'f' && trait(look, 'lips') < 0.4;
   const mouth = MOUTHS[face.mouth ?? 'smile'];
-  const smile = lips ? mouth.replace(`stroke="${INK}" stroke-width="1.2"`, 'stroke="#c2405a" stroke-width="1.8"').replace('fill="#c2405a"', 'fill="#d23a5c"') : mouth;
+  const smile = lips ? mouth.replace(`stroke="${INK}" stroke-width="1.2"`, 'stroke="#c2405a" stroke-width="1.8"').replace('fill="rgba(90, 30, 40, 0.45)"', 'fill="#d23a5c"') : mouth;
   // Sänger: singender Mund beim Spielen, Lächeln beim Warten (CSS blendet um).
   p.push(sing
     ? `<g class="fig-singing">${pivot(50, 53.5, 'fig-mouth', `<ellipse cx="50" cy="53.5" rx="2.6" ry="2.4" fill="#7a2338" stroke="${INK}" stroke-width="0.8"/>`)}</g><g class="fig-resting">${smile}</g>`

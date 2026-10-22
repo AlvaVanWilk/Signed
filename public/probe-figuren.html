@@ -180,7 +180,8 @@
     + ['#ef233c', '#3a86ff', '#06d6a0', '#ffbe0b', '#8338ec', '#fb5607', '#f1faee', '#222222'].map((shirt, i) => {
       const l = { ...people[[0, 3, 5][i % 3]].look, shirt, skin: ['#f6d7c3', '#c58c63', '#6b3f27', '#eac0a2'][i % 4], hair: ['lang', 'bob', 'zopf', 'dutt', 'locken', 'afro', 'kurz', 'lang'][i] };
       return `<div class="photo l2" style="--r:${tilt(i + 3)}"><div class="pic fig-stage idle"><div class="fig-member" style="--d:${-i * 0.7}s">${portrait(l, Object.keys(MOOD_NAMES)[i])}</div></div><div class="nm">Musikerin ${i + 1}</div></div>`;
-    }).join('');
+    }).join('')
+    + ['#4b2c1c', '#6b3f27', '#8a5536', '#f6d7c3'].map((skin, i) => `<div class="photo l3" style="--r:${tilt(i)}"><div class="pic fig-stage idle"><div class="fig-member" style="--d:${-i}s">${portrait({ ...people[1].look, skin, gender: 'm' }, 'diva')}</div></div><div class="nm">Diva (Mann)</div></div>`).join('');
   // A1 + A2
   $('[data-wall]').innerHTML = [...people, ...people.slice(0, 4).map((p, i) => ({ ...p, first: ['Mats', 'Elif', 'Noa', 'Theo'][i], look: { ...p.look, shirt: ['#fb5607', '#8d99ae', '#ffbe0b', '#222222'][i], skin: ['#8a5536', '#f6d7c3', '#c58c63', '#eac0a2'][i] }, busy: null }))].map((p, i) => `
     <div class="photo l${p.level} ${p.busy ? 'busy' : ''}" style="--r:${tilt(i)}">

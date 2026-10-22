@@ -63,7 +63,7 @@ function chartHtml(text) {
   return `
     <div class="celebrate-trophy">🏆</div>
     <div class="celebrate-text">${esc(text)}</div>
-    <div class="celebrate-sub">Platz 1: doppelte Tantiemen</div>`;
+    <div class="celebrate-sub">Die beste Platte der Charts!</div>`;
 }
 
 const NEWS_ICONS = { chart1: '🏆', chart: '📈', transfer: '🔁', scout: '🎟️', level: '⭐', fame: '✨' };

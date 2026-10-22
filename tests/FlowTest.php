@@ -596,9 +596,8 @@ test('Album-Charts: Platten aller Labels, Platz 1 gibt einen Gutschein, Tantieme
     for ($t = $from; $t < Clock::now(); $t += 10) {
         $expected += Signed\Game\Charts::pointsAt($row, $t) * 10 / 3600 * Balance::ROYALTY_MONEY;
     }
-    // Platz 1: doppelte Tantiemen.
+    // Platz 1 – aber Tantiemen nur nach Punkten, kein Platz-Bonus.
     checkEquals(1, (int) $db->value("SELECT rank_last FROM records WHERE title = 'Alpha EP'"));
-    $expected *= Signed\Game\Charts::rankFactor(1, Balance::CHART_RANK_BONUS);
     $state = $a->get('state');
     check(abs($state['label']['money'] - $money - $expected) <= 1.5, sprintf('Tantiemen nach zwei Stunden: %d statt %.1f', $state['label']['money'] - $money, $expected));
     check(str_starts_with($state['finance']['ledger'][0]['text'], 'Tantiemen'));

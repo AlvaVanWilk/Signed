@@ -351,8 +351,6 @@ final class Balance
     /** Nachrichten beim Wiederkommen: nach so langer Pause, diese Arten aus der Chronik. */
     public const NEWS_AWAY = 900;
     public const NEWS_KINDS = ['chart1', 'chart', 'transfer', 'scout', 'level', 'fame', 'fanjoin'];
-    /** Tantiemen (Geld, nicht Ruhm) nach Platz: Platz 1 × (1 + CHART_RANK_BONUS), dann gleichmäßig weniger bis Platz 10. */
-    public const CHART_RANK_BONUS = 1.0;
     public const CHART_DECAY = 0.03;
     public const CHART_MAX_AGE = 7 * 86400;
     /**
@@ -371,8 +369,8 @@ final class Balance
     public const CHART_SIZE = 10;
     /** Platz 1 bringt einen Scout-Gutschein erst, wenn so viele Labels Platten in den Charts haben. */
     public const CHART_TOP_MIN_LABELS = 3;
-    /** Tantiemen pro Chartpunkt und Stunde (vor dem Platz-Bonus). */
-    public const ROYALTY_MONEY = 0.5;
+    /** Tantiemen pro Chartpunkt und Stunde – ohne Platz-Bonus (die Punkte sind schon die Platzierung). */
+    public const ROYALTY_MONEY = 0.6;
     /**
      * Katalog: Jede fertige Platte verkauft sich für immer ein wenig – so viel ₲ pro Stunde und Chartpunkt (Startwert
      * der Platte), zusätzlich zu den Charts. Eine Platte mit 60 Punkten bringt so rund 14 ₲ am Tag: spürbar, wenn sich

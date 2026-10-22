@@ -270,17 +270,17 @@ Nur die Gewinne sind klein; wie oft man etwas hintereinander spielt, ist nicht b
   Aufschlag – das Verhältnis zweier Platten bleibt, der Schub belohnt nur Fleiß. Die Schere schließt die Zeit (3 % pro Stunde).
   (Früher hing der Gig-Schub an der Größe des Ortes – große Bands zogen davon.)
 - Unter 1 Punkt verkauft sich eine Platte nicht mehr, nach 7 Tagen zählt sie nicht mehr. Die Charts zeigen die Top 10 groß und darunter kompakt bis Platz 100 (`CHART_LIST`); jede Platte zählt, ohne Deckel pro Band oder Label.
-  Belohnungen nach Platz (Tantiemen-Bonus) gibt es nur in den Top 10. Eine Band spielt und bewirbt immer ihre **neueste** Platte
+  Für den Platz selbst gibt es nur den Scout-Gutschein für Platz 1 und Nachrichten. Eine Band spielt und bewirbt immer ihre **neueste** Platte
   (`Charts::promoted`), ältere fallen so von selbst; sie wieder zu spielen kommt später mit dem Remaster.
 - Die Plätze werden alle 3 Stunden neu vergeben (Chartwoche) – sofort, wenn eine Platte erscheint oder Schub bekommt.
   Dazwischen bleiben sie stehen. „Vorher“ ist der Platz zu Beginn der Chartwoche; dazu Trend (▲ ▼ – NEU),
   Stunden in den Charts und bester Platz. Nachrichten: Einstieg in die Top 10, Platz 1 (mit Feier), aus den Top 10 gefallen.
-- Tantiemen laufen ständig (sekundengenau abgerechnet, Bruchteile werden aufgehoben): pro Punkt und Stunde 0,5 ₲ und
-  0,0125 Ruhm. Nur das Geld bekommt den Platz-Bonus (Platz 1 × 2, abnehmend bis Platz 10 × 1,1, außerhalb × 1);
-  der Ruhm hängt nur an den Punkten. Ruhm an die aktuellen Mitglieder.
-  Eine Platte mit 60 Punkten bringt über ihre Chartzeit etwa 950–1.900 ₲ je nach Platz.
+- Tantiemen laufen ständig (sekundengenau abgerechnet, Bruchteile werden aufgehoben): pro Punkt und Stunde 0,6 ₲ und
+  0,0125 Ruhm – nur nach Punkten, ohne Platz-Bonus (die Punkte sind schon die Platzierung; früher × bis zu 2 für
+  Platz 1, das war doppelt gezählt). Ruhm an die aktuellen Mitglieder.
+  Eine Platte mit 60 Punkten bringt über ihre Chartzeit etwa 1.200 ₲.
   Das Geld zählt im Browser sichtbar mit; im Kontoauszug eine Zeile pro Platte und Tag.
-- Platten ohne Chartplatz (eine pro Band chartet) verkaufen sich in ihrer ersten Woche trotzdem: Tantiemen mit Platz-Bonus × 1.
+- Platten ohne Chartplatz verkaufen sich in ihrer ersten Woche trotzdem: Tantiemen nach Punkten wie alle.
 - Katalog: Jede Platte verkauft sich für immer ein wenig – 0,01 ₲ pro Stunde und Chartpunkt (Startwert), zusätzlich
   zu den Charts. 60 Punkte ≈ 14 ₲ am Tag. Klein gegen Gigs, aber es sammelt sich mit vielen Platten; das 5-Gig-Limit
   zwischen zwei Platten verhindert, dass man das mit EP-Fluten ausnutzt.
@@ -395,7 +395,7 @@ Grundsatz: Ruhm darf nie den eigenen Ruhm-Zuwachs über den Chartplatz verstärk
 
 - **Chartplatz** ← Chartpunkte (Qualität, Sound, Länge, perfekt) × Verlauf (−3 %/Std.) × Schub (Gigs, Promo).
   Ruhm wirkt hier nicht.
-- **Chartplatz →** nur Geld (Tantiemen bis × 2) und der Scout-Gutschein für Platz 1. Kein Ruhm-Bonus, keine volleren Gigs.
+- **Chartplatz →** nur der Scout-Gutschein für Platz 1 und Nachrichten. Geld und Ruhm kommen aus den Punkten, nicht aus dem Platz.
 - **Ruhm** ← Gigs (je nach Ort), Platten, Charts (nach Punkten), Promo, Straßenmusik/Open Stage (mit Ruhm abnehmend).
 - **Ruhm →** Auftrittsort (die Leiter nach oben: mehr Gage und Ruhm pro Lied), Erstverkauf einer Platte (Geld),
   Bandplätze (Label-Ruhm), Marktwert. Der Ort ist der einzige Ruhm-zu-Ruhm-Weg – gewollt, mit festen Stufen.

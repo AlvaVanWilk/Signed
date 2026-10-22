@@ -29,12 +29,6 @@ final class Charts
             * ($perfect ? Balance::CHART_PERFECT : 1), 1);
     }
 
-    /** Bonus nach Platz: Platz 1 × (1 + $bonus), gleichmäßig weniger bis Platz 10, außerhalb × 1. */
-    public static function rankFactor(?int $rank, float $bonus): float
-    {
-        return $rank === null || $rank > Balance::CHART_SIZE ? 1.0 : 1 + $bonus * (Balance::CHART_SIZE + 1 - $rank) / Balance::CHART_SIZE;
-    }
-
     /** Verlauf ohne Schub: Einstieg mit den vollen Punkten, dann jede Stunde CHART_DECAY weniger – für jede Platte gleich. */
     public static function curve(int $age): float
     {
@@ -107,7 +101,7 @@ final class Charts
                 'prev' => $prev,
                 'best' => $row['rank_best'] === null ? $rank : (int) $row['rank_best'],
                 'trend' => $prev === null || $prev > Balance::CHART_SIZE ? 'new' : ($rank < $prev ? 'up' : ($rank > $prev ? 'down' : 'same')),
-                'perHour' => round($points * Balance::ROYALTY_MONEY * self::rankFactor($rank, Balance::CHART_RANK_BONUS), 1),
+                'perHour' => round($points * Balance::ROYALTY_MONEY, 1),
                 'own' => $labelId !== null && (int) $row['label_id'] === $labelId,
                 'topped' => (bool) $row['topped'],
                 'labelId' => (int) $row['label_id'],
@@ -270,14 +264,12 @@ final class Charts
                 if ($claimed === 0) {
                     return;
                 }
-                // Höhere Platzierung, mehr Tantiemen: Platz 1 doppelt, bis Platz 10 abnehmend (Platz zum Abrechnungszeitpunkt).
-                // Ruhm dagegen nur nach Punkten – kein Ruhm-Bonus für den Platz, sonst schaukelt sich Platz 1 auf.
-                $rank = $row['rank_last'] === null ? null : (int) $row['rank_last'];
+                // Geld und Ruhm nur nach Punkten: Die Punkte sind schon die Platzierung, ein Platz-Bonus wäre doppelt.
                 $pointHours = self::pointSeconds($row, $from, $now) / self::HOUR;
                 if ($pointHours <= 0) {
                     return;
                 }
-                $money = $pointHours * self::rankFactor($rank, Balance::CHART_RANK_BONUS) * Balance::ROYALTY_MONEY + (float) $row['royalty_carry'];
+                $money = $pointHours * Balance::ROYALTY_MONEY + (float) $row['royalty_carry'];
                 $paid = (int) floor($money);
                 $db->update('records', ['royalty_carry' => $money - $paid], ['id' => (int) $row['id']]);
                 $repo = new Repo($db, $labelId);
@@ -346,9 +338,8 @@ final class Charts
             }
             if ($album['bandId'] !== null) {
                 $band = &$bands[$album['bandId']];
-                $factor = self::rankFactor($album['rank'], Balance::CHART_RANK_BONUS);
-                $band['moneyPerHour'] = ($band['moneyPerHour'] ?? 0) + $album['points'] * Balance::ROYALTY_MONEY * $factor;
-                $band['famePerHour'] = ($band['famePerHour'] ?? 0) + $album['points'] * Balance::ROYALTY_FAME * $factor;
+                $band['moneyPerHour'] = ($band['moneyPerHour'] ?? 0) + $album['points'] * Balance::ROYALTY_MONEY;
+                $band['famePerHour'] = ($band['famePerHour'] ?? 0) + $album['points'] * Balance::ROYALTY_FAME;
                 unset($band);
             }
             $records[] = [
@@ -359,7 +350,6 @@ final class Charts
                 'trend' => $album['trend'],
                 'perHour' => $album['perHour'],
                 'placed' => $album['placed'],
-                'factor' => self::rankFactor($album['rank'], Balance::CHART_RANK_BONUS),
             ];
         }
         // Eigene Platten ohne Chartplatz (eine pro Band chartet) verkaufen sich trotzdem weiter.
@@ -388,10 +378,10 @@ final class Charts
             }
             $records[] = [
                 'title' => $row['title'], 'band' => $row['band_name'] ?? 'aufgelöste Band', 'points' => round($p, 1),
-                'rank' => null, 'trend' => null, 'perHour' => round($p * Balance::ROYALTY_MONEY, 1), 'placed' => false, 'factor' => 1.0,
+                'rank' => null, 'trend' => null, 'perHour' => round($p * Balance::ROYALTY_MONEY, 1), 'placed' => false,
             ];
         }
-        $points = array_sum(array_map(static fn ($r) => $r['points'] * $r['factor'], $records));
+        $points = array_sum(array_column($records, 'points'));
         $ledger = $db->all('SELECT amount, text, created_at FROM ledger WHERE label_id = ? ORDER BY id DESC LIMIT 40', [$labelId]);
         return [
             // Für die laufende Anzeige im Browser (Geld tickt zwischen zwei Abrufen weiter).

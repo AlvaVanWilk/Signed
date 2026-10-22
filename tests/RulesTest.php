@@ -258,14 +258,10 @@ test('Mischpult: bis 4 Musiker einzeln, größere Bands in Gruppen; gute Musiker
     check($spread(90) < $spread(10) / 2, 'Gute Musiker bewegen sich sanfter');
 });
 
-test('Gigs: frisches Material zählt, Charts machen voller', function () {
+test('Gigs: frisches Material zählt', function () {
     checkEquals(1.0, Signed\Game\BandCalc::freshness(0));
     check(Signed\Game\BandCalc::freshness(3) < 1.0);
     checkEquals(Balance::GIG_FRESH['min'], Signed\Game\BandCalc::freshness(50));
-    checkEquals(1.0, Signed\Game\Charts::rankFactor(null, 0.4));
-    check(abs(Signed\Game\Charts::rankFactor(1, 0.4) - 1.4) < 1e-9);
-    check(Signed\Game\Charts::rankFactor(10, 0.4) > 1.0 && Signed\Game\Charts::rankFactor(10, 0.4) < Signed\Game\Charts::rankFactor(2, 0.4));
-    checkEquals(1.0, Signed\Game\Charts::rankFactor(11, 0.4));
 });
 
 test('Backup: einmal am Tag eine Kopie, alte werden aufgeräumt', function () {

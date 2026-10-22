@@ -64,12 +64,12 @@ Instrument = Klang/100 × 0,5 × min(1, Können / (100 − Spielbarkeit))²   (d
              ein einfaches Instrument ist für Anfänger oft besser als ein gutes)
 Sound      = (0,75 × Durchschnitt + 0,25 × schwächster Beitrag) × Genre (gemischt 0,8 / Genre-Band 1,15 / Hybrid 1,25 / Crossover 1,3)
              × (1 + 0,05 × weitere Instrumentenarten, höchstens +20 %)
-             × (1 + 0,05 × Mitglieder über 2)            (volle Bühne: 6 Mitglieder × 1,2)
+             × (1 + 0,05 × Mitglieder über 2)            (volle Bühne: 7 Mitglieder × 1,25)
              × (0,7 + 0,3 × Zusammenspiel/100)             (Hybrid bis 120: × 1,06)
 ```
 
-Ein schwacher Musiker zieht den Sound runter. Große Bands klingen dafür voller: Sechs Musiker mit fünf Instrumentenarten
-sind bis zu 44 % stärker als ein Duo (`MEMBER_SOUND_BONUS`). Dazu bekommen sie mehr Gage (siehe Auftritte).
+Ein schwacher Musiker zieht den Sound runter. Große Bands klingen dafür voller: Sieben Musiker mit fünf Instrumentenarten
+sind bis zu 50 % stärker als ein Duo (`MEMBER_SOUND_BONUS`). Dazu bekommen sie mehr Gage (siehe Auftritte).
 
 ### Genre einer Band
 
@@ -135,7 +135,7 @@ sind bis zu 44 % stärker als ein Duo (`MEMBER_SOUND_BONUS`). Dazu bekommen sie 
 | Gig | 1 bis Maximum | Gage des Ortes pro Lied, vorher bekannt | je nach Ort | erst mit Platte |
 
 Orte nach Bandruhm: Kneipe (ab 0), Club (30), Konzertsaal (150), Halle (600), Arena (2.500).
-Gage + 10 % für jedes Mitglied über 2 (`MEMBER_GAGE_BONUS`, 6 Mitglieder + 40 %): Große Bands zahlen so ihre Instrumente und Kurse.
+Gage + 10 % für jedes Mitglied über 2 (`MEMBER_GAGE_BONUS`, 7 Mitglieder + 50 %): Große Bands zahlen so ihre Instrumente und Kurse.
 Grund-Ruhm pro Lied: 0,25 / 0,5 / 1 / 2 / 4.
 Das Stadion bleibt der Tournee vorbehalten.
 
@@ -421,7 +421,7 @@ Diese Punkte sind im Konzept offen. Für den Kern habe ich sie so festgelegt; al
 
 - **Instrumente:** Keyboard und Synthesizer sind ein Instrument (Keyboard). Gitarren, Schlagzeuge und Keyboards gibt es akustisch und elektrisch; das merkt sich nur das Spiel, um später die passende Spur zu spielen.
 - **Besetzung:** Jedes Mitglied spielt in der Band genau ein Instrument. Ein Sänger mit Gitarre zählt
-  als Gitarrist, wenn er in der Band Gitarre spielt. Höchstens 6 Mitglieder.
+  als Gitarrist, wenn er in der Band Gitarre spielt. Höchstens 7 Mitglieder (damit jede Genre-Kombination möglich ist; Metal + Jazz + Hip-Hop braucht 7).
 - **Straßenmusik:** etwas Ruhm; Geld nur als Notgroschen (Hut, 20–45 ₲ je nach Auftritt), solange das Geld nicht für die
   kleinste Platte reicht – so kommt niemand in eine Sackgasse (ca. 10 Auftritte bis zur EP). Läden, Scout, Börse und
   Umbenennen warnen, bevor das Geld unter die kleinste Platte fällt, solange noch keine Band Gigs spielen kann.

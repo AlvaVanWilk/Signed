@@ -492,3 +492,46 @@ test('Crossover: alle teilen drei Genres', function (): void {
     check(str_contains($identity['title'], 'Crossover'), $identity['title']);
     checkEquals(120.0, BandCalc::maxCohesion($identity), 'Zusammenspiel wie Hybrid');
 });
+
+test('Jede Genre-Kombination (Hybrid und Crossover) lässt sich besetzen', function (): void {
+    $instruments = array_keys(Catalog::INSTRUMENTS);
+    $lineups = [];
+    $grow = static function (array $lineup, int $from) use (&$grow, &$lineups, $instruments): void {
+        if (count($lineup) >= Balance::MAX_MEMBERS) {
+            return;
+        }
+        for ($i = $from; $i < count($instruments); $i++) {
+            $next = [...$lineup, $instruments[$i]];
+            $counts = array_count_values($next);
+            foreach (Balance::MAX_PER_INSTRUMENT as $type => $max) {
+                if (($counts[$type] ?? 0) > $max) {
+                    continue 2;
+                }
+            }
+            $lineups[] = $counts;
+            $grow($next, $i);
+        }
+    };
+    $grow([], 0);
+    $meets = static function (array $counts, string $genre): bool {
+        foreach (Catalog::GENRE_LINEUP[$genre] as [$options, $need]) {
+            if (array_sum(array_map(static fn ($t) => $counts[$t] ?? 0, $options)) < $need) {
+                return false;
+            }
+        }
+        return true;
+    };
+    $genres = array_keys(Catalog::GENRE_LINEUP);
+    foreach ($genres as $i => $a) {
+        foreach (array_slice($genres, $i + 1) as $j => $b) {
+            foreach ([null, ...array_slice($genres, $i + $j + 2)] as $c) {
+                $combo = array_filter([$a, $b, $c]);
+                $possible = array_filter($lineups, static fn ($l) => array_sum($l) >= Balance::MIN_MEMBERS
+                    && !in_array(false, array_map(static fn ($g) => $meets($l, $g), $combo), true));
+                check($possible !== [], implode(' + ', $combo) . ' braucht mehr als ' . Balance::MAX_MEMBERS . ' Musiker');
+            }
+        }
+    }
+    // Musiker: Sänger mögen jedes Genre und können als zweites Instrument alles spielen.
+    checkEquals($genres, array_values(array_intersect($genres, Catalog::INSTRUMENTS['vocals']['genres'])));
+});

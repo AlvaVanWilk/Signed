@@ -94,7 +94,7 @@ final class Balance
     /** Namensänderung nach dem ersten Auftritt: Gebühr; der Ruhm am alten Namen geht verloren. */
     public const RENAME_COST = 300;
     public const MIN_MEMBERS = 2;
-    public const MAX_MEMBERS = 6;
+    public const MAX_MEMBERS = 7;
     public const MAX_PER_INSTRUMENT = ['drums' => 1, 'guitar' => 2];
 
     // ---------- Sound ----------

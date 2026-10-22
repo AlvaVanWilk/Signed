@@ -1,7 +1,7 @@
 import { api } from './api.js';
 import { actions, app, bandById, cat, defineActions, liveMoney, musicianById, mutate, navigate, onRender, refresh, rerender, serverNow } from './core.js';
 import { bandFill, genreGlyph, levelUpBanners, musicianCard } from './cards.js';
-import { closeAllModals, duration, esc, fmt1, fmtGain, money, openModal, percent, timeAgo, topModal } from './ui.js';
+import { closeAllModals, duration, esc, fmt1, fmtGain, money, openModal, percent, timeAgo, toast, topModal } from './ui.js';
 import './celebrate.js';
 import './settings.js';
 import './genre-info.js';
@@ -298,7 +298,7 @@ function showResults() {
     wide: !!jamOffer,
     html: `${safeResultHtml(r)}<div class="dialog-actions">${jamOffer
       ? `<button class="btn ghost" data-act="jamDecline" data-offer="${jamOffer.id}">Alle ablehnen</button><button class="btn" data-close>Später</button>`
-      : '<button class="btn primary" data-close>Weiter</button>'}</div>`,
+      : `${r.type === 'practice' && musicianById(r.musicianId) ? '<button class="btn" data-again>Nochmal üben</button>' : ''}<button class="btn primary" data-close>Weiter</button>`}</div>`,
     onClose: () => {
       resultModal = null;
       app.state.results = app.state.results.filter((x) => x.id !== r.id);
@@ -307,6 +307,13 @@ function showResults() {
     },
   });
   resultModal.body.querySelector('[data-close]').addEventListener('click', () => resultModal?.close());
+  // Allein geübt: gleich noch eine Runde mit demselben Instrument.
+  resultModal.body.querySelector('[data-again]')?.addEventListener('click', async () => {
+    const m = musicianById(r.musicianId);
+    const slot = Math.max(1, m.instruments.findIndex((i) => i.type === r.result.instrument) + 1);
+    resultModal?.close();
+    if (await mutate('practiceAuto', { musicianId: m.id, slot })) toast(`${m.firstName} übt noch eine Runde.`, 'ok');
+  });
   if (r.type !== 'promo') celebrateResult(resultModal.body, r.result, r.type !== 'rehearsal');
 }
 

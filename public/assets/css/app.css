@@ -1253,9 +1253,9 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .fig .fig-shut, .fig-stage.idle .fig g.fig-shut { animation: fig-peek-shut 7.3s step-end infinite; animation-delay: var(--d, 0s); }
 @keyframes fig-peek { 0%, 78% { opacity: 0; } 79%, 92% { opacity: 1; } 93%, 100% { opacity: 0; } }
 @keyframes fig-peek-shut { 0%, 78% { opacity: 1; } 79%, 92% { opacity: 0; } 93%, 100% { opacity: 1; } }
-/* Typischer Gesichtsausdruck nur ab und zu (etwa ein Drittel der Zeit), sonst freundlich – jede Figur in eigenem Takt. */
-.fig .fig-mood, .fig-stage.idle .fig g.fig-mood { animation: fig-mood 11s step-end infinite; animation-delay: calc(var(--d, 0s) * 2.6); }
-.fig .fig-calm, .fig-stage.idle .fig g.fig-calm { animation: fig-calm 11s step-end infinite; animation-delay: calc(var(--d, 0s) * 2.6); }
-@keyframes fig-mood { 0%, 61% { opacity: 0; } 62%, 95% { opacity: 1; } 96%, 100% { opacity: 0; } }
-@keyframes fig-calm { 0%, 61% { opacity: 1; } 62%, 95% { opacity: 0; } 96%, 100% { opacity: 1; } }
+/* Typischer Gesichtsausdruck nur ab und zu (etwa ein Drittel der Zeit), weich überblendet – jede Figur in eigenem Takt. */
+.fig .fig-mood, .fig-stage.idle .fig g.fig-mood { animation: fig-mood 11s ease-in-out infinite; animation-delay: calc(var(--d, 0s) * 2.6); }
+.fig .fig-calm, .fig-stage.idle .fig g.fig-calm { animation: fig-calm 11s ease-in-out infinite; animation-delay: calc(var(--d, 0s) * 2.6); }
+@keyframes fig-mood { 0%, 58% { opacity: 0; } 64%, 91% { opacity: 1; } 97%, 100% { opacity: 0; } }
+@keyframes fig-calm { 0%, 58% { opacity: 1; } 64%, 91% { opacity: 0; } 97%, 100% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .fig .fig-mood { opacity: 0; } .fig .fig-calm { opacity: 1; } }

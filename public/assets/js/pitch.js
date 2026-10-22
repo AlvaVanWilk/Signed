@@ -1,4 +1,4 @@
-import { createVoice, getAudio, latency, scaleMidi, scheduleEvents, scheduleMetronome } from './audio.js';
+import { createVoice, getAudio, latency, scaleMidi, scheduleMetronome } from './audio.js';
 import { loadStems, playStems } from './music.js';
 import { judgeRatio, mountShell } from './mg-shell.js';
 import { duration, percent } from './ui.js';
@@ -8,14 +8,13 @@ const AHEAD = 3.2;
 const BEHIND = 1.0;
 const MARKER_X = 0.25;
 /** So schnell steigt bzw. sinkt der Ton (Anteil der Tonleiter pro Sekunde), mindestens bzw. höchstens. */
-const SPEED = 0.7;
-const MAX_SPEED = 1.2;
-/** Fassung der Steuerung – steht auf der Probeseite, damit man sieht, welche man spielt. Bei jeder Änderung hochzählen. */
-export const PITCH_VERSION = 11;
-/** Wie schnell der Ton auf Drücken und Loslassen reagiert (größer = schneller, aber zappeliger). */
-const RESPONSE = 12;
+const SPEED = 0.5;
+const MAX_SPEED = 1.0;
 
-/** Schnell genug für die meisten Sprünge (90 % davon, anderthalbfaches Tempo), aber nicht zappelig. */
+/**
+ * Echte Melodien springen weiter: Die Geschwindigkeit reicht für die meisten Sprünge
+ * (drei Viertel davon schafft man rechtzeitig), bleibt aber steuerbar.
+ */
 function speedFor(notes) {
   const rates = [];
   for (let i = 1; i < notes.length; i++) {
@@ -23,29 +22,28 @@ function speedFor(notes) {
     rates.push(Math.abs(notes[i].p - notes[i - 1].p) / 7 / gap);
   }
   rates.sort((a, b) => a - b);
-  const typical = rates[Math.floor(rates.length * 0.9)] ?? 0;
-  return Math.max(SPEED, Math.min(MAX_SPEED, typical * 1.5));
+  const typical = rates[Math.floor(rates.length * 0.75)] ?? 0;
+  return Math.max(SPEED, Math.min(MAX_SPEED, typical));
 }
-/** Tasten für „höher“ und „tiefer“. */
-const UP_KEYS = [' ', 'arrowup', 'w', 'j'];
-const DOWN_KEYS = ['arrowdown', 's', 'f'];
+const HOLD_KEYS = [' ', 'arrowup', 'w', 'j'];
+/** Fassung der Steuerung (steht auf der Probeseite). 12 = wieder die ursprüngliche Steuerung. */
+export const PITCH_VERSION = 12;
 
 /**
- * Tonhöhen-Spiel: Zwei Knöpfe – „höher“ lässt den Ton steigen, „tiefer“ sinken, ohne Knopf bleibt er stehen.
+ * Tonhöhen-Spiel: Gedrückt halten lässt den Ton steigen, Loslassen lässt ihn sinken.
  * Gewertet wird, wie lange man bei jedem Ton der Melodie im richtigen Bereich bleibt – nicht der genaue Moment.
  */
 export function createPitchGame(container, game) {
   const shell = mountShell(container, game, {
     hud: '<span>Im Ton <b class="mg-acc">–</b></span><span class="mg-combo"></span><span>Zeit <b class="mg-time"></b></span>',
-    hint: 'Halte <b>▲ höher</b> oder <b>▼ tiefer</b> (Tastatur: Pfeil hoch / runter). Lässt du los, bleibt dein Ton stehen. Bleib in den Balken der Melodie.',
-    below: '<div class="mg-pitch-keys"><button class="mg-hold mg-down">▼ tiefer</button><button class="mg-hold mg-up">▲ höher</button></div>',
+    hint: 'Halte die <b>Leertaste</b> gedrückt (oder den Finger auf dem Feld), dann steigt dein Ton. Lass los, dann sinkt er. Bleib in den Balken der Melodie.',
+    below: '<button class="mg-hold">Gedrückt halten: Ton steigt</button>',
   });
   const { canvas, draw } = shell;
   const accEl = shell.el('.mg-acc');
   const comboEl = shell.el('.mg-combo');
   const timeEl = shell.el('.mg-time');
-  const upButton = shell.el('.mg-up');
-  const downButton = shell.el('.mg-down');
+  const holdButton = shell.el('.mg-hold');
   timeEl.textContent = duration(game.duration);
 
   const notes = game.notes.map((n) => ({ ...n, level: n.p / 7, total: 0, inTune: 0, judged: null }));
@@ -56,7 +54,7 @@ export function createPitchGame(container, game) {
     const prev = notes[i - 1];
     const travel = prev ? Math.abs(note.level - prev.level) / speed : 0;
     const pause = prev ? Math.max(0, note.t - (prev.t + prev.d)) : 1;
-    note.grace = Math.min(note.d * 0.5, Math.max(0, travel - pause) + (travel > 0 ? 0.12 : 0)) * (game.grace ?? 1);
+    note.grace = Math.min(note.d * 0.5, Math.max(0, travel - pause) + (travel > 0 ? 0.12 : 0));
   });
   const tolerance = game.tolerance;
   const beat = 60 / game.bpm;
@@ -64,8 +62,7 @@ export function createPitchGame(container, game) {
   const trail = [];
   let pos = notes.length ? notes[0].level : 0.4;
   let velocity = 0;
-  // Gedrückte Richtungen: +1 höher, -1 tiefer (beide gleichzeitig heben sich auf).
-  const pressed = new Set();
+  let holding = false;
   let audio = null;
   let voice = null;
   let t0 = 0;
@@ -92,19 +89,15 @@ export function createPitchGame(container, game) {
 
   const clock = () => (audio ? audio.currentTime : performance.now() / 1000);
 
-  function press(dir, on) {
-    if (on) pressed.add(dir);
-    else pressed.delete(dir);
-    upButton.classList.toggle('down', pressed.has(1));
-    downButton.classList.toggle('down', pressed.has(-1));
+  function setHolding(value) {
+    holding = value;
+    holdButton.classList.toggle('down', value);
   }
 
   function step(now, dt) {
-    // Weicher Schwung (nicht zackig), etwas schneller als ursprünglich. Nach dem Loslassen schwebt der Ton kurz,
-    // bevor er fällt – ruhiges Tippen hält ihn so auf einer Höhe.
-    // Höher / tiefer mit weichem An- und Abfahren; ohne Knopf bleibt der Ton stehen.
-    const dir = (pressed.has(1) ? 1 : 0) - (pressed.has(-1) ? 1 : 0);
-    velocity += (dir * speed - velocity) * Math.min(1, dt * RESPONSE);
+    // Weiche Beschleunigung: schnelles Tippen hält den Ton, langes Halten lässt ihn deutlich steigen.
+    const target = holding ? speed : -speed;
+    velocity += (target - velocity) * Math.min(1, dt * 6);
     pos += velocity * dt;
     if (pos <= 0 || pos >= 1) {
       pos = Math.max(0, Math.min(1, pos));
@@ -132,8 +125,7 @@ export function createPitchGame(container, game) {
       }
     }
     if (voice) {
-      // Im Feld der Note klingt sie sauber auf ihrer Höhe – man kann den Ton ja nie ganz gerade halten.
-      voice.setPitch(scaleMidi(game.instrument, (inTune ? active.level : pos) * 7, game.tonality));
+      voice.setPitch(scaleMidi(game.instrument, pos * 7, game.tonality));
       voice.setLevel(active && (!player || !inTune) ? 1 : 0);
     }
     const level = !active || inTune ? 1 : 0.12;
@@ -235,17 +227,19 @@ export function createPitchGame(container, game) {
 
   function onKeyDown(e) {
     if (!running || e.ctrlKey || e.metaKey || e.altKey) return;
-    const key = e.key.toLowerCase();
-    if (UP_KEYS.includes(key) || DOWN_KEYS.includes(key)) {
+    if (HOLD_KEYS.includes(e.key.toLowerCase())) {
       e.preventDefault();
-      press(UP_KEYS.includes(key) ? 1 : -1, true);
+      setHolding(true);
     }
   }
   function onKeyUp(e) {
-    const key = e.key.toLowerCase();
-    if (UP_KEYS.includes(key)) press(1, false);
-    if (DOWN_KEYS.includes(key)) press(-1, false);
+    if (HOLD_KEYS.includes(e.key.toLowerCase())) setHolding(false);
   }
+  const down = (e) => {
+    e.preventDefault();
+    if (running) setHolding(true);
+  };
+  const up = () => setHolding(false);
 
   function start() {
     shell.hideOverlay();
@@ -256,9 +250,7 @@ export function createPitchGame(container, game) {
     t0 = clock() + 0.15 + 4 * beat;
     last = clock();
     // Allein üben: nur das Metronom tickt mit.
-    const stopTick = scheduleMetronome({ bpm: game.bpm, start: t0, duration: game.duration, meter: game.meter ?? 4 });
-    const stopEtude = game.backing ? scheduleEvents(game.backing, t0) : () => {};
-    stopBacking = () => { stopTick(); stopEtude(); };
+    stopBacking = scheduleMetronome({ bpm: game.bpm, start: t0, duration: game.duration });
     if (buffers) player = playStems(buffers, t0, { volume: 0.9 });
     running = true;
     raf = requestAnimationFrame(frame);
@@ -266,7 +258,7 @@ export function createPitchGame(container, game) {
 
   function finish(result) {
     running = false;
-    pressed.clear();
+    setHolding(false);
     cancelAnimationFrame(raf);
     stopBacking();
     player?.stop();
@@ -279,12 +271,11 @@ export function createPitchGame(container, game) {
   window.addEventListener('keydown', onKeyDown, true);
   window.addEventListener('keyup', onKeyUp, true);
   window.addEventListener('resize', shell.resize);
-  for (const [button, dir] of [[upButton, 1], [downButton, -1]]) {
-    button.addEventListener('pointerdown', (e) => {
-      e.preventDefault();
-      if (running) press(dir, true);
-    });
-    for (const type of ['pointerup', 'pointercancel', 'pointerleave']) button.addEventListener(type, () => press(dir, false));
+  for (const el of [canvas, holdButton]) {
+    el.addEventListener('pointerdown', down);
+    el.addEventListener('pointerup', up);
+    el.addEventListener('pointercancel', up);
+    el.addEventListener('pointerleave', up);
   }
   shell.el('.mg-start').addEventListener('click', start);
   shell.el('.mg-abort').addEventListener('click', () => {

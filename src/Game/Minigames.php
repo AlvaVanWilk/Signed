@@ -36,8 +36,18 @@ final class Minigames
                 }
                 $genre = $m['genres'][0];
                 $bpm = Catalog::GENRES[$genre]['bpm'];
-                // Allein üben: die eigene Spur aus den Aufnahmen, dazu nur ein Metronom.
-                $chart = $this->soloChart($m, $slot, $this->practiceStem(['band_slot' => $slot] + $m), $bpm);
+                $stem = $this->practiceStem(['band_slot' => $slot] + $m);
+                $instrument = $slot === 2 && $m['instr2'] !== null ? $m['instr2'] : $m['instr1'];
+                $rap = $instrument === 'vocals' && in_array($stem['genre'], Catalog::RAP_GENRES, true);
+                if (in_array($instrument, Catalog::PITCH_INSTRUMENTS, true) || $rap) {
+                    // Gesang und Geige üben weiter mit der eigenen Spur aus den Aufnahmen, dazu nur ein Metronom.
+                    $chart = $this->soloChart($m, $slot, $stem, $bpm);
+                } else {
+                    // Alle anderen üben eine Etüde im Genre: jedes Mal neu, Schwierigkeit nach Können.
+                    $genre = isset(Styles::GENRES[$stem['genre']]) ? $stem['genre'] : 'pop';
+                    $chart = Etude::game($instrument, $genre, BandCalc::skill($m, $slot), random_int(1, 999999), Levels::has($m, 'gehoer'));
+                    $bpm = $chart['bpm'];
+                }
                 $instrument = $chart['instrument'];
 
                 $db->update('musicians', ['busy_until' => $expires], ['id' => $m['id']]);

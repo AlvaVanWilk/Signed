@@ -1144,3 +1144,28 @@ test('Hall of Fame: Bands aller Labels nach Ruhm', function () {
     checkEquals([1, 2], array_column($list, 'rank'));
     check(!$list[0]['own'] && $list[1]['own']);
 });
+
+test('Solo-Probe: Instrumente üben Etüden aus dem Synthesizer, Gesang weiter mit der Aufnahme', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Etueden');
+    $state = $p->get('state');
+    $byInstrument = [];
+    foreach ($state['musicians'] as $m) {
+        $byInstrument[$m['instruments'][0]['type']] = $m;
+    }
+    $drums = $p->post('minigameStart', ['kind' => 'practice', 'musicianId' => $byInstrument['drums']['id']])['game'];
+    check(!empty($drums['backing']) && isset($drums['etude']) && !isset($drums['music']), 'Schlagzeug: Etüde mit Begleitung');
+    checkEquals($drums['etude']['bpm'], $drums['bpm'], 'Tempo der Etüde');
+    Clock::advance(Balance::SONG_SECONDS + 2);
+    $res = $p->post('minigameFinish', ['sessionId' => $drums['sessionId'], 'perfect' => $drums['count'], 'good' => 0, 'miss' => 0]);
+    check($res['result']['gain'] > 0, 'Etüde bringt Können');
+    $vocals = $p->post('minigameStart', ['kind' => 'practice', 'musicianId' => $byInstrument['vocals']['id']])['game'];
+    check(!isset($vocals['etude']), 'Gesang: keine Etüde');
+});
+
+test('Gesang: Vor einem großen Sprung wird der Ton hinten gekürzt', function () {
+    $chart = Signed\Game\Music::melodyChart(['bpm' => 120, 'notes' => [[0, 2, 60, 80], [2, 2, 72, 80], [4, 2, 74, 80]]], 24);
+    // C4 → C5 (7 Stufen): Lücke 7 × 0,07 s; C5 → D5 (1 Stufe): kein Abstand nötig.
+    checkEquals(round(1 - 7 * 0.07, 3), $chart['notes'][0]['d']);
+    checkEquals(1.0, (float) $chart['notes'][1]['d']);
+});

@@ -155,6 +155,9 @@ final class Music
     private const SNARE = [37, 38, 40];
     /** Töne ab dieser Länge (in Schlägen) werden im Rhythmus-Spiel gehalten. */
     private const HOLD_BEATS = 1.5;
+    /** Ab so vielen Tonleiterstufen gilt ein Sprung als groß; davor bleibt pro Stufe so viel Zeit (Sekunden) frei. */
+    private const BIG_JUMP = 3;
+    private const JUMP_GAP = 0.07;
     /** Kürzester Ton (Sekunden), der im Tonhöhen-Spiel zählt. */
     private const MELODY_MIN = 0.15;
 
@@ -312,6 +315,13 @@ final class Music
             }
             $t = $at * $beat;
             $d = min($length * $beat, $duration - 0.3 - $t);
+            // Großer Sprung zum nächsten Ton: diesen Ton hinten kürzen, damit Zeit zum Hinübergleiten bleibt.
+            if (isset($notes[$i + 1])) {
+                $jump = abs($steps[$i + 1] - $steps[$i]);
+                if ($jump >= self::BIG_JUMP) {
+                    $d = min($d, $notes[$i + 1][0] * $beat - $t - self::JUMP_GAP * $jump);
+                }
+            }
             if ($d < self::MELODY_MIN) {
                 continue;
             }

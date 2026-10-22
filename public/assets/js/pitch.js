@@ -123,7 +123,8 @@ export function createPitchGame(container, game) {
       }
     }
     if (voice) {
-      voice.setPitch(scaleMidi(game.instrument, pos * 7, game.tonality));
+      // Im Feld der Note klingt sie sauber auf ihrer Höhe – man kann den Ton ja nie ganz gerade halten.
+      voice.setPitch(scaleMidi(game.instrument, (inTune ? active.level : pos) * 7, game.tonality));
       voice.setLevel(active && (!player || !inTune) ? 1 : 0);
     }
     const level = !active || inTune ? 1 : 0.12;

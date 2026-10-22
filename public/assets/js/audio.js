@@ -251,16 +251,29 @@ function tone(type, midi, t, length, vel = 0.8, out = master) {
       break;
     }
     case 'turntables': {
+      // Scratch: die Platte wird vor- und zurückgezogen – Tonhöhe und Rauschen gleiten hoch, runter, wieder hoch.
+      const len = Math.max(0.32, Math.min(0.6, length));
+      const sweep = (param, base) => {
+        param.setValueAtTime(base, t);
+        param.exponentialRampToValueAtTime(base * 3.2, t + len * 0.3);
+        param.exponentialRampToValueAtTime(base * 0.8, t + len * 0.65);
+        param.exponentialRampToValueAtTime(base * 2.4, t + len);
+      };
       const n = noise();
       const bp = ctx.createBiquadFilter();
       bp.type = 'bandpass';
-      bp.Q.value = 4;
-      bp.frequency.setValueAtTime(f * 8, t);
-      bp.frequency.exponentialRampToValueAtTime(f * 2, t + 0.15);
+      bp.Q.value = 3;
+      sweep(bp.frequency, f * 4);
       n.connect(bp).connect(gain);
       n.start(t);
-      n.stop(t + 0.25);
-      envelope(gain, t, 0.005, 0.9 * vel, 0.18);
+      n.stop(t + len + 0.05);
+      const voice = osc('sawtooth', f);
+      sweep(voice.frequency, f);
+      voice.connect(filter('lowpass', 2400)).connect(gain);
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.5 * vel, t + 0.02);
+      gain.gain.setValueAtTime(0.5 * vel, t + len * 0.8);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + len + 0.04);
       break;
     }
     default:

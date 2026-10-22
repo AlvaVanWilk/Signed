@@ -131,16 +131,25 @@ final class Etude
             $scale = Styles::SCALES[$style['scale']];
             $melody = [];
             $lastEnd = -1.0;
+            // Spielbar halten: Sprünge höchstens so weit, wie man in der Zeit bis zum Ton gleiten kann
+            // (etwa 2,5 Stufen pro Sekunde), und Anfänger springen ohnehin höchstens zwei Stufen.
+            $maxJump = 2 + (int) floor($d * 3);
             foreach ($notes as $i => $n) {
                 if ($n['t'] < $lastEnd) {
                     continue;
                 }
                 $next = $notes[$i + 1]['t'] ?? $duration - 0.3;
                 $len = min($next - $n['t'], 4 * $stepSec * 2) * 0.92;
-                if ($len < 0.25) {
+                if ($len < 0.35) {
                     continue;
                 }
-                $melody[] = ['t' => round($n['t'], 3), 'd' => round($len, 3), 'p' => $n['p']];
+                $p = $n['p'];
+                if ($melody) {
+                    $prev = end($melody);
+                    $reach = max(1, min($maxJump, (int) floor(($n['t'] - $prev['t']) * 2.5)));
+                    $p = max($prev['p'] - $reach, min($prev['p'] + $reach, $p));
+                }
+                $melody[] = ['t' => round($n['t'], 3), 'd' => round($len, 3), 'p' => $p];
                 $lastEnd = $n['t'] + $len;
             }
             return $out + [

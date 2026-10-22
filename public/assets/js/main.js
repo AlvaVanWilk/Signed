@@ -223,6 +223,12 @@ function celebrateResult(body, res, audience) {
   if (audience && res.meter !== null && res.meter !== undefined) playApplause((res.meter - 35) / 60, moneyTile ? duration / 1000 : 0);
 }
 
+/** „ · Bandname“ für Ergebnisse einzelner Musiker, damit man weiß, wer gemeint ist. */
+function bandOf(m) {
+  const band = m?.bandId ? bandById(m.bandId) : null;
+  return band ? ` · ${esc(band.name)}` : '';
+}
+
 /** „+0,05“ oder „+0,01–0,07“ – wer schon gut ist, lernt langsamer. */
 function skillSpan(values) {
   const min = Math.min(...values);
@@ -235,8 +241,8 @@ function resultHtml(r) {
   if (r.type === 'practice' || r.type === 'course') {
     const m = musicianById(r.musicianId);
     return `
-      <div class="eyebrow">${r.type === 'course' ? 'Kurs geschafft' : 'Allein geübt'}</div>
-      <h2>${esc(m ? m.firstName : 'Übung')} ist fertig</h2>
+      <div class="eyebrow">${r.type === 'course' ? 'Kurs geschafft' : 'Allein geübt'}${bandOf(m)}</div>
+      <h2>${esc(m ? `${m.firstName} ${m.lastName}` : 'Übung')} ist fertig</h2>
       <div class="reward-grid">${reward(`Können ${esc(cat().instruments[res.instrument]?.name ?? '')}`, `+${fmtGain(res.skill)}`)}${reward('Jetzt', fmt1(res.skillAfter))}</div>
       ${levelUpBanners(res.levelUps)}
       ${r.type === 'practice' ? '<p class="muted small">Selbst mitspielen bringt bis zum Vierfachen.</p>' : ''}`;
@@ -244,7 +250,7 @@ function resultHtml(r) {
   if (r.type === 'promo') {
     const m = musicianById(r.musicianId);
     return `
-      <div class="eyebrow">Promo-Mission</div>
+      <div class="eyebrow">Promo-Mission${bandOf(m)}</div>
       <h2>${esc(m ? `${m.firstName} ${m.lastName}` : 'Promo')} ist zurück</h2>
       <div class="reward-grid">${reward('Bekanntheit', `+${fmtGain(res.fame)}`)}${reward('Bekanntheit jetzt', fmt1(res.total))}</div>`;
   }

@@ -3,75 +3,182 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Signed – Probe: Figuren</title>
+  <title>Signed – Probe: Figuren statt Karten</title>
   <link rel="stylesheet" href="assets/css/app.css">
   <style>
-    body { margin: 0; font-family: system-ui, sans-serif; color: #f3eefc; background: #0e0c14; }
-    header { padding: 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
-    h1 { font-size: 1.2rem; margin: 0; }
-    button { font: inherit; font-weight: 700; padding: 10px 16px; border-radius: 999px; border: 0; background: #ff4f8b; color: #fff; }
-    label { font-size: 0.9rem; color: #a49bbd; }
-    .stage { margin: 0 16px 16px; padding: 24px 12px 12px; border-radius: 18px;
-      background: radial-gradient(ellipse at 50% 0%, rgba(255, 214, 120, 0.25), transparent 60%), linear-gradient(180deg, #241b33, #15111e 70%, #3a2a1f 70%, #2a1e16);
-      display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-end; gap: 4px; }
-    .member { width: min(30vw, 190px); text-align: center; }
-    .member small { display: block; color: #a49bbd; margin-top: -4px; }
-    p.hint { margin: 0 16px; color: #a49bbd; font-size: 0.9rem; }
+    body { margin: 0; }
+    main { max-width: 1100px; margin: 0 auto; padding: 16px; }
+    h1 { font-size: 1.3rem; margin: 0 0 4px; }
+    h2 { font-size: 1rem; margin: 28px 0 6px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    .lead { color: var(--muted); margin: 0 0 10px; max-width: 760px; }
+    /* Stufenfarben wie bisher die Kartenrahmen: grau, grün, blau, lila. */
+    .l0 { --lvl: #7d8291; } .l1 { --lvl: #2fa84f; } .l2 { --lvl: #2f7fe0; } .l3 { --lvl: #b03ad6; }
 
+    /* ---------- A: Katalog ---------- */
+    .roster { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+    .pin { position: relative; border-radius: 18px; padding: 10px 10px 12px; text-align: center; cursor: pointer;
+      background: radial-gradient(ellipse at 50% 0%, rgba(255, 214, 120, var(--spot, 0)), transparent 62%), linear-gradient(180deg, #241b33, #18131f);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06); }
+    .pin.busy { opacity: 0.55; }
+    .pin .fig-wrap { position: relative; width: 112px; margin: 0 auto; }
+    .pin .podest { height: 12px; margin: -10px auto 0; width: 92px; border-radius: 50%; background: var(--lvl); box-shadow: 0 0 12px var(--lvl); opacity: 0.9; }
+    .pin .name { font-weight: 800; margin-top: 8px; font-size: 0.95rem; }
+    .pin .sub { font-size: 0.75rem; color: var(--muted); display: flex; justify-content: center; gap: 4px; align-items: center; margin-top: 2px; }
+    .pin .genres { position: absolute; top: 8px; left: 8px; display: flex; flex-direction: column; gap: 3px; }
+    .pin .genres i { width: 12px; height: 12px; border-radius: 50%; display: block; box-shadow: 0 0 0 2px #18131f; }
+    .pin .stars { position: absolute; top: 8px; right: 10px; color: #ffc23d; font-size: 0.75rem; letter-spacing: -1px; }
+    .pin .bar { height: 5px; border-radius: 3px; background: rgba(255,255,255,0.1); margin: 7px 6px 0; overflow: hidden; }
+    .pin .bar b { display: block; height: 100%; background: var(--lvl); }
+    .pin .tag { display: inline-block; margin-top: 6px; font-size: 0.7rem; padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,0.08); color: var(--muted); }
+    .pin .gear { position: absolute; top: 92px; right: 10px; width: 30px; height: 30px; border-radius: 50%; background: #2a2338; display: grid; place-items: center; box-shadow: 0 0 0 2px var(--g-rar, #555); }
+    .pin .gear svg { width: 24px; height: 24px; }
+
+    /* ---------- B: Band-Aufstellung ---------- */
+    .fp-lineup { display: grid; gap: 6px; }
+    .fp-row { display: grid; grid-template-columns: 54px 1fr auto auto; gap: 12px; align-items: center; padding: 8px 12px; border-radius: 14px; background: var(--panel, #1c1726); }
+    .fp-row .head { width: 54px; height: 54px; border-radius: 50%; overflow: hidden; background: var(--lvl); }
+    .fp-row .head svg { width: 100%; height: 100%; }
+    .fp-row .who b { display: block; }
+    .fp-row .who small { color: var(--muted); }
+    .fp-row .meter { width: 160px; }
+    .fp-row .meter .bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.1); overflow: hidden; margin-top: 4px; }
+    .fp-row .meter .bar b { display: block; height: 100%; background: var(--lvl); }
+    .fp-row .meter span { font-size: 0.75rem; color: var(--muted); }
+    .fp-row .gearchip { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; padding: 4px 10px 4px 4px; border-radius: 999px; background: #2a2338; }
+    .fp-row .gearchip svg { width: 28px; height: 28px; }
+
+    /* ---------- C: Casting ---------- */
+    .casting { position: relative; border-radius: 20px; overflow: hidden; padding: 30px 16px 18px;
+      background: radial-gradient(ellipse at 50% 0%, rgba(255, 214, 120, 0.25), transparent 60%), linear-gradient(180deg, #241b33, #15111e 74%, #3a2a1f 74%, #2a1e16); }
+    .casting .curtain { position: absolute; top: 0; bottom: 0; width: 50%; background: repeating-linear-gradient(90deg, #8d1c2e 0 18px, #6e1424 18px 36px); transition: transform 1.2s ease; z-index: 2; }
+    .casting .curtain.l { left: 0; } .casting .curtain.r { right: 0; }
+    .casting.open .curtain.l { transform: translateX(-100%); } .casting.open .curtain.r { transform: translateX(100%); }
+    .casting .acts { display: flex; justify-content: center; gap: 18px; flex-wrap: wrap; }
+    .act { width: 170px; text-align: center; opacity: 0; transform: translateY(14px); transition: opacity 0.5s, transform 0.5s; }
+    .casting.open .act { opacity: 1; transform: none; }
+    .casting.open .act:nth-child(2) { transition-delay: 0.5s; } .casting.open .act:nth-child(3) { transition-delay: 0.9s; }
+    .act .spot { width: 150px; margin: 0 auto; padding-top: 6px; border-radius: 50% 50% 8px 8px / 30% 30% 8px 8px; background: radial-gradient(ellipse at 50% 100%, var(--lvl), transparent 70%); }
+    .act b { display: block; margin-top: 4px; }
+    .act small { color: var(--muted); display: block; }
+    .act button { margin-top: 8px; }
+    .rarity { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--lvl); }
+
+    /* ---------- D: Instrumente ---------- */
+    .racks { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+    .rack { border-radius: 18px; padding: 12px; text-align: center; background: linear-gradient(180deg, #221b2e, #18131f); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06); }
+    .rack .stand { position: relative; height: 110px; display: grid; place-items: center; }
+    .rack .stand svg { width: 96px; height: 96px; filter: drop-shadow(0 6px 8px rgba(0,0,0,0.5)); }
+    .rack .plinth { height: 10px; width: 80px; margin: -6px auto 6px; border-radius: 50%; background: var(--lvl); box-shadow: 0 0 10px var(--lvl); }
+    .rack b { display: block; font-size: 0.9rem; }
+    .rack .vals { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; font-size: 0.72rem; color: var(--muted); margin-top: 6px; text-align: left; align-items: center; }
+    .rack .vals i { height: 5px; border-radius: 3px; background: rgba(255,255,255,0.1); overflow: hidden; display: block; }
+    .rack .vals i b { height: 100%; background: #f3eefc; }
+    .note { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 10px 14px; color: var(--muted); font-size: 0.9rem; margin-top: 10px; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Probe: niedliche Musiker-Figuren</h1>
-    <div>
-      <label>Tempo <input type="range" min="70" max="160" value="120" data-tempo></label>
-      <button data-new>Andere Musiker</button>
-    </div>
-  </header>
-  <div class="stage"></div>
-  <p class="hint">Alle Haltungen auf einen Blick. Im Spiel: Live-Ansicht von Auftritten, Band-Seite, Band-Ansicht in den Charts.</p>
-  <script type="module">
-    import { figure } from './assets/js/figure.js';
-    import { instrumentSvg } from './assets/js/icons.js';
+<main>
+  <h1>Probe: Figuren statt Karten</h1>
+  <p class="lead">Nur zum Anschauen, mit Beispieldaten. Alles, was heute eine Karte ist, wird eine Figur. Die Stufe zeigt das leuchtende Podest (grau, grün, blau, lila wie bisher die Rahmen), Bekanntheit das Scheinwerferlicht von oben und die Sterne.</p>
 
-    const pick = (list) => list[Math.floor(Math.random() * list.length)];
-    const SKINS = ['#f5d6c0', '#eac0a0', '#d9a27e', '#b97a56', '#8d5a3b', '#5e3a24'];
-    const HAIR = ['#1f1a17', '#3b2a20', '#6b4423', '#a0522d', '#d8b26e', '#e8d9a8', '#ff4f8b', '#4fd1ff', '#9b7bff'];
-    const SHIRTS = ['#4a6fa5', '#e4572e', '#3ddc97', '#9b7bff', '#ffb547', '#2b2d42', '#ff4f8b'];
-    const NAMES = { f: ['Mia', 'Leni', 'Nika', 'Ada', 'Hira'], m: ['Ben', 'Oskar', 'Jonas', 'Leon', 'Kenji'] };
-    const BAND = [['vocals', 'Gesang'], ['guitar', 'Gitarre'], ['guitar', 'E-Gitarre', true], ['guitar', 'E-Gitarre grün', true, 140], ['bass', 'Bass'], ['bass', 'E-Bass', true], ['bass', 'E-Bass lila', true, 280], ['keys', 'Keyboard'], ['drums', 'Schlagzeug'], ['violin', 'Geige'], ['sax', 'Saxophon'], ['trumpet', 'Trompete'], ['flute', 'Flöte'], ['turntables', 'Turntables']];
+  <h2>A · Katalog: Musiker als Figuren</h2>
+  <div class="roster" data-roster></div>
+  <p class="note">Antippen öffnet wie bisher die Musikerseite. Wer unterwegs ist, wird blasser. Oben links die Genres als Farbpunkte, oben rechts die Bekanntheits-Sterne, unten der Fortschritt zur nächsten Stufe. Das runde Abzeichen ist das eigene Instrument.</p>
 
-    function look() {
-      const gender = pick(['f', 'm']);
-      return {
-        gender,
-        skin: pick(SKINS),
-        hairColor: pick(HAIR),
-        hair: pick(gender === 'f' ? ['lang', 'bob', 'zopf', 'dutt', 'locken', 'afro'] : ['kurz', 'locken', 'afro', 'sidecut', 'irokese', 'kurz']),
-        shirt: pick(SHIRTS),
-        glasses: pick(['none', 'none', 'round', 'square', 'sun']),
-        hat: pick(['none', 'none', 'none', 'beanie', 'cap', 'fedora']),
-        beard: gender === 'm' ? pick(['none', 'none', 'stubble', 'full']) : 'none',
-        freckles: Math.random() < 0.3,
-        name: pick(NAMES[gender]),
-      };
-    }
+  <h2>B · Bandseite: Aufstellung als Liste unter der Bühne</h2>
+  <div class="fig-stage" data-stage></div>
+  <div class="fp-lineup" data-lineup></div>
+  <p class="note">Die große Bühne bleibt oben. Darunter statt der Karten eine ruhige Liste: Kopf, Name, Instrument, Können und das Instrument, das er spielt. Antippen öffnet den Musiker.</p>
 
-    const stage = document.querySelector('.stage');
-    function draw() {
-      stage.innerHTML = BAND.map(([type, label, electric, hue = null]) => {
-        const l = look();
-        return `<div class="member">${figure(l, type, { electric, hue })}<b>${l.name}</b><small>${instrumentSvg(type, electric, hue) ?? ''} ${label}</small></div>`;
-      }).join('');
-      setTempo();
-    }
-    function setTempo() {
-      const bpm = Number(document.querySelector('[data-tempo]').value);
-      stage.querySelectorAll('.fig').forEach((f) => f.style.setProperty('--beat', `${60 / bpm}s`));
-    }
-    document.querySelector('[data-new]').addEventListener('click', draw);
-    document.querySelector('[data-tempo]').addEventListener('input', setTempo);
-    draw();
-  </script>
+  <h2>C · Pack öffnen wird „Vorspielen“</h2>
+  <div class="casting" data-casting>
+    <div class="curtain l"></div><div class="curtain r"></div>
+    <div class="acts" data-acts></div>
+  </div>
+  <p><button class="btn" data-again>Vorhang nochmal</button></p>
+  <p class="note">Statt Karten umzudrehen geht der Vorhang auf, und die Kandidaten treten nacheinander ins Licht. Ein seltener Musiker bekommt einen farbigen Scheinwerfer. Man nimmt einen davon auf.</p>
+
+  <h2>D · Lager: Instrumente auf dem Ständer</h2>
+  <div class="racks" data-racks></div>
+  <p class="note">Instrumente stehen auf einem Sockel in ihrer Seltenheitsfarbe. Darunter die drei Werte Klang, Spielbarkeit und Design als kurze Balken.</p>
+</main>
+<script type="module">
+  import { figure } from './assets/js/figure.js';
+  import { avatar } from './assets/js/avatar.js';
+  import { instrumentSvg } from './assets/js/icons.js';
+
+  const GENRE = { pop: '#d6336c', rock: '#e8590c', metal: '#5c6370', punk: '#74b816', jazz: '#d99a00', elektro: '#1c7ed6', hiphop: '#7048e8', folk: '#2b8a3e' };
+  const INSTR = { guitar: 'Gitarre', bass: 'Bass', drums: 'Schlagzeug', vocals: 'Gesang', keys: 'Keyboard', sax: 'Saxophon', violin: 'Geige', turntables: 'Turntables', trumpet: 'Trompete', flute: 'Flöte' };
+  const LEVEL = ['Anfänger', 'Fortgeschritten', 'Profi', 'Virtuose'];
+  const look = (gender, skin, hair, hairColor, shirt, extra = {}) => ({ gender, skin, hair, hairColor, shirt, beard: 'none', glasses: 'none', hat: 'none', ...extra });
+  const people = [
+    { first: 'Lena', last: 'Berger', instr: 'vocals', level: 1, skill: 0.6, fame: 2, genres: ['pop', 'rock'], look: look('f', '#eac0a2', 'lang', '#8a5a33', '#ef233c'), gear: 'rare' },
+    { first: 'Finn', last: 'Okafor', instr: 'guitar', level: 2, skill: 0.3, fame: 3, genres: ['rock', 'metal', 'punk'], look: look('m', '#6b3f27', 'locken', '#1d1612', '#2b2d42', { beard: 'stubble' }), gear: 'epic' },
+    { first: 'Kim', last: 'Novak', instr: 'drums', level: 0, skill: 0.8, fame: 0, genres: ['punk'], look: look('d', '#d9a27e', 'irokese', '#ff4fa3', '#06d6a0'), busy: 'übt allein' },
+    { first: 'Ida', last: 'Lindqvist', instr: 'bass', level: 1, skill: 0.2, fame: 1, genres: ['rock', 'jazz'], look: look('f', '#f6d7c3', 'bob', '#e3c88a', '#3a86ff', { glasses: 'round' }), gear: 'common' },
+    { first: 'Yusuf', last: 'Demir', instr: 'keys', level: 3, skill: 1, fame: 3, genres: ['jazz', 'elektro'], look: look('m', '#a86f4b', 'kurz', '#3b2a20', '#8338ec', { hat: 'fedora' }), gear: 'legendary' },
+    { first: 'Svea', last: 'Kaya', instr: 'violin', level: 0, skill: 0.4, fame: 0, genres: ['folk', 'pop'], look: look('f', '#c58c63', 'zopf', '#a8442a', '#ffbe0b') },
+  ];
+  const RAR = { common: 'l0', rare: 'l1', epic: 'l2', legendary: 'l3' };
+  const RAR_COLOR = { common: '#7d8291', rare: '#2fa84f', epic: '#2f7fe0', legendary: '#b03ad6' };
+  const stars = (n) => '★'.repeat(n) + '<span style="opacity:.25">' + '★'.repeat(3 - n) + '</span>';
+  const genreDots = (g) => g.map((k) => `<i style="background:${GENRE[k]}" title="${k}"></i>`).join('');
+  const $ = (s) => document.querySelector(s);
+
+  // A
+  $('[data-roster]').innerHTML = people.map((p) => `
+    <div class="pin l${p.level} ${p.busy ? 'busy' : ''}" style="--spot:${[0, 0.12, 0.22, 0.34][p.fame]}">
+      <div class="genres">${genreDots(p.genres)}</div>
+      <div class="stars">${stars(p.fame)}</div>
+      <div class="fig-stage idle" style="background:none;padding:0;margin:0"><div class="fig-member" style="width:112px;margin:0 auto">${figure(p.look, p.instr)}</div></div>
+      <div class="podest"></div>
+      ${p.gear ? `<span class="gear" style="--g-rar:${RAR_COLOR[p.gear]}">${instrumentSvg(p.instr) ?? ''}</span>` : ''}
+      <div class="name">${p.first} ${p.last}</div>
+      <div class="sub">${INSTR[p.instr]} · ${LEVEL[p.level]}</div>
+      <div class="bar"><b style="width:${p.skill * 100}%"></b></div>
+      ${p.busy ? `<span class="tag">${p.busy}</span>` : '<span class="tag">Kellerkinder</span>'}
+    </div>`).join('');
+
+  // B
+  const band = people.slice(0, 4).map((p, i) => ({ id: i + 1, firstName: p.first, look: p.look, instruments: [{ type: p.instr }], bandSlot: 1 }));
+  $('[data-stage]').innerHTML = band.map((m) => `<div class="fig-member" style="--d:${-m.id}s">${figure(m.look, m.instruments[0].type)}<b>${m.firstName}</b></div>`).join('');
+  $('[data-lineup]').innerHTML = people.slice(0, 4).map((p) => `
+    <div class="fp-row l${p.level}">
+      <span class="head">${avatar(p.look)}</span>
+      <span class="who"><b>${p.first} ${p.last}</b><small>${INSTR[p.instr]} · ${LEVEL[p.level]} · ${'★'.repeat(p.fame) || 'unbekannt'}</small></span>
+      <span class="meter"><span>Können bis zur nächsten Stufe</span><span class="bar"><b style="width:${p.skill * 100}%"></b></span></span>
+      <span class="gearchip">${instrumentSvg(p.instr) ?? ''}${p.gear ? 'eigenes Instrument' : '<span class="bad">ohne Instrument</span>'}</span>
+    </div>`).join('');
+
+  // C
+  const candidates = [people[3], people[1], people[5]];
+  const rarity = ['Gewöhnlich', 'Selten', 'Episch', 'Legendär'];
+  $('[data-acts]').innerHTML = candidates.map((p) => `
+    <div class="act l${p.level}">
+      <div class="spot"><div class="fig-stage idle" style="background:none;padding:0;margin:0"><div class="fig-member" style="width:130px;margin:0 auto">${figure(p.look, p.instr)}</div></div></div>
+      <span class="rarity">${rarity[p.level]}</span>
+      <b>${p.first} ${p.last}</b><small>${INSTR[p.instr]} · ${p.genres.join(', ')}</small>
+      <button class="btn small primary">Aufnehmen</button>
+    </div>`).join('');
+  const open = () => { const c = $('[data-casting]'); c.classList.remove('open'); void c.offsetWidth; setTimeout(() => c.classList.add('open'), 300); };
+  $('[data-again]').addEventListener('click', open);
+  open();
+
+  // D
+  const racks = [
+    { type: 'guitar', name: 'Westerngitarre Eiche', rar: 'common', v: [20, 80, 15] },
+    { type: 'bass', name: 'Jazz-Bass Sonnenbrand', rar: 'rare', v: [45, 60, 40] },
+    { type: 'drums', name: 'Kesselset Donner', rar: 'epic', v: [70, 45, 65] },
+    { type: 'keys', name: 'Konzertflügel Mond', rar: 'legendary', v: [92, 35, 90] },
+    { type: 'sax', name: 'Altsaxophon Messing', rar: 'common', v: [15, 85, 20] },
+  ];
+  $('[data-racks]').innerHTML = racks.map((r) => `
+    <div class="rack ${RAR[r.rar]}">
+      <div class="stand">${instrumentSvg(r.type) ?? ''}</div>
+      <div class="plinth"></div>
+      <b>${r.name}</b><span class="rarity">${rarity[Object.keys(RAR).indexOf(r.rar)]}</span>
+      <div class="vals">${['Klang', 'Spielbarkeit', 'Design'].map((n, i) => `<span>${n}</span><i><b style="display:block;width:${r.v[i]}%"></b></i>`).join('')}</div>
+    </div>`).join('');
+</script>
 </body>
 </html>

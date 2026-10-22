@@ -43,6 +43,11 @@
       background: radial-gradient(circle at 35% 35%, #ff8fae, #c2185b); box-shadow: 0 2px 3px rgba(0,0,0,0.4); }
     .photo .pic { aspect-ratio: 1; border-radius: 2px; overflow: hidden; background: linear-gradient(180deg, #cfdbe6, #b5c4d2); box-shadow: 0 0 0 3px var(--lvl); }
     .photo .pic svg { width: 100%; height: 100%; display: block; }
+    .pic.fig-stage, .head.fig-stage { display: block; padding: 0; margin: 0; border-radius: inherit; }
+    .photo .pic.fig-stage { background: linear-gradient(180deg, #cfdbe6, #b5c4d2); border-radius: 2px; }
+    .krow .pic.fig-stage { background: linear-gradient(180deg, #cfdbe6, #b5c4d2); border-radius: 6px; }
+    .fp-row .head.fig-stage { background: var(--lvl); border-radius: 50%; }
+    .pic .fig-member, .head .fig-member { display: block; width: 100%; min-width: 0; height: 100%; }
     .photo .nm { font-weight: 800; font-size: 0.85rem; margin-top: 7px; line-height: 1.1; }
     .photo .in { font-size: 0.7rem; color: #6b6377; }
     .photo .st { color: #e0a21a; font-size: 0.72rem; letter-spacing: -1px; }
@@ -111,7 +116,7 @@
 <body>
 <main>
   <h1>Probe: Figuren statt Karten</h1>
-  <p class="lead">Nur zum Anschauen, mit Beispieldaten. Alles, was heute eine Karte ist, wird eine Figur. Die Stufe zeigt das leuchtende Podest (grau, grün, blau, lila wie bisher die Rahmen), Bekanntheit das Scheinwerferlicht von oben und die Sterne.</p>
+  <p class="lead">Nur zum Anschauen, mit Beispieldaten. Alles, was heute eine Karte ist, wird eine Minifigur – auch die Passfotos sind Ausschnitte der Figuren. Die Stufe zeigt das leuchtende Podest (grau, grün, blau, lila wie bisher die Rahmen), Bekanntheit das Scheinwerferlicht von oben und die Sterne.</p>
 
   <h2>A1 · Katalog als Fotowand (Passfotos)</h2>
   <div class="wall" data-wall></div>
@@ -142,7 +147,7 @@
   <p class="note">Instrumente stehen auf einem Sockel in ihrer Seltenheitsfarbe. Darunter die drei Werte Klang, Spielbarkeit und Design als kurze Balken.</p>
 </main>
 <script type="module">
-  import { figure } from './assets/js/figure.js';
+  import { figure, portrait } from './assets/js/figure.js';
   import { avatar } from './assets/js/avatar.js';
   import { instrumentSvg } from './assets/js/icons.js';
 
@@ -168,7 +173,7 @@
   const tilt = (i) => ['-2.5deg', '1.8deg', '-1deg', '2.6deg', '-1.8deg', '1deg'][i % 6];
   $('[data-wall]').innerHTML = [...people, ...people.slice(0, 4).map((p, i) => ({ ...p, first: ['Mats', 'Elif', 'Noa', 'Theo'][i], look: { ...p.look, shirt: ['#fb5607', '#8d99ae', '#ffbe0b', '#222222'][i], skin: ['#8a5536', '#f6d7c3', '#c58c63', '#eac0a2'][i] }, busy: null }))].map((p, i) => `
     <div class="photo l${p.level} ${p.busy ? 'busy' : ''}" style="--r:${tilt(i)}">
-      <div class="pic">${avatar(p.look)}</div>
+      <div class="pic fig-stage idle"><div class="fig-member" style="--d:${(-i * 1.37).toFixed(2)}s">${portrait(p.look)}</div></div>
       ${p.busy ? `<div class="away">${p.busy}</div>` : ''}
       <div class="nm">${p.first} ${p.last}</div>
       <div class="in">${INSTR[p.instr]} · ${LEVEL[p.level]}</div>
@@ -177,7 +182,7 @@
     </div>`).join('');
   $('[data-file]').innerHTML = people.map((p) => `
     <div class="krow l${p.level} ${p.busy ? 'busy' : ''}">
-      <span class="pic">${avatar(p.look)}</span>
+      <span class="pic fig-stage idle"><span class="fig-member" style="--d:${(-people.indexOf(p) * 1.37).toFixed(2)}s">${portrait(p.look)}</span></span>
       <span><b>${p.first} ${p.last}</b><small>${INSTR[p.instr]} · ${LEVEL[p.level]} · ${p.genres.join(', ')}</small></span>
       <span><small>Können</small><span class="bar"><b style="display:block;width:${p.skill * 100}%"></b></span></span>
       <span class="kside"><span class="st">${stars(p.fame)}</span><br>${p.busy ?? 'frei'}</span>
@@ -188,7 +193,7 @@
     <div class="pin l${p.level} ${p.busy ? 'busy' : ''}" style="--spot:${[0, 0.12, 0.22, 0.34][p.fame]}">
       <div class="genres">${genreDots(p.genres)}</div>
       <div class="stars">${stars(p.fame)}</div>
-      <div class="fig-stage idle" style="background:none;padding:0;margin:0"><div class="fig-member" style="width:112px;margin:0 auto">${figure(p.look, p.instr)}</div></div>
+      <div class="fig-stage idle" style="background:none;padding:0;margin:0"><div class="fig-member" style="width:112px;margin:0 auto;--d:${(-people.indexOf(p) * 1.3).toFixed(2)}s">${figure(p.look, p.instr)}</div></div>
       <div class="podest"></div>
       ${p.gear ? `<span class="gear" style="--g-rar:${RAR_COLOR[p.gear]}">${instrumentSvg(p.instr) ?? ''}</span>` : ''}
       <div class="name">${p.first} ${p.last}</div>
@@ -202,7 +207,7 @@
   $('[data-stage]').innerHTML = band.map((m) => `<div class="fig-member" style="--d:${-m.id}s">${figure(m.look, m.instruments[0].type)}<b>${m.firstName}</b></div>`).join('');
   $('[data-lineup]').innerHTML = people.slice(0, 4).map((p) => `
     <div class="fp-row l${p.level}">
-      <span class="head">${avatar(p.look)}</span>
+      <span class="head fig-stage idle"><span class="fig-member" style="--d:${(-people.indexOf(p) * 1.9).toFixed(2)}s">${portrait(p.look)}</span></span>
       <span class="who"><b>${p.first} ${p.last}</b><small>${INSTR[p.instr]} · ${LEVEL[p.level]} · ${'★'.repeat(p.fame) || 'unbekannt'}</small></span>
       <span class="meter"><span>Können bis zur nächsten Stufe</span><span class="bar"><b style="width:${p.skill * 100}%"></b></span></span>
       <span class="gearchip">${instrumentSvg(p.instr) ?? ''}${p.gear ? 'eigenes Instrument' : '<span class="bad">ohne Instrument</span>'}</span>
@@ -213,7 +218,7 @@
   const rarity = ['Gewöhnlich', 'Selten', 'Episch', 'Legendär'];
   $('[data-acts]').innerHTML = candidates.map((p) => `
     <div class="act l${p.level}">
-      <div class="spot"><div class="fig-stage idle" style="background:none;padding:0;margin:0"><div class="fig-member" style="width:130px;margin:0 auto">${figure(p.look, p.instr)}</div></div></div>
+      <div class="spot"><div class="fig-stage idle" style="background:none;padding:0;margin:0"><div class="fig-member" style="width:130px;margin:0 auto;--d:${(-candidates.indexOf(p) * 1.7 - 0.4).toFixed(2)}s">${figure(p.look, p.instr)}</div></div></div>
       <span class="rarity">${rarity[p.level]}</span>
       <b>${p.first} ${p.last}</b><small>${INSTR[p.instr]} · ${p.genres.join(', ')}</small>
       <button class="btn small primary">Aufnehmen</button>

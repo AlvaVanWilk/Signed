@@ -237,6 +237,22 @@ const POSES = {
 };
 
 /** Instrument, das ein Musiker in der Band spielt (wie BandCalc::instrument). */
+/**
+ * Passfoto im Stil der Figuren: Kopf und Schultern derselben Figur, ohne Instrument. Blinzelt und schaut umher,
+ * wenn es in einem .fig-stage.idle steht.
+ */
+export function portrait(look = {}) {
+  const skin = look.skin || '#d9a27e';
+  const shirt = look.shirt || '#4a6fa5';
+  return `
+    <svg class="fig fig-portrait" viewBox="14 -6 92 96" aria-hidden="true">
+      <g class="fig-body">
+        <path d="M43 76 Q60 68 77 76 L81 108 Q60 115 39 108 Z" fill="${shirt}" ${STROKE}/>
+        ${pivot(60, 74, 'fig-head', head(look, skin, false))}
+      </g>
+    </svg>`;
+}
+
 export function playedInstrument(m) {
   const slot = m.bandSlot === 2 && m.instruments[1] ? 1 : 0;
   return m.instruments[slot].type;

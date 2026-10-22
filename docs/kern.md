@@ -202,7 +202,7 @@ den Gesangsspuren der Aufnahmen (`Music::melodyChart`, für Studio-Aufnahmen).
   Grundpreis (80 / 150 / 300 ₲) × 1 / 3 / 8 je Schwierigkeit. Jeder Musiker einmal pro Tag, auch ohne Band; läuft
   offline; Zurückholen gibt das Geld zurück. Ein Musiker hat etwa jeden zehnten Tag sein Instrument: im Schnitt +4,5
   Können, eine Stufe allein durch Kurse in rund zwei Monaten.
-- Allein üben lassen (statt Minispiel): 2 Minuten, läuft auch offline, bringt ¼ einer perfekten Solo-Probe. Wer selbst
+- Allein üben lassen (statt Minispiel): 10 Minuten, läuft auch offline, bringt ¼ einer perfekten Solo-Probe. Wer selbst
   spielt, bekommt je nach Treffern bis zum Vierfachen. Beim Platte-Aufnehmen gibt es diese Wahl nicht.
 - Solo-Probe: Können + 0,8 × Trefferquote^1,5 × Talent × Lernkurve; auf Stufe 0 (unter 35) × 3 –
   eine perfekte Probe bringt dann +1,7 (bei Können 15) bis +0,95 (bei 34). Von 15 auf 35 sind es bei 90 % Treffern

@@ -32,7 +32,7 @@ const NAMES = [
     'piano' => ['keyboard', true], 'keys' => ['keyboard', true], 'keyboard' => ['keyboard', true],
     'vocal' => ['gesang', false], 'vocals' => ['gesang', false],
     'flute' => ['floete', false], 'violine' => ['geige', false], 'violin' => ['geige', false],
-    'trumpet' => ['trompete', false], 'sax' => ['saxophon', false], 'turntables' => ['turntables', false],
+    'trumpet' => ['trompete', false], 'sax' => ['saxophon', false], 'turntables' => ['turntables', false], 'turntable' => ['turntables', false],
 ];
 
 /** Ziel-Lautheit je Rolle in LUFS: Gesang vorn, Bass und Schlagzeug tragen, der Rest begleitet. */

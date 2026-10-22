@@ -333,7 +333,10 @@ Instrumente sind zufällig. Im Music Store hat der Verkäufer mit 25 % Chance ei
   nicht, ineinander gebundene Töne enden, wo der nächste beginnt.
 - Rap: In Hip-Hop wird gerappt (`Catalog::RAP_GENRES`). Gesang übt dort im Rhythmus-Spiel – man tippt die Silben
   im Takt (Noten aus derselben MIDI-Spur wie Pop). Vorhanden: Pop 0 komplett, Rock 0 (Schlagzeug, Bass, Keyboard),
-  Hip-Hop 0 (Schlagzeug, Bass, Gesang).
+  Hip-Hop 0 (Schlagzeug, Bass, Gesang), Elektro 0 (Schlagzeug, E-Piano, Turntables, Gesang; Gesang und E-Piano mit den Noten von Pop,
+  Männerstimme aus Pop).
+- Spur ohne MIDI (Elektro-Turntables): Die Noten fürs Rhythmus-Spiel kommen aus der Aufnahme selbst – Anschläge erkannt
+  (Spektral-Fluss), aufs Achtel gerundet, die Spur im Spiel nach Klangfarbe (hell/dunkel) verteilt.
 - Fehlt eine Spur, nimmt das Spiel die nächste Stufe, dann die andere Variante, dann Pop. Gibt es gar keine, bleibt der Synthesizer.
 - Elektrisch oder akustisch (`Catalog::soundsElectric`): Manche Genres verlangen es (Metal: Gitarre und Bass, Elektro: Keyboard,
   Schlagzeug und Bass immer elektrisch). Sonst zählt das eigene Instrument; ohne eigenes Instrument die Gewohnheit des Genres

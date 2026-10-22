@@ -412,3 +412,13 @@ test('Musik: Elektro-Keyboard klingt immer elektrisch, ohne eigenes Instrument e
     checkEquals(true, Signed\Game\Music::stem($keys, [], ['pop'])['electric'], 'Pop ohne Instrument: elektrisch');
     checkEquals(false, Signed\Game\Music::stem($keys, [], ['jazz'])['electric'], 'Jazz ohne Instrument: akustisch');
 });
+
+test('Musik: Elektro hat eigene Aufnahmen, Turntables mit Noten fürs Rhythmus-Spiel', function () {
+    $r = Signed\Game\Music::resolve(['type' => 'turntables', 'level' => 0, 'genre' => 'elektro', 'electric' => true]);
+    checkEquals('elektro-0/turntables', $r['folder'] . '/' . $r['file']);
+    check(count(Signed\Game\Music::notes($r)['notes']) > 20, 'Turntables haben Noten');
+    $k = Signed\Game\Music::resolve(['type' => 'keys', 'level' => 0, 'genre' => 'elektro', 'electric' => true]);
+    checkEquals('elektro-0/keyboard-elektrisch', $k['folder'] . '/' . $k['file']);
+    $m = Signed\Game\Music::resolve(['type' => 'vocals', 'level' => 0, 'genre' => 'elektro', 'electric' => false, 'voice' => 'maennlich']);
+    checkEquals('elektro-0/gesang-maennlich', $m['folder'] . '/' . $m['file']);
+});

@@ -57,7 +57,7 @@
     $('[data-seed]').value = game.seed;
     const e = game.etude;
     const keys = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'H'];
-    $('[data-meta]').innerHTML = `Nummer <b>${game.seed}</b> · ${game.bpm} BPM · ${e.meter}/4-Takt · Tonart <b>${keys[(e.key + 12) % 12]}</b> · Akkorde <b>${e.chords.join(' – ')}</b> · <b>${game.count}</b> Noten`;
+    $('[data-meta]').innerHTML = `Nummer <b>${game.seed}</b> · ${game.bpm} BPM · ${e.meter}/4-Takt · Tonart <b>${keys[(e.key + 12) % 12]}</b> · Akkorde <b>${e.chords.join(' – ')}</b> · <b>${game.count}</b> Noten${game.mode === 'pitch' ? ` · Trefferfeld <b>±${game.tolerance}</b> · Schonzeit <b>${Math.round((game.grace ?? 1) * 100)} %</b>` : ''} · Können <b>${$('[data-skill]').value}</b>`;
     $('.result').textContent = '';
     $('.stage-box').innerHTML = '';
     mg = createMinigame($('.stage-box'), game);

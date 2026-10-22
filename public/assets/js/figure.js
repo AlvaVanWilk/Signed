@@ -129,7 +129,9 @@ function head(look, skin, sing, mood = null) {
   p.push(pivot(50, 45, 'fig-eyes', eyes(face.eyes, skin)));
   // Der typische Ausdruck (Brauen, Lider, Mund) kommt nur ab und zu, dazwischen schaut die Figur freundlich (CSS blendet um).
   // Wer Brauen hat, behält sie: dazwischen ruhige Brauen. Offene Münder und Schmollmund schließen sich dazwischen.
-  const upper = (face.eyes === 'lidded' ? lids(skin) : '') + (BROWS[mood] ?? '');
+  // Halb geschlossene Augen (Diva, Gelassen) bleiben immer, nur Brauen und Mund wechseln.
+  if (face.eyes === 'lidded') p.push(lids(skin));
+  const upper = BROWS[mood] ?? '';
   const calmUpper = BROWS[mood] ? line('M40 39.2 Q43 37.9 46 39.2') + line('M54 39.2 Q57 37.9 60 39.2') : '';
   const calmMouth = CALM_MOUTH[face.mouth] ?? face.mouth ?? 'smile';
   const changes = calmMouth !== (face.mouth ?? 'smile');

@@ -1131,3 +1131,16 @@ test('Cover-Automat: die letzte Aufnahme, jedes Band zählt sofort, wertvolle Fe
     checkEquals(null, bandById($done['state'], $band['id'])['record']['open']);
     checkEquals($c['cover'], bandById($done['state'], $band['id'])['discography'][0]['cover']);
 });
+
+test('Hall of Fame: Bands aller Labels nach Ruhm', function () {
+    $db = freshDb();
+    $a = registerPlayer($db, 'Ruhmreich');
+    $b = registerPlayer($db, 'Klein');
+    $bandA = foundBand($a, 'Die Großen');
+    foundBand($b, 'Die Kleinen');
+    $db->exec('UPDATE bands SET fame_own = 50 WHERE id = ?', [$bandA['id']]);
+    $list = $b->get('charts')['bands'];
+    checkEquals(['Die Großen', 'Die Kleinen'], array_column($list, 'band'));
+    checkEquals([1, 2], array_column($list, 'rank'));
+    check(!$list[0]['own'] && $list[1]['own']);
+});

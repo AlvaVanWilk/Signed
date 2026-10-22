@@ -22,7 +22,7 @@ export async function loadCharts() {
 }
 
 export function render() {
-  const tab = app.ui.chartsTab === 'labels' ? 'labels' : 'albums';
+  const tab = ['labels', 'fame'].includes(app.ui.chartsTab) ? app.ui.chartsTab : 'albums';
   const charts = app.charts;
   const rules = cat().rules;
 
@@ -32,6 +32,7 @@ export function render() {
         <h1>Charts</h1>
         <p class="muted">${tab === 'albums'
           ? `Die Platten aller Labels bis Platz ${rules.chartList}. Die Plätze werden alle ${fmt0(rules.chartIntervalHours)} Stunden neu vergeben – sofort, wenn eine Platte einsteigt oder Gigs und Promo sie anschieben. In den Top ${rules.chartSize}: je höher der Platz, desto mehr Tantiemen und Ruhm (Platz 1 doppelt), und Gigs der Band werden voller. Platz 1 gibt einen Scout-Gutschein.`
+          : tab === 'fame' ? 'Hall of Fame: die berühmtesten Bands aller Labels.'
           : 'Die erfolgreichsten Labels nach dem Ruhm all ihrer Bands.'}</p>
       </div>
       <button class="btn ghost small" data-act="chartsReload">Aktualisieren</button>
@@ -39,8 +40,9 @@ export function render() {
     <div class="tabs">
       <button class="tab ${tab === 'albums' ? 'active' : ''}" data-act="chartsTab" data-tab="albums">Album-Charts</button>
       <button class="tab ${tab === 'labels' ? 'active' : ''}" data-act="chartsTab" data-tab="labels">Labels</button>
+      <button class="tab ${tab === 'fame' ? 'active' : ''}" data-act="chartsTab" data-tab="fame">Hall of Fame</button>
     </div>
-    ${!charts ? '<div class="empty">Charts werden geladen …</div>' : tab === 'albums' ? albums(charts.albums) : labels(charts.labels)}`;
+    ${!charts ? '<div class="empty">Charts werden geladen …</div>' : tab === 'albums' ? albums(charts.albums) : tab === 'fame' ? hallOfFame(charts.bands ?? []) : labels(charts.labels)}`;
 }
 
 function albums(all) {
@@ -96,7 +98,11 @@ const HEADS = {
     <ul><li>Erst steigen sie, nach etwa ${fmt0(r.chartPeakHours)} Stunden sinken sie.</li>
     <li>Gigs und Promo geben <b>Schub</b>: bis +${Math.round(r.chartBoostMax * 100)} %, er halbiert sich alle ${fmt0(r.chartBoostHalfHours)} Stunden.</li>
     <li>Bei deinen Platten steht darunter, wie viel <b>Geld pro Minute</b> sie gerade bringen.</li></ul>`],
-  labelRank: ['#', 'Platz', () => '<p>Der Platz unter allen Labels – nach dem Ruhm all ihrer Bands.</p>'],
+  labelRank: ['#', 'Platz', () => '<p>Der Platz in der Rangliste – nach Ruhm.</p>'],
+  fameBand: ['Band', 'Band', () => '<p>Tippe auf eine Band, um sie anzuschauen und anzuhören.</p>'],
+  fameLabel: ['Label', 'Label', () => '<p>Das Plattenlabel, zu dem die Band gehört.</p>'],
+  bandFame: ['Ruhm', 'Ruhm', () => `<p>Der Ruhm der Band: die Bekanntheit ihrer Mitglieder plus der Ruhm am Bandnamen.</p>
+    <ul><li>Er kommt aus Auftritten, Platten, Charts und Promo.</li></ul>`],
   label: ['Label', 'Label', () => '<p>Das Plattenlabel, also der Spieler.</p>'],
   bands: ['Bands', 'Bands', () => '<p>Wie viele Bands das Label gerade hat.</p>'],
   labelFame: ['Ruhm', 'Ruhm', () => `<p>Der Ruhm aller Bands des Labels zusammen.</p>
@@ -113,6 +119,22 @@ export function trendBadge(e) {
   if (e.trend === 'up') return `<span class="trend up" title="vorher Platz ${e.prev}">▲ ${e.prev}</span>`;
   if (e.trend === 'down') return `<span class="trend down" title="vorher Platz ${e.prev}">▼ ${e.prev}</span>`;
   return `<span class="trend same" title="vorher Platz ${e.prev}">– ${e.prev ?? ''}</span>`;
+}
+
+function hallOfFame(list) {
+  if (!list.length) return '<div class="empty">Noch keine Band.</div>';
+  return `
+    <table class="charts">
+      <thead><tr>${['labelRank', 'fameBand', 'fameLabel', 'bandFame'].map(headCell).join('')}</tr></thead>
+      <tbody>${list.map((e) => `
+        <tr class="${e.own ? 'own' : ''}">
+          <td class="rank">${e.rank <= 3 ? ['🥇', '🥈', '🥉'][e.rank - 1] : e.rank}</td>
+          <td><button class="link" data-act="viewBand" data-id="${e.bandId}">${esc(e.band)}</button></td>
+          <td class="muted">${esc(e.label)}</td>
+          <td><b>${fmt1(e.points)}</b></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
 }
 
 function labels(list) {

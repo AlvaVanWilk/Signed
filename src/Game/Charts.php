@@ -219,7 +219,11 @@ final class Charts
         }
         unset($album);
 
-        return ['albums' => $albums, 'labels' => self::rank(self::labels($db, $labelId))];
+        return [
+            'albums' => $albums,
+            'labels' => self::rank(self::labels($db, $labelId)),
+            'bands' => self::rank(self::hallOfFame($db, $labelId), Balance::CHART_LIST),
+        ];
     }
 
     /**
@@ -430,13 +434,32 @@ final class Charts
         ], $rows);
     }
 
+    /** Hall of Fame: alle Bands aller Labels nach Ruhm (am Namen plus Bekanntheit der Mitglieder, wie BandCalc::bandFame). */
+    private static function hallOfFame(Db $db, int $labelId): array
+    {
+        $rows = $db->all(
+            'SELECT b.id, b.name, b.fame_own, b.label_id, l.name AS label_name, COALESCE(SUM(m.fame), 0) AS member_fame
+             FROM bands b
+             JOIN labels l ON l.id = b.label_id
+             LEFT JOIN musicians m ON m.band_id = b.id
+             GROUP BY b.id, b.name, b.fame_own, b.label_id, l.name'
+        );
+        return array_map(static fn ($r) => [
+            'bandId' => (int) $r['id'],
+            'band' => $r['name'],
+            'label' => $r['label_name'],
+            'points' => round((float) $r['fame_own'] + (float) $r['member_fame'], 1),
+            'own' => (int) $r['label_id'] === $labelId,
+        ], $rows);
+    }
+
     /** Sortiert nach Punkten, vergibt Plätze und kürzt auf die Top-Liste (eigene Einträge bleiben immer). */
-    private static function rank(array $list): array
+    private static function rank(array $list, int $size = Balance::CHART_SIZE): array
     {
         usort($list, static fn ($a, $b) => $b['points'] <=> $a['points']);
         $out = [];
         foreach ($list as $index => $entry) {
-            if ($index < Balance::CHART_SIZE || $entry['own']) {
+            if ($index < $size || $entry['own']) {
                 $out[] = $entry + ['rank' => $index + 1];
             }
         }

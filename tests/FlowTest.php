@@ -876,7 +876,7 @@ test('Band anderer Labels ansehen: Mitglieder, Genre, Platten und Spuren zum Anh
     checkApiError(fn () => $b->post('bandView', ['bandId' => 99999]), 'gibt es nicht');
 });
 
-test('Charts: Eine Band darf mehrere Platten in den Charts haben, pro Label höchstens drei', function () {
+test('Charts: Eine Band darf mehrere Platten in den Charts haben', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Flut');
     $band = foundBand($p);
@@ -890,10 +890,10 @@ test('Charts: Eine Band darf mehrere Platten in den Charts haben, pro Label höc
     }
     Signed\Game\Charts::markDirty($db);
     $placed = array_column(array_filter($p->get('charts')['albums'], static fn ($a) => $a['placed']), 'title');
-    checkEquals(['Eins', 'Zwei', 'Drei'], $placed);
+    checkEquals(['Eins', 'Zwei', 'Drei', 'Vier'], $placed);
 });
 
-test('Gigs: Die Band wählt, welches Album sie spielt – Gigs schieben dieses an', function () {
+test('Gigs: Die Band spielt immer ihre neueste Platte – Gigs schieben diese an', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Setlist');
     $band = foundBand($p);
@@ -909,15 +909,12 @@ test('Gigs: Die Band wählt, welches Album sie spielt – Gigs schieben dieses a
     }
     $db->exec('UPDATE bands SET records = 2, songs_recorded = 6 WHERE id = ?', [$band['id']]);
     $promoted = static fn ($state) => array_column(array_filter(bandById($state, $band['id'])['discography'], static fn ($r) => $r['promoted']), 'title');
-    checkEquals(['Neu'], $promoted($p->get('state')), 'Ohne Wahl: das neueste');
-    $state = $p->post('bandPromoRecord', ['bandId' => $band['id'], 'recordId' => $ids['Alt']])['state'];
-    checkEquals(['Alt'], $promoted($state));
+    checkEquals(['Neu'], $promoted($p->get('state')));
     $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'gig', 'songs' => 3]);
     Clock::advance(3 * Balance::SONG_SECONDS);
     $p->get('state');
-    check((float) $db->value('SELECT boost FROM records WHERE id = ?', [$ids['Alt']]) > 0, 'Gig schiebt das gewählte Album');
-    checkEquals(0.0, (float) $db->value('SELECT boost FROM records WHERE id = ?', [$ids['Neu']]));
-    checkApiError(fn () => $p->post('bandPromoRecord', ['bandId' => $band['id'], 'recordId' => 99999]), 'verkauft sich nicht');
+    check((float) $db->value('SELECT boost FROM records WHERE id = ?', [$ids['Neu']]) > 0, 'Gig schiebt die neueste Platte');
+    checkEquals(0.0, (float) $db->value('SELECT boost FROM records WHERE id = ?', [$ids['Alt']]));
 });
 
 test('Tantiemen: Platten ohne Chartplatz verkaufen sich weiter, ältere bringen dauerhaft Katalog-Geld', function () {
@@ -925,7 +922,7 @@ test('Tantiemen: Platten ohne Chartplatz verkaufen sich weiter, ältere bringen 
     $p = registerPlayer($db, 'Katalog');
     $band = foundBand($p);
     $labelId = (int) $db->value('SELECT label_id FROM bands WHERE id = ?', [$band['id']]);
-    // Vier Platten, pro Label stehen höchstens drei in den Charts: eine verkauft sich ohne Chartplatz.
+    // Vier Platten, alle verkaufen sich (und stehen in den Charts).
     foreach (['Alt' => 50, 'Mitte' => 40, 'Neu' => 20, 'Klein' => 10] as $title => $points) {
         $db->insert('records', [
             'label_id' => $labelId, 'band_id' => $band['id'], 'title' => $title, 'songs_total' => 3, 'songs_done' => 3,
@@ -936,8 +933,8 @@ test('Tantiemen: Platten ohne Chartplatz verkaufen sich weiter, ältere bringen 
     }
     Signed\Game\Charts::markDirty($db);
     $finance = $p->get('state')['finance'];
-    checkEquals(4, count($finance['records']), 'Alle verkaufen sich, auch die ohne Chartplatz');
-    checkEquals(3, count(array_filter($finance['records'], static fn ($r) => $r['placed'])));
+    checkEquals(4, count($finance['records']), 'Alle verkaufen sich');
+    checkEquals(4, count(array_filter($finance['records'], static fn ($r) => $r['placed'])));
     check($finance['catalogPerHour'] > 1.1 && $finance['catalogPerHour'] < 1.3, 'Katalog: 120 Punkte × 0,01');
 
     // Nach den Charts: Katalog läuft weiter.
@@ -951,12 +948,12 @@ test('Tantiemen: Platten ohne Chartplatz verkaufen sich weiter, ältere bringen 
     checkEquals(0, count($state['finance']['records']), 'Keine Chart-Tantiemen mehr');
 });
 
-test('Charts: Pro Label höchstens drei Platten, auch mit vielen Bands', function () {
+test('Charts: Alle Platten zählen – Top 10 mit Belohnung, darunter bis Platz 100', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Viele');
     $band = foundBand($p);
     $labelId = (int) $db->value('SELECT label_id FROM bands WHERE id = ?', [$band['id']]);
-    for ($i = 1; $i <= 5; $i++) {
+    for ($i = 1; $i <= 12; $i++) {
         $bandId = $db->insert('bands', ['label_id' => $labelId, 'name' => "Band $i", 'genre' => 'rock', 'created_at' => Clock::now()]);
         $db->insert('records', [
             'label_id' => $labelId, 'band_id' => $bandId, 'title' => "Platte $i", 'songs_total' => 3, 'songs_done' => 3,
@@ -965,8 +962,11 @@ test('Charts: Pro Label höchstens drei Platten, auch mit vielen Bands', functio
         ]);
     }
     Signed\Game\Charts::markDirty($db);
-    $placed = array_column(array_filter($p->get('charts')['albums'], static fn ($a) => $a['placed']), 'title');
-    checkEquals(['Platte 5', 'Platte 4', 'Platte 3'], $placed);
+    $albums = $p->get('charts')['albums'];
+    checkEquals(12, count($albums), 'Kein Label-Deckel mehr');
+    checkEquals(Balance::CHART_SIZE, count(array_filter($albums, static fn ($a) => $a['placed'])));
+    checkEquals('Platte 12', $albums[0]['title']);
+    checkEquals(12, end($albums)['rank']);
     checkEquals(8, count(Signed\Game\Balance::BAND_SLOTS));
 });
 

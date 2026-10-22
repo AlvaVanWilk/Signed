@@ -31,7 +31,7 @@ export function render() {
       <div>
         <h1>Charts</h1>
         <p class="muted">${tab === 'albums'
-          ? `Die Top ${rules.chartSize} der Platten aller Labels. Die Plätze werden alle ${fmt0(rules.chartIntervalHours)} Stunden neu vergeben – sofort, wenn eine Platte einsteigt oder Gigs und Promo sie anschieben. Je höher der Platz, desto mehr Tantiemen und Ruhm (Platz 1 doppelt), und Gigs der Band werden voller. Platz 1 gibt einen Scout-Gutschein.`
+          ? `Die Platten aller Labels bis Platz ${rules.chartList}. Die Plätze werden alle ${fmt0(rules.chartIntervalHours)} Stunden neu vergeben – sofort, wenn eine Platte einsteigt oder Gigs und Promo sie anschieben. In den Top ${rules.chartSize}: je höher der Platz, desto mehr Tantiemen und Ruhm (Platz 1 doppelt), und Gigs der Band werden voller. Platz 1 gibt einen Scout-Gutschein.`
           : 'Die erfolgreichsten Labels nach dem Ruhm all ihrer Bands.'}</p>
       </div>
       <button class="btn ghost small" data-act="chartsReload">Aktualisieren</button>
@@ -62,8 +62,11 @@ function albums(all) {
         </tr>`).join('')}
       </tbody>
     </table>
-    ${outside.length ? `<h3>Deine Platten außerhalb der Top ${cat().rules.chartSize}</h3>
-      <ul class="history">${outside.map((e) => `<li><span>„${esc(e.title)}“ · ${esc(e.band)}</span><span class="muted">Platz ${e.rank} · ${fmt1(e.points)} Punkte</span></li>`).join('')}</ul>` : ''}`;
+    ${outside.length ? `<h3>Platz ${cat().rules.chartSize + 1} bis ${cat().rules.chartList}</h3>
+      <ol class="chart-rest">${outside.map((e) => `
+        <li class="${e.own ? 'own' : ''}"><span class="rank">${e.rank}</span><span class="cover-thumb">${coverHtml(e.cover)}</span>
+          <span class="chart-rest-main"><b>${esc(e.title)}</b> <span class="muted small">${e.bandId ? `<button class="link" data-act="viewBand" data-id="${e.bandId}">${esc(e.band)}</button>` : esc(e.band)} · ${esc(e.label)}</span></span>
+          ${trendBadge(e)}<span class="chart-rest-points">${fmt1(e.points)}</span></li>`).join('')}</ol>` : ''}`;
 }
 
 /** Spaltenköpfe der Charts: antippen erklärt, was in der Spalte steht. */
@@ -78,7 +81,7 @@ const HEADS = {
   record: ['Platte', 'Platte', (r) => `<ul><li><b>EP</b>: bis ${r.chartLpSongs - 1} Lieder, <b>LP</b>: ab ${r.chartLpSongs} Liedern – LPs bekommen mehr Punkte.</li>
     <li><b>perfekt</b>: ohne einen einzigen Fehler aufgenommen – Punkte × ${fmt1(r.chartPerfect)}.</li>
     <li>Das Bild ist das Cover aus dem Cover-Automaten.</li></ul>`],
-  band: ['Band · Label', 'Band und Label', (r) => `<ul><li>Von jedem Label stehen höchstens <b>${r.chartPerLabel}</b> Platten in den Charts – die stärksten.</li>
+  band: ['Band · Label', 'Band und Label', (r) => `<ul><li>Jede Platte kann in die Charts – die Punkte entscheiden. Eine Band spielt und bewirbt immer ihre <b>neueste</b> Platte, ältere fallen so langsam.</li>
     <li>Tippe auf eine Band, um sie anzuschauen und anzuhören.</li></ul>`],
   hours: ['Std.', 'Std. – Stunden', (r) => `<p>Wie viele Stunden die Platte schon draußen ist.</p>
     <ul><li>Die Punkte steigen bis etwa <b>${fmt0(r.chartPeakHours)} Stunden</b> nach dem Erscheinen, danach sinken sie langsam.</li>

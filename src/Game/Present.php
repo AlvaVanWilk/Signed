@@ -195,7 +195,7 @@ final class Present
                 'chartBoostMax' => Balance::CHART_BOOST_MAX,
                 'chartMaxAgeDays' => Balance::CHART_MAX_AGE / 86400,
                 'chartPerfect' => Balance::CHART_PERFECT,
-                'chartPerLabel' => Balance::CHART_PER_LABEL,
+                'chartList' => Balance::CHART_LIST,
                 'chartGigBonus' => Balance::CHART_GIG_BONUS,
                 'chartFameMax' => Balance::CHART_FAME_MAX,
                 'chartTopMinLabels' => Balance::CHART_TOP_MIN_LABELS,

@@ -326,7 +326,7 @@ function financeHtml() {
     </div>
     ${f.catalogPerHour ? `<p class="muted small">Davon Katalog: <b>${fmtGain(f.catalogPerHour / 60)} ₲</b> pro Minute – jede Platte verkauft sich für immer ein wenig.</p>` : ''}
     ${f.records.length ? `
-      <p class="muted small">Neue Platten verkaufen sich eine Woche lang gut, auch ohne Chartplatz. Von jedem Label stehen höchstens drei in den Charts, dort gibt es mehr: Platz 1 doppelt so viel. Gigs und Promo schieben das Album an, das die Band spielt.</p>
+      <p class="muted small">Neue Platten verkaufen sich eine Woche lang gut, auch ohne Chartplatz. In den Top 10 gibt es mehr: Platz 1 doppelt so viel. Gigs und Promo schieben die neueste Platte der Band an.</p>
       <table class="charts finance-table">
         <thead><tr><th>Platte</th><th>Band</th><th>Platz</th><th>Punkte</th><th>pro Minute</th></tr></thead>
         <tbody>${f.records.map((r) => `<tr><td>„${esc(r.title)}“</td><td>${esc(r.band)}</td><td>${r.placed ? `${r.rank} ${trendBadge(r)}` : `<span class="muted">${r.rank ? `${r.rank} (nicht in den Top ${cat().rules.chartSize})` : 'verkauft sich'}</span>`}</td><td>${fmt1(r.points)}</td><td>${fmtGain(r.perHour / 60)} ₲</td></tr>`).join('')}</tbody>

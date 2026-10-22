@@ -249,7 +249,9 @@ Nur die Gewinne sind klein; wie oft man etwas hintereinander spielt, ist nicht b
   Gig = Lieder × √(Grund-Ruhm des Ortes) × 4 % × Publikum, Band-Promo +10 %, Promo-Mission eines Mitglieds +4 %.
   Höchstens +60 %, halbiert sich alle 3 Stunden. Weil der Schub nur die fallenden Punkte vervielfacht, hält
   Dauer-Promo eine Platte nicht in den Charts.
-- Unter 1 Punkt verkauft sich eine Platte nicht mehr, nach 7 Tagen zählt sie nicht mehr. Die Charts zeigen die Top 10; pro Label zählen höchstens 3 (die übrigen verkaufen sich weiter, ohne Platz). Eine Band darf mehrere Platten in den Charts haben.
+- Unter 1 Punkt verkauft sich eine Platte nicht mehr, nach 7 Tagen zählt sie nicht mehr. Die Charts zeigen die Top 10 groß und darunter kompakt bis Platz 100 (`CHART_LIST`); jede Platte zählt, ohne Deckel pro Band oder Label.
+  Belohnungen nach Platz (Tantiemen-Bonus, vollere Gigs) gibt es nur in den Top 10. Eine Band spielt und bewirbt immer ihre **neueste** Platte
+  (`Charts::promoted`), ältere fallen so von selbst; sie wieder zu spielen kommt später mit dem Remaster.
 - Die Plätze werden alle 3 Stunden neu vergeben (Chartwoche) – sofort, wenn eine Platte erscheint oder Schub bekommt.
   Dazwischen bleiben sie stehen. „Vorher“ ist der Platz zu Beginn der Chartwoche; dazu Trend (▲ ▼ – NEU),
   Stunden in den Charts und bester Platz. Nachrichten: Einstieg in die Top 10, Platz 1 (mit Feier), aus den Top 10 gefallen.

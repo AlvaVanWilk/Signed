@@ -352,7 +352,6 @@ function promo(b, members) {
     <div class="action-grid">
       ${actionTile({
         icon: '📣', title: 'Band-Promo', meta: `${duration(cat().rules.bandPromoSeconds)} · Ruhm${chartPush(b)}${cycleChip(b, 'promos', 'Für die nächste Platte')}`,
-        body: setlist(b, 'Wir werben für'),
         button: `<button class="btn primary" data-act="bandPromo" data-id="${b.id}" ${blocked ? 'disabled' : ''}>Losschicken</button>`,
       })}
       ${members.map((m) => promoTile(m, isBusy(m.busyUntil) || isBusy(b.busyUntil))).join('')}
@@ -374,15 +373,6 @@ export function promoTile(m, busy) {
 function chartPush(b) {
   const record = b?.discography.find((r) => r.promoted);
   return record ? ` · Schub in den Charts für „${esc(record.title)}“` : ' · Schub in den Charts, sobald eine Platte chartet';
-}
-
-/** Auswahl, welches Album die Band auf Gigs spielt und bewirbt (nur, wenn mehrere sich noch verkaufen). Gilt für Gigs und Promo. */
-function setlist(b, label = 'Wir spielen') {
-  const albums = b.discography.filter((r) => r.promotable);
-  if (albums.length < 2) return '';
-  return `<span class="small"><label class="inline-select">${label}
-    <select data-change="promoRecord" data-id="${b.id}">${albums.map((r) => `<option value="${r.id}" ${r.promoted ? 'selected' : ''}>„${esc(r.title)}“${r.rank ? ` (Platz ${r.rank})` : ''}</option>`).join('')}</select>
-  </label></span>`;
 }
 
 /** Studiozeit: Grundpreis plus pro Lied. */
@@ -431,7 +421,7 @@ function gigTile(b, gig, disabled) {
           ${gigDraw(gig)}${cycleChip(b, 'songs', 'Für die nächste Platte: Lieder live')}
           <span class="gig-controls"><label class="inline-select">Lieder
             <select data-change="gigSongs" data-id="${b.id}">${Array.from({ length: gig.maxSongs - gig.minSongs + 1 }, (_, i) => gig.minSongs + i).map((n) => `<option value="${n}" ${n === songs ? 'selected' : ''}>${n}</option>`).join('')}</select>
-          </label><span>${duration(songs * cat().rules.songSeconds)}</span><span>zusammen <b>${money(gig.gagePerSong * songs)}</b></span>${setlist(b)}</span>`
+          </label><span>${duration(songs * cat().rules.songSeconds)}</span><span>zusammen <b>${money(gig.gagePerSong * songs)}</b></span></span>`
         : '<span class="muted small">Erst mit der ersten Platte.</span>'}
       </div>
       <button class="btn primary" data-act="startActivity" data-id="${b.id}" data-type="gig" ${gig.available ? disabled : 'disabled'}>Spielen</button>
@@ -931,9 +921,6 @@ defineActions({
   },
   practice({ id, slot }) {
     startPractice(id, slot);
-  },
-  async promoRecord(value, el) {
-    await mutate('bandPromoRecord', { bandId: Number(el.dataset.id), recordId: Number(value) });
   },
   async courseAttend({ id }) {
     const c = app.state.course;

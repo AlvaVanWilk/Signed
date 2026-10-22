@@ -36,7 +36,6 @@ final class Api
         'state' => ['GET', true],
         'charts' => ['GET', true],
         'bandView' => ['POST', true],
-        'bandPromoRecord' => ['POST', true],
         'buyPack' => ['POST', true],
         'packPick' => ['POST', true],
         'scoutOpen' => ['POST', true],
@@ -191,12 +190,6 @@ final class Api
     private function state(array $in, Repo $repo): array
     {
         return State::build($repo);
-    }
-
-    private function bandPromoRecord(array $in, Repo $repo): array
-    {
-        (new Bands($repo))->setPromoRecord(self::int($in, 'bandId'), self::int($in, 'recordId'));
-        return ['state' => State::build($repo)];
     }
 
     private function bandView(array $in, Repo $repo): array

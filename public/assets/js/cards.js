@@ -58,7 +58,7 @@ export function bandIdentity(members, prefer = '', preferSecond = null) {
   let second = null;
   let third = null;
   if (primary) {
-    const shared = keys.filter((g) => g !== primary && allFans(g));
+    const shared = eligible.filter((g) => g !== primary);
     second = shared.includes(preferSecond) ? preferSecond : shared[0] ?? null;
     third = shared.find((g) => g !== second) ?? null;
   }
@@ -73,8 +73,8 @@ export function genreRuleText() {
   const pct = (x) => `${x >= 1 ? '+' : '−'}${Math.round(Math.abs(x - 1) * 100)} %`;
   return `Gemischte Band: Sound ${pct(r.mixedBonus)}, Zusammenspiel wächst halb so schnell, höchstens ${g.mixed.max}. `
     + `Genre-Band (alle mögen das Genre, die Besetzung passt): Sound ${pct(r.genreBonus)}, Zusammenspiel bis ${g.genre.max}. `
-    + `Hybrid (alle mögen noch ein zweites Genre): Sound ${pct(r.hybridBonus)}, Zusammenspiel bis ${g.hybrid.max}. `
-    + `Crossover (sogar ein drittes, sehr selten): Sound ${pct(r.crossoverBonus)}.`;
+    + `Hybrid (dasselbe für ein zweites Genre, auch dessen Besetzung): Sound ${pct(r.hybridBonus)}, Zusammenspiel bis ${g.hybrid.max}. `
+    + `Crossover (sogar für ein drittes, sehr selten): Sound ${pct(r.crossoverBonus)}.`;
 }
 
 export function bandTitle(primary, second, third = null) {

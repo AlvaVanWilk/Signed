@@ -40,10 +40,13 @@ test('Genre ergibt sich aus der Besetzung: alle mögen es und die Instrumente pa
     checkEquals('Rockband', $band['title']);
     checkEquals(Balance::GENRE_BONUS, $band['bonus']);
 
-    $hybrid = BandCalc::identity([$rock('guitar', ['rock', 'punk']), $rock('drums', ['punk', 'rock'])]);
-    checkEquals('Punk-Rock-Band', $hybrid['title'], 'Fürs zweite Genre reicht es, dass alle es mögen');
+    $noBass = BandCalc::identity([$rock('guitar', ['rock', 'punk']), $rock('drums', ['punk', 'rock'])]);
+    checkEquals('Rockband', $noBass['title'], 'Punk braucht auch als zweites Genre einen Bass');
+    $punkRock = [$rock('guitar', ['rock', 'punk']), $rock('drums', ['punk', 'rock']), $rock('bass', ['rock', 'punk'])];
+    $hybrid = BandCalc::identity($punkRock);
+    checkEquals('Punk-Rock-Band', $hybrid['title']);
     checkEquals(Balance::HYBRID_BONUS, $hybrid['bonus']);
-    checkEquals('Punk-Rock-Band', BandCalc::identity([$rock('guitar', ['rock', 'punk']), $rock('drums', ['punk', 'rock'])], 'rock', 'punk')['title']);
+    checkEquals('Punk-Rock-Band', BandCalc::identity($punkRock, 'rock', 'punk')['title']);
 
     $sound = BandCalc::sound([$rock('guitar'), $rock('drums')], 0, [], $band['bonus']);
     check(abs($sound / BandCalc::sound([$rock('guitar'), $rock('drums')], 0, []) - Balance::GENRE_BONUS) < 0.01);

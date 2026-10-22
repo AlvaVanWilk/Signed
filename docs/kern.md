@@ -75,9 +75,10 @@ sind bis zu 44 % stärker als ein Duo (`MEMBER_SOUND_BONUS`). Dazu bekommen sie 
 
 - Beim Gründen wählt man kein Genre. Eine Band ist erst einmal einfach eine Band.
 - **Genre-Band** (z. B. „Rockband“): Alle Mitglieder mögen das Genre **und** die Besetzung passt. Sound × 1,15.
-- **Hybrid** (z. B. „Punk-Rock-Band“): Genre-Band, und alle mögen zusätzlich ein zweites Genre (ohne weitere
-  Besetzungs-Bedingung). Sound × 1,25. Name: zweites Genre vor dem Bandgenre.
-- **Crossover** (z. B. „Rock-Crossover-Band“): Hybrid, und alle mögen sogar ein drittes Genre. Sound × 1,3,
+- **Hybrid** (z. B. „Punk-Rock-Band“): Genre-Band, und für ein zweites Genre gilt dasselbe – alle mögen es **und**
+  seine Besetzung passt auch. Sound × 1,25. Name: zweites Genre vor dem Bandgenre. Mehr Genres brauchen meist mehr
+  Instrumente, also größere Bands (früher reichte für das zweite Genre, dass alle es mögen).
+- **Crossover** (z. B. „Rock-Crossover-Band“): Hybrid, und dasselbe gilt sogar für ein drittes Genre (samt Besetzung). Sound × 1,3,
   Zusammenspiel wie Hybrid (bis 120). Sehr selten (nur rund 3 % der Musiker haben drei Genres) – ein Sammelziel.
 - Besetzungs-Bedingungen (gezählt wird das Instrument, das jemand in der Band spielt):
 

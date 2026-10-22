@@ -75,7 +75,7 @@ final class BandCalc
 
     /**
      * Genre einer Band ergibt sich aus der Besetzung: Teilen alle Mitglieder ein Genre und passt die Besetzung dazu,
-     * ist es eine Genre-Band (z. B. Rockband). Teilen sie zusätzlich ein zweites Genre, wird sie hybrid (Punk-Rock-Band),
+     * ist es eine Genre-Band (z. B. Rockband). Gilt beides auch für ein zweites Genre, wird sie hybrid (Punk-Rock-Band),
      * bei einem dritten sogar Crossover (Rock-Crossover-Band; das dritte ergibt sich aus der festen Genre-Reihenfolge).
      * $prefer/$preferSecond halten die bisherige Ausrichtung, wenn mehrere Genres in Frage kommen.
      * @return array{primary: ?string, second: ?string, third: ?string, title: ?string, bonus: float, music: string, checks: array<string, array>}
@@ -105,7 +105,8 @@ final class BandCalc
         $second = null;
         $third = null;
         if ($primary !== null) {
-            $shared = array_values(array_filter(array_keys($checks), static fn ($g) => $g !== $primary && $checks[$g]['allFans']));
+            // Auch das zweite und dritte Genre brauchen ihre Besetzung (Punk-Rock ohne Bass gibt es nicht).
+            $shared = array_values(array_filter($eligible, static fn ($g) => $g !== $primary));
             $second = in_array($preferSecond, $shared, true) ? $preferSecond : ($shared[0] ?? null);
             $third = array_values(array_diff($shared, [$second]))[0] ?? null;
         }

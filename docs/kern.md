@@ -253,8 +253,10 @@ Nur die Gewinne sind klein; wie oft man etwas hintereinander spielt, ist nicht b
 
 - Chartpunkte = 100 × Qualität² × Soundfaktor × Format × Perfekt (× 1,3) × (1 + Bandruhm/500, höchstens × 3).
   Format: EP × 0,6, LP (ab 7 Liedern) × 1 + 4 % pro Lied über 7.
-- Die Charts rechnen in Stunden. Punkte jetzt = Chartpunkte × Verlauf + Schub. Verlauf mit x = Alter / 8 Stunden:
-  (x + 0,5) / 1,5 × e^((1 − x) / 1,5) – Einstieg mit 65 %, Höhepunkt nach 8 Stunden, nach gut 3 Tagen fast null.
+- Die Charts rechnen in Stunden. Punkte jetzt = Chartpunkte × Verlauf + Schub. Verlauf mit x = Alter / 10 Stunden:
+  (x + 1,5) / 1,5 × e^(−x / 1,5) – Einstieg mit den vollen Punkten (so viele, wie beim Fertigstellen angezeigt), nach
+  10 Stunden 86 %, nach 20 Stunden 62 %, nach knapp 4 Tagen fast null (gleich lange in den Charts wie vorher). Von selbst steigt eine Platte nie, nur durch Schub.
+  (Früher: Einstieg mit 65 %, Höhepunkt nach 8 Stunden – das wirkte wie verlorene Punkte und lief neben dem Schub mit.)
   Eine starke Platte kann gegen schwache Konkurrenz direkt auf Platz 1 einsteigen.
   Weil jede Platte ihren eigenen Verlauf hat, überholen sich Platten; es gibt Bewegung.
 - Schub für die neueste Platte der Band, solange sie chartet, als Aufschlag auf ihre Punkte:

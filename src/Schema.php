@@ -375,6 +375,10 @@ final class Schema
                 'ALTER TABLE bands ADD COLUMN band_promos INTEGER NOT NULL DEFAULT 0',
                 [Migrations::class, 'recordCycle'],
             ],
+            // 21: Chart-Verlauf ohne eigenes Steigen (Einstieg mit vollen Punkten) – Plätze sofort neu vergeben
+            [
+                [Migrations::class, 'chartsRerank'],
+            ],
         ];
     }
 }

@@ -125,7 +125,8 @@ export function createPitchGame(container, game) {
       }
     }
     if (voice) {
-      voice.setPitch(scaleMidi(game.instrument, pos * 7, game.tonality));
+      // Wer im Trefferfeld ist, klingt sauber: der Ton rastet auf die Note ein statt leicht schief zu sein.
+      voice.setPitch(scaleMidi(game.instrument, (inTune ? active.level : pos) * 7, game.tonality));
       voice.setLevel(active && (!player || !inTune) ? 1 : 0);
     }
     const level = !active || inTune ? 1 : 0.12;

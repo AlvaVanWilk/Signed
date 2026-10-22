@@ -86,7 +86,7 @@ const HEADS = {
   band: ['Band · Label', 'Band und Label', (r) => `<ul><li>Jede Platte kann in die Charts – die Punkte entscheiden. Eine Band spielt und bewirbt immer ihre <b>neueste</b> Platte, ältere fallen so langsam.</li>
     <li>Tippe auf eine Band, um sie anzuschauen und anzuhören.</li></ul>`],
   hours: ['Std.', 'Std. – Stunden', (r) => `<p>Wie viele Stunden die Platte schon draußen ist.</p>
-    <ul><li>Die Punkte steigen bis etwa <b>${fmt0(r.chartPeakHours)} Stunden</b> nach dem Erscheinen, danach sinken sie langsam.</li>
+    <ul><li>Eine Platte steigt mit ihren vollen Punkten ein. Die ersten <b>${fmt0(r.chartScaleHours)} Stunden</b> sinken die Punkte kaum, danach schneller. Höher geht es nur mit Gigs und Promo.</li>
     <li>Nach <b>${fmt0(r.chartMaxAgeDays)} Tagen</b> ist eine Platte raus aus den Charts – verkauft sich aber für immer ein wenig weiter.</li></ul>`],
   best: ['Best', 'Best', () => '<p>Der beste Platz, den die Platte je erreicht hat.</p>'],
   points: ['Punkte', 'Punkte', (r) => `<p>Danach richtet sich der Platz.</p>
@@ -95,7 +95,7 @@ const HEADS = {
     <li><b>Sound</b> der Band und <b>Länge</b> (LP mehr als EP), <b>perfekt</b> × ${fmt1(r.chartPerfect)}.</li>
     <li><b>Ruhm</b> der Band: bis × ${fmt0(1 + r.chartFameMax)}.</li></ul>
     <h3>Wie sie sich ändern</h3>
-    <ul><li>Erst steigen sie, nach etwa ${fmt0(r.chartPeakHours)} Stunden sinken sie.</li>
+    <ul><li>Sie sinken mit der Zeit – erst kaum, dann schneller. Gigs und Promo schieben sie wieder an.</li>
     <li>Gigs und Promo geben <b>Schub</b>: bis +${Math.round(r.chartBoostMax * 100)} %, er halbiert sich alle ${fmt0(r.chartBoostHalfHours)} Stunden.</li>
     <li>Bei deinen Platten steht darunter, wie viel <b>Geld pro Minute</b> sie gerade bringen.</li></ul>`],
   labelRank: ['#', 'Platz', () => '<p>Der Platz in der Rangliste – nach Ruhm.</p>'],

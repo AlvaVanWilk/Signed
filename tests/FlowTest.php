@@ -468,8 +468,8 @@ test('Platte produzieren, dann Gigs spielen, dann die nächste Platte', function
 
     checkApiError(fn () => $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'gig', 'songs' => 4]), '3 Lieder');
     checkApiError(fn () => $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'gig', 'songs' => 2]), '3 Lieder');
-    // Zwischen zwei Platten eine feste Zahl Gigs, egal wie lang die Platte war.
-    $gigs = Balance::RECORD_GIGS_BETWEEN;
+    // Album-Zyklus: die Platte (3 Lieder) dreimal komplett live spielen und dreimal Band-Promo.
+    $gigs = Balance::RECORD_CYCLE['plays'];
     for ($i = 0; $i < $gigs; $i++) {
         check(str_contains((string) bandById($p->get('state'), $band['id'])['record']['blocker'], 'live'));
         $gig = $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'gig', 'songs' => 3])['activity'];
@@ -479,7 +479,16 @@ test('Platte produzieren, dann Gigs spielen, dann die nächste Platte', function
     $state = $p->get('state');
     $band = bandById($state, $band['id']);
     checkEquals($gigs, $band['gigsPlayed']);
-    checkEquals(null, $band['record']['blocker'], 'Nach genug Gigs darf die nächste Platte kommen');
+    checkEquals(['have' => 9, 'need' => 9], $band['record']['cycle']['songs']);
+    check($band['record']['blocker'] !== null, 'Ohne Promo noch keine neue Platte');
+    for ($i = 0; $i < Balance::RECORD_CYCLE['promos']; $i++) {
+        $p->post('bandPromo', ['bandId' => $band['id']]);
+        Clock::advance(Balance::BAND_PROMO['seconds']);
+        $state = $p->get('state');
+    }
+    $band = bandById($state, $band['id']);
+    checkEquals(Balance::RECORD_CYCLE['promos'], $band['record']['cycle']['promos']['have']);
+    checkEquals(null, $band['record']['blocker'], 'Nach Gigs und Promo darf die nächste Platte kommen');
     check(array_sum(array_map(static fn ($r) => $r['result']['money'], $state['results'])) > 0, 'Gigs bringen Gage');
 });
 

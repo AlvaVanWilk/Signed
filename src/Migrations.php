@@ -78,6 +78,27 @@ final class Migrations
     }
 
     /** 9: Epische und legendäre Instrumente, die es schon gibt, bekommen ihre Eigenschaften. */
+    /**
+     * 20: Album-Zyklus. Wer nach der alten Regel (5 Gigs) schon frei war, bleibt frei; sonst zählen die bisherigen Gigs
+     * mit je 3 Liedern, Promos fangen bei 0 an.
+     */
+    public static function recordCycle(Db $db): void
+    {
+        foreach ($db->all('SELECT id, gigs_since_record FROM bands WHERE records > 0') as $band) {
+            $songs = (int) $db->value(
+                "SELECT songs_total FROM records WHERE band_id = ? AND status = 'done' ORDER BY finished_at DESC LIMIT 1",
+                [(int) $band['id']]
+            );
+            $needed = \Signed\Game\Balance::RECORD_CYCLE['plays'] * $songs;
+            $free = (int) $band['gigs_since_record'] >= 5;
+            $db->update('bands', [
+                'live_songs_needed' => $needed,
+                'live_songs' => $free ? $needed : 3 * (int) $band['gigs_since_record'],
+                'band_promos' => $free ? \Signed\Game\Balance::RECORD_CYCLE['promos'] : 0,
+            ], ['id' => (int) $band['id']]);
+        }
+    }
+
     /** 19: Plätze sofort neu vergeben, damit Platten, die bisher nur wegen „eine pro Band“ fehlten, gleich einsteigen. */
     public static function chartsRerank(Db $db): void
     {

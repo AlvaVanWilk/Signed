@@ -351,7 +351,7 @@ function promo(b, members) {
     ${blockerNotice(b, members)}
     <div class="action-grid">
       ${actionTile({
-        icon: '📣', title: 'Band-Promo', meta: `${duration(cat().rules.bandPromoSeconds)} · Ruhm${chartPush(b)}`,
+        icon: '📣', title: 'Band-Promo', meta: `${duration(cat().rules.bandPromoSeconds)} · Ruhm${chartPush(b)}${cycleChip(b, 'promos', 'Für die nächste Platte')}`,
         body: setlist(b, 'Wir werben für'),
         button: `<button class="btn primary" data-act="bandPromo" data-id="${b.id}" ${blocked ? 'disabled' : ''}>Losschicken</button>`,
       })}
@@ -411,6 +411,13 @@ function gigDraw(gig) {
   return parts.length ? `<span class="gig-notes">${parts.join('')}</span>` : '';
 }
 
+/** Fortschritt im Album-Zyklus als kleiner Hinweis (nur solange er noch nicht geschafft ist). */
+function cycleChip(b, key, label) {
+  const c = b.record.cycle;
+  if (!c || c.done || c[key].have >= c[key].need) return '';
+  return ` <span class="chip">${label}: ${fmt0(c[key].have)}/${fmt0(c[key].need)}</span>`;
+}
+
 /** Gig: breite Kachel – Gage, Hinweise, Liederzahl. Die Erklärung steckt im i. */
 function gigTile(b, gig, disabled) {
   const songs = Math.max(gig.minSongs, Math.min(app.ui.gigSongs[b.id] || gig.maxSongs, gig.maxSongs));
@@ -421,7 +428,7 @@ function gigTile(b, gig, disabled) {
         <b>Gig in der ${esc(gig.venue)} <button class="info-btn" data-act="gigInfo" data-id="${b.id}" aria-label="Info">i</button></b>
         ${gig.available ? `
           <span class="gig-pay"><b>${money(gig.gagePerSong)}</b> pro Lied</span>
-          ${gigDraw(gig)}
+          ${gigDraw(gig)}${cycleChip(b, 'songs', 'Für die nächste Platte: Lieder live')}
           <span class="gig-controls"><label class="inline-select">Lieder
             <select data-change="gigSongs" data-id="${b.id}">${Array.from({ length: gig.maxSongs - gig.minSongs + 1 }, (_, i) => gig.minSongs + i).map((n) => `<option value="${n}" ${n === songs ? 'selected' : ''}>${n}</option>`).join('')}</select>
           </label><span>${duration(songs * cat().rules.songSeconds)}</span><span>zusammen <b>${money(gig.gagePerSong * songs)}</b></span>${setlist(b)}</span>`
@@ -508,6 +515,15 @@ function studio(b, members) {
         return `<span class="song-dot ${r ? (r.miss === 0 ? 'perfect' : r.accuracy >= 0.75 ? 'good' : 'weak') : ''}"></span>`;
       }).join('')}</span>`,
       button: `<button class="btn primary" data-act="recordSong" data-id="${b.id}" ${blocked ? 'disabled' : ''}>Aufnehmen</button>`,
+    });
+  } else if (b.record.cycle && !b.record.cycle.done) {
+    // Album-Zyklus: erst die letzte Platte live spielen und bewerben.
+    const c = b.record.cycle;
+    const step = (label, { have, need }) => `<span class="cycle-step ${have >= need ? 'ok' : ''}">
+      <span>${have >= need ? '✓' : '○'} ${label}</span><b>${fmt0(have)}/${fmt0(need)}</b>${bar(have, need, 'thin')}</span>`;
+    record = actionTile({
+      icon: '💿', title: 'Neue Platte', meta: 'Erst die letzte Platte unter die Leute bringen:',
+      body: `<span class="cycle">${step(`Album ${c.plays}× live gespielt (Lieder auf Gigs)`, c.songs)}${step('Band-Promo', c.promos)}</span>`,
     });
   } else if (b.record.blocker) {
     record = actionTile({ icon: '💿', title: 'Neue Platte', meta: esc(b.record.blocker) });

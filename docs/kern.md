@@ -231,8 +231,11 @@ Nur die Gewinne sind klein; wie oft man etwas hintereinander spielt, ist nicht b
 - Fertig: Erstverkauf = Lieder × 60 ₲ × (0,3 + Qualität²) × LP-Bonus × Perfekt-Bonus × Verkäufe,
   Ruhm = Lieder × 0,6 × Soundfaktor × (0,3 + Qualität^1,5) × LP-Bonus × Perfekt-Bonus.
   - LP-Bonus: +4 % pro Lied über 3. Perfekt (kein einziger Fehler): × 1,5. Verkäufe: 1 + Bandruhm/400, höchstens × 5.
-- Vor der nächsten Platte spielt die Band die letzte live: 5 Gigs, egal wie lang die Platte ist. Eine LP lohnt sich
-  also mehr als viele kleine EPs (früher: 2 Lieder live pro Plattenlied – kurze EPs fluteten die Charts).
+- **Album-Zyklus** (`Balance::RECORD_CYCLE`, `Studio::cycle`): Vor der nächsten Platte spielt die Band die letzte
+  **3-mal komplett live** (3 × Lieder der Platte, gezählt werden Lieder auf Gigs) und macht **3 Band-Promos** (je 10 Minuten,
+  laufen auch offline; abgebrochene zählen nicht). Die Promos kosten jede Platte gleich viel Zeit, damit kurze EPs nicht viel
+  schneller sind. Die Studio-Kachel zeigt beides als Checkliste, Gig- und Promo-Kachel den Stand.
+  (Früher: 5 Gigs; davor 2 Lieder live pro Plattenlied – kurze EPs fluteten die Charts.)
 
 ### Album-Charts
 

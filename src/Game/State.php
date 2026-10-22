@@ -163,6 +163,7 @@ final class State
                 'record' => [
                     'open' => Present::record($open),
                     'blocker' => Studio::blocker($band, count($list), $open),
+                    'cycle' => Studio::cycle($band),
                 ],
                 'discography' => $discography[$band['id']] ?? [],
                 // Was die Werte oben konkret bewirken (für die Kacheln der Bandseite).

@@ -369,6 +369,12 @@ final class Schema
             [
                 [Migrations::class, 'chartsRerank'],
             ],
+            // 20: Album-Zyklus – live gespielte Lieder und Band-Promos seit der letzten Platte
+            [
+                'ALTER TABLE bands ADD COLUMN live_songs INTEGER NOT NULL DEFAULT 0',
+                'ALTER TABLE bands ADD COLUMN band_promos INTEGER NOT NULL DEFAULT 0',
+                [Migrations::class, 'recordCycle'],
+            ],
         ];
     }
 }

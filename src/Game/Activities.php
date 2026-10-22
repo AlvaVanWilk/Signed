@@ -379,6 +379,10 @@ final class Activities
         $bandId = (int) $row['band_id'];
         $repo->earn((int) ($reward['money'] ?? 0), sprintf('Gage: %s', $data['title']));
         $fameGain = $repo->addBandFame($bandId, $reward['fameGains'] ?? []);
+        if ($row['type'] === 'bandpromo') {
+            // Album-Zyklus: Band-Promo zählt (abgebrochene kommen hier nicht an).
+            $db->exec('UPDATE bands SET band_promos = band_promos + 1 WHERE id = ?', [$bandId]);
+        }
         Charts::boost($repo, $bandId, (float) ($reward['chartBoost'] ?? 0));
         $result = [
             'money' => (int) ($reward['money'] ?? 0),
@@ -403,6 +407,8 @@ final class Activities
             if ($row['type'] === 'gig') {
                 $updates['gigs_played'] = $band['gigs_played'] + 1;
                 $updates['gigs_since_record'] = $band['gigs_since_record'] + 1;
+                // Album-Zyklus: jedes Lied, das die Band vor Publikum spielt, zählt.
+                $updates['live_songs'] = $band['live_songs'] + (int) ($data['songs'] ?? 0);
                 if ($band['gigs_played'] === 0) {
                     $repo->log('gig', sprintf('%s spielt den ersten richtigen Gig.', $band['name']), $bandId);
                 }

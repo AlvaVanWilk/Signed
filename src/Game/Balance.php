@@ -288,12 +288,12 @@ final class Balance
     public const RECORD_COST_PER_SONG = 80;
     public const RECORD_MIN_SONGS = 3;
     public const RECORD_MAX_SONGS = 12;
-    /** Vor der nächsten Platte spielt die Band die letzte live: so viele Lieder pro Lied der Platte, auf Gigs. */
     /**
-     * Zwischen zwei Platten spielt die Band so viele Gigs – egal wie lang die Platte war. (Früher: 2 Lieder live pro
-     * Plattenlied; dann waren kurze EPs am schnellsten, und wenige Bands haben die Charts mit EPs geflutet.)
+     * Album-Zyklus: Vor der nächsten Platte spielt die Band die letzte plays-mal komplett live (plays × Lieder der Platte,
+     * auf Gigs) und macht promos Band-Promos. Die Promos kosten jede Platte gleich viel Zeit (je 10 Minuten, auch offline),
+     * damit kurze EPs nicht viel schneller sind als LPs. (Früher: 5 Gigs, davor 2 Lieder live pro Plattenlied.)
      */
-    public const RECORD_GIGS_BETWEEN = 5;
+    public const RECORD_CYCLE = ['plays' => 3, 'promos' => 3];
     public const RECORD_SONG_SKILL = 0.12;
     public const RECORD_SONG_COHESION = 2.0;
     /** Erstverkauf beim Erscheinen; das eigentliche Einkommen sind die Tantiemen, solange die Platte chartet. */

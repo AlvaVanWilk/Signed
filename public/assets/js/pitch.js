@@ -11,7 +11,7 @@ const MARKER_X = 0.25;
 const SPEED = 0.7;
 const MAX_SPEED = 1.2;
 /** Fassung der Steuerung – steht auf der Probeseite, damit man sieht, welche man spielt. Bei jeder Änderung hochzählen. */
-export const PITCH_VERSION = 9;
+export const PITCH_VERSION = 10;
 /** Wie schnell der Ton auf Drücken und Loslassen reagiert (ursprünglich 6, größer = schneller, aber zappeliger). */
 const RESPONSE = 10;
 
@@ -29,6 +29,8 @@ function speedFor(notes) {
 const HOLD_KEYS = [' ', 'arrowup', 'w', 'j'];
 /** So lange (Sekunden) schwebt der Ton nach dem Loslassen, bevor er fällt. */
 const HOVER = 0.13;
+/** Ziehen mit dem Finger: so viel schneller als Drücken/Loslassen darf der Ton zum Finger gleiten. */
+const AIM_SPEED = 1.6;
 
 /**
  * Tonhöhen-Spiel: Gedrückt halten lässt den Ton steigen, Loslassen lässt ihn sinken.
@@ -37,7 +39,7 @@ const HOVER = 0.13;
 export function createPitchGame(container, game) {
   const shell = mountShell(container, game, {
     hud: '<span>Im Ton <b class="mg-acc">–</b></span><span class="mg-combo"></span><span>Zeit <b class="mg-time"></b></span>',
-    hint: 'Halte die <b>Leertaste</b> gedrückt (oder den Finger auf dem Feld), dann steigt dein Ton. Lass los, dann sinkt er. Bleib in den Balken der Melodie.',
+    hint: 'Zieh den <b>Finger auf dem Feld</b> hoch und runter – dort, wo er ist, ist dein Ton. Oder halte die <b>Leertaste</b>: dann steigt er, loslassen lässt ihn sinken. Bleib in den Balken der Melodie.',
     below: '<button class="mg-hold">Gedrückt halten: Ton steigt</button>',
   });
   const { canvas, draw } = shell;
@@ -65,6 +67,7 @@ export function createPitchGame(container, game) {
   let velocity = 0;
   let holding = false;
   let releasedAt = -1;
+  let aim = null;
   let audio = null;
   let voice = null;
   let t0 = 0;
@@ -100,10 +103,17 @@ export function createPitchGame(container, game) {
   function step(now, dt) {
     // Weicher Schwung (nicht zackig), etwas schneller als ursprünglich. Nach dem Loslassen schwebt der Ton kurz,
     // bevor er fällt – ruhiges Tippen hält ihn so auf einer Höhe.
-    const hovering = !holding && clock() - releasedAt < HOVER;
-    const target = holding ? speed : hovering ? 0 : -speed;
-    velocity += (target - velocity) * Math.min(1, dt * RESPONSE);
-    pos += velocity * dt;
+    if (aim !== null) {
+      // Ziehen: der Ton gleitet zügig zum Finger, höchstens mit dem Tempo des Spiels (Sprünge brauchen Zeit).
+      const step = Math.max(-speed * AIM_SPEED * dt, Math.min(speed * AIM_SPEED * dt, (aim - pos) * Math.min(1, dt * 14)));
+      pos += step;
+      velocity = step / Math.max(dt, 0.001);
+    } else {
+      const hovering = !holding && clock() - releasedAt < HOVER;
+      const target = holding ? speed : hovering ? 0 : -speed;
+      velocity += (target - velocity) * Math.min(1, dt * RESPONSE);
+      pos += velocity * dt;
+    }
     if (pos <= 0 || pos >= 1) {
       pos = Math.max(0, Math.min(1, pos));
       velocity = 0;
@@ -279,12 +289,21 @@ export function createPitchGame(container, game) {
   window.addEventListener('keydown', onKeyDown, true);
   window.addEventListener('keyup', onKeyUp, true);
   window.addEventListener('resize', shell.resize);
-  for (const el of [canvas, holdButton]) {
-    el.addEventListener('pointerdown', down);
-    el.addEventListener('pointerup', up);
-    el.addEventListener('pointercancel', up);
-    el.addEventListener('pointerleave', up);
-  }
+  holdButton.addEventListener('pointerdown', down);
+  for (const type of ['pointerup', 'pointercancel', 'pointerleave']) holdButton.addEventListener(type, up);
+  // Finger (oder Maus) auf dem Spielfeld: Wo er ist, da ist der Ton.
+  const aimAt = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    aim = Math.max(0, Math.min(1, 1 - (e.clientY - rect.top - 26) / (rect.height - 52)));
+  };
+  canvas.addEventListener('pointerdown', (e) => {
+    if (!running) return;
+    e.preventDefault();
+    try { canvas.setPointerCapture(e.pointerId); } catch { /* Zeiger schon weg */ }
+    aimAt(e);
+  });
+  canvas.addEventListener('pointermove', (e) => { if (aim !== null) aimAt(e); });
+  for (const type of ['pointerup', 'pointercancel']) canvas.addEventListener(type, () => { aim = null; });
   shell.el('.mg-start').addEventListener('click', start);
   shell.el('.mg-abort').addEventListener('click', () => {
     if (!shell.resultShown()) finish({ aborted: true });

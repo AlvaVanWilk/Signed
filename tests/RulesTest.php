@@ -209,9 +209,9 @@ test('Minispiele: Tonhöhen-Melodie und Mischpult', function () {
 });
 
 test('Chartpunkte: Qualität zählt, LPs mehr als EPs; Verlauf steigt erst und fällt dann', function () {
-    check(Signed\Game\Charts::points(3, 0.9, 30, false, 0) > Signed\Game\Charts::points(3, 0.5, 30, false, 0));
-    check(Signed\Game\Charts::points(10, 0.8, 30, false, 0) > Signed\Game\Charts::points(6, 0.8, 30, false, 0) * 1.5);
-    check(Signed\Game\Charts::points(3, 0.8, 30, true, 0) > Signed\Game\Charts::points(3, 0.8, 30, false, 0));
+    check(Signed\Game\Charts::points(3, 0.9, 30, false) > Signed\Game\Charts::points(3, 0.5, 30, false));
+    check(Signed\Game\Charts::points(10, 0.8, 30, false) > Signed\Game\Charts::points(6, 0.8, 30, false) * 1.5);
+    check(Signed\Game\Charts::points(3, 0.8, 30, true) > Signed\Game\Charts::points(3, 0.8, 30, false));
     $curve = [Signed\Game\Charts::class, 'curve'];
     checkEquals(1.0, $curve(0), 'Einstieg mit den vollen Punkten');
     check(abs($curve(3600) - (1 - Balance::CHART_DECAY)) < 1e-9, 'jede Stunde derselbe Anteil weniger');

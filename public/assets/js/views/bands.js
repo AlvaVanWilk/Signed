@@ -194,7 +194,7 @@ const STAT_INFO = {
       <h3>Gerade</h3>
       <ul><li>Am Bandnamen <b>${fmt1(b.fameOwn)}</b>, bei den Musikern <b>${fmt1(b.fame - b.fameOwn)}</b>.</li>
         <li>Gigs in der <b>${esc(fx.venue)}</b> für <b>${money(fx.gage)}</b> pro Lied (+${Math.round(cat().rules.memberGageBonus * 100)} % für jedes Mitglied über ${cat().rules.minMembers}).${gig.nextVenue ? ` ${esc(gig.nextVenue)} ab ${fmt0(gig.nextFame)} Ruhm.` : ''}</li>
-        <li>Platten verkaufen sich <b>+${percent(fx.sales)}</b> besser und bekommen <b>+${percent(fx.chart)}</b> Chartpunkte.</li></ul>
+        <li>Platten verkaufen sich beim Erscheinen <b>+${percent(fx.sales)}</b> besser. Auf die Charts wirkt Ruhm nicht – dort zählt nur die Platte.</li></ul>
       <h3>Woher er kommt</h3>
       <ul><li>Auftritte, Platten, Charts und Promo.</li><li>Geht jemand, nimmt er seine Bekanntheit mit. Der Ruhm am Namen bleibt.</li></ul>`;
     },
@@ -405,7 +405,6 @@ export async function confirmSpend(amount) {
 function gigDraw(gig) {
   const parts = [];
   if (gig.fresh < 1) parts.push(`<span class="chip bad">Lieder schon bekannt: −${percent(1 - gig.fresh)}</span>`);
-  if (gig.chartRank) parts.push(`<span class="chip ok">Platz ${gig.chartRank} in den Charts: +${percent(gig.chartBonus - 1)}</span>`);
   return parts.length ? `<span class="gig-notes">${parts.join('')}</span>` : '';
 }
 
@@ -454,7 +453,6 @@ function openGigInfo(b) {
     </ul>
     <h3>Charts</h3>
     <ul>
-      <li>Steht eine Platte der Band in den Charts, kommen mehr Leute${gig.chartRank ? `: Platz ${gig.chartRank} bringt <b>+${percent(gig.chartBonus - 1)}</b>` : ''}.</li>
       <li>${record ? `Jeder Gig schiebt „${esc(record.title)}“ in den Charts an.` : 'Jeder Gig schiebt die Platte an, die ihr spielt – sobald eine chartet.'}</li>
     </ul>
     <h3>Ruhm</h3>

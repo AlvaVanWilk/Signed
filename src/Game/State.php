@@ -90,8 +90,7 @@ final class State
             $level = BandCalc::managerLevel($manager, count($managerBands[$band['manager_id']] ?? []));
             $venue = BandCalc::venue($fame);
             $open = $openRecords[$band['id']] ?? null;
-            $chartRank = Charts::bandRank($db, $band['id']);
-            $draw = BandCalc::freshness($band['gigs_since_record']) * Charts::rankFactor($chartRank, Balance::CHART_GIG_BONUS);
+            $draw = BandCalc::freshness($band['gigs_since_record']);
             // Vorschau für Instrumentwechsel: Sound danach (samt Zusammenspiel-Abzug), null = Besetzung geht so nicht.
             $slotPreview = [];
             foreach ($list as $i => $m) {
@@ -156,8 +155,6 @@ final class State
                         'songCap' => BandCalc::gigSongCap($level),
                         'gagePerSong' => (int) round(BandCalc::gagePerSong($venue, BandCalc::managerBonus($manager, $level, 'verhandler', Balance::NEGOTIATOR_BONUS)) * $draw),
                         'fresh' => round(BandCalc::freshness($band['gigs_since_record']), 2),
-                        'chartRank' => $chartRank,
-                        'chartBonus' => round(Charts::rankFactor($chartRank, Balance::CHART_GIG_BONUS), 2),
                     ],
                 ],
                 'record' => [
@@ -173,7 +170,6 @@ final class State
                     'venue' => $venue['name'],
                     'gage' => (int) round(BandCalc::gagePerSong($venue, BandCalc::managerBonus($manager, $level, 'verhandler', Balance::NEGOTIATOR_BONUS), count($list)) * $draw),
                     'sales' => round(min(Balance::RECORD_FAME_SALES_MAX, $fame / Balance::RECORD_FAME_SALES), 3),
-                    'chart' => round(min(Balance::CHART_FAME_MAX, $fame / Balance::CHART_FAME), 3),
                     'cohesionSound' => round(Balance::COHESION_FLOOR + (1 - Balance::COHESION_FLOOR) * $band['cohesion'] / 100, 3),
                     'chemistry' => round($chemistry, 2),
                 ],

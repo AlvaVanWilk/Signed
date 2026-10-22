@@ -342,9 +342,6 @@ final class Balance
     public const CHART_LP_SONGS = 7;
     public const CHART_LP_PER_SONG = 0.04;
     public const CHART_PERFECT = 1.3;
-    /** Bandruhm hebt die Punkte: +1 pro 500 Ruhm, höchstens +2. */
-    public const CHART_FAME = 500;
-    public const CHART_FAME_MAX = 2;
     /**
      * Verlauf: Einstieg mit den vollen Punkten, dann verliert jede Platte jede Stunde CHART_DECAY ihrer Punkte
      * (3 %: nach einem Tag noch knapp die Hälfte, nach drei Tagen gut ein Zehntel). Von selbst steigt sie nie, nur durch Schub. Älter als CHART_MAX_AGE zählt nicht mehr.
@@ -354,10 +351,8 @@ final class Balance
     /** Nachrichten beim Wiederkommen: nach so langer Pause, diese Arten aus der Chronik. */
     public const NEWS_AWAY = 900;
     public const NEWS_KINDS = ['chart1', 'chart', 'transfer', 'scout', 'level', 'fame', 'fanjoin'];
-    /** Tantiemen und Chart-Ruhm nach Platz: Platz 1 × (1 + CHART_RANK_BONUS), dann gleichmäßig weniger bis Platz 10. */
+    /** Tantiemen (Geld, nicht Ruhm) nach Platz: Platz 1 × (1 + CHART_RANK_BONUS), dann gleichmäßig weniger bis Platz 10. */
     public const CHART_RANK_BONUS = 1.0;
-    /** Eine Platte in den Top 10 macht die Gigs der Band voller: Platz 1 Gage und Ruhm + 40 %, abnehmend bis Platz 10. */
-    public const CHART_GIG_BONUS = 0.4;
     public const CHART_DECAY = 0.03;
     public const CHART_MAX_AGE = 7 * 86400;
     /**

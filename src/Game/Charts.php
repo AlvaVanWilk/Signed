@@ -16,25 +16,17 @@ final class Charts
 {
     private const HOUR = 3600;
 
-    /** Chartpunkte einer frisch fertigen Platte. */
-    public static function points(int $songs, float $quality, float $sound, bool $perfect, float $bandFame): float
+    /**
+     * Chartpunkte einer frisch fertigen Platte – nur aus der Platte selbst (Qualität, Sound, Länge, perfekt).
+     * Bewusst ohne Bandruhm: Sonst bringt Ruhm Plätze und Plätze bringen Ruhm, und wer oben ist, bleibt oben.
+     */
+    public static function points(int $songs, float $quality, float $sound, bool $perfect): float
     {
         $format = $songs >= Balance::CHART_LP_SONGS
             ? 1 + Balance::CHART_LP_PER_SONG * ($songs - Balance::CHART_LP_SONGS)
             : Balance::CHART_EP_FACTOR;
-        $fame = 1 + min(Balance::CHART_FAME_MAX, $bandFame / Balance::CHART_FAME);
         return round(Balance::CHART_BASE * $quality ** 2 * BandCalc::soundFactor($sound) * $format
-            * ($perfect ? Balance::CHART_PERFECT : 1) * $fame, 1);
-    }
-
-    /** Bester aktueller Platz einer Band in den Top 10 oder null. */
-    public static function bandRank(Db $db, int $bandId): ?int
-    {
-        $rank = $db->value(
-            "SELECT MIN(rank_last) FROM records WHERE band_id = ? AND status = 'done' AND rank_last IS NOT NULL AND rank_last <= ? AND finished_at >= ?",
-            [$bandId, Balance::CHART_SIZE, Clock::now() - Balance::CHART_MAX_AGE]
-        );
-        return $rank === null ? null : (int) $rank;
+            * ($perfect ? Balance::CHART_PERFECT : 1), 1);
     }
 
     /** Bonus nach Platz: Platz 1 × (1 + $bonus), gleichmäßig weniger bis Platz 10, außerhalb × 1. */
@@ -279,12 +271,13 @@ final class Charts
                     return;
                 }
                 // Höhere Platzierung, mehr Tantiemen: Platz 1 doppelt, bis Platz 10 abnehmend (Platz zum Abrechnungszeitpunkt).
+                // Ruhm dagegen nur nach Punkten – kein Ruhm-Bonus für den Platz, sonst schaukelt sich Platz 1 auf.
                 $rank = $row['rank_last'] === null ? null : (int) $row['rank_last'];
-                $pointHours = self::pointSeconds($row, $from, $now) / self::HOUR * self::rankFactor($rank, Balance::CHART_RANK_BONUS);
+                $pointHours = self::pointSeconds($row, $from, $now) / self::HOUR;
                 if ($pointHours <= 0) {
                     return;
                 }
-                $money = $pointHours * Balance::ROYALTY_MONEY + (float) $row['royalty_carry'];
+                $money = $pointHours * self::rankFactor($rank, Balance::CHART_RANK_BONUS) * Balance::ROYALTY_MONEY + (float) $row['royalty_carry'];
                 $paid = (int) floor($money);
                 $db->update('records', ['royalty_carry' => $money - $paid], ['id' => (int) $row['id']]);
                 $repo = new Repo($db, $labelId);

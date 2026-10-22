@@ -31,7 +31,7 @@ export function render() {
       <div>
         <h1>Charts</h1>
         <p class="muted">${tab === 'albums'
-          ? `Die Platten aller Labels bis Platz ${rules.chartList}. Die Plätze werden alle ${fmt0(rules.chartIntervalHours)} Stunden neu vergeben – sofort, wenn eine Platte einsteigt oder Gigs und Promo sie anschieben. In den Top ${rules.chartSize}: je höher der Platz, desto mehr Tantiemen und Ruhm (Platz 1 doppelt), und Gigs der Band werden voller. Platz 1 gibt einen Scout-Gutschein.`
+          ? `Die Platten aller Labels bis Platz ${rules.chartList}. Die Plätze werden alle ${fmt0(rules.chartIntervalHours)} Stunden neu vergeben – sofort, wenn eine Platte einsteigt oder Gigs und Promo sie anschieben. In den Top ${rules.chartSize}: je höher der Platz, desto mehr Tantiemen (Platz 1 doppelt). Ruhm gibt es nach Punkten, nicht nach Platz. Platz 1 gibt einen Scout-Gutschein.`
           : tab === 'fame' ? 'Hall of Fame: die berühmtesten Bands aller Labels.'
           : 'Die erfolgreichsten Labels nach dem Ruhm all ihrer Bands.'}</p>
       </div>
@@ -74,8 +74,8 @@ function albums(all) {
 /** Spaltenköpfe der Charts: antippen erklärt, was in der Spalte steht. */
 const HEADS = {
   rank: ['#', 'Platz', (r) => `<p>Der Platz in den Top ${r.chartSize}.</p>
-    <ul><li>Je höher der Platz, desto mehr <b>Tantiemen</b> (Geld) und <b>Ruhm</b> pro Stunde – Platz 1 bekommt doppelt so viel wie ganz unten.</li>
-    <li>Gigs der Band werden voller: bis <b>+${Math.round(r.chartGigBonus * 100)} %</b> auf Platz 1.</li>
+    <ul><li>Je höher der Platz, desto mehr <b>Tantiemen</b> (Geld) pro Stunde – Platz 1 bekommt doppelt so viel wie ganz unten.</li>
+    <li><b>Ruhm</b> gibt es nach Punkten, für jeden Platz gleich: So schaukelt sich Platz 1 nicht von selbst auf.</li>
     <li>Wer zum ersten Mal Platz 1 erreicht, bekommt einen <b>Scout-Gutschein</b> – wenn mindestens ${r.chartTopMinLabels} Labels in den Charts sind.</li></ul>`],
   prev: ['Vorher', 'Vorher', (r) => `<p>Der Platz zu Beginn der Chartwoche.</p>
     <ul><li>Die Plätze werden alle <b>${fmt0(r.chartIntervalHours)} Stunden</b> neu vergeben – sofort, wenn eine Platte einsteigt oder Gigs und Promo sie anschieben.</li>
@@ -93,7 +93,7 @@ const HEADS = {
     <h3>Woraus sie kommen</h3>
     <ul><li><b>Qualität</b> der Aufnahmen im Studio – zählt am meisten.</li>
     <li><b>Sound</b> der Band und <b>Länge</b> (LP mehr als EP), <b>perfekt</b> × ${fmt1(r.chartPerfect)}.</li>
-    <li><b>Ruhm</b> der Band: bis × ${fmt0(1 + r.chartFameMax)}.</li></ul>
+    <li>Der <b>Ruhm</b> der Band zählt nicht: Es zählt die Platte.</li></ul>
     <h3>Wie sie sich ändern</h3>
     <ul><li>Jede Stunde verliert jede Platte ${Math.round(r.chartDecay * 100)} % ihrer Punkte. Gigs und Promo schieben sie wieder an.</li>
     <li>Gigs und Promo geben <b>Schub</b>: +${fmt1(r.chartGigBoost * 100)} % pro live gespieltes Lied, Band-Promo +${Math.round(r.chartPromoBoost * 100)} %. Zusammen bis +${Math.round(r.chartBoostMax * 100)} %, er halbiert sich alle ${fmt0(r.chartBoostHalfHours)} Stunden.</li>

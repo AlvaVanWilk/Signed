@@ -214,7 +214,7 @@ final class Studio
         $fameGain = round(array_sum($gains), 1);
         $firstRecord = (int) $db->value("SELECT COUNT(*) FROM records WHERE label_id = ? AND status = 'done'", [$this->repo->labelId]) === 0;
         $studio = count(array_filter($members, static fn ($m) => BandCalc::hasPerk(BandCalc::gearOf($m, $gear), 'studio')));
-        $chartPoints = round(Charts::points($songs, $quality, $sound, $perfect, BandCalc::bandFame($band, $members)) * (1 + Balance::PERK_STUDIO * $studio), 1);
+        $chartPoints = round(Charts::points($songs, $quality, $sound, $perfect) * (1 + Balance::PERK_STUDIO * $studio), 1);
         $now = Clock::now();
         $db->update('records', [
             'status' => 'done',

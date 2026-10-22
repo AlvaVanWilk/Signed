@@ -255,7 +255,8 @@ Nur die Gewinne sind klein; wie oft man etwas hintereinander spielt, ist nicht b
 
 ### Album-Charts
 
-- Chartpunkte = 100 × Qualität² × Soundfaktor × Format × Perfekt (× 1,3) × (1 + Bandruhm/500, höchstens × 3).
+- Chartpunkte = 100 × Qualität² × Soundfaktor × Format × Perfekt (× 1,3) – nur die Platte selbst, **ohne Bandruhm**.
+  (Früher × bis zu 3 durch Bandruhm: Ruhm brachte Plätze, Plätze brachten Ruhm – wer oben war, blieb oben.)
   Format: EP × 0,6, LP (ab 7 Liedern) × 1 + 4 % pro Lied über 7.
 - Die Charts rechnen in Stunden. Punkte jetzt = Chartpunkte × Verlauf + Schub. Verlauf: Einstieg mit den vollen Punkten
   (so viele, wie beim Fertigstellen angezeigt), dann verliert jede Platte jede Stunde 3 % (`CHART_DECAY`):
@@ -269,13 +270,14 @@ Nur die Gewinne sind klein; wie oft man etwas hintereinander spielt, ist nicht b
   Aufschlag – das Verhältnis zweier Platten bleibt, der Schub belohnt nur Fleiß. Die Schere schließt die Zeit (3 % pro Stunde).
   (Früher hing der Gig-Schub an der Größe des Ortes – große Bands zogen davon.)
 - Unter 1 Punkt verkauft sich eine Platte nicht mehr, nach 7 Tagen zählt sie nicht mehr. Die Charts zeigen die Top 10 groß und darunter kompakt bis Platz 100 (`CHART_LIST`); jede Platte zählt, ohne Deckel pro Band oder Label.
-  Belohnungen nach Platz (Tantiemen-Bonus, vollere Gigs) gibt es nur in den Top 10. Eine Band spielt und bewirbt immer ihre **neueste** Platte
+  Belohnungen nach Platz (Tantiemen-Bonus) gibt es nur in den Top 10. Eine Band spielt und bewirbt immer ihre **neueste** Platte
   (`Charts::promoted`), ältere fallen so von selbst; sie wieder zu spielen kommt später mit dem Remaster.
 - Die Plätze werden alle 3 Stunden neu vergeben (Chartwoche) – sofort, wenn eine Platte erscheint oder Schub bekommt.
   Dazwischen bleiben sie stehen. „Vorher“ ist der Platz zu Beginn der Chartwoche; dazu Trend (▲ ▼ – NEU),
   Stunden in den Charts und bester Platz. Nachrichten: Einstieg in die Top 10, Platz 1 (mit Feier), aus den Top 10 gefallen.
 - Tantiemen laufen ständig (sekundengenau abgerechnet, Bruchteile werden aufgehoben): pro Punkt und Stunde 0,5 ₲ und
-  0,0125 Ruhm, mal Platz-Bonus: Platz 1 × 2, abnehmend bis Platz 10 × 1,1, außerhalb × 1. Ruhm an die aktuellen Mitglieder.
+  0,0125 Ruhm. Nur das Geld bekommt den Platz-Bonus (Platz 1 × 2, abnehmend bis Platz 10 × 1,1, außerhalb × 1);
+  der Ruhm hängt nur an den Punkten. Ruhm an die aktuellen Mitglieder.
   Eine Platte mit 60 Punkten bringt über ihre Chartzeit etwa 950–1.900 ₲ je nach Platz.
   Das Geld zählt im Browser sichtbar mit; im Kontoauszug eine Zeile pro Platte und Tag.
 - Platten ohne Chartplatz (eine pro Band chartet) verkaufen sich in ihrer ersten Woche trotzdem: Tantiemen mit Platz-Bonus × 1.
@@ -385,7 +387,21 @@ Rechnung pro Stunde Spielzeit (Gig = 3 Lieder ≈ 1,5 Minuten, Plattenlied ≈ 1
 | Gut (Sound 55, Ruhm 600) | ~19.500 ₲ | ~31.500 + ~20.800 ₲ |
 
 Nur Gigs lohnt sich immer weniger (das Publikum kennt die Lieder), nur Platten geht nicht (Live-Pflicht vor der nächsten).
-Platten bringen über die Charts mehr, Gigs schieben die Platte an, und eine Platte in den Charts macht Gigs voller.
+Platten bringen über die Charts mehr, Gigs schieben die Platte an.
+
+### Wer wirkt auf wen (ohne Kreisläufe)
+
+Grundsatz: Ruhm darf nie den eigenen Ruhm-Zuwachs über den Chartplatz verstärken. Sonst schaukelt sich Platz 1 auf.
+
+- **Chartplatz** ← Chartpunkte (Qualität, Sound, Länge, perfekt) × Verlauf (−3 %/Std.) × Schub (Gigs, Promo).
+  Ruhm wirkt hier nicht.
+- **Chartplatz →** nur Geld (Tantiemen bis × 2) und der Scout-Gutschein für Platz 1. Kein Ruhm-Bonus, keine volleren Gigs.
+- **Ruhm** ← Gigs (je nach Ort), Platten, Charts (nach Punkten), Promo, Straßenmusik/Open Stage (mit Ruhm abnehmend).
+- **Ruhm →** Auftrittsort (die Leiter nach oben: mehr Gage und Ruhm pro Lied), Erstverkauf einer Platte (Geld),
+  Bandplätze (Label-Ruhm), Marktwert. Der Ort ist der einzige Ruhm-zu-Ruhm-Weg – gewollt, mit festen Stufen.
+- **Geld →** Instrumente, Kurse → Können und Sound → bessere Platten. Ein langsamer, gewollter Weg.
+- **Bandgröße →** Sound (+5 % je Mitglied über 2) und Gage (+10 %). Die Bekanntheit eines Gigs wird geteilt:
+  In großen Bands wird der Einzelne langsamer bekannt, die Band als Ganzes nicht.
 
 ### Nachrichten
 

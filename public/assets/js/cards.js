@@ -281,8 +281,7 @@ export function gearCard(g, { act = null, data = {}, size = '', extra = '', skil
   const klangText = now === null || now >= full - 0.001
     ? `Klang <em>+${percent(full)}</em> ab Können ${threshold}`
     : `Klang jetzt <em>+${percent(now)}</em> · voll <b>+${percent(full)}</b> ab Können ${threshold}`;
-  const arrow = (up ?? g.upgrades?.some((u) => u.bandId))
-    ? `<span class="tcg-up" title="${up ? 'Im Lager liegt ein besseres Instrument' : 'Jemand in deiner Band klingt damit besser'}">▲</span>` : '';
+  const arrow = (up ?? g.upgrades?.some((u) => u.bandId)) ? upArrow(up ? { musicianId: holder?.id ?? null } : { gear: g }) : '';
   const finish = gearFinish(model);
   const perks = (g.perks ?? []).map((p) => cat().gearPerks[p]).filter(Boolean);
   return tcg({
@@ -343,11 +342,40 @@ export function managerCard(m, { act = null, data = {}, size = '', extra = '' } 
   });
 }
 
+/**
+ * Wer mit welchem Instrument besser klingt und um wie viel: für ein freies Instrument (gearId) alle, die es verbessert,
+ * für einen Musiker (musicianId) alle Instrumente im Lager, die ihn verbessern. Daten aus GearAdvice (upgrades).
+ */
+export function upgradeLines({ gear = null, musicianId = null }) {
+  const lines = [];
+  for (const g of gear ? [gear] : app.state.gear) {
+    for (const u of g.upgrades ?? []) {
+      if (musicianId !== null && u.musicianId !== musicianId) continue;
+      if (gear && !u.bandId) continue;
+      const m = musicianById(u.musicianId);
+      if (!m) continue;
+      const band = u.bandId ? bandById(u.bandId) : null;
+      lines.push({
+        text: `${gear ? m.firstName : gearModel(g.model).name}${band ? ` (${band.name})` : ''}: Sound ${fmt1(u.before)} → ${fmt1(u.after)} (+${fmt1(u.after - u.before)})`,
+        gain: u.after - u.before,
+      });
+    }
+  }
+  return lines.sort((a, b) => b.gain - a.gain).map((l) => l.text);
+}
+
+/** Grüner Pfeil: Drüberfahren zeigt, wen es wie viel verbessert; Antippen öffnet die Liste. */
+function upArrow(target) {
+  const lines = upgradeLines(target);
+  const head = target.gear ? 'Damit klingt besser:' : 'Im Lager liegt ein besseres Instrument:';
+  return `<span class="tcg-up" data-act="upgradeInfo" data-head="${esc(head)}" data-lines="${esc(JSON.stringify(lines))}" title="${esc([head, ...lines].join('\n'))}">▲</span>`;
+}
+
 /** Leerer Kartenplatz, z. B. für ein fehlendes Instrument oder einen Manager. */
 export function emptySlot(label, { act = null, data = {}, size = '', icon = '+', up = false } = {}) {
   const attrs = act ? ` data-act="${act}" ${Object.entries(data).map(([k, v]) => `data-${k}="${esc(v)}"`).join(' ')}` : '';
   const tag = act ? 'button' : 'div';
-  const arrow = up ? '<span class="tcg-up" title="Im Lager liegt ein passendes Instrument">▲</span>' : '';
+  const arrow = up && data.musician ? upArrow({ musicianId: Number(data.musician) }) : up ? '<span class="tcg-up" title="Im Lager liegt ein passendes Instrument">▲</span>' : '';
   return `<${tag} class="tcg-slot ${size}"${attrs}>${arrow}<span class="tcg-slot-icon">${icon}</span><span>${esc(label)}</span></${tag}>`;
 }
 

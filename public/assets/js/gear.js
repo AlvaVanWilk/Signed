@@ -89,6 +89,13 @@ export function openGear(gearId) {
 }
 
 defineActions({
+  upgradeInfo({ head, lines: json }) {
+    const lines = JSON.parse(json || '[]');
+    const modal = openModal({ html: `<div class="eyebrow">Instrument</div><h2>${esc(head)}</h2>
+      ${lines.length ? `<ul class="history">${lines.map((l) => `<li><span>${esc(l)}</span></li>`).join('')}</ul>` : '<p class="muted">Gerade niemand.</p>'}
+      <div class="dialog-actions"><button class="btn primary" data-close>OK</button></div>` });
+    modal.body.querySelector('[data-close]').addEventListener('click', () => modal.close());
+  },
   openGear({ id }) {
     openGear(Number(id));
   },

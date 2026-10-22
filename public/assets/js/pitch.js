@@ -8,13 +8,14 @@ const AHEAD = 3.2;
 const BEHIND = 1.0;
 const MARKER_X = 0.25;
 /** So schnell steigt bzw. sinkt der Ton (Anteil der Tonleiter pro Sekunde), mindestens bzw. höchstens. */
-const SPEED = 0.9;
-const MAX_SPEED = 1.6;
+const SPEED = 0.7;
+const MAX_SPEED = 1.2;
+/** Fassung der Steuerung – steht auf der Probeseite, damit man sieht, welche man spielt. Bei jeder Änderung hochzählen. */
+export const PITCH_VERSION = 9;
+/** Wie schnell der Ton auf Drücken und Loslassen reagiert (ursprünglich 6, größer = schneller, aber zappeliger). */
+const RESPONSE = 10;
 
-/**
- * Schnell genug, dass man fast jeden Sprung in der ersten Hälfte der Zeit bis zum Ton schafft (90 % der Sprünge,
- * doppeltes Tempo) – das Schweben nach dem Loslassen hält es trotzdem steuerbar.
- */
+/** Schnell genug für die meisten Sprünge (90 % davon, anderthalbfaches Tempo), aber nicht zappelig. */
 function speedFor(notes) {
   const rates = [];
   for (let i = 1; i < notes.length; i++) {
@@ -23,7 +24,7 @@ function speedFor(notes) {
   }
   rates.sort((a, b) => a - b);
   const typical = rates[Math.floor(rates.length * 0.9)] ?? 0;
-  return Math.max(SPEED, Math.min(MAX_SPEED, typical * 2));
+  return Math.max(SPEED, Math.min(MAX_SPEED, typical * 1.5));
 }
 const HOLD_KEYS = [' ', 'arrowup', 'w', 'j'];
 /** So lange (Sekunden) schwebt der Ton nach dem Loslassen, bevor er fällt. */
@@ -97,11 +98,11 @@ export function createPitchGame(container, game) {
   }
 
   function step(now, dt) {
-    // Ohne Schwung, damit es berechenbar bleibt: Drücken steigt mit festem Tempo, nach dem Loslassen schwebt der
-    // Ton kurz (ruhiges Tippen hält ihn auf einer Höhe) und fällt dann mit festem Tempo. Gleich langes Tippen
-    // bewegt ihn also immer gleich weit.
+    // Weicher Schwung (nicht zackig), etwas schneller als ursprünglich. Nach dem Loslassen schwebt der Ton kurz,
+    // bevor er fällt – ruhiges Tippen hält ihn so auf einer Höhe.
     const hovering = !holding && clock() - releasedAt < HOVER;
-    velocity = holding ? speed : hovering ? 0 : -speed;
+    const target = holding ? speed : hovering ? 0 : -speed;
+    velocity += (target - velocity) * Math.min(1, dt * RESPONSE);
     pos += velocity * dt;
     if (pos <= 0 || pos >= 1) {
       pos = Math.max(0, Math.min(1, pos));

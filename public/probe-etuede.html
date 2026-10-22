@@ -17,12 +17,12 @@
 </head>
 <body>
 <main>
-  <h1>Probe: Etüden</h1>
+  <h1>Probe: Etüden <small class="muted" data-version style="font-size:0.9rem"></small></h1>
   <p class="info">Das Spiel erzeugt eine Übung aus typischen Genre-Bausteinen. Mit mehr Können kommen mehr Noten dazu – dieselbe Nummer bleibt dieselbe Etüde, nur voller.</p>
   <div class="controls">
     <label>Genre <select data-genre></select></label>
     <label>Instrument <select data-instrument></select></label>
-    <label>Können <input type="range" min="0" max="100" value="10" data-skill> <b data-skill-out>10</b></label>
+    <label>Können <input type="range" min="0" max="100" value="10" data-skill> <input type="number" min="0" max="100" value="10" data-skill-num style="width:4.5em"></label>
     <label>Nummer <input type="number" min="1" max="999999" value="1" data-seed style="width:7em"></label>
     <button class="btn" data-same>Gleiche Etüde laden</button>
     <button class="btn primary" data-new>Neue Etüde</button>
@@ -34,6 +34,7 @@
 <script type="module">
   import { app } from './assets/js/core.js';
   import { createMinigame } from './assets/js/minigame.js';
+  import { PITCH_VERSION } from './assets/js/pitch.js';
 
   const $ = (s) => document.querySelector(s);
   const session = await (await fetch('api.php?a=session')).json();
@@ -41,7 +42,15 @@
   const c = app.catalog;
   $('[data-genre]').innerHTML = Object.entries(c.genres).map(([k, g]) => `<option value="${k}">${g.name}</option>`).join('');
   $('[data-instrument]').innerHTML = Object.entries(c.instruments).map(([k, i]) => `<option value="${k}">${i.name}</option>`).join('');
-  $('[data-skill]').addEventListener('input', (e) => { $('[data-skill-out]').textContent = e.target.value; });
+  $('[data-version]').textContent = `Version ${PITCH_VERSION}`;
+  // Regler und Zahlenfeld zeigen dasselbe; beides lädt beim Ändern dieselbe Etüde neu.
+  $('[data-skill]').addEventListener('input', (e) => { $('[data-skill-num]').value = e.target.value; });
+  $('[data-skill-num]').addEventListener('change', (e) => {
+    const value = Math.max(0, Math.min(100, Number(e.target.value) || 0));
+    e.target.value = value;
+    $('[data-skill]').value = value;
+    load($('[data-seed]').value);
+  });
   // Können verstellt: dieselbe Etüde mit der neuen Schwierigkeit laden (sonst spielt man noch die alte).
   $('[data-skill]').addEventListener('change', () => load($('[data-seed]').value));
   $('[data-genre]').addEventListener('change', () => load(null));

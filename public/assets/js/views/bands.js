@@ -90,6 +90,13 @@ const songsMeta = (songs) => `${songs} ${songs === 1 ? 'Lied' : 'Lieder'} · ${d
 
 // ---------- Band ----------
 
+/** Allein unterwegs (Üben, Promo, Kurs), während die Band nicht gemeinsam unterwegs ist: wann zurück? */
+function awayOf(b, m) {
+  if (isBusy(b.busyUntil) || !isBusy(m.busyUntil)) return null;
+  const a = app.state.running.find((x) => x.musicianId === m.id && ['promo', 'practice', 'course'].includes(x.type));
+  return { until: a?.endsAt ?? m.busyUntil, label: { promo: 'Promo-Tour', practice: 'Übt allein', course: 'Im Kurs' }[a?.type] ?? 'Unterwegs' };
+}
+
 /** Spielt ein Mitglied eine E-Aufnahme? Danach richtet sich, ob seine Figur eine E-Gitarre hält. */
 function electricByStem(members, b) {
   const stems = bandStems(members, b);
@@ -103,7 +110,7 @@ function overview(b, members) {
     <div class="page-head">
       <div><div class="eyebrow">${b.title ? esc(b.title) : 'Band'}</div><h1>${esc(b.name)} <button class="icon-btn" data-act="bandRename" data-id="${b.id}" title="${b.released ? 'Namensänderung beantragen' : 'Umbenennen'}">✎</button></h1></div>
     </div>
-    ${members.length ? stage(members, { className: runningFor(b.id) ? '' : 'idle', electricOf: electricByStem(members, b), hueOf: (m) => ownGear(m, playedInstrument(m)).hue }) : ''}
+    ${members.length ? stage(members, { className: runningFor(b.id) ? '' : 'idle', electricOf: electricByStem(members, b), hueOf: (m) => ownGear(m, playedInstrument(m)).hue, awayOf: (m) => awayOf(b, m) }) : ''}
     <div class="stat-grid">
       ${statTile('sound', b, fmt1(b.sound), { flash: `sound-${b.id}` })}
       ${statTile('fame', b, fmt1(b.fame), { extra: gig.nextVenue ? bar(gig.progress, 1, 'thin') : '' })}

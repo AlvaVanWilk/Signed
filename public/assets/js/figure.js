@@ -246,9 +246,20 @@ export function playedInstrument(m) {
  * Bühne mit Figuren. electricOf(m): spielt er elektrisch (E-Gitarre, E-Bass)? bpm setzt das Tempo; mood: 'hype' (Publikum tobt – die Band springt), 'calm' oder ''.
  * names: Vornamen unter den Figuren zeigen.
  */
-export function stage(members, { bpm = 120, names = true, className = '', electricOf = () => false, hueOf = () => null } = {}) {
-  return `<div class="fig-stage ${className}" style="--beat:${(60 / bpm).toFixed(3)}s">${members.map((m) => `
-    <div class="fig-member" style="--d:${(-((m.id * 7919) % 4300) / 1000).toFixed(2)}s">${figure(m.look, playedInstrument(m), { electric: electricOf(m), hue: hueOf(m) })}${names ? `<b>${escapeHtml(m.firstName)}</b>` : ''}</div>`).join('')}
+/**
+ * Bühne mit allen Mitgliedern. awayOf(m) liefert für jemanden, der gerade allein unterwegs ist (Üben, Promo, Kurs),
+ * { until, label } – dann steht statt der Figur an seinem Platz, wann er zurück ist.
+ */
+export function stage(members, { bpm = 120, names = true, className = '', electricOf = () => false, hueOf = () => null, awayOf = () => null } = {}) {
+  return `<div class="fig-stage ${className}" style="--beat:${(60 / bpm).toFixed(3)}s">${members.map((m) => {
+    const away = awayOf(m);
+    if (away) {
+      return `<div class="fig-member fig-away" title="${escapeHtml(away.label)}"><span class="fig-away-box"><span class="fig-away-label">${escapeHtml(away.label)}</span>
+        <span class="countdown" data-until="${away.until}"></span></span>${names ? `<b>${escapeHtml(m.firstName)}</b>` : ''}</div>`;
+    }
+    return `
+    <div class="fig-member" style="--d:${(-((m.id * 7919) % 4300) / 1000).toFixed(2)}s">${figure(m.look, playedInstrument(m), { electric: electricOf(m), hue: hueOf(m) })}${names ? `<b>${escapeHtml(m.firstName)}</b>` : ''}</div>`;
+  }).join('')}
   </div>`;
 }
 

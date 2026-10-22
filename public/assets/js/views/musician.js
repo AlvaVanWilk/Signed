@@ -53,7 +53,7 @@ const busyOf = (m) => isBusy(m.busyUntil) || (m.bandId && isBusy(bandById(m.band
 
 function statusNotice(m) {
   const status = musicianStatus(m);
-  return status ? `<div class="notice"><span class="pulse"></span><span>${status}</span>${cancelButton(promoOf(m))}</div>` : '';
+  return status ? `<div class="notice away-notice"><span class="pulse"></span><span>${status}</span>${cancelButton(promoOf(m))}</div>` : '';
 }
 
 function profile(m) {
@@ -63,10 +63,10 @@ function profile(m) {
   const nextFame = rules.fameLevels[m.fameLevel];
   return `
     ${pager(m)}
+    ${statusNotice(m)}
     <div class="profile">
       <div class="profile-card">${musicianCard(m, { act: null })}</div>
       <div class="profile-side">
-        ${statusNotice(m)}
         ${m.abilityChoice ? `<div class="notice choice"><span>⭐ ${esc(m.firstName)} ist jetzt ${esc(cat().levelWords[3])} und darf eine dritte Fähigkeit wählen.</span><button class="btn primary small" data-act="chooseAbility" data-id="${m.id}">Wählen</button></div>` : ''}
         <div class="stat-grid">
           <div class="tile"><span>Können</span><b>${esc(cat().levelNames[m.level])}</b><small>Jetzt <em>${fmt1(Math.max(...m.instruments.map((i) => i.skill)))}</em>${nextSkill ? ` · ${esc(cat().levelNames[m.level + 1])} ab ${nextSkill}` : ' · höchste Stufe'}</small></div>

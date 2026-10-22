@@ -1170,3 +1170,11 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .chart-rest-main { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .chart-rest-points { text-align: right; font-weight: 700; }
 .chart-rest .cover-frame { padding: 1px; }
+
+/* Wer allein unterwegs ist: auf der Bühne eine Uhr statt der Figur, auf der Musikerseite gelb hervorgehoben */
+.fig-away { align-self: stretch; display: flex; flex-direction: column; justify-content: flex-end; }
+.fig-away-box { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; aspect-ratio: 120 / 150; margin: 0 6px 4px;
+  border: 2px dashed rgba(255, 181, 71, 0.55); border-radius: 14px; background: rgba(255, 181, 71, 0.08); }
+.fig-away-label { font-size: 0.75rem; color: var(--muted); }
+.fig-away .countdown { font-size: 1.05rem; }
+.away-notice { background: rgba(255, 181, 71, 0.16); border-color: rgba(255, 181, 71, 0.6); color: #ffd9a0; font-weight: 600; }

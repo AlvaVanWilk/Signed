@@ -116,8 +116,8 @@ final class Etude
         }
 
         // Jetzt erst nach Können ausdünnen – die Entscheidungen oben sind davon unabhängig.
-        // Singen und Geige: höchstens so dicht wie ein Fortgeschrittener spielt, sonst wird es Gezappel.
-        $limit = $pitchGame ? max($threshold, 6) : $threshold;
+        // Singen und Geige: Anfänger nur das Gerüst, Profis deutlich mehr Töne (aber nie jede Verzierung).
+        $limit = $pitchGame ? max($threshold, 6 - 3 * $d) : $threshold;
         $notes = array_values(array_filter($notes, static fn ($n) => $n['w'] >= $limit && $n['t'] < $duration - 0.3));
         usort($notes, static fn ($a, $b) => $a['t'] <=> $b['t'] ?: $a['l'] <=> $b['l']);
 
@@ -130,29 +130,44 @@ final class Etude
         if ($pitchGame) {
             $scale = Styles::SCALES[$style['scale']];
             $melody = [];
-            // Spielbar halten: Sprünge höchstens so weit, wie man in der Zeit bis zum Ton gleiten kann
-            // (etwa 2,5 Stufen pro Sekunde), und Anfänger springen ohnehin höchstens zwei Stufen.
-            $maxJump = 2 + (int) floor($d * 3);
-            // Töne mit mindestens 0,4 s Abstand auswählen (schnelle Genres singen sonst nur Fetzen) …
+            // Spielbar, aber mit dem Können anspruchsvoller: Sprünge von 2 Stufen (Anfänger) bis 7 (Virtuose),
+            // gleiten von 2,5 bis 7 Stufen pro Sekunde (die Schonzeit im Spiel deckt den halben Ton), Töne mit 0,4 bis 0,22 s Abstand.
+            $maxJump = 2 + (int) floor($d * 5.5);
+            $glide = 2.5 + 4.5 * $d;
+            $spacing = 0.4 - 0.18 * $d;
+            // Töne mit Mindestabstand auswählen (schnelle Genres singen sonst nur Fetzen) …
             $starts = [];
             foreach ($notes as $n) {
-                if (!$starts || $n['t'] - end($starts)['t'] >= 0.4) {
+                if (!$starts || $n['t'] - end($starts)['t'] >= $spacing) {
                     $starts[] = $n;
                 }
             }
+            $rawPrev = 0;
             // … und jeder klingt bis kurz vor den nächsten, höchstens zwei Schläge.
             foreach ($starts as $i => $n) {
                 $next = $starts[$i + 1]['t'] ?? $duration - 0.3;
                 $len = min($next - $n['t'], 4 * $stepSec * 2) * 0.92;
-                if ($len < 0.3) {
+                if ($len < $spacing * 0.75) {
                     continue;
                 }
                 $p = $n['p'];
                 if ($melody) {
                     $prev = end($melody);
-                    $reach = max(1, min($maxJump, (int) floor(($n['t'] - $prev['t']) * 2.5)));
-                    $p = max($prev['p'] - $reach, min($prev['p'] + $reach, $p));
+                    if ($n['w'] >= 8) {
+                        // Gerüsttöne (auf Akkorden): derselbe Verlauf, mit dem Können weiter auseinandergezogen.
+                        $p = $prev['p'] + (int) round(($n['p'] - $rawPrev) * (1 + 1.6 * $d));
+                    } else {
+                        // Zusätzliche Töne (je besser, desto mehr): echte Sprünge, fest an Nummer und Zeit gebunden.
+                        $h = crc32($seed . ':' . round($n['t'], 3));
+                        $p = $prev['p'] + (($h & 1) ? 1 : -1) * (1 + ($h >> 1) % max(1, $maxJump));
+                    }
+                    if ($p < 0 || $p > 7) {
+                        $p = $prev['p'] - ($p - $prev['p']);  // an der Grenze umkehren statt kleben bleiben
+                    }
+                    $reach = max(1, min($maxJump, (int) floor(($n['t'] - $prev['t'] + $len / 2) * $glide)));
+                    $p = max(0, min(7, max($prev['p'] - $reach, min($prev['p'] + $reach, $p))));
                 }
+                $rawPrev = $n['p'];
                 $melody[] = ['t' => round($n['t'], 3), 'd' => round($len, 3), 'p' => $p];
             }
             return $out + [
@@ -203,7 +218,9 @@ final class Etude
             'etude' => ['recipe' => $e['recipe'], 'genre' => $e['genre'], 'chords' => $e['chords'], 'key' => $e['key'], 'bpm' => $e['bpm'], 'meter' => $e['meter']],
         ];
         if ($e['mode'] === 'pitch') {
-            return $game + ['tonality' => $e['tonality'], 'tolerance' => Chart::pitchTolerance($skill, $perfectPitch)];
+            // Die Etüde wird mit dem Können schwerer – das Trefferfeld darf dann nicht breiter werden, sondern enger.
+            $tolerance = round(0.1 - 0.035 * min(100.0, $skill) / 100 + ($perfectPitch ? 0.02 : 0), 3);
+            return $game + ['tonality' => $e['tonality'], 'tolerance' => $tolerance];
         }
         return $game + [
             'windows' => Chart::windows($skill, $perfectPitch),

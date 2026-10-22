@@ -102,6 +102,26 @@ function sidebar(route) {
     </aside>`;
 }
 
+/**
+ * Zahl am Menüpunkt Börse: wie viele Angebote anderer Labels drin sind. In Signalfarbe, solange eins dabei ist,
+ * das man noch nicht gesehen hat (gemerkt im Browser: höchste gesehene Angebots-Nummer je Label).
+ */
+function marketBadge(visiting) {
+  const offers = app.state.market?.offers ?? [];
+  if (!offers.length) return '';
+  const key = `signed.marketSeen.${app.state.label.id ?? app.state.label.name}`;
+  const newest = Math.max(...offers.map((o) => o.id));
+  let seen = 0;
+  try {
+    seen = Number(localStorage.getItem(key) || 0);
+    if (visiting && newest > seen) {
+      localStorage.setItem(key, String(newest));
+      seen = newest;
+    }
+  } catch { /* ohne Speicher: alles gilt als neu */ }
+  return ` <span class="nav-badge ${newest > seen ? 'new' : ''}" title="${offers.length} Angebote${newest > seen ? ', neue dabei' : ''}">${offers.length}</span>`;
+}
+
 function layout(content, route) {
   const s = app.state;
   const active = route.name;
@@ -109,7 +129,7 @@ function layout(content, route) {
   return `
     <header class="topbar">
       <a class="logo" href="#/">Signed</a>
-      <nav class="nav">${NAV.map(([key, label]) => `<a href="#/${key}" class="${key === active ? 'active' : ''}">${label}</a>`).join('')}</nav>
+      <nav class="nav">${NAV.map(([key, label]) => `<a href="#/${key}" class="${key === active ? 'active' : ''}">${label}${key === 'boerse' ? marketBadge(active === 'boerse') : ''}</a>`).join('')}</nav>
       <div class="label-info">
         <span class="label-name" title="Dein Label">${esc(s.label.name)}</span>
         <button class="money-pill" data-act="openFinance" data-live-money title="Konto und Einnahmen">${money(liveMoney())}</button>

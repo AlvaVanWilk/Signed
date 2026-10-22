@@ -1178,3 +1178,8 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .fig-away-label { font-size: 0.75rem; color: var(--muted); }
 .fig-away .countdown { font-size: 1.05rem; }
 .away-notice { background: rgba(255, 181, 71, 0.16); border-color: rgba(255, 181, 71, 0.6); color: #ffd9a0; font-weight: 600; }
+
+/* Zahl am Menüpunkt (Börse); in Signalfarbe, wenn Neues dabei ist */
+.nav-badge { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; margin-left: 4px; border-radius: 999px;
+  background: var(--panel-2); color: var(--muted); font-size: 0.7rem; font-weight: 800; vertical-align: middle; }
+.nav-badge.new { background: var(--accent, #ff4f8b); color: #fff; box-shadow: 0 0 10px rgba(255, 79, 139, 0.6); }

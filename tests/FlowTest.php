@@ -823,15 +823,15 @@ test('Charts: Plätze bleiben eine Chartwoche stehen, Nachrichten bei Einstieg u
     check(Signed\Game\Charts::pointsAt($row, (int) $row['finished_at'] + 12 * Balance::CHART_PEAK) < 0.05 * (float) $row['chart_points'], 'Auch mit vollem Schub fällt sie heraus');
 });
 
-test('Rap: Hip-Hop-Gesang übt im Rhythmus-Spiel mit der Aufnahme', function () {
+test('Rap: Hip-Hop-Gesang übt im Rhythmus-Spiel (Etüde)', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Rapper');
     $m = $p->get('state')['musicians'][0];
     $db->exec("UPDATE musicians SET instr1 = 'vocals', instr2 = NULL, genres = ? WHERE id = ?", ['["hiphop"]', $m['id']]);
     $game = $p->post('minigameStart', ['kind' => 'practice', 'musicianId' => $m['id']])['game'];
     checkEquals('rhythm', $game['mode']);
-    check(str_contains($game['music']['own'], 'hiphop-0/gesang-'), 'Eigene Hip-Hop-Aufnahme');
-    check($game['count'] > 20, 'Silben aus der MIDI-Spur');
+    checkEquals('hiphop', $game['etude']['genre'], 'Hip-Hop-Etüde');
+    check($game['count'] > 0, 'Silben im Rhythmus');
     $db->exec("UPDATE musicians SET genres = ? WHERE id = ?", ['["pop"]', $m['id']]);
     checkEquals('pitch', $p->post('minigameStart', ['kind' => 'practice', 'musicianId' => $m['id']])['game']['mode'], 'Pop singt nach Tonhöhe');
 });
@@ -1145,7 +1145,7 @@ test('Hall of Fame: Bands aller Labels nach Ruhm', function () {
     check(!$list[0]['own'] && $list[1]['own']);
 });
 
-test('Solo-Probe: Instrumente üben Etüden aus dem Synthesizer, Gesang weiter mit der Aufnahme', function () {
+test('Solo-Probe: Alle üben Etüden aus dem Synthesizer, Gesang im Tonhöhen-Spiel', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Etueden');
     $state = $p->get('state');
@@ -1160,7 +1160,14 @@ test('Solo-Probe: Instrumente üben Etüden aus dem Synthesizer, Gesang weiter m
     $res = $p->post('minigameFinish', ['sessionId' => $drums['sessionId'], 'perfect' => $drums['count'], 'good' => 0, 'miss' => 0]);
     check($res['result']['gain'] > 0, 'Etüde bringt Können');
     $vocals = $p->post('minigameStart', ['kind' => 'practice', 'musicianId' => $byInstrument['vocals']['id']])['game'];
-    check(!isset($vocals['etude']), 'Gesang: keine Etüde');
+    check(isset($vocals['etude']) && $vocals['mode'] === 'pitch' && isset($vocals['tonality']), 'Gesang: Etüde im Tonhöhen-Spiel');
+    foreach (array_slice($vocals['notes'], 0, -1) as $i => $n) {
+        $next = $vocals['notes'][$i + 1];
+        $jump = abs($next['p'] - $n['p']);
+        if ($jump >= 3) {
+            check($next['t'] - ($n['t'] + $n['d']) >= 0.07 * $jump - 0.002 || $n['d'] <= 0.15, 'Vor großen Sprüngen bleibt Zeit');
+        }
+    }
 });
 
 test('Gesang: Vor einem großen Sprung wird der Ton hinten gekürzt', function () {

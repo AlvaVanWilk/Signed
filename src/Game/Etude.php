@@ -170,6 +170,14 @@ final class Etude
                 $rawPrev = $n['p'];
                 $melody[] = ['t' => round($n['t'], 3), 'd' => round($len, 3), 'p' => $p];
             }
+            // Großer Sprung (ab 3 Stufen): den Ton davor hinten kürzen, damit Zeit zum Hinübergleiten bleibt.
+            for ($i = 0; $i < count($melody) - 1; $i++) {
+                $jump = abs($melody[$i + 1]['p'] - $melody[$i]['p']);
+                if ($jump >= 3) {
+                    $end = $melody[$i + 1]['t'] - 0.07 * $jump;
+                    $melody[$i]['d'] = round(max(0.15, min($melody[$i]['d'], $end - $melody[$i]['t'])), 3);
+                }
+            }
             return $out + [
                 'mode' => 'pitch',
                 'notes' => $melody,

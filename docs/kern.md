@@ -160,14 +160,15 @@ Das Stadion bleibt der Tournee vorbehalten.
 
 Ein Lied dauert 24 Sekunden: 12 Takte 4/4 (oder 16 Takte 3/4) bei 120 BPM – alle Genres im selben Tempo und derselben Tonart, damit sich alle Spuren mischen lassen. Bewertet wird in Perfekt / Gut / Daneben; Trefferquote = (Perfekt + 0,6 × Gut) / Anzahl.
 
-**Etüden (Solo-Probe, außer Gesang und Geige):** Statt der Aufnahme spielt man eine Übung, die das Spiel aus typischen
+**Etüden (Solo-Probe, alle Instrumente):** Statt der Aufnahme spielt man eine Übung, die das Spiel aus typischen
 Genre-Bausteinen erzeugt (`Styles`: Akkordfolgen, Grooves, Bass-, Begleit- und Melodie-Rhythmen je Genre; `Etude`).
 Eigenes Tempo, Taktart (Folk 3/4) und Tonart, Swing bei Jazz und Hip-Hop, leise Synthesizer-Begleitung ohne die eigene Rolle.
 Muster tragen Wichtigkeiten (9 = Gerüst … 1 = Verzierung, zusätzlich durch die Taktposition gedeckelt); die Schwelle sinkt
 stufenlos mit dem Können (9 − 9 × (Können/100)²). Alles Zufällige hängt an einer Nummer: dieselbe Etüde wird mit mehr Können
 voller, bleibt aber dieselbe (Grundlage fürs spätere Notizbuch und Songwriting). Probe: `probe-etuede.html`.
-Gesang und Geige üben weiter mit den Aufnahmen; vor großen Sprüngen (ab 3 Stufen) endet der Ton früher (0,07 s pro Stufe),
-damit Zeit zum Hinübergleiten bleibt (`Music::melodyChart`).
+Gesang und Geige spielen die Etüde im Tonhöhen-Spiel (Steuerung unverändert), Rap im Hip-Hop im Rhythmus-Spiel. Vor großen
+Sprüngen (ab 3 Stufen) endet der Ton früher (0,07 s pro Stufe), damit Zeit zum Hinübergleiten bleibt – in Etüden und in
+den Gesangsspuren der Aufnahmen (`Music::melodyChart`, für Studio-Aufnahmen).
 
 - **Rhythmus** (Solo-Probe für alle außer Gesang und Geige): vier Spuren, Tasten D F J K oder Tippen.
   Die Noten kommen aus der Aufnahme (noten.json) der eigenen Spur: Schlagzeug nur Bassdrum (links) und Snare (rechts),

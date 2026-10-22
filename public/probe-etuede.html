@@ -42,6 +42,10 @@
   $('[data-genre]').innerHTML = Object.entries(c.genres).map(([k, g]) => `<option value="${k}">${g.name}</option>`).join('');
   $('[data-instrument]').innerHTML = Object.entries(c.instruments).map(([k, i]) => `<option value="${k}">${i.name}</option>`).join('');
   $('[data-skill]').addEventListener('input', (e) => { $('[data-skill-out]').textContent = e.target.value; });
+  // Können verstellt: dieselbe Etüde mit der neuen Schwierigkeit laden (sonst spielt man noch die alte).
+  $('[data-skill]').addEventListener('change', () => load($('[data-seed]').value));
+  $('[data-genre]').addEventListener('change', () => load(null));
+  $('[data-instrument]').addEventListener('change', () => load(null));
   let mg = null;
   let ticket = 0;
 

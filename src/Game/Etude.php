@@ -117,7 +117,7 @@ final class Etude
 
         // Jetzt erst nach Können ausdünnen – die Entscheidungen oben sind davon unabhängig.
         // Singen und Geige: Anfänger nur das Gerüst, Profis deutlich mehr Töne (aber nie jede Verzierung).
-        $limit = $pitchGame ? max($threshold, 6 - 3 * $d) : $threshold;
+        $limit = $pitchGame ? max($threshold, 6 - 2 * $d) : $threshold;
         $notes = array_values(array_filter($notes, static fn ($n) => $n['w'] >= $limit && $n['t'] < $duration - 0.3));
         usort($notes, static fn ($a, $b) => $a['t'] <=> $b['t'] ?: $a['l'] <=> $b['l']);
 
@@ -130,11 +130,11 @@ final class Etude
         if ($pitchGame) {
             $scale = Styles::SCALES[$style['scale']];
             $melody = [];
-            // Spielbar, aber mit dem Können anspruchsvoller: Sprünge von 2 Stufen (Anfänger) bis 7 (Virtuose),
-            // gleiten von 2,5 bis 7 Stufen pro Sekunde (die Schonzeit im Spiel deckt den halben Ton), Töne mit 0,4 bis 0,22 s Abstand.
-            $maxJump = 2 + (int) floor($d * 5.5);
-            $glide = 2.5 + 4.5 * $d;
-            $spacing = 0.4 - 0.18 * $d;
+            // Spielbar, aber mit dem Können anspruchsvoller: Sprünge von 2 Stufen (Anfänger) bis 5 (Virtuose),
+            // gleiten von 2,5 bis 5,5 Stufen pro Sekunde (die Schonzeit im Spiel deckt den halben Ton), Töne mit 0,4 bis 0,32 s Abstand.
+            $maxJump = 2 + (int) floor($d * 3.5);
+            $glide = 2.5 + 3 * $d;
+            $spacing = 0.4 - 0.08 * $d;
             // Töne mit Mindestabstand auswählen (schnelle Genres singen sonst nur Fetzen) …
             $starts = [];
             foreach ($notes as $n) {
@@ -220,9 +220,9 @@ final class Etude
         if ($e['mode'] === 'pitch') {
             // Die Etüde wird mit dem Können schwerer – das Trefferfeld darf dann nicht breiter werden, sondern enger.
             $d = min(100.0, $skill) / 100;
-            $tolerance = round(0.1 - 0.05 * $d + ($perfectPitch ? 0.02 : 0), 3);
+            $tolerance = round(0.1 - 0.025 * $d + ($perfectPitch ? 0.02 : 0), 3);
             // Schonzeit nach Sprüngen: Anfänger ganz, Profis kaum noch – wer gut ist, trifft den neuen Ton sofort.
-            return $game + ['tonality' => $e['tonality'], 'tolerance' => $tolerance, 'grace' => round(1 - 0.8 * $d, 2)];
+            return $game + ['tonality' => $e['tonality'], 'tolerance' => $tolerance, 'grace' => round(1 - 0.45 * $d, 2)];
         }
         return $game + [
             'windows' => Chart::windows($skill, $perfectPitch),

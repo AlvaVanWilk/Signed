@@ -219,8 +219,10 @@ final class Etude
         ];
         if ($e['mode'] === 'pitch') {
             // Die Etüde wird mit dem Können schwerer – das Trefferfeld darf dann nicht breiter werden, sondern enger.
-            $tolerance = round(0.1 - 0.035 * min(100.0, $skill) / 100 + ($perfectPitch ? 0.02 : 0), 3);
-            return $game + ['tonality' => $e['tonality'], 'tolerance' => $tolerance];
+            $d = min(100.0, $skill) / 100;
+            $tolerance = round(0.1 - 0.05 * $d + ($perfectPitch ? 0.02 : 0), 3);
+            // Schonzeit nach Sprüngen: Anfänger ganz, Profis kaum noch – wer gut ist, trifft den neuen Ton sofort.
+            return $game + ['tonality' => $e['tonality'], 'tolerance' => $tolerance, 'grace' => round(1 - 0.8 * $d, 2)];
         }
         return $game + [
             'windows' => Chart::windows($skill, $perfectPitch),

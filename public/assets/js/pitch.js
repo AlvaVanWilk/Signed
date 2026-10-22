@@ -52,7 +52,7 @@ export function createPitchGame(container, game) {
     const prev = notes[i - 1];
     const travel = prev ? Math.abs(note.level - prev.level) / speed : 0;
     const pause = prev ? Math.max(0, note.t - (prev.t + prev.d)) : 1;
-    note.grace = Math.min(note.d * 0.5, Math.max(0, travel - pause) + (travel > 0 ? 0.12 : 0));
+    note.grace = Math.min(note.d * 0.5, Math.max(0, travel - pause) + (travel > 0 ? 0.12 : 0)) * (game.grace ?? 1);
   });
   const tolerance = game.tolerance;
   const beat = 60 / game.bpm;

@@ -33,6 +33,38 @@
     .pin .gear { position: absolute; top: 92px; right: 10px; width: 30px; height: 30px; border-radius: 50%; background: #2a2338; display: grid; place-items: center; box-shadow: 0 0 0 2px var(--g-rar, #555); }
     .pin .gear svg { width: 24px; height: 24px; }
 
+    /* ---------- A1: Fotowand ---------- */
+    .wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 18px 14px; padding: 18px 14px;
+      border-radius: 18px; background: #3b2f27 repeating-linear-gradient(45deg, rgba(255,255,255,0.025) 0 6px, transparent 6px 12px); }
+    .photo { position: relative; background: #fbf8f1; padding: 7px 7px 8px; border-radius: 3px; color: #2a2233; text-align: center; cursor: pointer;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.45); transform: rotate(var(--r, 0deg)); transition: transform 0.15s; }
+    .photo:hover { transform: rotate(0) scale(1.04); }
+    .photo::before { content: ''; position: absolute; top: -7px; left: 50%; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #ff8fae, #c2185b); box-shadow: 0 2px 3px rgba(0,0,0,0.4); }
+    .photo .pic { aspect-ratio: 1; border-radius: 2px; overflow: hidden; background: linear-gradient(180deg, #cfdbe6, #b5c4d2); box-shadow: 0 0 0 3px var(--lvl); }
+    .photo .pic svg { width: 100%; height: 100%; display: block; }
+    .photo .nm { font-weight: 800; font-size: 0.85rem; margin-top: 7px; line-height: 1.1; }
+    .photo .in { font-size: 0.7rem; color: #6b6377; }
+    .photo .st { color: #e0a21a; font-size: 0.72rem; letter-spacing: -1px; }
+    .photo .dots { display: flex; gap: 3px; justify-content: center; margin-top: 3px; }
+    .photo .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; }
+    .photo .away { position: absolute; top: 40%; left: -6px; right: -6px; transform: rotate(-8deg); background: #ffe27a; color: #5a4300;
+      font-size: 0.72rem; font-weight: 800; padding: 3px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+    .photo.busy .pic { filter: grayscale(0.6) brightness(0.9); }
+    /* ---------- A2: Kartei-Liste ---------- */
+    .file { display: grid; gap: 6px; }
+    .krow { display: grid; grid-template-columns: 58px 1fr 150px 90px; gap: 12px; align-items: center; padding: 8px 12px 8px 8px; border-radius: 12px;
+      background: #fbf8f1; color: #2a2233; box-shadow: inset 5px 0 0 var(--lvl); }
+    .krow .pic { width: 58px; height: 58px; border-radius: 6px; overflow: hidden; background: linear-gradient(180deg, #cfdbe6, #b5c4d2); }
+    .krow .pic svg { width: 100%; height: 100%; display: block; }
+    .krow b { display: block; }
+    .krow small { color: #6b6377; }
+    .krow .bar { height: 6px; border-radius: 3px; background: rgba(0,0,0,0.1); overflow: hidden; margin-top: 3px; }
+    .krow .bar b { height: 100%; background: var(--lvl); }
+    .krow .kside { text-align: right; font-size: 0.75rem; color: #6b6377; }
+    .krow .kside .st { color: #e0a21a; font-size: 0.85rem; }
+    .krow.busy { opacity: 0.6; }
+
     /* ---------- B: Band-Aufstellung ---------- */
     .fp-lineup { display: grid; gap: 6px; }
     .fp-row { display: grid; grid-template-columns: 54px 1fr auto auto; gap: 12px; align-items: center; padding: 8px 12px; border-radius: 14px; background: var(--panel, #1c1726); }
@@ -81,9 +113,16 @@
   <h1>Probe: Figuren statt Karten</h1>
   <p class="lead">Nur zum Anschauen, mit Beispieldaten. Alles, was heute eine Karte ist, wird eine Figur. Die Stufe zeigt das leuchtende Podest (grau, grün, blau, lila wie bisher die Rahmen), Bekanntheit das Scheinwerferlicht von oben und die Sterne.</p>
 
-  <h2>A · Katalog: Musiker als Figuren</h2>
+  <h2>A1 · Katalog als Fotowand (Passfotos)</h2>
+  <div class="wall" data-wall></div>
+  <p class="note">Die Künstlerkartei: Jeder Musiker als Passfoto, leicht schräg angepinnt. Der farbige Rand ist die Stufe, die Sterne die Bekanntheit, die Punkte unten die Genres. Wer unterwegs ist, hat einen gelben Zettel drauf (z. B. „übt allein“). Antippen öffnet die Musikerseite.</p>
+
+  <h2>A2 · Katalog als Kartei-Liste</h2>
+  <div class="file" data-file></div>
+  <p class="note">Dasselbe als Liste wie in einer Kartei: mehr Platz für Können und Instrument, gut zum Vergleichen und Sortieren. Auf dem iPad passen viele untereinander.</p>
+
+  <h2>A3 · Zum Vergleich: ganze Figuren (erster Entwurf)</h2>
   <div class="roster" data-roster></div>
-  <p class="note">Antippen öffnet wie bisher die Musikerseite. Wer unterwegs ist, wird blasser. Oben links die Genres als Farbpunkte, oben rechts die Bekanntheits-Sterne, unten der Fortschritt zur nächsten Stufe. Das runde Abzeichen ist das eigene Instrument.</p>
 
   <h2>B · Bandseite: Aufstellung als Liste unter der Bühne</h2>
   <div class="fig-stage" data-stage></div>
@@ -125,7 +164,26 @@
   const genreDots = (g) => g.map((k) => `<i style="background:${GENRE[k]}" title="${k}"></i>`).join('');
   const $ = (s) => document.querySelector(s);
 
-  // A
+  // A1 + A2
+  const tilt = (i) => ['-2.5deg', '1.8deg', '-1deg', '2.6deg', '-1.8deg', '1deg'][i % 6];
+  $('[data-wall]').innerHTML = [...people, ...people.slice(0, 4).map((p, i) => ({ ...p, first: ['Mats', 'Elif', 'Noa', 'Theo'][i], look: { ...p.look, shirt: ['#fb5607', '#8d99ae', '#ffbe0b', '#222222'][i], skin: ['#8a5536', '#f6d7c3', '#c58c63', '#eac0a2'][i] }, busy: null }))].map((p, i) => `
+    <div class="photo l${p.level} ${p.busy ? 'busy' : ''}" style="--r:${tilt(i)}">
+      <div class="pic">${avatar(p.look)}</div>
+      ${p.busy ? `<div class="away">${p.busy}</div>` : ''}
+      <div class="nm">${p.first} ${p.last}</div>
+      <div class="in">${INSTR[p.instr]} · ${LEVEL[p.level]}</div>
+      <div class="st">${stars(p.fame)}</div>
+      <div class="dots">${p.genres.map((k) => `<i style="background:${GENRE[k]}"></i>`).join('')}</div>
+    </div>`).join('');
+  $('[data-file]').innerHTML = people.map((p) => `
+    <div class="krow l${p.level} ${p.busy ? 'busy' : ''}">
+      <span class="pic">${avatar(p.look)}</span>
+      <span><b>${p.first} ${p.last}</b><small>${INSTR[p.instr]} · ${LEVEL[p.level]} · ${p.genres.join(', ')}</small></span>
+      <span><small>Können</small><span class="bar"><b style="display:block;width:${p.skill * 100}%"></b></span></span>
+      <span class="kside"><span class="st">${stars(p.fame)}</span><br>${p.busy ?? 'frei'}</span>
+    </div>`).join('');
+
+  // A3
   $('[data-roster]').innerHTML = people.map((p) => `
     <div class="pin l${p.level} ${p.busy ? 'busy' : ''}" style="--spot:${[0, 0.12, 0.22, 0.34][p.fame]}">
       <div class="genres">${genreDots(p.genres)}</div>

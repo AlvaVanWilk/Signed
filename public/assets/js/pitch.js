@@ -26,6 +26,10 @@ function speedFor(notes) {
   return Math.max(SPEED, Math.min(MAX_SPEED, typical));
 }
 const HOLD_KEYS = [' ', 'arrowup', 'w', 'j'];
+/** Wie schnell der Ton auf Drücken/Loslassen reagiert, und wie stark ein naher Ton ihn anzieht (Reichweite in Trefferfeldern). */
+const RESPONSE = 14;
+const MAGNET_RANGE = 1.6;
+const MAGNET_PULL = 5;
 
 /**
  * Tonhöhen-Spiel: Gedrückt halten lässt den Ton steigen, Loslassen lässt ihn sinken.
@@ -93,10 +97,15 @@ export function createPitchGame(container, game) {
   }
 
   function step(now, dt) {
-    // Weiche Beschleunigung: schnelles Tippen hält den Ton, langes Halten lässt ihn deutlich steigen.
+    // Schnelle Reaktion: Drücken steigt, Loslassen bremst fast sofort (sonst schießt man übers Ziel hinaus).
     const target = holding ? speed : -speed;
-    velocity += (target - velocity) * Math.min(1, dt * 6);
+    velocity += (target - velocity) * Math.min(1, dt * RESPONSE);
     pos += velocity * dt;
+    // Leichter Magnet: knapp am Ton zieht er sanft in die Mitte – genau halten kann man ihn ja nie.
+    const near = notes.find((n) => !n.judged && now >= n.t && now < n.t + n.d);
+    if (near && Math.abs(pos - near.level) < tolerance * MAGNET_RANGE) {
+      pos += (near.level - pos) * Math.min(1, dt * MAGNET_PULL);
+    }
     if (pos <= 0 || pos >= 1) {
       pos = Math.max(0, Math.min(1, pos));
       velocity = 0;

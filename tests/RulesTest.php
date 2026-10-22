@@ -417,6 +417,12 @@ test('Musik: Elektro hat eigene Aufnahmen, Turntables mit Noten fürs Rhythmus-S
     $r = Signed\Game\Music::resolve(['type' => 'turntables', 'level' => 0, 'genre' => 'elektro', 'electric' => true]);
     checkEquals('elektro-0/turntables', $r['folder'] . '/' . $r['file']);
     check(count(Signed\Game\Music::notes($r)['notes']) > 20, 'Turntables haben Noten');
+    // Stufe 1 scratcht mit Doppeltönen, Stufe 0 nur Einzeltöne.
+    $hard = Signed\Game\Music::resolve(['type' => 'turntables', 'level' => 1, 'genre' => 'elektro', 'electric' => true]);
+    checkEquals('elektro-1/turntables', $hard['folder'] . '/' . $hard['file']);
+    check(count(Signed\Game\Music::notes($hard)['notes']) > count(Signed\Game\Music::notes($r)['notes']));
+    $k1 = Signed\Game\Music::resolve(['type' => 'keys', 'level' => 1, 'genre' => 'elektro', 'electric' => true]);
+    checkEquals('elektro-0/keyboard-elektrisch', $k1['folder'] . '/' . $k1['file'], 'Andere Spuren von Stufe 0');
     $k = Signed\Game\Music::resolve(['type' => 'keys', 'level' => 0, 'genre' => 'elektro', 'electric' => true]);
     checkEquals('elektro-0/keyboard-elektrisch', $k['folder'] . '/' . $k['file']);
     $m = Signed\Game\Music::resolve(['type' => 'vocals', 'level' => 0, 'genre' => 'elektro', 'electric' => false, 'voice' => 'maennlich']);

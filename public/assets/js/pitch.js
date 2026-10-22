@@ -46,6 +46,14 @@ export function createPitchGame(container, game) {
 
   const notes = game.notes.map((n) => ({ ...n, level: n.p / 7, total: 0, inTune: 0, judged: null }));
   const speed = speedFor(game.notes);
+  // Schonzeit nach Sprüngen: Der Anfang eines Tons zählt erst, wenn man ihn vom vorigen aus überhaupt erreichen kann
+  // (Weg ÷ Tempo, abzüglich der Pause dazwischen, plus etwas Reaktionszeit) – höchstens die Hälfte des Tons.
+  notes.forEach((note, i) => {
+    const prev = notes[i - 1];
+    const travel = prev ? Math.abs(note.level - prev.level) / speed : 0;
+    const pause = prev ? Math.max(0, note.t - (prev.t + prev.d)) : 1;
+    note.grace = Math.min(note.d * 0.5, Math.max(0, travel - pause) + (travel > 0 ? 0.12 : 0));
+  });
   const tolerance = game.tolerance;
   const beat = 60 / game.bpm;
   const counts = { perfect: 0, good: 0, miss: 0 };
@@ -102,9 +110,10 @@ export function createPitchGame(container, game) {
       if (note.judged) continue;
       if (now >= note.t && now < note.t + note.d) {
         active = note;
-        note.total += dt;
+        const scoring = now >= note.t + note.grace;
+        if (scoring) note.total += dt;
         if (Math.abs(pos - note.level) <= tolerance) {
-          note.inTune += dt;
+          if (scoring) note.inTune += dt;
           inTune = true;
         }
       } else if (now >= note.t + note.d) {

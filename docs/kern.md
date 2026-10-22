@@ -342,6 +342,9 @@ Instrumente sind zufällig. Im Music Store hat der Verkäufer mit 25 % Chance ei
   Männerstimme aus Pop).
 - Spur ohne MIDI (Elektro-Turntables): Die Noten fürs Rhythmus-Spiel kommen aus der Aufnahme selbst – Anschläge erkannt
   (Spektral-Fluss), aufs Achtel gerundet, die Spur im Spiel nach Klangfarbe (hell/dunkel) verteilt.
+  Stufe 0 bekommt nur Einzeltöne (Doppeltöne im Abstand bis ½ Schlag zusammengefasst), Stufe 1 (`elektro-1`) die schwerere Fassung.
+- Tonhöhen-Spiel (Gesang, Geige): Nach einem Sprung zählt der Anfang des neuen Tons erst, wenn man ihn bei normalem Tempo
+  erreichen kann (Weg ÷ Tempo minus Pause, plus 0,12 s, höchstens der halbe Ton) – weite Sprünge sind so schaffbar.
 - Fehlt eine Spur, nimmt das Spiel die nächste Stufe, dann die andere Variante, dann Pop. Gibt es gar keine, bleibt der Synthesizer.
 - Elektrisch oder akustisch (`Catalog::soundsElectric`): Manche Genres verlangen es (Metal: Gitarre und Bass, Elektro: Keyboard,
   Schlagzeug und Bass immer elektrisch). Sonst zählt das eigene Instrument; ohne eigenes Instrument die Gewohnheit des Genres

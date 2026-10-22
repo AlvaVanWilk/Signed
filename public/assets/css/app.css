@@ -1203,3 +1203,48 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 /* Tonhöhen-Spiel: zwei Knöpfe nebeneinander, einer unter jedem Daumen */
 .mg-pitch-keys { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .mg-pitch-keys .mg-hold { font-size: 1.1rem; padding: 18px; }
+
+/* ---------- Künstlerkartei: Passfotos im Stil der Minifiguren ---------- */
+.photo-wall, .file-row, .photo { --lvl: #7d8291; }
+.lvl-1.photo, .lvl-1.file-row { --lvl: #2fa84f; }
+.lvl-2.photo, .lvl-2.file-row { --lvl: #2f7fe0; }
+.lvl-3.photo, .lvl-3.file-row { --lvl: #b03ad6; }
+.photo-pic.fig-stage { display: block; padding: 0; margin: 0; aspect-ratio: 1; overflow: hidden; background: linear-gradient(180deg, #cfdbe6, #b5c4d2); }
+.photo-pic .fig-member { display: block; width: 100%; min-width: 0; height: 100%; }
+.photo-pic .fig { height: 100%; }
+.view-toggle { display: flex; gap: 6px; }
+.view-toggle .chip-btn { padding: 6px 14px; border-radius: 999px; background: var(--panel-2); color: var(--muted); font-weight: 700; }
+.view-toggle .chip-btn.active { background: var(--accent); color: #fff; }
+.photo-wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 20px 14px; padding: 20px 14px 16px; border-radius: var(--radius);
+  background: #3b2f27 repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.025) 0 6px, transparent 6px 12px); }
+.photo { position: relative; display: flex; flex-direction: column; align-items: center; gap: 1px; border: 0; font: inherit; cursor: pointer;
+  background: #fbf8f1; padding: 7px 7px 8px; border-radius: 3px; color: #2a2233; text-align: center;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.45); transform: rotate(var(--r, 0deg)); transition: transform 0.15s; }
+.photo:hover, .photo:focus-visible { transform: rotate(0) scale(1.04); }
+.photo::before { content: ''; position: absolute; top: -7px; left: 50%; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; z-index: 1;
+  background: radial-gradient(circle at 35% 35%, #ff8fae, #c2185b); box-shadow: 0 2px 3px rgba(0, 0, 0, 0.4); }
+.photo .photo-pic { width: 100%; border-radius: 2px; box-shadow: 0 0 0 3px var(--lvl); margin-bottom: 6px; }
+.photo-name { font-weight: 800; font-size: 0.85rem; line-height: 1.15; }
+.photo-sub { font-size: 0.7rem; color: #6b6377; line-height: 1.2; }
+.photo-stars { color: #e0a21a; font-size: 0.75rem; letter-spacing: -1px; }
+.photo-stars i { font-style: normal; opacity: 0.25; }
+.photo-dots { display: flex; gap: 3px; justify-content: center; margin-top: 2px; }
+.photo-dots i { width: 9px; height: 9px; border-radius: 50%; display: block; background: var(--g); }
+.photo-note { position: absolute; top: 36%; left: -6px; right: -6px; transform: rotate(-8deg); background: #ffe27a; color: #5a4300;
+  font-size: 0.7rem; font-weight: 800; padding: 3px 4px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); }
+.photo.busy .photo-pic { filter: grayscale(0.6) brightness(0.9); }
+.in-band .photo-wall { background-color: #2c241e; }
+.in-band .photo { opacity: 0.6; }
+.in-band .photo:hover, .in-band .photo:focus-visible { opacity: 1; }
+.file-list { display: grid; gap: 6px; }
+.file-row { display: grid; grid-template-columns: 58px minmax(0, 1fr) 280px 110px; gap: 12px; align-items: center; width: 100%; border: 0; font: inherit;
+  cursor: pointer; text-align: left; padding: 8px 12px 8px 8px; border-radius: 12px; background: #fbf8f1; color: #2a2233; box-shadow: inset 5px 0 0 var(--lvl); }
+.file-row .photo-pic { width: 58px; border-radius: 6px; }
+.file-who b { display: block; }
+.file-who small, .file-side small { color: #6b6377; display: block; }
+/* Die Können-Zeilen rechnen wie auf den Karten in cqi – hier misst die Spalte. */
+.file-skills { container-type: inline-size; display: grid; gap: 4px; }
+.file-skills .skill-row { color: #2a2233; }
+.file-side { text-align: right; font-size: 0.8rem; }
+.file-row.busy, .in-band .file-row { opacity: 0.65; }
+@media (max-width: 640px) { .file-row { grid-template-columns: 50px minmax(0, 1fr); } .file-skills, .file-side { grid-column: 2; text-align: left; } }

@@ -1,4 +1,5 @@
 import { avatar } from './avatar.js';
+import { portrait } from './figure.js';
 import { instrumentSvg } from './icons.js';
 import { app, bandById, cat, isBusy, musicianById } from './core.js';
 import { esc, fmt0, fmt1, percent } from './ui.js';
@@ -115,6 +116,44 @@ export function musicianStatus(m) {
     if (band && isBusy(band.busyUntil)) return `Mit ${esc(band.name)} unterwegs`;
   }
   return '';
+}
+
+// ---------- Künstlerkartei (Passfotos im Stil der Minifiguren) ----------
+
+/** Passfoto: Kopf und Schultern der Figur, blinzelt und schaut umher – jedes im eigenen Takt. */
+export function photo(m) {
+  return `<span class="photo-pic fig-stage idle"><span class="fig-member" style="--d:${(-((m.id * 7919) % 4300) / 1000).toFixed(2)}s">${portrait(m.look, m.personality?.[0] ?? null)}</span></span>`;
+}
+
+const fameStars = (m) => `<span class="photo-stars" title="${esc(cat().fameNames[m.fameLevel])}">${'★'.repeat(m.fameLevel)}<i>${'★'.repeat(3 - m.fameLevel)}</i></span>`;
+const genreDots = (m) => `<span class="photo-dots">${sortedGenres(m.genres).map((g) => `<i class="g-${g}" title="${esc(genreName(g))}"></i>`).join('')}</span>`;
+const instrumentLine = (m) => m.instruments.map((i) => esc(instrumentName(i.type))).join(' / ');
+
+/** Passfoto an der Pinnwand des Katalogs: Rand = Stufe, Sterne = Bekanntheit, Punkte = Genres, Zettel = unterwegs. */
+export function photoCard(m, { act = 'openMusician' } = {}) {
+  const status = musicianStatus(m);
+  const tilt = [-2.5, 1.8, -1, 2.6, -1.8, 1][m.id % 6];
+  return `
+    <button class="photo lvl-${m.level} ${status ? 'busy' : ''}" style="--r:${tilt}deg" data-act="${act}" data-id="${m.id}">
+      ${photo(m)}
+      ${status ? `<span class="photo-note">${status}</span>` : ''}
+      <span class="photo-name">${esc(fullName(m))}</span>
+      <span class="photo-sub">${instrumentLine(m)} · ${esc(cat().levelNames[m.level])}</span>
+      ${fameStars(m)}${genreDots(m)}
+    </button>`;
+}
+
+/** Dieselben Musiker als Karteikarte in einer Liste: mehr Platz für Können und Band. */
+export function fileRow(m, { act = 'openMusician' } = {}) {
+  const status = musicianStatus(m);
+  const band = m.bandId ? bandById(m.bandId) : null;
+  return `
+    <button class="file-row lvl-${m.level} ${status ? 'busy' : ''}" data-act="${act}" data-id="${m.id}">
+      ${photo(m)}
+      <span class="file-who"><b>${esc(fullName(m))}</b><small>${esc(cat().levelNames[m.level])} · ${m.genres.map((g) => esc(genreName(g))).join(', ')}</small></span>
+      <span class="file-skills">${m.instruments.map((i) => `<span class="skill-row"><span class="skill-name">${instrumentIcon(i.type, ownGear(m, i.type).electric, ownGear(m, i.type).hue)}<span> ${esc(instrumentName(i.type))}</span></span>${skillBar(i.skill)}</span>`).join('')}</span>
+      <span class="file-side">${fameStars(m)}<small>${status || (band ? esc(band.name) : 'frei')}</small></span>
+    </button>`;
 }
 
 // ---------- Sammelkarten ----------

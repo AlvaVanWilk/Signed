@@ -118,6 +118,9 @@
   <h1>Probe: Figuren statt Karten</h1>
   <p class="lead">Nur zum Anschauen, mit Beispieldaten. Alles, was heute eine Karte ist, wird eine Minifigur – auch die Passfotos sind Ausschnitte der Figuren. Die Stufe zeigt das leuchtende Podest (grau, grün, blau, lila wie bisher die Rahmen), Bekanntheit das Scheinwerferlicht von oben und die Sterne.</p>
 
+  <h2>Gesichter nach Charakter</h2>
+  <div class="wall" data-moods></div>
+
   <h2>A1 · Katalog als Fotowand (Passfotos)</h2>
   <div class="wall" data-wall></div>
   <p class="note">Die Künstlerkartei: Jeder Musiker als Passfoto, leicht schräg angepinnt. Der farbige Rand ist die Stufe, die Sterne die Bekanntheit, die Punkte unten die Genres. Wer unterwegs ist, hat einen gelben Zettel drauf (z. B. „übt allein“). Antippen öffnet die Musikerseite.</p>
@@ -169,8 +172,12 @@
   const genreDots = (g) => g.map((k) => `<i style="background:${GENRE[k]}" title="${k}"></i>`).join('');
   const $ = (s) => document.querySelector(s);
 
-  // A1 + A2
   const tilt = (i) => ['-2.5deg', '1.8deg', '-1deg', '2.6deg', '-1.8deg', '1deg'][i % 6];
+  // Gesichter: alle neun Charaktere nebeneinander
+  const MOOD_NAMES = { ehrgeizig: 'Ehrgeizig', gelassen: 'Gelassen', perfektionist: 'Perfektionist', chaot: 'Chaot', rampensau: 'Rampensau', diva: 'Diva', teamplayer: 'Teamplayer', ruhepol: 'Ruhepol', partytier: 'Partytier' };
+  $('[data-moods]').innerHTML = Object.entries(MOOD_NAMES).map(([k, n], i) => `
+    <div class="photo l1" style="--r:${tilt(i)}"><div class="pic fig-stage idle"><div class="fig-member" style="--d:${-i}s">${portrait(people[i % people.length].look, k)}</div></div><div class="nm">${n}</div></div>`).join('');
+  // A1 + A2
   $('[data-wall]').innerHTML = [...people, ...people.slice(0, 4).map((p, i) => ({ ...p, first: ['Mats', 'Elif', 'Noa', 'Theo'][i], look: { ...p.look, shirt: ['#fb5607', '#8d99ae', '#ffbe0b', '#222222'][i], skin: ['#8a5536', '#f6d7c3', '#c58c63', '#eac0a2'][i] }, busy: null }))].map((p, i) => `
     <div class="photo l${p.level} ${p.busy ? 'busy' : ''}" style="--r:${tilt(i)}">
       <div class="pic fig-stage idle"><div class="fig-member" style="--d:${(-i * 1.37).toFixed(2)}s">${portrait(p.look)}</div></div>

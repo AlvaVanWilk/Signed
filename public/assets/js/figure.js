@@ -15,7 +15,7 @@ const STROKE = `stroke="${INK}" stroke-width="2" stroke-linejoin="round"`;
  */
 const pivot = (x, y, cls, inner) => `<g transform="translate(${x} ${y})"><g class="${cls}"><g transform="translate(${-x} ${-y})">${inner}</g></g></g>`;
 
-export function figure(look = {}, instrument = 'guitar', { electric = false, hue = null } = {}) {
+export function figure(look = {}, instrument = 'guitar', { electric = false, hue = null, mood = null } = {}) {
   const skin = look.skin || '#d9a27e';
   const shirt = look.shirt || '#4a6fa5';
   const pose = POSES[instrument] ? instrument : instrument === 'synth' ? 'keys' : 'guitar';
@@ -32,14 +32,59 @@ export function figure(look = {}, instrument = 'guitar', { electric = false, hue
           <path d="M43 76 Q60 68 77 76 L81 108 Q60 115 39 108 Z" fill="${shirt}"/>
         </g>
         ${POSES[pose].back(skin, shirt)}
-        ${pivot(60, 74, 'fig-head', head(look, skin, sing))}
+        ${pivot(60, 74, 'fig-head', head(look, skin, sing, mood))}
         ${POSES[pose].front(skin, shirt, electric, hue)}
       </g>
     </svg>`;
 }
 
 /** Kopf im Koordinatensystem des Kartenbilds (Mitte 50/42), vergrößert auf die Figur gesetzt. */
-function head(look, skin, sing) {
+/**
+ * Gesichtsausdruck nach der ersten Charaktereigenschaft: Brauen, Augen (offen, halb geschlossen, zufriedene Bögen)
+ * und Mund. Ohne Eigenschaft ein einfaches Lächeln.
+ */
+const line = (d, w = 1.2) => `<path d="${d}" fill="none" stroke="${INK}" stroke-width="${w}" stroke-linecap="round"/>`;
+const BROWS = {
+  ehrgeizig: line('M39.5 38.8 L46 40.6') + line('M60.5 38.8 L54 40.6'),
+  perfektionist: line('M40 39.6 L46 39.6') + line('M54 38.4 Q57 36.4 60 38.4'),
+  chaot: line('M40 38.6 Q43 37 46 39.2') + line('M54 40.6 L60 39.2'),
+  rampensau: line('M40 38.4 Q43 36.2 46 38.4') + line('M54 38.4 Q57 36.2 60 38.4'),
+  partytier: line('M40 38.4 Q43 36.2 46 38.4') + line('M54 38.4 Q57 36.2 60 38.4'),
+  diva: line('M40 38.2 Q43 36.8 46 37.8', 1) + line('M54 37.8 Q57 36.8 60 38.2', 1),
+};
+const MOUTHS = {
+  smile: line('M46.5 52 Q50 55 53.5 52'),
+  wide: line('M45.3 51.4 Q50 56.4 54.7 51.4'),
+  soft: line('M47.5 52.6 Q50 54.2 52.5 52.6'),
+  smirk: line('M46.5 53.2 Q50.5 54.2 53.8 51.4'),
+  flat: line('M47 53.2 L53 53.2'),
+  grin: `<path d="M45 51.2 Q50 58.4 55 51.2 Z" fill="#7a2338" stroke="${INK}" stroke-width="1.1" stroke-linejoin="round"/>`,
+  teeth: `<path d="M45 51.2 Q50 58.4 55 51.2 Z" fill="#7a2338" stroke="${INK}" stroke-width="1.1" stroke-linejoin="round"/><path d="M45.8 51.6 L54.2 51.6 L53.6 53 L46.4 53 Z" fill="#fff"/>`,
+  pout: '<ellipse cx="50.6" cy="53.2" rx="1.7" ry="1.4" fill="#c2405a"/>',
+};
+const MOODS = {
+  ehrgeizig: { mouth: 'smirk' },
+  gelassen: { mouth: 'soft', eyes: 'lidded' },
+  perfektionist: { mouth: 'flat' },
+  chaot: { mouth: 'smirk' },
+  rampensau: { mouth: 'grin' },
+  diva: { mouth: 'pout', eyes: 'lidded' },
+  teamplayer: { mouth: 'wide' },
+  ruhepol: { mouth: 'soft', eyes: 'happy' },
+  partytier: { mouth: 'teeth' },
+};
+
+function eyes(kind, skin) {
+  if (kind === 'happy') return line('M40.6 45.6 Q43 42.8 45.4 45.6', 1.4) + line('M54.6 45.6 Q57 42.8 59.4 45.6', 1.4);
+  const dots = `<ellipse cx="43" cy="45" rx="2.3" ry="2.8" fill="${INK}"/><ellipse cx="57" cy="45" rx="2.3" ry="2.8" fill="${INK}"/>
+    <circle cx="43.8" cy="44" r="0.8" fill="#fff"/><circle cx="57.8" cy="44" r="0.8" fill="#fff"/>`;
+  if (kind !== 'lidded') return dots;
+  // Halb geschlossen: das obere Lid deckt die Augen bis zur Mitte.
+  return `${dots}<rect x="40" y="41.6" width="6" height="3.4" fill="${skin}"/><rect x="54" y="41.6" width="6" height="3.4" fill="${skin}"/>`
+    + line('M40.4 45 L45.6 45') + line('M54.4 45 L59.6 45');
+}
+
+function head(look, skin, sing, mood = null) {
   const hair = look.hairColor || '#3b2a20';
   const style = look.hair || 'kurz';
   const hatted = look.hat && look.hat !== 'none';
@@ -48,11 +93,12 @@ function head(look, skin, sing) {
   if (HAIR_BACK[style]) p.push(`<path d="${HAIR_BACK[style]}" fill="${hair}"/>`);
   p.push(`<g stroke="${INK}" stroke-width="1.2"><ellipse cx="31.5" cy="45" rx="3.5" ry="4.5" fill="${skin}"/><ellipse cx="68.5" cy="45" rx="3.5" ry="4.5" fill="${skin}"/>`);
   p.push(`<ellipse cx="50" cy="43" rx="19" ry="18" fill="${skin}"/></g>`);
-  // Gesicht: Punktaugen mit Glanz, rote Bäckchen, Lächeln – beim Singen ein runder Mund.
-  p.push(pivot(50, 45, 'fig-eyes', `<ellipse cx="43" cy="45" rx="2.3" ry="2.8" fill="${INK}"/><ellipse cx="57" cy="45" rx="2.3" ry="2.8" fill="${INK}"/>
-    <circle cx="43.8" cy="44" r="0.8" fill="#fff"/><circle cx="57.8" cy="44" r="0.8" fill="#fff"/>`));
+  // Gesicht: Augen, Brauen und Mund nach dem Charakter, rote Bäckchen – beim Singen ein runder Mund.
+  const face = MOODS[mood] ?? {};
+  p.push(pivot(50, 45, 'fig-eyes', eyes(face.eyes, skin)));
+  if (BROWS[mood]) p.push(BROWS[mood]);
   p.push('<ellipse cx="38" cy="51" rx="3.2" ry="1.9" fill="#ff8fa3" opacity="0.6"/><ellipse cx="62" cy="51" rx="3.2" ry="1.9" fill="#ff8fa3" opacity="0.6"/>');
-  const smile = `<path d="M46.5 52 Q50 55 53.5 52" fill="none" stroke="${INK}" stroke-width="1.2" stroke-linecap="round"/>`;
+  const smile = MOUTHS[face.mouth ?? 'smile'];
   // Sänger: singender Mund beim Spielen, Lächeln beim Warten (CSS blendet um).
   p.push(sing
     ? `<g class="fig-singing">${pivot(50, 53.5, 'fig-mouth', `<ellipse cx="50" cy="53.5" rx="2.6" ry="2.4" fill="#7a2338" stroke="${INK}" stroke-width="0.8"/>`)}</g><g class="fig-resting">${smile}</g>`
@@ -239,16 +285,16 @@ const POSES = {
 /** Instrument, das ein Musiker in der Band spielt (wie BandCalc::instrument). */
 /**
  * Passfoto im Stil der Figuren: Kopf und Schultern derselben Figur, ohne Instrument. Blinzelt und schaut umher,
- * wenn es in einem .fig-stage.idle steht.
+ * wenn es in einem .fig-stage.idle steht. mood: Charaktereigenschaft für den Gesichtsausdruck.
  */
-export function portrait(look = {}) {
+export function portrait(look = {}, mood = null) {
   const skin = look.skin || '#d9a27e';
   const shirt = look.shirt || '#4a6fa5';
   return `
     <svg class="fig fig-portrait" viewBox="14 -6 92 96" aria-hidden="true">
       <g class="fig-body">
         <path d="M43 76 Q60 68 77 76 L81 108 Q60 115 39 108 Z" fill="${shirt}" ${STROKE}/>
-        ${pivot(60, 74, 'fig-head', head(look, skin, false))}
+        ${pivot(60, 74, 'fig-head', head(look, skin, false, mood))}
       </g>
     </svg>`;
 }
@@ -274,7 +320,7 @@ export function stage(members, { bpm = 120, names = true, className = '', electr
         <span class="countdown" data-until="${away.until}"></span></span>${names ? `<b>${escapeHtml(m.firstName)}</b>` : ''}</div>`;
     }
     return `
-    <div class="fig-member" style="--d:${(-((m.id * 7919) % 4300) / 1000).toFixed(2)}s">${figure(m.look, playedInstrument(m), { electric: electricOf(m), hue: hueOf(m) })}${names ? `<b>${escapeHtml(m.firstName)}</b>` : ''}</div>`;
+    <div class="fig-member" style="--d:${(-((m.id * 7919) % 4300) / 1000).toFixed(2)}s">${figure(m.look, playedInstrument(m), { electric: electricOf(m), hue: hueOf(m), mood: m.personality?.[0] ?? null })}${names ? `<b>${escapeHtml(m.firstName)}</b>` : ''}</div>`;
   }).join('')}
   </div>`;
 }

@@ -1,4 +1,4 @@
-import { genreOrder, musicianCard } from '../cards.js';
+import { fileRow, genreOrder, photoCard } from '../cards.js';
 import { app, cat, defineActions, rerender } from '../core.js';
 import { esc } from '../ui.js';
 
@@ -42,8 +42,13 @@ export function render() {
   const free = list.filter((m) => !m.bandId);
   const taken = list.filter((m) => m.bandId);
 
+  // Pinnwand mit Passfotos, oder als Kartei-Liste zum Vergleichen (merkt sich das Gerät).
+  const asList = f.view === 'list';
+  const show = (items) => (asList ? `<div class="file-list">${items.map((m) => fileRow(m)).join('')}</div>` : `<div class="photo-wall">${items.map((m) => photoCard(m)).join('')}</div>`);
   return `
-    <div class="section-head"><h1>Katalog</h1></div>
+    <div class="section-head"><h1>Katalog</h1>
+      <div class="view-toggle">${[['wall', 'Fotowand'], ['list', 'Liste']].map(([k, label]) => `<button class="chip-btn ${(f.view || 'wall') === k ? 'active' : ''}" data-act="catalogView" data-view="${k}">${label}</button>`).join('')}</div>
+    </div>
     <div class="filters">
       ${select('instrument', f.instrument, 'Alle Instrumente', Object.entries(c.instruments).map(([k, v]) => [k, `${v.icon} ${v.name}`]))}
       ${select('genre', f.genre, 'Alle Genres', Object.entries(c.genres).map(([k, v]) => [k, v.name]))}
@@ -51,8 +56,8 @@ export function render() {
       ${select('sort', f.sort, null, [['level', 'Stufe'], ['skill', 'Können'], ['fame', 'Bekanntheit'], ['newest', 'Neueste']])}
     </div>
     ${list.length ? '' : '<div class="empty">Keine Musiker.</div>'}
-    ${free.length ? `<div class="tcg-grid">${free.map((m) => musicianCard(m)).join('')}</div>` : ''}
-    ${taken.length ? `<h2 class="catalog-split">In einer Band</h2><div class="tcg-grid in-band">${taken.map((m) => musicianCard(m)).join('')}</div>` : ''}`;
+    ${free.length ? show(free) : ''}
+    ${taken.length ? `<h2 class="catalog-split">In einer Band</h2><div class="in-band">${show(taken)}</div>` : ''}`;
 }
 
 function select(key, value, emptyLabel, options) {
@@ -63,7 +68,23 @@ function select(key, value, emptyLabel, options) {
     </select>`;
 }
 
+const VIEW_KEY = 'signed.catalogView';
+try {
+  app.ui.catalog.view = localStorage.getItem(VIEW_KEY) || 'wall';
+} catch {
+  app.ui.catalog.view = 'wall';
+}
+
 defineActions({
+  catalogView({ view }) {
+    app.ui.catalog.view = view;
+    try {
+      localStorage.setItem(VIEW_KEY, view);
+    } catch {
+      // ohne Speicher gilt die Wahl nur bis zum Neuladen
+    }
+    rerender();
+  },
   catalogFilter(value, el) {
     app.ui.catalog[el.dataset.key] = value;
     rerender();

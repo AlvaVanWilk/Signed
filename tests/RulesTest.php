@@ -428,3 +428,31 @@ test('Musik: Elektro hat eigene Aufnahmen, Turntables mit Noten fürs Rhythmus-S
     $m = Signed\Game\Music::resolve(['type' => 'vocals', 'level' => 0, 'genre' => 'elektro', 'electric' => false, 'voice' => 'maennlich']);
     checkEquals('elektro-0/gesang-maennlich', $m['folder'] . '/' . $m['file']);
 });
+
+test('Etüden: alle Genres und Instrumente, mehr Können = mehr Noten, dieselbe Nummer = dieselbe Etüde', function () {
+    foreach (Signed\Game\Styles::GENRES as $genre => $style) {
+        $steps = $style['meter'] * 4;
+        foreach (['drums', 'bass', 'comp', 'lead'] as $role) {
+            foreach ($style[$role] as $set) {
+                foreach ($set as $part) {
+                    foreach ((array) $part as $pattern) {
+                        checkEquals($steps, strlen($pattern), "$genre $role: Musterlänge");
+                    }
+                }
+            }
+        }
+        foreach (array_keys(Signed\Game\Styles::ROLES) as $instrument) {
+            $easy = Signed\Game\Etude::build($instrument, $genre, 5, 11, 24);
+            $hard = Signed\Game\Etude::build($instrument, $genre, 90, 11, 24);
+            check(count($easy['notes']) > 0, "$genre $instrument: Anfänger haben Noten");
+            check(count($hard['notes']) >= count($easy['notes']), "$genre $instrument: mit Können nicht weniger");
+            if ($easy['mode'] === 'rhythm') {
+                $key = static fn ($n) => $n['t'] . '/' . $n['l'];
+                checkEquals([], array_values(array_diff(array_map($key, $easy['notes']), array_map($key, $hard['notes']))), "$genre $instrument: dieselbe Etüde, nur voller");
+            }
+        }
+    }
+    checkEquals(Signed\Game\Etude::build('keys', 'jazz', 40, 99, 24), Signed\Game\Etude::build('keys', 'jazz', 40, 99, 24));
+    checkEquals(['root' => 10, 'minor' => false, 'tones' => [0, 4, 7]], array_diff_key(Signed\Game\Etude::chord('bVII', 'major'), ['name' => 1]));
+    checkEquals([0, 3, 7, 10], Signed\Game\Etude::chord('ii7', 'major')['tones']);
+});

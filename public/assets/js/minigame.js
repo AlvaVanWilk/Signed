@@ -1,4 +1,4 @@
-import { getAudio, latency, playLane, playMiss, scheduleMetronome } from './audio.js';
+import { getAudio, latency, playLane, playMiss, playNote, scheduleEvents, scheduleMetronome } from './audio.js';
 import { loadStems, playStems } from './music.js';
 import { instrumentIcon } from './cards.js';
 import { COLORS, mountShell } from './mg-shell.js';
@@ -40,7 +40,7 @@ function createRhythmGame(container, game) {
   timeEl.textContent = duration(game.duration);
 
   // d > 0: Haltenote. press = Wertung des Anschlags, solange sie noch gehalten wird.
-  const notes = game.notes.map((n) => ({ t: n.t, l: n.l, d: n.d ?? 0, judged: null, press: null }));
+  const notes = game.notes.map((n) => ({ t: n.t, l: n.l, d: n.d ?? 0, m: n.m ?? null, judged: null, press: null }));
   const perfectWin = game.windows.perfect / 1000;
   const goodWin = game.windows.good / 1000;
   const beat = 60 / game.bpm;
@@ -93,6 +93,7 @@ function createRhythmGame(container, game) {
     if (best && bestDiff <= goodWin) {
       const grade = bestDiff <= perfectWin ? 'perfect' : 'good';
       if (player) ownLevel(1);
+      else if (best.m) playNote(game.instrument ?? game.lanes[lane], best.m, best.d || (60 / game.bpm) * 0.9);
       else playLane(game.lanes[lane], lane, now, game.bpm);
       if (best.d > 0) {
         best.press = grade;
@@ -283,7 +284,10 @@ function createRhythmGame(container, game) {
     audio = getAudio();
     lag = latency();
     t0 = clock() + 0.15 + 4 * beat;
-    stopBacking = scheduleMetronome({ bpm: game.bpm, start: t0, duration: game.duration });
+    const stopTick = scheduleMetronome({ bpm: game.bpm, start: t0, duration: game.duration, meter: game.meter ?? 4 });
+    // Etüde: leise Begleitung aus dem Synthesizer (Schlagzeug, Bass, Akkorde) zum Tick.
+    const stopEtude = game.backing ? scheduleEvents(game.backing, t0) : () => {};
+    stopBacking = () => { stopTick(); stopEtude(); };
     if (buffers) player = playStems(buffers, t0, { volume: 0.9 });
     running = true;
     raf = requestAnimationFrame(frame);

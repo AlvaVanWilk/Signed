@@ -1,4 +1,4 @@
-import { createVoice, getAudio, latency, scaleMidi, scheduleMetronome } from './audio.js';
+import { createVoice, getAudio, latency, scaleMidi, scheduleEvents, scheduleMetronome } from './audio.js';
 import { loadStems, playStems } from './music.js';
 import { judgeRatio, mountShell } from './mg-shell.js';
 import { duration, percent } from './ui.js';
@@ -248,7 +248,9 @@ export function createPitchGame(container, game) {
     t0 = clock() + 0.15 + 4 * beat;
     last = clock();
     // Allein üben: nur das Metronom tickt mit.
-    stopBacking = scheduleMetronome({ bpm: game.bpm, start: t0, duration: game.duration });
+    const stopTick = scheduleMetronome({ bpm: game.bpm, start: t0, duration: game.duration, meter: game.meter ?? 4 });
+    const stopEtude = game.backing ? scheduleEvents(game.backing, t0) : () => {};
+    stopBacking = () => { stopTick(); stopEtude(); };
     if (buffers) player = playStems(buffers, t0, { volume: 0.9 });
     running = true;
     raf = requestAnimationFrame(frame);

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Signed – Probe: Etüden</title>
+  <link rel="stylesheet" href="assets/css/app.css">
+  <style>
+    main { max-width: 1000px; margin: 0 auto; padding: 16px; }
+    .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 12px 0; }
+    .controls label { display: flex; gap: 6px; align-items: center; color: var(--muted); }
+    .info { color: var(--muted); font-size: 0.9rem; margin: 6px 0 12px; }
+    .info b { color: var(--text); }
+    .stage-box { min-height: 420px; }
+    .result { margin-top: 10px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Probe: Etüden</h1>
+  <p class="info">Das Spiel erzeugt eine Übung aus typischen Genre-Bausteinen. Mit mehr Können kommen mehr Noten dazu – dieselbe Nummer bleibt dieselbe Etüde, nur voller.</p>
+  <div class="controls">
+    <label>Genre <select data-genre></select></label>
+    <label>Instrument <select data-instrument></select></label>
+    <label>Können <input type="range" min="0" max="100" value="10" data-skill> <b data-skill-out>10</b></label>
+    <label>Nummer <input type="number" min="1" max="999999" value="1" data-seed style="width:7em"></label>
+    <button class="btn" data-same>Gleiche Etüde laden</button>
+    <button class="btn primary" data-new>Neue Etüde</button>
+  </div>
+  <p class="info" data-meta></p>
+  <div class="stage-box"></div>
+  <div class="result info"></div>
+</main>
+<script type="module">
+  import { app } from './assets/js/core.js';
+  import { createMinigame } from './assets/js/minigame.js';
+
+  const $ = (s) => document.querySelector(s);
+  const session = await (await fetch('api.php?a=session')).json();
+  app.catalog = session.catalog;
+  const c = app.catalog;
+  $('[data-genre]').innerHTML = Object.entries(c.genres).map(([k, g]) => `<option value="${k}">${g.name}</option>`).join('');
+  $('[data-instrument]').innerHTML = Object.entries(c.instruments).map(([k, i]) => `<option value="${k}">${i.name}</option>`).join('');
+  $('[data-skill]').addEventListener('input', (e) => { $('[data-skill-out]').textContent = e.target.value; });
+  let mg = null;
+  let ticket = 0;
+
+  async function load(seed) {
+    const mine = ++ticket;
+    mg?.destroy();
+    const body = { genre: $('[data-genre]').value, instrument: $('[data-instrument]').value, skill: Number($('[data-skill]').value) };
+    if (seed) body.seed = Number(seed);
+    const res = await (await fetch('api.php?a=etudePreview', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Signed': '1' }, body: JSON.stringify(body) })).json();
+    if (mine !== ticket) return; // inzwischen wurde schon eine andere Etüde angefordert
+    if (!res.ok) { $('[data-meta]').textContent = res.error; return; }
+    const game = res.game;
+    $('[data-seed]').value = game.seed;
+    const e = game.etude;
+    const keys = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'H'];
+    $('[data-meta]').innerHTML = `Nummer <b>${game.seed}</b> · ${game.bpm} BPM · ${e.meter}/4-Takt · Tonart <b>${keys[(e.key + 12) % 12]}</b> · Akkorde <b>${e.chords.join(' – ')}</b> · <b>${game.count}</b> Noten`;
+    $('.result').textContent = '';
+    $('.stage-box').innerHTML = '';
+    mg = createMinigame($('.stage-box'), game);
+    const outcome = await mg.play();
+    if (outcome && !outcome.aborted) {
+      const total = outcome.perfect + outcome.good + outcome.miss;
+      $('.result').innerHTML = `Perfekt <b>${outcome.perfect}</b> · Gut <b>${outcome.good}</b> · Daneben <b>${outcome.miss}</b> von ${total}`;
+      mg.showResult(`<p>Perfekt ${outcome.perfect} · Gut ${outcome.good} · Daneben ${outcome.miss}</p>`, [
+        { label: 'Nochmal', cls: 'primary', onClick: () => load(game.seed) },
+      ]);
+    }
+  }
+  $('[data-new]').addEventListener('click', () => load(null));
+  $('[data-same]').addEventListener('click', () => load($('[data-seed]').value));
+  load(null);
+</script>
+</body>
+</html>

@@ -6,8 +6,10 @@ namespace Signed;
 use Signed\Game\Activities;
 use Signed\Game\Balance;
 use Signed\Game\Bands;
+use Signed\Game\Catalog;
 use Signed\Game\Charts;
 use Signed\Game\Courses;
+use Signed\Game\Etude;
 use Signed\Game\Cover;
 use Signed\Game\Jam;
 use Signed\Game\Levels;
@@ -18,6 +20,7 @@ use Signed\Game\Present;
 use Signed\Game\Repo;
 use Signed\Game\Scout;
 use Signed\Game\State;
+use Signed\Game\Styles;
 use Signed\Game\Studio;
 use Signed\Game\Transfers;
 
@@ -30,6 +33,7 @@ final class Api
     /** Aktion => [HTTP-Methode, Anmeldung nötig] */
     private const ROUTES = [
         'session' => ['GET', false],
+        'etudePreview' => ['POST', false],
         'register' => ['POST', false],
         'login' => ['POST', false],
         'logout' => ['POST', false],
@@ -357,6 +361,20 @@ final class Api
     {
         $res = (new Cover($repo))->pick(self::int($in, 'bandId'), self::int($in, 'reel'), self::int($in, 'index'));
         return $res + ['state' => State::build($repo)];
+    }
+
+    /** Probeseite: eine Etüde ansehen und spielen, ohne Anmeldung und ohne etwas zu speichern. */
+    private function etudePreview(array $in): array
+    {
+        $instrument = (string) ($in['instrument'] ?? 'guitar');
+        $genre = (string) ($in['genre'] ?? 'pop');
+        if (!isset(Catalog::INSTRUMENTS[$instrument]) || !isset(Styles::GENRES[$genre])) {
+            throw new ApiError('Unbekanntes Instrument oder Genre.');
+        }
+        $skill = max(0.0, min(100.0, (float) ($in['skill'] ?? 10)));
+        $seed = (int) ($in['seed'] ?? random_int(1, 999999));
+        $game = Etude::game($instrument, $genre, $skill, $seed, false, $instrument === 'vocals' && in_array($genre, Catalog::RAP_GENRES, true));
+        return ['game' => $game + ['title' => 'Etüde', 'subtitle' => sprintf('%s · %s', Catalog::GENRES[$genre]['name'], Catalog::INSTRUMENTS[$instrument]['name']), 'seed' => $seed]];
     }
 
     private function jamPick(array $in, Repo $repo): array

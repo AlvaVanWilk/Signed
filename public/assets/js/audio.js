@@ -284,6 +284,36 @@ export function playLane(type, lane, songTime, bpm) {
   tone(type, laneMidi(type, lane, chordAt(songTime, bpm)), t, (60 / bpm) * 0.9);
 }
 
+/** Ein bestimmter Ton (Etüde): Instrument, MIDI-Ton, Länge in Sekunden. */
+export function playNote(type, midi, length = 0.3) {
+  if (!ctx) return;
+  tone(type, midi, ctx.currentTime, length);
+}
+
+/**
+ * Begleitung einer Etüde vom Server: [Zeit, Art, MIDI, Länge] ab start (AudioContext-Zeit).
+ * Art: k/s/h/t Schlagzeug, bass, pad (Akkord). Leise, damit die eigene Stimme vorn bleibt. Liefert eine Stopp-Funktion.
+ */
+export function scheduleEvents(events, start, volume = 0.32) {
+  if (!ctx) return () => {};
+  const bus = ctx.createGain();
+  bus.gain.value = volume;
+  bus.connect(master);
+  for (const [t, kind, midi, length] of events) {
+    const at = start + t;
+    if (kind === 'k') kick(bus, at, 0.8);
+    else if (kind === 's') snare(bus, at, 0.7);
+    else if (kind === 'h') hat(bus, at, 0.6);
+    else if (kind === 't') tom(bus, at, 0.6);
+    else if (kind === 'bass') tone('bass', midi, at, length ?? 0.3, 0.6, bus);
+    else if (kind === 'pad') tone('keys', midi, at, length ?? 1, 0.35, bus);
+  }
+  return () => {
+    bus.gain.setTargetAtTime(0, ctx.currentTime, 0.05);
+    setTimeout(() => bus.disconnect(), 400);
+  };
+}
+
 /** Leiser dumpfer Klick bei einem verpassten Ton. */
 export function playMiss() {
   if (!ctx) return;
@@ -434,14 +464,15 @@ export function setLatency(ms) {
 }
 
 /** Metronom für die Solo-Probe: Vorzähler und ein Klick auf jeden Schlag, betont auf der Eins. */
-export function scheduleMetronome({ bpm, start, duration, countIn = 4 }) {
+export function scheduleMetronome({ bpm, start, duration, countIn = 4, meter = 4 }) {
   if (!ctx) return () => {};
   const bus = ctx.createGain();
   bus.gain.value = 0.45;
   bus.connect(master);
   const beat = 60 / bpm;
   for (let i = -countIn; i * beat < duration; i++) {
-    hat(bus, start + i * beat, (i + countIn) % 4 === 0 ? 1.6 : 0.9);
+    // Betont wird die Eins jedes Takts (im 3/4 jeder dritte Schlag).
+    hat(bus, start + i * beat, ((i % meter) + meter) % meter === 0 ? 1.6 : 0.9);
   }
   return () => {
     bus.gain.setTargetAtTime(0, ctx.currentTime, 0.05);

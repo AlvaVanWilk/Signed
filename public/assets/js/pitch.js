@@ -28,6 +28,8 @@ function speedFor(notes) {
 const HOLD_KEYS = [' ', 'arrowup', 'w', 'j'];
 /** Wie schnell der Ton auf Drücken und Loslassen reagiert (größer = schneller). */
 const RESPONSE = 14;
+/** So lange (Sekunden) schwebt der Ton nach dem Loslassen, bevor er fällt. */
+const HOVER = 0.13;
 
 /**
  * Tonhöhen-Spiel: Gedrückt halten lässt den Ton steigen, Loslassen lässt ihn sinken.
@@ -63,6 +65,7 @@ export function createPitchGame(container, game) {
   let pos = notes.length ? notes[0].level : 0.4;
   let velocity = 0;
   let holding = false;
+  let releasedAt = -1;
   let audio = null;
   let voice = null;
   let t0 = 0;
@@ -90,13 +93,16 @@ export function createPitchGame(container, game) {
   const clock = () => (audio ? audio.currentTime : performance.now() / 1000);
 
   function setHolding(value) {
+    if (holding && !value) releasedAt = clock();
     holding = value;
     holdButton.classList.toggle('down', value);
   }
 
   function step(now, dt) {
     // Schnelle Reaktion: Drücken steigt, Loslassen bremst fast sofort (sonst schießt man übers Ziel hinaus).
-    const target = holding ? speed : -speed;
+    // Schweben: kurz nach dem Loslassen bleibt der Ton stehen – ruhiges Tippen hält ihn so auf einer Höhe.
+    const hovering = !holding && clock() - releasedAt < HOVER;
+    const target = holding ? speed : hovering ? 0 : -speed;
     velocity += (target - velocity) * Math.min(1, dt * RESPONSE);
     pos += velocity * dt;
     if (pos <= 0 || pos >= 1) {

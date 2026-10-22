@@ -103,11 +103,12 @@ function eyes(kind, skin) {
   }
   const dots = `<ellipse cx="43" cy="45" rx="2.3" ry="2.8" fill="${INK}"/><ellipse cx="57" cy="45" rx="2.3" ry="2.8" fill="${INK}"/>
     <circle cx="43.8" cy="44" r="0.8" fill="#fff"/><circle cx="57.8" cy="44" r="0.8" fill="#fff"/>`;
-  if (kind !== 'lidded') return dots;
-  // Halb geschlossen: das obere Lid deckt die Augen bis zur Mitte.
-  return `${dots}<rect x="40" y="41.6" width="6" height="3.4" fill="${skin}"/><rect x="54" y="41.6" width="6" height="3.4" fill="${skin}"/>`
-    + line('M40.4 45 L45.6 45') + line('M54.4 45 L59.6 45');
+  return dots;
 }
+
+/** Halb geschlossen: das obere Lid deckt die Augen bis zur Mitte (liegt über den Augen, gehört zum Ausdruck). */
+const lids = (skin) => `<rect x="40" y="41.6" width="6" height="3.4" fill="${skin}"/><rect x="54" y="41.6" width="6" height="3.4" fill="${skin}"/>`
+  + line('M40.4 45 L45.6 45') + line('M54.4 45 L59.6 45');
 
 function head(look, skin, sing, mood = null) {
   const hair = look.hairColor || '#3b2a20';
@@ -124,13 +125,17 @@ function head(look, skin, sing, mood = null) {
   // Gesicht: Augen, Brauen und Mund nach dem Charakter, rote Bäckchen – beim Singen ein runder Mund.
   const face = MOODS[mood] ?? {};
   p.push(pivot(50, 45, 'fig-eyes', eyes(face.eyes, skin)));
-  if (BROWS[mood]) p.push(BROWS[mood]);
+  // Der typische Ausdruck (Brauen, Lider, Mund) kommt nur ab und zu, dazwischen schaut die Figur freundlich (CSS blendet um).
+  const upper = (face.eyes === 'lidded' ? lids(skin) : '') + (BROWS[mood] ?? '');
+  const changes = upper !== '' || !['smile', 'soft', 'wide', undefined].includes(face.mouth);
+  if (upper) p.push(`<g class="fig-mood">${upper}</g>`);
   const [cheek, alpha] = blush(skin);
   p.push(`<ellipse cx="38" cy="51" rx="3.2" ry="1.9" fill="${cheek}" opacity="${alpha}"/><ellipse cx="62" cy="51" rx="3.2" ry="1.9" fill="${cheek}" opacity="${alpha}"/>`);
   // Ein Teil der Musikerinnen hat rote Lippen: derselbe Mund, nur rot und etwas kräftiger.
   const lips = look.gender === 'f' && trait(look, 'lips') < 0.4;
-  const mouth = MOUTHS[face.mouth ?? 'smile'];
-  const smile = lips ? mouth.replace(`stroke="${INK}" stroke-width="1.2"`, 'stroke="#c2405a" stroke-width="1.8"').replace('fill="rgba(90, 30, 40, 0.45)"', 'fill="#d23a5c"') : mouth;
+  const tint = (m) => (lips ? m.replace(`stroke="${INK}" stroke-width="1.2"`, 'stroke="#c2405a" stroke-width="1.8"').replace('fill="rgba(90, 30, 40, 0.45)"', 'fill="#d23a5c"') : m);
+  const mouth = tint(MOUTHS[face.mouth ?? 'smile']);
+  const smile = changes ? `<g class="fig-mood">${mouth}</g><g class="fig-calm">${tint(MOUTHS.smile)}</g>` : mouth;
   // Sänger: singender Mund beim Spielen, Lächeln beim Warten (CSS blendet um).
   p.push(sing
     ? `<g class="fig-singing">${pivot(50, 53.5, 'fig-mouth', `<ellipse cx="50" cy="53.5" rx="2.6" ry="2.4" fill="#7a2338" stroke="${INK}" stroke-width="0.8"/>`)}</g><g class="fig-resting">${smile}</g>`

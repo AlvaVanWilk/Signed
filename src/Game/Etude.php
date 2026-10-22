@@ -130,17 +130,21 @@ final class Etude
         if ($pitchGame) {
             $scale = Styles::SCALES[$style['scale']];
             $melody = [];
-            $lastEnd = -1.0;
             // Spielbar halten: Sprünge höchstens so weit, wie man in der Zeit bis zum Ton gleiten kann
             // (etwa 2,5 Stufen pro Sekunde), und Anfänger springen ohnehin höchstens zwei Stufen.
             $maxJump = 2 + (int) floor($d * 3);
-            foreach ($notes as $i => $n) {
-                if ($n['t'] < $lastEnd) {
-                    continue;
+            // Töne mit mindestens 0,4 s Abstand auswählen (schnelle Genres singen sonst nur Fetzen) …
+            $starts = [];
+            foreach ($notes as $n) {
+                if (!$starts || $n['t'] - end($starts)['t'] >= 0.4) {
+                    $starts[] = $n;
                 }
-                $next = $notes[$i + 1]['t'] ?? $duration - 0.3;
+            }
+            // … und jeder klingt bis kurz vor den nächsten, höchstens zwei Schläge.
+            foreach ($starts as $i => $n) {
+                $next = $starts[$i + 1]['t'] ?? $duration - 0.3;
                 $len = min($next - $n['t'], 4 * $stepSec * 2) * 0.92;
-                if ($len < 0.35) {
+                if ($len < 0.3) {
                     continue;
                 }
                 $p = $n['p'];
@@ -150,7 +154,6 @@ final class Etude
                     $p = max($prev['p'] - $reach, min($prev['p'] + $reach, $p));
                 }
                 $melody[] = ['t' => round($n['t'], 3), 'd' => round($len, 3), 'p' => $p];
-                $lastEnd = $n['t'] + $len;
             }
             return $out + [
                 'mode' => 'pitch',

@@ -172,6 +172,7 @@ const STAT_INFO = {
           <li>Jeder Musiker: sein <b>Können</b> × sein <b>Instrument</b>. Ein gutes Instrument bringt bis +${Math.round(r.gearMaxBonus * 100)} %, ohne eigenes Instrument zählt nur ${Math.round(r.noGearFactor * 100)} %.</li>
           <li>Der Durchschnitt zählt ${Math.round(r.soundMeanWeight * 100)} %, der <b>Schwächste</b> ${Math.round((1 - r.soundMeanWeight) * 100)} %: Eine schwache Stelle zieht runter.</li>
           <li>Verschiedene Instrumente: +${Math.round(r.lineupBonus * 100)} % je weiterem, höchstens +${Math.round(r.lineupBonus * r.lineupBonusMaxTypes * 100)} %.</li>
+          <li><b>Volle Bühne</b>: +${Math.round(r.memberSoundBonus * 100)} % für jedes Mitglied über ${r.minMembers}.</li>
           <li><b>Zusammenspiel</b>: × ${fmt2(r.cohesionFloor)} bis × 1 – gerade × ${fmt2(fx.cohesionSound)}.</li>
           <li><b>Genre-Band</b>: +${Math.round((r.genreBonus - 1) * 100)} %${b.genreBonus > 1 ? ' – hat sie' : ''}.</li>
         </ul>
@@ -192,7 +193,7 @@ const STAT_INFO = {
       return `<p>Wie bekannt die Band ist: die Bekanntheit der Mitglieder plus der Ruhm am Bandnamen.</p>
       <h3>Gerade</h3>
       <ul><li>Am Bandnamen <b>${fmt1(b.fameOwn)}</b>, bei den Musikern <b>${fmt1(b.fame - b.fameOwn)}</b>.</li>
-        <li>Gigs in der <b>${esc(fx.venue)}</b> für <b>${money(fx.gage)}</b> pro Lied.${gig.nextVenue ? ` ${esc(gig.nextVenue)} ab ${fmt0(gig.nextFame)} Ruhm.` : ''}</li>
+        <li>Gigs in der <b>${esc(fx.venue)}</b> für <b>${money(fx.gage)}</b> pro Lied (+${Math.round(cat().rules.memberGageBonus * 100)} % für jedes Mitglied über ${cat().rules.minMembers}).${gig.nextVenue ? ` ${esc(gig.nextVenue)} ab ${fmt0(gig.nextFame)} Ruhm.` : ''}</li>
         <li>Platten verkaufen sich <b>+${percent(fx.sales)}</b> besser und bekommen <b>+${percent(fx.chart)}</b> Chartpunkte.</li></ul>
       <h3>Woher er kommt</h3>
       <ul><li>Auftritte, Platten, Charts und Promo.</li><li>Geht jemand, nimmt er seine Bekanntheit mit. Der Ruhm am Namen bleibt.</li></ul>`;

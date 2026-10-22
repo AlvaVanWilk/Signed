@@ -64,10 +64,12 @@ Instrument = Klang/100 × 0,5 × min(1, Können / (100 − Spielbarkeit))²   (d
              ein einfaches Instrument ist für Anfänger oft besser als ein gutes)
 Sound      = (0,75 × Durchschnitt + 0,25 × schwächster Beitrag) × Genre-Bonus (1 / 1,15 / 1,25)
              × (1 + 0,05 × weitere Instrumentenarten, höchstens +20 %)
+             × (1 + 0,05 × Mitglieder über 2)            (volle Bühne: 6 Mitglieder × 1,2)
              × (0,7 + 0,3 × Zusammenspiel/100)
 ```
 
-Ein schwacher Musiker zieht den Sound runter, und vier Musiker sind höchstens 20 % stärker als zwei.
+Ein schwacher Musiker zieht den Sound runter. Große Bands klingen dafür voller: Sechs Musiker mit fünf Instrumentenarten
+sind bis zu 44 % stärker als ein Duo (`MEMBER_SOUND_BONUS`). Dazu bekommen sie mehr Gage (siehe Auftritte).
 
 ### Genre einer Band
 
@@ -126,6 +128,7 @@ Ein schwacher Musiker zieht den Sound runter, und vier Musiker sind höchstens 2
 | Gig | 1 bis Maximum | Gage des Ortes pro Lied, vorher bekannt | je nach Ort | erst mit Platte |
 
 Orte nach Bandruhm: Kneipe (ab 0), Club (30), Konzertsaal (150), Halle (600), Arena (2.500).
+Gage + 10 % für jedes Mitglied über 2 (`MEMBER_GAGE_BONUS`, 6 Mitglieder + 40 %): Große Bands zahlen so ihre Instrumente und Kurse.
 Grund-Ruhm pro Lied: 0,25 / 0,5 / 1 / 2 / 4.
 Das Stadion bleibt der Tournee vorbehalten.
 
@@ -218,7 +221,8 @@ heutigen Mitteln kaum weiter: Ab Stufe 1 wirken alle Können- und Bekanntheitsge
 nur noch zu 3 %. Profi bzw. Szenegröße dauert so rund 40 Stunden Spielzeit, Virtuose bzw. Star weit über 1.000 –
 praktisch unerreichbar, bis Tourneen und Manager dazukommen.
 **Tageskurse** öffnen diesen Weg als erste: ohne Bremse, aber selten und teuer (eine Stufe allein durch Kurse in rund zwei Monaten).
-**Fans** großer Bühnen sind ein zweiter, kleiner Weg: In Halle und Arena kommen auch epische und legendäre Musiker, so gut wie fast die Band.
+**Große Bands** sind ein bewusster Weg nach oben: mehr Sound (+5 % je Mitglied über 2) und mehr Gage (+10 % je Mitglied über 2) – sie kosten mehr Zeit und Geld, dafür kommen sie schneller zu größeren Bühnen.
+**Fans** großer Bühnen sind ein weiterer, kleiner Weg: In Halle und Arena kommen auch epische und legendäre Musiker, so gut wie fast die Band.
 **Für neue Inhalte:** Tourneen, Manager und Co. sollen genau diese Stufen erreichbar machen (eigene, ungebremste
 Gewinne oder eine gelockerte Bremse) – nicht einfach dem heutigen Tempo unterliegen. Lokal bekannt ist man nach einigen Stunden Auftritten.
 Nur die Gewinne sind klein; wie oft man etwas hintereinander spielt, ist nicht begrenzt.

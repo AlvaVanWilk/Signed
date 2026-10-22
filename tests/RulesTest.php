@@ -473,3 +473,10 @@ test('Namen: Vornamen, die im Label schon vorkommen, werden gemieden', function 
         checkEquals(count($names), count(array_unique($names)), "$gender: keine doppelten Vornamen");
     }
 });
+
+test('Große Bands: mehr Sound und mehr Gage je Mitglied über zwei', function (): void {
+    $sound = static fn (int $n) => Signed\Game\BandCalc::sound(array_map(static fn ($i) => musician(['id' => $i, 'instr1' => 'guitar', 'skill1' => 50.0]), range(1, $n)), 100, []);
+    checkEquals(round($sound(2) * 1.2, 1), $sound(6), 'sechs Gitarren: × 1,2 gegenüber zwei');
+    $venue = Signed\Game\BandCalc::venue(0);
+    checkEquals((int) round(Signed\Game\BandCalc::gagePerSong($venue, 0.0) * 1.4), Signed\Game\BandCalc::gagePerSong($venue, 0.0, 6));
+});

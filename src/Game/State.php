@@ -171,7 +171,7 @@ final class State
                     'soundFame' => round(BandCalc::soundFactor($sound), 2),
                     'expect' => $venue['expect'],
                     'venue' => $venue['name'],
-                    'gage' => (int) round(BandCalc::gagePerSong($venue, BandCalc::managerBonus($manager, $level, 'verhandler', Balance::NEGOTIATOR_BONUS)) * $draw),
+                    'gage' => (int) round(BandCalc::gagePerSong($venue, BandCalc::managerBonus($manager, $level, 'verhandler', Balance::NEGOTIATOR_BONUS), count($list)) * $draw),
                     'sales' => round(min(Balance::RECORD_FAME_SALES_MAX, $fame / Balance::RECORD_FAME_SALES), 3),
                     'chart' => round(min(Balance::CHART_FAME_MAX, $fame / Balance::CHART_FAME), 3),
                     'cohesionSound' => round(Balance::COHESION_FLOOR + (1 - Balance::COHESION_FLOOR) * $band['cohesion'] / 100, 3),

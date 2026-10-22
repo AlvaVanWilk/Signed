@@ -57,7 +57,14 @@ final class BandCalc
         $types = count(array_unique(array_map([self::class, 'instrument'], $members)));
         $lineup = 1 + Balance::LINEUP_BONUS * min(Balance::LINEUP_BONUS_MAX_TYPES, $types - 1);
         $cohesionFactor = Balance::COHESION_FLOOR + (1 - Balance::COHESION_FLOOR) * $cohesion / 100;
-        return round($core * $lineup * $cohesionFactor * $bonus, 1);
+        $stage = self::sizeBonus(count($members), Balance::MEMBER_SOUND_BONUS);
+        return round($core * $lineup * $stage * $cohesionFactor * $bonus, 1);
+    }
+
+    /** Volle Bühne: 1 + $perMember für jedes Mitglied über MIN_MEMBERS. */
+    public static function sizeBonus(int $members, float $perMember): float
+    {
+        return 1 + $perMember * max(0, $members - Balance::MIN_MEMBERS);
     }
 
     /** Sound einer Band samt Genre-Bonus. */
@@ -351,9 +358,10 @@ final class BandCalc
     }
 
     /** Gage pro Lied: Grundgage des Ortes, etwas mehr je näher an der nächsten Stufe, plus Verhandler. */
-    public static function gagePerSong(array $venue, float $negotiatorBonus): int
+    public static function gagePerSong(array $venue, float $negotiatorBonus, int $members = Balance::MIN_MEMBERS): int
     {
-        return (int) round($venue['gage'] * (0.9 + 0.2 * $venue['progress']) * (1 + $negotiatorBonus));
+        return (int) round($venue['gage'] * (0.9 + 0.2 * $venue['progress']) * (1 + $negotiatorBonus)
+            * self::sizeBonus($members, Balance::MEMBER_GAGE_BONUS));
     }
 
     /** Gigs seit der letzten Platte: Mit jedem kennt das Publikum die Lieder besser, Gage und Ruhm sinken. */

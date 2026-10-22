@@ -99,7 +99,7 @@ final class Activities
                     $negotiator = BandCalc::managerBonus($manager, $level, 'verhandler', Balance::NEGOTIATOR_BONUS);
                     // Frisches Material und eine Platte in den Charts machen Gigs voller; das Publikum kennt die Lieder sonst schon.
                     $draw = BandCalc::freshness($band['gigs_since_record']) * Charts::rankFactor(Charts::bandRank($db, $bandId), Balance::CHART_GIG_BONUS);
-                    $gage = (int) round(BandCalc::gagePerSong($venue, $negotiator) * $songs * $draw);
+                    $gage = (int) round(BandCalc::gagePerSong($venue, $negotiator, count($members)) * $songs * $draw);
                     $fameBase = $venue['fame'] * $draw;
                     $expect = $venue['expect'];
                     $venueKey = $venue['key'];

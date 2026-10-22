@@ -123,6 +123,12 @@ final class Balance
     /** +5 % je weiterem unterschiedlichen Instrument, höchstens für 4 weitere. */
     public const LINEUP_BONUS = 0.05;
     public const LINEUP_BONUS_MAX_TYPES = 4;
+    /**
+     * Große Bands: Jedes Mitglied über MIN_MEMBERS bringt mehr Sound (volle Bühne) und mehr Gage (zahlt Instrumente und
+     * Kurse). Sechs Leute auf hohes Können zu bringen dauert und kostet – das soll sich lohnen.
+     */
+    public const MEMBER_SOUND_BONUS = 0.05;
+    public const MEMBER_GAGE_BONUS = 0.10;
     /** Sound-Faktor bei Zusammenspiel 0; bei 100 ist er 1. */
     public const COHESION_FLOOR = 0.7;
 

@@ -23,6 +23,9 @@ export function ownGear(m, type) {
 }
 export const playsElectric = (m, type) => ownGear(m, type).electric;
 export const genreName = (key) => cat().genres[key]?.name ?? key;
+/** Genres immer in derselben Reihenfolge anzeigen (wie im Katalog: Pop, Rock, Metal …). */
+export const genreOrder = (key) => Object.keys(cat().genres).indexOf(key);
+export const sortedGenres = (genres) => [...genres].sort((a, b) => genreOrder(a) - genreOrder(b));
 export const rarityName = (key) => cat().rarities[key]?.name ?? key;
 export const fullName = (p) => `${p.firstName} ${p.lastName}`;
 
@@ -226,9 +229,9 @@ export function musicianCard(m, { act = 'openMusician', size = '', extra = '', s
   return tcg({
     frame: musicianFrame(m),
     theme: 'genre-split',
-    style: genreSplit(m.genres),
+    style: genreSplit(sortedGenres(m.genres)),
     name: fullName(m),
-    badge: `<span class="tcg-genres">${m.genres.map((g) => `<span class="genre-hit" role="button" data-act="genreInfo" data-genre="${g}" data-id="${m.id}" title="${esc(genreName(g))}: Was heißt das?">${genreIcon(g)}</span>`).join('')}</span>`,
+    badge: `<span class="tcg-genres">${sortedGenres(m.genres).map((g) => `<span class="genre-hit" role="button" data-act="genreInfo" data-genre="${g}" data-id="${m.id}" title="${esc(genreName(g))}: Was heißt das?">${genreIcon(g)}</span>`).join('')}</span>`,
     art: `${avatar(m.look)}
       <span class="tcg-badge">${m.instruments.map((i) => instrumentIcon(i.type, ownGear(m, i.type).electric, ownGear(m, i.type).hue)).join('')}</span>
       ${abilities.length ? `<span class="tcg-abilities">${abilities.map((a) => `<i title="${esc(a.name)}">${a.icon}</i>`).join('')}</span>` : ''}`,

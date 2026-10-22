@@ -1,4 +1,4 @@
-import { musicianCard } from '../cards.js';
+import { genreOrder, musicianCard } from '../cards.js';
 import { app, cat, defineActions, rerender } from '../core.js';
 import { esc } from '../ui.js';
 
@@ -11,6 +11,18 @@ const SORTS = {
 
 const maxSkill = (m) => Math.max(...m.instruments.map((i) => i.skill));
 
+/** Nach Genre gefiltert: nach den übrigen Genres gruppieren (nur dieses Genre zuerst, dann Pop, Rock … in fester Reihenfolge). */
+function byOtherGenres(a, b, genre) {
+  const rest = (m) => m.genres.filter((g) => g !== genre).map(genreOrder).sort((x, y) => x - y);
+  const ra = rest(a);
+  const rb = rest(b);
+  for (let i = 0; i < Math.max(ra.length, rb.length); i++) {
+    if (ra[i] === undefined || rb[i] === undefined) return ra.length - rb.length;
+    if (ra[i] !== rb[i]) return ra[i] - rb[i];
+  }
+  return 0;
+}
+
 /** Die Musiker so gefiltert und sortiert, wie der Katalog sie zeigt: erst ohne Band, dann in Bands. */
 export function catalogList() {
   const f = app.ui.catalog;
@@ -18,7 +30,7 @@ export function catalogList() {
     .filter((m) => !f.instrument || m.instruments.some((i) => i.type === f.instrument))
     .filter((m) => !f.genre || m.genres.includes(f.genre))
     .filter((m) => !f.status || (f.status === 'free' ? !m.bandId : !!m.bandId))
-    .sort(SORTS[f.sort] || SORTS.level);
+    .sort((a, b) => (f.genre ? byOtherGenres(a, b, f.genre) : 0) || (SORTS[f.sort] || SORTS.level)(a, b));
   return [...list.filter((m) => !m.bandId), ...list.filter((m) => m.bandId)];
 }
 

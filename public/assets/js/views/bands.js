@@ -1,5 +1,5 @@
 import { api } from '../api.js';
-import { bandGenreTags, bandIdentity, emptySlot, face, fullName, gearCard, gearModel, genreIcon, genreTag, instrumentEmoji, instrumentIcon, instrumentName, ownGear, managerCard, musicianCard } from '../cards.js';
+import { bandGenreTags, bandIdentity, emptySlot, face, fullName, gearCard, gearModel, genreIcon, genreTag, instrumentEmoji, instrumentIcon, instrumentName, ownGear, managerCard, musicianCard, sortedGenres } from '../cards.js';
 import { app, bandById, cat, defineActions, isBusy, managerById, musicianById, mutate, navigate, rerender, runningFor } from '../core.js';
 import { openLive } from '../live.js';
 import { coverHtml, startPractice, startRecordSong } from '../play.js';
@@ -666,7 +666,7 @@ function pickRow(m, { checkbox = true, button = '', note = '' } = {}) {
       <label class="pick-main">
         ${checkbox ? `<input type="checkbox" value="${m.id}">` : ''}
         ${face(m, 'sm')}
-        <span class="pick-name">${esc(fullName(m))}<small class="muted">${m.genres.map(genreIcon).join('')}${note ? ` · ${note}` : ''}</small></span>
+        <span class="pick-name">${esc(fullName(m))}<small class="muted">${sortedGenres(m.genres).map(genreIcon).join('')}${note ? ` · ${note}` : ''}</small></span>
       </label>
       ${m.instruments.length > 1 ? `
         <select data-slot>

@@ -249,7 +249,7 @@ final class Charts
         }
         $now = Clock::now();
         $row = self::promoted($repo->db, $bandId, $now);
-        if ($row === null || self::pointsAt($row, $now) < Balance::CHART_MIN_POINTS) {
+        if ($row === null) {
             return;
         }
         self::payRoyalties($repo->db, $repo->labelId);

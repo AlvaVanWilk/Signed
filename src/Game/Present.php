@@ -193,6 +193,8 @@ final class Present
                 'chartIntervalHours' => Balance::CHART_INTERVAL / 3600,
                 'chartBoostHalfHours' => Balance::CHART_BOOST_HALF / 3600,
                 'chartBoostMax' => Balance::CHART_BOOST_MAX,
+                'chartGigBoost' => Balance::CHART_GIG_BOOST,
+                'chartPromoBoost' => Balance::CHART_PROMO_BOOST['band'],
                 'chartMaxAgeDays' => Balance::CHART_MAX_AGE / 86400,
                 'chartPerfect' => Balance::CHART_PERFECT,
                 'chartList' => Balance::CHART_LIST,

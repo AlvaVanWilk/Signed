@@ -379,7 +379,7 @@ export function promoTile(m, busy) {
 /** Gigs und Promo schieben die neueste Platte in den Charts an – sagen, welche. */
 function chartPush(b) {
   const record = b?.discography.find((r) => r.promoted);
-  return record ? ` · Schub in den Charts für „${esc(record.title)}“` : ' · Schub in den Charts, sobald eine Platte chartet';
+  return record ? ` · Schub in den Charts für „${esc(record.title)}“` : ' · Schub in den Charts, sobald die Band eine Platte hat';
 }
 
 /** Studiozeit: Grundpreis plus pro Lied. */

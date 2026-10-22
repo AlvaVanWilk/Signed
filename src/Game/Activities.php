@@ -148,8 +148,8 @@ final class Activities
                     'meter' => $sim['meter'],
                     'drops' => $drops,
                     'venue' => $venueKey,
-                    // Ein guter Gig schiebt die neueste Platte in den Charts an.
-                    'chartBoost' => $type === 'gig' ? round($songs * sqrt($fameBase) * Balance::CHART_GIG_BOOST * $sim['perf'], 3) : 0,
+                    // Jedes gespielte Lied schiebt die neueste Platte in den Charts an – egal wo.
+                    'chartBoost' => $type === 'gig' ? round($songs * Balance::CHART_GIG_BOOST, 3) : 0,
                 ],
             ]);
         });

@@ -259,10 +259,11 @@ Nur die Gewinne sind klein; wie oft man etwas hintereinander spielt, ist nicht b
   (Früher: Einstieg mit 65 %, Höhepunkt nach 8 Stunden, dann fallend – wirkte wie verlorene Punkte.)
   Eine starke Platte kann gegen schwache Konkurrenz direkt auf Platz 1 einsteigen.
   Weil jede Platte ihren eigenen Verlauf hat, überholen sich Platten; es gibt Bewegung.
-- Schub für die neueste Platte der Band, solange sie chartet, als Aufschlag auf ihre Punkte:
-  Gig = Lieder × √(Grund-Ruhm des Ortes) × 4 % × Publikum, Band-Promo +10 %, Promo-Mission eines Mitglieds +4 %.
-  Höchstens +60 %, halbiert sich alle 3 Stunden. Weil der Schub nur die fallenden Punkte vervielfacht, hält
-  Dauer-Promo eine Platte nicht in den Charts.
+- Schub für die neueste Platte der Band (immer, auch wenn sie gerade nicht chartet), als Aufschlag auf ihre Punkte:
+  Gig +2,5 % pro gespieltes Lied (egal wo, egal wie gut), Band-Promo +10 %, Promo-Mission eines Mitglieds +4 %.
+  Höchstens +60 %, halbiert sich alle 3 Stunden. Prozent statt fester Punkte: Wer gleich viel spielt, bekommt denselben
+  Aufschlag – das Verhältnis zweier Platten bleibt, der Schub belohnt nur Fleiß. Die Schere schließt die Zeit (3 % pro Stunde).
+  (Früher hing der Gig-Schub an der Größe des Ortes – große Bands zogen davon.)
 - Unter 1 Punkt verkauft sich eine Platte nicht mehr, nach 7 Tagen zählt sie nicht mehr. Die Charts zeigen die Top 10 groß und darunter kompakt bis Platz 100 (`CHART_LIST`); jede Platte zählt, ohne Deckel pro Band oder Label.
   Belohnungen nach Platz (Tantiemen-Bonus, vollere Gigs) gibt es nur in den Top 10. Eine Band spielt und bewirbt immer ihre **neueste** Platte
   (`Charts::promoted`), ältere fallen so von selbst; sie wieder zu spielen kommt später mit dem Remaster.

@@ -96,7 +96,7 @@ const HEADS = {
     <li><b>Ruhm</b> der Band: bis × ${fmt0(1 + r.chartFameMax)}.</li></ul>
     <h3>Wie sie sich ändern</h3>
     <ul><li>Jede Stunde verliert jede Platte ${Math.round(r.chartDecay * 100)} % ihrer Punkte. Gigs und Promo schieben sie wieder an.</li>
-    <li>Gigs und Promo geben <b>Schub</b>: bis +${Math.round(r.chartBoostMax * 100)} %, er halbiert sich alle ${fmt0(r.chartBoostHalfHours)} Stunden.</li>
+    <li>Gigs und Promo geben <b>Schub</b>: +${fmt1(r.chartGigBoost * 100)} % pro live gespieltes Lied, Band-Promo +${Math.round(r.chartPromoBoost * 100)} %. Zusammen bis +${Math.round(r.chartBoostMax * 100)} %, er halbiert sich alle ${fmt0(r.chartBoostHalfHours)} Stunden.</li>
     <li>Bei deinen Platten steht darunter, wie viel <b>Geld pro Minute</b> sie gerade bringen.</li></ul>`],
   labelRank: ['#', 'Platz', () => '<p>Der Platz in der Rangliste – nach Ruhm.</p>'],
   fameBand: ['Band', 'Band', () => '<p>Tippe auf eine Band, um sie anzuschauen und anzuhören.</p>'],

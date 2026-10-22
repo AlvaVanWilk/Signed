@@ -8,12 +8,12 @@ const AHEAD = 3.2;
 const BEHIND = 1.0;
 const MARKER_X = 0.25;
 /** So schnell steigt bzw. sinkt der Ton (Anteil der Tonleiter pro Sekunde), mindestens bzw. höchstens. */
-const SPEED = 0.5;
-const MAX_SPEED = 1.0;
+const SPEED = 0.9;
+const MAX_SPEED = 1.6;
 
 /**
- * Echte Melodien springen weiter: Die Geschwindigkeit reicht für die meisten Sprünge
- * (drei Viertel davon schafft man rechtzeitig), bleibt aber steuerbar.
+ * Schnell genug, dass man fast jeden Sprung in der ersten Hälfte der Zeit bis zum Ton schafft (90 % der Sprünge,
+ * doppeltes Tempo) – das Schweben nach dem Loslassen hält es trotzdem steuerbar.
  */
 function speedFor(notes) {
   const rates = [];
@@ -22,8 +22,8 @@ function speedFor(notes) {
     rates.push(Math.abs(notes[i].p - notes[i - 1].p) / 7 / gap);
   }
   rates.sort((a, b) => a - b);
-  const typical = rates[Math.floor(rates.length * 0.75)] ?? 0;
-  return Math.max(SPEED, Math.min(MAX_SPEED, typical));
+  const typical = rates[Math.floor(rates.length * 0.9)] ?? 0;
+  return Math.max(SPEED, Math.min(MAX_SPEED, typical * 2));
 }
 const HOLD_KEYS = [' ', 'arrowup', 'w', 'j'];
 /** Wie schnell der Ton auf Drücken und Loslassen reagiert (größer = schneller). */

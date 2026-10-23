@@ -1185,3 +1185,19 @@ test('Eigene Reihenfolge der Band- und Favoritenknöpfe', function () {
     $res = $p->post('navOrder', ['order' => ['m5', 'b2', 'b2', 'x1', 7, 'b9']]);
     checkEquals(['m5', 'b2', 'b9'], $res['state']['label']['navOrder']);
 });
+
+test('Musiker entlassen: nur ohne Band, Instrumente bleiben im Lager', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Entlass');
+    $band = foundBand($p);
+    $inBand = $band['memberIds'][0];
+    checkApiError(fn () => $p->post('musicianRelease', ['musicianId' => $inBand]), 'aus der Band');
+    $p->post('bandRemoveMember', ['bandId' => $band['id'], 'musicianId' => $inBand]);
+    $db->exec('UPDATE musicians SET busy_until = 0');
+    $gear = (int) $db->value('SELECT COUNT(*) FROM gear');
+    $before = count($p->get('state')['musicians']);
+    $state = $p->post('musicianRelease', ['musicianId' => $inBand])['state'];
+    checkEquals($before - 1, count($state['musicians']));
+    checkEquals($gear, (int) $db->value('SELECT COUNT(*) FROM gear WHERE musician_id IS NULL OR musician_id <> ?', [$inBand]), 'Instrumente bleiben');
+    checkApiError(fn () => $p->post('musicianRelease', ['musicianId' => $inBand]), 'nicht');
+});

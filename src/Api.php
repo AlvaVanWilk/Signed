@@ -72,6 +72,7 @@ final class Api
         'transferAccept' => ['POST', true],
         'jamDecline' => ['POST', true],
         'musicianFavorite' => ['POST', true],
+        'musicianRelease' => ['POST', true],
         'navOrder' => ['POST', true],
         'abilityChoose' => ['POST', true],
         'recordStart' => ['POST', true],
@@ -411,6 +412,32 @@ final class Api
     private function jamDecline(array $in, Repo $repo): array
     {
         (new Jam($repo))->decline(self::int($in, 'offerId'));
+        return ['state' => State::build($repo)];
+    }
+
+    /**
+     * Musiker entlassen: verlässt das Label für immer. Nur ohne Band, wenn er frei ist und nicht an der Börse steht.
+     * Seine Instrumente bleiben im Lager; offene Jam-Angebote verfallen.
+     */
+    private function musicianRelease(array $in, Repo $repo): array
+    {
+        $m = $repo->musician(self::int($in, 'musicianId'));
+        if ($m['band_id'] !== null) {
+            throw new ApiError('Erst aus der Band nehmen, dann entlassen.');
+        }
+        if ((int) $m['busy_until'] > \Signed\Clock::now()) {
+            throw new ApiError(sprintf('%s ist gerade unterwegs.', $m['first_name']));
+        }
+        if ($this->db->value("SELECT COUNT(*) FROM transfers WHERE musician_id = ? AND status = 'open'", [$m['id']])) {
+            throw new ApiError(sprintf('%s steht an der Börse. Erst zurückziehen.', $m['first_name']));
+        }
+        $this->db->transaction(function () use ($m, $repo): void {
+            $this->db->exec('UPDATE gear SET musician_id = NULL WHERE musician_id = ?', [$m['id']]);
+            $this->db->exec("UPDATE jam_offers SET status = 'declined' WHERE musician_id = ? AND status = 'open'", [$m['id']]);
+            // Label 0 gibt es nicht: Der Musiker verschwindet aus allem, alte Einträge (Chronik, Platten) bleiben gültig.
+            $this->db->update('musicians', ['label_id' => 0, 'favorite' => 0], ['id' => $m['id']]);
+            $repo->log('lineup', sprintf('%s %s verlässt das Label.', $m['first_name'], $m['last_name']));
+        });
         return ['state' => State::build($repo)];
     }
 

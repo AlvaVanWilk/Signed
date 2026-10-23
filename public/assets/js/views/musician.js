@@ -2,7 +2,7 @@ import { abilityInfo, bandIdentity, emptySlot, fullName, gearCard, gearModel, ge
 import { app, bandById, cat, defineActions, isBusy, musicianById, mutate, navigate } from '../core.js';
 import { openLive } from '../live.js';
 import { chip } from '../cards.js';
-import { closeAllModals, duration, esc, fmt0, fmt1, money, openModal, timeAgo, toast } from '../ui.js';
+import { closeAllModals, confirmDialog, duration, esc, fmt0, fmt1, money, openModal, timeAgo, toast } from '../ui.js';
 import { buskingHat, cancelButton, chemistryLabel, courseTiles, promoOf, practiceTile, promoTile, suggestName } from './bands.js';
 import { catalogList } from './catalog.js';
 
@@ -75,7 +75,7 @@ function profile(m) {
             ${band ? '' : `<button class="btn small ${m.favorite ? 'primary' : ''}" data-act="toggleFavorite" data-id="${m.id}">${m.favorite ? '★ Favorit' : '☆ Favorit'}</button>`}
           </div>
           <div class="tile"><span>Marktwert</span><b>${money(m.value)}</b>
-            ${band || busyOf(m) ? '' : `<button class="btn small" data-act="transferList" data-id="${m.id}">An die Börse</button>`}
+            ${band || busyOf(m) ? '' : `<button class="btn small" data-act="transferList" data-id="${m.id}">An die Börse</button> <button class="btn small ghost danger" data-act="musicianRelease" data-id="${m.id}">Entlassen</button>`}
           </div>
         </div>
         <div class="tile-grid compact">
@@ -293,6 +293,15 @@ defineActions({
       app.ui.musicianNav = { ids: null, back: { href: location.hash || '#/', label: 'Zurück' } };
     }
     navigate(`#/musician/${id}`);
+  },
+  async musicianRelease({ id }) {
+    const m = musicianById(id);
+    const ok = await confirmDialog(`${fullName(m)} entlassen? ${m.firstName} verlässt das Label für immer, du bekommst kein Geld dafür. Eigene Instrumente kommen ins Lager. (An der Börse bekämst du den Marktwert.)`, { ok: 'Entlassen', danger: true });
+    if (!ok) return;
+    if (await mutate('musicianRelease', { musicianId: m.id })) {
+      toast(`${m.firstName} hat das Label verlassen.`, 'ok');
+      navigate('#/katalog');
+    }
   },
   async toggleFavorite({ id }) {
     const m = musicianById(id);

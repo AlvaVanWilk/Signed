@@ -230,7 +230,8 @@ test('Jam-Café: drei passende Musiker zur Auswahl, einer gründet mit dem Gastg
     checkApiError(fn () => $p->post('soloStart', ['musicianId' => $m['id'], 'type' => 'jam']), 'Band');
     checkApiError(fn () => $p->post('jamPick', ['offerId' => $offer['id'], 'index' => 0, 'name' => 'Nochmal']), 'nicht mehr');
 
-    // Ohne freien Band-Platz geht niemand mehr ins Jam-Café.
+    // Ohne freien Band-Platz geht niemand mehr ins Jam-Café (der zweite Platz von Anfang an wird belegt).
+    $db->exec("INSERT INTO bands (label_id, name, genre, created_at) SELECT id, 'Zweitband', '', 0 FROM labels");
     $shop = $p->post('buyPack', ['pack' => 'aushang'])['offer'];
     $free = $p->post('packPick', ['offerId' => $shop['id'], 'index' => 0])['card']['musician'];
     checkApiError(fn () => $p->post('soloStart', ['musicianId' => $free['id'], 'type' => 'jam']), 'Label-Ruhm');
@@ -322,10 +323,11 @@ test('Bandregeln: weitere Bands erst mit Label-Ruhm, niemand in zwei Bands, Genr
     checkEquals('Rockband', $band['title']);
     $state = $p->get('state');
     $m = $state['musicians'][0];
-    checkEquals(1, $state['label']['bandSlots']['open']);
-    checkApiError(fn () => $p->post('bandCreate', ['name' => 'Zweite', 'members' => []]), '50 Label-Ruhm');
-    $db->exec('UPDATE bands SET fame_own = 80');
-    checkEquals(2, $p->get('state')['label']['bandSlots']['open']);
+    checkEquals(2, $state['label']['bandSlots']['open'], 'zwei Bands von Anfang an');
+    $db->exec("INSERT INTO bands (label_id, name, genre, created_at) SELECT id, 'Zweite', '', 0 FROM labels");
+    checkApiError(fn () => $p->post('bandCreate', ['name' => 'Dritte', 'members' => []]), '50 Label-Ruhm');
+    $db->exec('UPDATE bands SET fame_own = 40');
+    checkEquals(3, $p->get('state')['label']['bandSlots']['open'], 'zusammen 80 Label-Ruhm: dritter Platz');
     checkApiError(fn () => $p->post('bandCreate', ['name' => 'Zweite', 'members' => [['id' => $m['id']]]]), 'schon in einer Band');
     checkApiError(fn () => $p->post('bandCreate', ['name' => '   ', 'members' => []]), 'Bandname');
 

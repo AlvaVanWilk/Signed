@@ -100,7 +100,7 @@ sind bis zu 50 % stärker als ein Duo (`MEMBER_SOUND_BONUS`). Dazu bekommen sie 
   Hybrid 120. Verliert eine Band ihre Linie, sinkt das Zusammenspiel auf den neuen Höchstwert.
 - Bewusst kein eigener Verkaufs- oder Ruhm-Bonus fürs Genre: Der bessere Sound wirkt schon auf Ruhm, Platten und Charts.
 - Wechsel kommen in die Chronik; beim Aufnehmen zeigt das Spiel vorher, ob die Band ihr Genre verliert oder gewinnt.
-- **Band-Plätze:** bis zu 8 Bands – die ersten beiden sofort, weitere ab 50, 150, 300, 500, 750 und 1.050 Label-Ruhm. Genres dürfen sich wiederholen.
+- **Band-Plätze:** bis zu 8 Bands – die ersten beiden sofort, weitere ab 50, 150, 450, 1.350, 4.050 und 12.150 Label-Ruhm (jeweils das Dreifache). Genres dürfen sich wiederholen.
 - **Namensänderung:** vor dem ersten Auftritt frei; danach kostet sie 300 ₲ und der Ruhm am alten Namen geht verloren.
 
 ### Zusammenspiel und Chemie

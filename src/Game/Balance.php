@@ -89,8 +89,8 @@ final class Balance
     public const SCOUT_SHIFT = 0.06;
 
     // ---------- Band ----------
-    /** Band-Plätze: die ersten beiden sofort, jede weitere ab diesem Label-Ruhm (Summe des Ruhms aller eigenen Bands). */
-    public const BAND_SLOTS = [0, 0, 50, 150, 300, 500, 750, 1050];
+    /** Band-Plätze: die ersten beiden sofort, jede weitere ab dem Dreifachen (50, 150, 450 …) Label-Ruhm (Summe des Ruhms aller eigenen Bands). */
+    public const BAND_SLOTS = [0, 0, 50, 150, 450, 1350, 4050, 12150];
     /** Namensänderung nach dem ersten Auftritt: Gebühr; der Ruhm am alten Namen geht verloren. */
     public const RENAME_COST = 300;
     public const MIN_MEMBERS = 2;

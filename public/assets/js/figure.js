@@ -356,7 +356,7 @@ export function playedInstrument(m) {
  * Bühne mit allen Mitgliedern. awayOf(m) liefert für jemanden, der gerade allein unterwegs ist (Üben, Promo, Kurs),
  * { until, label } – dann steht statt der Figur an seinem Platz, wann er zurück ist.
  */
-export function stage(members, { bpm = 120, names = true, className = '', electricOf = () => false, hueOf = () => null, awayOf = () => null } = {}) {
+export function stage(members, { bpm = 120, names = true, className = '', electricOf = () => false, hueOf = () => null, awayOf = () => null, nameOf = null, below = () => '' } = {}) {
   return `<div class="fig-stage ${className}" style="--beat:${(60 / bpm).toFixed(3)}s">${members.map((m) => {
     const away = awayOf(m);
     if (away) {
@@ -364,7 +364,7 @@ export function stage(members, { bpm = 120, names = true, className = '', electr
         <span class="countdown" data-until="${away.until}"></span></span>${names ? `<b>${escapeHtml(m.firstName)}</b>` : ''}</div>`;
     }
     return `
-    <div class="fig-member" style="--d:${(-((m.id * 7919) % 4300) / 1000).toFixed(2)}s">${figure(m.look, playedInstrument(m), { electric: electricOf(m), hue: hueOf(m), mood: m.personality?.[0] ?? null })}${names ? `<b>${escapeHtml(m.firstName)}</b>` : ''}</div>`;
+    <div class="fig-member" style="--d:${(-((m.id * 7919) % 4300) / 1000).toFixed(2)}s">${figure(m.look, playedInstrument(m), { electric: electricOf(m), hue: hueOf(m), mood: m.personality?.[0] ?? null })}${names ? `<b>${nameOf ? nameOf(m) : escapeHtml(m.firstName)}</b>` : ''}${below(m)}</div>`;
   }).join('')}
   </div>`;
 }

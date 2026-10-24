@@ -212,10 +212,13 @@ function liveBlock(b, members, act) {
         <span class="lb-live-btns"><button class="btn small ghost" data-act="liveSound" data-id="${act.id}">${music?.actId === act.id ? 'Ton aus' : 'Ton an'}</button>
           <button class="btn small primary" data-act="rehearsalStop" data-id="${act.id}">Probe beenden</button></span>
       </div>
-      ${stage(members, { bpm: cat().genres[sortedGenres(genresOf(b))[0]]?.bpm ?? 120, electricOf: (m) => electric.get(m.id), hueOf: (m) => ownGear(m, playedInstrument(m)).hue })}
-      <div class="lb-live-rows">${members.map((m) => `<div class="lb-live-row"><b>${esc(m.firstName)}</b>
-        <span class="lb-live-gain">Können <em data-live-gain="${m.id}">+0,00</em> <i class="muted">jetzt <span data-live-skill="${m.id}"></span></i></span>
-        <span data-live-mood="${m.id}"></span></div>`).join('')}</div>
+      ${stage(members, {
+    bpm: cat().genres[sortedGenres(genresOf(b))[0]]?.bpm ?? 120,
+    electricOf: (m) => electric.get(m.id),
+    hueOf: (m) => ownGear(m, playedInstrument(m)).hue,
+    nameOf: (m) => `<i class="lb-glow ${m.wellbeing?.level ?? 'green'}" data-live-glow="${m.id}"></i>${esc(m.firstName)}`,
+    below: (m) => `<span class="lb-lv"><span class="lb-prog" title="Weg zur nächsten Stufe"><i data-live-bar="${m.id}"></i></span><em data-live-gain="${m.id}">+0,00</em></span>`,
+  })}
     </section>`;
 }
 
@@ -254,7 +257,6 @@ export function tickLive() {
   const rules = cat().rules;
   const unit = rules.rehearsalSeconds;
   const now = serverNow();
-  const since = Math.max(0, now - app.state.now);
   const run = Math.max(0, Math.min(now, act.endsAt) - app.state.now);
   const band = bandById(act.bandId);
   const left = root.querySelector('[data-live-left]');
@@ -267,20 +269,23 @@ export function tickLive() {
     const gain = credited + ((m.gains?.rehearsal ?? 0) / unit) * run;
     const gainEl = root.querySelector(`[data-live-gain="${id}"]`);
     if (gainEl) gainEl.textContent = `+${fmtGain(gain)}`;
-    const skillEl = root.querySelector(`[data-live-skill="${id}"]`);
     const played = playedOf(m);
     const skillNow = played.skill + ((m.gains?.rehearsal ?? 0) / unit) * run;
-    if (skillEl) skillEl.textContent = fmt1(skillNow);
+    const barEl = root.querySelector(`[data-live-bar="${id}"]`);
+    if (barEl) {
+      // Weg zur nächsten Stufe (nach der letzten: Rest bis 100)
+      const marks = [0, ...rules.skillLevels, 100];
+      const hi = marks.findIndex((x) => skillNow < x);
+      const lo = marks[Math.max(0, hi - 1)];
+      barEl.style.width = `${Math.min(100, ((skillNow - lo) / ((marks[hi] ?? 100) - lo)) * 100)}%`;
+    }
     const bar = document.querySelector(`[data-member-row="${id}"] .sk i`);
     if (bar) bar.style.width = `${Math.min(100, skillNow)}%`;
     const score = Math.max(-1, Math.min(1, (band.mood.reactions?.rehearsal.like.includes(id) ? 1 : 0) - (band.mood.reactions?.rehearsal.dislike.includes(id) ? 1 : 0)));
     const w = Math.max(0, Math.min(100, (m.wellbeing?.value ?? 60) + (rules.reactStep * score * run) / unit));
     const level = w >= rules.moodGreen ? 'green' : w >= rules.moodYellow ? 'yellow' : 'red';
-    const moodEl = root.querySelector(`[data-live-mood="${id}"]`);
-    if (moodEl && moodEl.dataset.level !== level) {
-      moodEl.dataset.level = level;
-      moodEl.innerHTML = moodTag(level);
-    }
+    const glow = root.querySelector(`[data-live-glow="${id}"]`);
+    if (glow) glow.className = `lb-glow ${level}`;
     const row = document.querySelector(`[data-member-row="${id}"]`);
     if (row) {
       const ph = row.querySelector('.lb-ph');

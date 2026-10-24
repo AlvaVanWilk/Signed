@@ -1,0 +1,16 @@
+{
+  "name": "Signed Test",
+  "short_name": "Signed Test",
+  "description": "Testversion von Signed – hier wird an Neuem gearbeitet.",
+  "lang": "de",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0e0c14",
+  "theme_color": "#0d4a4f",
+  "icons": [
+    { "src": "assets/img/test-icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/img/test-icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "assets/img/test-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

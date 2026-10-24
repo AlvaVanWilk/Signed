@@ -15,10 +15,19 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="stylesheet" href="assets/css/app.css">
   <script>
-    // Testversion (Ordner mit „-test“): anderes Logo, damit man sie nicht mit dem echten Spiel verwechselt.
+    // Testversion (Ordner mit „-test“): anderes Logo und anderes Symbol für den Home-Bildschirm,
+    // damit man sie nicht mit dem echten Spiel verwechselt.
     if (/-test(\/|$)/.test(location.pathname)) {
       document.documentElement.classList.add('is-test');
       document.title = 'Signed Test';
+      const icons = { 'assets/img/favicon.png': 'test-favicon.png', 'assets/img/icon-192.png': 'test-icon-192.png', 'assets/img/apple-touch-icon.png': 'test-apple-touch-icon.png' };
+      for (const link of document.querySelectorAll('link[rel~="icon"], link[rel="apple-touch-icon"]')) {
+        const name = icons[link.getAttribute('href')];
+        if (name) link.setAttribute('href', 'assets/img/' + name);
+      }
+      document.querySelector('link[rel="manifest"]')?.setAttribute('href', 'manifest-test.webmanifest');
+      document.querySelector('meta[name="apple-mobile-web-app-title"]')?.setAttribute('content', 'Signed Test');
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#0d4a4f');
     }
   </script>
 </head>

@@ -152,3 +152,6 @@ button.lb-pill:disabled { opacity: 0.45; cursor: default; }
 .lb-live-row { display: grid; grid-template-columns: 40px 90px 1fr auto; gap: 12px; align-items: center; }
 .lb-live-gain em { font-style: normal; font-weight: 800; color: var(--lb-accent); font-variant-numeric: tabular-nums; }
 .lb-live-gain i { font-style: normal; margin-left: 8px; font-size: 0.82rem; }
+.lb-live .fig-stage { margin: 4px 0; }
+.lb-live-rows { display: grid; gap: 6px; }
+.lb-live-row { grid-template-columns: 90px 1fr auto; }

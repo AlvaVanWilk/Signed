@@ -1,6 +1,9 @@
 import { genreGlyph, genreName, gearModel, instrumentIcon, instrumentName, ownGear, photo, sortedGenres } from '../cards.js';
 import { actions, app, bandById, cat, defineActions, isBusy, mutate, musicianById, runningFor, serverNow } from '../core.js';
 import { closePopover, duration, esc, fmt0, fmt1, fmtGain, openModal, popover } from '../ui.js';
+import { getAudio } from '../audio.js';
+import { playedInstrument, stage } from '../figure.js';
+import { bandStems, loadStems, playStems, stemUrl } from '../music.js';
 import { blocker, blockerNotice, chemistryLabel, courseTiles, gainRange, statTile } from './bands.js';
 
 /** Label-Ebene: Band-Leiste links und die ruhige Bandseite. Stimmung als Punkt und Wort (grün, gelb, rot). */
@@ -110,7 +113,7 @@ function memberRow(b, m, members) {
   const split = sortedGenres(m.genres).map((g, i, all) => `var(--lb-c-${g}) ${(i * 100) / all.length}% ${((i + 1) * 100) / all.length}%`).join(', ');
   return `
     <div class="lb-line">
-    <div class="lb-mr">
+    <div class="lb-mr" data-member-row="${m.id}">
       <a class="lb-ph ${mood}" href="#/musician/${m.id}" style="--split:linear-gradient(120deg, ${split})" title="${esc(m.firstName)} ansehen">${photo(m)}</a>
       <div class="lb-info">
         <div class="lb-nm"><a href="#/musician/${m.id}">${esc(m.firstName)} ${esc(m.lastName)}</a>${moodTag(mood)}</div>
@@ -185,26 +188,55 @@ function act(b, members, type, section, title, text, icon, warn = false, busy = 
 function liveBlock(b, members, act) {
   const left = act.endsAt - serverNow();
   const who = musicianById(act.rehearsal.limit.id);
+  const stems = bandStems(members, b, act.id);
+  const electric = new Map(members.map((m, i) => [m.id, /elektrisch/.test(stemUrl(stems[i]) ?? '')]));
   return `
     <section class="lb-live" data-live-act="${act.id}">
       <div class="lb-live-head">
         <div><h2 class="lb-cap">Die Band probt</h2>
-          <small class="muted">Läuft seit <span data-live-since="${act.startedAt}"></span> · spätestens zu Ende in <b data-live-left="${act.endsAt}">${duration(left)}</b> (${esc(who?.firstName ?? '')}${act.rehearsal.limit.why === 'red' ? ' wird genervt' : ' hat dann keine Lust mehr'})</small></div>
-        <span class="lb-live-btns"><button class="btn small" data-act="watch" data-id="${act.id}">Zuschauen</button>
+          <small class="muted">Seit <span data-live-since="${act.startedAt}"></span> · spätestens zu Ende in <b data-live-left="${act.endsAt}">${duration(left)}</b> (${esc(who?.firstName ?? '')}${act.rehearsal.limit.why === 'red' ? ' wird genervt' : ' hat dann keine Lust mehr'})</small></div>
+        <span class="lb-live-btns"><button class="btn small ghost" data-act="liveSound" data-id="${act.id}">${music?.actId === act.id ? 'Ton aus' : 'Ton an'}</button>
           <button class="btn small primary" data-act="rehearsalStop" data-id="${act.id}">Probe beenden</button></span>
       </div>
-      ${members.map((m) => `<div class="lb-live-row"><span class="lb-ph sm" data-live-ring="${m.id}">${photo(m)}</span><b>${esc(m.firstName)}</b>
+      ${stage(members, { bpm: cat().genres[sortedGenres(genresOf(b))[0]]?.bpm ?? 120, electricOf: (m) => electric.get(m.id), hueOf: (m) => ownGear(m, playedInstrument(m)).hue })}
+      <div class="lb-live-rows">${members.map((m) => `<div class="lb-live-row"><b>${esc(m.firstName)}</b>
         <span class="lb-live-gain">Können <em data-live-gain="${m.id}">+0,00</em> <i class="muted">jetzt <span data-live-skill="${m.id}"></span></i></span>
-        <span data-live-mood="${m.id}"></span></div>`).join('')}
+        <span data-live-mood="${m.id}"></span></div>`).join('')}</div>
     </section>`;
+}
+
+// ---------- Ton der Probe ----------
+
+let music = null;
+
+function stopMusic() {
+  music?.player?.stop();
+  music = null;
+}
+
+/** Die Aufnahmen der Band laufen in Schleife mit, passend zur Serverzeit. Braucht einen Tipp des Spielers (Browser-Regel). */
+function startMusic(act) {
+  stopMusic();
+  const band = bandById(act.bandId);
+  const players = band.memberIds.map(musicianById).filter(Boolean);
+  const groups = bandStems(players, band, act.id).map((stem) => [stem]);
+  const mine = { actId: act.id, player: null };
+  music = mine;
+  loadStems(groups).then((buffers) => {
+    if (!buffers || music !== mine) return;
+    const elapsed = serverNow() - act.startedAt;
+    mine.player = playStems(buffers, getAudio().currentTime + 0.05, { offset: elapsed % cat().rules.songSeconds, loop: true, volume: 0.8 });
+  });
 }
 
 /** Live-Anzeige der laufenden Probe aus dem letzten Spielstand und der Zeit seither. */
 export function tickLive() {
   const root = document.querySelector('[data-live-act]');
-  if (!root || !app.state) return;
-  const act = app.state.running.find((a) => a.id === Number(root.dataset.liveAct));
-  if (!act) return;
+  const act = root && app.state?.running.find((a) => a.id === Number(root.dataset.liveAct));
+  if (!act) {
+    if (music) stopMusic();
+    return;
+  }
   const rules = cat().rules;
   const unit = rules.rehearsalSeconds;
   const now = serverNow();
@@ -223,7 +255,10 @@ export function tickLive() {
     if (gainEl) gainEl.textContent = `+${fmtGain(gain)}`;
     const skillEl = root.querySelector(`[data-live-skill="${id}"]`);
     const played = playedOf(m);
-    if (skillEl) skillEl.textContent = fmt1(played.skill + ((m.gains?.rehearsal ?? 0) / unit) * run);
+    const skillNow = played.skill + ((m.gains?.rehearsal ?? 0) / unit) * run;
+    if (skillEl) skillEl.textContent = fmt1(skillNow);
+    const bar = document.querySelector(`[data-member-row="${id}"] .sk i`);
+    if (bar) bar.style.width = `${Math.min(100, skillNow)}%`;
     const score = Math.max(-1, Math.min(1, (band.mood.reactions?.rehearsal.like.includes(id) ? 1 : 0) - (band.mood.reactions?.rehearsal.dislike.includes(id) ? 1 : 0)));
     const w = Math.max(0, Math.min(100, (m.wellbeing?.value ?? 60) + (rules.reactStep * score * run) / unit));
     const level = w >= rules.moodGreen ? 'green' : w >= rules.moodYellow ? 'yellow' : 'red';
@@ -232,8 +267,13 @@ export function tickLive() {
       moodEl.dataset.level = level;
       moodEl.innerHTML = moodTag(level);
     }
-    const ring = root.querySelector(`[data-live-ring="${id}"]`);
-    if (ring) ring.className = `lb-ph sm ${level}`;
+    const row = document.querySelector(`[data-member-row="${id}"]`);
+    if (row) {
+      const ph = row.querySelector('.lb-ph');
+      if (ph) ph.className = `lb-ph ${level}`;
+      const tag = row.querySelector('.lb-nm .lb-mood');
+      if (tag && !tag.classList.contains(level)) tag.outerHTML = moodTag(level);
+    }
   }
 }
 
@@ -308,8 +348,22 @@ function reactionLines(b, type) {
 }
 
 defineActions({
+  /** Ton der laufenden Probe an oder aus. */
+  liveSound({ id }, el) {
+    if (music?.actId === Number(id)) {
+      stopMusic();
+      el.textContent = 'Ton an';
+      return;
+    }
+    const act = app.state.running.find((a) => a.id === Number(id));
+    if (act) {
+      startMusic(act);
+      el.textContent = 'Ton aus';
+    }
+  },
   /** Laufende Probe beenden: was bis jetzt gelernt wurde, bleibt. */
   async rehearsalStop({ id }) {
+    stopMusic();
     await mutate('rehearsalStop', { activityId: Number(id) });
   },
   /** Kurzer Hinweis am Knopf (Genre, Stufe, Instrument, gesperrte Anordnung). */
@@ -342,6 +396,9 @@ defineActions({
       modal.close();
       closePopover();
       await actions.startActivity({ id: String(b.id), type: 'rehearsal' });
+      // Der Tipp aufs Starten erlaubt dem Browser den Ton.
+      const act = runningFor(b.id);
+      if (act?.type === 'rehearsal') startMusic(act);
     });
   },
   /** Beziehung antippen: wer mit wem, in Worten. */

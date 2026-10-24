@@ -497,7 +497,7 @@ setInterval(() => {
   const due = app.state.running.some((a) => a.endsAt <= serverNow());
   if ((due && Date.now() - lastAutoRefresh > 3000) || (live && Date.now() - lastAutoRefresh > 5000)) {
     lastAutoRefresh = Date.now();
-    refresh();
+    refresh({ quiet: !due });
   }
 }, 1000);
 

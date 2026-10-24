@@ -62,14 +62,28 @@ export function liveMoney() {
   return Math.floor(s.label.money + (s.finance.moneyPerHour / 3600) * Math.max(0, serverNow() - s.now));
 }
 
-export async function refresh() {
+/** Wechselt am Spielstand etwas, das die Seite neu aufbauen muss (statt nur Zahlen mitlaufen zu lassen)? */
+function structuralChange(before, after) {
+  if (!before) return true;
+  const key = (s) => [
+    s.running.map((a) => `${a.id}`).join(','),
+    s.bands.map((b) => `${b.id}:${b.memberIds.join('.')}:${b.mood.level}:${b.mood.wishes.length}`).join(','),
+    s.musicians.map((m) => `${m.id}:${m.level}:${m.fameLevel}:${m.bandId}:${m.wellbeing?.level}`).join(','),
+    s.results.map((r) => r.id).join(','),
+  ].join('|');
+  return key(before) !== key(after);
+}
+
+/** quiet: Der Spielstand wird übernommen, die Seite aber nur neu gezeichnet, wenn sich etwas Grundlegendes ändert (laufende Probe). */
+export async function refresh({ quiet = false } = {}) {
+  const before = app.state;
   try {
     setState(await api('state'));
   } catch (e) {
     handleError(e);
     return;
   }
-  rerender();
+  if (!quiet || structuralChange(before, app.state)) rerender();
 }
 
 /** Führt eine Aktion aus, übernimmt den neuen Spielstand und zeigt Fehler als Hinweis. Liefert null bei Fehlern. */

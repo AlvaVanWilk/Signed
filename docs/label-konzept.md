@@ -152,8 +152,7 @@ Anspruch übertrifft, macht glücklich (auch eine unzufriedene Band lässt sich 
 | **Aufnehmen** | Songs → Platte. Label wählt **Studio** und **Produzent** (verschiedene Preise); Qualität = Sound × Produktion | Songs vorhanden, Band nicht rot; Produktion unter dem Anspruch ärgert |
 | **Auftritt buchen** | Gage, Ruhm, Bekanntheit; Ort mit festen Kosten und Gewinn-Schätzung | Band nicht rot; Ort unter der Würde ärgert |
 | **Interview/Promo-Anfrage** | Bekanntheit und Ruhm | Eingang von Anfragen, passend zur Bekanntheitsstufe |
-| **Kurs** | einzelner Musiker fördern (Können) | Musiker frei; wie bisher Tageskurse |
-| **Instrument kaufen** | gezielt für einen Musiker, Preis und Wert sichtbar | Geld |
+| **Einkaufen** | Instrumente, Kurse, Proberaum, Auszeit … (siehe unten) | Geld; Kurse brauchen einen freien Musiker |
 | **Manager einsetzen** | siehe unten | einmalig bezahlt |
 | **Cover wählen** | aus Entwürfen für die Platte | bei der Aufnahme |
 
@@ -192,14 +191,31 @@ auf Stimmung statt auf Können). Ein bisschen mehr Können gewinnt, wer unter Be
 - **Gewinn = Anteil des Weges zur nächsten Stufe** (zum Beispiel 10–15 %). So ist jede Stufe gleich gut erreichbar, ohne Bremse; für Bekannte
   bringt ein kleines Blatt nichts, weil die Anfragen ihrer Stufe entsprechen.
 
-### Instrumente, Einkaufen, Talente
+### Einkaufen
 
-- **Instrumente** werden gezielt gekauft: Auswahl nach Art, Werte und Preis sichtbar, keine Pakete. Musiker äußern Wünsche danach (Diva zuerst).
-  Ohne Instrument kann eine Band nicht proben.
-- **Musiker aufnehmen („Vorspielen“):** Das Label wählt Genre, Instrument und Budget und sieht dann eine kurze Liste von Kandidaten (Können,
-  Charakter, Genres sichtbar), aus der es einen unter Vertrag nimmt. Statt Zufallspaketen.
-- Die **Läden heißen künftig „Einkaufen“** und werden dafür überarbeitet: Instrumente gezielt, Manager in der Stellenbörse, Musiker über das Vorspielen. Keine Kartenpakete mehr.
-- Fortlaufende Kosten gibt es nicht, nur einmalige Ausgaben.
+Aus den „Läden“ wird **Einkaufen**, mit Reitern nach Art. **Der Shop ist für alle Spieler gleich**: Das Angebot wechselt täglich (aus dem Datum berechnet,
+nicht pro Spieler gewürfelt), wie bei den Tageskursen. Man sieht vorher Preis und Werte und entscheidet gezielt. Das „Zufällige“ ist nur,
+**was heute im Regal steht** (Art und Güte), nicht, was man bekommt. Es gibt nur **einmalige Ausgaben**, keine laufenden Kosten.
+
+| Reiter | Was | Wirkung | Wann |
+|---|---|---|---|
+| **Instrumente** | gezielt für einen Musiker, in verschiedener Güte | Klang, Sound, Wohlbefinden (Wünsche), nötig zum Proben | von Anfang an |
+| **Kurse** | einzelne Musiker fördern; mehrere Kurse, aus denen man wählt (Instrument, Dauer, Preis), täglich gleich für alle | Können (ohne Bremse), Wohlbefinden je Charakter (Ehrgeizige mögen Kurse) | von Anfang an |
+| **Proberaum** | Ausstattung **einer Band**, in Stufen | Proben bringen mehr Können und stärken die Beziehung | früh, teure Stufen später |
+| **Auszeit** | Wochenende, Urlaub, Ausflug für **eine Band** | hebt die Stimmung (Gelassene und Ruhepole freuen sich besonders), Band ist dabei für eine Zeit nicht verfügbar | mittel; Preis steigt mit der Bandgröße |
+| **Bühnentechnik** | Licht, Ton, Show, Stufen | größere Orte füllen sich leichter (Erwartung sinkt), Diva und Rampensau freuen sich | mit größeren Bühnen |
+| **Fahrzeuge** | **kleiner Tourbus**, **großer Tourbus**, **Jet**, jeweils in verschiedener Güte | Komfort auf Tour (Stimmung), später Voraussetzung für Tourneen mit mehreren Auftritten | **nur im späten Spiel**, erst mit hohem Label-Erfolg freigeschaltet |
+| **Stellenbörse** | Manager, täglich 1–3, teuer | siehe Manager | früh |
+
+**Was ich noch gut fände** (für später, nicht alles auf einmal): ein **Songschreiber/Texter** für eine Band (die Band schreibt schneller Songs),
+ein **Medienpaket** (bessere Interview-Anfragen), **Teambuilding** (Beziehungen wachsen schneller), **Outfits/Styling** (Bekanntheit der Mitglieder wächst schneller).
+Jede neue Art braucht einen eigenen Zweck und Wunsch (Perfektionist → Proberaum, Diva → Bühnentechnik und Fahrzeug, Gelassen → Auszeit), sonst ist sie nur Beiwerk.
+
+**Warnung zur Größe:** Mehr Reiter bedeuten mehr Klicken. Ich würde mit **Instrumente, Kurse, Proberaum, Auszeit und Stellenbörse** beginnen und
+**Bühnentechnik und Fahrzeuge zusammen mit Tourneen** nachlegen. Der Weg zu den hohen Stufen (Konzept „Tempo“) läuft dann über diese Bereiche, nicht über eine Bremse.
+
+**Musiker aufnehmen („Vorspielen“):** Das Label wählt Genre, Instrument und Budget und sieht dann eine kurze Liste von Kandidaten (Können,
+Charakter, Genres sichtbar), aus der es einen unter Vertrag nimmt. Statt Zufallspaketen. Auch das liegt unter „Einkaufen“ oder im Katalog (offen).
 
 ### Manager
 

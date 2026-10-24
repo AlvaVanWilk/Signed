@@ -168,6 +168,10 @@ final class BandCalc
     /** Können-Zuwachs einer Bandprobe für ein Mitglied (sein Band-Instrument). */
     public static function rehearsalGain(array $m, ?array $model): float
     {
+        // Ohne Instrument steht er nur dabei und lernt nichts.
+        if ($model === null) {
+            return 0.0;
+        }
         return self::trainingGain($m, Balance::REHEARSAL['skill'], null, $model, false);
     }
 

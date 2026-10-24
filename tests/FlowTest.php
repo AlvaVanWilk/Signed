@@ -234,10 +234,21 @@ test('Jam-Café: drei passende Musiker zur Auswahl, einer gründet mit dem Gastg
     check(!$p->get('state')['musicians'][0]['favorite']);
 });
 
+/** Gibt jedem Musiker der Band ein einfaches Instrument seiner Art (ohne Instrument lernt man bei der Probe nichts). */
+function equipBand(Player $p, Signed\Db $db, array $band): void
+{
+    $repo = new Signed\Game\Repo($db, (int) $db->value('SELECT id FROM labels ORDER BY id DESC LIMIT 1'));
+    $models = ['vocals' => 'mic_basic', 'guitar' => 'gtr_school', 'drums' => 'drm_rehearsal', 'bass' => 'bass_entry', 'keys' => 'key_home'];
+    foreach ($db->all('SELECT id, instr1 FROM musicians WHERE band_id = ?', [$band['id']]) as $m) {
+        $p->post('gearAssign', ['gearId' => $repo->insertGear($models[$m['instr1']]), 'musicianId' => $m['id']]);
+    }
+}
+
 test('Bandprobe und Band-Promo', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Probe');
     $band = foundBand($p);
+    equipBand($p, $db, $band);
     $before = array_column($db->all('SELECT id, skill1 FROM musicians'), 'skill1', 'id');
     $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'rehearsal']);
     Clock::advance(2 * Balance::REHEARSAL['lust']);
@@ -1281,6 +1292,7 @@ test('Offene Probe: Können wächst laufend, Abbrechen behält den Fortschritt, 
     $db = freshDb();
     $p = registerPlayer($db, 'Offen');
     $band = foundBand($p);
+    equipBand($p, $db, $band);
     $ids = array_column($db->all('SELECT id FROM musicians WHERE band_id = ? ORDER BY id', [$band['id']]), 'id');
     $skill = static fn (int $id) => (float) $db->value('SELECT skill1 FROM musicians WHERE id = ?', [$id]);
     $start = $skill($ids[0]);
@@ -1312,6 +1324,7 @@ test('Offene Probe: Wer sie nicht mag, wird zuerst rot – dann endet sie frühe
     $db = freshDb();
     $p = registerPlayer($db, 'Genervt');
     $band = foundBand($p);
+    equipBand($p, $db, $band);
     $ids = array_column($db->all('SELECT id FROM musicians WHERE band_id = ? ORDER BY id', [$band['id']]), 'id');
     $db->exec('UPDATE musicians SET personality = ?, wellbeing = 38 WHERE id = ?', [json_encode(['chaot']), $ids[0]]);
     $act = $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'rehearsal'])['activity'];
@@ -1369,4 +1382,23 @@ test('Einsendungen: Menge und Güte wachsen mit dem Erfolg des Labels', function
     $star = Signed\Game\Submissions::price(['skill1' => 80.0, 'skill2' => null, 'fame' => 100.0]);
     check($cheap >= 60 && $cheap <= 90, "Können 25 etwa 70 ₲: $cheap");
     check($star > 4 * $cheap, 'Bekannt und gut ist teurer');
+});
+
+test('Ohne Instrument lernt man bei der Probe nichts, steht aber dabei', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Leer');
+    $band = foundBand($p);
+    equipBand($p, $db, $band);
+    $ids = array_column($db->all('SELECT id FROM musicians WHERE band_id = ? ORDER BY id', [$band['id']]), 'id');
+    $db->exec('UPDATE musicians SET skill1 = 20 WHERE band_id = ?', [$band['id']]);
+    // Dem ersten Musiker das Instrument wegnehmen.
+    $gearId = (int) $db->value('SELECT id FROM gear WHERE musician_id = ?', [$ids[0]]);
+    $p->post('gearAssign', ['gearId' => $gearId, 'musicianId' => null]);
+    $state = $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'rehearsal'])['state'];
+    $first = array_values(array_filter($state['musicians'], static fn ($m) => $m['id'] === $ids[0]))[0];
+    checkEquals(0.0, (float) $first['gains']['rehearsal'], 'kein Zuwachs ohne Instrument');
+    Clock::advance(600);
+    $p->get('state');
+    checkEquals(20.0, (float) $db->value('SELECT skill1 FROM musicians WHERE id = ?', [$ids[0]]), 'ohne Instrument bleibt das Können');
+    check((float) $db->value('SELECT skill1 FROM musicians WHERE id = ?', [$ids[1]]) > 20.0, 'die anderen lernen');
 });

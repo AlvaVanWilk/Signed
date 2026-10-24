@@ -395,7 +395,7 @@ test('Proben: Hauptquelle für Können, ohne Stufen-Bremse – Stufe 1 in wenige
     $reached = [];
     while ($skill < 85.0 && $probes < 1000) {
         $m = musician(['skill1' => $skill, 'band_slot' => 1]);
-        $skill += BandCalc::rehearsalGain($m, null);
+        $skill += BandCalc::rehearsalGain($m, ['klang' => 10, 'spielbarkeit' => 0, 'perks' => []]);
         $probes++;
         foreach ([35, 60, 85] as $mark) {
             if (!isset($reached[$mark]) && $skill >= $mark) {

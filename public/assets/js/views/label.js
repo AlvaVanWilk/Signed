@@ -128,6 +128,12 @@ function genreSlots(members) {
   return order.sort((a, b) => count.get(a) - count.get(b) || order.indexOf(b) - order.indexOf(a));
 }
 
+/** Hat der Musiker ein Instrument für das, was er in der Band spielt? Ohne steht er nur dabei. */
+export function hasGear(m) {
+  const type = playedOf(m).type;
+  return app.state.gear.some((g) => g.musicianId === m.id && gearModel(g.model).type === type);
+}
+
 function memberRow(b, m, members, slots) {
   const played = playedOf(m);
   const gear = app.state.gear.find((g) => g.musicianId === m.id && gearModel(g.model).type === played.type);
@@ -227,6 +233,7 @@ function liveBlock(b, members, act) {
     bpm: cat().genres[sortedGenres(genresOf(b))[0]]?.bpm ?? 120,
     electricOf: (m) => electric.get(m.id),
     hueOf: (m) => ownGear(m, playedInstrument(m)).hue,
+    instrumentOf: (m) => (hasGear(m) ? playedInstrument(m) : 'none'),
     nameOf: (m) => `<i class="lb-glow ${m.wellbeing?.level ?? 'green'}" data-live-glow="${m.id}"></i>${esc(m.firstName)}`,
     below: (m) => `<span class="lb-lv lv-${Math.min(steps(playedOf(m).skill, cat().rules.skillLevels), MAX_LV_STYLE)}"><span class="lb-prog" title="Weg zur nächsten Stufe"><i data-live-bar="${m.id}"></i></span><em data-live-gain="${m.id}">+0,00</em></span>`,
   })}
@@ -399,7 +406,9 @@ defineActions({
     const b = bandById(id);
     const members = b.memberIds.map(musicianById).filter(Boolean);
     const unit = mins(cat().rules.rehearsalSeconds);
-    const skill = members.map((m) => `<li><b>${esc(m.firstName)}</b>: Können <em>+${fmtGain(m.gains?.rehearsal ?? 0)}</em> je ${unit}</li>`).join('');
+    const skill = members.map((m) => (hasGear(m)
+      ? `<li><b>${esc(m.firstName)}</b>: Können <em>+${fmtGain(m.gains?.rehearsal ?? 0)}</em> je ${unit}</li>`
+      : `<li class="bad"><b>${esc(m.firstName)}</b> hat kein Instrument, steht nur dabei und lernt nichts.</li>`)).join('');
     const who = musicianById(b.options.rehearsal.limit.id);
     const why = b.options.rehearsal.limit.why === 'red' ? `${esc(who?.firstName ?? '')} wird davon so genervt, dass die Stimmung kippt` : `${esc(who?.firstName ?? '')} hat dann keine Lust mehr`;
     const modal = openModal({

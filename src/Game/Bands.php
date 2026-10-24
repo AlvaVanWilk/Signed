@@ -199,7 +199,23 @@ final class Bands
                 $effects[] = ['good' => true, 'text' => sprintf('Genre-Bonus: Sound +%d %%', round(($idAfter['bonus'] / max(0.01, $idNow['bonus']) - 1) * 100))];
                 $green = true;
             } elseif ($idAfter['bonus'] < $idNow['bonus'] - 1e-9) {
-                $effects[] = ['good' => false, 'text' => sprintf('Verwässert das Genre: Sound %d %%', round(($idAfter['bonus'] / max(0.01, $idNow['bonus']) - 1) * 100))];
+                $pct = round(($idAfter['bonus'] / max(0.01, $idNow['bonus']) - 1) * 100);
+                // Teilen alle ein Genre, fehlt nur die Besetzung dafür; sonst sind die Genres wirklich gemischt.
+                $missing = null;
+                foreach ($idAfter['checks'] as $genre => $check) {
+                    if ($check['fans'] === count($after) && !$check['lineup']) {
+                        $parts = [];
+                        foreach ($check['requirements'] as $req) {
+                            if (!$req['met']) {
+                                $names = implode(' oder ', array_map(static fn ($t) => Catalog::INSTRUMENTS[$t]['name'], $req['instruments']));
+                                $parts[] = $req['need'] > 1 ? sprintf('%d × %s', $req['need'], $names) : $names;
+                            }
+                        }
+                        $missing = sprintf('Für eine %s fehlt noch %s, bis dahin Sound %d %%', Catalog::GENRES[$genre]['name'] . (str_contains(Catalog::GENRES[$genre]['name'], '-') ? '-Band' : 'band'), implode(' und ', $parts), $pct);
+                        break;
+                    }
+                }
+                $effects[] = ['good' => false, 'text' => $missing ?? sprintf('Gemischte Genres: Sound %d %%', $pct)];
             }
             $new = array_values(array_unique(array_diff(array_map([BandCalc::class, 'instrument'], $group), $typesNow)));
             foreach ($new as $type) {

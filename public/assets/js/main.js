@@ -21,7 +21,7 @@ import * as storage from './views/storage.js';
 
 const NAV = [
   ['', 'Übersicht'],
-  ['packs', 'Läden'],
+  ['packs', 'Einkaufen'],
   ['katalog', 'Katalog'],
   ['lager', 'Lager'],
   ['boerse', 'Börse'],

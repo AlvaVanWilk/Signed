@@ -9,7 +9,7 @@ export function render() {
   const packs = cat().packs;
   return `
     <div class="section-head">
-      <h1>Läden</h1>
+      <h1>Einkaufen</h1>
       <div class="money-pill">${money(app.state.label.money)}</div>
     </div>
     ${openOfferTile()}

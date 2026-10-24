@@ -192,13 +192,13 @@ auf Stimmung statt auf Können). Ein bisschen mehr Können gewinnt, wer unter Be
 - **Gewinn = Anteil des Weges zur nächsten Stufe** (zum Beispiel 10–15 %). So ist jede Stufe gleich gut erreichbar, ohne Bremse; für Bekannte
   bringt ein kleines Blatt nichts, weil die Anfragen ihrer Stufe entsprechen.
 
-### Instrumente, Läden, Talente
+### Instrumente, Einkaufen, Talente
 
 - **Instrumente** werden gezielt gekauft: Auswahl nach Art, Werte und Preis sichtbar, keine Pakete. Musiker äußern Wünsche danach (Diva zuerst).
   Ohne Instrument kann eine Band nicht proben.
 - **Musiker aufnehmen („Vorspielen“):** Das Label wählt Genre, Instrument und Budget und sieht dann eine kurze Liste von Kandidaten (Können,
   Charakter, Genres sichtbar), aus der es einen unter Vertrag nimmt. Statt Zufallspaketen.
-- **Läden** werden dafür überarbeitet: Instrumente gezielt, Manager in der Stellenbörse, Musiker über das Vorspielen. Keine Kartenpakete mehr.
+- Die **Läden heißen künftig „Einkaufen“** und werden dafür überarbeitet: Instrumente gezielt, Manager in der Stellenbörse, Musiker über das Vorspielen. Keine Kartenpakete mehr.
 - Fortlaufende Kosten gibt es nicht, nur einmalige Ausgaben.
 
 ### Manager
@@ -225,7 +225,7 @@ als Grundlage. Einzelne Wahlen verändern zum Beispiel Tempo-Gefühl, Akkordfolg
 
 ## Oberfläche
 
-- **Hauptmenü** (oben): Übersicht, Katalog, Läden, Lager, Börse, Charts.
+- **Hauptmenü** (oben): Übersicht, Katalog, Einkaufen, Lager, Börse, Charts.
 - **Band-Leiste** (links, immer sichtbar, bleibt verschiebbar): große Knöpfe, je Band mit
   **Stimmung sehr deutlich** (großes Gesicht in Ampelfarbe), **Songs geschrieben** (Zahl mit Icon), **Ruhm als Stufe/Sterne**, kleiner Wunsch-Hinweis (leere Blase), Streifen wenn beschäftigt.
 - **Bandseite** (Klick auf die Band, kein Untermenü): Kopf mit Name und Stimmung; **Anordnungen** als Knöpfe (Proben, Aufnehmen, Auftritt);
@@ -257,16 +257,22 @@ Wir reduzieren stark und schauen dann, was wirklich fehlt.
 ## Übergang für bestehende Labels
 
 Beim ersten Login nach dem Umbau ein Willkommens-Dialog (Saison 2). Labelname und Konto bleiben.
-1. **Bis zu zwei Bands mitnehmen** (so viele Plätze hat ein Label am Anfang). Sie behalten **Namen, Mitglieder, Aussehen, Charakter und Können**,
-   starten aber **ohne Ruhm und Bekanntheit** und ohne Platten; die **Beziehung** wird aus dem alten Zusammenspiel und der Chemie nach dem neuen System berechnet.
-   Jeder Musiker bekommt ein einfaches Standard-Instrument (die guten Instrumente bleiben zurück). Ein besonderer Chronik-Eintrag erinnert an die alte Zeit.
-2. **Oder neu starten** mit einem kleinen Startbonus (Geld).
-3. Alle anderen Bands, der Katalog und das Lager entfallen. Alte Platten und Bands kommen in eine **Ruhmeshalle der vorigen Saison** (mit Bildern und Namen), damit
+1. **Bands mitnehmen**, so viele Plätze das Label hat (siehe Startbonus). Sie behalten **Namen, Mitglieder, Aussehen, Charakter und Können**,
+   starten aber **ohne Ruhm und Bekanntheit** und ohne Platten. Jeder Musiker bekommt ein einfaches Standard-Instrument (die guten Instrumente bleiben zurück).
+   Ein besonderer Chronik-Eintrag erinnert an die alte Zeit.
+2. **Beziehungen** werden nicht nur aus dem Zusammenspiel berechnet: Die **gemeinsame Bandzeit** zählt (aus der Chronik: wer ist wann beigetreten,
+   Gründungsmitglieder seit der Gründung; der Neue kennt die anderen weniger gut) und der **Charakter** (Passung, auch Genre und Können-Abstand).
+   Startwert eines Paares = Zielwert der Passung × Anteil, der sich mit der gemeinsamen Zeit füllt.
+3. **Oder neu starten** mit einem kleinen Startbonus (Geld).
+4. Alle anderen Bands, der Katalog und das Lager entfallen. Alte Platten und Bands kommen in eine **Ruhmeshalle der vorigen Saison** (mit Bildern und Namen), damit
    die Geschichten nicht verloren gehen. Die Charts beginnen neu.
 
+**Startbonus für Bandplätze:** Alle beginnen mit 0 Ruhm und hätten damit nur zwei Bandplätze. Wer vorher weit oben stand, bekommt deshalb einen **Ruhm-Bonus
+nur für die Bandplätze** (er zählt nicht für den Rang in der Bestenliste, damit die Rangliste neu beginnt): Platz 1–2 der Bestenliste 450 (5 Plätze),
+Platz 3–5 150 (4 Plätze), alle anderen 50 (3 Plätze). Die Werte passen wir an, wenn wir die tatsächliche Bestenliste und die Bandzahlen kennen.
+
 **Stolpersteine:** Mitgenommene Musiker haben Können und damit einen hohen Marktwert. Würde man sie auflösen und an der Börse verkaufen, brächte das
-mehr Geld als der Bonus. Deshalb: **Mitgenommene Musiker lassen sich nicht an die Börse stellen** (sie dürfen nur entlassen werden). Mehr als zwei Bands gibt
-es nicht, weil die Plätze auch bei Label-Ruhm 0 begrenzt sind.
+mehr Geld als der Bonus. Deshalb: **Mitgenommene Musiker lassen sich nicht an die Börse stellen** (sie dürfen nur entlassen werden).
 
 ## Wer wirkt auf wen (nur stabilisierende Kreisläufe)
 

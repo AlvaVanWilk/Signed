@@ -6,7 +6,7 @@ import { esc, fmt0, openModal } from '../ui.js';
  * Wer mehr wissen will, findet alles in der Hilfe (#/hilfe).
  */
 const TOUR = [
-  ['🎤', 'Du hast ein Plattenlabel!', 'Sammle Musiker – beim Talent-Scout und in den Läden.'],
+  ['🎤', 'Du hast ein Plattenlabel!', 'Sammle Musiker – beim Talent-Scout und beim Einkaufen.'],
   ['🎸', 'Gründe eine Band', 'Gib jedem ein eigenes Instrument. Dann klingt die Band besser.'],
   ['🥁', 'Übe!', 'Spiel im Takt mit. So werden deine Musiker besser.'],
   ['🎪', 'Tritt auf', 'Auftritte bringen Geld und Ruhm.'],
@@ -74,7 +74,7 @@ export function render() {
     ['👥', 'Band und Genre', `Mögen alle Mitglieder dasselbe Genre und passt die Besetzung, wird die Band eine Genre-Band (+${fmt0((r.genreBonus - 1) * 100)} % Sound). Gilt das auch für ein zweites Genre (samt Besetzung), wird sie hybrid – dann wird das Zusammenspiel sogar besser als 100. Gemischte Bands klingen schlechter und spielen sich schwer ein. Weitere Bands gibt es mit mehr Label-Ruhm. <b>Zusammenspiel</b> wächst durch Proben, <b>Chemie</b> hängt vom Charakter ab.`],
     ['🎪', 'Auftritte', 'Straßenmusik und Open Stage gehen immer, richtige Gigs erst mit einer Platte. Je öfter ihr seit der letzten Platte spielt, desto mehr kennt das Publikum eure Lieder – eine neue Platte macht die Gigs wieder voll. Ab genug Ruhm spielt ihr in größeren Läden.'],
     ['💿', 'Platten und Charts', `Im Studio gibt es so viele Aufnahmen wie Lieder: Instrumente einspielen, am Mischpult mischen und zum Schluss der Master-Mix. Danach steigt die Platte in die Charts ein (Top ${fmt0(r.chartSize)}). Gigs und Promo schieben sie an. Je höher der Platz, desto mehr Tantiemen. Es zählt nur die Platte, nicht wie berühmt die Band schon ist. Vor der nächsten Platte müsst ihr die letzte live spielen.`],
-    ['💰', 'Geld', 'Geld kommt von Gigs, vom Verkauf neuer Platten und laufend als Tantiemen, solange eine Platte sich verkauft. Ausgeben kannst du es in den Läden, im Studio und an der Wechselbörse. Ein Klick aufs Geld zeigt das Konto.'],
+    ['💰', 'Geld', 'Geld kommt von Gigs, vom Verkauf neuer Platten und laufend als Tantiemen, solange eine Platte sich verkauft. Ausgeben kannst du es beim Einkaufen, im Studio und an der Wechselbörse. Ein Klick aufs Geld zeigt das Konto.'],
     ['🔁', 'Wechselbörse und Jam-Café', 'Musiker ohne Band kannst du an der Börse anbieten oder dort kaufen. Im Jam-Café lernt ein Musiker ohne Band andere kennen und gründet mit einem davon eine Band.'],
     ['🎧', 'Kopfhörer', 'Hörst du die Töne später, als du sie siehst (oft bei Bluetooth)? Dann stell deine Kopfhörer einmal ein – das gilt danach für dieses Gerät.'],
   ];

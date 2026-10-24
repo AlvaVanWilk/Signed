@@ -8,6 +8,8 @@ import { blocker, blockerNotice, courseTiles, gainRange, statTile } from './band
 
 /** Label-Ebene: Band-Leiste links und die ruhige Bandseite. Stimmung als Punkt und Wort (grün, gelb, rot). */
 
+/** Wie viele Können-Stufen eine eigene Farbe haben (lv-0 … lv-N in label.css); weitere Stufen übernehmen die letzte, bis eine dazukommt. */
+const MAX_LV_STYLE = 3;
 const MOOD_WORD = { green: 'gut', yellow: 'angespannt', red: 'unzufrieden' };
 const LAST_KEY = 'signed.lastBand';
 
@@ -131,7 +133,7 @@ function memberRow(b, m, members, slots) {
       <a class="lb-ph ${mood}" href="#/musician/${m.id}" style="--split:linear-gradient(120deg, ${split})" title="${esc(m.firstName)} ansehen">${photo(m)}</a>
       <div class="lb-info">
         <div class="lb-nm"><a href="#/musician/${m.id}">${esc(m.firstName)} ${esc(m.lastName)}</a>${moodTag(mood)}</div>
-        <div class="lb-ins">
+        <div class="lb-ins lv-${Math.min(level, MAX_LV_STYLE)}">
           ${m.instruments.length > 1
     ? `<button class="ico switch" data-act="slotCycle" data-band="${b.id}" data-musician="${m.id}" title="${esc(instrumentName(played.type))} – tippen, um ein anderes Instrument zu wählen">${instrumentIcon(played.type, own.electric, own.hue)}<i>⇄</i></button>`
     : `<span class="ico" data-act="tip" data-tip="${esc(instrumentName(played.type))}">${instrumentIcon(played.type, own.electric, own.hue)}</span>`}
@@ -217,7 +219,7 @@ function liveBlock(b, members, act) {
     electricOf: (m) => electric.get(m.id),
     hueOf: (m) => ownGear(m, playedInstrument(m)).hue,
     nameOf: (m) => `<i class="lb-glow ${m.wellbeing?.level ?? 'green'}" data-live-glow="${m.id}"></i>${esc(m.firstName)}`,
-    below: (m) => `<span class="lb-lv"><span class="lb-prog" title="Weg zur nächsten Stufe"><i data-live-bar="${m.id}"></i></span><em data-live-gain="${m.id}">+0,00</em></span>`,
+    below: (m) => `<span class="lb-lv lv-${Math.min(steps(playedOf(m).skill, cat().rules.skillLevels), MAX_LV_STYLE)}"><span class="lb-prog" title="Weg zur nächsten Stufe"><i data-live-bar="${m.id}"></i></span><em data-live-gain="${m.id}">+0,00</em></span>`,
   })}
     </section>`;
 }
@@ -271,6 +273,10 @@ export function tickLive() {
     if (gainEl) gainEl.textContent = `+${fmtGain(gain)}`;
     const played = playedOf(m);
     const skillNow = played.skill + ((m.gains?.rehearsal ?? 0) / unit) * run;
+    const lvl = Math.min(steps(skillNow, rules.skillLevels), MAX_LV_STYLE);
+    for (const el of [root.querySelector(`[data-live-bar="${id}"]`)?.closest('.lb-lv'), document.querySelector(`[data-member-row="${id}"] .lb-ins`)]) {
+      if (el) el.className = el.className.replace(/lv-\d/, `lv-${lvl}`);
+    }
     const barEl = root.querySelector(`[data-live-bar="${id}"]`);
     if (barEl) {
       // Weg zur nächsten Stufe (nach der letzten: Rest bis 100)

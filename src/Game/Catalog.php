@@ -185,6 +185,19 @@ final class Catalog
         'partytier' => ['Wann ist der nächste Gig?', 'gig'],
     ];
 
+    /** Dieselben Wünsche, wenn der Musiker allein ist (ohne „wir“ und „zusammen“). */
+    public const WISHES_SOLO = [
+        'ehrgeizig' => ['Ich will weiter!', 'gig'],
+        'gelassen' => ['Lass mich in Ruhe aufnehmen.', 'record'],
+        'perfektionist' => ['Ich muss besser werden.', 'rehearsal'],
+        'chaot' => ['Lass mich spontan spielen!', 'gig'],
+        'rampensau' => ['Ab auf die Bühne!', 'gig'],
+        'diva' => ['Ich habe was Besseres verdient.', 'gig'],
+        'teamplayer' => ['Ich würde gern mal wieder üben.', 'rehearsal'],
+        'ruhepol' => ['In Ruhe Musik machen wäre schön.', 'rehearsal'],
+        'partytier' => ['Wann ist der nächste Gig?', 'gig'],
+    ];
+
     /** Was eine Eigenschaft bedeutet und wie sie in der Band wirkt (Chemie). */
     public const PERSONALITY_INFO = [
         'ehrgeizig' => 'Will immer mehr erreichen. Reibt sich mit Gelassenen.',

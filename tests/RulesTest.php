@@ -619,3 +619,13 @@ test('Songs schreiben: Tempo nach Stimmung, Schub bei bester Laune, Pause bei Au
     check(Signed\Game\Mood::activityFactor('rehearsal') > 0 && Signed\Game\Mood::activityFactor('rehearsal') < 1);
     checkEquals(1.0, Signed\Game\Mood::activityFactor(null));
 });
+
+test('Genre: gemeinsames Genre ohne Besetzung gibt weder Bonus noch Abzug, kein gemeinsames Genre den Abzug', function () {
+    $folkA = ['genres' => ['folk'], 'instr1' => 'guitar', 'instr2' => null, 'band_slot' => 1];
+    $folkB = ['genres' => ['folk'], 'instr1' => 'bass', 'instr2' => null, 'band_slot' => 1];
+    $metal = ['genres' => ['metal'], 'instr1' => 'bass', 'instr2' => null, 'band_slot' => 1];
+    $violin = ['genres' => ['folk'], 'instr1' => 'violin', 'instr2' => null, 'band_slot' => 1];
+    checkEquals(1.0, BandCalc::identity([$folkA, $folkB])['bonus'], 'gleiches Genre, Besetzung fehlt');
+    checkEquals(Balance::MIXED_BONUS, BandCalc::identity([$folkA, $metal])['bonus'], 'verschiedene Genres');
+    checkEquals(Balance::GENRE_BONUS, BandCalc::identity([$folkA, $violin])['bonus'], 'gleiches Genre mit Besetzung');
+});

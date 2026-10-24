@@ -63,7 +63,7 @@ export function bandIdentity(members, prefer = '', preferSecond = null) {
     second = shared.includes(preferSecond) ? preferSecond : shared[0] ?? null;
     third = shared.find((g) => g !== second) ?? null;
   }
-  const bonus = !primary ? c.rules.mixedBonus : !second ? c.rules.genreBonus : !third ? c.rules.hybridBonus : c.rules.crossoverBonus;
+  const bonus = !primary ? (keys.some(allFans) ? 1 : c.rules.mixedBonus) : !second ? c.rules.genreBonus : !third ? c.rules.hybridBonus : c.rules.crossoverBonus;
   return { primary, second, third, title: primary ? bandTitle(primary, second, third) : null, bonus };
 }
 
@@ -71,7 +71,7 @@ export function bandIdentity(members, prefer = '', preferSecond = null) {
 export function genreRuleText() {
   const r = cat().rules;
   const pct = (x) => `${x >= 1 ? '+' : '−'}${Math.round(Math.abs(x - 1) * 100)} %`;
-  return `Gemischte Band: Sound ${pct(r.mixedBonus)}. `
+  return `Gemischte Band (kein gemeinsames Genre): Sound ${pct(r.mixedBonus)}. Teilen alle ein Genre, aber die Besetzung fehlt noch: kein Abzug, aber auch kein Bonus. `
     + `Genre-Band (alle mögen das Genre, die Besetzung passt): Sound ${pct(r.genreBonus)}. `
     + `Hybrid (dasselbe für ein zweites Genre, auch dessen Besetzung): Sound ${pct(r.hybridBonus)}. `
     + `Crossover (sogar für ein drittes, sehr selten): Sound ${pct(r.crossoverBonus)}.`;

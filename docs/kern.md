@@ -104,8 +104,9 @@ sind bis zu 50 % stärker als ein Duo (`MEMBER_SOUND_BONUS`). Dazu bekommen sie 
 | Folk | Gitarre und Geige oder Flöte |
 
 - Kommen mehrere Genres in Frage, bleibt die Band bei ihrem bisherigen; sonst gilt die Reihenfolge oben.
-- Ohne Genre-Einheit (**gemischte Band**) spielt die Musik im Genre, das die meisten Mitglieder mögen – und keiner
-  versteht so recht, was der andere macht: Sound × 0,8, Zusammenspiel wächst halb so schnell und höchstens bis 70.
+- Teilen alle ein Genre, aber die Besetzung dafür fehlt noch (z. B. zwei Folk-Musiker ohne Geige oder Flöte): **kein Abzug und kein Bonus** (Sound × 1,0). Erst die Besetzung bringt den Genre-Bonus.
+- Ohne gemeinsames Genre (**gemischte Band**) spielt die Musik im Genre, das die meisten Mitglieder mögen – und keiner
+  versteht so recht, was der andere macht: Sound × 0,8.
 - Zusammenspiel je nach Linie (`COHESION_BY_GENRE`): gemischt höchstens 70 (halb so schnell), Genre-Band 100,
   Hybrid 120. Verliert eine Band ihre Linie, sinkt das Zusammenspiel auf den neuen Höchstwert.
 - Bewusst kein eigener Verkaufs- oder Ruhm-Bonus fürs Genre: Der bessere Sound wirkt schon auf Ruhm, Platten und Charts.

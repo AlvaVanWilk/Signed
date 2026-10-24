@@ -249,7 +249,8 @@ final class Mood
                 $noGear = ['musicianId' => $m['id'], 'text' => 'Ich brauche ein Instrument.', 'action' => 'gear', 'level' => $level];
             }
             if ($level !== 'green') {
-                [$text, $action] = Catalog::WISHES[$m['personality'][0] ?? 'gelassen'] ?? Catalog::WISHES['gelassen'];
+                $table = count($members) === 1 ? Catalog::WISHES_SOLO : Catalog::WISHES;
+                [$text, $action] = $table[$m['personality'][0] ?? 'gelassen'] ?? $table['gelassen'];
                 $char[] = ['musicianId' => $m['id'], 'text' => $text, 'action' => $action, 'level' => $level];
             }
         }

@@ -192,30 +192,38 @@ final class Bands
             $effects = [];
             $green = false;
             $newInstrument = false;
+            // Gemeinsames Genre: wirkt auf zwei Ebenen, auf den Sound (Genre-Bonus) und auf die Beziehungen.
+            $shared = [];
+            foreach ($idAfter['checks'] as $genre => $check) {
+                if ($check['fans'] === count($after)) {
+                    $shared[] = $genre;
+                }
+            }
+            $pctUp = static fn (float $to, float $from): int => (int) round(($to / max(0.01, $from) - 1) * 100);
             if ($idAfter['title'] !== null && $idAfter['title'] !== $idNow['title']) {
-                $effects[] = ['good' => true, 'text' => sprintf('Wird zur %s: Sound +%d %%', $idAfter['title'], max(0, round(($idAfter['bonus'] / max(0.01, $idNow['bonus']) - 1) * 100)))];
+                $effects[] = ['good' => true, 'text' => sprintf('Wird zur %s: Sound +%d %%', $idAfter['title'], $pctUp($idAfter['bonus'], $idNow['bonus']))];
                 $green = true;
-            } elseif ($idAfter['bonus'] > $idNow['bonus'] + 1e-9) {
-                $effects[] = ['good' => true, 'text' => sprintf('Genre-Bonus: Sound +%d %%', round(($idAfter['bonus'] / max(0.01, $idNow['bonus']) - 1) * 100))];
+            } elseif ($idAfter['title'] !== null && $idAfter['bonus'] >= $idNow['bonus'] - 1e-9) {
+                $effects[] = ['good' => true, 'text' => sprintf('Bleibt eine %s: Sound +%d %%', $idAfter['title'], $pctUp($idAfter['bonus'], 1.0))];
                 $green = true;
-            } elseif ($idAfter['bonus'] < $idNow['bonus'] - 1e-9) {
-                $pct = round(($idAfter['bonus'] / max(0.01, $idNow['bonus']) - 1) * 100);
-                // Teilen alle ein Genre, fehlt nur die Besetzung dafür; sonst sind die Genres wirklich gemischt.
-                $missing = null;
-                foreach ($idAfter['checks'] as $genre => $check) {
-                    if ($check['fans'] === count($after) && !$check['lineup']) {
-                        $parts = [];
-                        foreach ($check['requirements'] as $req) {
-                            if (!$req['met']) {
-                                $names = implode(' oder ', array_map(static fn ($t) => Catalog::INSTRUMENTS[$t]['name'], $req['instruments']));
-                                $parts[] = $req['need'] > 1 ? sprintf('%d × %s', $req['need'], $names) : $names;
-                            }
-                        }
-                        $missing = sprintf('Für eine %s fehlt noch %s, bis dahin Sound %d %%', Catalog::GENRES[$genre]['name'] . (str_contains(Catalog::GENRES[$genre]['name'], '-') ? '-Band' : 'band'), implode(' und ', $parts), $pct);
-                        break;
+            } elseif ($idAfter['title'] === null && $shared) {
+                // Gemeinsames Genre, nur die Besetzung fehlt noch: kein Abzug, sondern eine Aussicht.
+                $genre = $shared[0];
+                $missing = [];
+                foreach ($idAfter['checks'][$genre]['requirements'] as $req) {
+                    if (!$req['met']) {
+                        $names = implode(' oder ', array_map(static fn ($t) => Catalog::INSTRUMENTS[$t]['name'], $req['instruments']));
+                        $missing[] = $req['need'] > 1 ? sprintf('%d × %s', $req['need'], $names) : $names;
                     }
                 }
-                $effects[] = ['good' => false, 'text' => $missing ?? sprintf('Gemischte Genres: Sound %d %%', $pct)];
+                $effects[] = ['good' => true, 'text' => sprintf('Gemeinsames Genre %s: mit %s wird es eine Band mit Genre-Bonus (Sound +%d %%)', Catalog::GENRES[$genre]['name'], implode(' und ', $missing), $pctUp(Balance::GENRE_BONUS, 1.0))];
+                $green = true;
+            } elseif ($idAfter['bonus'] < $idNow['bonus'] - 1e-9) {
+                $effects[] = ['good' => false, 'text' => sprintf('Kein gemeinsames Genre: Sound %d %%', $pctUp($idAfter['bonus'], $idNow['bonus']))];
+            }
+            if ($shared) {
+                $effects[] = ['good' => true, 'text' => sprintf('Gemeinsames Genre %s: die Charaktere verstehen sich leichter', Catalog::GENRES[$shared[0]]['name'])];
+                $green = true;
             }
             $new = array_values(array_unique(array_diff(array_map([BandCalc::class, 'instrument'], $group), $typesNow)));
             foreach ($new as $type) {

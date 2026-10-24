@@ -125,7 +125,8 @@ final class BandCalc
             'bonus' => match (true) {
                 // Ein Solokünstler hat weder Genre-Bonus noch den Malus einer „gemischten“ Band.
                 $count < Balance::GENRE_MIN_MEMBERS => 1.0,
-                $primary === null => Balance::MIXED_BONUS,
+                // Teilen alle ein Genre, fehlt aber noch die Besetzung dafür, gibt es keinen Bonus – aber auch keinen Abzug.
+                $primary === null => array_filter($checks, static fn ($c) => $c['allFans']) ? 1.0 : Balance::MIXED_BONUS,
                 $second === null => Balance::GENRE_BONUS,
                 $third === null => Balance::HYBRID_BONUS,
                 default => Balance::CROSSOVER_BONUS,

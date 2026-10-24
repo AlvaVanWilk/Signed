@@ -429,3 +429,6 @@ button.lb-pill:disabled { opacity: 0.45; cursor: default; }
 .lb-mw-list.plain li { display: block; }
 .lb-mw-list li.good { color: #7fd0a6; }
 .lb-mw-list li.bad { color: #e0a45a; }
+.lb-mw-list .lb-ins { flex: none; width: 168px; margin-top: 0; }
+.lb-mw-list .lb-ins .sk { flex: 1 1 auto; min-width: 60px; }
+.lb-mw-list li > span:last-child { min-width: 0; }

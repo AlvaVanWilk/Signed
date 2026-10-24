@@ -265,6 +265,35 @@ final class Mood
         return $out;
     }
 
+    /** Songs je Stunde bei dieser Stimmung (Ampel und Wert): grün schnell, gelb halb so schnell, rot gar nicht, ganz oben mit Schub. */
+    public static function songRate(array $mood): float
+    {
+        $c = Balance::MOOD;
+        $rate = $c['songsPerHour'][$mood['level']];
+        return $mood['level'] === 'green' && $mood['value'] >= $c['songsBoost']['from'] ? $rate * $c['songsBoost']['factor'] : $rate;
+    }
+
+    /** Faktor aufs Songschreiben je nach dem, was die Band gerade tut: Auftritt und Promo 0, Probe etwas langsamer, sonst 1. */
+    public static function activityFactor(?string $type): float
+    {
+        $c = Balance::MOOD['songsActivity'];
+        return $type === null ? 1.0 : (in_array($type, $c['stop'], true) ? 0.0 : ($type === 'rehearsal' ? $c['rehearsal'] : 1.0));
+    }
+
+    /** Mittlerer Faktor aufs Songschreiben zwischen zwei Zeitpunkten (nach den Aktivitäten der Band in dieser Zeit). */
+    public static function writeFactor(Repo $repo, int $bandId, int $from, int $to): float
+    {
+        if ($to <= $from) {
+            return 1.0;
+        }
+        $lost = 0.0;
+        foreach ($repo->db->all('SELECT type, started_at, ends_at FROM activities WHERE band_id = ? AND ends_at > ? AND started_at < ?', [$bandId, $from, $to]) as $a) {
+            $overlap = max(0, min($to, (int) $a['ends_at']) - max($from, (int) $a['started_at']));
+            $lost += $overlap * (1 - self::activityFactor($a['type']));
+        }
+        return max(0.0, 1 - $lost / ($to - $from));
+    }
+
     public static function bandMood(array $wellbeing): array
     {
         if (!$wellbeing) {
@@ -365,8 +394,9 @@ final class Mood
             $relations = self::relations($repo, $members, $now);
             $state = ['w' => array_column($members, 'wellbeing', 'id'), 'songs' => $band['songs_written']];
             $onlineSpan = min($online, $span);
-            $state = self::run($state, $members, $band, $relations, $span - $onlineSpan, true);
-            $state = self::run($state, $members, $band, $relations, $onlineSpan, false);
+            $factor = self::writeFactor($repo, $band['id'], $now - $span, $now);
+            $state = self::run($state, $members, $band, $relations, $span - $onlineSpan, true, $factor);
+            $state = self::run($state, $members, $band, $relations, $onlineSpan, false, $factor);
             $after = self::bandMood($state['w']);
             foreach ($state['w'] as $id => $w) {
                 $repo->db->update('musicians', ['wellbeing' => round($w, 3)], ['id' => $id]);
@@ -386,7 +416,7 @@ final class Mood
      * Rechnet $seconds in Schritten. $freezeAtRed: Offline-Zeit – rot am Anfang überspringt alles, rot unterwegs hält an.
      * @return array{w: array<int, float>, songs: float}
      */
-    private static function run(array $state, array $members, array $band, array $relations, int $seconds, bool $freezeAtRed): array
+    private static function run(array $state, array $members, array $band, array $relations, int $seconds, bool $freezeAtRed, float $writeFactor = 1.0): array
     {
         $c = Balance::MOOD;
         $byId = [];
@@ -399,8 +429,7 @@ final class Mood
             }
             $dt = min($c['step'], $seconds);
             $seconds -= $dt;
-            $level = self::bandMood($state['w'])['level'];
-            $state['songs'] = min((float) $c['songCap'], $state['songs'] + $c['songsPerHour'][$level] * $dt / 3600);
+            $state['songs'] = min((float) $c['songCap'], $state['songs'] + self::songRate(self::bandMood($state['w'])) * $writeFactor * $dt / 3600);
             $next = [];
             foreach ($state['w'] as $id => $w) {
                 $target = self::target($byId[$id], $band, $members, $state['w'], $relations, $state['songs']);

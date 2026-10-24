@@ -607,3 +607,15 @@ test('Solokünstler: Band-Wunsch drückt Teamplayer, Diva freut sich, Songstau z
     $one = [musician(['personality' => ['gelassen']])];
     checkEquals(1.0, BandCalc::identity($one)['bonus'], 'kein Malus der gemischten Band');
 });
+
+test('Songs schreiben: Tempo nach Stimmung, Schub bei bester Laune, Pause bei Auftritt und Promo, langsamer beim Proben', function (): void {
+    $rate = static fn (string $level, float $value) => Signed\Game\Mood::songRate(['level' => $level, 'value' => $value]);
+    checkEquals(0.0, $rate('red', 20.0));
+    checkEquals(0.5, $rate('yellow', 50.0));
+    checkEquals(1.0, $rate('green', 65.0));
+    check($rate('green', 90.0) > $rate('green', 65.0), 'Schub bei bester Laune');
+    checkEquals(0.0, Signed\Game\Mood::activityFactor('gig'));
+    checkEquals(0.0, Signed\Game\Mood::activityFactor('bandpromo'));
+    check(Signed\Game\Mood::activityFactor('rehearsal') > 0 && Signed\Game\Mood::activityFactor('rehearsal') < 1);
+    checkEquals(1.0, Signed\Game\Mood::activityFactor(null));
+});

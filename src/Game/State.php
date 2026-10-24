@@ -133,6 +133,9 @@ final class State
                     'patience' => round($band['patience']),
                     'relations' => $bandRelations[$band['id']] ?? [],
                     'togetherness' => Mood::togetherness($bandRelations[$band['id']] ?? []),
+                    // Songs je Stunde, gerade jetzt (0 bei Rot, Auftritt, Promo; langsamer beim Proben, schneller bei bester Laune)
+                    'songRate' => round(Mood::songRate(Mood::bandMood(array_column($list, 'wellbeing')))
+                        * Mood::activityFactor($db->value('SELECT type FROM activities WHERE band_id = ? AND settled = 0 AND started_at <= ? AND ends_at > ? ORDER BY id DESC LIMIT 1', [$band['id'], $now, $now])), 3),
                     'reactions' => Mood::reactions($list),
                     'wishes' => Mood::wishes($list, $gearMap, (int) floor($band['songs_written'])),
                 ],

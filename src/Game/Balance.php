@@ -114,6 +114,9 @@ final class Balance
         'pull' => ['per' => 0.15, 'max' => 20.0, 'friend' => 0.5],
         // Songs je Stunde nach Ampel, Vorrat höchstens cap
         'songsPerHour' => ['green' => 1.0, 'yellow' => 0.5, 'red' => 0.0], 'songCap' => 24,
+        // Wer ausgesprochen gut drauf ist (grün ab Wert `from`), schreibt schneller; auf der Bühne oder Promo-Tour ruht das Schreiben, beim Proben geht es langsamer weiter
+        'songsBoost' => ['from' => 80.0, 'factor' => 1.5],
+        'songsActivity' => ['stop' => ['gig', 'busking', 'openstage', 'bandpromo'], 'rehearsal' => 0.6],
         // Geduld (Sekunden Spielzeit im Roten) bis die Band geht; erst eingeschaltet, wenn die Anordnungen da sind
         'patience' => 1800.0, 'patienceRecover' => 2.0, 'leaving' => false,
         // Solokünstler: Wer sich eine Band wünscht (Teamplayer, Partytier), leidet; wer das Rampenlicht liebt (Diva), freut sich

@@ -192,3 +192,9 @@ button.lb-pill:disabled { opacity: 0.45; cursor: default; }
 .lb-filter { display: flex; gap: 6px; flex-wrap: wrap; }
 .lb-filter button { border: 1px solid var(--lb-line); background: none; color: var(--lb-muted); font: inherit; font-weight: 700; font-size: 0.82rem; padding: 5px 12px; border-radius: 999px; cursor: pointer; }
 .lb-filter button.on { color: var(--lb-text); border-color: var(--lb-accent); }
+
+/* Die Note füllt sich, solange die Band Songs schreibt – je schneller sie schreibt, desto schneller; ohne Schreiben steht sie still */
+.lb-bt .songs svg { fill: var(--lb-accent); fill-opacity: 0; transform-origin: 50% 70%; }
+.lb-bt .songs.writing svg { animation: lb-write var(--cycle, 4s) ease-in infinite; }
+@keyframes lb-write { 0% { fill-opacity: 0; transform: scale(1); } 78% { fill-opacity: 0.95; transform: scale(1); } 88% { fill-opacity: 1; transform: scale(1.18); } 100% { fill-opacity: 0; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .lb-bt .songs.writing svg { animation: none; fill-opacity: 0.5; } }

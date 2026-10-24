@@ -1345,12 +1345,16 @@ test('Einsendungen: Willkommens-Stapel, laufender Eingang, Unterschreiben kostet
     check(!isset($state['submissions'][0]['firstName']), 'ungehört verrät nichts');
     checkApiError(fn () => $p->post('submissionSign', ['submissionId' => $state['submissions'][0]['submissionId']]), 'anhören');
     // Anhören dauert ein paar Sekunden.
-    foreach ($state['submissions'] as $s) {
-        $p->post('submissionOpen', ['submissionId' => $s['submissionId']]);
-    }
+    $ids = array_column($state['submissions'], 'submissionId');
+    $p->post('submissionOpen', ['submissionId' => $ids[0]]);
+    checkApiError(fn () => $p->post('submissionOpen', ['submissionId' => $ids[1]]), 'schon eine andere');
     $listening = $p->get('state')['submissions'];
-    checkEquals(['listening'], array_values(array_unique(array_column($listening, 'state'))));
-    check(!isset($listening[0]['firstName']), 'beim Anhören noch nichts zu sehen');
+    checkEquals(1, count(array_filter($listening, static fn ($s) => $s['state'] === 'listening')), 'nur eine gleichzeitig');
+    check(!isset($listening[array_search($ids[0], array_column($listening, 'submissionId'), true)]['firstName']), 'beim Anhören noch nichts zu sehen');
+    foreach (array_slice($ids, 1) as $id) {
+        Clock::advance(Balance::SUBMISSIONS['listen'] + 1);
+        $p->post('submissionOpen', ['submissionId' => $id]);
+    }
     Clock::advance(Balance::SUBMISSIONS['listen'] + 1);
     $state = $p->get('state');
     checkEquals(['open'], array_values(array_unique(array_column($state['submissions'], 'state'))));
@@ -1374,6 +1378,10 @@ test('Einsendungen: Willkommens-Stapel, laufender Eingang, Unterschreiben kostet
     Clock::advance(Balance::SUBMISSIONS['ttl'] + 10);
     $old = array_filter($p->get('state')['submissions'], static fn ($s) => $s['expiresAt'] <= Clock::now());
     checkEquals([], array_values($old));
+    // Neue ungehörte Kassetten zum Ausprobieren.
+    $before = count($p->get('state')['submissions']);
+    $res = $p->post('submissionsTest', ['closed' => true]);
+    checkEquals($before + 6, count($res['state']['submissions']));
     // Testbewerber: alle vier Können-Stufen, darunter Bekanntheit.
     $res = $p->post('submissionsTest');
     $open = array_values(array_filter($res['state']['submissions'], static fn ($s) => $s['state'] === 'open'));

@@ -249,3 +249,4 @@ button.lb-pill:disabled { opacity: 0.45; cursor: default; }
 .lb-tapeitem.playing .lb-reel { animation: lb-spin 1.2s linear infinite; }
 .lb-tapeitem .lb-sub-foot { justify-content: center; }
 @media (prefers-reduced-motion: reduce) { .lb-tapeitem.playing .lb-reel { animation: none; } }
+.lb-test { display: flex; gap: 8px; flex-wrap: wrap; }

@@ -340,7 +340,8 @@ final class Api
     /** Zum Ausprobieren (nur in der Testversion im Menü): Bewerbungen aller Können-Stufen. */
     private function submissionsTest(array $in, Repo $repo): array
     {
-        (new Submissions($repo))->testFill();
+        $tests = new Submissions($repo);
+        empty($in['closed']) ? $tests->testFill() : $tests->testClosed();
         return ['state' => State::build($repo)];
     }
 

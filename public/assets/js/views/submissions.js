@@ -26,7 +26,7 @@ const cassette = (hint = null) => `<span class="lb-tape-wrap"><svg class="lb-tap
 </svg><span class="lb-tape-label">${hint?.genres?.length ? hint.genres.map((g) => `<i class="g-${g}">${genreGlyph(g)}</i>`).join('') : '<b>?</b>'}</span></span>`;
 
 /** Kassette im Briefkasten: ohne Kachel, mit leichter Schräglage, damit es nicht wie eine Tabelle wirkt. */
-function tape(s) {
+function tape(s, busy = false) {
   const listening = s.state === 'listening';
   const total = cat().rules.submissionListen ?? 5;
   const elapsed = listening ? Math.max(0, total - (s.opensAt - serverNow())) : 0;
@@ -40,7 +40,7 @@ function tape(s) {
     ? `<div class="lb-listen"><span class="lb-eq"><i></i><i></i><i></i><i></i></span><b>Du hörst rein …</b>
         <span class="lb-prog wide"><i style="animation-duration:${total}s;animation-delay:-${elapsed.toFixed(2)}s"></i></span></div>`
     : `<div class="lb-listen"><b>Neue Einsendung</b></div>
-      <div class="lb-sub-foot"><button class="btn small primary" data-act="submissionOpen" data-id="${s.submissionId}">Anhören</button>
+      <div class="lb-sub-foot"><button class="btn small primary" data-act="submissionOpen" data-id="${s.submissionId}" ${busy ? 'disabled title="Es läuft schon eine Kassette"' : ''}>Anhören</button>
         <button class="btn small ghost" data-act="submissionDrop" data-id="${s.submissionId}">Wegwerfen</button></div>
       <small class="muted">${expires(s)}</small>`}
     </div>`;
@@ -78,11 +78,11 @@ export function render() {
   const cards = list.filter((x) => x.state === 'open');
   const tapes = list.filter((x) => x.state !== 'open');
   return `
-    <div class="section-head"><h1>Einsendungen</h1>${isTest() ? '<button class="btn small" data-act="submissionsTest">Test: Bewerber aller Stufen</button>' : ''}</div>
+    <div class="section-head"><h1>Einsendungen</h1>${isTest() ? '<span class="lb-test"><button class="btn small" data-act="submissionsTest" data-closed="1">Test: neue Kassetten</button><button class="btn small" data-act="submissionsTest">Test: angehörte Bewerber aller Stufen</button></span>' : ''}</div>
     <p class="muted">Jede Einsendung ist eine Kassette: Erst wenn du sie dir anhörst, siehst du, wer sich da bewirbt. Unterschreiben kostet einmalig eine Prämie, wegwerfen nichts. Wer zu lange liegt, zieht weiter.</p>
     <div class="lb-filter">${[['all', 'Alle'], ['unheard', 'Ungehört'], ['0', 'Stufe 0'], ['1', 'Stufe 1'], ['2', 'Stufe 2'], ['3', 'Stufe 3']].map(([k, label]) => `<button class="${f === k ? 'on' : ''}" data-act="subFilter" data-key="${k}">${label}</button>`).join('')}</div>
     ${cards.length ? `<h2 class="lb-cap">Angehört</h2><div class="lb-subs">${cards.map(card).join('')}</div>` : ''}
-    ${tapes.length ? `<h2 class="lb-cap">Im Briefkasten · ${tapes.length}</h2><div class="lb-tapes">${tapes.map(tape).join('')}</div>` : ''}
+    ${tapes.length ? `<h2 class="lb-cap">Im Briefkasten · ${tapes.length}</h2><div class="lb-tapes">${tapes.map((x) => tape(x, tapes.some((y) => y.state === 'listening'))).join('')}</div>` : ''}
     ${list.length ? '' : '<div class="empty">Gerade liegt nichts im Briefkasten. Es trudelt laufend etwas ein.</div>'}`;
 }
 
@@ -102,7 +102,7 @@ defineActions({
   async submissionDrop({ id }) {
     await mutate('submissionDrop', { submissionId: Number(id) });
   },
-  async submissionsTest() {
-    await mutate('submissionsTest');
+  async submissionsTest({ closed }) {
+    await mutate('submissionsTest', { closed: !!closed });
   },
 });

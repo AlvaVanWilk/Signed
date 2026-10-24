@@ -119,7 +119,16 @@ final class Submissions
         $db->update('labels', ['submit_at' => (int) ($at + $count * $interval)], ['id' => $this->repo->labelId]);
     }
 
-    /** Zum Ausprobieren: acht Bewerbungen, zwei je Können-Stufe, darunter bekannte. */
+    /** Zum Ausprobieren: sechs neue, ungehörte Kassetten (Stufen gemischt, wie sie im Alltag kämen). */
+    public function testClosed(): void
+    {
+        $now = Clock::now();
+        foreach ([0, 0, 1, 2, 0, 3] as $i => $level) {
+            $this->store(self::make($level, $level >= 1 && $i % 2 === 1 ? 40.0 : 0.0), $now - $i * 20);
+        }
+    }
+
+    /** Zum Ausprobieren: acht angehörte Bewerbungen, zwei je Können-Stufe, darunter bekannte. */
     public function testFill(): void
     {
         $now = Clock::now();
@@ -158,6 +167,9 @@ final class Submissions
     {
         $row = $this->row($id);
         if ($row['opened_at'] === null) {
+            if ((int) $this->repo->db->value('SELECT COUNT(*) FROM submissions WHERE label_id = ? AND opened_at > ?', [$this->repo->labelId, Clock::now()]) > 0) {
+                throw new ApiError('Du hörst gerade schon eine andere Einsendung an.');
+            }
             $this->repo->db->update('submissions', ['opened_at' => Clock::now() + Balance::SUBMISSIONS['listen']], ['id' => $id]);
         }
     }

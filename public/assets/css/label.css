@@ -240,13 +240,40 @@ button.lb-pill:disabled { opacity: 0.45; cursor: default; }
 .lb-tape-label i.g-pop { --g: var(--lb-c-pop); } .lb-tape-label i.g-rock { --g: var(--lb-c-rock); } .lb-tape-label i.g-metal { --g: var(--lb-c-metal); } .lb-tape-label i.g-punk { --g: var(--lb-c-punk); }
 .lb-tape-label i.g-jazz { --g: var(--lb-c-jazz); } .lb-tape-label i.g-elektro { --g: var(--lb-c-elektro); } .lb-tape-label i.g-hiphop { --g: var(--lb-c-hiphop); } .lb-tape-label i.g-folk { --g: var(--lb-c-folk); }
 
-/* Kassetten im Briefkasten: groß genug zum Lesen, aber ohne Kachel und leicht schief */
-.lb-tapes { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px 8px; padding: 6px 0 14px; }
-.lb-tapeitem { display: grid; gap: 7px; justify-items: center; text-align: center; transform: translateY(var(--y)) rotate(var(--r)); padding: 6px 4px; }
+.lb-test { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Einsendungen: Kassette und Visitenkarte teilen sich einen Platz fester Größe, nichts verschiebt sich */
+.lb-slots { position: relative; display: grid; grid-template-columns: repeat(auto-fill, 224px); gap: 8px 12px; justify-content: start; padding: 4px 0 16px; }
+.lb-slotitem { width: 224px; height: 268px; display: grid; align-content: center; justify-items: center; transform: translateY(var(--y)) rotate(var(--r)); touch-action: manipulation; user-select: none; -webkit-user-select: none; cursor: grab; transition: transform 0.12s; }
+.lb-slotitem.dragging { z-index: 20; cursor: grabbing; transition: none; filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.55)); }
+.lb-slotitem > * { width: 100%; }
+.lb-tapeitem { display: grid; gap: 7px; justify-items: center; text-align: center; }
 .lb-tapeitem small { font-size: 0.74rem; }
 .lb-tape-big { width: 150px; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.4)); }
 .lb-tape-big .lb-tape-svg { width: 100%; }
 .lb-tapeitem.playing .lb-reel { animation: lb-spin 1.2s linear infinite; }
 .lb-tapeitem .lb-sub-foot { justify-content: center; }
+.lb-card2 { height: 100%; box-sizing: border-box; display: grid; align-content: space-between; gap: 6px; padding: 12px; border-radius: 14px; background: var(--lb-card); border: 1px solid var(--lb-line); box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35); text-align: left; }
+.lb-card2 .lb-sub-top { grid-template-columns: 58px 1fr; gap: 10px; }
+.lb-card2 .lb-ph { width: 58px; height: 58px; border-radius: 10px; }
+.lb-card2 .lb-sub-name b { font-size: 0.95rem; }
+.lb-card2 .lb-ins { gap: 8px; margin: 0; } .lb-card2 .lb-ins .ico { width: 26px; height: 26px; } .lb-card2 .lb-ins .sk { flex: 0 0 90px; }
+.lb-card2 .lb-gt { width: 26px; height: 26px; }
+.lb-card2 .lb-sub-foot { justify-content: flex-start; gap: 6px; flex-wrap: nowrap; }
+.lb-card2 .lb-sub-foot .btn { padding: 5px 9px; font-size: 0.8rem; white-space: nowrap; }
+.lb-sub-left { color: var(--lb-muted); font-size: 0.7rem; text-align: right; }
+.lb-band-head { display: flex; gap: 8px; align-items: baseline; } .lb-band-head b { font-size: 0.95rem; }
+.lb-band-faces { display: flex; gap: 8px; justify-content: center; }
+.lb-bm { display: grid; gap: 3px; justify-items: center; opacity: 0.55; } .lb-bm.on { opacity: 1; }
+.lb-bm .lb-ph.sm { width: 42px; height: 42px; border-radius: 9px; box-shadow: none; }
+.lb-bm .ico { width: 20px; height: 20px; display: block; } .lb-bm .ico svg { width: 100%; height: 100%; }
+.lb-bm .lv { font-size: 0.78rem; color: var(--lc); }
+.lb-check { width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--lb-line); background: var(--lb-card2); color: var(--lb-accent); font-weight: 800; font-size: 0.8rem; line-height: 1; cursor: pointer; padding: 0; }
+.lb-bm.on .lb-check { border-color: var(--lb-accent); }
 @media (prefers-reduced-motion: reduce) { .lb-tapeitem.playing .lb-reel { animation: none; } }
-.lb-test { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.lb-card2 { min-width: 0; overflow: hidden; }
+.lb-price { display: flex; justify-content: space-between; align-items: baseline; }
+.lb-price b { color: var(--lb-accent); font-size: 0.95rem; } .lb-price small { color: var(--lb-muted); font-size: 0.7rem; }
+.lb-card2 .lb-sub-foot .btn { padding: 5px 8px; font-size: 0.78rem; }
+.lb-card2 .lb-sub-foot { flex: none; }

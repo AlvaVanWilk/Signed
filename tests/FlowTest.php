@@ -1381,7 +1381,7 @@ test('Einsendungen: Willkommens-Stapel, laufender Eingang, Unterschreiben kostet
     // Neue ungehörte Kassetten zum Ausprobieren.
     $before = count($p->get('state')['submissions']);
     $res = $p->post('submissionsTest', ['closed' => true]);
-    checkEquals($before + 6, count($res['state']['submissions']));
+    checkEquals($before + 7, count($res['state']['submissions']), 'sechs Musiker und eine Band');
     // Testbewerber: alle vier Können-Stufen, darunter Bekanntheit.
     $res = $p->post('submissionsTest');
     $open = array_values(array_filter($res['state']['submissions'], static fn ($s) => $s['state'] === 'open'));
@@ -1423,4 +1423,38 @@ test('Ohne Instrument lernt man bei der Probe nichts, steht aber dabei', functio
     $p->get('state');
     checkEquals(20.0, (float) $db->value('SELECT skill1 FROM musicians WHERE id = ?', [$ids[0]]), 'ohne Instrument bleibt das Können');
     check((float) $db->value('SELECT skill1 FROM musicians WHERE id = ?', [$ids[1]]) > 20.0, 'die anderen lernen');
+});
+
+test('Einsendungen: Bands bewerben sich, man nimmt alle oder einzelne, sie kennen sich schon', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Gruppe');
+    $p->get('state');
+    $res = $p->post('submissionsTest');
+    $bands = array_values(array_filter($res['state']['submissions'], static fn ($s) => $s['state'] === 'open' && $s['kind'] === 'band'));
+    check(count($bands) >= 2, 'angehörte Bands im Briefkasten');
+    $band = $bands[0];
+    check(count($band['members']) >= 2 && count($band['members']) <= 4, 'zwei bis vier Mitglieder');
+    checkEquals(array_sum(array_column($band['members'], 'price')), $band['price'], 'Preis = Summe');
+    // Nur das erste Mitglied aufnehmen: die anderen bleiben auf der Einsendung.
+    $res = $p->post('submissionSign', ['submissionId' => $band['submissionId'], 'members' => [0]]);
+    $left = array_values(array_filter($res['state']['submissions'], static fn ($s) => $s['submissionId'] === $band['submissionId']))[0];
+    checkEquals(count($band['members']) - 1, count($left['members']));
+    // Den Rest aufnehmen: Sie kennen sich (Beziehung von Anfang an).
+    $before = count($res['state']['musicians']);
+    $res = $p->post('submissionSign', ['submissionId' => $band['submissionId']]);
+    checkEquals($before + count($left['members']), count($res['state']['musicians']));
+    $ids = array_slice(array_column($res['state']['musicians'], 'id'), -count($left['members']));
+    if (count($ids) >= 2) {
+        $pair = $db->one('SELECT value FROM relations WHERE a_id = ? AND b_id = ?', [min($ids[0], $ids[1]), max($ids[0], $ids[1])]);
+        check($pair !== null && $pair['value'] > 0, 'Beziehung startet nicht bei 0');
+    }
+    checkApiError(fn () => $p->post('submissionSign', ['submissionId' => $band['submissionId']]), 'nicht mehr');
+});
+
+test('Einsendungen: eigene Reihenfolge merken', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Ordnung');
+    $ids = array_column($p->get('state')['submissions'], 'submissionId');
+    $p->post('submissionOrder', ['order' => array_reverse($ids)]);
+    checkEquals(array_reverse($ids), $p->get('state')['label']['subOrder']);
 });

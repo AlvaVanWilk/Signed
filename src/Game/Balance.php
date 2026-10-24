@@ -140,6 +140,7 @@ final class Balance
      */
     public const SUBMISSIONS = [
         'perDay' => [[0, 8], [50, 14], [450, 45], [5000, 250]],
+        'bandChance' => 0.15, 'bandBond' => 4.0,
         'listen' => 5, 'ttl' => 4 * 86400, 'maxCatchUp' => 4 * 86400, 'maxPerCall' => 120,
         'good' => ['from' => 0.05, 'to' => 0.25, 'at' => 5000],
         'goodLevels' => [1 => 70, 2 => 25, 3 => 5],

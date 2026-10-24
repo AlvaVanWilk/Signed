@@ -65,6 +65,7 @@ final class Api
         'submissionSign' => ['POST', true],
         'submissionDrop' => ['POST', true],
         'submissionOpen' => ['POST', true],
+        'submissionOrder' => ['POST', true],
         'submissionsTest' => ['POST', true],
         'practiceAuto' => ['POST', true],
         'courseAttend' => ['POST', true],
@@ -321,8 +322,17 @@ final class Api
 
     private function submissionSign(array $in, Repo $repo): array
     {
-        $id = (new Submissions($repo))->sign(self::int($in, 'submissionId'));
+        $picks = is_array($in['members'] ?? null) ? array_map('intval', $in['members']) : null;
+        $id = (new Submissions($repo))->sign(self::int($in, 'submissionId'), $picks);
         return ['musicianId' => $id, 'state' => State::build($repo)];
+    }
+
+    /** Eigene Reihenfolge der Kassetten und Visitenkarten merken. */
+    private function submissionOrder(array $in, Repo $repo): array
+    {
+        $order = array_values(array_unique(array_map('intval', array_filter(is_array($in['order'] ?? null) ? $in['order'] : [], 'is_numeric'))));
+        $this->db->update('labels', ['sub_order' => json_encode(array_slice($order, 0, 500))], ['id' => $repo->labelId]);
+        return [];
     }
 
     private function submissionOpen(array $in, Repo $repo): array

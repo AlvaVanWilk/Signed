@@ -417,6 +417,10 @@ final class Schema
             [
                 'ALTER TABLE submissions ADD COLUMN opened_at INTEGER NULL',
             ],
+            // 26: Eigene Reihenfolge der Einsendungen (Kassetten und Visitenkarten frei sortierbar)
+            [
+                'ALTER TABLE labels ADD COLUMN sub_order TEXT NULL',
+            ],
         ];
     }
 }

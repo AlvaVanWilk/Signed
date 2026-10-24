@@ -1,11 +1,13 @@
 import { genreGlyph, genreName, instrumentIcon, instrumentName, photo, sortedGenres } from '../cards.js';
+import { api } from '../api.js';
 import { app, cat, defineActions, mutate, rerender, serverNow } from '../core.js';
 import { esc, money, toast } from '../ui.js';
 import { levelClass, levelProgress } from './label.js';
 
 /**
  * Einsendungen: Musiker bewerben sich von selbst beim Label. Man sieht sie, unterschreibt sie gegen eine einmalige Prämie
- * oder wirft sie weg. (Das Öffnen der Umschläge, die Assistenz und der Scout kommen später.)
+ * oder wirft sie weg. Kassetten und Visitenkarten teilen sich dieselben Plätze (nichts verschiebt sich beim Anhören) und lassen sich frei sortieren.
+ * (Assistenz und Scout kommen später.)
  */
 
 const isTest = () => document.documentElement.classList.contains('is-test') || ['localhost', '127.0.0.1'].includes(location.hostname);
@@ -26,15 +28,22 @@ const cassette = (hint = null) => `<span class="lb-tape-wrap"><svg class="lb-tap
 </svg><span class="lb-tape-label">${hint?.genres?.length ? hint.genres.map((g) => `<i class="g-${g}">${genreGlyph(g)}</i>`).join('') : '<b>?</b>'}</span></span>`;
 
 /** Kassette im Briefkasten: ohne Kachel, mit leichter Schräglage, damit es nicht wie eine Tabelle wirkt. */
-function tape(s, busy = false) {
+/** Kleine Streuung aus der Nummer: Schräglage und Versatz bleiben beim Neuladen gleich, wirken aber unregelmäßig. */
+function scatter(id) {
+  const h = (n) => (Math.imul(id + n, 2654435761) >>> 0) / 4294967296;
+  return `--r:${(Math.round((h(1) * 8 - 4) * 10) / 10)}deg;--y:${Math.round(h(2) * 10 - 5)}px`;
+}
+
+const levelCount = (skill) => Math.min(3, cat().rules.skillLevels.filter((t) => skill >= t).length);
+const levelOf = (s) => Math.max(...(s.kind === 'band' ? s.members : [s]).flatMap((m) => m.instruments.map((i) => i.skill)).map(levelCount));
+
+/** Kassette im Briefkasten: ohne Kachel; der Platz ist so groß wie später die Visitenkarte. */
+function tape(s, busy) {
   const listening = s.state === 'listening';
   const total = cat().rules.submissionListen ?? 5;
   const elapsed = listening ? Math.max(0, total - (s.opensAt - serverNow())) : 0;
-  const h = (n) => (Math.imul(s.submissionId + n, 2654435761) >>> 0) / 4294967296;
-  const rot = Math.round((h(1) * 8 - 4) * 10) / 10;
-  const lift = Math.round(h(2) * 10 - 5);
   return `
-    <div class="lb-tapeitem ${listening ? 'playing' : ''}" style="--r:${rot}deg;--y:${lift}px">
+    <div class="lb-tapeitem ${listening ? 'playing' : ''}">
       <div class="lb-tape-big">${cassette(s.hint)}</div>
       ${listening
     ? `<div class="lb-listen"><span class="lb-eq"><i></i><i></i><i></i><i></i></span><b>Du hörst rein …</b>
@@ -46,55 +55,185 @@ function tape(s, busy = false) {
     </div>`;
 }
 
+const split = (genres) => sortedGenres(genres).map((g, i, all) => `var(--lb-c-${g}) ${(i * 100) / all.length}% ${((i + 1) * 100) / all.length}%`).join(', ');
+const genreTags = (genres) => `<div class="lb-genres">${sortedGenres(genres).map((g) => `<button class="lb-gt g-${g}" data-act="tip" data-tip="${esc(genreName(g))}">${genreGlyph(g)}</button>`).join('')}</div>`;
+const instrumentRow = (i) => `<div class="lb-ins ${levelClass(i.skill)}"><span class="ico" data-act="tip" data-tip="${esc(instrumentName(i.type))}">${instrumentIcon(i.type)}</span>
+  <span class="sk" title="Können ${Math.floor(i.skill)}"><i style="width:${levelProgress(i.skill)}%"></i></span>
+  <b class="lv" data-act="tip" data-tip="Können ${Math.floor(i.skill)}">${levelCount(i.skill)}</b></div>`;
+
+/** Visitenkarte eines einzelnen Musikers (an der Stelle der Kassette). */
 function card(s) {
-  const split = sortedGenres(s.genres).map((g, i, all) => `var(--lb-c-${g}) ${(i * 100) / all.length}% ${((i + 1) * 100) / all.length}%`).join(', ');
   const chars = s.personality.map((p) => cat().personalities[p]).join(' · ');
-  const money0 = app.state.label.money;
   return `
-    <article class="lb-sub">
+    <article class="lb-card2">
       <div class="lb-sub-top">
-        <span class="lb-ph" style="--split:linear-gradient(120deg, ${split})">${photo(s)}</span>
+        <span class="lb-ph" style="--split:linear-gradient(120deg, ${split(s.genres)})">${photo(s)}</span>
         <div class="lb-sub-name"><b>${esc(s.firstName)} ${esc(s.lastName)}</b>
           ${s.fameLevel ? `<span class="lb-sub-fame" title="${esc(cat().fameNames[s.fameLevel])}">${'★'.repeat(s.fameLevel)}</span>` : '<small class="muted">noch unbekannt</small>'}
           <span class="lb-sub-chars">${esc(chars)}</span></div>
       </div>
-      ${s.instruments.map((i) => `<div class="lb-ins ${levelClass(i.skill)}"><span class="ico" data-act="tip" data-tip="${esc(instrumentName(i.type))}">${instrumentIcon(i.type)}</span>
-        <span class="sk" title="Können ${Math.floor(i.skill)}"><i style="width:${levelProgress(i.skill)}%"></i></span>
-        <b class="lv" data-act="tip" data-tip="Können ${Math.floor(i.skill)}">${Math.min(3, cat().rules.skillLevels.filter((t) => i.skill >= t).length)}</b></div>`).join('')}
-      <div class="lb-genres">${sortedGenres(s.genres).map((g) => `<button class="lb-gt g-${g}" data-act="tip" data-tip="${esc(genreName(g))}">${genreGlyph(g)}</button>`).join('')}</div>
-      <div class="lb-sub-foot">
-        <button class="btn small primary" data-act="submissionSign" data-id="${s.submissionId}" ${money0 < s.price ? 'disabled title="Dafür reicht das Geld nicht"' : ''}>Unterschreiben · ${money(s.price)}</button>
-        <button class="btn small ghost" data-act="submissionDrop" data-id="${s.submissionId}">Wegwerfen</button>
-        <small>${expires(s)}</small>
-      </div>
+      ${s.instruments.map(instrumentRow).join('')}
+      ${genreTags(s.genres)}
+      ${cardFoot(s, s.price, true)}
     </article>`;
+}
+
+function cardFoot(s, price, enough) {
+  const money0 = app.state.label.money;
+  return `<div class="lb-price"><b>${money(price)}</b><small>${expires(s).replace('läuft ab in', 'noch')}</small></div>
+  <div class="lb-sub-foot">
+    <button class="btn small primary" data-act="submissionSign" data-id="${s.submissionId}" ${money0 < price || !enough ? 'disabled' : ''}>Unterschreiben</button>
+    <button class="btn small ghost" data-act="submissionDrop" data-id="${s.submissionId}">Wegwerfen</button>
+  </div>`;
+}
+
+/** Visitenkarte einer Band: Gesichter mit Haken – alle oder einzelne unterschreiben, die anderen bleiben liegen. */
+function bandCard(s) {
+  const picked = app.ui.subPick?.[s.submissionId] ?? new Set(s.members.map((m) => m.index));
+  const chosen = s.members.filter((m) => picked.has(m.index));
+  const price = chosen.reduce((a, m) => a + m.price, 0);
+  const genres = [...new Set(s.members.flatMap((m) => m.genres))];
+  return `
+    <article class="lb-card2 band">
+      <div class="lb-band-head"><small class="muted">Band</small><b>${esc(s.bandName)}</b></div>
+      <div class="lb-band-faces">${s.members.map((m) => `
+        <div class="lb-bm ${picked.has(m.index) ? 'on' : ''}">
+          <span class="lb-ph sm" style="--split:linear-gradient(120deg, ${split(m.genres)})" data-act="tip" data-tip="${esc(m.firstName)} · ${esc(m.instruments.map((i) => instrumentName(i.type)).join(', '))} · Stufe ${levelCount(m.instruments[0].skill)}">${photo(m)}</span>
+          <span class="ico">${instrumentIcon(m.instruments[0].type)}</span>
+          <b class="lv ${levelClass(m.instruments[0].skill)}">${levelCount(m.instruments[0].skill)}</b>
+          <button class="lb-check" data-act="subPick" data-id="${s.submissionId}" data-index="${m.index}" aria-pressed="${picked.has(m.index)}" title="${esc(m.firstName)} ${picked.has(m.index) ? 'abwählen' : 'auswählen'} · ${money(m.price)}">${picked.has(m.index) ? '✓' : ''}</button>
+        </div>`).join('')}</div>
+      ${genreTags(genres.slice(0, 4))}
+      ${cardFoot(s, price, chosen.length > 0)}
+    </article>`;
+}
+
+function slot(s, busy) {
+  const inner = s.state !== 'open' ? tape(s, busy) : (s.kind === 'band' ? bandCard(s) : card(s));
+  return `<div class="lb-slotitem" data-sid="${s.submissionId}" style="${scatter(s.submissionId)}">${inner}</div>`;
+}
+
+/** Eigene Reihenfolge: Neues zuerst, danach die gemerkte Anordnung. */
+function ordered(list) {
+  const saved = app.state.label.subOrder ?? [];
+  const known = list.filter((x) => saved.includes(x.submissionId)).sort((a, b) => saved.indexOf(a.submissionId) - saved.indexOf(b.submissionId));
+  return [...list.filter((x) => !saved.includes(x.submissionId)), ...known];
 }
 
 export function render() {
   const all = app.state.submissions ?? [];
   const f = app.ui.subFilter ?? 'all';
-  const levelOf = (s) => Math.max(...s.instruments.map((i) => cat().rules.skillLevels.filter((t) => i.skill >= t).length));
-  const list = all.filter((s) => f === 'all' || (f === 'unheard' ? s.state !== 'open' : s.state === 'open' && levelOf(s) === Number(f)));
-  const cards = list.filter((x) => x.state === 'open');
-  const tapes = list.filter((x) => x.state !== 'open');
+  const list = ordered(all).filter((s) => f === 'all' || (f === 'unheard' ? s.state !== 'open' : s.state === 'open' && levelOf(s) === Number(f)));
+  const busy = all.some((x) => x.state === 'listening');
   return `
     <div class="section-head"><h1>Einsendungen</h1>${isTest() ? '<span class="lb-test"><button class="btn small" data-act="submissionsTest" data-closed="1">Test: neue Kassetten</button><button class="btn small" data-act="submissionsTest">Test: angehörte Bewerber aller Stufen</button></span>' : ''}</div>
-    <p class="muted">Jede Einsendung ist eine Kassette: Erst wenn du sie dir anhörst, siehst du, wer sich da bewirbt. Unterschreiben kostet einmalig eine Prämie, wegwerfen nichts. Wer zu lange liegt, zieht weiter.</p>
+    <p class="muted">Jede Einsendung ist eine Kassette: Erst wenn du sie dir anhörst, siehst du, wer sich da bewirbt – ein Musiker oder eine ganze Band. Unterschreiben kostet einmalig eine Prämie, wegwerfen nichts. Wer zu lange liegt, zieht weiter. Du kannst alles frei hin und her schieben.</p>
     <div class="lb-filter">${[['all', 'Alle'], ['unheard', 'Ungehört'], ['0', 'Stufe 0'], ['1', 'Stufe 1'], ['2', 'Stufe 2'], ['3', 'Stufe 3']].map(([k, label]) => `<button class="${f === k ? 'on' : ''}" data-act="subFilter" data-key="${k}">${label}</button>`).join('')}</div>
-    ${cards.length ? `<h2 class="lb-cap">Angehört</h2><div class="lb-subs">${cards.map(card).join('')}</div>` : ''}
-    ${tapes.length ? `<h2 class="lb-cap">Im Briefkasten · ${tapes.length}</h2><div class="lb-tapes">${tapes.map((x) => tape(x, tapes.some((y) => y.state === 'listening'))).join('')}</div>` : ''}
-    ${list.length ? '' : '<div class="empty">Gerade liegt nichts im Briefkasten. Es trudelt laufend etwas ein.</div>'}`;
+    ${list.length ? `<div class="lb-slots" data-slots>${list.map((x) => slot(x, busy)).join('')}</div>` : '<div class="empty">Gerade liegt nichts im Briefkasten. Es trudelt laufend etwas ein.</div>'}`;
 }
+
+// ---------- Verschieben ----------
+
+const HOLD_MS = 320;
+const SLOP = 7;
+let press = null;
+let swallowUntil = 0;
+
+function beginDrag() {
+  if (!press || !press.el.isConnected) return;
+  press.active = true;
+  press.el.classList.add('dragging');
+  navigator.vibrate?.(12);
+}
+
+function dragMove(x, y) {
+  const { el, box, grab } = press;
+  const rect = box.getBoundingClientRect();
+  // Folgt dem Zeiger: Abstand von der natürlichen Mitte des Platzes (Layout ohne Transform).
+  const cx = el.offsetLeft + el.offsetWidth / 2;
+  const cy = el.offsetTop + el.offsetHeight / 2;
+  el.style.transform = `translate(${x - rect.left - grab.x - cx}px, ${y - rect.top - grab.y - cy}px) scale(1.04)`;
+  // Platz unter dem Zeiger suchen und tauschen.
+  const over = [...box.children].find((c) => c !== el && (() => {
+    const r = c.getBoundingClientRect();
+    return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+  })());
+  if (over) {
+    const kids = [...box.children];
+    if (kids.indexOf(over) < kids.indexOf(el)) box.insertBefore(el, over);
+    else box.insertBefore(el, over.nextSibling);
+  }
+}
+
+function dragEnd(cancelled) {
+  const p = press;
+  press = null;
+  if (!p) return;
+  clearTimeout(p.timer);
+  if (!p.active) return;
+  p.el.classList.remove('dragging');
+  p.el.style.transform = '';
+  swallowUntil = Date.now() + 400;
+  if (cancelled || !p.el.isConnected) return;
+  const order = [...p.box.children].map((c) => Number(c.dataset.sid));
+  app.state.label.subOrder = order;
+  api('submissionOrder', { order }).catch(() => {});
+}
+
+document.addEventListener('pointerdown', (e) => {
+  const el = e.target.closest?.('.lb-slotitem');
+  if (!el || e.button > 0 || e.target.closest('button, a, input, select, [data-act]')) return;
+  const box = el.parentElement;
+  const rect = box.getBoundingClientRect();
+  const cx = el.offsetLeft + el.offsetWidth / 2;
+  const cy = el.offsetTop + el.offsetHeight / 2;
+  press = { el, box, x: e.clientX, y: e.clientY, active: false, touch: e.pointerType !== 'mouse', grab: { x: e.clientX - rect.left - cx, y: e.clientY - rect.top - cy } };
+  if (press.touch) press.timer = setTimeout(beginDrag, HOLD_MS);
+});
+
+document.addEventListener('pointermove', (e) => {
+  if (!press) return;
+  if (!press.active) {
+    const far = Math.hypot(e.clientX - press.x, e.clientY - press.y) > SLOP;
+    if (press.touch) {
+      if (far) { clearTimeout(press.timer); press = null; }
+    } else if (far) {
+      beginDrag();
+    }
+    if (!press?.active) return;
+  }
+  e.preventDefault();
+  dragMove(e.clientX, e.clientY);
+}, { passive: false });
+
+document.addEventListener('touchmove', (e) => { if (press?.active) e.preventDefault(); }, { passive: false });
+document.addEventListener('pointerup', () => dragEnd(false));
+document.addEventListener('pointercancel', () => dragEnd(true));
+document.addEventListener('click', (e) => { if (Date.now() < swallowUntil) { e.stopPropagation(); e.preventDefault(); } }, true);
 
 defineActions({
   subFilter({ key }) {
     app.ui.subFilter = key;
     rerender();
   },
+  subPick({ id, index }) {
+    const s = app.state.submissions.find((x) => x.submissionId === Number(id));
+    app.ui.subPick ??= {};
+    const set = app.ui.subPick[id] ?? new Set(s.members.map((m) => m.index));
+    if (set.has(Number(index))) set.delete(Number(index));
+    else set.add(Number(index));
+    app.ui.subPick[id] = set;
+    rerender();
+  },
   async submissionSign({ id }) {
     const s = app.state.submissions.find((x) => x.submissionId === Number(id));
-    const res = await mutate('submissionSign', { submissionId: Number(id) });
-    if (res && s) toast(`${s.firstName} ${s.lastName} hat unterschrieben.`, 'ok');
+    const body = { submissionId: Number(id) };
+    if (s.kind === 'band') body.members = [...(app.ui.subPick?.[id] ?? new Set(s.members.map((m) => m.index)))];
+    const res = await mutate('submissionSign', body);
+    if (res) {
+      delete app.ui.subPick?.[id];
+      toast(s.kind === 'band' ? 'Unterschrieben.' : `${s.firstName} ${s.lastName} hat unterschrieben.`, 'ok');
+    }
   },
   async submissionOpen({ id }) {
     await mutate('submissionOpen', { submissionId: Number(id) });

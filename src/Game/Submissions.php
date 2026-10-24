@@ -66,6 +66,27 @@ final class Submissions
         return $card;
     }
 
+    /**
+     * Eine Band als Einsendung: zwei bis vier Musiker mit gemeinsamem Genre und verschiedenen Instrumenten, rund um die gewünschte Stufe.
+     * Sie kennen sich schon (Beziehung beim Unterschreiben `bandBond`).
+     */
+    public static function makeBand(int $level, ?\Signed\Db $db = null): array
+    {
+        $genre = (string) Rng::pick(array_keys(Catalog::GENRES));
+        $instruments = Rng::sample(['vocals', 'guitar', 'drums', 'bass', 'keys'], Rng::int(2, 4));
+        $members = [];
+        $avoid = [];
+        foreach ($instruments as $instrument) {
+            $own = max(0, min(3, $level - (Rng::chance(0.4) ? 1 : 0)));
+            $card = self::make($own, 0.0, ['instrument' => $instrument, 'genre' => $genre, 'single' => true, 'avoid' => $avoid]);
+            $card['instr2'] = null;
+            $card['skill2'] = null;
+            $avoid = array_merge($avoid, [$card['first_name'], $card['last_name']]);
+            $members[] = $card;
+        }
+        return ['kind' => 'band', 'name' => $db !== null ? Names::band($db) : 'Die Unbekannten', 'members' => $members];
+    }
+
     private function store(array $card, int $at, ?int $openedAt = null): void
     {
         $this->repo->db->insert('submissions', [
@@ -114,7 +135,8 @@ final class Submissions
         for ($i = 1; $i <= $count; $i++) {
             $level = Rng::chance($good) ? (int) Rng::weighted(Balance::SUBMISSIONS['goodLevels']) : 0;
             $fame = $level >= 1 && Rng::chance(Balance::SUBMISSIONS['fameChance']) ? Rng::float(...Balance::SUBMISSIONS['fame']) : 0.0;
-            $this->store(self::make($level, $fame), (int) ($at + $i * $interval));
+            $card = Rng::chance(Balance::SUBMISSIONS['bandChance']) ? self::makeBand($level, $this->repo->db) : self::make($level, $fame);
+            $this->store($card, (int) ($at + $i * $interval));
         }
         $db->update('labels', ['submit_at' => (int) ($at + $count * $interval)], ['id' => $this->repo->labelId]);
     }
@@ -126,6 +148,7 @@ final class Submissions
         foreach ([0, 0, 1, 2, 0, 3] as $i => $level) {
             $this->store(self::make($level, $level >= 1 && $i % 2 === 1 ? 40.0 : 0.0), $now - $i * 20);
         }
+        $this->store(self::makeBand(1, $this->repo->db), $now - 130);
     }
 
     /** Zum Ausprobieren: acht angehörte Bewerbungen, zwei je Können-Stufe, darunter bekannte. */
@@ -139,6 +162,8 @@ final class Submissions
             };
             $this->store(self::make($level, $fame), $now - $i * 30, $now);
         }
+        $this->store(self::makeBand(1, $this->repo->db), $now - 300, $now);
+        $this->store(self::makeBand(2, $this->repo->db), $now - 330, $now);
     }
 
     /**
@@ -157,8 +182,18 @@ final class Submissions
                 return $base + ['state' => 'listening', 'opensAt' => (int) $r['opened_at']];
             }
             $card = json_decode($r['card'], true);
-            $m = $card + ['id' => -(int) $r['id'], 'favorite' => false, 'jam_at' => 0, 'band_id' => null, 'band_slot' => 1, 'busy_until' => 0];
-            return Present::musician($m) + $base + ['state' => 'open', 'price' => self::price($card)];
+            $present = static function (array $c, int $id) {
+                $m = $c + ['id' => $id, 'favorite' => false, 'jam_at' => 0, 'band_id' => null, 'band_slot' => 1, 'busy_until' => 0];
+                return Present::musician($m) + ['price' => self::price($c)];
+            };
+            if (($card['kind'] ?? '') === 'band') {
+                $members = [];
+                foreach ($card['members'] as $i => $c) {
+                    $members[] = $present($c, -((int) $r['id'] * 10 + $i + 1)) + ['index' => $i];
+                }
+                return $base + ['state' => 'open', 'kind' => 'band', 'bandName' => $card['name'], 'members' => $members, 'price' => array_sum(array_column($members, 'price'))];
+            }
+            return $present($card, -(int) $r['id']) + $base + ['state' => 'open', 'kind' => 'solo'];
         }, $rows);
     }
 
@@ -183,23 +218,52 @@ final class Submissions
         return $row;
     }
 
-    /** Unterschreiben: Prämie zahlen, der Musiker ist im Label (zunächst als Solokünstler ohne Band). */
-    public function sign(int $id): int
+    /**
+     * Unterschreiben: Prämie zahlen, der Musiker ist im Label (zunächst ohne Band). Bei einer Band lassen sich alle oder einzelne Mitglieder
+     * aufnehmen; die anderen bleiben auf der Einsendung. Mitglieder einer Band kennen sich schon.
+     * @param list<int>|null $picks Nummern der Mitglieder (nur bei Bands); null = alle
+     * @return int ID des (ersten) neuen Musikers
+     */
+    public function sign(int $id, ?array $picks = null): int
     {
-        return $this->repo->db->transaction(function () use ($id): int {
+        return $this->repo->db->transaction(function () use ($id, $picks): int {
             $row = $this->row($id);
             if ($row['opened_at'] === null || (int) $row['opened_at'] > Clock::now()) {
                 throw new ApiError('Die Einsendung musst du dir erst anhören.');
             }
             $card = json_decode($row['card'], true);
-            $this->repo->spend(self::price($card), sprintf('Unterschrift: %s %s', $card['first_name'], $card['last_name']));
-            $musicianId = $this->repo->insertMusician($card, 'submission');
-            if (!empty($card['ability_choice'])) {
-                $this->repo->db->update('musicians', ['ability_choice' => json_encode($card['ability_choice'])], ['id' => $musicianId]);
+            $isBand = ($card['kind'] ?? '') === 'band';
+            $cards = $isBand ? $card['members'] : [$card];
+            $chosen = $isBand ? array_values(array_unique($picks ?? array_keys($cards))) : [0];
+            $chosen = array_values(array_filter($chosen, static fn ($i) => isset($cards[$i])));
+            if (!$chosen) {
+                throw new ApiError('Wähle mindestens einen Musiker.');
             }
-            $this->repo->db->exec('DELETE FROM submissions WHERE id = ?', [$id]);
-            $this->repo->log('submission', sprintf('%s %s hat bei uns unterschrieben.', $card['first_name'], $card['last_name']), null, $musicianId);
-            return $musicianId;
+            $this->repo->spend((int) array_sum(array_map(static fn ($i) => self::price($cards[$i]), $chosen)), $isBand && count($chosen) > 1 ? sprintf('Unterschrift: %s', $card['name']) : sprintf('Unterschrift: %s %s', $cards[$chosen[0]]['first_name'], $cards[$chosen[0]]['last_name']));
+            $ids = [];
+            foreach ($chosen as $i) {
+                $c = $cards[$i];
+                $musicianId = $this->repo->insertMusician($c, 'submission');
+                if (!empty($c['ability_choice'])) {
+                    $this->repo->db->update('musicians', ['ability_choice' => json_encode($c['ability_choice'])], ['id' => $musicianId]);
+                }
+                $this->repo->log('submission', sprintf('%s %s hat bei uns unterschrieben.', $c['first_name'], $c['last_name']), null, $musicianId);
+                $ids[] = $musicianId;
+            }
+            // Wer als Band kam, kennt sich schon.
+            foreach ($ids as $k => $a) {
+                foreach (array_slice($ids, $k + 1) as $b) {
+                    $this->repo->db->insert('relations', ['label_id' => $this->repo->labelId, 'a_id' => min($a, $b), 'b_id' => max($a, $b), 'value' => Balance::SUBMISSIONS['bandBond'], 'at' => Clock::now()]);
+                }
+            }
+            $left = $isBand ? array_values(array_diff_key($cards, array_flip($chosen))) : [];
+            if ($left) {
+                $card['members'] = $left;
+                $this->repo->db->update('submissions', ['card' => json_encode($card, JSON_UNESCAPED_UNICODE)], ['id' => $id]);
+            } else {
+                $this->repo->db->exec('DELETE FROM submissions WHERE id = ?', [$id]);
+            }
+            return $ids[0];
         });
     }
 

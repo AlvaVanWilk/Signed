@@ -1,8 +1,8 @@
 import { genreGlyph, genreName, instrumentIcon, instrumentName, photo, sortedGenres } from '../cards.js';
 import { api } from '../api.js';
-import { app, cat, defineActions, mutate, rerender, serverNow } from '../core.js';
-import { esc, money, toast } from '../ui.js';
-import { levelClass, levelProgress } from './label.js';
+import { actions, app, cat, defineActions, mutate, musicianById, rerender, serverNow } from '../core.js';
+import { confirmDialog, esc, money, openModal, toast } from '../ui.js';
+import { levelClass, levelProgress, relColor } from './label.js';
 
 /**
  * Einsendungen: Musiker bewerben sich von selbst beim Label. Man sieht sie, unterschreibt sie gegen eine einmalige Prämie
@@ -56,51 +56,69 @@ function tape(s, busy) {
 
 const split = (genres) => sortedGenres(genres).map((g, i, all) => `var(--lb-c-${g}) ${(i * 100) / all.length}% ${((i + 1) * 100) / all.length}%`).join(', ');
 const genreTags = (genres) => `<div class="lb-genres">${sortedGenres(genres).map((g) => `<button class="lb-gt g-${g}" data-act="tip" data-tip="${esc(genreName(g))}">${genreGlyph(g)}</button>`).join('')}</div>`;
-const instrumentRow = (i) => `<div class="lb-ins ${levelClass(i.skill)}"><span class="ico" data-act="tip" data-tip="${esc(instrumentName(i.type))}">${instrumentIcon(i.type)}</span>
+const instrumentRow = (i, compact = false) => `<div class="lb-ins ${levelClass(i.skill)} ${compact ? 'compact' : ''}"><span class="ico" data-act="tip" data-tip="${esc(instrumentName(i.type))}">${instrumentIcon(i.type)}</span>
   <span class="sk" title="Können ${Math.floor(i.skill)}"><i style="width:${levelProgress(i.skill)}%"></i></span>
   <b class="lv" data-act="tip" data-tip="Können ${Math.floor(i.skill)}">${levelCount(i.skill)}</b></div>`;
 
-/** Visitenkarte eines einzelnen Musikers: fast so groß und so schräg wie die Kassette, aus der sie kommt. */
-function card(s) {
-  const chars = s.personality.map((p) => cat().personalities[p]).join(' · ');
-  return `
-    <article class="lb-card2">
-      <div class="lb-sub-top">
-        <span class="lb-ph" style="--split:linear-gradient(120deg, ${split(s.genres)})">${photo(s)}</span>
-        <div class="lb-sub-name"><b title="${esc(chars)}">${esc(s.firstName)} ${esc(s.lastName)}</b>
-          ${s.fameLevel ? `<span class="lb-sub-fame" title="${esc(cat().fameNames[s.fameLevel])}">${'★'.repeat(s.fameLevel)}</span>` : '<small class="muted">noch unbekannt</small>'}
-          ${genreTags(s.genres)}</div>
-      </div>
-      <div class="lb-card-ins">${s.instruments.map(instrumentRow).join('')}</div>
-      ${cardFoot(s, s.price, true)}
-    </article>`;
-}
+const PEN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4L16.5 4.5a2 2 0 013 3L8 19l-4 1z M14 7l3 3 M3 21h6"/></svg>';
+const fameStars = (s) => (s.fameLevel ? `<span class="lb-sub-fame" title="${esc(cat().fameNames[s.fameLevel])}">${'★'.repeat(s.fameLevel)}</span>` : '<small class="muted" title="Noch keine Bekanntheit">unbekannt</small>');
+const traitChips = (m, act = 'subInfo', sid = 0, index = 0) => m.personality.map((p) => `<button class="lb-trait" data-act="${act}" data-id="${sid}" data-index="${index}" data-tip="${esc(cat().personalities[p])}: ${esc(cat().personalityInfo[p])}" title="${esc(cat().personalities[p])}: ${esc(cat().personalityInfo[p])}">${esc(cat().personalities[p])}</button>`).join('');
 
-function cardFoot(s, price, enough) {
+/** Unterschreiben (Stift) und Wegwerfen (✕): klein und eindeutig; Unterschreiben fragt nach. */
+function iconFoot(s, price, enough) {
   const money0 = app.state.label.money;
-  return `<div class="lb-sub-foot">
+  return `<div class="lb-card-foot">
     <b class="lb-price" title="${expires(s)}">${money(price)}</b>
-    <button class="btn small primary" data-act="submissionSign" data-id="${s.submissionId}" ${money0 < price || !enough ? 'disabled' : ''}>Unterschreiben</button>
-    <button class="btn small ghost lb-drop" data-act="submissionDrop" data-id="${s.submissionId}" title="Wegwerfen" aria-label="Wegwerfen">✕</button>
+    <button class="lb-iconbtn drop" data-act="submissionDrop" data-id="${s.submissionId}" title="Wegwerfen" aria-label="Wegwerfen">✕</button>
+    <button class="lb-iconbtn sign" data-act="subSign" data-id="${s.submissionId}" ${money0 < price || !enough ? 'disabled' : ''} title="Unterschreiben – ${money(price)}" aria-label="Unterschreiben">${PEN}</button>
   </div>`;
 }
 
-/** Visitenkarte einer Band: Gesichter antippen, wer mit unterschreibt; die anderen bleiben liegen. */
+const flipped = (s) => app.ui.subFlipped?.has(s.submissionId);
+
+/** Visitenkarte: vorn Genres, Instrument mit Leiste und Bekanntheit; ein Tipp dreht sie um (hinten Person und Eigenschaften). */
+function card(s) {
+  return `
+    <div class="lb-flipper ${flipped(s) ? 'flipped' : ''}" data-act="subFlip" data-id="${s.submissionId}">
+      <article class="lb-face front">
+        <div class="lb-fr-name"><b>${esc(s.firstName)} ${esc(s.lastName)}</b></div>
+        <div class="lb-fr-row">${genreTags(s.genres)}${fameStars(s)}</div>
+        <div class="lb-card-ins">${s.instruments.map(instrumentRow).join('')}</div>
+        ${iconFoot(s, s.price, true)}
+      </article>
+      <article class="lb-face back">
+        <div class="lb-bk-head"><span class="lb-ph" style="--split:linear-gradient(120deg, ${split(s.genres)})" data-act="subInfo" data-id="${s.submissionId}" data-index="0" title="Mehr über ${esc(s.firstName)}">${photo(s)}</span>
+          <div><b>${esc(s.firstName)} ${esc(s.lastName)}</b><small class="muted">Tipp auf Gesicht oder Eigenschaft: mehr erfahren</small></div></div>
+        <div class="lb-traits">${traitChips(s, 'subInfo', s.submissionId, 0)}</div>
+        ${iconFoot(s, s.price, true)}
+      </article>
+    </div>`;
+}
+
+/** Karte einer Band: vorn die Instrumente aller, hinten die Gesichter mit ihren Eigenschaften (Gesicht antippen = wählen). */
 function bandCard(s) {
   const picked = app.ui.subPick?.[s.submissionId] ?? new Set(s.members.map((m) => m.index));
   const chosen = s.members.filter((m) => picked.has(m.index));
   const price = chosen.reduce((a, m) => a + m.price, 0);
+  const genres = [...new Set(s.members.flatMap((m) => m.genres))].slice(0, 4);
   return `
-    <article class="lb-card2 band">
-      <div class="lb-band-head"><small class="muted">Band</small><b>${esc(s.bandName)}</b></div>
-      <div class="lb-band-faces">${s.members.map((m) => `
-        <button class="lb-bm ${picked.has(m.index) ? 'on' : ''}" data-act="subPick" data-id="${s.submissionId}" data-index="${m.index}" aria-pressed="${picked.has(m.index)}"
-          title="${esc(m.firstName)} · ${esc(m.instruments.map((i) => instrumentName(i.type)).join(', '))} · ${money(m.price)} – antippen zum Wählen">
-          <span class="lb-ph sm" style="--split:linear-gradient(120deg, ${split(m.genres)})">${photo(m)}<i class="lb-tick">${picked.has(m.index) ? '✓' : ''}</i></span>
-          <span class="lb-bm-row"><span class="ico">${instrumentIcon(m.instruments[0].type)}</span><b class="lv ${levelClass(m.instruments[0].skill)}">${levelCount(m.instruments[0].skill)}</b></span>
-        </button>`).join('')}</div>
-      ${cardFoot(s, price, chosen.length > 0)}
-    </article>`;
+    <div class="lb-flipper band ${flipped(s) ? 'flipped' : ''}" data-act="subFlip" data-id="${s.submissionId}">
+      <article class="lb-face front">
+        <div class="lb-fr-name"><small class="muted">Band</small> <b>${esc(s.bandName)}</b></div>
+        <div class="lb-fr-row">${genreTags(genres)}</div>
+        <div class="lb-card-ins grid">${s.members.map((m) => instrumentRow(m.instruments[0], true)).join('')}</div>
+        ${iconFoot(s, price, chosen.length > 0)}
+      </article>
+      <article class="lb-face back">
+        <div class="lb-band-faces">${s.members.map((m) => `
+          <div class="lb-bm ${picked.has(m.index) ? 'on' : ''}">
+            <button class="lb-ph sm" style="--split:linear-gradient(120deg, ${split(m.genres)})" data-act="subPick" data-id="${s.submissionId}" data-index="${m.index}" aria-pressed="${picked.has(m.index)}"
+              title="${esc(m.firstName)} · ${money(m.price)} – antippen zum Wählen">${photo(m)}<i class="lb-tick">${picked.has(m.index) ? '✓' : ''}</i></button>
+            <div class="lb-bm-traits">${traitChips(m, 'subInfo', s.submissionId, m.index)}</div>
+          </div>`).join('')}</div>
+        ${iconFoot(s, price, chosen.length > 0)}
+      </article>
+    </div>`;
 }
 
 function slot(s, busy) {
@@ -130,6 +148,42 @@ export function render() {
     <p class="muted">Jede Einsendung ist eine Kassette. Tipp sie an und sichte sie, dann siehst du, wer sich da bewirbt – ein Musiker oder eine ganze Band. Unterschreiben kostet einmalig eine Prämie, wegwerfen nichts. Wer zu lange liegt, zieht weiter. Du kannst alles frei hin und her schieben.</p>
     <div class="lb-filter">${[['all', 'Alle'], ['unheard', 'Ungehört'], ['0', 'Stufe 0'], ['1', 'Stufe 1'], ['2', 'Stufe 2'], ['3', 'Stufe 3']].map(([k, label]) => `<button class="${f === k ? 'on' : ''}" data-act="subFilter" data-key="${k}">${label}</button>`).join('')}</div>
     ${list.length ? `<div class="lb-slots" data-slots>${list.map((x) => slot(x, busy)).join('')}</div>` : '<div class="empty">Gerade liegt nichts im Briefkasten. Es trudelt laufend etwas ein.</div>'}`;
+}
+
+// ---------- Info-Fenster: Eigenschaften und wer zu wem passt ----------
+
+const COMPAT_WORD = (v) => (v >= 7 ? 'sehr gut' : v >= 5 ? 'gut' : v > 1 ? 'geht so' : 'schwierig');
+
+function openInfo(s, m) {
+  const modal = openModal({
+    className: 'lb-info-modal',
+    html: `
+      <div class="lb-cap">Einsendung</div>
+      <div class="lb-info-head"><span class="lb-ph" style="--split:linear-gradient(120deg, ${split(m.genres)})">${photo(m)}</span>
+        <div><h2>${esc(m.firstName)} ${esc(m.lastName)}</h2>${genreTags(m.genres)}</div></div>
+      <h3>Eigenschaften</h3>
+      <ul class="lb-trait-list">${m.personality.map((p) => `<li><b>${esc(cat().personalities[p])}</b> ${esc(cat().personalityInfo[p])}</li>`).join('')}</ul>
+      <h3>Wer zu ${esc(m.firstName)} passt</h3>
+      <div class="lb-compat" data-compat><small class="muted">Einen Moment …</small></div>
+      <div class="dialog-actions"><button class="btn primary" data-close>Schließen</button></div>`,
+  });
+  modal.body.querySelector('[data-close]').addEventListener('click', () => modal.close());
+  api('submissionCompat', { submissionId: s.submissionId, index: s.kind === 'band' ? m.index : 0 }).then(({ compat }) => {
+    const box = modal.body.querySelector('[data-compat]');
+    if (!box) return;
+    const row = (c) => {
+      const mm = musicianById(c.id);
+      const band = c.bandId ? app.state.bands.find((b) => b.id === c.bandId) : null;
+      return `<div class="lb-cp"><span class="lb-rel" style="--rc:${relColor(c.target)}">${mm ? photo(mm) : ''}</span>
+        <b>${esc(c.name)}</b><small class="muted">${band ? esc(band.name) : 'ohne Band'}</small><em>${COMPAT_WORD(c.target)}</em></div>`;
+    };
+    const good = compat.filter((c) => c.target >= 5).slice(0, 5);
+    const bad = compat.filter((c) => c.target <= 1).slice(-4).reverse();
+    box.innerHTML = !compat.length ? '<p class="muted">Du hast noch keine Musiker im Label, mit denen man vergleichen könnte.</p>'
+      : `${good.length ? `<h4>Versteht sich gut mit</h4>${good.map(row).join('')}` : ''}
+         ${bad.length ? `<h4>Schwierig mit</h4>${bad.map(row).join('')}` : ''}
+         ${!good.length && !bad.length ? '<p class="muted">Mit niemandem besonders gut oder schlecht – die Beziehungen wachsen langsam auf ein mittleres Niveau.</p>' : ''}`;
+  }).catch((e) => { const box = modal.body.querySelector('[data-compat]'); if (box) box.textContent = e.message; });
 }
 
 // ---------- Verschieben ----------
@@ -182,7 +236,7 @@ function dragEnd(cancelled) {
 
 document.addEventListener('pointerdown', (e) => {
   const el = e.target.closest?.('.lb-slotitem');
-  if (!el || e.button > 0 || e.target.closest('button, a, input, select, [data-act]:not(.lb-tape-big)')) return;
+  if (!el || e.button > 0 || e.target.closest('button, a, input, select, [data-act]:not(.lb-tape-big):not(.lb-flipper)')) return;
   const box = el.parentElement;
   const rect = box.getBoundingClientRect();
   const cx = el.offsetLeft + el.offsetWidth / 2;
@@ -227,6 +281,27 @@ defineActions({
   subFilter({ key }) {
     app.ui.subFilter = key;
     rerender();
+  },
+  /** Karte umdrehen (ohne neu zu zeichnen, damit die Drehung zu sehen ist). */
+  subFlip({ id }, el) {
+    app.ui.subFlipped ??= new Set();
+    const sid = Number(id);
+    if (app.ui.subFlipped.has(sid)) app.ui.subFlipped.delete(sid);
+    else app.ui.subFlipped.add(sid);
+    el.classList.toggle('flipped');
+  },
+  /** Unterschreiben nach Rückfrage: „… für … ₲ in das Label aufnehmen?“ */
+  async subSign({ id }) {
+    const s = app.state.submissions.find((x) => x.submissionId === Number(id));
+    const members = s.kind === 'band' ? s.members.filter((m) => (app.ui.subPick?.[id] ?? new Set(s.members.map((x) => x.index))).has(m.index)) : [s];
+    const names = members.map((m) => m.firstName);
+    const who = names.length > 1 ? `${names.slice(0, -1).join(', ')} und ${names.at(-1)}` : names[0];
+    const price = s.kind === 'band' ? members.reduce((a, m) => a + m.price, 0) : s.price;
+    if (await confirmDialog(`${who} für ${money(price)} in das Label aufnehmen?`, { ok: 'Aufnehmen' })) await actions.submissionSign({ id: String(id) });
+  },
+  subInfo({ id, index }) {
+    const s = app.state.submissions.find((x) => x.submissionId === Number(id));
+    openInfo(s, s.kind === 'band' ? s.members.find((m) => m.index === Number(index)) : s);
   },
   subPick({ id, index }) {
     const s = app.state.submissions.find((x) => x.submissionId === Number(id));

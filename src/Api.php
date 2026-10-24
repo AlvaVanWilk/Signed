@@ -66,6 +66,7 @@ final class Api
         'submissionDrop' => ['POST', true],
         'submissionOpen' => ['POST', true],
         'submissionOrder' => ['POST', true],
+        'submissionCompat' => ['POST', true],
         'submissionsTest' => ['POST', true],
         'practiceAuto' => ['POST', true],
         'courseAttend' => ['POST', true],
@@ -333,6 +334,11 @@ final class Api
         $order = array_values(array_unique(array_map('intval', array_filter(is_array($in['order'] ?? null) ? $in['order'] : [], 'is_numeric'))));
         $this->db->update('labels', ['sub_order' => json_encode(array_slice($order, 0, 500))], ['id' => $repo->labelId]);
         return [];
+    }
+
+    private function submissionCompat(array $in, Repo $repo): array
+    {
+        return ['compat' => (new Submissions($repo))->compat(self::int($in, 'submissionId'), (int) ($in['index'] ?? 0))];
     }
 
     private function submissionOpen(array $in, Repo $repo): array

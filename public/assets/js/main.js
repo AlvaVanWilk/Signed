@@ -490,14 +490,20 @@ document.addEventListener('visibilitychange', () => {
 });
 
 let lastAutoRefresh = 0;
+let lastTapeRefresh = 0;
 setInterval(() => {
   if (!app.state) return;
   updateCountdowns();
   // Eine laufende Probe wird alle paar Sekunden gutgeschrieben: So steigen Können und Stufen wirklich in dem Moment, in dem es passiert.
   const live = app.state.running.some((a) => a.type === 'rehearsal');
   label.tickLive();
-  const due = app.state.running.some((a) => a.endsAt <= serverNow())
-    || (app.state.submissions ?? []).some((x) => x.state === 'listening' && x.opensAt <= serverNow());
+  const due = app.state.running.some((a) => a.endsAt <= serverNow());
+  // Eine gesichtete Kassette soll sich sofort öffnen: kurz nach dem Ablauf (mit Reserve für die Uhr) schnell und wiederholt nachfragen.
+  const tapeDone = (app.state.submissions ?? []).some((x) => x.state === 'listening' && x.opensAt + 0.4 <= serverNow());
+  if (tapeDone && Date.now() - lastTapeRefresh > 700) {
+    lastTapeRefresh = Date.now();
+    refresh();
+  }
   if ((due && Date.now() - lastAutoRefresh > 3000) || (live && Date.now() - lastAutoRefresh > 5000)) {
     lastAutoRefresh = Date.now();
     refresh({ quiet: !due });

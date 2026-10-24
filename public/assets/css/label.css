@@ -1,5 +1,5 @@
 /* Label-Ebene: ruhige Flächen in drei Stufen (Seite, Feld, Karte), ein warmer Akzent, Farbe nur für Stimmung und Genre. */
-.shell {
+.shell, .modal, .modal-backdrop {
   --lb-panel: #121017; --lb-card: #1d1b27; --lb-card2: #252231; --lb-line: #302c3b; --lb-off: #2a2735;
   --lb-text: #e8e4ef; --lb-muted: #8d879c; --lb-accent: #c9a86a;
   --lb-ok: #5fb589; --lb-warn: #d9a441; --lb-bad: #c6585f;
@@ -196,15 +196,11 @@ button.lb-pill:disabled { opacity: 0.45; cursor: default; }
 .lb-filter button { border: 1px solid var(--lb-line); background: none; color: var(--lb-muted); font: inherit; font-weight: 700; font-size: 0.82rem; padding: 5px 12px; border-radius: 999px; cursor: pointer; }
 .lb-filter button.on { color: var(--lb-text); border-color: var(--lb-accent); }
 
-/* Schreibt die Band, bewegen sich drei dünne Pegel neben der Note – ruhig, im Takt des Schreibens; sonst stehen sie flach und gedämpft */
-.lb-bt .songs { position: relative; }
-.lb-bt .songs .eq { display: inline-flex; gap: 2px; align-items: flex-end; height: 12px; position: absolute; top: 3px; right: -2px; }
-.lb-bt .songs .eq s { display: block; width: 2px; height: 2px; border-radius: 1px; background: var(--lb-muted); opacity: 0.5; text-decoration: none; }
-.lb-bt .songs.writing .eq s { background: var(--lb-accent); opacity: 0.9; animation: lb-level var(--cycle, 1.6s) ease-in-out infinite; }
-.lb-bt .songs.writing .eq s:nth-child(2) { animation-delay: calc(var(--cycle, 1.6s) * -0.33); }
-.lb-bt .songs.writing .eq s:nth-child(3) { animation-delay: calc(var(--cycle, 1.6s) * -0.66); }
-@keyframes lb-level { 0%, 100% { height: 3px; } 50% { height: 12px; } }
-@media (prefers-reduced-motion: reduce) { .lb-bt .songs.writing .eq s { animation: none; height: 7px; } }
+/* Schreibt die Band, wird die Note immer wieder neu geschrieben: Der Strich zeichnet sie nach, bleibt kurz stehen und verblasst – im Takt des Schreibens; sonst steht sie blass und fertig da */
+.lb-bt .songs svg path { stroke-dasharray: 100; stroke-dashoffset: 0; opacity: 0.55; }
+.lb-bt .songs.writing svg path { opacity: 1; animation: lb-inkwrite var(--cycle, 2.4s) ease-in-out infinite; }
+@keyframes lb-inkwrite { 0% { stroke-dashoffset: 100; opacity: 1; } 55% { stroke-dashoffset: 0; opacity: 1; } 82% { stroke-dashoffset: 0; opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .lb-bt .songs.writing svg path { animation: none; } }
 
 /* Kassette: ungehörte Einsendung */
 .lb-tape { justify-items: center; text-align: center; }
@@ -332,3 +328,58 @@ button.lb-pill:disabled { opacity: 0.45; cursor: default; }
 .lv-2 .sk i, .lb-lv.lv-2 .lb-prog i { animation: lb-flow 6s ease-in-out infinite alternate; }
 @keyframes lb-flow { from { background-position: 0% 0; } to { background-position: 100% 0; } }
 @media (prefers-reduced-motion: reduce) { .lv-2 .sk i, .lb-lv.lv-2 .lb-prog i { animation: none; } }
+
+/* Eigenschaften als kleine Marken */
+.lb-trait { border: 1px solid var(--lb-line); background: var(--lb-card2); color: var(--lb-muted); font: inherit; font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; cursor: pointer; line-height: 1.3; }
+.lb-trait:hover { color: var(--lb-text); border-color: var(--lb-accent); }
+.lb-traitrow { display: inline-flex; gap: 5px; flex-wrap: wrap; }
+
+/* Gold: ganz leichtes Glitzern */
+.lv-3 .sk i, .lv-3 .lb-prog i { position: relative; overflow: hidden; }
+.lv-3 .sk i::after, .lv-3 .lb-prog i::after { content: ''; position: absolute; inset: 0; pointer-events: none;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0 0.8px, transparent 1.6px), radial-gradient(circle, rgba(255, 250, 220, 0.9) 0 0.7px, transparent 1.4px);
+  background-size: 23px 100%, 37px 100%; background-position: 4px 30%, 17px 70%; background-repeat: repeat-x; animation: lb-glint 2.8s ease-in-out infinite; }
+@keyframes lb-glint { 0%, 100% { opacity: 0.15; background-position: 4px 30%, 17px 70%; } 50% { opacity: 0.9; background-position: 9px 55%, 12px 35%; } }
+@media (prefers-reduced-motion: reduce) { .lv-3 .sk i::after, .lv-3 .lb-prog i::after { animation: none; opacity: 0.35; } }
+
+/* Karten: gleiche Größe wie die Kassette, drehbar */
+.lb-slots { grid-template-columns: repeat(auto-fill, 236px); }
+.lb-slotitem { width: 236px; height: 182px; }
+.lb-tape-big { width: 210px; }
+.lb-flipper { position: relative; width: 210px; height: 140px; perspective: 800px; cursor: pointer; }
+.lb-face { position: absolute; inset: 0; box-sizing: border-box; padding: 9px 11px; border-radius: 13px; background: var(--lb-card); border: 1px solid var(--lb-line); box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+  display: grid; align-content: space-between; gap: 4px; backface-visibility: hidden; -webkit-backface-visibility: hidden; transition: transform 0.45s; text-align: left; overflow: hidden; }
+.lb-face.back { transform: rotateY(180deg); background: var(--lb-card2); }
+.lb-flipper.flipped .front { transform: rotateY(-180deg); }
+.lb-flipper.flipped .back { transform: rotateY(0deg); }
+@media (prefers-reduced-motion: reduce) { .lb-face { transition: none; } }
+.lb-fr-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.88rem; line-height: 1.1; }
+.lb-fr-row { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+.lb-face .lb-genres { gap: 4px; } .lb-face .lb-gt { width: 21px; height: 21px; border-radius: 6px; } .lb-face .lb-gt .genre-icon { width: 13px; height: 13px; }
+.lb-sub-fame { color: var(--lb-accent); font-size: 0.78rem; letter-spacing: 0.08em; } .lb-fr-row small { font-size: 0.7rem; }
+.lb-card-ins { display: grid; gap: 3px; align-content: center; }
+.lb-card-ins.grid { grid-template-columns: 1fr 1fr; gap: 3px 8px; }
+.lb-face .lb-ins { gap: 6px; margin: 0; } .lb-face .lb-ins .ico { width: 20px; height: 20px; } .lb-face .lb-ins .ico svg { width: 100%; height: 100%; }
+.lb-face .lb-ins .sk { flex: 0 0 88px; } .lb-face .lb-ins.compact .sk { flex: 0 0 38px; } .lb-face .lb-ins.compact .ico { width: 17px; height: 17px; }
+.lb-card-foot { display: flex; align-items: center; gap: 6px; }
+.lb-card-foot .lb-price { flex: 1; color: var(--lb-accent); font-size: 0.84rem; }
+.lb-iconbtn { width: 28px; height: 24px; border-radius: 8px; border: 1px solid var(--lb-line); background: var(--lb-card2); color: var(--lb-muted); cursor: pointer; display: grid; place-items: center; padding: 0; font: inherit; font-size: 0.7rem; line-height: 1; }
+.lb-iconbtn:hover:not(:disabled) { color: var(--lb-text); border-color: var(--lb-accent); }
+.lb-iconbtn:disabled { opacity: 0.4; cursor: not-allowed; }
+.lb-iconbtn.sign { color: var(--lb-accent); border-color: color-mix(in srgb, var(--lb-accent) 55%, transparent); }
+.lb-iconbtn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.lb-bk-head { display: flex; gap: 9px; align-items: center; } .lb-bk-head b { display: block; font-size: 0.86rem; } .lb-bk-head small { font-size: 0.66rem; line-height: 1.2; display: block; }
+.lb-face .lb-bk-head .lb-ph { width: 42px; height: 42px; border-radius: 9px; flex: none; box-shadow: none; cursor: pointer; }
+.lb-traits { display: flex; gap: 5px; flex-wrap: wrap; }
+.lb-flipper.band .back .lb-band-faces { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; }
+.lb-flipper.band .lb-bm { display: flex; gap: 6px; align-items: center; opacity: 0.5; } .lb-flipper.band .lb-bm.on { opacity: 1; }
+.lb-flipper.band .lb-bm .lb-ph.sm { width: 32px; height: 32px; flex: none; border: 0; padding: 0; cursor: pointer; position: relative; box-shadow: none; }
+.lb-bm-traits { display: grid; gap: 2px; min-width: 0; } .lb-bm-traits .lb-trait { font-size: 0.6rem; padding: 0 5px; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-flipper.band .lb-face.back { padding-top: 8px; }
+/* Info-Fenster */
+.lb-info-head { display: flex; gap: 12px; align-items: center; margin-bottom: 8px; }
+.lb-info-head .lb-ph { width: 64px; height: 64px; box-shadow: none; flex: none; } .lb-info-head h2 { margin: 0 0 6px; }
+.lb-trait-list { margin: 0 0 10px; padding-left: 1.1em; display: grid; gap: 6px; }
+.lb-compat h4 { margin: 10px 0 6px; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--lb-muted, #8d879c); }
+.lb-cp { display: grid; grid-template-columns: 36px 1fr auto auto; gap: 10px; align-items: center; padding: 4px 0; }
+.lb-cp .lb-rel { width: 32px; height: 32px; margin: 2px; } .lb-cp em { font-style: normal; font-weight: 700; font-size: 0.82rem; }

@@ -267,6 +267,31 @@ final class Submissions
         });
     }
 
+    /**
+     * Mit wem würde dieser Bewerber (bei Bands: das Mitglied mit der Nummer $index) gut auskommen, mit wem nicht? Die Beziehung, auf die es zuläuft
+     * (−10…+10), für jeden Musiker des Labels. Erst nach dem Sichten.
+     * @return list<array{id: int, name: string, bandId: ?int, target: float}> beste zuerst
+     */
+    public function compat(int $id, int $index = 0): array
+    {
+        $row = $this->row($id);
+        if ($row['opened_at'] === null || (int) $row['opened_at'] > Clock::now()) {
+            throw new ApiError('Die Einsendung musst du erst sichten.');
+        }
+        $card = json_decode($row['card'], true);
+        $c = ($card['kind'] ?? '') === 'band' ? ($card['members'][$index] ?? null) : $card;
+        if ($c === null) {
+            throw new ApiError('Diesen Musiker gibt es auf der Einsendung nicht.');
+        }
+        $candidate = $c + ['id' => 0, 'band_slot' => 1];
+        $out = [];
+        foreach ($this->repo->musicians() as $m) {
+            $out[] = ['id' => $m['id'], 'name' => $m['first_name'] . ' ' . $m['last_name'], 'bandId' => $m['band_id'], 'target' => round(Mood::relationTarget(Mood::fit($candidate, $m)), 1)];
+        }
+        usort($out, static fn ($a, $b) => $b['target'] <=> $a['target']);
+        return $out;
+    }
+
     public function drop(int $id): void
     {
         $this->row($id);

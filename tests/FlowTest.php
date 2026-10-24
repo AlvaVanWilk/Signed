@@ -1458,3 +1458,16 @@ test('Einsendungen: eigene Reihenfolge merken', function () {
     $p->post('submissionOrder', ['order' => array_reverse($ids)]);
     checkEquals(array_reverse($ids), $p->get('state')['label']['subOrder']);
 });
+
+test('Einsendungen: Verträglichkeit mit den eigenen Musikern, erst nach dem Sichten', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Passung');
+    $closed = $p->get('state')['submissions'][0];
+    checkApiError(fn () => $p->post('submissionCompat', ['submissionId' => $closed['submissionId']]), 'sichten');
+    $res = $p->post('submissionsTest');
+    $open = array_values(array_filter($res['state']['submissions'], static fn ($s) => $s['state'] === 'open' && $s['kind'] === 'solo'))[0];
+    $compat = $p->post('submissionCompat', ['submissionId' => $open['submissionId']])['compat'];
+    checkEquals(count($res['state']['musicians']), count($compat), 'ein Eintrag je Musiker des Labels');
+    check($compat[0]['target'] >= end($compat)['target'], 'beste zuerst');
+    check($compat[0]['target'] <= 10 && end($compat)['target'] >= -10, 'Beziehung liegt zwischen −10 und +10');
+});

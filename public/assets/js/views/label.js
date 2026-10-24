@@ -61,11 +61,11 @@ function tile(b, selected) {
   const pips = steps(b.fame, cat().rules.fameLevels);
   const split = genreList.length ? `--g:var(--lb-c-${sortedGenres(genreList)[0]})` : '';
   return `
-    <a href="#/band/${b.id}" class="lb-bt ${selected ? 'sel' : ''} ${away ? 'busy' : ''} ${b.mood.level === 'red' ? 'frozen' : ''}" style="${split}" title="${esc(b.name)}">
+    <a href="#/band/${b.id}" data-nav="b${b.id}" draggable="false" class="lb-bt ${selected ? 'sel' : ''} ${away ? 'busy' : ''} ${b.mood.level === 'red' ? 'frozen' : ''}" style="${split}" title="${esc(b.name)}">
       <span class="nm">${esc(b.name)}</span>
       <span class="gl">${solo ? 'Solo · ' : ''}${esc(genres)}</span>
       <span class="mood">${moodTag(b.mood.level)}</span>
-      <span class="fame" title="Ruhm: ${esc(cat().fameNames[Math.min(pips, 3)] ?? '')}">${[0, 1, 2].map((i) => `<i class="${i < pips ? 'on' : ''}"></i>`).join('')}${b.mood.level === 'red' ? '<small>wartet auf dich</small>' : ''}${b.mood.wishes?.length ? `<svg class="wish" viewBox="0 0 24 20" title="Die Band hat einen Wunsch"><path d="M3 2h18a2 2 0 012 2v9a2 2 0 01-2 2h-9l-5 4v-4H3a2 2 0 01-2-2V4a2 2 0 012-2z"/></svg>` : ''}</span>
+      <span class="fame" title="Ruhm: ${esc(cat().fameNames[Math.min(pips, 3)] ?? '')}">${[0, 1, 2].map((i) => `<i class="${i < pips ? 'on' : ''}"></i>`).join('')}${b.mood.level === 'red' ? '<small>wartet auf dich</small>' : ''}${b.mood.wishes?.length ? `<svg class="wish" viewBox="0 0 24 20" title="${solo ? 'Ein Wunsch ist offen' : 'Die Band hat einen Wunsch'}"><path d="M3 2h18a2 2 0 012 2v9a2 2 0 01-2 2h-9l-5 4v-4H3a2 2 0 01-2-2V4a2 2 0 012-2z"/></svg>` : ''}</span>
       <span class="songs ${b.mood.songRate > 0 ? 'writing' : ''}" style="--cycle:${b.mood.songRate > 0 ? Math.min(6, Math.max(0.9, 1.6 / b.mood.songRate)).toFixed(2) : 0}s" title="Geschriebene Songs, die auf eine Aufnahme warten${b.mood.songRate > 0 ? ` · schreibt gerade etwa ${String(Math.round(b.mood.songRate * 10) / 10).replace('.', ',')} pro Std.` : ' · schreibt gerade nicht'}"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="ghost" d="M9 18a3 3 0 11-6 0 3 3 0 016 0 L9 5 L20 3 L20 16 a3 3 0 11-6 0 3 3 0 016 0"/><path class="draw" pathLength="100" d="M9 18a3 3 0 11-6 0 3 3 0 016 0 L9 5 L20 3 L20 16 a3 3 0 11-6 0 3 3 0 016 0"/></svg><b>${b.mood.songs}</b></span>
     </a>`;
 }
@@ -159,7 +159,7 @@ function memberRow(b, m, members, slots) {
       </div>
       <div class="lb-genres" style="--slots:${slots.length}">${slots.map((g) => (m.genres.includes(g) ? genreTag(g) : '<span class="lb-gt none"></span>')).join('')}</div>
       <div class="lb-rels">${members.length > 1 ? relationsOf(b, m, members) : ''}</div>
-      <button class="icon-btn lb-x" data-act="removeMember" data-band="${b.id}" data-musician="${m.id}" title="Aus der Band nehmen">✕</button>
+      ${members.length > 1 ? `<button class="icon-btn lb-x" data-act="removeMember" data-band="${b.id}" data-musician="${m.id}" title="Aus der Band nehmen">✕</button>` : ''}
     </div>
     <button class="lb-gear ${gear ? '' : 'empty'}" data-act="pickGear" data-musician="${m.id}" data-type="${played.type}" title="${gear ? esc(gearModel(gear.model).name) : `Kein ${esc(instrumentName(played.type))}`}">
       <span class="art">${gear ? instrumentIcon(played.type, gearModel(gear.model).electric, null) : '+'}</span>
@@ -182,7 +182,7 @@ function wishBlock(b, members) {
   const wishes = (b.mood.wishes ?? []).slice(0, 3);
   if (!wishes.length) return '';
   return `
-    <section class="lb-wishes"><h2 class="lb-cap">Wünsche der Band</h2>
+    <section class="lb-wishes"><h2 class="lb-cap">${members.length === 1 ? 'Wünsche' : 'Wünsche der Band'}</h2>
       ${wishes.map((w) => {
         const m = musicianById(w.musicianId);
         const [label, section] = WISH_BUTTON[w.action] ?? ['Einkaufen', null];
@@ -208,7 +208,7 @@ function act(b, members, type, section, title, text, icon, warn = false, busy = 
   const hint = r.dislike.length ? `<small class="no">${esc(names(r.dislike))} ${plural(r.dislike, 'mag', 'mögen')} das nicht.</small>` : `<small>${text}</small>`;
   // Ohne Unterseite: Die Anordnung startet gleich (Proben).
   if (!section) {
-    return `<button class="lb-act ${busy ? 'idle' : ''}" data-act="rehearseAsk" data-id="${b.id}" ${busy ? 'disabled' : ''}>${icon}<b>${title}</b>${busy ? '<small>Die Band ist gerade beschäftigt.</small>' : hint}</button>`;
+    return `<button class="lb-act ${busy ? 'idle' : ''}" data-act="rehearseAsk" data-id="${b.id}" ${busy ? 'disabled' : ''}>${icon}<b>${title}</b>${busy ? `<small>${members.length === 1 ? 'Gerade beschäftigt.' : 'Die Band ist gerade beschäftigt.'}</small>` : hint}</button>`;
   }
   return `<a class="lb-act ${warn ? 'warn' : ''}" href="#/band/${b.id}/${section}">${icon}<b>${title}</b>${hint}</a>`;
 }
@@ -225,7 +225,7 @@ function liveBlock(b, members, act) {
   return `
     <section class="lb-live" data-live-act="${act.id}">
       <div class="lb-live-head">
-        <div><h2 class="lb-cap">Die Band probt</h2>
+        <div><h2 class="lb-cap">${members.length === 1 ? 'Probt' : 'Die Band probt'}</h2>
           <small class="muted">Seit <span data-live-since="${act.startedAt}"></span> · spätestens zu Ende in <b data-live-left="${act.endsAt}">${duration(left)}</b> (${esc(who?.firstName ?? '')}${act.rehearsal.limit.why === 'red' ? ' wird genervt' : ' hat dann keine Lust mehr'})</small></div>
         <span class="lb-live-btns"><button class="btn small ghost" data-act="liveSound" data-id="${act.id}">${music?.actId === act.id ? 'Ton aus' : 'Ton an'}</button>
           <button class="btn small primary" data-act="rehearsalStop" data-id="${act.id}">Probe beenden</button></span>
@@ -346,13 +346,13 @@ export function page(route) {
     <h2 class="lb-cap lb-sec">Musiker</h2>
     <div class="lb-members">
       ${members.map((m) => memberRow(b, m, members, genreSlots(members))).join('')}
-      ${free > 0 ? `<button class="lb-addm" data-act="addMember" data-id="${b.id}">+ Musiker aufnehmen</button>` : ''}
+      ${free > 0 ? `<button class="lb-addm" data-act="together" data-id="${b.id}">${solo ? '+ mit anderen zusammentun' : '+ mit Musiker(n) zusammentun'}</button>` : ''}
     </div>
     <h2 class="lb-cap lb-sec">Werte</h2>
     <div class="lb-sum">
       <div data-act="bandStatInfo" data-key="sound" data-id="${b.id}" data-flash="sound-${b.id}"><small>Sound</small><b>${fmt1(b.sound)}</b></div>
       <div data-act="bandStatInfo" data-key="fame" data-id="${b.id}"><small>Ruhm</small><b>${esc(cat().fameNames[steps(b.fame, cat().rules.fameLevels)])}</b></div>
-      <div data-act="bandStatInfo" data-key="together" data-id="${b.id}"><small>Zusammenhalt</small><b>${solo || !b.mood.togetherness ? '–' : signed1(b.mood.togetherness.value)}</b></div>
+      ${solo || !b.mood.togetherness ? '' : `<div data-act="bandStatInfo" data-key="together" data-id="${b.id}"><small>Zusammenhalt</small><b>${signed1(b.mood.togetherness.value)}</b></div>`}
       <div><small>Stimmung</small><b>${fmt0(b.mood.value)}</b></div>
     </div>
     <details class="lb-more"><summary>Weitere Werte</summary>
@@ -364,7 +364,9 @@ export function page(route) {
     <div class="lb-foot">
       <a class="btn ghost small" href="${base}/auszeichnungen">Auszeichnungen</a>
       <a class="btn ghost small" href="${base}/promo">Promo</a>
-      <button class="btn danger ghost small" data-act="bandDisband" data-id="${b.id}">Band auflösen</button>
+      ${solo
+    ? `<button class="btn danger ghost small" data-act="musicianRelease" data-id="${members[0].id}">Künstler entlassen</button>`
+    : `<button class="btn danger ghost small" data-act="bandDisband" data-id="${b.id}">Band auflösen</button>`}
     </div>`;
 }
 
@@ -417,9 +419,9 @@ defineActions({
       html: `
         <div class="lb-cap">Anordnung</div>
         <h2>Proben mit ${esc(b.name)}</h2>
-        <p class="muted">Die Band geht in den Proberaum und probt, bis jemand keine Lust mehr hat – hier nach etwa <b>${mins(b.options.rehearsal.seconds)}</b> (${why}). Du kannst jederzeit beenden und behältst alles, was bis dahin gelernt wurde.</p>
+        <p class="muted">${members.length === 1 ? `${esc(members[0].firstName)} geht in den Proberaum und übt` : 'Die Band geht in den Proberaum und probt'}, bis ${members.length === 1 ? 'die Lust vorbei ist' : 'jemand keine Lust mehr hat'} – hier nach etwa <b>${mins(b.options.rehearsal.seconds)}</b> (${why}). Du kannst jederzeit beenden und behältst alles, was bis dahin gelernt wurde.</p>
         <h3>Was es bringt</h3>
-        <ul class="lb-ask-list">${skill}<li>Die Beziehungen untereinander wachsen.</li>${reactionLines(b, 'rehearsal')}</ul>
+        <ul class="lb-ask-list">${skill}${members.length > 1 ? '<li>Die Beziehungen untereinander wachsen.</li>' : ''}${reactionLines(b, 'rehearsal')}</ul>
         <div class="dialog-actions">
           <button class="btn ghost" data-cancel>Abbrechen</button>
           <button class="btn primary" data-go>Proben starten</button>

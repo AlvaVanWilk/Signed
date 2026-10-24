@@ -62,6 +62,8 @@ final class Api
         'bandPromo' => ['POST', true],
         'promoCancel' => ['POST', true],
         'rehearsalStop' => ['POST', true],
+        'bandJoinCandidates' => ['POST', true],
+        'bandMerge' => ['POST', true],
         'submissionSign' => ['POST', true],
         'submissionDrop' => ['POST', true],
         'submissionOpen' => ['POST', true],
@@ -358,6 +360,17 @@ final class Api
     {
         $tests = new Submissions($repo);
         empty($in['closed']) ? $tests->testFill() : $tests->testClosed();
+        return ['state' => State::build($repo)];
+    }
+
+    private function bandJoinCandidates(array $in, Repo $repo): array
+    {
+        return ['candidates' => (new Bands($repo))->joinCandidates(self::int($in, 'bandId'))];
+    }
+
+    private function bandMerge(array $in, Repo $repo): array
+    {
+        (new Bands($repo))->merge(self::int($in, 'bandId'), self::int($in, 'otherId'));
         return ['state' => State::build($repo)];
     }
 

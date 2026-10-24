@@ -383,3 +383,10 @@ Beim ersten Login nach dem Umbau (Saison 2) bleiben **Labelname und Konto**, all
 - Verfallszeit der Einsendungen (4 Tage?), Verteilung der Mengen und Preise der Assistenzen und Scouts (Scout-Startwerte: Stufe 1 400 ₲, Stufe 2 1.200 ₲, Stufe 3 3.000 ₲).
 - Klangprofil (A/B-Vorspielen): erst nach den ersten Schritten.
 - Auszeichnungen: endgültige kurze Liste.
+
+## Zusammentun (Band erweitern)
+
+- Statt „Musiker aufnehmen“: „mit Musiker(n) zusammentun“ (`bandJoinCandidates`, `bandMerge`). Kandidaten sind freie Solokünstler **und** Bands ohne eigene Laufbahn.
+- Sortierung: erst echte Vorteile (Genre-Titel, Genre-Bonus, neues Instrument bei steigendem Sound), dann gute Passung der Charaktere (Beziehungsziel ≥ 4), dann Sound-Änderung; Unmögliches zuletzt mit Grund. Suchfeld nach Namen (auch Mitglieder).
+- Band-Leiste links ist per Ziehen ordenbar (`navOrder`, Schlüssel `b<ID>`). Gelangweilte Figuren ohne Instrument zucken ab und zu die Schultern.
+- Solokünstler: keine „Band“-Wörter, „Künstler entlassen“ statt „Band auflösen“, kein ✕, kein Zusammenhalt-Feld.

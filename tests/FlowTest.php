@@ -1525,3 +1525,41 @@ test('Solokünstler wechseln in eine Band: Die leere Solo-Band verschwindet; wer
     $db->exec('UPDATE bands SET released = 1 WHERE id = (SELECT band_id FROM musicians WHERE id = ?)', [$id2]);
     checkApiError(fn () => $p->post('bandAddMember', ['bandId' => $band['id'], 'musicianId' => $id2, 'slot' => 1]), 'aufgebaut');
 });
+
+test('Zusammentun: Kandidaten nach Nutzen geordnet, Unmögliches zuletzt, Bands lassen sich verschmelzen', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Zusammen');
+    $band = foundBand($p, 'Kern');
+    $res = $p->post('submissionsTest');
+    // Zwei Solokünstler dazuholen lassen.
+    foreach (array_slice(array_values(array_filter($res['state']['submissions'], static fn ($s) => $s['state'] === 'open' && $s['kind'] === 'solo')), 0, 2) as $s) {
+        $p->post('submissionSign', ['submissionId' => $s['submissionId']]);
+    }
+    $list = $p->post('bandJoinCandidates', ['bandId' => $band['id']])['candidates'];
+    checkEquals(2, count($list));
+    foreach ($list as $c) {
+        check(isset($c['effects']) && array_key_exists('blocked', $c), 'Angaben vollständig');
+    }
+    // Wer etwas Grünes bringt, steht vor dem, der nichts bringt.
+    $greens = array_values(array_filter($list, static fn ($c) => $c['green'] && $c['blocked'] === null));
+    $rest = array_values(array_filter($list, static fn ($c) => !$c['green'] && $c['blocked'] === null));
+    if ($greens && $rest) {
+        check(array_search($greens[0]['bandId'], array_column($list, 'bandId'), true) < array_search($rest[0]['bandId'], array_column($list, 'bandId'), true), 'Vorteile zuerst');
+    }
+    // Verschmelzen: Eine unveröffentlichte Solo-Band geht in der anderen auf.
+    $other = $list[0];
+    if ($other['blocked'] === null) {
+        $state = $p->post('bandMerge', ['bandId' => $band['id'], 'otherId' => $other['bandId']])['state'];
+        $merged = bandById($state, $band['id']);
+        check(in_array($other['memberIds'][0], $merged['memberIds'], true), 'Mitglied ist dabei');
+        check(count(array_filter($state['bands'], static fn ($b) => $b['id'] === $other['bandId'])) === 0, 'die andere Band gibt es nicht mehr');
+    }
+    // Eine Band mit Laufbahn lässt sich nicht verschmelzen.
+    $any = array_values(array_filter($p->get('state')['bands'], static fn ($b) => $b['id'] !== $band['id']));
+    if ($any) {
+        $db->exec('UPDATE bands SET released = 1 WHERE id = ?', [$any[0]['id']]);
+        checkApiError(fn () => $p->post('bandMerge', ['bandId' => $band['id'], 'otherId' => $any[0]['id']]), 'Laufbahn');
+        $blockedList = $p->post('bandJoinCandidates', ['bandId' => $band['id']])['candidates'];
+        check(end($blockedList)['blocked'] !== null, 'Unmögliches steht zuletzt');
+    }
+});

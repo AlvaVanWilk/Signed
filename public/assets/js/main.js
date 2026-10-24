@@ -19,6 +19,7 @@ import * as overview from './views/overview.js';
 import * as packs from './views/packs.js';
 import * as storage from './views/storage.js';
 import * as submissions from './views/submissions.js';
+import './views/together.js';
 
 const NAV = [
   ['', 'Übersicht'],

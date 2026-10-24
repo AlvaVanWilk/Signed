@@ -235,7 +235,7 @@ const POSES = {
   // Ohne Instrument: Er steht nur dabei, die Arme hängen.
   none: {
     back: () => '',
-    front: (skin, shirt) => `${arm('M45 80 Q40 92 42 103', [42, 103], skin, shirt)}${arm('M75 80 Q81 92 78 103', [78, 103], skin, shirt)}`,
+    front: (skin, shirt) => `${arm('M45 80 Q40 92 42 103', [42, 103], skin, shirt, 'fig-shrug-l')}${arm('M75 80 Q81 92 78 103', [78, 103], skin, shirt, 'fig-shrug-r')}`,
   },
   guitar: { back: () => '', front: guitarLike('#e9a24b', 6, '#e4572e') },
   bass: { back: () => '', front: bassLike },

@@ -151,6 +151,125 @@ final class Bands
         });
     }
 
+    /**
+     * Wer passt zu dieser Band? Alle Solokünstler und anderen Bands, die sich dazuholen ließen, nach Nutzen geordnet:
+     * erst echte Vorteile (Genre-Titel, Genre-Bonus, neues Instrument), dann gute Passung der Charaktere, dann der Rest; Unmögliches zuletzt.
+     * @return list<array<string, mixed>>
+     */
+    public function joinCandidates(int $bandId): array
+    {
+        $band = $this->repo->band($bandId);
+        $members = $this->repo->members($bandId);
+        $gear = $this->repo->gearByMusician();
+        $now = Clock::now();
+        $relNow = Mood::relations($this->repo, array_map(static fn ($m) => ['band_id' => $bandId] + $m, $members));
+        $idNow = BandCalc::identity($members, $band['genre'], $band['genre2']);
+        $soundNow = BandCalc::sound($members, Mood::cohesionValue($relNow), $gear, $idNow['bonus']);
+        $typesNow = array_map([BandCalc::class, 'instrument'], $members);
+        $out = [];
+        foreach ($this->repo->bands() as $other) {
+            if ($other['id'] === $bandId) {
+                continue;
+            }
+            $group = $this->repo->members($other['id']);
+            if (!$group) {
+                continue;
+            }
+            $solo = count($group) === 1;
+            $blocked = null;
+            if ($other['released'] || $other['records'] > 0) {
+                $blocked = $solo ? sprintf('%s hat mit der eigenen Band schon etwas aufgebaut.', $group[0]['first_name']) : sprintf('„%s“ hat schon eine eigene Laufbahn.', $other['name']);
+            } elseif ($other['busy_until'] > $now || $band['busy_until'] > $now) {
+                $blocked = 'Gerade beschäftigt.';
+            }
+            $after = array_merge($members, $group);
+            if ($blocked === null && ($problems = BandCalc::lineupProblems($after))) {
+                $blocked = $problems[0];
+            }
+            $relAfter = Mood::relations($this->repo, array_map(static fn ($m) => ['band_id' => $bandId] + $m, $after));
+            $idAfter = BandCalc::identity($after, $band['genre'], $band['genre2']);
+            $soundAfter = BandCalc::sound($after, Mood::cohesionValue($relAfter), $gear, $idAfter['bonus']);
+            $effects = [];
+            $green = false;
+            $newInstrument = false;
+            if ($idAfter['title'] !== null && $idAfter['title'] !== $idNow['title']) {
+                $effects[] = ['good' => true, 'text' => sprintf('Wird zur %s: Sound +%d %%', $idAfter['title'], max(0, round(($idAfter['bonus'] / max(0.01, $idNow['bonus']) - 1) * 100)))];
+                $green = true;
+            } elseif ($idAfter['bonus'] > $idNow['bonus'] + 1e-9) {
+                $effects[] = ['good' => true, 'text' => sprintf('Genre-Bonus: Sound +%d %%', round(($idAfter['bonus'] / max(0.01, $idNow['bonus']) - 1) * 100))];
+                $green = true;
+            } elseif ($idAfter['bonus'] < $idNow['bonus'] - 1e-9) {
+                $effects[] = ['good' => false, 'text' => sprintf('Verwässert das Genre: Sound %d %%', round(($idAfter['bonus'] / max(0.01, $idNow['bonus']) - 1) * 100))];
+            }
+            $new = array_values(array_unique(array_diff(array_map([BandCalc::class, 'instrument'], $group), $typesNow)));
+            foreach ($new as $type) {
+                $effects[] = ['good' => true, 'text' => sprintf('Bringt %s dazu', Catalog::INSTRUMENTS[$type]['name'])];
+                $newInstrument = true;
+            }
+            // Charakter-Passung: Wohin die Beziehungen zwischen Neuen und Bestehenden laufen würden
+            $pairs = [];
+            foreach ($group as $g) {
+                foreach ($members as $m) {
+                    $pairs[] = ['g' => $g, 'm' => $m, 'v' => Mood::relationTarget(Mood::fit($g, $m))];
+                }
+            }
+            $avg = $pairs ? array_sum(array_column($pairs, 'v')) / count($pairs) : 0.0;
+            usort($pairs, static fn ($a, $b) => $b['v'] <=> $a['v']);
+            if ($pairs && $pairs[0]['v'] >= 5) {
+                $effects[] = ['good' => true, 'text' => sprintf('%s und %s verstehen sich gut', $pairs[0]['g']['first_name'], $pairs[0]['m']['first_name'])];
+            }
+            $worst = $pairs ? end($pairs) : null;
+            if ($worst && $worst['v'] <= 1) {
+                $effects[] = ['good' => false, 'text' => sprintf('%s und %s würden sich reiben', $worst['g']['first_name'], $worst['m']['first_name'])];
+            }
+            // Ein neues Instrument allein zählt nur, wenn der Sound unterm Strich nicht sinkt.
+            if ($newInstrument && $soundAfter > $soundNow) {
+                $green = true;
+            }
+            $out[] = [
+                'kind' => $solo ? 'musician' : 'band',
+                'bandId' => $other['id'],
+                'musicianId' => $solo ? $group[0]['id'] : null,
+                'name' => $solo ? self::fullName($group[0]) : $other['name'],
+                'memberIds' => array_column($group, 'id'),
+                'blocked' => $blocked,
+                'green' => $green,
+                'soundDelta' => $soundNow > 0 ? round(($soundAfter / $soundNow - 1) * 100, 1) : 0.0,
+                'compat' => round($avg, 1),
+                'effects' => $effects,
+            ];
+        }
+        usort($out, static fn ($a, $b) => [$a['blocked'] === null ? 1 : 0, $a['green'] ? 1 : 0, $a['compat'] >= 4 ? 1 : 0, $a['soundDelta'], $a['compat']]
+            <=> [$b['blocked'] === null ? 1 : 0, $b['green'] ? 1 : 0, $b['compat'] >= 4 ? 1 : 0, $b['soundDelta'], $b['compat']]);
+        return array_slice(array_reverse($out), 0, 80);
+    }
+
+    /** Zwei Bands tun sich zusammen: Die andere (ohne eigene Laufbahn) geht in dieser auf. */
+    public function merge(int $bandId, int $otherId): void
+    {
+        $this->repo->db->transaction(function () use ($bandId, $otherId): void {
+            $band = $this->idleBand($bandId);
+            $other = $this->idleBand($otherId);
+            if ($bandId === $otherId) {
+                throw new ApiError('Das ist dieselbe Band.');
+            }
+            if ($other['released'] || $other['records'] > 0) {
+                throw new ApiError(sprintf('„%s“ hat schon eine eigene Laufbahn und bleibt bestehen.', $other['name']));
+            }
+            $group = $this->repo->members($otherId);
+            $members = array_merge($this->repo->members($bandId), $group);
+            self::assertLineup($members);
+            $db = $this->repo->db;
+            $db->exec('UPDATE musicians SET band_id = ? WHERE band_id = ?', [$bandId, $otherId]);
+            $db->exec("DELETE FROM records WHERE band_id = ? AND status = 'open'", [$otherId]);
+            $db->exec('DELETE FROM bands WHERE id = ?', [$otherId]);
+            if (count($group) > 1) {
+                $this->repo->log('lineup', sprintf('„%s“ geht in „%s“ auf.', $other['name'], $band['name']), $bandId);
+            }
+            $this->syncIdentity($this->repo->band($bandId));
+        });
+    }
+
     public function rename(int $bandId, string $name): void
     {
         $band = $this->repo->band($bandId);

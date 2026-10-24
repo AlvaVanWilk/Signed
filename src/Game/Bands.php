@@ -215,16 +215,21 @@ final class Bands
             }
             $avg = $pairs ? array_sum(array_column($pairs, 'v')) / count($pairs) : 0.0;
             usort($pairs, static fn ($a, $b) => $b['v'] <=> $a['v']);
-            if ($pairs && $pairs[0]['v'] >= 5) {
+            if ($pairs && $pairs[0]['v'] >= 3.5) {
                 $effects[] = ['good' => true, 'text' => sprintf('%s und %s verstehen sich gut', $pairs[0]['g']['first_name'], $pairs[0]['m']['first_name'])];
             }
             $worst = $pairs ? end($pairs) : null;
-            if ($worst && $worst['v'] <= 1) {
+            if ($worst && $worst['v'] <= -3) {
                 $effects[] = ['good' => false, 'text' => sprintf('%s und %s würden sich reiben', $worst['g']['first_name'], $worst['m']['first_name'])];
             }
             // Ein neues Instrument allein zählt nur, wenn der Sound unterm Strich nicht sinkt.
             if ($newInstrument && $soundAfter > $soundNow) {
                 $green = true;
+            }
+            foreach ($group as $g) {
+                if (in_array('teamplayer', $g['personality'], true)) {
+                    $effects[] = ['good' => true, 'text' => sprintf('%s ist Teamplayer und hilft allen', $g['first_name'])];
+                }
             }
             $out[] = [
                 'kind' => $solo ? 'musician' : 'band',
@@ -239,8 +244,8 @@ final class Bands
                 'effects' => $effects,
             ];
         }
-        usort($out, static fn ($a, $b) => [$a['blocked'] === null ? 1 : 0, $a['green'] ? 1 : 0, $a['compat'] >= 4 ? 1 : 0, $a['soundDelta'], $a['compat']]
-            <=> [$b['blocked'] === null ? 1 : 0, $b['green'] ? 1 : 0, $b['compat'] >= 4 ? 1 : 0, $b['soundDelta'], $b['compat']]);
+        usort($out, static fn ($a, $b) => [$a['blocked'] === null ? 1 : 0, $a['green'] ? 1 : 0, $a['compat'] >= 3.5 ? 1 : 0, $a['soundDelta'], $a['compat']]
+            <=> [$b['blocked'] === null ? 1 : 0, $b['green'] ? 1 : 0, $b['compat'] >= 3.5 ? 1 : 0, $b['soundDelta'], $b['compat']]);
         return array_slice(array_reverse($out), 0, 80);
     }
 

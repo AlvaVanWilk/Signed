@@ -16,7 +16,7 @@ const SECTIONS = [
   ['blocked', 'Gerade nicht möglich', ''],
 ];
 
-const sectionOf = (c) => (c.blocked ? 'blocked' : c.green ? 'green' : c.compat >= 4 ? 'fit' : 'rest');
+const sectionOf = (c) => (c.blocked ? 'blocked' : c.green ? 'green' : c.compat >= 3.5 ? 'fit' : 'rest');
 
 function who(c) {
   if (c.kind === 'musician') {

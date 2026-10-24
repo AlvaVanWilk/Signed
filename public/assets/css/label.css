@@ -77,7 +77,7 @@
 .lb-ins .ico.switch { position: relative; border: 1px dashed var(--lb-muted); border-radius: 9px; background: var(--lb-card2); padding: 2px; cursor: pointer; }
 .lb-ins .ico.switch:hover { border-color: var(--lb-accent); }
 .lb-ins .ico.switch i { position: absolute; right: -6px; bottom: -6px; font-style: normal; font-size: 0.68rem; line-height: 1; background: var(--lb-accent); color: #17151d; border-radius: 50%; padding: 2px 3px; font-weight: 800; }
-.lb-ins .sk { flex: 0 0 100px; height: 5px; border-radius: 3px; background: var(--lb-off); overflow: hidden; } .lb-ins .sk i { display: block; height: 100%; background: var(--lc, var(--lb-accent)); }
+.lb-ins .sk { flex: 0 0 100px; height: 5px; border-radius: 3px; background: var(--lb-off); overflow: hidden; } .lb-ins .sk i { display: block; height: 100%; background: var(--lg, var(--lc, var(--lb-accent))); background-size: 220% 100%; }
 .lb-ins .lv { font-weight: 800; color: var(--lc, var(--lb-accent)); min-width: 14px; }
 .lb-ins select { font-size: 0.78rem; max-width: 120px; }
 .lb-genres { display: flex; gap: 6px; }
@@ -171,11 +171,14 @@ button.lb-pill:disabled { opacity: 0.45; cursor: default; }
 .lb-glow.yellow { --c: var(--lb-warn); } .lb-glow.red { --c: var(--lb-bad); }
 .lb-lv { display: grid; gap: 3px; justify-items: center; margin-top: 5px; width: 100%; }
 .lb-prog { display: block; width: 100px; height: 6px; border-radius: 3px; background: var(--lb-off); overflow: hidden; }
-.lb-prog i { display: block; height: 100%; width: 0; background: var(--lc, var(--lb-accent)); transition: width 0.9s linear; }
+.lb-prog i { display: block; height: 100%; width: 0; background: var(--lg, var(--lc, var(--lb-accent))); background-size: 220% 100%; transition: width 0.9s linear; }
 .lb-lv em { font-style: normal; font-weight: 800; color: var(--lc, var(--lb-accent)); font-variant-numeric: tabular-nums; font-size: 0.92rem; }
 
 /* Farbe je Können-Stufe (nicht Grün, Gelb, Rot – die gehören der Stimmung). Neue Stufen: eine Zeile mehr hier und MAX_LV_STYLE in label.js erhöhen. */
-.lv-0 { --lc: #8a8f9c; } .lv-1 { --lc: #5b94d0; } .lv-2 { --lc: #9a82d4; } .lv-3 { --lc: #d9b25a; }
+.lv-0 { --lc: #8a8f9c; --lg: #8a8f9c; }
+.lv-1 { --lc: #56b884; --lg: #56b884; }
+.lv-2 { --lc: #5f9bde; --lg: linear-gradient(90deg, #3d74c2, #86bdf4); }
+.lv-3 { --lc: #f0c14b; --lg: linear-gradient(100deg, #c18a1d 0%, #ffe08a 35%, #e0a52a 50%, #ffe08a 65%, #c18a1d 100%); }
 .lb-ins .sk i, .lb-prog i, .lb-ins .lv { transition: background 0.4s, color 0.4s; }
 
 /* Einsendungen */
@@ -193,11 +196,15 @@ button.lb-pill:disabled { opacity: 0.45; cursor: default; }
 .lb-filter button { border: 1px solid var(--lb-line); background: none; color: var(--lb-muted); font: inherit; font-weight: 700; font-size: 0.82rem; padding: 5px 12px; border-radius: 999px; cursor: pointer; }
 .lb-filter button.on { color: var(--lb-text); border-color: var(--lb-accent); }
 
-/* Die Note füllt sich, solange die Band Songs schreibt – je schneller sie schreibt, desto schneller; ohne Schreiben steht sie still */
-.lb-bt .songs svg { fill: var(--lb-accent); fill-opacity: 0; transform-origin: 50% 70%; }
-.lb-bt .songs.writing svg { animation: lb-write var(--cycle, 4s) ease-in infinite; }
-@keyframes lb-write { 0% { fill-opacity: 0; transform: scale(1); } 78% { fill-opacity: 0.95; transform: scale(1); } 88% { fill-opacity: 1; transform: scale(1.18); } 100% { fill-opacity: 0; transform: scale(1); } }
-@media (prefers-reduced-motion: reduce) { .lb-bt .songs.writing svg { animation: none; fill-opacity: 0.5; } }
+/* Schreibt die Band, bewegen sich drei dünne Pegel neben der Note – ruhig, im Takt des Schreibens; sonst stehen sie flach und gedämpft */
+.lb-bt .songs { position: relative; }
+.lb-bt .songs .eq { display: inline-flex; gap: 2px; align-items: flex-end; height: 12px; position: absolute; top: 3px; right: -2px; }
+.lb-bt .songs .eq s { display: block; width: 2px; height: 2px; border-radius: 1px; background: var(--lb-muted); opacity: 0.5; text-decoration: none; }
+.lb-bt .songs.writing .eq s { background: var(--lb-accent); opacity: 0.9; animation: lb-level var(--cycle, 1.6s) ease-in-out infinite; }
+.lb-bt .songs.writing .eq s:nth-child(2) { animation-delay: calc(var(--cycle, 1.6s) * -0.33); }
+.lb-bt .songs.writing .eq s:nth-child(3) { animation-delay: calc(var(--cycle, 1.6s) * -0.66); }
+@keyframes lb-level { 0%, 100% { height: 3px; } 50% { height: 12px; } }
+@media (prefers-reduced-motion: reduce) { .lb-bt .songs.writing .eq s { animation: none; height: 7px; } }
 
 /* Kassette: ungehörte Einsendung */
 .lb-tape { justify-items: center; text-align: center; }
@@ -277,3 +284,9 @@ button.lb-pill:disabled { opacity: 0.45; cursor: default; }
 .lb-price b { color: var(--lb-accent); font-size: 0.95rem; } .lb-price small { color: var(--lb-muted); font-size: 0.7rem; }
 .lb-card2 .lb-sub-foot .btn { padding: 5px 8px; font-size: 0.78rem; }
 .lb-card2 .lb-sub-foot { flex: none; }
+
+/* Stufe 3: wertvoller – goldener Glanz zieht über die Leiste, dazu ein leichtes Leuchten */
+.lv-3 .sk i, .lv-3 .lb-prog i, .lb-lv.lv-3 .lb-prog i { animation: lb-sheen 3.2s linear infinite; box-shadow: 0 0 8px rgba(255, 205, 90, 0.55); }
+.lv-3 .lv, .lb-lv.lv-3 em { text-shadow: 0 0 8px rgba(255, 205, 90, 0.5); }
+@keyframes lb-sheen { from { background-position: 0% 0; } to { background-position: -220% 0; } }
+@media (prefers-reduced-motion: reduce) { .lv-3 .sk i, .lv-3 .lb-prog i { animation: none; } }

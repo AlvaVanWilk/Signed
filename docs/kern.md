@@ -3,7 +3,7 @@
 Stand: vierte Runde (Läden mit Auswahl, Konto, neue Karten). Währung: Groove Coins (₲). Grundlage ist das Claude-Doc „Signed – Spielkonzept“.
 Alle Zahlen stehen in [`src/Game/Balance.php`](../src/Game/Balance.php) und sind Startwerte zum Nachjustieren.
 
-> **Umbau:** Signed wird gerade auf die Label-Ebene umgebaut (Bands mit Eigenleben, Zufriedenheit, Beziehungen). Das neue Konzept steht in
+> **Umbau:** Signed wird gerade auf die Label-Ebene umgebaut (Bands mit Eigenleben, Stimmung, Beziehungen). Das neue Konzept steht in
 > [`label-konzept.md`](label-konzept.md), was ins Musikerspiel auswandert in [`ausgelagert-musikerspiel.md`](ausgelagert-musikerspiel.md).
 > Diese Datei beschreibt weiter das echte Spiel, bis der Umbau fertig ist.
 

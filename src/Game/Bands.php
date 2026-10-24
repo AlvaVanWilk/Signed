@@ -165,7 +165,6 @@ final class Bands
         $relNow = Mood::relations($this->repo, array_map(static fn ($m) => ['band_id' => $bandId] + $m, $members));
         $idNow = BandCalc::identity($members, $band['genre'], $band['genre2']);
         $soundNow = BandCalc::sound($members, Mood::cohesionValue($relNow), $gear, $idNow['bonus']);
-        $typesNow = array_map([BandCalc::class, 'instrument'], $members);
         $out = [];
         foreach ($this->repo->bands() as $other) {
             if ($other['id'] === $bandId) {
@@ -191,69 +190,57 @@ final class Bands
             $soundAfter = BandCalc::sound($after, Mood::cohesionValue($relAfter), $gear, $idAfter['bonus']);
             $effects = [];
             $green = false;
-            $newInstrument = false;
-            // Gemeinsames Genre: wirkt auf zwei Ebenen, auf den Sound (Genre-Bonus) und auf die Beziehungen.
+            // Gemeinsames Genre aller (nach dem Zusammentun)
             $shared = [];
             foreach ($idAfter['checks'] as $genre => $check) {
                 if ($check['fans'] === count($after)) {
                     $shared[] = $genre;
                 }
             }
-            $pctUp = static fn (float $to, float $from): int => (int) round(($to / max(0.01, $from) - 1) * 100);
-            if ($idAfter['title'] !== null && $idAfter['title'] !== $idNow['title']) {
-                $effects[] = ['good' => true, 'text' => sprintf('Wird zur %s: Sound +%d %%', $idAfter['title'], $pctUp($idAfter['bonus'], $idNow['bonus']))];
+            if ($shared) {
+                $effects[] = ['good' => true, 'text' => 'Gemeinsames Genre: ' . implode(' und ', array_map(static fn ($g) => Catalog::GENRES[$g]['name'], $shared))];
                 $green = true;
-            } elseif ($idAfter['title'] !== null && $idAfter['bonus'] >= $idNow['bonus'] - 1e-9) {
-                $effects[] = ['good' => true, 'text' => sprintf('Bleibt eine %s: Sound +%d %%', $idAfter['title'], $pctUp($idAfter['bonus'], 1.0))];
-                $green = true;
-            } elseif ($idAfter['title'] === null && $shared) {
-                // Gemeinsames Genre, nur die Besetzung fehlt noch: kein Abzug, sondern eine Aussicht.
-                $genre = $shared[0];
-                $missing = [];
-                foreach ($idAfter['checks'][$genre]['requirements'] as $req) {
-                    if (!$req['met']) {
-                        $names = implode(' oder ', array_map(static fn ($t) => Catalog::INSTRUMENTS[$t]['name'], $req['instruments']));
-                        $missing[] = $req['need'] > 1 ? sprintf('%d × %s', $req['need'], $names) : $names;
+                // Besetzungs-Schablone des Genres: erfüllt der Neue ein Stück davon, oder gar das letzte?
+                $genre = $idAfter['primary'] ?? $shared[0];
+                $bandName = BandCalc::title($genre, null);
+                if ($idNow['primary'] !== $genre && $idAfter['primary'] === $genre) {
+                    $effects[] = ['good' => true, 'text' => sprintf('Vervollständigt die %s', $bandName)];
+                } elseif ($idAfter['primary'] === null || $idNow['primary'] !== $genre) {
+                    $nowReq = $idNow['checks'][$genre]['requirements'];
+                    foreach ($idAfter['checks'][$genre]['requirements'] as $i => $req) {
+                        if (!$nowReq[$i]['met'] && $req['have'] > $nowReq[$i]['have']) {
+                            $given = array_values(array_unique(array_filter(array_map([BandCalc::class, 'instrument'], $group), static fn ($t) => in_array($t, $req['instruments'], true))));
+                            $effects[] = ['good' => true, 'text' => sprintf('Bringt %s für die %s', implode(' oder ', array_map(static fn ($t) => Catalog::INSTRUMENTS[$t]['name'], $given)), $bandName)];
+                        }
                     }
                 }
-                $effects[] = ['good' => true, 'text' => sprintf('Gemeinsames Genre %s: mit %s wird es eine Band mit Genre-Bonus (Sound +%d %%)', Catalog::GENRES[$genre]['name'], implode(' und ', $missing), $pctUp(Balance::GENRE_BONUS, 1.0))];
-                $green = true;
             } elseif ($idAfter['bonus'] < $idNow['bonus'] - 1e-9) {
-                $effects[] = ['good' => false, 'text' => sprintf('Kein gemeinsames Genre: Sound %d %%', $pctUp($idAfter['bonus'], $idNow['bonus']))];
+                $effects[] = ['good' => false, 'text' => sprintf('Kein gemeinsames Genre: Sound %d %%', (int) round(($idAfter['bonus'] / max(0.01, $idNow['bonus']) - 1) * 100))];
             }
-            if ($shared) {
-                $effects[] = ['good' => true, 'text' => sprintf('Gemeinsames Genre %s: die Charaktere verstehen sich leichter', Catalog::GENRES[$shared[0]]['name'])];
-                $green = true;
-            }
-            $new = array_values(array_unique(array_diff(array_map([BandCalc::class, 'instrument'], $group), $typesNow)));
-            foreach ($new as $type) {
-                $effects[] = ['good' => true, 'text' => sprintf('Bringt %s dazu', Catalog::INSTRUMENTS[$type]['name'])];
-                $newInstrument = true;
-            }
-            // Charakter-Passung: Wohin die Beziehungen zwischen Neuen und Bestehenden laufen würden
+            // Charakter: verstehen sie sich über das Genre hinaus gut oder reiben sie sich?
             $pairs = [];
             foreach ($group as $g) {
                 foreach ($members as $m) {
-                    $pairs[] = ['g' => $g, 'm' => $m, 'v' => Mood::relationTarget(Mood::fit($g, $m))];
+                    $fit = Mood::fit($g, $m);
+                    $genreTerm = Balance::RELATION['genres'][min(3, count(array_intersect($g['genres'], $m['genres'])))];
+                    $pairs[] = ['g' => $g, 'm' => $m, 'v' => Mood::relationTarget($fit), 'own' => $fit - $genreTerm];
                 }
             }
             $avg = $pairs ? array_sum(array_column($pairs, 'v')) / count($pairs) : 0.0;
-            usort($pairs, static fn ($a, $b) => $b['v'] <=> $a['v']);
-            if ($pairs && $pairs[0]['v'] >= 3.5) {
-                $effects[] = ['good' => true, 'text' => sprintf('%s und %s verstehen sich gut', $pairs[0]['g']['first_name'], $pairs[0]['m']['first_name'])];
-            }
-            $worst = $pairs ? end($pairs) : null;
-            if ($worst && $worst['v'] <= -3) {
-                $effects[] = ['good' => false, 'text' => sprintf('%s und %s würden sich reiben', $worst['g']['first_name'], $worst['m']['first_name'])];
-            }
-            // Ein neues Instrument allein zählt nur, wenn der Sound unterm Strich nicht sinkt.
-            if ($newInstrument && $soundAfter > $soundNow) {
+            $teamplayer = array_values(array_filter($group, static fn ($g) => in_array('teamplayer', $g['personality'], true)));
+            if ($teamplayer) {
+                $effects[] = ['good' => true, 'text' => sprintf('%s ist Teamplayer und hilft allen', $teamplayer[0]['first_name'])];
                 $green = true;
-            }
-            foreach ($group as $g) {
-                if (in_array('teamplayer', $g['personality'], true)) {
-                    $effects[] = ['good' => true, 'text' => sprintf('%s ist Teamplayer und hilft allen', $g['first_name'])];
+            } else {
+                usort($pairs, static fn ($a, $b) => $b['own'] <=> $a['own']);
+                if ($pairs && $pairs[0]['own'] >= 0.2) {
+                    $effects[] = ['good' => true, 'text' => sprintf('%s und %s verstehen sich gut', $pairs[0]['g']['first_name'], $pairs[0]['m']['first_name'])];
+                    $green = true;
                 }
+            }
+            usort($pairs, static fn ($a, $b) => $a['v'] <=> $b['v']);
+            if ($pairs && $pairs[0]['v'] <= -3) {
+                $effects[] = ['good' => false, 'text' => sprintf('%s und %s würden sich reiben', $pairs[0]['g']['first_name'], $pairs[0]['m']['first_name'])];
             }
             $out[] = [
                 'kind' => $solo ? 'musician' : 'band',

@@ -486,9 +486,38 @@ defineActions({
     popover(el, `${x.firstName} und ${y.firstName} ${relWord(v)} (${signed(v)}).`);
   },
   /** Nächstes Instrument des Musikers in der Band wählen (mit der gewohnten Rückfrage). */
+  /** Instrument wechseln: Unter dem Knopf klappen die anderen Instrumente als Symbole mit Können-Leiste auf. */
   slotCycle({ band, musician }, el) {
+    const open = document.querySelector('.lb-slotmenu');
+    const same = open?.dataset.musician === musician;
+    open?.remove();
+    if (same) return;
     const m = musicianById(musician);
-    const next = (m.bandSlot % m.instruments.length) + 1;
-    return actions.bandSetSlot(String(next), el);
+    const rules = cat().rules;
+    const menu = document.createElement('div');
+    menu.className = 'lb-slotmenu';
+    menu.dataset.musician = musician;
+    menu.innerHTML = m.instruments.map((i, idx) => ({ i, idx })).filter(({ idx }) => idx + 1 !== m.bandSlot).map(({ i, idx }) => {
+      const lv = steps(i.skill, rules.skillLevels);
+      const own = ownGear(m, i.type);
+      return `<button class="lb-ins lv-${Math.min(lv, MAX_LV_STYLE)}" data-slot="${idx + 1}" title="${esc(instrumentName(i.type))} (Können ${fmt0(i.skill)})" aria-label="${esc(instrumentName(i.type))}">
+        <span class="ico">${instrumentIcon(i.type, own.electric, own.hue)}</span><span class="sk"><i style="width:${levelProgress(i.skill)}%"></i></span><b class="lv">${lv}</b></button>`;
+    }).join('');
+    document.body.appendChild(menu);
+    const r = el.getBoundingClientRect();
+    menu.style.left = `${Math.max(8, Math.min(window.innerWidth - menu.offsetWidth - 8, r.left)) + window.scrollX}px`;
+    menu.style.top = `${r.bottom + 6 + window.scrollY}px`;
+    const close = (e) => {
+      if (e && menu.contains(e.target)) return;
+      menu.remove();
+      document.removeEventListener('pointerdown', close, true);
+    };
+    setTimeout(() => document.addEventListener('pointerdown', close, true));
+    menu.addEventListener('click', (e) => {
+      const pick = e.target.closest('[data-slot]');
+      if (!pick) return;
+      close();
+      actions.bandSetSlot(pick.dataset.slot, { dataset: { band, musician }, value: '' });
+    });
   },
 });

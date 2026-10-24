@@ -432,3 +432,9 @@ button.lb-pill:disabled { opacity: 0.45; cursor: default; }
 .lb-mw-list .lb-ins { flex: none; width: 168px; margin-top: 0; }
 .lb-mw-list .lb-ins .sk { flex: 1 1 auto; min-width: 60px; }
 .lb-mw-list li > span:last-child { min-width: 0; }
+
+/* Instrumentwechsel: Die anderen Instrumente klappen unter dem Knopf auf */
+.lb-slotmenu { position: absolute; z-index: 1000; display: flex; flex-direction: column; gap: 4px; padding: 6px; border-radius: 12px; background: #2c2838; border: 1px solid #4a4458; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45); }
+.lb-slotmenu .lb-ins { margin: 0; padding: 4px 8px 4px 4px; border: 0; border-radius: 9px; background: transparent; cursor: pointer; font: inherit; }
+.lb-slotmenu .lb-ins:hover { background: var(--lb-card2); }
+.lb-slotmenu .lb-ins .sk { flex: 0 0 64px; }

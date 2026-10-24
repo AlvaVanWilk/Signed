@@ -305,15 +305,20 @@ als Grundlage. Einzelne Wahlen verändern zum Beispiel Tempo-Gefühl, Akkordfolg
 ## Oberfläche
 
 - **Hauptmenü** (oben): Übersicht, Katalog, Einkaufen, Lager, Börse, Charts.
-- **Band-Leiste** (links, immer sichtbar, bleibt verschiebbar): große Knöpfe, je Band (und je **Solokünstler**) mit
-  **Stimmung sehr deutlich** (großes Gesicht in Ampelfarbe), **Songs geschrieben** (Zahl mit Icon), **Ruhm als Stufe/Sterne**, kleiner Wunsch-Hinweis (leere Blase), Streifen wenn beschäftigt.
+- **Band-Leiste** (links, immer sichtbar): gleich große Knöpfe ohne Köpfe, je Band (und je **Solokünstler**) mit
+  Name, Genre, **Stimmung als Punkt und Wort** (gut / angespannt / unzufrieden, **kein Smiley**), **Ruhm als drei Rauten**, **Songs geschrieben rechts** (Notensymbol mit Zahl), kleiner Wunsch-Hinweis (leere Blase), Streifen wenn beschäftigt.
+  Verschieben per Ziehen gibt es in der senkrechten Leiste noch nicht (die gespeicherte Reihenfolge gilt weiter).
 - **Bandseite** (Klick auf die Band, kein Untermenü): Kopf mit Name und Stimmung; **Anordnungen** als Knöpfe (Proben, Aufnehmen, Auftritt);
-  Musikerliste als **Zeilen** (Passfoto, Name, Instrument, Können, Gesicht, Beziehungskreise); darunter **Werte mit Aufschlüsselung** (Sound, Ruhm, Zusammenhalt,
+  Musikerliste als **Zeilen**: eckiges Passfoto (Hintergrund in den Genre-Farben, Rahmen in der Stimmungsfarbe), Name mit **Stimmung als Wort direkt dahinter**,
+  Instrument-Symbol, Können-Strich mit **Stufe 0–3**, **quadratischer Platz für das Instrument**, **Genre-Marken in Genre-Farbe**, Beziehungen (kleines Foto des anderen mit Zahl, farblos); darunter **Werte mit Aufschlüsselung** (Sound, Ruhm, Zusammenhalt,
   Stimmung mit den Einflüssen, die gerade wirken); Wünsche der Band oben; **Auszeichnungen** als kleine Symbole. Die **Chronik** ist zugeklappt und lässt sich per Tippen öffnen. Keine Bühne.
 - **Übersicht des Labels:** alle geäußerten Wünsche aller Bands als **Mitteilungen** untereinander; Tippen öffnet die Band, ein Knopf erfüllt direkt.
   Dazu Geld, Charts, Rangliste.
 - **Katalog** bleibt die Künstlerkartei (Passfotos), mit Beziehungen zu früheren Mitmusikern in den Details.
 - **Aufnahme-Dialog** (Studio, Produzent, Songs, Cover) mit Preisen.
+
+**Gestaltung:** ruhig, dunkle Flächen in drei Stufen (Seite, Feld, Karte), ein warmer Akzent. **Farbe hat feste Bedeutungen:** Grün/Gelb/Rot nur für Stimmung,
+die Genre-Farben nur für Genre. Keine Seltenheits-Farben, keine Smileys, Köpfe eckig mit abgerundeten Ecken.
 
 ### Auszeichnungen
 
@@ -358,7 +363,7 @@ Beim ersten Login nach dem Umbau (Saison 2) bleiben **Labelname und Konto**, all
 
 1. Konzept und Auslagerung dokumentieren (diese Dateien).
 2. Datenmodell: Wohlbefinden, Beziehungen (Paare), Songs, Spielzeit, Stimmung.
-3. Band-Leiste und Bandseite (neue Oberfläche, ohne Untermenü).
+3. Band-Leiste und Bandseite (neue Oberfläche, ohne Untermenü). **Gebaut** (Testversion). Noch offen: Wünsche, Sperren bei Rot (Proben/Auftritt), Verschieben der Knöpfe.
 4. Anordnungen: Proben (neue Können-Quelle), Auftritt buchen mit Kosten und Gewinn-Schätzung.
 5. Aufnehmen mit Studio und Produzent, Cover-Wahl.
 6. Wünsche, Mitteilungen, Charakter-Tabelle.

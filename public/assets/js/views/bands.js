@@ -38,7 +38,7 @@ export function renderBand(route) {
 }
 
 function head(title, b) {
-  return `<div class="page-head"><div><div class="eyebrow">${esc(b.name)}</div><h1>${esc(title)}</h1></div></div>`;
+  return `<div class="page-head"><div><a class="lb-back" href="#/band/${b.id}">‹ ${esc(b.name)}</a><h1>${esc(title)}</h1></div></div>`;
 }
 
 /** Was gerade läuft oder warum nichts geht. */
@@ -56,7 +56,7 @@ function blocker(b, members) {
   return null;
 }
 
-function blockerNotice(b, members) {
+export function blockerNotice(b, members) {
   const block = blocker(b, members);
   if (!block) return '';
   return `
@@ -239,7 +239,7 @@ const STAT_INFO = {
 };
 
 /** Wert-Kachel der Bandseite: nur Name und Wert; antippen (oder das i) zeigt, woraus er kommt und was er bewirkt. */
-function statTile(key, b, value, { flash = '', extra = '' } = {}) {
+export function statTile(key, b, value, { flash = '', extra = '' } = {}) {
   return `<div class="tile stat-tile" data-act="bandStatInfo" data-key="${key}" data-id="${b.id}"${flash ? ` data-flash="${flash}"` : ''}>
     <span>${STAT_INFO[key].title} ${infoBtn(key, b)}</span><b>${value}</b>${extra}</div>`;
 }

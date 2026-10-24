@@ -8,6 +8,7 @@ import './genre-info.js';
 import './navdrag.js';
 import * as auth from './views/auth.js';
 import * as bands from './views/bands.js';
+import * as label from './views/label.js';
 import * as catalog from './views/catalog.js';
 import * as charts from './views/charts.js';
 import * as help from './views/help.js';
@@ -21,6 +22,7 @@ import * as storage from './views/storage.js';
 
 const NAV = [
   ['', 'Übersicht'],
+  ['bands', 'Bands'],
   ['packs', 'Einkaufen'],
   ['katalog', 'Katalog'],
   ['lager', 'Lager'],
@@ -33,8 +35,8 @@ const VIEWS = {
   packs: () => packs.render(),
   katalog: () => catalog.render(),
   lager: () => storage.render(),
-  bands: () => bands.renderList(),
-  band: (route) => bands.renderBand(route),
+  bands: (route) => viewBand(route),
+  band: (route) => viewBand(route),
   musician: (route) => musician.renderMusician(route),
   charts: () => charts.render(),
   boerse: () => market.render(),
@@ -43,7 +45,15 @@ const VIEWS = {
 
 function parseRoute() {
   const [name = '', id, section = ''] = location.hash.replace(/^#\/?/, '').split('/');
+  // „Bands“ im Hauptmenü öffnet die zuletzt angesehene Band.
+  if (name === 'bands') return { name: 'band', id: app.state ? label.lastBandId() : null, section: '' };
   return { name: VIEWS[name] ? name : '', id: id ? Number(id) : null, section };
+}
+
+/** Bandseite: ohne Unterseite die ruhige Label-Ansicht, sonst die Übung, das Studio usw. */
+function viewBand(route) {
+  if (!app.state.bands.length) return `<div class="empty">Noch keine Band. <button class="btn primary" data-act="newBand">+ Band oder Solokünstler</button></div>`;
+  return route.section ? bands.renderBand(route) : label.page(route);
 }
 
 /** Zweite Menüzeile: die Bands des Labels und favorisierte Musiker ohne Band. */
@@ -53,8 +63,8 @@ function subnav(route) {
   const active = (kind, id) => route.name === kind && route.id === id;
   // Eigene Reihenfolge (verschiebbar, navdrag.js); Neues hängt hinten an.
   const order = s.label.navOrder ?? [];
+  if (!favorites.length) return '';
   const items = [
-    ...s.bands.map((b) => ({ key: `b${b.id}`, html: bandButton(b) })),
     ...favorites.map((m) => ({ key: `m${m.id}`, html: `<a href="#/musician/${m.id}" data-nav="m${m.id}" draggable="false" class="subnav-btn fav ${active('musician', m.id) ? 'active' : ''}">★ ${esc(m.firstName)} ${esc(m.lastName)}</a>` })),
   ];
   const rank = (key, i) => (order.includes(key) ? order.indexOf(key) : order.length + i);
@@ -62,7 +72,6 @@ function subnav(route) {
   return `
     <nav class="subnav">
       ${sorted.map((it) => it.html).join('')}
-      <button class="subnav-btn add" data-act="newBand">+ Band</button>
     </nav>`;
 
   function bandButton(b) {
@@ -90,14 +99,7 @@ function sidebar(route) {
   let icon = '';
   let themeStyle = '';
   if (route.name === 'band') {
-    const b = bandById(route.id);
-    if (!b) return '';
-    title = b.name;
-    icon = b.genres.map(genreGlyph).join('');
-    base = `#/band/${b.id}`;
-    sections = bands.BAND_SECTIONS;
-    theme = bandFill(b).cls;
-    themeStyle = bandFill(b).style;
+    return '';
   } else if (route.name === 'musician') {
     const m = musicianById(route.id);
     if (!m) return '';
@@ -141,10 +143,11 @@ function layout(content, route) {
   const s = app.state;
   const active = route.name;
   const side = sidebar(route);
+  const lbar = route.name === 'band' && app.state.bands.length ? label.bar(route.id) : '';
   return `
     <header class="topbar">
       <a class="logo" href="#/">Signed</a>
-      <nav class="nav">${NAV.map(([key, label]) => `<a href="#/${key}" class="${key === active ? 'active' : ''}">${label}${key === 'boerse' ? marketBadge(active === 'boerse') : ''}</a>`).join('')}</nav>
+      <nav class="nav">${NAV.map(([key, label]) => `<a href="#/${key}" class="${key === active || (key === 'bands' && active === 'band') ? 'active' : ''}">${label}${key === 'boerse' ? marketBadge(active === 'boerse') : ''}</a>`).join('')}</nav>
       <div class="label-info">
         <span class="label-name" title="Dein Label">${esc(s.label.name)}</span>
         <button class="money-pill" data-act="openFinance" data-live-money title="Konto und Einnahmen">${money(liveMoney())}</button>
@@ -153,7 +156,7 @@ function layout(content, route) {
       </div>
       ${subnav(route)}
     </header>
-    <div class="shell ${side ? 'with-side' : ''}">${side}<main class="page">${content}</main></div>`;
+    <div class="shell ${side ? 'with-side' : ''} ${lbar ? 'with-bar' : ''}">${side}${lbar}<main class="page ${lbar ? 'lb-main' : ''}">${content}</main></div>`;
 }
 
 function render() {

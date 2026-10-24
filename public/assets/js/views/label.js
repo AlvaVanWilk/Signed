@@ -1,6 +1,6 @@
-import { genreGlyph, genreName, gearModel, instrumentIcon, instrumentName, ownGear, photo, sortedGenres } from '../cards.js';
+import { abilityInfo, genreGlyph, genreName, gearModel, instrumentIcon, instrumentName, ownGear, photo, sortedGenres } from '../cards.js';
 import { actions, app, bandById, cat, defineActions, isBusy, mutate, musicianById, runningFor, serverNow } from '../core.js';
-import { closePopover, duration, esc, fmt0, fmt1, fmtGain, openModal, popover } from '../ui.js';
+import { closePopover, duration, esc, fmt0, fmt1, fmtGain, money, openModal, popover } from '../ui.js';
 import { getAudio } from '../audio.js';
 import { playedInstrument, stage } from '../figure.js';
 import { bandStems, loadStems, playStems, stemUrl } from '../music.js';
@@ -145,9 +145,9 @@ function memberRow(b, m, members, slots) {
   return `
     <div class="lb-line">
     <div class="lb-mr" data-member-row="${m.id}">
-      <a class="lb-ph ${mood}" href="#/musician/${m.id}" style="--split:linear-gradient(120deg, ${split})" title="${esc(m.firstName)} ansehen">${photo(m)}</a>
+      <a class="lb-ph ${mood}" data-act="musicianInfo" data-id="${m.id}" style="--split:linear-gradient(120deg, ${split})" title="${esc(m.firstName)} ansehen">${photo(m)}</a>
       <div class="lb-info">
-        <div class="lb-nm"><a href="#/musician/${m.id}">${esc(m.firstName)} ${esc(m.lastName)}</a>${moodTag(mood)}
+        <div class="lb-nm"><a data-act="musicianInfo" data-id="${m.id}">${esc(m.firstName)} ${esc(m.lastName)}</a>${moodTag(mood)}
           <span class="lb-traitrow">${m.personality.map((p) => `<button class="lb-trait" data-act="tip" data-tip="${esc(cat().personalities[p])}: ${esc(cat().personalityInfo[p])}" title="${esc(cat().personalities[p])}: ${esc(cat().personalityInfo[p])}">${esc(cat().personalities[p])}</button>`).join('')}</span></div>
         <div class="lb-ins lv-${Math.min(level, MAX_LV_STYLE)}">
           ${m.instruments.length > 1
@@ -191,7 +191,7 @@ function wishBlock(b, members) {
         const go = w.action === 'rehearsal'
           ? `<button class="lb-pill" data-act="rehearseAsk" data-id="${b.id}" ${blocker(b, members) ? 'disabled' : ''}>${label}</button>`
           : `<a class="lb-pill" href="${target}">${label}</a>`;
-        return `<div class="lb-wish"><a class="lb-ph sm ${w.level}" href="#/musician/${m.id}">${photo(m)}</a><span class="say">${esc(w.text)}</span>${go}</div>`;
+        return `<div class="lb-wish"><a class="lb-ph sm ${w.level}" data-act="musicianInfo" data-id="${m.id}">${photo(m)}</a><span class="say">${esc(w.text)}</span>${go}</div>`;
       }).join('')}
     </section>`;
 }
@@ -381,7 +381,48 @@ function reactionLines(b, type) {
   return lines.join('');
 }
 
+/** Kleines Fenster zum Musiker: was die Bandseite nicht zeigt (Bekanntheit, Wert, Fähigkeiten, Auskommen mit den anderen). */
+function musicianWindow(m) {
+  const rules = cat().rules;
+  const band = m.bandId ? bandById(m.bandId) : null;
+  const nextFame = rules.fameLevels[m.fameLevel];
+  const notes = band ? band.chemistryNotes.filter((n) => n.ids.includes(m.id)) : [];
+  const ins = m.instruments.map((i) => {
+    const lv = steps(i.skill, rules.skillLevels);
+    const next = rules.skillLevels[lv];
+    return `<li><span class="lb-ins lv-${Math.min(lv, MAX_LV_STYLE)}"><span class="ico">${instrumentIcon(i.type)}</span><span class="sk"><i style="width:${levelProgress(i.skill)}%"></i></span><b class="lv">${lv}</b></span>
+      <span>${esc(instrumentName(i.type))}: ${esc(cat().levelNames[lv])} <small class="muted">(${fmt0(i.skill)}${next ? `, nächste Stufe ab ${next}` : ''})</small></span></li>`;
+  }).join('');
+  const abilities = m.abilities.map((a) => {
+    const info = abilityInfo(a);
+    return `<li><b>${info.icon} ${esc(info.name)}</b> <small class="muted">${esc(info.desc)}</small></li>`;
+  }).join('');
+  const modal = openModal({
+    className: 'lb-ask lb-mw',
+    html: `
+      <div class="lb-mw-head"><span class="lb-ph ${m.wellbeing?.level ?? 'green'}">${photo(m)}</span>
+        <div><h2>${esc(m.firstName)} ${esc(m.lastName)}</h2><small class="muted">${band && band.memberIds.length > 1 ? esc(band.name) : 'Solokünstler'}</small></div></div>
+      ${m.abilityChoice ? `<p class="lb-mw-note">${esc(m.firstName)} ist jetzt ${esc(cat().levelWords[3])} und darf eine dritte Fähigkeit wählen. <button class="btn small primary" data-choose>Wählen</button></p>` : ''}
+      <div class="lb-sum">
+        <div><small>Bekanntheit</small><b>${esc(cat().fameNames[m.fameLevel])}</b><small class="muted">${fmt1(m.fame)}${nextFame ? ` · nächste Stufe ab ${nextFame}` : ''}</small></div>
+        <div><small>Marktwert</small><b>${money(m.value)}</b></div>
+      </div>
+      <h3 class="lb-cap">Können</h3><ul class="lb-mw-list">${ins}</ul>
+      ${abilities ? `<h3 class="lb-cap">Fähigkeiten</h3><ul class="lb-mw-list plain">${abilities}</ul>` : ''}
+      ${notes.length ? `<h3 class="lb-cap">Mit den anderen</h3><ul class="lb-mw-list plain">${notes.map((n) => `<li class="${n.good ? 'good' : 'bad'}">${n.good ? '+' : '–'} ${esc(n.text)}</li>`).join('')}</ul>` : ''}
+      <div class="dialog-actions"><button class="btn primary" data-close>Schließen</button></div>`,
+  });
+  modal.body.querySelector('[data-close]').addEventListener('click', () => modal.close());
+  modal.body.querySelector('[data-choose]')?.addEventListener('click', () => {
+    modal.close();
+    actions.chooseAbility({ id: String(m.id) });
+  });
+}
+
 defineActions({
+  musicianInfo({ id }) {
+    musicianById(id) && musicianWindow(musicianById(id));
+  },
   /** Ton der laufenden Probe an oder aus. */
   liveSound({ id }, el) {
     if (music?.actId === Number(id)) {

@@ -222,8 +222,10 @@ In der Wirklichkeit schicken Künstler Demos an Labels, und Talentsucher hören 
 - Jeden Tag kommen **Einsendungen** an, **für jedes Label eine eigene Auswahl** (ein Künstler bewirbt sich nur bei einem Label). Sie liegen als **neutrale Umschläge/Tapes** im Briefkasten.
   Außen steht **nichts** (weder Solo noch Band). Anklicken **öffnet** („entblößen“, etwa 5 Sekunden) und zeigt, was drin ist: meist **Unnützes** (sehr schwach, kein erkennbares Genre),
   manchmal **Gutes**. Das Öffnen hat etwas von einem Pack, soll aber **Arbeit** sein.
-- **Keine Mengenbegrenzung** im Briefkasten; nur ein Verfallsdatum (etwa 4 Tage), das **auf jeder Einsendung steht** („läuft ab in …“). Wegwerfen kann man jede Einsendung jederzeit. Am Anfang kommen **ganz wenige** (grob 4 pro Tag), mit wachsendem **Erfolg des Labels** immer mehr
-  (grob 8 bei 50, 30 bei 450, 190 bei 5.000 Erfolg) und ein größerer Anteil Guter (von etwa 5 % auf höchstens 25 %). Die schlechten hören **nie auf**, sich zu bewerben:
+- **Laufend statt einmal am Tag:** Die Einsendungen **trudeln über den Tag verteilt ein** (Zufallszeiten, nicht alle auf einmal); bei einem kleinen Label etwa alle drei Stunden eine, bei einem großen alle paar Minuten.
+  Wer wartet, bekommt mehr zu tun, und offline sammeln sich Einsendungen bis zum Verfallsdatum.
+- **Keine Mengenbegrenzung** im Briefkasten; nur ein Verfallsdatum (etwa 4 Tage), das **auf jeder Einsendung steht** („läuft ab in …“). Wegwerfen kann man jede Einsendung jederzeit. Am Anfang kommen **wenige** (grob 8 pro Tag), mit wachsendem **Erfolg des Labels** immer mehr
+  (grob 14 bei 50, 45 bei 450, 250 bei 5.000 Erfolg) und ein größerer Anteil Guter (von etwa 5 % auf höchstens 25 %). Die schlechten hören **nie auf**, sich zu bewerben:
   Große Labels haben viel Arbeit, können sich aber am ehesten eine Assistenz leisten.
 - **Genres folgen dem Erfolg:** Hat eine Band des Labels Erfolg, bewerben sich vermehrt Musiker mit **gleichen oder ähnlichen Genres**, fremde Genres seltener (außer ein Musiker hat mehrere Genres,
   dann kann auch ein fremdes dabei sein).
@@ -250,6 +252,16 @@ In der Wirklichkeit schicken Künstler Demos an Labels, und Talentsucher hören 
   und über den Tag reichen zwei, drei Aufbrüche. Das reicht, ein kleines Label gut zu bestücken; die Kosten sind die Prämien und, dass jeder Neue betreut werden will.
 
 Die **Wechselbörse entfällt** erstmal; ebenso die Zufallspakete (Talent-Scout-Karten, Packs) und der Fan-Musiker.
+
+### Spielbeginn und Startkapital
+
+Wer neu anfängt, soll **sofort etwas tun** können:
+- **Startkapital 2.000 ₲** (wie bisher). Reicht für: einen einfachen **Scout** (einmalig, Startwert 400 ₲), **mehrere Künstler** auf Einsendungen (je Unterschriftsprämie, bei Können um 25 etwa 70 ₲), je ein **einfaches Instrument**
+  (Startwert gewöhnlich 60 ₲, selten 200, episch 700, legendär 2.000) und noch eine erste Platte (150 ₲ + 80 ₲ je Lied, also eine EP mit vier Liedern rund 470 ₲).
+  Beispiel für vier Künstler: Scout 400 + 4 Prämien 280 + 4 Instrumente 240 + EP 470 = rund 1.400 ₲, es bleiben 600 ₲ Puffer.
+- Ein **Willkommens-Stapel** liegt zu Beginn im Briefkasten: fünf Einsendungen, **drei brauchbar** (Können 15–34, verschiedene Instrumente, die sich zu einer Band ergänzen können) und zwei Mist, damit man das Öffnen gleich lernt.
+- Der einfache **Scout** steht von Anfang an in der **Stellenbörse**, die **Assistenz** erst später (eine Assistenz lohnt sich erst, wenn viele Einsendungen kommen).
+- Die kurze Tour führt durch: Briefkasten öffnen, Künstler unterzeichnen, Instrument kaufen, Band bilden, Proben.
 
 ### Kartei und Besetzungsplaner
 
@@ -358,7 +370,6 @@ Beim ersten Login nach dem Umbau (Saison 2) bleiben **Labelname und Konto**, all
 ## Offene Fragen
 
 - Genaue Zahlen (Songtempo, Geduld, Beziehungsraten, Zeit bis Rot, Studio-/Produzentenpreise, Kosten und Gewinn der Orte) werden beim Bauen abgestimmt.
-- Verfallszeit der Einsendungen (4 Tage?), Verteilung der Mengen und Preise der Assistenzen und Scouts.
+- Verfallszeit der Einsendungen (4 Tage?), Verteilung der Mengen und Preise der Assistenzen und Scouts (Scout-Startwerte: Stufe 1 400 ₲, Stufe 2 1.200 ₲, Stufe 3 3.000 ₲).
 - Klangprofil (A/B-Vorspielen): erst nach den ersten Schritten.
 - Auszeichnungen: endgültige kurze Liste.
-- **Spielbeginn:** Wie fängt ein neues Label an? Vorschlag: ein paar Einsendungen im Briefkasten (mindestens zwei brauchbare, damit man gleich spielen kann), dazu der einfache Scout in der Stellenbörse.

@@ -230,12 +230,6 @@ test('Jam-Café: drei passende Musiker zur Auswahl, einer gründet mit dem Gastg
     checkApiError(fn () => $p->post('soloStart', ['musicianId' => $m['id'], 'type' => 'jam']), 'Band');
     checkApiError(fn () => $p->post('jamPick', ['offerId' => $offer['id'], 'index' => 0, 'name' => 'Nochmal']), 'nicht mehr');
 
-    // Ohne freien Band-Platz geht niemand mehr ins Jam-Café (der zweite Platz von Anfang an wird belegt).
-    $db->exec("INSERT INTO bands (label_id, name, genre, created_at) SELECT id, 'Zweitband', '', 0 FROM labels");
-    $shop = $p->post('buyPack', ['pack' => 'aushang'])['offer'];
-    $free = $p->post('packPick', ['offerId' => $shop['id'], 'index' => 0])['card']['musician'];
-    checkApiError(fn () => $p->post('soloStart', ['musicianId' => $free['id'], 'type' => 'jam']), 'Label-Ruhm');
-
     $p->post('musicianFavorite', ['musicianId' => $m['id'], 'favorite' => false]);
     check(!$p->get('state')['musicians'][0]['favorite']);
 });
@@ -323,11 +317,7 @@ test('Bandregeln: weitere Bands erst mit Label-Ruhm, niemand in zwei Bands, Genr
     checkEquals('Rockband', $band['title']);
     $state = $p->get('state');
     $m = $state['musicians'][0];
-    checkEquals(2, $state['label']['bandSlots']['open'], 'zwei Bands von Anfang an');
-    $db->exec("INSERT INTO bands (label_id, name, genre, created_at) SELECT id, 'Zweite', '', 0 FROM labels");
-    checkApiError(fn () => $p->post('bandCreate', ['name' => 'Dritte', 'members' => []]), '50 Label-Ruhm');
-    $db->exec('UPDATE bands SET fame_own = 40');
-    checkEquals(3, $p->get('state')['label']['bandSlots']['open'], 'zusammen 80 Label-Ruhm: dritter Platz');
+    checkEquals(9999, $state['label']['bandSlots']['open'], 'keine Bandplätze mehr');
     checkApiError(fn () => $p->post('bandCreate', ['name' => 'Zweite', 'members' => [['id' => $m['id']]]]), 'schon in einer Band');
     checkApiError(fn () => $p->post('bandCreate', ['name' => '   ', 'members' => []]), 'Bandname');
 
@@ -505,7 +495,6 @@ test('Umbesetzung nach der Freigabe kostet Zusammenspiel, Bekanntheit geht mit',
     $after = bandById($state, $band['id']);
     checkEquals(60 - Balance::COHESION_REMOVE_PENALTY, $after['cohesion']);
     checkEquals(20.0, $after['fame'], 'Bandruhm sinkt genau um die Bekanntheit des Ausgetretenen');
-    checkApiError(fn () => $p->post('bandRemoveMember', ['bandId' => $band['id'], 'musicianId' => $after['memberIds'][0]]), 'mindestens 2');
 
     $state = $p->post('bandAddMember', ['bandId' => $band['id'], 'musicianId' => $leaving, 'slot' => 1])['state'];
     checkEquals(30.0, bandById($state, $band['id'])['fame']);
@@ -968,7 +957,6 @@ test('Charts: Alle Platten zählen – Top 10 mit Belohnung, darunter bis Platz 
     checkEquals(Balance::CHART_SIZE, count(array_filter($albums, static fn ($a) => $a['placed'])));
     checkEquals('Platte 12', $albums[0]['title']);
     checkEquals(12, end($albums)['rank']);
-    checkEquals(8, count(Signed\Game\Balance::BAND_SLOTS));
 });
 
 test('Allein üben lassen: läuft von selbst, bringt ein Viertel einer perfekten Solo-Probe', function () {
@@ -1253,4 +1241,16 @@ test('Bands leben offline weiter: Songs, Stimmung; rot friert ein; Beziehungen w
     Clock::advance(3600 * 10);
     $drifted = Signed\Game\Mood::relations($repo, $members)[$key];
     check(abs($drifted) < abs($grown) && abs($drifted) >= 0, 'Beziehung driftet Richtung 0');
+});
+
+test('Solokünstler: eine Band mit einem Mitglied, ohne Genre-Bonus; der Letzte kann nicht herausgenommen werden', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Solo');
+    $one = $p->get('state')['musicians'][0];
+    $res = $p->post('bandCreate', ['name' => 'Solo Eins', 'members' => [['id' => $one['id'], 'slot' => 1]]]);
+    $band = bandById($res['state'], $res['bandId']);
+    checkEquals(1, count($band['memberIds']));
+    checkEquals(Balance::MIXED_BONUS, $band['genreBonus'], 'ohne Genre-Band-Bonus');
+    checkApiError(fn () => $p->post('bandRemoveMember', ['bandId' => $band['id'], 'musicianId' => $one['id']]), 'mindestens 1');
+    check($p->get('state')['label']['bandSlots']['open'] > 8, 'keine Obergrenze für Bands');
 });

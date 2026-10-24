@@ -89,11 +89,13 @@ final class Balance
     public const SCOUT_SHIFT = 0.06;
 
     // ---------- Band ----------
-    /** Band-Plätze: die ersten beiden sofort, jede weitere ab dem Dreifachen (50, 150, 450 …) Label-Ruhm (Summe des Ruhms aller eigenen Bands). */
-    public const BAND_SLOTS = [0, 0, 50, 150, 450, 1350, 4050, 12150];
+    // Bands lassen sich ohne Obergrenze führen: Geld und Aufmerksamkeit bremsen von selbst (siehe docs/label-konzept.md).
     /** Namensänderung nach dem ersten Auftritt: Gebühr; der Ruhm am alten Namen geht verloren. */
     public const RENAME_COST = 300;
-    public const MIN_MEMBERS = 2;
+    /** Auch ein Solokünstler ist eine Band (mit einem Mitglied). Genre-Bands und der Besetzungs-Bonus beginnen ab zwei Mitgliedern. */
+    public const MIN_MEMBERS = 1;
+    public const GENRE_MIN_MEMBERS = 2;
+    public const SIZE_BONUS_FROM = 2;
 
     // ---------- Label-Umbau: Stimmung, Beziehung, Songs (siehe docs/label-konzept.md) ----------
     /**
@@ -159,7 +161,7 @@ final class Balance
     public const LINEUP_BONUS = 0.05;
     public const LINEUP_BONUS_MAX_TYPES = 4;
     /**
-     * Große Bands: Jedes Mitglied über MIN_MEMBERS bringt mehr Sound (volle Bühne) und mehr Gage (zahlt Instrumente und
+     * Große Bands: Jedes Mitglied über SIZE_BONUS_FROM bringt mehr Sound (volle Bühne) und mehr Gage (zahlt Instrumente und
      * Kurse). Sechs Leute auf hohes Können zu bringen dauert und kostet – das soll sich lohnen.
      */
     public const MEMBER_SOUND_BONUS = 0.05;

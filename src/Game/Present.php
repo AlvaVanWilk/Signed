@@ -183,7 +183,6 @@ final class Present
                 'gigMinSongs' => Balance::GIG_MIN_SONGS,
                 'genreBonus' => Balance::GENRE_BONUS,
                 'hybridBonus' => Balance::HYBRID_BONUS,
-                'bandSlots' => Balance::BAND_SLOTS,
                 'promoSeconds' => Balance::PROMO_SECONDS,
                 'autoPracticeSeconds' => Balance::AUTO_PRACTICE['seconds'],
                 'cohesionRemovePenalty' => Balance::COHESION_REMOVE_PENALTY,

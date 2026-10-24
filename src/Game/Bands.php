@@ -153,7 +153,7 @@ final class Bands
                 throw new ApiError(sprintf('%s spielt nicht in dieser Band.', $m['first_name']));
             }
             if (count($this->repo->members($bandId)) - 1 < Balance::MIN_MEMBERS) {
-                throw new ApiError('Eine Band braucht mindestens 2 Musiker. Löse die Band stattdessen auf.');
+                throw new ApiError(sprintf('Eine Band braucht mindestens %d Musiker. Löse die Band stattdessen auf.', Balance::MIN_MEMBERS));
             }
             $this->repo->db->update('musicians', ['band_id' => null, 'band_slot' => 1], ['id' => $m['id']]);
             $return = $band['slot_return'];
@@ -230,22 +230,15 @@ final class Bands
         return $identity;
     }
 
-    /** Ist noch ein Band-Platz frei? Sonst Fehler mit dem Ruhm, ab dem der nächste dazukommt. */
+    /** Bands lassen sich ohne Obergrenze führen (kein Platz-Freischalten mehr). Bleibt für die alten Aufrufer. */
     public function assertSlotFree(): void
     {
-        $slots = self::slots($this->repo->labelFame());
-        if (count($this->repo->bands()) >= $slots['open']) {
-            throw new ApiError($slots['next'] === null
-                ? 'Mehr Bands kann dein Label nicht führen.'
-                : sprintf('Deine nächste Band kannst du ab %s Label-Ruhm gründen.', number_format($slots['next'], 0, ',', '.')));
-        }
     }
 
-    /** Wie viele Bands das Label führen darf und ab welchem Label-Ruhm die nächste dazukommt. */
+    /** Für den Browser: Es gibt keine Bandplätze mehr. */
     public static function slots(float $labelFame): array
     {
-        $open = count(array_filter(Balance::BAND_SLOTS, static fn ($min) => $labelFame >= $min));
-        return ['open' => $open, 'max' => count(Balance::BAND_SLOTS), 'next' => Balance::BAND_SLOTS[$open] ?? null];
+        return ['open' => 9999, 'max' => 9999, 'next' => null];
     }
 
     public function setManager(int $bandId, ?int $managerId): void

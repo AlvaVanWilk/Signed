@@ -100,7 +100,8 @@ test('Chemie: Divas reiben sich, ein Ruhepol dämpft', function () {
 });
 
 test('Besetzungsregeln', function () {
-    check(BandCalc::lineupProblems([musician()]) !== [], 'Ein Musiker reicht nicht');
+    checkEquals([], BandCalc::lineupProblems([musician()]), 'Ein Solokünstler ist eine Band');
+    check(BandCalc::lineupProblems([]) !== [], 'Ohne Musiker keine Band');
     check(BandCalc::lineupProblems([musician(['instr1' => 'drums']), musician(['instr1' => 'drums'])]) !== [], 'Zwei Schlagzeuger');
     $threeGuitars = [musician(), musician(), musician()];
     check(BandCalc::lineupProblems($threeGuitars) !== [], 'Drei Gitarristen');

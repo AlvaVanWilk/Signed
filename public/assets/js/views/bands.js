@@ -698,7 +698,7 @@ function openCreateBand() {
     return;
   }
   if (free.length < cat().rules.minMembers) {
-    toast('Du brauchst mindestens zwei Musiker ohne Band.', 'error');
+    toast('Du brauchst mindestens einen Musiker ohne Band.', 'error');
     return;
   }
 

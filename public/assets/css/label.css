@@ -229,3 +229,13 @@ button.lb-pill:disabled { opacity: 0.45; cursor: default; }
 .lb-heap-item.playing .lb-reel { animation: lb-spin 1.2s linear infinite; }
 .lb-prog.tiny { width: 60px; height: 4px; margin-top: 3px; } .lb-prog.tiny i { width: 100%; transform-origin: left; transition: none; animation-name: lb-fill; animation-timing-function: linear; animation-fill-mode: forwards; }
 @media (prefers-reduced-motion: reduce) { .lb-heap-item.playing .lb-reel { animation: none; } }
+
+/* Beschriftungsfeld: ein Fragezeichen, solange niemand reingehört hat; später schreibt eine Assistenz die Genres drauf */
+.lb-tape-wrap { position: relative; display: block; line-height: 0; }
+.lb-tape-label { position: absolute; left: 11.7%; top: 17.5%; width: 76.7%; height: 37.5%; display: flex; align-items: center; justify-content: center; gap: 4px; line-height: 1; }
+.lb-tape-label b { font: italic 700 1.7em/1 Georgia, 'Times New Roman', serif; color: #4a4558; transform: rotate(-6deg); }
+.lb-mini .lb-tape-label b { font-size: 1.45rem; }
+.lb-tape-label i { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: color-mix(in srgb, var(--g, #777) 75%, #fff 10%); }
+.lb-tape-label i .genre-icon { width: 14px; height: 14px; stroke: #fff; stroke-width: 2; fill: none; }
+.lb-tape-label i.g-pop { --g: var(--lb-c-pop); } .lb-tape-label i.g-rock { --g: var(--lb-c-rock); } .lb-tape-label i.g-metal { --g: var(--lb-c-metal); } .lb-tape-label i.g-punk { --g: var(--lb-c-punk); }
+.lb-tape-label i.g-jazz { --g: var(--lb-c-jazz); } .lb-tape-label i.g-elektro { --g: var(--lb-c-elektro); } .lb-tape-label i.g-hiphop { --g: var(--lb-c-hiphop); } .lb-tape-label i.g-folk { --g: var(--lb-c-folk); }

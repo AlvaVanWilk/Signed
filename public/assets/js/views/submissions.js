@@ -17,14 +17,13 @@ function expires(s) {
 }
 
 /** Die Kassette: Außen steht nichts drauf – man muss sie sich anhören, um zu wissen, was drin ist. */
-const CASSETTE = `<svg class="lb-tape-svg" viewBox="0 0 120 80" aria-hidden="true">
+const cassette = (hint = null) => `<span class="lb-tape-wrap"><svg class="lb-tape-svg" viewBox="0 0 120 80" aria-hidden="true">
   <rect x="4" y="6" width="112" height="68" rx="9" fill="#2b2836" stroke="#4a4458" stroke-width="2"/>
   <rect x="14" y="14" width="92" height="30" rx="4" fill="#d8d2c4"/>
-  <path d="M20 28 H100" stroke="#8d879c" stroke-width="1.5" stroke-dasharray="3 3"/>
   <g transform="translate(36 58)"><circle r="9" fill="#18161f" stroke="#4a4458" stroke-width="2"/><g class="lb-reel"><circle r="5" fill="none" stroke="#c9a86a" stroke-width="2" stroke-dasharray="4 3"/></g></g>
   <g transform="translate(84 58)"><circle r="9" fill="#18161f" stroke="#4a4458" stroke-width="2"/><g class="lb-reel"><circle r="5" fill="none" stroke="#c9a86a" stroke-width="2" stroke-dasharray="4 3"/></g></g>
   <rect x="46" y="52" width="28" height="12" rx="3" fill="#18161f"/>
-</svg>`;
+</svg><span class="lb-tape-label">${hint?.genres?.length ? hint.genres.map((g) => `<i class="g-${g}">${genreGlyph(g)}</i>`).join('') : '<b>?</b>'}</span></span>`;
 
 /** Kleine Kassette im Haufen: leicht schief und versetzt, Wurf und Anhören direkt daran. */
 function tape(s) {
@@ -41,8 +40,8 @@ function tape(s) {
   return `
     <div class="lb-heap-item ${listening ? 'playing' : ''}" style="--r:${rot}deg;--y:${lift}px;--x:${nudge}px">
       ${listening
-    ? `<span class="lb-mini">${CASSETTE}</span><span class="lb-prog tiny"><i style="animation-duration:${total}s;animation-delay:-${elapsed.toFixed(2)}s"></i></span>`
-    : `<button class="lb-mini" data-act="submissionOpen" data-id="${s.submissionId}" title="Anhören · ${expires(s)}">${CASSETTE}</button>
+    ? `<span class="lb-mini">${cassette(s.hint)}</span><span class="lb-prog tiny"><i style="animation-duration:${total}s;animation-delay:-${elapsed.toFixed(2)}s"></i></span>`
+    : `<button class="lb-mini" data-act="submissionOpen" data-id="${s.submissionId}" title="Anhören · ${expires(s)}">${cassette(s.hint)}</button>
       <button class="lb-toss" data-act="submissionDrop" data-id="${s.submissionId}" title="Wegwerfen" aria-label="Wegwerfen">✕</button>
       <small>${left}</small>`}
     </div>`;

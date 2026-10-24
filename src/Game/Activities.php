@@ -60,12 +60,9 @@ final class Activities
             $sound = BandCalc::bandSound($band, $members, $gear);
             $fame = BandCalc::bandFame($band, $members);
             [$manager, $level] = $this->repo->bandManager($band);
-            $chemistry = BandCalc::chemistry($members);
-            $cohesionRule = BandCalc::cohesionRule(BandCalc::identity($members, $band['genre'], $band['genre2']));
             $venueKey = null;
             $gage = 0;
             $skill = [];
-            $cohesionPerSong = Balance::COHESION_PER_SONG;
 
             $rehearsal = null;
             if ($type === 'rehearsal') {
@@ -74,7 +71,7 @@ final class Activities
                 $title = 'Bandprobe';
                 $sim = ['timeline' => self::rehearsalTimeline($members, $songs, $duration), 'meter' => 0.0, 'perf' => 0.0];
                 $fameTotal = 0.0;
-                $rehearsal = ['done' => 0, 'limit' => $limit, 'credited' => (object) [], 'levelUps' => [], 'cohesion' => 0.0, 'maxCohesion' => $cohesionRule['max'], 'growth' => round($chemistry * $cohesionRule['growth'], 4)];
+                $rehearsal = ['done' => 0, 'limit' => $limit, 'credited' => (object) [], 'levelUps' => []];
             } else {
                 if ($type === 'busking') {
                     $cfg = Balance::BUSKING;
@@ -148,8 +145,6 @@ final class Activities
                     'fameGains' => BandCalc::splitFame($members, $fameTotal, $gear),
                     'skill' => $skill,
                     'rehearsal' => $rehearsal,
-                    'cohesion' => round($cohesionPerSong * $songs * $chemistry * $cohesionRule['growth'], 2),
-                    'maxCohesion' => $cohesionRule['max'],
                     'meter' => $sim['meter'],
                     'drops' => $drops,
                     'venue' => $venueKey,
@@ -403,22 +398,17 @@ final class Activities
             'money' => (int) ($reward['money'] ?? 0),
             'fame' => round($fameGain, 2),
             'meter' => $reward['meter'] ?? null,
-            'cohesion' => 0.0,
             'drops' => [],
             'venueUp' => null,
             'levelUps' => self::applySkill($repo, $reward['skill'] ?? []),
             // Können je Mitglied (Bandprobe), damit das Ergebnis zeigt, was sie gebracht hat.
             'skill' => array_values(array_map(static fn ($g) => (float) $g, $reward['skill'] ?? [])),
-            'cohesionFull' => false,
         ];
 
         $bandRow = $db->one('SELECT * FROM bands WHERE id = ?', [$bandId]);
-        if ($bandRow !== null && isset($reward['cohesion'])) {
+        if ($bandRow !== null && $row['type'] !== 'bandpromo') {
             $band = Repo::hydrateBand($bandRow);
-            $cohesion = $band['cohesion'] >= $reward['maxCohesion']
-                ? $band['cohesion']
-                : min((float) $reward['maxCohesion'], $band['cohesion'] + (float) $reward['cohesion']);
-            $updates = ['cohesion' => $cohesion];
+            $updates = [];
             if ($row['type'] === 'gig') {
                 $updates['gigs_played'] = $band['gigs_played'] + 1;
                 $updates['gigs_since_record'] = $band['gigs_since_record'] + 1;
@@ -428,9 +418,9 @@ final class Activities
                     $repo->log('gig', sprintf('%s spielt den ersten richtigen Gig.', $band['name']), $bandId);
                 }
             }
-            $db->update('bands', $updates, ['id' => $bandId]);
-            $result['cohesion'] = round($cohesion - $band['cohesion'], 1);
-            $result['cohesionFull'] = $cohesion >= (float) $reward['maxCohesion'];
+            if ($updates) {
+                $db->update('bands', $updates, ['id' => $bandId]);
+            }
 
             $fameNow = (float) $db->value('SELECT COALESCE(SUM(fame), 0) FROM musicians WHERE band_id = ?', [$bandId]);
             $before = BandCalc::venue($fameNow - $fameGain);
@@ -598,13 +588,6 @@ final class Activities
             $credited[$id] = ($credited[$id] ?? 0.0) + $g;
         }
         $levelUps = self::applySkill($repo, $gains);
-        $band = Repo::hydrateBand($repo->db->one('SELECT * FROM bands WHERE id = ?', [$bandId]));
-        if ($band['cohesion'] < $r['maxCohesion']) {
-            $add = Balance::REHEARSAL['cohesion'] * $f * $r['growth'];
-            $cohesion = min((float) $r['maxCohesion'], $band['cohesion'] + $add);
-            $repo->db->update('bands', ['cohesion' => $cohesion], ['id' => $bandId]);
-            $r['cohesion'] += $cohesion - $band['cohesion'];
-        }
         Mood::bond($repo, $members, 'rehearsal', null, $f);
         Mood::react($repo, $members, 'rehearsal', $f);
         $r['done'] += $dt;
@@ -630,15 +613,12 @@ final class Activities
     private static function rehearsalResult(Repo $repo, int $activityId, string $reason): array
     {
         $row = $repo->db->one('SELECT * FROM activities WHERE id = ?', [$activityId]);
-        $r = (json_decode($row['data'], true)['reward']['rehearsal'] ?? []) + ['credited' => [], 'levelUps' => [], 'cohesion' => 0.0, 'done' => 0, 'limit' => ['id' => 0, 'why' => 'lust'], 'maxCohesion' => 0];
+        $r = (json_decode($row['data'], true)['reward']['rehearsal'] ?? []) + ['credited' => [], 'levelUps' => [], 'done' => 0, 'limit' => ['id' => 0, 'why' => 'lust']];
         $name = $r['limit']['id'] ? ($repo->db->value('SELECT first_name FROM musicians WHERE id = ?', [(int) $r['limit']['id']]) ?? '') : '';
-        $band = Repo::hydrateBand($repo->db->one('SELECT * FROM bands WHERE id = ?', [(int) $row['band_id']]));
         return [
             'money' => 0,
             'fame' => 0.0,
             'meter' => null,
-            'cohesion' => round((float) $r['cohesion'], 1),
-            'cohesionFull' => $band['cohesion'] >= (float) $r['maxCohesion'],
             'drops' => [],
             'venueUp' => null,
             'levelUps' => $r['levelUps'],

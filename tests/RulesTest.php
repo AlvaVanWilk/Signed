@@ -90,13 +90,23 @@ test('Chemie: Divas reiben sich, ein Ruhepol dämpft', function () {
     check(BandCalc::chemistry($divas) < 1.0);
     check(BandCalc::chemistry($calm) > BandCalc::chemistry($divas));
     check(BandCalc::chemistry($team) > 1.0);
-    // Höchstwert hängt an der Genre-Linie, nicht an der Chemie.
-    checkEquals(70.0, BandCalc::maxCohesion(['primary' => null, 'second' => null]), 'gemischt: höchstens 70');
-    checkEquals(100.0, BandCalc::maxCohesion(['primary' => 'rock', 'second' => null]));
-    checkEquals(120.0, BandCalc::maxCohesion(['primary' => 'rock', 'second' => 'punk']), 'Hybrid: über 100');
-    checkEquals(0.5, BandCalc::cohesionRule(['primary' => null, 'second' => null])['growth'], 'gemischt: halb so schnell');
     $notes = BandCalc::chemistryNotes($divas);
     check(count(array_filter($notes, static fn ($n) => !$n['good'] && str_contains($n['text'], 'reiben sich'))) > 0, 'Erklärt, wer sich reibt');
+});
+
+test('Zusammenhalt: ergibt sich aus Durchschnitt und schwächster Beziehung und wirkt auf den Sound', function (): void {
+    checkEquals(null, Signed\Game\Mood::togetherness([]), 'Solokünstler: keine Paare');
+    checkEquals(100.0, Signed\Game\Mood::cohesionValue([]), 'Solokünstler streiten nicht');
+    $even = Signed\Game\Mood::togetherness(['1-2' => 6.0, '1-3' => 6.0, '2-3' => 6.0]);
+    $weak = Signed\Game\Mood::togetherness(['1-2' => 10.0, '1-3' => 10.0, '2-3' => -10.0]);
+    check($even['value'] > $weak['value'], 'gleiche Durchschnitte: die schwächste Beziehung zieht runter');
+    checkEquals(50.0, Signed\Game\Mood::cohesionValue(['1-2' => 0.0]), 'Fremde: Mitte');
+    checkEquals(100.0, Signed\Game\Mood::cohesionValue(['1-2' => 10.0]));
+    checkEquals(0.0, Signed\Game\Mood::cohesionValue(['1-2' => -10.0]));
+    $members = [musician(['id' => 1]), musician(['id' => 2])];
+    $bad = BandCalc::sound($members, Signed\Game\Mood::cohesionValue(['1-2' => -10.0]), []);
+    $good = BandCalc::sound($members, Signed\Game\Mood::cohesionValue(['1-2' => 10.0]), []);
+    check($good > $bad * 1.3, 'Streit kostet Sound: ' . $bad . ' gegen ' . $good);
 });
 
 test('Besetzungsregeln', function () {
@@ -504,7 +514,6 @@ test('Crossover: alle teilen drei Genres', function (): void {
     check($identity['third'] !== null, 'drittes Genre erkannt');
     checkEquals(Balance::CROSSOVER_BONUS, $identity['bonus']);
     check(str_contains($identity['title'], 'Crossover'), $identity['title']);
-    checkEquals(120.0, BandCalc::maxCohesion($identity), 'Zusammenspiel wie Hybrid');
 });
 
 test('Jede Genre-Kombination (Hybrid und Crossover) lässt sich besetzen', function (): void {

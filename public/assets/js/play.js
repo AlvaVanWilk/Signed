@@ -137,7 +137,6 @@ function recordSummary(r) {
   const head = `
     <h3>Aufnahme ${r.songsDone}/${r.songsTotal} im Kasten – Trefferquote ${percent(r.accuracy)}</h3>
     ${counts(r)}
-    <p class="muted">Zusammenspiel +${fmt1(r.cohesion)}</p>
     ${levelUpBanners(r.levelUps)}`;
   return head;
 }

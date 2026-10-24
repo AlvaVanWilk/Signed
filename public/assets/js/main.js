@@ -273,7 +273,6 @@ function resultHtml(r) {
       <h2>Die Probe ist vorbei</h2>
       <p class="muted">${(REHEARSAL_END[res.ended] ?? REHEARSAL_END.ended)(res.endedBy ?? '')} Sie dauerte ${duration(res.seconds ?? 0)}.</p>
       <div class="reward-grid">
-        ${res.cohesion ? reward('Zusammenspiel', `+${fmt1(res.cohesion)}`) : res.cohesionFull ? reward('Zusammenspiel', 'schon voll') : ''}
         ${members.map((m) => (skills[m.id] === undefined ? '' : reward(`Können ${esc(m.firstName)}`, `+${fmtGain(skills[m.id])}`))).join('')}
       </div>
       ${levelUpBanners(res.levelUps)}`;
@@ -319,7 +318,6 @@ function resultHtml(r) {
     <div class="reward-grid">
       ${res.money ? reward(r.type === 'busking' ? 'Im Hut' : 'Gage', `+${money(0)}`, { to: res.money, kind: 'money' }) : ''}
       ${res.fame ? reward('Ruhm', `+${fmtGain(0)}`, { to: res.fame, kind: 'fame' }) : ''}
-      ${res.cohesion ? reward('Zusammenspiel', `+${fmt1(res.cohesion)}`) : res.cohesionFull ? reward('Zusammenspiel', 'schon voll') : ''}
       ${res.skill?.length ? reward('Können je Musiker', skillSpan(res.skill)) : ''}
       ${res.meter ? reward('Publikum', percent(res.meter / 100)) : ''}
     </div>

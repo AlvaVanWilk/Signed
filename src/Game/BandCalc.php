@@ -248,8 +248,8 @@ final class BandCalc
      */
     public static function cohesionRule(array $identity): array
     {
-        $kind = $identity['primary'] === null ? 'mixed' : ($identity['second'] === null ? 'genre' : 'hybrid');
-        return Balance::COHESION_BY_GENRE[$kind];
+        // Umbau: Der Zusammenhalt ergibt sich aus den Beziehungen (Mood::cohesionValue), nicht mehr aus Genre-Linie und Üben.
+        return ['max' => 100.0, 'growth' => 1.0];
     }
 
     public static function maxCohesion(array $identity): float

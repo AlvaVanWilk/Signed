@@ -4,7 +4,7 @@ import { closePopover, duration, esc, fmt0, fmt1, fmtGain, openModal, popover } 
 import { getAudio } from '../audio.js';
 import { playedInstrument, stage } from '../figure.js';
 import { bandStems, loadStems, playStems, stemUrl } from '../music.js';
-import { blocker, blockerNotice, chemistryLabel, courseTiles, gainRange, statTile } from './bands.js';
+import { blocker, blockerNotice, courseTiles, gainRange, statTile } from './bands.js';
 
 /** Label-Ebene: Band-Leiste links und die ruhige Bandseite. Stimmung als Punkt und Wort (grün, gelb, rot). */
 
@@ -15,6 +15,7 @@ export const moodWord = (level) => MOOD_WORD[level] ?? MOOD_WORD.green;
 
 const moodTag = (level) => `<span class="lb-mood ${level}"><i></i>${moodWord(level)}</span>`;
 const steps = (value, thresholds) => thresholds.filter((t) => value >= t).length;
+const signed1 = (v) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${fmt1(Math.abs(v)).replace('.', ',')}`;
 const signed = (v) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${fmt0(Math.abs(v))}`;
 
 /** Genre-Marke: Farbe des Genres als Rand und zarte Fläche, das Symbol darin. */
@@ -282,8 +283,6 @@ export function page(route) {
   if (!b) return '<div class="empty">Diese Band gibt es nicht mehr.</div>';
   rememberBand(b.id);
   const members = b.memberIds.map(musicianById).filter(Boolean);
-  const rel = Object.values(b.mood.relations ?? {});
-  const avgRel = rel.length ? rel.reduce((a, v) => a + v, 0) / rel.length : 0;
   const solo = members.length === 1;
   const running = runningFor(b.id);
   const notice = running?.type === 'rehearsal' ? '' : blockerNotice(b, members);
@@ -318,13 +317,11 @@ export function page(route) {
     <div class="lb-sum">
       <div data-act="bandStatInfo" data-key="sound" data-id="${b.id}" data-flash="sound-${b.id}"><small>Sound</small><b>${fmt1(b.sound)}</b></div>
       <div data-act="bandStatInfo" data-key="fame" data-id="${b.id}"><small>Ruhm</small><b>${esc(cat().fameNames[steps(b.fame, cat().rules.fameLevels)])}</b></div>
-      <div><small>Beziehungen Ø</small><b>${solo ? '–' : `${avgRel > 0 ? '+' : avgRel < 0 ? '−' : ''}${fmt1(Math.abs(avgRel)).replace('.', ',')}`}</b></div>
+      <div data-act="bandStatInfo" data-key="together" data-id="${b.id}"><small>Zusammenhalt</small><b>${solo || !b.mood.togetherness ? '–' : signed1(b.mood.togetherness.value)}</b></div>
       <div><small>Stimmung</small><b>${fmt0(b.mood.value)}</b></div>
     </div>
     <details class="lb-more"><summary>Weitere Werte</summary>
       <div class="stat-grid">
-        ${statTile('cohesion', b, `${fmt0(b.cohesion)}<small> / ${fmt0(b.maxCohesion)}</small>`)}
-        ${statTile('chemistry', b, chemistryLabel(b.chemistry))}
         ${statTile('records', b, fmt0(b.records))}
       </div>
     </details>
@@ -385,7 +382,7 @@ defineActions({
         <h2>Proben mit ${esc(b.name)}</h2>
         <p class="muted">Die Band geht in den Proberaum und probt, bis jemand keine Lust mehr hat – hier nach etwa <b>${duration(b.options.rehearsal.seconds)}</b> (${why}). Du kannst jederzeit beenden und behältst alles, was bis dahin gelernt wurde.</p>
         <h3>Was es bringt</h3>
-        <ul class="lb-ask-list">${skill}<li>Die Beziehungen untereinander wachsen, das Zusammenspiel auch.</li>${reactionLines(b, 'rehearsal')}</ul>
+        <ul class="lb-ask-list">${skill}<li>Die Beziehungen untereinander wachsen.</li>${reactionLines(b, 'rehearsal')}</ul>
         <div class="dialog-actions">
           <button class="btn ghost" data-cancel>Abbrechen</button>
           <button class="btn primary" data-go>Proben starten</button>

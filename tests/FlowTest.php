@@ -484,21 +484,28 @@ test('Platte produzieren, dann Gigs spielen, dann die nächste Platte', function
     check(array_sum(array_map(static fn ($r) => $r['result']['money'], $state['results'])) > 0, 'Gigs bringen Gage');
 });
 
-test('Umbesetzung nach der Freigabe kostet Zusammenspiel, Bekanntheit geht mit', function () {
+test('Umbesetzung: Bekanntheit geht mit, der Zusammenhalt folgt den Beziehungen', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Lineup');
     $band = foundBand($p);
-    $db->exec('UPDATE bands SET cohesion = 60, released = 1');
+    $db->exec('UPDATE bands SET released = 1');
     $db->exec('UPDATE musicians SET fame = 10');
     $leaving = $band['memberIds'][0];
     $state = $p->post('bandRemoveMember', ['bandId' => $band['id'], 'musicianId' => $leaving])['state'];
     $after = bandById($state, $band['id']);
-    checkEquals(60 - Balance::COHESION_REMOVE_PENALTY, $after['cohesion']);
     checkEquals(20.0, $after['fame'], 'Bandruhm sinkt genau um die Bekanntheit des Ausgetretenen');
+    checkEquals(50.0, $after['cohesion'], 'Fremde: mittlerer Zusammenhalt');
+
+    // Die beiden anderen werden Freunde: voller Zusammenhalt.
+    [$x, $y] = $after['memberIds'];
+    $db->insert('relations', ['label_id' => (int) $db->value('SELECT id FROM labels'), 'a_id' => min($x, $y), 'b_id' => max($x, $y), 'value' => 10.0, 'at' => Clock::now()]);
+    $state = $p->get('state');
+    checkEquals(100.0, bandById($state, $band['id'])['cohesion']);
+    checkEquals(10.0, bandById($state, $band['id'])['mood']['togetherness']['value']);
 
     $state = $p->post('bandAddMember', ['bandId' => $band['id'], 'musicianId' => $leaving, 'slot' => 1])['state'];
     checkEquals(30.0, bandById($state, $band['id'])['fame']);
-    checkEquals(60 - Balance::COHESION_REMOVE_PENALTY - Balance::COHESION_ADD_PENALTY, bandById($state, $band['id'])['cohesion']);
+    check(bandById($state, $band['id'])['cohesion'] < 100.0, 'Ein Neuer, den noch keiner kennt, drückt den Zusammenhalt');
 });
 
 test('Instrumente zuweisen: nur passende Art, eins pro Art', function () {
@@ -605,7 +612,7 @@ test('Album-Charts: Platten aller Labels, Platz 1 gibt einen Gutschein, Tantieme
     $beta = array_column($b->get('charts')['albums'], null, 'title')['Beta EP'];
     check($beta['prev'] !== null && in_array($beta['trend'], ['up', 'down', 'same'], true));
 
-    Clock::advance(3 * 86400);
+    Clock::advance(12 * 86400);
     checkEquals([], $b->get('charts')['albums'], 'Nach ein paar Tagen sind alle draußen');
 });
 
@@ -1026,28 +1033,21 @@ test('Tageskurs: nie zweimal hintereinander dasselbe Instrument', function () {
     check(($kinds['Kurs'] ?? 0) > ($kinds['Meisterklasse'] ?? 0) && ($kinds['Meisterklasse'] ?? 0) > 5, 'Kursarten gewichtet: ' . json_encode($kinds));
 });
 
-test('Instrumentwechsel: Vorschau stimmt, neue Rolle kostet Zusammenspiel, Zurückwechseln gibt es zurück', function () {
+test('Instrumentwechsel: Vorschau stimmt, Zurückwechseln geht jederzeit', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Wechsel');
     $band = foundBand($p);
-    $db->exec('UPDATE bands SET cohesion = 60, released = 1');
+    $db->exec('UPDATE bands SET released = 1');
     $drummer = (int) $db->value("SELECT id FROM musicians WHERE instr1 = 'drums'");
     $db->exec("UPDATE musicians SET instr2 = 'bass', skill2 = 30 WHERE id = ?", [$drummer]);
     $preview = bandById($p->get('state'), $band['id'])['slotPreview'][$drummer];
     $after = bandById($p->post('bandSetSlot', ['bandId' => $band['id'], 'musicianId' => $drummer, 'slot' => 2])['state'], $band['id']);
     checkEquals($preview, $after['sound']);
-    checkEquals(60 - Balance::COHESION_SWITCH_PENALTY, $after['cohesion']);
 
-    // Zurück aufs alte Instrument: Damit ist die Band eingespielt, nichts geht verloren.
     $preview = $after['slotPreview'][$drummer];
     $back = bandById($p->post('bandSetSlot', ['bandId' => $band['id'], 'musicianId' => $drummer, 'slot' => 1])['state'], $band['id']);
-    checkEquals(60.0, $back['cohesion']);
     checkEquals($preview, $back['sound']);
-    checkEquals(60.0, bandById($p->get('state'), $band['id'])['cohesion']);
-    // Hin und her bleibt beim selben Stand.
-    $p->post('bandSetSlot', ['bandId' => $band['id'], 'musicianId' => $drummer, 'slot' => 2]);
-    $again = bandById($p->post('bandSetSlot', ['bandId' => $band['id'], 'musicianId' => $drummer, 'slot' => 1])['state'], $band['id']);
-    checkEquals(60.0, $again['cohesion']);
+    check($back['cohesion'] === $after['cohesion'], 'ein Rollenwechsel kostet keinen Zusammenhalt');
 });
 
 test('Fan will einsteigen: selten nach begeistertem Gig, passendes fehlendes Instrument, höchstens einmal pro Woche', function () {

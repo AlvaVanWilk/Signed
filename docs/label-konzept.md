@@ -366,7 +366,7 @@ Beim ersten Login nach dem Umbau (Saison 2) bleiben **Labelname und Konto**, all
 
 1. Konzept und Auslagerung dokumentieren (diese Dateien).
 2. Datenmodell: Wohlbefinden, Beziehungen (Paare), Songs, Spielzeit, Stimmung.
-3. Band-Leiste und Bandseite (neue Oberfläche, ohne Untermenü). **Gebaut** (Testversion). Noch offen: Verschieben der Knöpfe.
+3. Band-Leiste und Bandseite (neue Oberfläche, ohne Untermenü). **Gebaut** (Testversion). **Zusammenspiel und Chemie sind ersetzt** durch den Zusammenhalt aus den Beziehungen (siehe `kern.md`). Noch offen: Verschieben der Knöpfe.
    Dazu gebaut (vorgezogen aus Schritt 6): **Charakter-Reaktionen** (`Catalog::LIKES`: Eine Anordnung, die der Charakter mag, hebt das Wohlbefinden sofort um `Balance::MOOD['reactStep']`, eine unbeliebte drückt es), **Sperre bei Rot** (ein roter Musiker, der die Anordnung nicht mag, sperrt sie; jede Eigenschaft mag mindestens eine Anordnung, damit es immer einen Ausweg gibt) und **Wünsche** (unzufriedene Musiker nennen ihren Charakter-Wunsch, `Catalog::WISHES`; fehlendes Instrument; Songstau). Offen: die Wirkung offener Wünsche auf das Wohlbefinden über die Zeit (bisher nur der Stoß beim Erfüllen), Anspruch und Studio.
 4. Anordnungen: Proben (neue Können-Quelle), Auftritt buchen mit Kosten und Gewinn-Schätzung.
 5. Aufnehmen mit Studio und Produzent, Cover-Wahl.

@@ -173,7 +173,7 @@ const STAT_INFO = {
           <li>Der Durchschnitt zählt ${Math.round(r.soundMeanWeight * 100)} %, der <b>Schwächste</b> ${Math.round((1 - r.soundMeanWeight) * 100)} %: Eine schwache Stelle zieht runter.</li>
           <li>Verschiedene Instrumente: +${Math.round(r.lineupBonus * 100)} % je weiterem, höchstens +${Math.round(r.lineupBonus * r.lineupBonusMaxTypes * 100)} %.</li>
           <li><b>Volle Bühne</b>: +${Math.round(r.memberSoundBonus * 100)} % für jedes Mitglied über ${r.minMembers}.</li>
-          <li><b>Zusammenspiel</b>: × ${fmt2(r.cohesionFloor)} bei 0, × 1 bei 100 – gerade × ${fmt2(fx.cohesionSound)}.</li>
+          <li><b>Zusammenhalt</b>: × ${fmt2(r.cohesionFloor)} bei −10, × 1 bei +10 – gerade × ${fmt2(fx.cohesionSound)}.</li>
           <li><b>Genre</b>: gemischt −${Math.round((1 - r.mixedBonus) * 100)} %, Genre-Band +${Math.round((r.genreBonus - 1) * 100)} %, Hybrid +${Math.round((r.hybridBonus - 1) * 100)} % – gerade × ${fmt2(b.genreBonus)}.</li>
         </ul>
         <h3>Was er bewirkt</h3>
@@ -199,28 +199,20 @@ const STAT_INFO = {
       <ul><li>Auftritte, Platten, Charts und Promo.</li><li>Geht jemand, nimmt er seine Bekanntheit mit. Der Ruhm am Namen bleibt.</li></ul>`;
     },
   },
-  cohesion: {
-    title: 'Zusammenspiel',
-    text: (b) => `<p>Wie gut die Band eingespielt ist – gerade höchstens <b>${fmt0(b.maxCohesion)}</b>.</p>
-      <h3>Woher es kommt</h3>
-      <ul><li>Bandproben, Auftritte und Aufnahmen im Studio. Die Chemie bestimmt, wie schnell es wächst.</li>
-      <li>Das Genre bestimmt, wie weit: Gemischte Bands verstehen sich schwer – halb so schnell, höchstens ${fmt0(cat().rules.cohesionByGenre.mixed.max)}. Genre-Bands bis ${fmt0(cat().rules.cohesionByGenre.genre.max)}, Hybrid-Bands sogar bis ${fmt0(cat().rules.cohesionByGenre.hybrid.max)}.</li>
-      <li>Neue Mitglieder, Rauswürfe und neue Rollen kosten etwas. Wer zurück aufs alte Instrument wechselt, bekommt es zurück.</li></ul>
-      <h3>Was es bewirkt</h3>
-      <ul><li>Sound × ${fmt2(cat().rules.cohesionFloor)} bei 0, × 1 bei 100, darüber noch mehr – gerade × ${fmt2(b.effects.cohesionSound)}.</li></ul>`,
-  },
-  chemistry: {
-    title: 'Chemie',
-    text: (b) => `<p>Wie gut sich die Charaktere in der Band verstehen.</p>
-      <h3>Gerade: ${chemistryLabel(b.chemistry)}</h3>
-      <ul>${b.chemistryNotes.length
-        ? b.chemistryNotes.map((n) => `<li class="${n.good ? 'ok' : 'bad'}">${n.good ? '＋' : '−'} ${esc(n.text)}</li>`).join('')
-        : '<li>Keine Reibung, aber auch niemand, der hilft.</li>'}
-        <li>Zusammenspiel wächst <b>× ${fmt2(b.effects.chemistry)}</b>.</li></ul>
-      <h3>Woraus sie sich zusammensetzt</h3>
-      <ul><li>Die Eigenschaften der Mitglieder: Manche reiben sich (z. B. zwei Diven), andere helfen (Teamplayer, Ruhepol).</li></ul>
-      <h3>Was sie bewirkt</h3>
-      <ul><li>Wie schnell das Zusammenspiel wächst. Eine Grenze setzt sie nicht.</li></ul>`,
+  together: {
+    title: 'Zusammenhalt',
+    text: (b) => {
+      const t = b.mood.togetherness;
+      const sign = (v) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${fmt1(Math.abs(v)).replace('.', ',')}`;
+      return `<p>Wie gut sich die Mitglieder verstehen: je zur Hälfte der <b>Durchschnitt</b> und die <b>schwächste Beziehung</b> der Band.</p>
+      <h3>Gerade</h3>
+      <ul>${t ? `<li>Durchschnitt <b>${sign(t.avg)}</b>, schwächste Beziehung <b>${sign(t.min)}</b>, zusammen <b>${sign(t.value)}</b>.</li>` : '<li>Ein Solokünstler hat niemanden, mit dem er sich streiten könnte.</li>'}</ul>
+      <h3>Woher er kommt</h3>
+      <ul><li>Die Beziehungen wachsen durch gemeinsames Proben, Auftreten und Aufnehmen – je nachdem, wie gut sich die Charaktere und Genres verstehen.</li>
+      <li>Wer neu in die Band kommt, kennt die anderen noch nicht. Wer schlecht zu ihnen passt, kann nie ein Freund werden.</li></ul>
+      <h3>Was er bewirkt</h3>
+      <ul><li>Sound × ${fmt2(cat().rules.cohesionFloor)} bei −10, × 1 bei +10 – gerade × ${fmt2(b.effects.cohesionSound)}.</li></ul>`;
+    },
   },
   records: {
     title: 'Platten',
@@ -744,7 +736,7 @@ function openCreateBand() {
     const identity = bandIdentity(picks().map((p) => ({ type: p.type, genres: musicianById(p.id).genres })));
     summary.innerHTML = problems.length
       ? `<span class="warn">${problems.map(esc).join(' ')}</span>`
-      : `<span class="ok">${selected.size} Musiker – ${identity.title ? `das wird eine ${esc(identity.title)} (+${percent(identity.bonus - 1)} Sound)` : `noch ohne gemeinsames Genre (−${percent(1 - identity.bonus)} Sound, Zusammenspiel höchstens ${cat().rules.cohesionByGenre.mixed.max})`}.</span>`;
+      : `<span class="ok">${selected.size} Musiker – ${identity.title ? `das wird eine ${esc(identity.title)} (+${percent(identity.bonus - 1)} Sound)` : `noch ohne gemeinsames Genre (−${percent(1 - identity.bonus)} Sound)`}.</span>`;
   };
   drawList();
   update();
@@ -845,7 +837,7 @@ defineActions({
     const m = musicianById(musician);
     if (b.released) {
       const ok = await confirmDialog(
-        `${fullName(m)} verlässt ${b.name}: Zusammenspiel −${cat().rules.cohesionRemovePenalty}, Bandruhm −${fmt1(m.fame)}.`,
+        `${fullName(m)} verlässt ${b.name}: Bandruhm −${fmt1(m.fame)}, und der Zusammenhalt ändert sich.`,
         { ok: 'Rausnehmen', danger: true },
       );
       if (!ok) return;
@@ -866,8 +858,7 @@ defineActions({
     const m = musicianById(Number(el.dataset.musician));
     const after = b.slotPreview?.[m.id];
     const back = b.slotReturn?.includes(String(m.id));
-    const penalty = back ? ' Mit diesem Instrument ist die Band eingespielt: Das Zusammenspiel kommt zurück.'
-      : b.released ? ` Neue Rolle: Zusammenspiel −${cat().rules.cohesionSwitchPenalty}, bis ${m.firstName} zurückwechselt.` : '';
+    const penalty = '';
     const ok = await confirmDialog(
       `${m.firstName} spielt ${instrumentName(m.instruments[Number(value) - 1].type)}: Sound ${fmt1(b.sound)} → ${after == null ? '?' : fmt1(after)}.${penalty}`,
       { ok: 'Wechseln', danger: !!b.released && !back },

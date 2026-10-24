@@ -137,7 +137,6 @@ final class Bands
 
             $this->repo->db->update('musicians', ['band_id' => $bandId, 'band_slot' => $m['band_slot']], ['id' => $m['id']]);
             if ($band['released']) {
-                $this->lowerCohesion($band, Balance::COHESION_ADD_PENALTY);
                 $this->repo->log('lineup', sprintf('%s steigt bei %s ein.', self::fullName($m), $band['name']), $bandId, $m['id']);
             }
             $this->syncIdentity($band);
@@ -160,7 +159,6 @@ final class Bands
             unset($return[$m['id']]);
             $this->saveSlotReturn($bandId, $return);
             if ($band['released']) {
-                $this->lowerCohesion($band, Balance::COHESION_REMOVE_PENALTY);
                 $this->repo->log('lineup', sprintf(
                     '%s verlässt %s und nimmt %s Bekanntheit mit.',
                     self::fullName($m),
@@ -192,18 +190,6 @@ final class Bands
             $members[$index]['band_slot'] = $slot;
             self::assertLineup($members);
             $this->repo->db->update('musicians', ['band_slot' => $slot], ['id' => $musicianId]);
-            $return = $band['slot_return'];
-            $back = $return[$musicianId] ?? null;
-            if ($back !== null && $back[0] === $slot) {
-                $max = BandCalc::maxCohesion(BandCalc::identity($members, $band['genre'], $band['genre2']));
-                $this->repo->db->update('bands', ['cohesion' => min($max, $band['cohesion'] + $back[1])], ['id' => $bandId]);
-                unset($return[$musicianId]);
-            } elseif ($band['released']) {
-                $lost = min($band['cohesion'], (float) Balance::COHESION_SWITCH_PENALTY);
-                $this->lowerCohesion($band, $lost);
-                $return[$musicianId] = [3 - $slot, $lost];
-            }
-            $this->saveSlotReturn($bandId, $return);
             $this->syncIdentity($band);
         });
     }
@@ -222,11 +208,8 @@ final class Bands
                 ? sprintf('%s ist jetzt eine %s.', $band['name'], $identity['title'])
                 : sprintf('%s hat keine gemeinsame Genre-Linie mehr.', $band['name']), $band['id']);
         }
-        // Ohne gemeinsame Linie (oder ohne zweites Genre) sinkt das Zusammenspiel auf den neuen Höchstwert.
-        $max = BandCalc::maxCohesion($identity);
-        if ($band['cohesion'] > $max) {
-            $this->repo->db->update('bands', ['cohesion' => $max], ['id' => $band['id']]);
-        }
+        // Wer dazukommt oder geht, ändert den Zusammenhalt (Beziehungen der neuen Besetzung).
+        Mood::syncCohesion($this->repo, (int) $band['id']);
         return $identity;
     }
 
@@ -372,11 +355,6 @@ final class Bands
     private function saveSlotReturn(int $bandId, array $return): void
     {
         $this->repo->db->update('bands', ['slot_return' => $return ? json_encode($return) : null], ['id' => $bandId]);
-    }
-
-    private function lowerCohesion(array $band, float $amount): void
-    {
-        $this->repo->db->update('bands', ['cohesion' => max(0.0, $band['cohesion'] - $amount)], ['id' => $band['id']]);
     }
 
     private static function slot(array $m, int $slot): int

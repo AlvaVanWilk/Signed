@@ -1,5 +1,11 @@
 # Der Kern von Signed
 
+> **Umbau (Label-Ebene), Stand Testversion:** Das **Zusammenspiel** (0–100, wuchs durch Proben, Auftritte, Aufnahmen; Höchstwert nach Genre-Linie) und die **Chemie** (Wachstum × 0,5–1,5) gibt es nicht mehr.
+> Stattdessen zählt der **Zusammenhalt** aus den Beziehungen der Mitglieder (−10…+10): `0,5 × Durchschnitt + 0,5 × schwächste Beziehung` (`Mood::togetherness`).
+> Er geht als Wert 0–100 (`50 + 5 × Zusammenhalt`; Solokünstler 100) mit derselben Formel `0,7 + 0,3 × Wert/100` in den Sound ein (`Mood::cohesionValue`, Zwischenspeicher `bands.cohesion`, nachgeführt von `Mood::syncCohesion`).
+> Kein Genre-Höchstwert mehr (der Genre-Bonus auf den Sound bleibt), keine Abzüge für Ein-/Austritt und Rollenwechsel – das übernehmen die Beziehungen (wer neu ist, ist ein Fremder = 0).
+> Neue Bands starten bei Beziehungen 0, also Zusammenhalt-Wert 50 (Sound × 0,85 statt vorher × 0,7). Die folgenden Abschnitte beschreiben noch den alten Stand.
+
 Stand: vierte Runde (Läden mit Auswahl, Konto, neue Karten). Währung: Groove Coins (₲). Grundlage ist das Claude-Doc „Signed – Spielkonzept“.
 Alle Zahlen stehen in [`src/Game/Balance.php`](../src/Game/Balance.php) und sind Startwerte zum Nachjustieren.
 

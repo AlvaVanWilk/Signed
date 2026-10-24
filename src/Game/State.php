@@ -95,7 +95,7 @@ final class State
             $venue = BandCalc::venue($fame);
             $open = $openRecords[$band['id']] ?? null;
             $draw = BandCalc::freshness($band['gigs_since_record']);
-            // Vorschau für Instrumentwechsel: Sound danach (samt Zusammenspiel-Abzug), null = Besetzung geht so nicht.
+            // Vorschau für Instrumentwechsel: Sound danach, null = Besetzung geht so nicht.
             $slotPreview = [];
             foreach ($list as $i => $m) {
                 if ($m['instr2'] === null) {
@@ -103,12 +103,9 @@ final class State
                 }
                 $try = $list;
                 $try[$i]['band_slot'] = $m['band_slot'] === 2 ? 1 : 2;
-                $back = $band['slot_return'][$m['id']] ?? null;
-                $cohesion = $back !== null && $back[0] === $try[$i]['band_slot'] ? min(BandCalc::maxCohesion($identity), $band['cohesion'] + $back[1])
-                    : ($band['released'] ? max(0.0, $band['cohesion'] - Balance::COHESION_SWITCH_PENALTY) : $band['cohesion']);
                 $slotPreview[$m['id']] = BandCalc::lineupProblems(array_values($try)) ? null : BandCalc::sound(
                     $try,
-                    $cohesion,
+                    $band['cohesion'],
                     $gearMap,
                     BandCalc::identity($try, $band['genre'], $band['genre2'])['bonus']
                 );
@@ -134,6 +131,7 @@ final class State
                     'songs' => (int) floor($band['songs_written']),
                     'patience' => round($band['patience']),
                     'relations' => $bandRelations[$band['id']] ?? [],
+                    'togetherness' => Mood::togetherness($bandRelations[$band['id']] ?? []),
                     'reactions' => Mood::reactions($list),
                     'wishes' => Mood::wishes($list, $gearMap, (int) floor($band['songs_written'])),
                 ],

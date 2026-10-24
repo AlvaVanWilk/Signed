@@ -162,13 +162,7 @@ final class Studio
             }
         }
 
-        $chemistry = BandCalc::chemistry($members);
-        $rule = BandCalc::cohesionRule(BandCalc::identity($members, $band['genre'], $band['genre2']));
-        $max = $rule['max'];
-        $cohesion = $band['cohesion'] >= $max
-            ? $band['cohesion']
-            : min($max, $band['cohesion'] + Balance::RECORD_SONG_COHESION * $accuracy * $chemistry * $rule['growth']);
-        $db->update('bands', ['cohesion' => $cohesion, 'released' => 1], ['id' => $band['id']]);
+        $db->update('bands', ['released' => 1], ['id' => $band['id']]);
         Mood::bond($this->repo, $members, 'record');
         Mood::react($this->repo, $members, 'record');
         $db->update('records', ['songs_done' => count($results), 'song_results' => json_encode($results)], ['id' => $record['id']]);
@@ -177,7 +171,6 @@ final class Studio
             'accuracy' => round($accuracy, 3),
             'songsDone' => count($results),
             'songsTotal' => $record['songs_total'],
-            'cohesion' => round($cohesion - $band['cohesion'], 1),
             'levelUps' => $levelUps,
             'completed' => null,
             // Als letzte Aufnahme kommt der Cover-Automat (Cover::start); danach ist die Platte fertig.

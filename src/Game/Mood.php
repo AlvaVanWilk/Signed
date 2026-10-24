@@ -110,6 +110,39 @@ final class Mood
                 $repo->db->insert('relations', ['label_id' => $repo->labelId, 'a_id' => $a, 'b_id' => $b, 'value' => round($value, 4), 'at' => $now]);
             }
         }
+        if ($members[0]['band_id'] !== null) {
+            self::syncCohesion($repo, (int) $members[0]['band_id']);
+        }
+    }
+
+    /**
+     * Zusammenhalt der Band aus ihren Beziehungen (−10…+10): je zur Hälfte Durchschnitt und schwächste Beziehung.
+     * @param array<string, float> $relations "a-b" => Wert; leer bei einem Solokünstler
+     * @return array{avg: float, min: float, value: float}|null
+     */
+    public static function togetherness(array $relations): ?array
+    {
+        if (!$relations) {
+            return null;
+        }
+        $avg = array_sum($relations) / count($relations);
+        $min = min($relations);
+        return ['avg' => round($avg, 2), 'min' => round($min, 2), 'value' => round(0.5 * $avg + 0.5 * $min, 2)];
+    }
+
+    /** Zusammenhalt als Wert 0–100 für den Sound (0 = −10, 50 = 0, 100 = +10); ein Solokünstler hat keinen Streit, also 100. */
+    public static function cohesionValue(array $relations): float
+    {
+        $t = self::togetherness($relations);
+        return $t === null ? 100.0 : max(0.0, min(100.0, 50 + 5 * $t['value']));
+    }
+
+    /** Hält den gespeicherten Zusammenhalt der Band (nur Zwischenspeicher für den Sound) aktuell. */
+    public static function syncCohesion(Repo $repo, int $bandId): void
+    {
+        $members = $repo->members($bandId);
+        $value = round(self::cohesionValue($members ? self::relations($repo, $members) : []), 2);
+        $repo->db->exec('UPDATE bands SET cohesion = ? WHERE id = ?', [$value, $bandId]);
     }
 
     // ---------- Wohlbefinden und Stimmung ----------
@@ -315,6 +348,7 @@ final class Mood
         $repo->db->update('labels', ['online_at' => $now], ['id' => $repo->labelId]);
 
         foreach ($repo->bands() as $band) {
+            self::syncCohesion($repo, $band['id']);
             if ($band['mood_at'] <= 0) {
                 $repo->db->update('bands', ['mood_at' => $now], ['id' => $band['id']]);
                 continue;

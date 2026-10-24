@@ -401,6 +401,18 @@ final class Schema
                 'ALTER TABLE bands ADD COLUMN patience REAL NOT NULL DEFAULT 1800',
                 'ALTER TABLE labels ADD COLUMN online_at INTEGER NOT NULL DEFAULT 0',
             ],
+            // 24: Label-Umbau – Einsendungen (Bewerbungen von Musikern, je Label eigene)
+            [
+                'CREATE TABLE submissions (
+                    id {PK},
+                    label_id INTEGER NOT NULL,
+                    card TEXT NOT NULL,
+                    created_at INTEGER NOT NULL,
+                    expires_at INTEGER NOT NULL
+                ){OPTS}',
+                'CREATE INDEX submissions_label ON submissions (label_id)',
+                'ALTER TABLE labels ADD COLUMN submit_at INTEGER NOT NULL DEFAULT 0',
+            ],
         ];
     }
 }

@@ -19,9 +19,11 @@ import * as musician from './views/musician.js';
 import * as overview from './views/overview.js';
 import * as packs from './views/packs.js';
 import * as storage from './views/storage.js';
+import * as submissions from './views/submissions.js';
 
 const NAV = [
   ['', 'Übersicht'],
+  ['einsendungen', 'Einsendungen'],
   ['packs', 'Einkaufen'],
   ['katalog', 'Katalog'],
   ['lager', 'Lager'],
@@ -31,6 +33,7 @@ const NAV = [
 
 const VIEWS = {
   '': () => overview.render(),
+  einsendungen: () => submissions.render(),
   packs: () => packs.render(),
   katalog: () => catalog.render(),
   lager: () => storage.render(),
@@ -149,7 +152,7 @@ function layout(content, route) {
   return `
     <header class="topbar">
       <a class="logo" href="#/">Signed</a>
-      <nav class="nav">${NAV.map(([key, label]) => `<a href="#/${key}" class="${key === active ? 'active' : ''}">${label}${key === 'boerse' ? marketBadge(active === 'boerse') : ''}</a>`).join('')}</nav>
+      <nav class="nav">${NAV.map(([key, label]) => `<a href="#/${key}" class="${key === active ? 'active' : ''}">${label}${key === 'boerse' ? marketBadge(active === 'boerse') : ''}${key === 'einsendungen' && s.submissions?.length ? ` <span class="nav-badge">${s.submissions.length}</span>` : ''}</a>`).join('')}</nav>
       <div class="label-info">
         <span class="label-name" title="Dein Label">${esc(s.label.name)}</span>
         <button class="money-pill" data-act="openFinance" data-live-money title="Konto und Einnahmen">${money(liveMoney())}</button>

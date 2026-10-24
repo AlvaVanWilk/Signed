@@ -13,6 +13,7 @@ final class State
         $db = $repo->db;
         $now = Clock::now();
         Mood::settle($repo, $now);
+        (new Submissions($repo))->topUp($now);
         $label = $repo->label();
         $musicians = $repo->musicians();
         $gear = $repo->gear();
@@ -229,6 +230,7 @@ final class State
             'now' => $now,
             'label' => $label + ['bandSlots' => Bands::slots($repo->labelFame())],
             'scout' => (new Scout($repo))->status(),
+            'submissions' => (new Submissions($repo))->list($now),
             'course' => (new Courses($repo))->status($musicians),
             'jamOffers' => (new Jam($repo))->open(),
             'market' => (new Transfers($repo))->market(),

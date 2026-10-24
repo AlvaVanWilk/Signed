@@ -131,6 +131,19 @@ final class Balance
         'clash' => -0.5, 'teamplayer' => 0.25, 'party' => 0.3,
         'genres' => [0 => -0.3, 1 => 0.1, 2 => 0.3, 3 => 0.4], 'gapFrom' => 30, 'gapBig' => 50, 'gapPenalty' => [-0.2, -0.4],
     ];
+    /**
+     * Einsendungen (Bewerbungen): je Tag so viele, wie der Erfolg des Labels hergibt (Stützpunkte [Erfolg, pro Tag], dazwischen linear);
+     * Verfall nach `ttl`; Anteil der Guten (ab Können-Stufe 1) wächst mit dem Erfolg; Unterschriftsprämie = base + skill × Können² + fame × Bekanntheit.
+     */
+    public const SUBMISSIONS = [
+        'perDay' => [[0, 8], [50, 14], [450, 45], [5000, 250]],
+        'ttl' => 4 * 86400, 'maxCatchUp' => 4 * 86400, 'maxPerCall' => 120,
+        'good' => ['from' => 0.05, 'to' => 0.25, 'at' => 5000],
+        'goodLevels' => [1 => 70, 2 => 25, 3 => 5],
+        'skill' => [0 => [6, 33], 1 => [35, 58], 2 => [60, 83], 3 => [85, 98]],
+        'fameChance' => 0.3, 'fame' => [5, 110],
+        'price' => ['base' => 40, 'skill' => 0.05, 'fame' => 1.5],
+    ];
     public const MAX_MEMBERS = 7;
     public const MAX_PER_INSTRUMENT = ['drums' => 1, 'guitar' => 2];
 

@@ -19,6 +19,7 @@ use Signed\Game\Packs;
 use Signed\Game\Present;
 use Signed\Game\Repo;
 use Signed\Game\Scout;
+use Signed\Game\Submissions;
 use Signed\Game\State;
 use Signed\Game\Styles;
 use Signed\Game\Studio;
@@ -61,6 +62,9 @@ final class Api
         'bandPromo' => ['POST', true],
         'promoCancel' => ['POST', true],
         'rehearsalStop' => ['POST', true],
+        'submissionSign' => ['POST', true],
+        'submissionDrop' => ['POST', true],
+        'submissionsTest' => ['POST', true],
         'practiceAuto' => ['POST', true],
         'courseAttend' => ['POST', true],
         'soloStart' => ['POST', true],
@@ -312,6 +316,25 @@ final class Api
     {
         $activity = (new Activities($repo))->start(self::int($in, 'bandId'), self::str($in, 'type'), (int) ($in['songs'] ?? 0));
         return ['activity' => $activity, 'state' => State::build($repo)];
+    }
+
+    private function submissionSign(array $in, Repo $repo): array
+    {
+        $id = (new Submissions($repo))->sign(self::int($in, 'submissionId'));
+        return ['musicianId' => $id, 'state' => State::build($repo)];
+    }
+
+    private function submissionDrop(array $in, Repo $repo): array
+    {
+        (new Submissions($repo))->drop(self::int($in, 'submissionId'));
+        return ['state' => State::build($repo)];
+    }
+
+    /** Zum Ausprobieren (nur in der Testversion im Menü): Bewerbungen aller Können-Stufen. */
+    private function submissionsTest(array $in, Repo $repo): array
+    {
+        (new Submissions($repo))->testFill();
+        return ['state' => State::build($repo)];
     }
 
     private function rehearsalStop(array $in, Repo $repo): array

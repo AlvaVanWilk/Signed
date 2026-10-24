@@ -1322,3 +1322,51 @@ test('Offene Probe: Wer sie nicht mag, wird zuerst rot – dann endet sie frühe
     $w = (float) $db->value('SELECT wellbeing FROM musicians WHERE id = ?', [$ids[0]]);
     check($w < 38, 'sein Wohlbefinden ist gesunken: ' . $w);
 });
+
+test('Einsendungen: Willkommens-Stapel, laufender Eingang, Unterschreiben kostet die Prämie, Testbewerber aller Stufen', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Post');
+    $state = $p->get('state');
+    checkEquals(5, count($state['submissions']), 'Willkommens-Stapel: fünf Einsendungen');
+    check(count(array_filter($state['submissions'], static fn ($s) => $s['instruments'][0]['skill'] >= 15)) >= 3, 'drei brauchbare');
+    // Zeit vergeht: es kommen neue, alte verfallen nicht vor dem Verfallsdatum.
+    Clock::advance(86400);
+    $later = $p->get('state')['submissions'];
+    check(count($later) >= 5 + 6, 'nach einem Tag etwa acht neue: ' . count($later));
+    // Unterschreiben.
+    $first = $later[0];
+    $money = $p->get('state')['label']['money'];
+    $res = $p->post('submissionSign', ['submissionId' => $first['submissionId']]);
+    checkEquals($money - $first['price'], $res['state']['label']['money']);
+    check(in_array($res['musicianId'], array_column($res['state']['musicians'], 'id'), true), 'der Musiker ist im Label');
+    checkApiError(fn () => $p->post('submissionSign', ['submissionId' => $first['submissionId']]), 'nicht mehr');
+    // Wegwerfen.
+    $second = $res['state']['submissions'][0];
+    $res = $p->post('submissionDrop', ['submissionId' => $second['submissionId']]);
+    check(!in_array($second['submissionId'], array_column($res['state']['submissions'], 'submissionId'), true));
+    // Ablauf nach dem Verfallsdatum.
+    Clock::advance(Balance::SUBMISSIONS['ttl'] + 10);
+    $old = array_filter($p->get('state')['submissions'], static fn ($s) => $s['expiresAt'] <= Clock::now());
+    checkEquals([], array_values($old));
+    // Testbewerber: alle vier Können-Stufen, darunter Bekanntheit.
+    $res = $p->post('submissionsTest');
+    $levels = array_unique(array_map(static fn ($s) => $s['level'], $res['state']['submissions']));
+    foreach ([0, 1, 2, 3] as $l) {
+        check(in_array($l, $levels, true), "Stufe $l kommt vor");
+    }
+    check(count(array_filter($res['state']['submissions'], static fn ($s) => $s['fameLevel'] >= 1)) >= 1, 'bekannte Bewerber');
+    $three = array_values(array_filter($res['state']['submissions'], static fn ($s) => $s['level'] === 3))[0];
+    check(!empty($three['abilityChoice']), 'Stufe 3 darf eine Fähigkeit wählen');
+});
+
+test('Einsendungen: Menge und Güte wachsen mit dem Erfolg des Labels', function () {
+    check(Signed\Game\Submissions::perDay(0) === 8.0);
+    check(abs(Signed\Game\Submissions::perDay(50) - 14.0) < 0.01);
+    check(abs(Signed\Game\Submissions::perDay(450) - 45.0) < 0.01);
+    check(Signed\Game\Submissions::perDay(9000) === 250.0);
+    check(Signed\Game\Submissions::goodShare(5000) > Signed\Game\Submissions::goodShare(0) * 4);
+    $cheap = Signed\Game\Submissions::price(['skill1' => 25.0, 'skill2' => null, 'fame' => 0.0]);
+    $star = Signed\Game\Submissions::price(['skill1' => 80.0, 'skill2' => null, 'fame' => 100.0]);
+    check($cheap >= 60 && $cheap <= 90, "Können 25 etwa 70 ₲: $cheap");
+    check($star > 4 * $cheap, 'Bekannt und gut ist teurer');
+});

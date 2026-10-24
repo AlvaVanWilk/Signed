@@ -1,10 +1,12 @@
 /* Label-Ebene: ruhige Flächen in drei Stufen (Seite, Feld, Karte), ein warmer Akzent, Farbe nur für Stimmung und Genre. */
-.shell.with-bar {
+.shell {
   --lb-panel: #121017; --lb-card: #1d1b27; --lb-card2: #252231; --lb-line: #302c3b; --lb-off: #2a2735;
   --lb-text: #e8e4ef; --lb-muted: #8d879c; --lb-accent: #c9a86a;
   --lb-ok: #5fb589; --lb-warn: #d9a441; --lb-bad: #c6585f;
   --lb-c-pop: #a8607c; --lb-c-rock: #b0784f; --lb-c-metal: #747b86; --lb-c-punk: #8ba05e;
   --lb-c-jazz: #b89d57; --lb-c-elektro: #6590b3; --lb-c-hiphop: #8676b5; --lb-c-folk: #6a9677;
+}
+.shell.with-bar {
   display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 18px; max-width: 1360px; margin: 0 auto; padding: 22px 20px 40px 72px; align-items: start;
 }
 .shell.with-bar .page.lb-main { margin: 0; max-width: none; width: 100%; background: var(--lb-panel); border: 1px solid var(--lb-line); border-radius: 16px; padding: 18px; gap: 14px; }
@@ -75,13 +77,13 @@
 .lb-ins .ico.switch { position: relative; border: 1px dashed var(--lb-muted); border-radius: 9px; background: var(--lb-card2); padding: 2px; cursor: pointer; }
 .lb-ins .ico.switch:hover { border-color: var(--lb-accent); }
 .lb-ins .ico.switch i { position: absolute; right: -6px; bottom: -6px; font-style: normal; font-size: 0.68rem; line-height: 1; background: var(--lb-accent); color: #17151d; border-radius: 50%; padding: 2px 3px; font-weight: 800; }
-.lb-ins .sk { flex: 0 1 120px; height: 5px; border-radius: 3px; background: var(--lb-off); overflow: hidden; } .lb-ins .sk i { display: block; height: 100%; background: var(--lc, var(--lb-accent)); }
+.lb-ins .sk { flex: 0 0 100px; height: 5px; border-radius: 3px; background: var(--lb-off); overflow: hidden; } .lb-ins .sk i { display: block; height: 100%; background: var(--lc, var(--lb-accent)); }
 .lb-ins .lv { font-weight: 800; color: var(--lc, var(--lb-accent)); min-width: 14px; }
 .lb-ins select { font-size: 0.78rem; max-width: 120px; }
 .lb-genres { display: flex; gap: 6px; }
 .lb-gt.g-pop { --g: var(--lb-c-pop); } .lb-gt.g-rock { --g: var(--lb-c-rock); } .lb-gt.g-metal { --g: var(--lb-c-metal); } .lb-gt.g-punk { --g: var(--lb-c-punk); }
 .lb-gt.g-jazz { --g: var(--lb-c-jazz); } .lb-gt.g-elektro { --g: var(--lb-c-elektro); } .lb-gt.g-hiphop { --g: var(--lb-c-hiphop); } .lb-gt.g-folk { --g: var(--lb-c-folk); }
-.lb-gt.none { border: 1px dashed #3a3646; background: none; opacity: 0.7; }
+.lb-gt.none { border: 1px solid #353141; background: #25222e; }
 .lb-gt { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; border: 1px solid var(--g); background: color-mix(in srgb, var(--g) 24%, transparent); }
 .lb-gt .genre-icon { width: 18px; height: 18px; stroke: color-mix(in srgb, var(--g) 45%, #fff); stroke-width: 1.9; fill: none; }
 .lb-rels { display: flex; gap: 8px; justify-content: flex-end; }
@@ -168,10 +170,25 @@ button.lb-pill:disabled { opacity: 0.45; cursor: default; }
 .lb-glow { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 7px; vertical-align: -1px; background: var(--c); box-shadow: 0 0 9px 2px color-mix(in srgb, var(--c) 65%, transparent); --c: var(--lb-ok); }
 .lb-glow.yellow { --c: var(--lb-warn); } .lb-glow.red { --c: var(--lb-bad); }
 .lb-lv { display: grid; gap: 3px; justify-items: center; margin-top: 5px; width: 100%; }
-.lb-prog { display: block; width: min(90px, 80%); height: 6px; border-radius: 3px; background: var(--lb-off); overflow: hidden; }
+.lb-prog { display: block; width: 100px; height: 6px; border-radius: 3px; background: var(--lb-off); overflow: hidden; }
 .lb-prog i { display: block; height: 100%; width: 0; background: var(--lc, var(--lb-accent)); transition: width 0.9s linear; }
 .lb-lv em { font-style: normal; font-weight: 800; color: var(--lc, var(--lb-accent)); font-variant-numeric: tabular-nums; font-size: 0.92rem; }
 
 /* Farbe je Können-Stufe (nicht Grün, Gelb, Rot – die gehören der Stimmung). Neue Stufen: eine Zeile mehr hier und MAX_LV_STYLE in label.js erhöhen. */
 .lv-0 { --lc: #8a8f9c; } .lv-1 { --lc: #5b94d0; } .lv-2 { --lc: #9a82d4; } .lv-3 { --lc: #d9b25a; }
 .lb-ins .sk i, .lb-prog i, .lb-ins .lv { transition: background 0.4s, color 0.4s; }
+
+/* Einsendungen */
+.lb-subs { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 12px; }
+.lb-sub { display: grid; gap: 10px; padding: 14px; border-radius: 14px; background: var(--lb-card); border: 1px solid var(--lb-line); }
+.lb-sub-top { display: grid; grid-template-columns: 76px 1fr; gap: 12px; align-items: center; }
+.lb-sub .lb-ph { box-shadow: none; }
+.lb-sub-name { display: grid; gap: 4px; } .lb-sub-name b { font-size: 1.02rem; }
+.lb-sub-fame { color: var(--lb-accent); letter-spacing: 0.1em; font-size: 0.8rem; }
+.lb-sub .lb-ins { margin: 0; }
+.lb-sub-chars { color: var(--lb-muted); font-size: 0.82rem; }
+.lb-sub-foot { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.lb-sub-foot small { color: var(--lb-muted); margin-left: auto; }
+.lb-filter { display: flex; gap: 6px; flex-wrap: wrap; }
+.lb-filter button { border: 1px solid var(--lb-line); background: none; color: var(--lb-muted); font: inherit; font-weight: 700; font-size: 0.82rem; padding: 5px 12px; border-radius: 999px; cursor: pointer; }
+.lb-filter button.on { color: var(--lb-text); border-color: var(--lb-accent); }

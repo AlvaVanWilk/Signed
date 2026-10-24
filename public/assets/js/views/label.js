@@ -16,6 +16,15 @@ const LAST_KEY = 'signed.lastBand';
 export const moodWord = (level) => MOOD_WORD[level] ?? MOOD_WORD.green;
 
 const moodTag = (level) => `<span class="lb-mood ${level}"><i></i>${moodWord(level)}</span>`;
+/** Weg zur nächsten Können-Stufe in Prozent (nach der letzten: Rest bis 100). Dieselbe Leiste in den Zeilen, in der Probe und bei den Einsendungen. */
+export function levelProgress(skill) {
+  const marks = [0, ...cat().rules.skillLevels, 100];
+  const hi = marks.findIndex((x) => skill < x);
+  const lo = marks[Math.max(0, hi - 1)];
+  return Math.min(100, ((skill - lo) / ((marks[hi] ?? 100) - lo)) * 100);
+}
+
+export const levelClass = (skill) => `lv-${Math.min(steps(skill, cat().rules.skillLevels), MAX_LV_STYLE)}`;
 const steps = (value, thresholds) => thresholds.filter((t) => value >= t).length;
 /** Dauer in Minuten (bzw. Stunden), lesbar ohne mm:ss. */
 const mins = (s) => (s >= 5400 ? `${(s / 3600).toFixed(1).replace('.', ',')} Std.` : `${Math.max(1, Math.round(s / 60))} Min.`);
@@ -137,7 +146,7 @@ function memberRow(b, m, members, slots) {
           ${m.instruments.length > 1
     ? `<button class="ico switch" data-act="slotCycle" data-band="${b.id}" data-musician="${m.id}" title="${esc(instrumentName(played.type))} – tippen, um ein anderes Instrument zu wählen">${instrumentIcon(played.type, own.electric, own.hue)}<i>⇄</i></button>`
     : `<span class="ico" data-act="tip" data-tip="${esc(instrumentName(played.type))}">${instrumentIcon(played.type, own.electric, own.hue)}</span>`}
-          <span class="sk" title="Können ${fmt0(played.skill)}"><i style="width:${Math.min(100, played.skill)}%"></i></span>
+          <span class="sk" title="Können ${fmt0(played.skill)}"><i style="width:${levelProgress(played.skill)}%"></i></span>
           <b class="lv" data-act="tip" data-tip="Stufe ${level}: ${esc(cat().levelWords[level])} (Können ${fmt0(played.skill)})">${level}</b>
         </div>
       </div>
@@ -278,15 +287,9 @@ export function tickLive() {
       if (el) el.className = el.className.replace(/lv-\d/, `lv-${lvl}`);
     }
     const barEl = root.querySelector(`[data-live-bar="${id}"]`);
-    if (barEl) {
-      // Weg zur nächsten Stufe (nach der letzten: Rest bis 100)
-      const marks = [0, ...rules.skillLevels, 100];
-      const hi = marks.findIndex((x) => skillNow < x);
-      const lo = marks[Math.max(0, hi - 1)];
-      barEl.style.width = `${Math.min(100, ((skillNow - lo) / ((marks[hi] ?? 100) - lo)) * 100)}%`;
-    }
+    if (barEl) barEl.style.width = `${levelProgress(skillNow)}%`;
     const bar = document.querySelector(`[data-member-row="${id}"] .sk i`);
-    if (bar) bar.style.width = `${Math.min(100, skillNow)}%`;
+    if (bar) bar.style.width = `${levelProgress(skillNow)}%`;
     const score = Math.max(-1, Math.min(1, (band.mood.reactions?.rehearsal.like.includes(id) ? 1 : 0) - (band.mood.reactions?.rehearsal.dislike.includes(id) ? 1 : 0)));
     const w = Math.max(0, Math.min(100, (m.wellbeing?.value ?? 60) + (rules.reactStep * score * run) / unit));
     const level = w >= rules.moodGreen ? 'green' : w >= rules.moodYellow ? 'yellow' : 'red';

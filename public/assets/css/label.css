@@ -239,3 +239,13 @@ button.lb-pill:disabled { opacity: 0.45; cursor: default; }
 .lb-tape-label i .genre-icon { width: 14px; height: 14px; stroke: #fff; stroke-width: 2; fill: none; }
 .lb-tape-label i.g-pop { --g: var(--lb-c-pop); } .lb-tape-label i.g-rock { --g: var(--lb-c-rock); } .lb-tape-label i.g-metal { --g: var(--lb-c-metal); } .lb-tape-label i.g-punk { --g: var(--lb-c-punk); }
 .lb-tape-label i.g-jazz { --g: var(--lb-c-jazz); } .lb-tape-label i.g-elektro { --g: var(--lb-c-elektro); } .lb-tape-label i.g-hiphop { --g: var(--lb-c-hiphop); } .lb-tape-label i.g-folk { --g: var(--lb-c-folk); }
+
+/* Kassetten im Briefkasten: groß genug zum Lesen, aber ohne Kachel und leicht schief */
+.lb-tapes { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px 8px; padding: 6px 0 14px; }
+.lb-tapeitem { display: grid; gap: 7px; justify-items: center; text-align: center; transform: translateY(var(--y)) rotate(var(--r)); padding: 6px 4px; }
+.lb-tapeitem small { font-size: 0.74rem; }
+.lb-tape-big { width: 150px; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.4)); }
+.lb-tape-big .lb-tape-svg { width: 100%; }
+.lb-tapeitem.playing .lb-reel { animation: lb-spin 1.2s linear infinite; }
+.lb-tapeitem .lb-sub-foot { justify-content: center; }
+@media (prefers-reduced-motion: reduce) { .lb-tapeitem.playing .lb-reel { animation: none; } }

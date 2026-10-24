@@ -42,7 +42,7 @@ function tile(b, selected) {
   const genreList = genresOf(b);
   const genres = genreList.length ? sortedGenres(genreList).map(genreName).join(' · ') : 'gemischt';
   const pips = steps(b.fame, cat().rules.fameLevels);
-  const split = genreList.length ? `--g:var(--c-${sortedGenres(genreList)[0]})` : '';
+  const split = genreList.length ? `--g:var(--lb-c-${sortedGenres(genreList)[0]})` : '';
   return `
     <a href="#/band/${b.id}" class="lb-bt ${selected ? 'sel' : ''} ${away ? 'busy' : ''} ${b.mood.level === 'red' ? 'frozen' : ''}" style="${split}" title="${esc(b.name)}">
       <span class="nm">${esc(b.name)}</span>
@@ -77,12 +77,18 @@ const ICON = {
   gig: '<svg viewBox="0 0 32 32"><rect x="12" y="4" width="8" height="15" rx="4"/><path d="M8 15 a8 8 0 0 0 16 0 M16 23 V28 M11 28 H21"/></svg>',
 };
 
+/** Beziehung −10…+10 als Farbe: Grau in der Mitte, zu Grün (gut) oder Rot (schlecht) hin stufenlos. */
+function relColor(v) {
+  const mix = (a, b, t) => a.map((x, i) => Math.round(x + (b[i] - x) * t));
+  return `rgb(${mix([96, 92, 108], v >= 0 ? [92, 170, 130] : [196, 100, 108], Math.min(1, Math.abs(v) / 10)).join(',')})`;
+}
+
 function relationsOf(b, m, members) {
   const rel = b.mood.relations ?? {};
   return members.filter((x) => x.id !== m.id).map((x) => {
     const key = m.id < x.id ? `${m.id}-${x.id}` : `${x.id}-${m.id}`;
     const v = Math.round(rel[key] ?? 0);
-    return `<span class="lb-rel" title="${esc(m.firstName)} und ${esc(x.firstName)}">${photo(x)}<b>${signed(v)}</b></span>`;
+    return `<span class="lb-rel" style="--rc:${relColor(rel[key] ?? 0)}" title="${esc(m.firstName)} und ${esc(x.firstName)}: ${signed(v)}">${photo(x)}</span>`;
   }).join('');
 }
 
@@ -99,8 +105,9 @@ function memberRow(b, m, members) {
   const mood = m.wellbeing?.level ?? 'green';
   const own = ownGear(m, played.type);
   const better = app.state.gear.some((g) => g.upgrades?.some((u) => u.musicianId === m.id));
-  const split = sortedGenres(m.genres).map((g, i, all) => `var(--c-${g}) ${(i * 100) / all.length}% ${((i + 1) * 100) / all.length}%`).join(', ');
+  const split = sortedGenres(m.genres).map((g, i, all) => `var(--lb-c-${g}) ${(i * 100) / all.length}% ${((i + 1) * 100) / all.length}%`).join(', ');
   return `
+    <div class="lb-line">
     <div class="lb-mr">
       <a class="lb-ph ${mood}" href="#/musician/${m.id}" style="--split:linear-gradient(120deg, ${split})" title="${esc(m.firstName)} ansehen">${photo(m)}</a>
       <div class="lb-info">
@@ -109,15 +116,17 @@ function memberRow(b, m, members) {
           <span class="ico" title="${esc(instrumentName(played.type))}">${instrumentIcon(played.type, own.electric, own.hue)}</span>
           <span class="sk" title="Können ${fmt0(played.skill)}"><i style="width:${Math.min(100, played.skill)}%"></i></span>
           <b class="lv" title="${esc(cat().levelWords[level])}">${level}</b>
-          <button class="lb-slot ${gear ? '' : 'empty'}" data-act="pickGear" data-musician="${m.id}" data-type="${played.type}" title="${gear ? esc(gearModel(gear.model).name) : `Kein ${esc(instrumentName(played.type))}`}">
-            ${gear ? instrumentIcon(played.type, gearModel(gear.model).electric, null) : '+'}${better ? '<em title="Im Lager liegt ein passendes Instrument">▲</em>' : ''}
-          </button>
           ${m.instruments.length > 1 ? `<select data-change="bandSetSlot" data-band="${b.id}" data-musician="${m.id}" title="Instrument in der Band">${m.instruments.map((i, idx) => `<option value="${idx + 1}" ${i === played ? 'selected' : ''}>${esc(instrumentName(i.type))}</option>`).join('')}</select>` : ''}
         </div>
       </div>
       <div class="lb-genres">${sortedGenres(m.genres).map(genreTag).join('')}</div>
       <div class="lb-rels">${members.length > 1 ? relationsOf(b, m, members) : ''}</div>
       <button class="icon-btn lb-x" data-act="removeMember" data-band="${b.id}" data-musician="${m.id}" title="Aus der Band nehmen">✕</button>
+    </div>
+    <button class="lb-gear ${gear ? '' : 'empty'}" data-act="pickGear" data-musician="${m.id}" data-type="${played.type}" title="${gear ? esc(gearModel(gear.model).name) : `Kein ${esc(instrumentName(played.type))}`}">
+      <span class="art">${gear ? instrumentIcon(played.type, gearModel(gear.model).electric, null) : '+'}</span>
+      <small>${gear ? esc(gearModel(gear.model).name) : 'Instrument'}</small>${better ? '<em title="Im Lager liegt ein passendes Instrument">▲</em>' : ''}
+    </button>
     </div>`;
 }
 
@@ -140,7 +149,7 @@ export function page(route) {
   const free = cat().rules.maxMembers - members.length;
   const base = `#/band/${b.id}`;
   return `
-    <header class="lb-hd" style="--g:var(--c-${sortedGenres(genresOf(b))[0] ?? 'pop'})">
+    <header class="lb-hd" style="--g:var(--lb-c-${sortedGenres(genresOf(b))[0] ?? 'pop'})">
       <div>
         <h1>${esc(b.name)} <button class="icon-btn" data-act="bandRename" data-id="${b.id}" title="${b.released ? 'Namensänderung beantragen' : 'Umbenennen'}">✎</button></h1>
         <small>${solo ? 'Solokünstler' : esc(b.title ?? 'Band')} · ${genresOf(b).length ? sortedGenres(genresOf(b)).map((g) => esc(genreName(g))).join(' · ') : 'gemischt'}</small>

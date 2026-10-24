@@ -152,7 +152,11 @@ function wishBlock(b, members) {
         const m = musicianById(w.musicianId);
         const [label, section] = WISH_BUTTON[w.action] ?? ['Einkaufen', null];
         const target = section ? `#/band/${b.id}/${section}` : '#/packs';
-        return `<div class="lb-wish"><a class="lb-ph sm ${w.level}" href="#/musician/${m.id}">${photo(m)}</a><span class="say">${esc(w.text)}</span><a class="lb-pill" href="${target}">${label}</a></div>`;
+        // Proben startet gleich, die übrigen führen zur passenden Seite.
+        const go = w.action === 'rehearsal'
+          ? `<button class="lb-pill" data-act="startActivity" data-id="${b.id}" data-type="rehearsal" ${blocker(b, members) ? 'disabled' : ''}>${label}</button>`
+          : `<a class="lb-pill" href="${target}">${label}</a>`;
+        return `<div class="lb-wish"><a class="lb-ph sm ${w.level}" href="#/musician/${m.id}">${photo(m)}</a><span class="say">${esc(w.text)}</span>${go}</div>`;
       }).join('')}
     </section>`;
 }

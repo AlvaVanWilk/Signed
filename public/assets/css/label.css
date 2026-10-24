@@ -130,3 +130,5 @@ button.lb-act { font: inherit; text-align: left; cursor: pointer; width: 100%; }
 button.lb-act:hover:not(:disabled) { border-color: var(--lb-accent); }
 .lb-act.idle { opacity: 0.55; cursor: default; }
 .lb-course { display: grid; gap: 10px; }
+button.lb-pill { font: inherit; font-weight: 700; font-size: 0.82rem; background: none; cursor: pointer; }
+button.lb-pill:disabled { opacity: 0.45; cursor: default; }

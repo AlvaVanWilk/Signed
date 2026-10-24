@@ -184,6 +184,7 @@ final class Present
                 'genreBonus' => Balance::GENRE_BONUS,
                 'hybridBonus' => Balance::HYBRID_BONUS,
                 'promoSeconds' => Balance::PROMO_SECONDS,
+                'rehearsalSeconds' => Balance::REHEARSAL['seconds'],
                 'autoPracticeSeconds' => Balance::AUTO_PRACTICE['seconds'],
                 'cohesionRemovePenalty' => Balance::COHESION_REMOVE_PENALTY,
                 'cohesionSwitchPenalty' => Balance::COHESION_SWITCH_PENALTY,

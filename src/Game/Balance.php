@@ -224,7 +224,7 @@ final class Balance
      */
     public const BUSKING_HAT = [20, 45];
     /** Bandprobe: keine Zuschauer, dafür doppeltes Zusammenspiel und etwas Können für alle. */
-    public const REHEARSAL = ['songs' => 2, 'cohesion' => 2.5, 'skill' => 0.05];
+    public const REHEARSAL = ['songs' => 6, 'seconds' => 900, 'cohesion' => 0.85, 'skill' => 4.0];
     /** Band-Promo: alle Mitglieder sind unterwegs, jeder bringt Bekanntheit wie bei der Promo-Mission. */
     public const BAND_PROMO = ['seconds' => 600, 'fame' => [0.1, 0.25]];
     /** Jam-Café: nur Musiker ohne Band; danach drei passende Musiker (Stufe 0) zur Auswahl für eine Band. */

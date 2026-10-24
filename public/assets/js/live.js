@@ -84,7 +84,7 @@ export function openLive(activityId) {
     }
     target = meterAt(elapsed);
     progress.style.width = `${(elapsed / total) * 100}%`;
-    songEl.textContent = `Lied ${Math.min(activity.songs, Math.floor(elapsed / songSeconds) + 1)} von ${activity.songs}`;
+    songEl.textContent = `Lied ${Math.min(activity.songs, Math.floor(elapsed / ((activity.songs * songSeconds) < total ? total / activity.songs : songSeconds)) + 1)} von ${activity.songs}`;
     leftEl.textContent = elapsed >= total ? 'Vorbei!' : duration(total - elapsed);
     if (elapsed >= total) {
       clearInterval(timer);

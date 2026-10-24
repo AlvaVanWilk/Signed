@@ -1,7 +1,7 @@
 import { genreGlyph, genreName, gearModel, instrumentIcon, instrumentName, ownGear, photo, sortedGenres } from '../cards.js';
 import { actions, app, bandById, cat, defineActions, isBusy, musicianById, runningFor } from '../core.js';
-import { esc, fmt0, fmt1, toast } from '../ui.js';
-import { blockerNotice, chemistryLabel, statTile } from './bands.js';
+import { duration, esc, fmt0, fmt1, toast } from '../ui.js';
+import { blocker, blockerNotice, chemistryLabel, courseTiles, gainRange, statTile } from './bands.js';
 
 /** Label-Ebene: Band-Leiste links und die ruhige Bandseite. Stimmung als Punkt und Wort (grün, gelb, rot). */
 
@@ -158,7 +158,7 @@ function wishBlock(b, members) {
 }
 
 /** Eine Anordnung: gesperrt, wenn ein roter Musiker sie ablehnt; sonst mit Hinweis, wem sie nicht gefällt. */
-function act(b, members, type, section, title, text, icon, warn = false) {
+function act(b, members, type, section, title, text, icon, warn = false, busy = false) {
   const r = b.mood.reactions?.[type] ?? { like: [], dislike: [], locked: false };
   const names = (ids) => ids.map((id) => musicianById(id)?.firstName).filter(Boolean).join(', ');
   const plural = (ids, one, many) => (ids.length > 1 ? many : one);
@@ -167,6 +167,10 @@ function act(b, members, type, section, title, text, icon, warn = false) {
     return `<div class="lb-act lock" title="Erst die Stimmung mit etwas heben, das der Band gefällt.">${icon}<b>${title}</b><small>${esc(names(red))} ${plural(red, 'hat', 'haben')} keine Lust darauf.</small></div>`;
   }
   const hint = r.dislike.length ? `<small class="no">${esc(names(r.dislike))} ${plural(r.dislike, 'mag', 'mögen')} das nicht.</small>` : `<small>${text}</small>`;
+  // Ohne Unterseite: Die Anordnung startet gleich (Proben).
+  if (!section) {
+    return `<button class="lb-act ${busy ? 'idle' : ''}" data-act="startActivity" data-id="${b.id}" data-type="${type}" ${busy ? 'disabled' : ''}>${icon}<b>${title}</b>${hint}</button>`;
+  }
   return `<a class="lb-act ${warn ? 'warn' : ''}" href="#/band/${b.id}/${section}">${icon}<b>${title}</b>${hint}</a>`;
 }
 
@@ -181,6 +185,8 @@ export function page(route) {
   const notice = blockerNotice(b, members);
   const free = cat().rules.maxMembers - members.length;
   const base = `#/band/${b.id}`;
+  const courses = courseTiles(members);
+  const course = courses ? `<details class="lb-more"><summary>Kurs des Tages</summary><div class="lb-course">${courses}</div></details>` : '';
   return `
     <header class="lb-hd" style="--g:var(--lb-c-${sortedGenres(genresOf(b))[0] ?? 'pop'})">
       <div>
@@ -193,10 +199,11 @@ export function page(route) {
     ${wishBlock(b, members)}
     <h2 class="lb-cap lb-sec">Anordnungen</h2>
     <div class="lb-acts">
-      ${act(b, members, 'rehearsal', 'uebung', 'Proben', 'Können und Beziehungen wachsen', ICON.rehearse)}
+      ${act(b, members, 'rehearsal', null, 'Proben', `${duration(cat().rules.rehearsalSeconds)} · Können ${gainRange(members.map((m) => m.gains?.rehearsal ?? 0))}`, ICON.rehearse, false, !!blocker(b, members))}
       ${act(b, members, 'record', 'studio', 'Aufnehmen', `${b.mood.songs} ${b.mood.songs === 1 ? 'Song wartet' : 'Songs warten'}`, ICON.record, b.mood.songs >= 12)}
       ${act(b, members, 'gig', 'auftritte', 'Auftritt buchen', 'Kosten und Gewinn sehen', ICON.gig)}
     </div>
+    ${course}
     <h2 class="lb-cap lb-sec">Musiker</h2>
     <div class="lb-members">
       ${members.map((m) => memberRow(b, m, members)).join('')}

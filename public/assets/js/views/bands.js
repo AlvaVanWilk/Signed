@@ -42,7 +42,7 @@ function head(title, b) {
 }
 
 /** Was gerade läuft oder warum nichts geht. */
-function blocker(b, members) {
+export function blocker(b, members) {
   const running = runningFor(b.id);
   if (running) return { text: running.title, running };
   if (isBusy(b.busyUntil)) return { text: 'Die Band ist gerade beschäftigt.' };
@@ -333,7 +333,7 @@ export function courseTiles(members) {
 }
 
 /** Spanne der Zuwächse, z. B. „+0,04–0,10“ (wer schon gut ist, lernt langsamer). */
-function gainRange(values) {
+export function gainRange(values) {
   const min = Math.min(...values);
   const max = Math.max(...values);
   return Math.abs(max - min) < 0.005 ? `+${fmtGain(max)}` : `+${fmtGain(min)}–${fmtGain(max)}`;

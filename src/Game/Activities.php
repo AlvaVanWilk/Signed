@@ -74,7 +74,7 @@ final class Activities
                     $skill[$m['id']] = round(BandCalc::rehearsalGain($m, BandCalc::gearOf($m, $gear)), 2);
                 }
                 $title = 'Bandprobe';
-                $sim = ['timeline' => self::rehearsalTimeline($members, $songs), 'meter' => 0.0, 'perf' => 0.0];
+                $sim = ['timeline' => self::rehearsalTimeline($members, $songs, Balance::REHEARSAL['seconds']), 'meter' => 0.0, 'perf' => 0.0];
                 $fameTotal = 0.0;
             } else {
                 if ($type === 'busking') {
@@ -135,7 +135,7 @@ final class Activities
                 }
             }
 
-            $endsAt = $now + $songs * Balance::SONG_SECONDS;
+            $endsAt = $now + ($type === 'rehearsal' ? Balance::REHEARSAL['seconds'] : $songs * Balance::SONG_SECONDS);
             $claimed = $db->exec('UPDATE bands SET busy_until = ?, released = 1 WHERE id = ? AND busy_until <= ?', [$endsAt, $bandId, $now]);
             if ($claimed === 0) {
                 throw new ApiError('Die Band ist gerade beschäftigt.');
@@ -543,13 +543,14 @@ final class Activities
         return Rng::float(...$range) * $factor / (1 + $m['fame'] / Balance::PROMO_FAME_FALLOFF);
     }
 
-    private static function rehearsalTimeline(array $members, int $songs): array
+    private static function rehearsalTimeline(array $members, int $songs, int $seconds): array
     {
         $timeline = [];
+        $span = $seconds / max(1, $songs);
         for ($s = 0; $s < $songs; $s++) {
-            $start = $s * Balance::SONG_SECONDS;
+            $start = $s * $span;
             $timeline[] = ['t' => $start + 0.5, 'kind' => 'song', 'text' => sprintf('Lied %d: „%s“', $s + 1, Generator::songTitle()), 'meter' => 50];
-            foreach ([8, 19] as $offset) {
+            foreach ([0.3 * $span, 0.7 * $span] as $offset) {
                 $text = sprintf(Rng::pick(Catalog::REHEARSAL_LINES), Rng::pick($members)['first_name']);
                 $timeline[] = ['t' => $start + $offset, 'kind' => 'highlight', 'text' => $text, 'meter' => 50];
             }

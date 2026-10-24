@@ -168,16 +168,19 @@ final class BandCalc
     /** Können-Zuwachs einer Bandprobe für ein Mitglied (sein Band-Instrument). */
     public static function rehearsalGain(array $m, ?array $model): float
     {
-        return self::trainingGain($m, Balance::REHEARSAL['skill'] * Balance::REHEARSAL['songs'], null, $model);
+        return self::trainingGain($m, Balance::REHEARSAL['skill'], null, $model, false);
     }
 
-    public static function trainingGain(array $m, float $base, ?int $slot = null, ?array $model = null): float
+    /** $paced = false: ohne die Bremse der Stufen (Balance::LEVEL_PACE); dann bremst nur die Lernkurve. */
+    public static function trainingGain(array $m, float $base, ?int $slot = null, ?array $model = null, bool $paced = true): float
     {
         $talent = Levels::has($m, 'talent') ? Balance::TALENT_FACTOR : 1.0;
         if (self::hasPerk($model, 'teacher')) {
             $talent *= Balance::PERK_TEACHER;
         }
-        $talent *= Levels::pace(Levels::forSkill(self::skill($m, $slot)));
+        if ($paced) {
+            $talent *= Levels::pace(Levels::forSkill(self::skill($m, $slot)));
+        }
         return $base * $talent * max(0.003, max(0.0, 1 - self::skill($m, $slot) / 110) ** Balance::TRAINING_CURVE);
     }
 

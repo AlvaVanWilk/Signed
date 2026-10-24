@@ -240,7 +240,7 @@ test('Bandprobe und Band-Promo', function () {
     $band = foundBand($p);
     $before = array_column($db->all('SELECT id, skill1 FROM musicians'), 'skill1', 'id');
     $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'rehearsal']);
-    Clock::advance(Balance::REHEARSAL['songs'] * Balance::SONG_SECONDS);
+    Clock::advance(Balance::REHEARSAL['seconds']);
     $state = $p->get('state');
     check(bandById($state, $band['id'])['cohesion'] > 0);
     foreach ($db->all('SELECT id, skill1 FROM musicians') as $m) {

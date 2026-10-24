@@ -126,3 +126,7 @@
 .lb-act.lock { opacity: 0.55; cursor: not-allowed; }
 .lb-act small.no { color: var(--lb-warn); }
 .lb-bt .wish { width: 18px; height: 15px; fill: none; stroke: var(--lb-accent); stroke-width: 1.6; flex: none; }
+button.lb-act { font: inherit; text-align: left; cursor: pointer; width: 100%; }
+button.lb-act:hover:not(:disabled) { border-color: var(--lb-accent); }
+.lb-act.idle { opacity: 0.55; cursor: default; }
+.lb-course { display: grid; gap: 10px; }

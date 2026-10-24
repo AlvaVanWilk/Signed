@@ -379,13 +379,26 @@ test('Musik: Zwei Gitarren in einer Band spielen verschiedene Aufnahmen (Metal: 
     checkEquals('pop-0/gitarre-elektrisch', $b['folder'] . '/' . $b['file']);
 });
 
-test('Üben: Eine Solo-Probe bringt einem Musiker deutlich mehr Können als eine Bandprobe', function () {
-    foreach ([20.0, 40.0, 70.0] as $skill) {
+test('Proben: Hauptquelle für Können, ohne Stufen-Bremse – Stufe 1 in wenigen Stunden, Stufe 3 erreichbar', function () {
+    $skill = 15.0;
+    $probes = 0;
+    $reached = [];
+    while ($skill < 85.0 && $probes < 1000) {
         $m = musician(['skill1' => $skill, 'band_slot' => 1]);
-        $solo = BandCalc::practiceGain($m, 1, 0.85, null);
-        $band = BandCalc::rehearsalGain($m, null);
-        check($solo >= 5 * $band, "Können $skill: Solo $solo, Band $band");
+        $skill += BandCalc::rehearsalGain($m, null);
+        $probes++;
+        foreach ([35, 60, 85] as $mark) {
+            if (!isset($reached[$mark]) && $skill >= $mark) {
+                $reached[$mark] = $probes;
+            }
+        }
     }
+    // Eine Probe dauert 15 Minuten Spielzeit.
+    $hours = static fn (int $mark): float => $reached[$mark] * Balance::REHEARSAL['seconds'] / 3600;
+    check($hours(35) <= 4, 'Stufe 1 nach höchstens 4 Stunden: ' . $hours(35));
+    check($hours(60) <= 15, 'Stufe 2 nach höchstens 15 Stunden: ' . $hours(60));
+    check($hours(85) <= 60, 'Stufe 3 nach höchstens 60 Stunden: ' . $hours(85));
+    check($hours(60) > $hours(35) && $hours(85) > $hours(60), 'jede Stufe dauert länger als die vorige');
 });
 
 test('Charakter: keine widersprüchlichen Eigenschaften (z. B. Teamplayer und Diva)', function () {

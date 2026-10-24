@@ -33,7 +33,7 @@
     .bt .wish { position: absolute; top: 8px; right: 8px; width: 24px; height: 20px; }
     .bt .faceRing { display: grid; place-items: center; width: 58px; height: 58px; border-radius: 50%; background: rgba(0,0,0,0.28); box-shadow: inset 0 0 0 3px var(--c); --c: var(--ok); }
     .bt .faceRing.yellow { --c: var(--warn); } .bt .faceRing.red { --c: var(--bad); }
-    .bt.lbusy::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(-45deg, rgba(0,0,0,0.3) 0 7px, transparent 7px 14px); background-size: 19.8px 19.8px; animation: stripes 0.9s linear infinite; }
+    .bt.lbusy::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(-45deg, rgba(0,0,0,0.17) 0 7px, transparent 7px 14px); background-size: 19.8px 19.8px; animation: stripes 0.9s linear infinite; }
     @keyframes stripes { to { background-position: 19.8px 0; } }
     .bt.frozen { filter: saturate(0.55); }
     .bt .fz { display: inline-block; margin-top: 6px; font-size: 0.7rem; font-weight: 900; background: rgba(0,0,0,0.5); padding: 1px 8px; border-radius: 999px; }
@@ -55,7 +55,8 @@
     .act { display: grid; gap: 2px; justify-items: start; padding: 14px 16px; border-radius: 16px; border: 0; background: #241d34; color: #fff; font: inherit; text-align: left; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08); }
     .act b { font-size: 1.05rem; } .act small { color: #a49bbd; }
     .act .ic { font-size: 1.5rem; }
-    .act.warn { box-shadow: inset 0 0 0 2px var(--warn); }
+    .act.lwarn { box-shadow: inset 0 0 0 2px var(--warn); }
+    .act.lock { opacity: 0.45; cursor: not-allowed; }
     .wishes { display: grid; gap: 8px; padding: 12px 14px; border-radius: 16px; background: #1c1726; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06); }
     .wishes h3 { margin: 0 0 2px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: #a49bbd; }
     .ws { display: flex; gap: 10px; align-items: center; }
@@ -168,9 +169,9 @@
         <div class="lbig">${face(b.mood, 44)}<span>Stimmung<br><small>${WB[b.mood]}</small></span></div>
       </div>
       <div class="acts">
-        <button class="act"><span class="ic">🥁</span><b>Proben</b><small>Können und Beziehungen wachsen · 15 Min.</small></button>
+        <button class="act ${b.frozen ? 'lock' : ''}"><span class="ic">${b.frozen ? '🔒' : '🥁'}</span><b>Proben</b><small>${b.frozen ? 'Dazu hat die Band keine Lust.' : 'Können und Beziehungen wachsen · 15 Min.'}</small></button>
         <button class="act ${b.songs >= 12 ? 'lwarn' : ''}"><span class="ic">💿</span><b>Aufnehmen</b><small>${b.songs} Songs fertig${b.songs >= 12 ? ' – sie warten!' : ''}</small></button>
-        <button class="act"><span class="ic">🎤</span><b>Auftritt buchen</b><small>Kosten und Gewinn sehen</small></button>
+        <button class="act ${b.frozen ? 'lock' : ''}"><span class="ic">${b.frozen ? '🔒' : '🎤'}</span><b>Auftritt buchen</b><small>${b.frozen ? 'Erst die Stimmung heben.' : 'Kosten und Gewinn sehen'}</small></button>
       </div>
       ${b.wish ? `<div class="wishes"><h3>Wünsche der Band</h3>
         <div class="ws"><span class="who">${portrait(members[0].look, members[0].mood)}</span><span class="bubble">${b.frozen ? 'Wir haben keine Lust mehr …' : 'Wann ist der nächste Gig?'}</span><button>Auftritt buchen</button></div>

@@ -140,7 +140,7 @@ final class Balance
      */
     public const SUBMISSIONS = [
         'perDay' => [[0, 8], [50, 14], [450, 45], [5000, 250]],
-        'ttl' => 4 * 86400, 'maxCatchUp' => 4 * 86400, 'maxPerCall' => 120,
+        'listen' => 5, 'ttl' => 4 * 86400, 'maxCatchUp' => 4 * 86400, 'maxPerCall' => 120,
         'good' => ['from' => 0.05, 'to' => 0.25, 'at' => 5000],
         'goodLevels' => [1 => 70, 2 => 25, 3 => 5],
         'skill' => [0 => [6, 33], 1 => [35, 58], 2 => [60, 83], 3 => [85, 98]],

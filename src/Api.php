@@ -64,6 +64,7 @@ final class Api
         'rehearsalStop' => ['POST', true],
         'submissionSign' => ['POST', true],
         'submissionDrop' => ['POST', true],
+        'submissionOpen' => ['POST', true],
         'submissionsTest' => ['POST', true],
         'practiceAuto' => ['POST', true],
         'courseAttend' => ['POST', true],
@@ -322,6 +323,12 @@ final class Api
     {
         $id = (new Submissions($repo))->sign(self::int($in, 'submissionId'));
         return ['musicianId' => $id, 'state' => State::build($repo)];
+    }
+
+    private function submissionOpen(array $in, Repo $repo): array
+    {
+        (new Submissions($repo))->open(self::int($in, 'submissionId'));
+        return ['state' => State::build($repo)];
     }
 
     private function submissionDrop(array $in, Repo $repo): array

@@ -496,7 +496,8 @@ setInterval(() => {
   // Eine laufende Probe wird alle paar Sekunden gutgeschrieben: So steigen Können und Stufen wirklich in dem Moment, in dem es passiert.
   const live = app.state.running.some((a) => a.type === 'rehearsal');
   label.tickLive();
-  const due = app.state.running.some((a) => a.endsAt <= serverNow());
+  const due = app.state.running.some((a) => a.endsAt <= serverNow())
+    || (app.state.submissions ?? []).some((x) => x.state === 'listening' && x.opensAt <= serverNow());
   if ((due && Date.now() - lastAutoRefresh > 3000) || (live && Date.now() - lastAutoRefresh > 5000)) {
     lastAutoRefresh = Date.now();
     refresh({ quiet: !due });

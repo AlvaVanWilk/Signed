@@ -66,13 +66,14 @@ final class Submissions
         return $card;
     }
 
-    private function store(array $card, int $at): void
+    private function store(array $card, int $at, ?int $openedAt = null): void
     {
         $this->repo->db->insert('submissions', [
             'label_id' => $this->repo->labelId,
             'card' => json_encode($card, JSON_UNESCAPED_UNICODE),
             'created_at' => $at,
             'expires_at' => $at + Balance::SUBMISSIONS['ttl'],
+            'opened_at' => $openedAt,
         ]);
     }
 
@@ -127,19 +128,38 @@ final class Submissions
                 3 => 30.0, 5 => 150.0, 7 => 650.0,
                 default => 0.0,
             };
-            $this->store(self::make($level, $fame), $now - $i * 30);
+            $this->store(self::make($level, $fame), $now - $i * 30, $now);
         }
     }
 
-    /** @return list<array> Bewerbungen im Format der Musiker-Karten, neueste zuerst. */
+    /**
+     * Die Einsendungen im Briefkasten, neueste zuerst. Ungehörte verraten nichts (nur Verfall); wer gerade anhört, bekommt es ab opensAt zu sehen.
+     * @return list<array>
+     */
     public function list(int $now): array
     {
         $rows = $this->repo->db->all('SELECT * FROM submissions WHERE label_id = ? AND expires_at > ? ORDER BY created_at DESC, id DESC', [$this->repo->labelId, $now]);
-        return array_map(static function (array $r): array {
+        return array_map(static function (array $r) use ($now): array {
+            $base = ['submissionId' => (int) $r['id'], 'expiresAt' => (int) $r['expires_at']];
+            if ($r['opened_at'] === null) {
+                return $base + ['state' => 'closed'];
+            }
+            if ((int) $r['opened_at'] > $now) {
+                return $base + ['state' => 'listening', 'opensAt' => (int) $r['opened_at']];
+            }
             $card = json_decode($r['card'], true);
             $m = $card + ['id' => -(int) $r['id'], 'favorite' => false, 'jam_at' => 0, 'band_id' => null, 'band_slot' => 1, 'busy_until' => 0];
-            return Present::musician($m) + ['submissionId' => (int) $r['id'], 'price' => self::price($card), 'expiresAt' => (int) $r['expires_at']];
+            return Present::musician($m) + $base + ['state' => 'open', 'price' => self::price($card)];
         }, $rows);
+    }
+
+    /** Anhören starten: Nach ein paar Sekunden Arbeit sieht man, was drauf ist. */
+    public function open(int $id): void
+    {
+        $row = $this->row($id);
+        if ($row['opened_at'] === null) {
+            $this->repo->db->update('submissions', ['opened_at' => Clock::now() + Balance::SUBMISSIONS['listen']], ['id' => $id]);
+        }
     }
 
     private function row(int $id): array
@@ -156,6 +176,9 @@ final class Submissions
     {
         return $this->repo->db->transaction(function () use ($id): int {
             $row = $this->row($id);
+            if ($row['opened_at'] === null || (int) $row['opened_at'] > Clock::now()) {
+                throw new ApiError('Die Einsendung musst du dir erst anhören.');
+            }
             $card = json_decode($row['card'], true);
             $this->repo->spend(self::price($card), sprintf('Unterschrift: %s %s', $card['first_name'], $card['last_name']));
             $musicianId = $this->repo->insertMusician($card, 'submission');

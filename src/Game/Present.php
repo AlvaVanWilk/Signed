@@ -189,6 +189,7 @@ final class Present
                 'hybridBonus' => Balance::HYBRID_BONUS,
                 'promoSeconds' => Balance::PROMO_SECONDS,
                 'rehearsalSeconds' => Balance::REHEARSAL['seconds'],
+                'submissionListen' => Balance::SUBMISSIONS['listen'],
                 'reactStep' => Balance::MOOD['reactStep'],
                 'moodGreen' => Balance::MOOD['green'],
                 'moodYellow' => Balance::MOOD['yellow'],

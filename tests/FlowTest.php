@@ -1341,20 +1341,33 @@ test('Einsendungen: Willkommens-Stapel, laufender Eingang, Unterschreiben kostet
     $p = registerPlayer($db, 'Post');
     $state = $p->get('state');
     checkEquals(5, count($state['submissions']), 'Willkommens-Stapel: fünf Einsendungen');
+    checkEquals(['closed'], array_values(array_unique(array_column($state['submissions'], 'state'))), 'alle ungehört');
+    check(!isset($state['submissions'][0]['firstName']), 'ungehört verrät nichts');
+    checkApiError(fn () => $p->post('submissionSign', ['submissionId' => $state['submissions'][0]['submissionId']]), 'anhören');
+    // Anhören dauert ein paar Sekunden.
+    foreach ($state['submissions'] as $s) {
+        $p->post('submissionOpen', ['submissionId' => $s['submissionId']]);
+    }
+    $listening = $p->get('state')['submissions'];
+    checkEquals(['listening'], array_values(array_unique(array_column($listening, 'state'))));
+    check(!isset($listening[0]['firstName']), 'beim Anhören noch nichts zu sehen');
+    Clock::advance(Balance::SUBMISSIONS['listen'] + 1);
+    $state = $p->get('state');
+    checkEquals(['open'], array_values(array_unique(array_column($state['submissions'], 'state'))));
     check(count(array_filter($state['submissions'], static fn ($s) => $s['instruments'][0]['skill'] >= 15)) >= 3, 'drei brauchbare');
     // Zeit vergeht: es kommen neue, alte verfallen nicht vor dem Verfallsdatum.
     Clock::advance(86400);
     $later = $p->get('state')['submissions'];
     check(count($later) >= 5 + 6, 'nach einem Tag etwa acht neue: ' . count($later));
-    // Unterschreiben.
-    $first = $later[0];
+    // Unterschreiben (die fünf geöffneten vom Anfang).
+    $first = array_values(array_filter($later, static fn ($s) => $s['state'] === 'open'))[0];
     $money = $p->get('state')['label']['money'];
     $res = $p->post('submissionSign', ['submissionId' => $first['submissionId']]);
     checkEquals($money - $first['price'], $res['state']['label']['money']);
     check(in_array($res['musicianId'], array_column($res['state']['musicians'], 'id'), true), 'der Musiker ist im Label');
     checkApiError(fn () => $p->post('submissionSign', ['submissionId' => $first['submissionId']]), 'nicht mehr');
     // Wegwerfen.
-    $second = $res['state']['submissions'][0];
+    $second = array_values(array_filter($res['state']['submissions'], static fn ($s) => $s['state'] === 'open'))[0];
     $res = $p->post('submissionDrop', ['submissionId' => $second['submissionId']]);
     check(!in_array($second['submissionId'], array_column($res['state']['submissions'], 'submissionId'), true));
     // Ablauf nach dem Verfallsdatum.
@@ -1363,12 +1376,13 @@ test('Einsendungen: Willkommens-Stapel, laufender Eingang, Unterschreiben kostet
     checkEquals([], array_values($old));
     // Testbewerber: alle vier Können-Stufen, darunter Bekanntheit.
     $res = $p->post('submissionsTest');
-    $levels = array_unique(array_map(static fn ($s) => $s['level'], $res['state']['submissions']));
+    $open = array_values(array_filter($res['state']['submissions'], static fn ($s) => $s['state'] === 'open'));
+    $levels = array_unique(array_map(static fn ($s) => $s['level'], $open));
     foreach ([0, 1, 2, 3] as $l) {
         check(in_array($l, $levels, true), "Stufe $l kommt vor");
     }
-    check(count(array_filter($res['state']['submissions'], static fn ($s) => $s['fameLevel'] >= 1)) >= 1, 'bekannte Bewerber');
-    $three = array_values(array_filter($res['state']['submissions'], static fn ($s) => $s['level'] === 3))[0];
+    check(count(array_filter($open, static fn ($s) => $s['fameLevel'] >= 1)) >= 1, 'bekannte Bewerber');
+    $three = array_values(array_filter($open, static fn ($s) => $s['level'] === 3))[0];
     check(!empty($three['abilityChoice']), 'Stufe 3 darf eine Fähigkeit wählen');
 });
 

@@ -413,6 +413,10 @@ final class Schema
                 'CREATE INDEX submissions_label ON submissions (label_id)',
                 'ALTER TABLE labels ADD COLUMN submit_at INTEGER NOT NULL DEFAULT 0',
             ],
+            // 25: Einsendungen kommen ungehört an; Anhören dauert ein paar Sekunden (opened_at = Zeitpunkt, ab dem man sieht, was drauf ist)
+            [
+                'ALTER TABLE submissions ADD COLUMN opened_at INTEGER NULL',
+            ],
         ];
     }
 }

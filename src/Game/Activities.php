@@ -67,15 +67,14 @@ final class Activities
             $skill = [];
             $cohesionPerSong = Balance::COHESION_PER_SONG;
 
+            $rehearsal = null;
             if ($type === 'rehearsal') {
-                $songs = Balance::REHEARSAL['songs'];
-                $cohesionPerSong = Balance::REHEARSAL['cohesion'];
-                foreach ($members as $m) {
-                    $skill[$m['id']] = round(BandCalc::rehearsalGain($m, BandCalc::gearOf($m, $gear)), 2);
-                }
+                [$duration, $limit] = Mood::rehearsalLimits($members);
+                $songs = max(1, intdiv($duration, Balance::REHEARSAL['songSpan']));
                 $title = 'Bandprobe';
-                $sim = ['timeline' => self::rehearsalTimeline($members, $songs, Balance::REHEARSAL['seconds']), 'meter' => 0.0, 'perf' => 0.0];
+                $sim = ['timeline' => self::rehearsalTimeline($members, $songs, $duration), 'meter' => 0.0, 'perf' => 0.0];
                 $fameTotal = 0.0;
+                $rehearsal = ['done' => 0, 'limit' => $limit, 'credited' => (object) [], 'levelUps' => [], 'cohesion' => 0.0, 'maxCohesion' => $cohesionRule['max'], 'growth' => round($chemistry * $cohesionRule['growth'], 4)];
             } else {
                 if ($type === 'busking') {
                     $cfg = Balance::BUSKING;
@@ -135,7 +134,7 @@ final class Activities
                 }
             }
 
-            $endsAt = $now + ($type === 'rehearsal' ? Balance::REHEARSAL['seconds'] : $songs * Balance::SONG_SECONDS);
+            $endsAt = $now + ($rehearsal !== null ? $duration : $songs * Balance::SONG_SECONDS);
             $claimed = $db->exec('UPDATE bands SET busy_until = ?, released = 1 WHERE id = ? AND busy_until <= ?', [$endsAt, $bandId, $now]);
             if ($claimed === 0) {
                 throw new ApiError('Die Band ist gerade beschäftigt.');
@@ -148,6 +147,7 @@ final class Activities
                     'money' => $gage,
                     'fameGains' => BandCalc::splitFame($members, $fameTotal, $gear),
                     'skill' => $skill,
+                    'rehearsal' => $rehearsal,
                     'cohesion' => round($cohesionPerSong * $songs * $chemistry * $cohesionRule['growth'], 2),
                     'maxCohesion' => $cohesionRule['max'],
                     'meter' => $sim['meter'],
@@ -366,6 +366,7 @@ final class Activities
                 $data = json_decode($row['data'], true) ?: [];
                 $result = match (true) {
                     $row['type'] === 'promo' => self::applyPromo($repo, $row, $data),
+                    $row['type'] === 'rehearsal' => self::applyRehearsal($repo, $row),
                     $row['type'] === 'practice', $row['type'] === 'course' => self::applyPractice($repo, $row, $data),
                     $row['band_id'] === null => self::applySolo($repo, $row, $data),
                     default => self::applyBand($repo, $row, $data),
@@ -376,6 +377,12 @@ final class Activities
     }
 
     // ---------- Gutschrift ----------
+
+    private static function applyRehearsal(Repo $repo, array $row): array
+    {
+        self::advanceRehearsal($repo, $row, (int) $row['ends_at']);
+        return self::rehearsalResult($repo, (int) $row['id'], 'ended');
+    }
 
     private static function applyBand(Repo $repo, array $row, array $data): array
     {
@@ -556,6 +563,109 @@ final class Activities
             }
         }
         return $timeline;
+    }
+
+    // ---------- Offene Bandprobe: laufend gutgeschrieben ----------
+
+    /**
+     * Schreibt den Fortschritt einer laufenden Bandprobe bis `$upTo` gut (höchstens bis zum natürlichen Ende):
+     * Können (mit Stufenaufstieg), Zusammenspiel, Beziehungen und Wohlbefinden – alles anteilig zur vergangenen Zeit.
+     */
+    public static function advanceRehearsal(Repo $repo, array $row, int $upTo): void
+    {
+        $data = json_decode($row['data'], true) ?: [];
+        $r = $data['reward']['rehearsal'] ?? null;
+        if ($r === null || $row['band_id'] === null) {
+            return;
+        }
+        $dt = min($upTo, (int) $row['ends_at']) - ((int) $row['started_at'] + (int) $r['done']);
+        if ($dt <= 0) {
+            return;
+        }
+        $bandId = (int) $row['band_id'];
+        $f = $dt / Balance::REHEARSAL['seconds'];
+        $members = $repo->members($bandId);
+        if (!$members) {
+            return;
+        }
+        $gear = $repo->gearByMusician();
+        $gains = [];
+        foreach ($members as $m) {
+            $gains[$m['id']] = BandCalc::rehearsalGain($m, BandCalc::gearOf($m, $gear)) * $f;
+        }
+        $credited = (array) $r['credited'];
+        foreach ($gains as $id => $g) {
+            $credited[$id] = ($credited[$id] ?? 0.0) + $g;
+        }
+        $levelUps = self::applySkill($repo, $gains);
+        $band = Repo::hydrateBand($repo->db->one('SELECT * FROM bands WHERE id = ?', [$bandId]));
+        if ($band['cohesion'] < $r['maxCohesion']) {
+            $add = Balance::REHEARSAL['cohesion'] * $f * $r['growth'];
+            $cohesion = min((float) $r['maxCohesion'], $band['cohesion'] + $add);
+            $repo->db->update('bands', ['cohesion' => $cohesion], ['id' => $bandId]);
+            $r['cohesion'] += $cohesion - $band['cohesion'];
+        }
+        Mood::bond($repo, $members, 'rehearsal', null, $f);
+        Mood::react($repo, $members, 'rehearsal', $f);
+        $r['done'] += $dt;
+        $r['credited'] = $credited;
+        $r['levelUps'] = array_merge($r['levelUps'], $levelUps);
+        $data['reward']['rehearsal'] = $r;
+        $repo->db->update('activities', ['data' => json_encode($data, JSON_UNESCAPED_UNICODE)], ['id' => (int) $row['id']]);
+    }
+
+    /** Laufende Proben bis jetzt gutschreiben (vor jedem Spielstand, damit man dem Lernen zusehen kann). */
+    public static function advanceRunning(Db $db, int $labelId): void
+    {
+        $now = Clock::now();
+        $rows = $db->all("SELECT * FROM activities WHERE label_id = ? AND type = 'rehearsal' AND settled = 0 AND ends_at > ?", [$labelId, $now]);
+        foreach ($rows as $row) {
+            $db->transaction(static function () use ($db, $row, $now): void {
+                self::advanceRehearsal(new Repo($db, (int) $row['label_id']), $row, $now);
+            });
+        }
+    }
+
+    /** Ergebnis einer Bandprobe aus dem, was sie gebracht hat. */
+    private static function rehearsalResult(Repo $repo, int $activityId, string $reason): array
+    {
+        $row = $repo->db->one('SELECT * FROM activities WHERE id = ?', [$activityId]);
+        $r = (json_decode($row['data'], true)['reward']['rehearsal'] ?? []) + ['credited' => [], 'levelUps' => [], 'cohesion' => 0.0, 'done' => 0, 'limit' => ['id' => 0, 'why' => 'lust'], 'maxCohesion' => 0];
+        $name = $r['limit']['id'] ? ($repo->db->value('SELECT first_name FROM musicians WHERE id = ?', [(int) $r['limit']['id']]) ?? '') : '';
+        $band = Repo::hydrateBand($repo->db->one('SELECT * FROM bands WHERE id = ?', [(int) $row['band_id']]));
+        return [
+            'money' => 0,
+            'fame' => 0.0,
+            'meter' => null,
+            'cohesion' => round((float) $r['cohesion'], 1),
+            'cohesionFull' => $band['cohesion'] >= (float) $r['maxCohesion'],
+            'drops' => [],
+            'venueUp' => null,
+            'levelUps' => $r['levelUps'],
+            'skill' => array_values(array_map(static fn ($g) => round((float) $g, 2), (array) $r['credited'])),
+            'skillBy' => array_map(static fn ($g) => round((float) $g, 3), (array) $r['credited']),
+            'seconds' => (int) $r['done'],
+            'ended' => $reason === 'stopped' ? 'stopped' : $r['limit']['why'],
+            'endedBy' => $name,
+        ];
+    }
+
+    /** Eine laufende Bandprobe beenden: Was bis jetzt gelernt wurde, bleibt. */
+    public function stopRehearsal(int $activityId): void
+    {
+        $db = $this->repo->db;
+        $db->transaction(function () use ($db, $activityId): void {
+            $row = $db->one("SELECT * FROM activities WHERE id = ? AND label_id = ? AND settled = 0 AND type = 'rehearsal'", [$activityId, $this->repo->labelId]);
+            if ($row === null) {
+                throw new ApiError('Die Probe läuft nicht mehr.');
+            }
+            $now = Clock::now();
+            self::advanceRehearsal($this->repo, $row, $now);
+            $endsAt = (int) $row['ends_at'];
+            $db->update('activities', ['settled' => 1, 'ends_at' => min($now, $endsAt)], ['id' => $activityId]);
+            $db->exec('UPDATE bands SET busy_until = 0 WHERE id = ? AND busy_until = ?', [(int) $row['band_id'], $endsAt]);
+            $db->update('activities', ['result' => json_encode(self::rehearsalResult($this->repo, $activityId, 'stopped'), JSON_UNESCAPED_UNICODE)], ['id' => $activityId]);
+        });
     }
 
     private static function applyFame(Repo $repo, array $gains): float

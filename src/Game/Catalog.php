@@ -166,6 +166,12 @@ final class Catalog
         'partytier' => ['gig' => 1, 'openstage' => 1, 'busking' => 1, 'rehearsal' => -1],
     ];
 
+    /** Wie lange ein Charakter bei der Probe Lust hat, als Faktor auf Balance::REHEARSAL['lust'] (bei zwei Eigenschaften der Mittelwert). */
+    public const LUST = [
+        'ehrgeizig' => 1.5, 'perfektionist' => 1.5, 'teamplayer' => 1.2, 'ruhepol' => 1.2,
+        'rampensau' => 0.9, 'diva' => 0.8, 'gelassen' => 0.8, 'chaot' => 0.6, 'partytier' => 0.6,
+    ];
+
     /** Der Wunsch eines unzufriedenen Musikers nach Charakter: [Satz, Anordnung, die ihn erfüllt]. */
     public const WISHES = [
         'ehrgeizig' => ['Wir wollen weiter!', 'gig'],

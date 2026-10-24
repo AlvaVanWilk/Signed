@@ -150,7 +150,10 @@ final class State
                 'busyUntil' => $band['busy_until'],
                 'options' => [
                     'busking' => ['songs' => Balance::BUSKING['songs']],
-                    'rehearsal' => ['songs' => Balance::REHEARSAL['songs']],
+                    'rehearsal' => (static function () use ($list): array {
+                        [$seconds, $limit] = Mood::rehearsalLimits($list);
+                        return ['seconds' => $seconds, 'limit' => $limit];
+                    })(),
                     'openstage' => [
                         'songs' => Balance::OPENSTAGE['songs'],
                         'worthIt' => BandCalc::falloff($fame, Balance::OPENSTAGE['falloff']) > 0,

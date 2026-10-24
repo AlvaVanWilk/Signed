@@ -100,7 +100,11 @@ final class Present
             'endsAt' => (int) $row['ends_at'],
             'songs' => $data['songs'] ?? 0,
             'timeline' => $data['timeline'] ?? [],
-        ];
+        ] + (isset($data['reward']['rehearsal']) ? ['rehearsal' => [
+            'done' => (int) $data['reward']['rehearsal']['done'],
+            'credited' => (object) $data['reward']['rehearsal']['credited'],
+            'limit' => $data['reward']['rehearsal']['limit'],
+        ]] : []);
     }
 
     public static function result(array $row): array
@@ -185,6 +189,9 @@ final class Present
                 'hybridBonus' => Balance::HYBRID_BONUS,
                 'promoSeconds' => Balance::PROMO_SECONDS,
                 'rehearsalSeconds' => Balance::REHEARSAL['seconds'],
+                'reactStep' => Balance::MOOD['reactStep'],
+                'moodGreen' => Balance::MOOD['green'],
+                'moodYellow' => Balance::MOOD['yellow'],
                 'autoPracticeSeconds' => Balance::AUTO_PRACTICE['seconds'],
                 'cohesionRemovePenalty' => Balance::COHESION_REMOVE_PENALTY,
                 'cohesionSwitchPenalty' => Balance::COHESION_SWITCH_PENALTY,

@@ -295,7 +295,7 @@ function practice(b, members) {
     ${courseTiles(members)}
     <div class="action-grid">
       ${actionTile({
-        icon: '🥁', title: 'Bandprobe', meta: `${songsMeta(b.options.rehearsal.songs)} · ${b.cohesion >= b.maxCohesion ? 'Zusammenspiel ist schon voll' : 'Zusammenspiel'} · Können für alle: <b>${gainRange(members.map((m) => m.gains?.rehearsal ?? 0))}</b> je Musiker`,
+        icon: '🥁', title: 'Bandprobe', meta: `bis zu ${duration(b.options.rehearsal.seconds)} · ${b.cohesion >= b.maxCohesion ? 'Zusammenspiel ist schon voll' : 'Zusammenspiel'} · Können für alle: <b>${gainRange(members.map((m) => m.gains?.rehearsal ?? 0))}</b> je Musiker`,
         body: b.cohesion >= b.maxCohesion ? '<span class="small muted">Die Band ist eingespielt. Für mehr Können lohnt sich jetzt Solo-Üben mehr.</span>' : '',
         button: `<button class="btn primary" data-act="startActivity" data-id="${b.id}" data-type="rehearsal" ${blocked ? 'disabled' : ''}>Proben</button>`,
       })}
@@ -910,7 +910,8 @@ defineActions({
     const b = bandById(id);
     const songs = type === 'gig' ? Math.max(b.options.gig.minSongs, Math.min(app.ui.gigSongs[b.id] || b.options.gig.maxSongs, b.options.gig.maxSongs)) : 0;
     const res = await mutate('activityStart', { bandId: b.id, type, songs });
-    if (res) openLive(res.activity.id);
+    // Die Probe läuft offen auf der Bandseite mit; der Probenraum ist nur auf Wunsch offen („Zuschauen“).
+    if (res && type !== 'rehearsal') openLive(res.activity.id);
   },
   async bandPromo({ id }) {
     if (await mutate('bandPromo', { bandId: Number(id) })) toast('Die Band ist auf Promo-Tour.', 'ok');

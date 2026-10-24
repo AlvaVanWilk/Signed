@@ -143,3 +143,12 @@ button.lb-pill:disabled { opacity: 0.45; cursor: default; }
 .lb-ask-list { margin: 0 0 14px; padding-left: 1.1em; display: grid; gap: 4px; }
 .lb-ask-list .good { color: #5fb589; } .lb-ask-list .bad { color: #d9a441; }
 .lb-ask .lb-cap { color: #8d879c; }
+
+/* Laufende Probe */
+.lb-live { padding: 14px 16px; border-radius: 12px; border: 1px solid var(--lb-accent); background: var(--lb-card); display: grid; gap: 10px; }
+.lb-live-head { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
+.lb-live .lb-cap { margin: 0 0 3px; }
+.lb-live-btns { display: flex; gap: 8px; }
+.lb-live-row { display: grid; grid-template-columns: 40px 90px 1fr auto; gap: 12px; align-items: center; }
+.lb-live-gain em { font-style: normal; font-weight: 800; color: var(--lb-accent); font-variant-numeric: tabular-nums; }
+.lb-live-gain i { font-style: normal; margin-left: 8px; font-size: 0.82rem; }

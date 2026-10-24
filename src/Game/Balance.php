@@ -224,7 +224,11 @@ final class Balance
      */
     public const BUSKING_HAT = [20, 45];
     /** Bandprobe: keine Zuschauer, dafür doppeltes Zusammenspiel und etwas Können für alle. */
-    public const REHEARSAL = ['songs' => 6, 'seconds' => 900, 'cohesion' => 0.85, 'skill' => 4.0];
+    /**
+     * Bandprobe: offen, die Band probt, bis ein Mitglied keine Lust mehr hat. Gewinne gelten je `seconds` (Bezugszeit) Probe und
+     * werden laufend gutgeschrieben. `lust` = Sekunden bis jemand genug hat (nach Charakter, Catalog::LUST), mindestens `minLust`.
+     */
+    public const REHEARSAL = ['seconds' => 900, 'lust' => 3600, 'minLust' => 60, 'cohesion' => 5.0, 'skill' => 4.0, 'songSpan' => 150];
     /** Band-Promo: alle Mitglieder sind unterwegs, jeder bringt Bekanntheit wie bei der Promo-Mission. */
     public const BAND_PROMO = ['seconds' => 600, 'fame' => [0.1, 0.25]];
     /** Jam-Café: nur Musiker ohne Band; danach drei passende Musiker (Stufe 0) zur Auswahl für eine Band. */

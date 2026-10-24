@@ -161,7 +161,10 @@ Rot sperrt alles, was die Band nicht „brennend“ will; erlaubt bleiben die An
 ### Proben (Hauptquelle für Können)
 
 Die alte Probe war „Wasser auf den heißen Stein“. Jetzt ist sie der Weg nach oben, **ohne Stufen-Bremse**: Die Lernkurve `(1 − Können/110)^2,5`
-bremst von selbst. Gebaut (Testversion): Knopf „Proben“ direkt auf der Bandseite, 15 Minuten, ohne Unterseite. Ziel für Startwerte (Spielzeit, ca. 15 Minuten je Probe; gebaut sind etwa 2,5 / 9 / 36 Stunden, siehe `kern.md`):
+bremst von selbst. Gebaut (Testversion): Knopf „Proben“ direkt auf der Bandseite, ohne Unterseite, mit Nachfrage. Die Probe ist **offen**: Die Band probt, bis ein Mitglied
+keine Lust mehr hat (`Balance::REHEARSAL['lust']` = 60 Minuten Grundwert, nach Charakter `Catalog::LUST`: Ehrgeizige und Perfektionisten halten länger, Chaoten und Partytiere kürzer)
+oder bis jemand, der Proben nicht mag, zu unzufrieden wird. Alles wird **laufend** gutgeschrieben (Können mit Stufenaufstieg im selben Moment, Zusammenspiel, Beziehungen, Wohlbefinden), „Probe beenden“ behält den bisherigen Fortschritt.
+Gewinne sind je 15 Minuten angegeben (Bezugszeit). Ziel für Startwerte (Spielzeit, ca. 15 Minuten je Probe; gebaut sind etwa 2,5 / 9 / 36 Stunden, siehe `kern.md`):
 Stufe 1 in etwa einer Stunde, Stufe 2 in etwa 15 Stunden, Stufe 3 in etwa 80 Stunden. Je Musiker verschieden (Talent; Chaot/Ehrgeizig wirken
 auf Stimmung statt auf Können). Ein bisschen mehr Können gewinnt, wer unter Besseren spielt.
 

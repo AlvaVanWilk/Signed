@@ -240,7 +240,7 @@ test('Bandprobe und Band-Promo', function () {
     $band = foundBand($p);
     $before = array_column($db->all('SELECT id, skill1 FROM musicians'), 'skill1', 'id');
     $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'rehearsal']);
-    Clock::advance(Balance::REHEARSAL['seconds']);
+    Clock::advance(2 * Balance::REHEARSAL['lust']);
     $state = $p->get('state');
     check(bandById($state, $band['id'])['cohesion'] > 0);
     foreach ($db->all('SELECT id, skill1 FROM musicians') as $m) {
@@ -1275,4 +1275,50 @@ test('Rote Band: Anordnungen, die ein Unzufriedener nicht mag, sind gesperrt; wa
     $p->get('state');
     $after = (float) $db->value('SELECT wellbeing FROM musicians WHERE id = ?', [$ids[0]]);
     check($after > 10, 'Wohlbefinden steigt nach einer Anordnung, die er mag: ' . $after);
+});
+
+test('Offene Probe: Können wächst laufend, Abbrechen behält den Fortschritt, am Ende hört die Band von selbst auf', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Offen');
+    $band = foundBand($p);
+    $ids = array_column($db->all('SELECT id FROM musicians WHERE band_id = ? ORDER BY id', [$band['id']]), 'id');
+    $skill = static fn (int $id) => (float) $db->value('SELECT skill1 FROM musicians WHERE id = ?', [$id]);
+    $start = $skill($ids[0]);
+    $act = $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'rehearsal'])['activity'];
+    check($act['endsAt'] - $act['startedAt'] >= Balance::REHEARSAL['minLust'], 'die Probe hat eine natürliche Dauer');
+    // Nach 5 Minuten: schon etwas gelernt, noch kein Ergebnis.
+    Clock::advance(300);
+    $running = $p->get('state');
+    check($skill($ids[0]) > $start, 'Können wächst schon während der Probe');
+    checkEquals(1, count($running['running']), 'die Probe läuft noch');
+    $half = $skill($ids[0]) - $start;
+    // Abbrechen: nichts geht verloren, die Band ist frei.
+    $res = $p->post('rehearsalStop', ['activityId' => $act['id']]);
+    checkEquals([], $res['state']['running']);
+    check(abs(($skill($ids[0]) - $start) - $half) < 0.01, 'bis dahin Gelerntes bleibt');
+    $b = bandById($res['state'], $band['id']);
+    check($b['busyUntil'] <= Clock::now(), 'die Band ist wieder frei');
+    checkApiError(fn () => $p->post('rehearsalStop', ['activityId' => $act['id']]), 'läuft nicht mehr');
+    // Zweite Probe: läuft bis zum Ende, die Band hört von selbst auf.
+    $act2 = $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'rehearsal'])['activity'];
+    $full = $act2['endsAt'] - $act2['startedAt'];
+    Clock::advance($full + 10);
+    $state = $p->get('state');
+    checkEquals([], $state['running']);
+    check($skill($ids[0]) - $start > $half, 'bis zum Ende hat sich mehr getan');
+});
+
+test('Offene Probe: Wer sie nicht mag, wird zuerst rot – dann endet sie früher', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Genervt');
+    $band = foundBand($p);
+    $ids = array_column($db->all('SELECT id FROM musicians WHERE band_id = ? ORDER BY id', [$band['id']]), 'id');
+    $db->exec('UPDATE musicians SET personality = ?, wellbeing = 38 WHERE id = ?', [json_encode(['chaot']), $ids[0]]);
+    $act = $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'rehearsal'])['activity'];
+    check($act['endsAt'] - $act['startedAt'] < Balance::REHEARSAL['lust'], 'der Chaot nervt sich früh: ' . ($act['endsAt'] - $act['startedAt']));
+    checkEquals('red', $act['rehearsal']['limit']['why']);
+    Clock::advance($act['endsAt'] - $act['startedAt'] + 5);
+    $p->get('state');
+    $w = (float) $db->value('SELECT wellbeing FROM musicians WHERE id = ?', [$ids[0]]);
+    check($w < 38, 'sein Wohlbefinden ist gesunken: ' . $w);
 });

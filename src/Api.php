@@ -60,6 +60,7 @@ final class Api
         'promoStart' => ['POST', true],
         'bandPromo' => ['POST', true],
         'promoCancel' => ['POST', true],
+        'rehearsalStop' => ['POST', true],
         'practiceAuto' => ['POST', true],
         'courseAttend' => ['POST', true],
         'soloStart' => ['POST', true],
@@ -111,6 +112,7 @@ final class Api
         }
         Backup::daily($this->db);
         Activities::settleDue($this->db, $labelId);
+        Activities::advanceRunning($this->db, $labelId);
         Charts::payRoyalties($this->db, $labelId);
         Transfers::settleDue($this->db);
         return $this->{$action}($in, $repo);
@@ -310,6 +312,12 @@ final class Api
     {
         $activity = (new Activities($repo))->start(self::int($in, 'bandId'), self::str($in, 'type'), (int) ($in['songs'] ?? 0));
         return ['activity' => $activity, 'state' => State::build($repo)];
+    }
+
+    private function rehearsalStop(array $in, Repo $repo): array
+    {
+        (new Activities($repo))->stopRehearsal(self::int($in, 'activityId'));
+        return ['state' => State::build($repo)];
     }
 
     private function activityAck(array $in, Repo $repo): array

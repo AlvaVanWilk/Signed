@@ -91,10 +91,10 @@ final class Mood
     }
 
     /** Gemeinsames Erlebnis aller Mitglieder (Probe, Auftritt, Aufnahme): jede Beziehung rückt ein Stück auf ihren Zielwert zu. */
-    public static function bond(Repo $repo, array $members, string $kind, ?int $now = null): void
+    public static function bond(Repo $repo, array $members, string $kind, ?int $now = null, float $factor = 1.0): void
     {
         $now ??= Clock::now();
-        $strength = Balance::RELATION['bond'][$kind] ?? 0.0;
+        $strength = min(1.0, (Balance::RELATION['bond'][$kind] ?? 0.0) * $factor);
         if ($strength <= 0 || count($members) < 2) {
             return;
         }
@@ -143,16 +143,43 @@ final class Mood
     }
 
     /** Eine erlebte Anordnung hebt oder drückt das Wohlbefinden je nach Charakter sofort (wirkt danach langsam ab). */
-    public static function react(Repo $repo, array $members, string $type): void
+    public static function react(Repo $repo, array $members, string $type, float $factor = 1.0): void
     {
         $step = Balance::MOOD['reactStep'];
         foreach ($members as $m) {
             $score = self::liking($m['personality'], $type);
             if ($score !== 0) {
-                $value = max(0.0, min(100.0, $m['wellbeing'] + $step * max(-1, min(1, $score))));
+                $value = max(0.0, min(100.0, $m['wellbeing'] + $step * max(-1, min(1, $score)) * $factor));
                 $repo->db->update('musicians', ['wellbeing' => round($value, 3)], ['id' => $m['id']]);
             }
         }
+    }
+
+    /**
+     * Wie lange die Band probt: bis das erste Mitglied keine Lust mehr hat (Charakter) oder wer die Probe nicht mag zu unzufrieden wird.
+     * @return array{0: int, 1: array{id: int, why: string}} Sekunden und wer die Probe beendet
+     */
+    public static function rehearsalLimits(array $members): array
+    {
+        $c = Balance::REHEARSAL;
+        $best = null;
+        foreach ($members as $m) {
+            $factors = array_map(static fn ($p) => Catalog::LUST[$p] ?? 1.0, $m['personality']);
+            $lust = $c['lust'] * ($factors ? array_sum($factors) / count($factors) : 1.0);
+            $why = 'lust';
+            $score = max(-1, min(1, self::liking($m['personality'], 'rehearsal')));
+            if ($score < 0) {
+                $toRed = max(0.0, $m['wellbeing'] - Balance::MOOD['yellow']) / (Balance::MOOD['reactStep'] * -$score / $c['seconds']);
+                if ($toRed < $lust) {
+                    $lust = $toRed;
+                    $why = 'red';
+                }
+            }
+            if ($best === null || $lust < $best[0]) {
+                $best = [$lust, $m['id'], $why];
+            }
+        }
+        return [max($c['minLust'], (int) round($best[0] ?? $c['lust'])), ['id' => $best[1] ?? 0, 'why' => $best[2] ?? 'lust']];
     }
 
     /**

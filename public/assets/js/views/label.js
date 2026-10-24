@@ -1,5 +1,5 @@
 import { genreGlyph, genreName, gearModel, instrumentIcon, instrumentName, ownGear, photo, sortedGenres } from '../cards.js';
-import { actions, app, bandById, cat, defineActions, isBusy, musicianById, runningFor } from '../core.js';
+import { actions, app, bandById, cat, defineActions, isBusy, mutate, musicianById, runningFor, serverNow } from '../core.js';
 import { closePopover, duration, esc, fmt0, fmt1, fmtGain, openModal, popover } from '../ui.js';
 import { blocker, blockerNotice, chemistryLabel, courseTiles, gainRange, statTile } from './bands.js';
 
@@ -173,9 +173,68 @@ function act(b, members, type, section, title, text, icon, warn = false, busy = 
   const hint = r.dislike.length ? `<small class="no">${esc(names(r.dislike))} ${plural(r.dislike, 'mag', 'mögen')} das nicht.</small>` : `<small>${text}</small>`;
   // Ohne Unterseite: Die Anordnung startet gleich (Proben).
   if (!section) {
-    return `<button class="lb-act ${busy ? 'idle' : ''}" data-act="rehearseAsk" data-id="${b.id}" ${busy ? 'disabled' : ''}>${icon}<b>${title}</b>${hint}</button>`;
+    return `<button class="lb-act ${busy ? 'idle' : ''}" data-act="rehearseAsk" data-id="${b.id}" ${busy ? 'disabled' : ''}>${icon}<b>${title}</b>${busy ? '<small>Die Band ist gerade beschäftigt.</small>' : hint}</button>`;
   }
   return `<a class="lb-act ${warn ? 'warn' : ''}" href="#/band/${b.id}/${section}">${icon}<b>${title}</b>${hint}</a>`;
+}
+
+/**
+ * Läuft eine Probe, sieht man ihr zu: je Musiker, was schon gelernt wurde, und wie die Stimmung gerade ist.
+ * Die Zahlen laufen sekündlich mit (tickLive); alle paar Sekunden kommt der echte Stand vom Server.
+ */
+function liveBlock(b, members, act) {
+  const left = act.endsAt - serverNow();
+  const who = musicianById(act.rehearsal.limit.id);
+  return `
+    <section class="lb-live" data-live-act="${act.id}">
+      <div class="lb-live-head">
+        <div><h2 class="lb-cap">Die Band probt</h2>
+          <small class="muted">Läuft seit <span data-live-since="${act.startedAt}"></span> · spätestens zu Ende in <b data-live-left="${act.endsAt}">${duration(left)}</b> (${esc(who?.firstName ?? '')}${act.rehearsal.limit.why === 'red' ? ' wird genervt' : ' hat dann keine Lust mehr'})</small></div>
+        <span class="lb-live-btns"><button class="btn small" data-act="watch" data-id="${act.id}">Zuschauen</button>
+          <button class="btn small primary" data-act="rehearsalStop" data-id="${act.id}">Probe beenden</button></span>
+      </div>
+      ${members.map((m) => `<div class="lb-live-row"><span class="lb-ph sm" data-live-ring="${m.id}">${photo(m)}</span><b>${esc(m.firstName)}</b>
+        <span class="lb-live-gain">Können <em data-live-gain="${m.id}">+0,00</em> <i class="muted">jetzt <span data-live-skill="${m.id}"></span></i></span>
+        <span data-live-mood="${m.id}"></span></div>`).join('')}
+    </section>`;
+}
+
+/** Live-Anzeige der laufenden Probe aus dem letzten Spielstand und der Zeit seither. */
+export function tickLive() {
+  const root = document.querySelector('[data-live-act]');
+  if (!root || !app.state) return;
+  const act = app.state.running.find((a) => a.id === Number(root.dataset.liveAct));
+  if (!act) return;
+  const rules = cat().rules;
+  const unit = rules.rehearsalSeconds;
+  const now = serverNow();
+  const since = Math.max(0, now - app.state.now);
+  const run = Math.max(0, Math.min(now, act.endsAt) - app.state.now);
+  const band = bandById(act.bandId);
+  const left = root.querySelector('[data-live-left]');
+  if (left) left.textContent = duration(Math.max(0, act.endsAt - now));
+  const sinceEl = root.querySelector('[data-live-since]');
+  if (sinceEl) sinceEl.textContent = duration(Math.max(0, now - act.startedAt));
+  for (const id of band.memberIds) {
+    const m = musicianById(id);
+    const credited = Number(act.rehearsal.credited[id] ?? 0);
+    const gain = credited + ((m.gains?.rehearsal ?? 0) / unit) * run;
+    const gainEl = root.querySelector(`[data-live-gain="${id}"]`);
+    if (gainEl) gainEl.textContent = `+${fmtGain(gain)}`;
+    const skillEl = root.querySelector(`[data-live-skill="${id}"]`);
+    const played = playedOf(m);
+    if (skillEl) skillEl.textContent = fmt1(played.skill + ((m.gains?.rehearsal ?? 0) / unit) * run);
+    const score = Math.max(-1, Math.min(1, (band.mood.reactions?.rehearsal.like.includes(id) ? 1 : 0) - (band.mood.reactions?.rehearsal.dislike.includes(id) ? 1 : 0)));
+    const w = Math.max(0, Math.min(100, (m.wellbeing?.value ?? 60) + (rules.reactStep * score * run) / unit));
+    const level = w >= rules.moodGreen ? 'green' : w >= rules.moodYellow ? 'yellow' : 'red';
+    const moodEl = root.querySelector(`[data-live-mood="${id}"]`);
+    if (moodEl && moodEl.dataset.level !== level) {
+      moodEl.dataset.level = level;
+      moodEl.innerHTML = moodTag(level);
+    }
+    const ring = root.querySelector(`[data-live-ring="${id}"]`);
+    if (ring) ring.className = `lb-ph sm ${level}`;
+  }
 }
 
 export function page(route) {
@@ -186,7 +245,8 @@ export function page(route) {
   const rel = Object.values(b.mood.relations ?? {});
   const avgRel = rel.length ? rel.reduce((a, v) => a + v, 0) / rel.length : 0;
   const solo = members.length === 1;
-  const notice = blockerNotice(b, members);
+  const running = runningFor(b.id);
+  const notice = running?.type === 'rehearsal' ? '' : blockerNotice(b, members);
   const free = cat().rules.maxMembers - members.length;
   const base = `#/band/${b.id}`;
   const courses = courseTiles(members);
@@ -200,10 +260,11 @@ export function page(route) {
       <div class="lb-hd-mood"><span class="lb-cap">Stimmung</span>${moodTag(b.mood.level).replace('class="lb-mood', 'class="lb-mood big')}</div>
     </header>
     ${notice}
+    ${running?.type === 'rehearsal' ? liveBlock(b, members, running) : ''}
     ${wishBlock(b, members)}
     <h2 class="lb-cap lb-sec">Anordnungen</h2>
     <div class="lb-acts">
-      ${act(b, members, 'rehearsal', null, 'Proben', `${duration(cat().rules.rehearsalSeconds)} · Können ${gainRange(members.map((m) => m.gains?.rehearsal ?? 0))}`, ICON.rehearse, false, !!blocker(b, members))}
+      ${act(b, members, 'rehearsal', null, 'Proben', `bis zu ${duration(b.options.rehearsal.seconds)} · Können ${gainRange(members.map((m) => m.gains?.rehearsal ?? 0))} je ${duration(cat().rules.rehearsalSeconds)}`, ICON.rehearse, false, !!blocker(b, members))}
       ${act(b, members, 'record', 'studio', 'Aufnehmen', `${b.mood.songs} ${b.mood.songs === 1 ? 'Song wartet' : 'Songs warten'}`, ICON.record, b.mood.songs >= 12)}
       ${act(b, members, 'gig', 'auftritte', 'Auftritt buchen', 'Kosten und Gewinn sehen', ICON.gig)}
     </div>
@@ -247,6 +308,10 @@ function reactionLines(b, type) {
 }
 
 defineActions({
+  /** Laufende Probe beenden: was bis jetzt gelernt wurde, bleibt. */
+  async rehearsalStop({ id }) {
+    await mutate('rehearsalStop', { activityId: Number(id) });
+  },
   /** Kurzer Hinweis am Knopf (Genre, Stufe, Instrument, gesperrte Anordnung). */
   tip({ tip }, el) {
     popover(el, tip);
@@ -255,13 +320,16 @@ defineActions({
   rehearseAsk({ id }) {
     const b = bandById(id);
     const members = b.memberIds.map(musicianById).filter(Boolean);
-    const skill = members.map((m) => `<li><b>${esc(m.firstName)}</b>: Können <em>+${fmtGain(m.gains?.rehearsal ?? 0)}</em></li>`).join('');
+    const unit = duration(cat().rules.rehearsalSeconds);
+    const skill = members.map((m) => `<li><b>${esc(m.firstName)}</b>: Können <em>+${fmtGain(m.gains?.rehearsal ?? 0)}</em> je ${unit}</li>`).join('');
+    const who = musicianById(b.options.rehearsal.limit.id);
+    const why = b.options.rehearsal.limit.why === 'red' ? `${esc(who?.firstName ?? '')} wird davon so genervt, dass die Stimmung kippt` : `${esc(who?.firstName ?? '')} hat dann keine Lust mehr`;
     const modal = openModal({
       className: 'lb-ask',
       html: `
         <div class="lb-cap">Anordnung</div>
         <h2>Proben mit ${esc(b.name)}</h2>
-        <p class="muted">Die Band probt <b>${duration(cat().rules.rehearsalSeconds)}</b>. Solange ist sie beschäftigt.</p>
+        <p class="muted">Die Band geht in den Proberaum und probt, bis jemand keine Lust mehr hat – hier nach etwa <b>${duration(b.options.rehearsal.seconds)}</b> (${why}). Du kannst jederzeit beenden und behältst alles, was bis dahin gelernt wurde.</p>
         <h3>Was es bringt</h3>
         <ul class="lb-ask-list">${skill}<li>Die Beziehungen untereinander wachsen, das Zusammenspiel auch.</li>${reactionLines(b, 'rehearsal')}</ul>
         <div class="dialog-actions">

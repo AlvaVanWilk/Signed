@@ -255,8 +255,29 @@ function skillSpan(values) {
   return max - min < 0.005 ? `+${fmtGain(max)}` : `+${fmtGain(min)}–${fmtGain(max)}`;
 }
 
+const REHEARSAL_END = {
+  lust: (n) => `${esc(n)} hat keine Lust mehr.`,
+  red: (n) => `${esc(n)} ist zu genervt.`,
+  stopped: () => 'Du hast die Probe beendet.',
+  ended: () => 'Die Probe ist zu Ende.',
+};
+
 function resultHtml(r) {
   const res = r.result;
+  if (r.type === 'rehearsal') {
+    const band = bandById(r.bandId);
+    const members = band ? band.memberIds.map(musicianById).filter(Boolean) : [];
+    const skills = res.skillBy ?? {};
+    return `
+      <div class="eyebrow">${esc(band?.name ?? '')}</div>
+      <h2>Die Probe ist vorbei</h2>
+      <p class="muted">${(REHEARSAL_END[res.ended] ?? REHEARSAL_END.ended)(res.endedBy ?? '')} Sie dauerte ${duration(res.seconds ?? 0)}.</p>
+      <div class="reward-grid">
+        ${res.cohesion ? reward('Zusammenspiel', `+${fmt1(res.cohesion)}`) : res.cohesionFull ? reward('Zusammenspiel', 'schon voll') : ''}
+        ${members.map((m) => (skills[m.id] === undefined ? '' : reward(`Können ${esc(m.firstName)}`, `+${fmtGain(skills[m.id])}`))).join('')}
+      </div>
+      ${levelUpBanners(res.levelUps)}`;
+  }
   if (r.type === 'practice' || r.type === 'course') {
     const m = musicianById(r.musicianId);
     return `
@@ -470,8 +491,11 @@ let lastAutoRefresh = 0;
 setInterval(() => {
   if (!app.state) return;
   updateCountdowns();
+  // Eine laufende Probe wird alle paar Sekunden gutgeschrieben: So steigen Können und Stufen wirklich in dem Moment, in dem es passiert.
+  const live = app.state.running.some((a) => a.type === 'rehearsal');
+  label.tickLive();
   const due = app.state.running.some((a) => a.endsAt <= serverNow());
-  if (due && Date.now() - lastAutoRefresh > 3000) {
+  if ((due && Date.now() - lastAutoRefresh > 3000) || (live && Date.now() - lastAutoRefresh > 5000)) {
     lastAutoRefresh = Date.now();
     refresh();
   }

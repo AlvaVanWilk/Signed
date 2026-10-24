@@ -228,8 +228,8 @@ den Gesangsspuren der Aufnahmen (`Music::melodyChart`, für Studio-Aufnahmen).
 ### Tempo
 
 **Umbau (Label-Ebene):** Die **Bandprobe** ist jetzt die Hauptquelle für Können und läuft **ohne Stufen-Bremse** (nur die Lernkurve bremst).
-Eine Probe dauert 15 Minuten Spielzeit (`Balance::REHEARSAL`: `seconds` 900, `skill` 4,0 Grundgewinn je Probe, `cohesion` 0,85 je „Lied“ bei 6 Liedern).
-Rechnung ab Können 15 (ohne Talent): Stufe 1 nach rund 10 Proben (2,5 Stunden), Stufe 2 nach rund 37 (9 Stunden), Stufe 3 nach rund 145 (36 Stunden).
+Die Probe ist offen und wird laufend gutgeschrieben; Gewinne gelten je 15 Minuten Probe (`Balance::REHEARSAL`: `seconds` 900 als Bezugszeit, `skill` 4,0, `cohesion` 5,0; `lust` 3600 s Grundwert bis jemand genug hat).
+Rechnung ab Können 15 (ohne Talent), in Probenzeit: Stufe 1 nach rund 2,5 Stunden, Stufe 2 nach rund 9, Stufe 3 nach rund 36 Stunden.
 Die Solo-Probe und das „Allein üben“ der Musikerseite gehören nicht mehr zu Signed (siehe `ausgelagert-musikerspiel.md`); die Beschreibung darunter gilt für den alten Stand.
 
 Ziel: Ein Anfänger (Können 15) ist schnell fortgeschritten – mit gezieltem Üben (Solo-Probe × 3 auf Stufe 0) in rund 13 Minuten. Darüber hinaus geht es mit den

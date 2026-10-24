@@ -334,13 +334,6 @@ button.lb-pill:disabled { opacity: 0.45; cursor: default; }
 .lb-trait:hover { color: var(--lb-text); border-color: var(--lb-accent); }
 .lb-traitrow { display: inline-flex; gap: 5px; flex-wrap: wrap; }
 
-/* Gold: ganz leichtes Glitzern */
-.lv-3 .sk i, .lv-3 .lb-prog i { position: relative; overflow: hidden; }
-.lv-3 .sk i::after, .lv-3 .lb-prog i::after { content: ''; position: absolute; inset: 0; pointer-events: none;
-  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0 0.8px, transparent 1.6px), radial-gradient(circle, rgba(255, 250, 220, 0.9) 0 0.7px, transparent 1.4px);
-  background-size: 23px 100%, 37px 100%; background-position: 4px 30%, 17px 70%; background-repeat: repeat-x; animation: lb-glint 2.8s ease-in-out infinite; }
-@keyframes lb-glint { 0%, 100% { opacity: 0.15; background-position: 4px 30%, 17px 70%; } 50% { opacity: 0.9; background-position: 9px 55%, 12px 35%; } }
-@media (prefers-reduced-motion: reduce) { .lv-3 .sk i::after, .lv-3 .lb-prog i::after { animation: none; opacity: 0.35; } }
 
 /* Karten: gleiche Größe wie die Kassette, drehbar */
 .lb-slots { grid-template-columns: repeat(auto-fill, 236px); }
@@ -383,3 +376,21 @@ button.lb-pill:disabled { opacity: 0.45; cursor: default; }
 .lb-compat h4 { margin: 10px 0 6px; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--lb-muted, #8d879c); }
 .lb-cp { display: grid; grid-template-columns: 36px 1fr auto auto; gap: 10px; align-items: center; padding: 4px 0; }
 .lb-cp .lb-rel { width: 32px; height: 32px; margin: 2px; } .lb-cp em { font-style: normal; font-weight: 700; font-size: 0.82rem; }
+
+/* Gold wie Goldpaste: feines Korn und winzige Glitzerpunkte, die an wechselnden Stellen aufblitzen */
+.lv-3 .sk i, .lv-3 .lb-prog i { position: relative; overflow: hidden; }
+.lv-3 .sk i::before, .lv-3 .lb-prog i::before { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0.6; mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='24'><filter id='n' x='0' y='0' width='100%25' height='100%25'><feTurbulence type='fractalNoise' baseFrequency='1.6' numOctaves='2' seed='7' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 0.93  0 0 0 0 0.62  0 0 0 2.2 -0.85'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  background-size: 64px 100%; }
+.lv-3 .sk i::after, .lv-3 .lb-prog i::after { content: ''; position: absolute; inset: 0; pointer-events: none;
+  background-image: radial-gradient(circle, #fff 0 0.32px, transparent 0.7px), radial-gradient(circle, #fff6cf 0 0.3px, transparent 0.65px), radial-gradient(circle, #fff 0 0.28px, transparent 0.6px), radial-gradient(circle, #ffeaa0 0 0.32px, transparent 0.7px);
+  background-size: 19px 100%, 29px 100%, 37px 100%, 47px 100%; background-position: 2px 25%, 6px 70%, 11px 45%, 4px 85%; background-repeat: repeat-x;
+  animation: lb-sparkle 1.6s steps(1) infinite, lb-shimmer 0.8s ease-in-out infinite alternate; }
+@keyframes lb-sparkle {
+  0% { background-position: 2px 25%, 6px 70%, 11px 45%, 4px 85%; }
+  25% { background-position: 15px 60%, 21px 20%, 3px 80%, 33px 40%; }
+  50% { background-position: 8px 35%, 9px 55%, 24px 20%, 20px 65%; }
+  75% { background-position: 13px 80%, 1px 30%, 29px 60%, 9px 15%; }
+}
+@keyframes lb-shimmer { from { opacity: 0.35; } to { opacity: 0.95; } }
+@media (prefers-reduced-motion: reduce) { .lv-3 .sk i::after, .lv-3 .lb-prog i::after { animation: none; opacity: 0.5; } }

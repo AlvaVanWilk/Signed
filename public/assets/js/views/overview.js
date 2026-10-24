@@ -5,7 +5,6 @@ import { esc, fmt0, fmt1, fmtGain, money, timeAgo } from '../ui.js';
 export function render() {
   const s = app.state;
   const fame = s.bands.reduce((sum, b) => sum + b.fame, 0);
-  const slots = s.label.bandSlots;
   const firstFavorite = s.musicians.find((m) => m.favorite && !m.bandId);
   const choices = s.musicians.filter((m) => m.abilityChoice);
   const steps = [
@@ -29,8 +28,7 @@ export function render() {
         ${tile('Geld', `<span data-live-money>${money(liveMoney())}</span>`,
           s.finance.moneyPerHour ? `Tantiemen <em>+${fmtGain(s.finance.moneyPerHour / 60)} ₲</em> pro Minute` : 'Tantiemen gibt es, sobald eine Platte chartet')}
         ${tile('Musiker', fmt0(s.musicians.length), `davon <em>${fmt0(s.musicians.filter((m) => !m.bandId).length)}</em> ohne Band`)}
-        ${tile('Bands', `${fmt0(s.bands.length)}<small> / ${fmt0(slots.open)}</small>`,
-          slots.next === null ? 'Alle Band-Plätze freigeschaltet' : `Nächster Band-Platz ab <em>${fmt0(slots.next)}</em> Label-Ruhm`)}
+        ${tile('Bands', fmt0(s.bands.length), 'Solokünstler zählen mit')}
         ${tile('Label-Ruhm', fmt1(fame),
           s.finance.famePerHour ? `aus den Charts <em>+${fmtGain(s.finance.famePerHour)}</em> pro Std.` : 'Summe des Ruhms aller Bands')}
       </div>
@@ -54,10 +52,7 @@ export function render() {
         <div class="running-list">${s.running.map(runningItem).join('')}</div>
       </section>` : ''}
 
-    <section>
-      <div class="section-head"><h2>Deine Bands</h2></div>
-      ${s.bands.length ? `<div class="band-grid">${s.bands.map(bandTile).join('')}</div>` : '<div class="empty">Noch keine Band.</div>'}
-    </section>
+    ${s.bands.length ? '' : '<section><div class="empty">Noch keine Band.</div></section>'}
 
     <section class="panel">
       <h2>Chronik</h2>

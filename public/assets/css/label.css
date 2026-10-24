@@ -5,7 +5,7 @@
   --lb-ok: #5fb589; --lb-warn: #d9a441; --lb-bad: #c6585f;
   --lb-c-pop: #a8607c; --lb-c-rock: #b0784f; --lb-c-metal: #747b86; --lb-c-punk: #8ba05e;
   --lb-c-jazz: #b89d57; --lb-c-elektro: #6590b3; --lb-c-hiphop: #8676b5; --lb-c-folk: #6a9677;
-  display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 18px; max-width: 1240px; margin: 0 auto; padding: 22px 20px 40px; align-items: start;
+  display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 18px; max-width: 1360px; margin: 0 auto; padding: 22px 20px 40px 72px; align-items: start;
 }
 .shell.with-bar .page.lb-main { margin: 0; max-width: none; width: 100%; background: var(--lb-panel); border: 1px solid var(--lb-line); border-radius: 16px; padding: 18px; gap: 14px; }
 .lb-cap { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--lb-muted); font-weight: 700; margin: 0 0 10px; }
@@ -81,6 +81,7 @@
 .lb-genres { display: flex; gap: 6px; }
 .lb-gt.g-pop { --g: var(--lb-c-pop); } .lb-gt.g-rock { --g: var(--lb-c-rock); } .lb-gt.g-metal { --g: var(--lb-c-metal); } .lb-gt.g-punk { --g: var(--lb-c-punk); }
 .lb-gt.g-jazz { --g: var(--lb-c-jazz); } .lb-gt.g-elektro { --g: var(--lb-c-elektro); } .lb-gt.g-hiphop { --g: var(--lb-c-hiphop); } .lb-gt.g-folk { --g: var(--lb-c-folk); }
+.lb-gt.none { border: 0; background: none; }
 .lb-gt { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; border: 1px solid var(--g); background: color-mix(in srgb, var(--g) 24%, transparent); }
 .lb-gt .genre-icon { width: 18px; height: 18px; stroke: color-mix(in srgb, var(--g) 45%, #fff); stroke-width: 1.9; fill: none; }
 .lb-rels { display: flex; gap: 8px; justify-content: flex-end; }
@@ -155,3 +156,10 @@ button.lb-pill:disabled { opacity: 0.45; cursor: default; }
 .lb-live .fig-stage { margin: 4px 0; }
 .lb-live-rows { display: grid; gap: 6px; }
 .lb-live-row { grid-template-columns: 90px 1fr auto; }
+
+/* Die Seitenleiste des Musikers sitzt neben der Band-Leiste oben auf der Seite */
+.shell.with-bar .page > .side.inline { position: static; flex-direction: row; align-items: center; flex-wrap: wrap; padding: 0; gap: 8px; }
+.shell.with-bar .page > .side.inline .side-menu { flex-direction: row; flex-wrap: wrap; }
+.shell.with-bar .page > .side.inline .side-menu a { flex-direction: row; padding: 6px 10px; }
+.shell.with-bar .page { max-width: none; width: 100%; margin: 0; }
+@media (max-width: 1100px) { .shell.with-bar { padding-left: 20px; } }

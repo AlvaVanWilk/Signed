@@ -22,7 +22,6 @@ import * as storage from './views/storage.js';
 
 const NAV = [
   ['', 'Übersicht'],
-  ['bands', 'Bands'],
   ['packs', 'Einkaufen'],
   ['katalog', 'Katalog'],
   ['lager', 'Lager'],
@@ -144,11 +143,13 @@ function layout(content, route) {
   const s = app.state;
   const active = route.name;
   const side = sidebar(route);
-  const lbar = route.name === 'band' && app.state.bands.length ? label.bar(route.id) : '';
+  // Die Band-Leiste ist auf jeder Seite da; auf der Bandseite zeigt sie die gewählte Band.
+  const lbar = app.state.bands.length ? label.bar(route.name === 'band' ? route.id : null) : '';
+  const bandPage = route.name === 'band' && !!lbar;
   return `
     <header class="topbar">
       <a class="logo" href="#/">Signed</a>
-      <nav class="nav">${NAV.map(([key, label]) => `<a href="#/${key}" class="${key === active || (key === 'bands' && active === 'band') ? 'active' : ''}">${label}${key === 'boerse' ? marketBadge(active === 'boerse') : ''}</a>`).join('')}</nav>
+      <nav class="nav">${NAV.map(([key, label]) => `<a href="#/${key}" class="${key === active ? 'active' : ''}">${label}${key === 'boerse' ? marketBadge(active === 'boerse') : ''}</a>`).join('')}</nav>
       <div class="label-info">
         <span class="label-name" title="Dein Label">${esc(s.label.name)}</span>
         <button class="money-pill" data-act="openFinance" data-live-money title="Konto und Einnahmen">${money(liveMoney())}</button>
@@ -157,7 +158,7 @@ function layout(content, route) {
       </div>
       ${subnav(route)}
     </header>
-    <div class="shell ${side ? 'with-side' : ''} ${lbar ? 'with-bar' : ''}">${side}${lbar}<main class="page ${lbar ? 'lb-main' : ''}">${content}</main></div>`;
+    <div class="shell ${side && !lbar ? 'with-side' : ''} ${lbar ? 'with-bar' : ''}">${lbar}<main class="page ${bandPage ? 'lb-main' : ''}">${lbar ? side.replace('class="side ', 'class="side inline ') : ''}${content}</main></div>`;
 }
 
 function render() {

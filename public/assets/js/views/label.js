@@ -15,6 +15,8 @@ export const moodWord = (level) => MOOD_WORD[level] ?? MOOD_WORD.green;
 
 const moodTag = (level) => `<span class="lb-mood ${level}"><i></i>${moodWord(level)}</span>`;
 const steps = (value, thresholds) => thresholds.filter((t) => value >= t).length;
+/** Dauer in Minuten (bzw. Stunden), lesbar ohne mm:ss. */
+const mins = (s) => (s >= 5400 ? `${(s / 3600).toFixed(1).replace('.', ',')} Std.` : `${Math.max(1, Math.round(s / 60))} Min.`);
 const signed1 = (v) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${fmt1(Math.abs(v)).replace('.', ',')}`;
 const signed = (v) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${fmt0(Math.abs(v))}`;
 
@@ -104,7 +106,18 @@ function playedOf(m) {
   return m.instruments[index] ?? m.instruments[0];
 }
 
-function memberRow(b, m, members) {
+/**
+ * Feste Plätze für die Genre-Marken der Band: Alle Genres, die ein Mitglied mag, je ein Platz.
+ * Das von den meisten geteilte steht ganz rechts, das am zweitmeisten geteilte links daneben – so stehen gleiche Marken in allen Zeilen untereinander.
+ */
+function genreSlots(members) {
+  const count = new Map();
+  for (const m of members) for (const g of m.genres) count.set(g, (count.get(g) ?? 0) + 1);
+  const order = sortedGenres([...count.keys()]);
+  return order.sort((a, b) => count.get(a) - count.get(b) || order.indexOf(b) - order.indexOf(a));
+}
+
+function memberRow(b, m, members, slots) {
   const played = playedOf(m);
   const gear = app.state.gear.find((g) => g.musicianId === m.id && gearModel(g.model).type === played.type);
   const level = steps(played.skill, cat().rules.skillLevels);
@@ -126,7 +139,7 @@ function memberRow(b, m, members) {
           <b class="lv" data-act="tip" data-tip="Stufe ${level}: ${esc(cat().levelWords[level])} (Können ${fmt0(played.skill)})">${level}</b>
         </div>
       </div>
-      <div class="lb-genres">${sortedGenres(m.genres).map(genreTag).join('')}</div>
+      <div class="lb-genres" style="--slots:${slots.length}">${slots.map((g) => (m.genres.includes(g) ? genreTag(g) : '<span class="lb-gt none"></span>')).join('')}</div>
       <div class="lb-rels">${members.length > 1 ? relationsOf(b, m, members) : ''}</div>
       <button class="icon-btn lb-x" data-act="removeMember" data-band="${b.id}" data-musician="${m.id}" title="Aus der Band nehmen">✕</button>
     </div>
@@ -303,14 +316,14 @@ export function page(route) {
     ${wishBlock(b, members)}
     <h2 class="lb-cap lb-sec">Anordnungen</h2>
     <div class="lb-acts">
-      ${act(b, members, 'rehearsal', null, 'Proben', `bis zu ${duration(b.options.rehearsal.seconds)} · Können ${gainRange(members.map((m) => m.gains?.rehearsal ?? 0))} je ${duration(cat().rules.rehearsalSeconds)}`, ICON.rehearse, false, !!blocker(b, members))}
+      ${act(b, members, 'rehearsal', null, 'Proben', `bis zu ${mins(b.options.rehearsal.seconds)} · Können ${gainRange(members.map((m) => m.gains?.rehearsal ?? 0))} je ${mins(cat().rules.rehearsalSeconds)}`, ICON.rehearse, false, !!blocker(b, members))}
       ${act(b, members, 'record', 'studio', 'Aufnehmen', `${b.mood.songs} ${b.mood.songs === 1 ? 'Song wartet' : 'Songs warten'}`, ICON.record, b.mood.songs >= 12)}
       ${act(b, members, 'gig', 'auftritte', 'Auftritt buchen', 'Kosten und Gewinn sehen', ICON.gig)}
     </div>
     ${course}
     <h2 class="lb-cap lb-sec">Musiker</h2>
     <div class="lb-members">
-      ${members.map((m) => memberRow(b, m, members)).join('')}
+      ${members.map((m) => memberRow(b, m, members, genreSlots(members))).join('')}
       ${free > 0 ? `<button class="lb-addm" data-act="addMember" data-id="${b.id}">+ Musiker aufnehmen</button>` : ''}
     </div>
     <h2 class="lb-cap lb-sec">Werte</h2>
@@ -371,7 +384,7 @@ defineActions({
   rehearseAsk({ id }) {
     const b = bandById(id);
     const members = b.memberIds.map(musicianById).filter(Boolean);
-    const unit = duration(cat().rules.rehearsalSeconds);
+    const unit = mins(cat().rules.rehearsalSeconds);
     const skill = members.map((m) => `<li><b>${esc(m.firstName)}</b>: Können <em>+${fmtGain(m.gains?.rehearsal ?? 0)}</em> je ${unit}</li>`).join('');
     const who = musicianById(b.options.rehearsal.limit.id);
     const why = b.options.rehearsal.limit.why === 'red' ? `${esc(who?.firstName ?? '')} wird davon so genervt, dass die Stimmung kippt` : `${esc(who?.firstName ?? '')} hat dann keine Lust mehr`;
@@ -380,7 +393,7 @@ defineActions({
       html: `
         <div class="lb-cap">Anordnung</div>
         <h2>Proben mit ${esc(b.name)}</h2>
-        <p class="muted">Die Band geht in den Proberaum und probt, bis jemand keine Lust mehr hat – hier nach etwa <b>${duration(b.options.rehearsal.seconds)}</b> (${why}). Du kannst jederzeit beenden und behältst alles, was bis dahin gelernt wurde.</p>
+        <p class="muted">Die Band geht in den Proberaum und probt, bis jemand keine Lust mehr hat – hier nach etwa <b>${mins(b.options.rehearsal.seconds)}</b> (${why}). Du kannst jederzeit beenden und behältst alles, was bis dahin gelernt wurde.</p>
         <h3>Was es bringt</h3>
         <ul class="lb-ask-list">${skill}<li>Die Beziehungen untereinander wachsen.</li>${reactionLines(b, 'rehearsal')}</ul>
         <div class="dialog-actions">

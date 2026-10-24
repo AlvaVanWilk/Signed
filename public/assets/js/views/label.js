@@ -66,7 +66,7 @@ function tile(b, selected) {
       <span class="gl">${solo ? 'Solo · ' : ''}${esc(genres)}</span>
       <span class="mood">${moodTag(b.mood.level)}</span>
       <span class="fame" title="Ruhm: ${esc(cat().fameNames[Math.min(pips, 3)] ?? '')}">${[0, 1, 2].map((i) => `<i class="${i < pips ? 'on' : ''}"></i>`).join('')}${b.mood.level === 'red' ? '<small>wartet auf dich</small>' : ''}${b.mood.wishes?.length ? `<svg class="wish" viewBox="0 0 24 20" title="Die Band hat einen Wunsch"><path d="M3 2h18a2 2 0 012 2v9a2 2 0 01-2 2h-9l-5 4v-4H3a2 2 0 01-2-2V4a2 2 0 012-2z"/></svg>` : ''}</span>
-      <span class="songs ${b.mood.songRate > 0 ? 'writing' : ''}" style="--cycle:${b.mood.songRate > 0 ? Math.min(6, Math.max(0.9, 1.6 / b.mood.songRate)).toFixed(2) : 0}s" title="Geschriebene Songs, die auf eine Aufnahme warten${b.mood.songRate > 0 ? ` · schreibt gerade etwa ${String(Math.round(b.mood.songRate * 10) / 10).replace('.', ',')} pro Std.` : ' · schreibt gerade nicht'}"><svg viewBox="0 0 24 24" aria-hidden="true"><path pathLength="100" d="M9 18V5l11-2v13 M9 18a3 3 0 11-6 0 3 3 0 016 0z M20 16a3 3 0 11-6 0 3 3 0 016 0z"/></svg><b>${b.mood.songs}</b></span>
+      <span class="songs ${b.mood.songRate > 0 ? 'writing' : ''}" style="--cycle:${b.mood.songRate > 0 ? Math.min(6, Math.max(0.9, 1.6 / b.mood.songRate)).toFixed(2) : 0}s" title="Geschriebene Songs, die auf eine Aufnahme warten${b.mood.songRate > 0 ? ` · schreibt gerade etwa ${String(Math.round(b.mood.songRate * 10) / 10).replace('.', ',')} pro Std.` : ' · schreibt gerade nicht'}"><svg viewBox="0 0 24 24" aria-hidden="true"><path pathLength="100" d="M9 18a3 3 0 11-6 0 3 3 0 016 0 L9 5 L20 3 L20 16 a3 3 0 11-6 0 3 3 0 016 0"/></svg><b>${b.mood.songs}</b></span>
     </a>`;
 }
 

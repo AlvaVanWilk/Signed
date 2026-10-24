@@ -1,6 +1,6 @@
 import { genreGlyph, genreName, gearModel, instrumentIcon, instrumentName, ownGear, photo, sortedGenres } from '../cards.js';
-import { app, bandById, cat, isBusy, musicianById, runningFor } from '../core.js';
-import { esc, fmt0, fmt1 } from '../ui.js';
+import { actions, app, bandById, cat, defineActions, isBusy, musicianById, runningFor } from '../core.js';
+import { esc, fmt0, fmt1, toast } from '../ui.js';
 import { blockerNotice, chemistryLabel, statTile } from './bands.js';
 
 /** Label-Ebene: Band-Leiste links und die ruhige Bandseite. Stimmung als Punkt und Wort (grün, gelb, rot). */
@@ -77,6 +77,8 @@ const ICON = {
   gig: '<svg viewBox="0 0 32 32"><rect x="12" y="4" width="8" height="15" rx="4"/><path d="M8 15 a8 8 0 0 0 16 0 M16 23 V28 M11 28 H21"/></svg>',
 };
 
+const relWord = (v) => (v >= 7 ? 'verstehen sich sehr gut' : v >= 3 ? 'verstehen sich gut' : v > -3 ? 'kennen sich kaum' : v > -7 ? 'sind angespannt' : 'sind zerstritten');
+
 /** Beziehung −10…+10 als Farbe: Grau in der Mitte, zu Grün (gut) oder Rot (schlecht) hin stufenlos. */
 function relColor(v) {
   const mix = (a, b, t) => a.map((x, i) => Math.round(x + (b[i] - x) * t));
@@ -88,7 +90,7 @@ function relationsOf(b, m, members) {
   return members.filter((x) => x.id !== m.id).map((x) => {
     const key = m.id < x.id ? `${m.id}-${x.id}` : `${x.id}-${m.id}`;
     const v = Math.round(rel[key] ?? 0);
-    return `<span class="lb-rel" style="--rc:${relColor(rel[key] ?? 0)}" title="${esc(m.firstName)} und ${esc(x.firstName)}: ${signed(v)}">${photo(x)}</span>`;
+    return `<button class="lb-rel" style="--rc:${relColor(rel[key] ?? 0)}" data-act="relInfo" data-a="${m.id}" data-b="${x.id}" data-band="${b.id}" title="${esc(m.firstName)} und ${esc(x.firstName)}: ${relWord(v)}">${photo(x)}</button>`;
   }).join('');
 }
 
@@ -113,10 +115,11 @@ function memberRow(b, m, members) {
       <div class="lb-info">
         <div class="lb-nm"><a href="#/musician/${m.id}">${esc(m.firstName)} ${esc(m.lastName)}</a>${moodTag(mood)}</div>
         <div class="lb-ins">
-          <span class="ico" title="${esc(instrumentName(played.type))}">${instrumentIcon(played.type, own.electric, own.hue)}</span>
+          ${m.instruments.length > 1
+    ? `<button class="ico switch" data-act="slotCycle" data-band="${b.id}" data-musician="${m.id}" title="${esc(instrumentName(played.type))} – tippen, um ein anderes Instrument zu wählen">${instrumentIcon(played.type, own.electric, own.hue)}<i>⇄</i></button>`
+    : `<span class="ico" title="${esc(instrumentName(played.type))}">${instrumentIcon(played.type, own.electric, own.hue)}</span>`}
           <span class="sk" title="Können ${fmt0(played.skill)}"><i style="width:${Math.min(100, played.skill)}%"></i></span>
           <b class="lv" title="${esc(cat().levelWords[level])}">${level}</b>
-          ${m.instruments.length > 1 ? `<select data-change="bandSetSlot" data-band="${b.id}" data-musician="${m.id}" title="Instrument in der Band">${m.instruments.map((i, idx) => `<option value="${idx + 1}" ${i === played ? 'selected' : ''}>${esc(instrumentName(i.type))}</option>`).join('')}</select>` : ''}
         </div>
       </div>
       <div class="lb-genres">${sortedGenres(m.genres).map(genreTag).join('')}</div>
@@ -190,3 +193,19 @@ export function page(route) {
     </div>`;
 }
 
+
+defineActions({
+  /** Beziehung antippen: wer mit wem, in Worten. */
+  relInfo({ a, b, band }) {
+    const x = musicianById(a);
+    const y = musicianById(b);
+    const v = Math.round(bandById(band)?.mood.relations?.[Number(a) < Number(b) ? `${a}-${b}` : `${b}-${a}`] ?? 0);
+    toast(`${x.firstName} und ${y.firstName} ${relWord(v)} (${signed(v)}).`);
+  },
+  /** Nächstes Instrument des Musikers in der Band wählen (mit der gewohnten Rückfrage). */
+  slotCycle({ band, musician }, el) {
+    const m = musicianById(musician);
+    const next = (m.bandSlot % m.instruments.length) + 1;
+    return actions.bandSetSlot(String(next), el);
+  },
+});

@@ -1,6 +1,8 @@
 # Signed – Hinweise für Claude Code
 
-Musik-Sammelkartenspiel (Web-App). Konzept: Claude-Doc „Signed – Spielkonzept“. Umfang und Formeln: `docs/kern.md`.
+Musik-Spiel auf Label-Ebene (Web-App). Konzept: Claude-Doc „Signed – Spielkonzept“. Umfang und Formeln des heutigen Spiels: `docs/kern.md`.
+**Im Umbau:** Neues Konzept in `docs/label-konzept.md` (Bands mit Eigenleben, Zufriedenheit, Beziehungen), Ausgelagertes in `docs/ausgelagert-musikerspiel.md`.
+Es wird nur in der Testversion gebaut; `main` (das echte Spiel) bleibt unverändert, bis der Umbau fertig ist und Sandra „veröffentlichen“ sagt.
 
 ## Rahmen
 

@@ -123,6 +123,8 @@ final class BandCalc
             'third' => $third,
             'title' => $primary === null ? null : self::title($primary, $second, $third),
             'bonus' => match (true) {
+                // Ein Solokünstler hat weder Genre-Bonus noch den Malus einer „gemischten“ Band.
+                $count < Balance::GENRE_MIN_MEMBERS => 1.0,
                 $primary === null => Balance::MIXED_BONUS,
                 $second === null => Balance::GENRE_BONUS,
                 $third === null => Balance::HYBRID_BONUS,

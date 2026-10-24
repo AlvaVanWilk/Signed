@@ -572,3 +572,16 @@ test('Stimmung: Ampel nach dem Unzufriedensten, Miesepeter zieht die anderen mit
     $mixed = Signed\Game\Mood::target($a, ['genre' => ''], [$a, $b], [2 => 70.0], ['1-2' => 0.0], 0.0);
     check($mixed < $calm, 'gemischte Band ist schlechter drauf');
 });
+
+test('Solokünstler: Band-Wunsch drückt Teamplayer, Diva freut sich, Songstau zählt', function (): void {
+    $solo = static fn (array $traits) => musician(['id' => 7, 'personality' => $traits, 'genres' => ['pop']]);
+    $band = ['genre' => ''];
+    $normal = Signed\Game\Mood::target($solo(['gelassen']), $band, [$solo(['gelassen'])], [], [], 0.0);
+    $team = Signed\Game\Mood::target($solo(['teamplayer']), $band, [$solo(['teamplayer'])], [], [], 0.0);
+    $diva = Signed\Game\Mood::target($solo(['diva']), $band, [$solo(['diva'])], [], [], 0.0);
+    check($team < $normal, 'Teamplayer wünscht sich eine Band');
+    check($diva > $normal, 'Diva liebt das Rampenlicht');
+    check(Signed\Game\Mood::target($solo(['gelassen']), $band, [$solo(['gelassen'])], [], [], 24.0) < $normal, 'Songstau drückt auch Solokünstler');
+    $one = [musician(['personality' => ['gelassen']])];
+    checkEquals(1.0, BandCalc::identity($one)['bonus'], 'kein Malus der gemischten Band');
+});

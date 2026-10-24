@@ -142,7 +142,12 @@ final class Mood
         $value = $c['start'];
         $mates = array_values(array_filter($members, static fn ($x) => $x['id'] !== $m['id']));
         if (!$mates) {
-            return $value;
+            // Solokünstler: keine Beziehungen, kein Genre der Band; es zählen Charakter (Band-Wunsch oder Rampenlicht) und Songstau.
+            foreach ($m['personality'] as $trait) {
+                $value += $c['solo'][$trait] ?? 0.0;
+            }
+            $value -= min($c['stau']['max'], max(0.0, $songs - $c['stau']['from']) * $c['stau']['per']);
+            return max(0.0, min(100.0, $value));
         }
         // Beziehungen
         $mine = [];

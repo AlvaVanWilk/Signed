@@ -116,6 +116,8 @@ final class Balance
         'songsPerHour' => ['green' => 1.0, 'yellow' => 0.5, 'red' => 0.0], 'songCap' => 24,
         // Geduld (Sekunden Spielzeit im Roten) bis die Band geht; erst eingeschaltet, wenn die Anordnungen da sind
         'patience' => 1800.0, 'patienceRecover' => 2.0, 'leaving' => false,
+        // Solokünstler: Wer sich eine Band wünscht (Teamplayer, Partytier), leidet; wer das Rampenlicht liebt (Diva), freut sich
+        'solo' => ['teamplayer' => -8.0, 'partytier' => -6.0, 'diva' => 6.0],
     ];
     /**
      * Beziehung zwischen zwei Musikern (−10 bis +10, Start 0): Gemeinsame Erlebnisse ziehen sie zum Zielwert `base + scale × Passung`;

@@ -1250,7 +1250,7 @@ test('Solokünstler: eine Band mit einem Mitglied, ohne Genre-Bonus; der Letzte 
     $res = $p->post('bandCreate', ['name' => 'Solo Eins', 'members' => [['id' => $one['id'], 'slot' => 1]]]);
     $band = bandById($res['state'], $res['bandId']);
     checkEquals(1, count($band['memberIds']));
-    checkEquals(Balance::MIXED_BONUS, $band['genreBonus'], 'ohne Genre-Band-Bonus');
+    checkEquals(1.0, $band['genreBonus'], 'weder Genre-Band-Bonus noch Malus der gemischten Band');
     checkApiError(fn () => $p->post('bandRemoveMember', ['bandId' => $band['id'], 'musicianId' => $one['id']]), 'mindestens 1');
     check($p->get('state')['label']['bandSlots']['open'] > 8, 'keine Obergrenze für Bands');
 });

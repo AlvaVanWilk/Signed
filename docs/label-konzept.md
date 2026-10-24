@@ -47,7 +47,7 @@ Drei Grundsätze, die für alles gelten:
 
 | Wert | Was es ist |
 |---|---|
-| **Erfolg** | Ruhm aller Bands (jede weitere Band zählt etwas weniger); steht in der Rangliste; bestimmt, wie viele Einsendungen kommen |
+| **Erfolg** | Summe des Ruhms aller Bands; steht in der Rangliste; bestimmt, wie viele Einsendungen kommen |
 
 ## Beziehung
 
@@ -222,7 +222,7 @@ In der Wirklichkeit schicken Künstler Demos an Labels, und Talentsucher hören 
 - Jeden Tag kommen **Einsendungen** an, **für jedes Label eine eigene Auswahl** (ein Künstler bewirbt sich nur bei einem Label). Sie liegen als **neutrale Umschläge/Tapes** im Briefkasten.
   Außen steht **nichts** (weder Solo noch Band). Anklicken **öffnet** („entblößen“, etwa 5 Sekunden) und zeigt, was drin ist: meist **Unnützes** (sehr schwach, kein erkennbares Genre),
   manchmal **Gutes**. Das Öffnen hat etwas von einem Pack, soll aber **Arbeit** sein.
-- **Keine Mengenbegrenzung** im Briefkasten; nur ein Verfallsdatum (etwa 4 Tage). Am Anfang kommen **ganz wenige** (grob 4 pro Tag), mit wachsendem **Erfolg des Labels** immer mehr
+- **Keine Mengenbegrenzung** im Briefkasten; nur ein Verfallsdatum (etwa 4 Tage), das **auf jeder Einsendung steht** („läuft ab in …“). Wegwerfen kann man jede Einsendung jederzeit. Am Anfang kommen **ganz wenige** (grob 4 pro Tag), mit wachsendem **Erfolg des Labels** immer mehr
   (grob 8 bei 50, 30 bei 450, 190 bei 5.000 Erfolg) und ein größerer Anteil Guter (von etwa 5 % auf höchstens 25 %). Die schlechten hören **nie auf**, sich zu bewerben:
   Große Labels haben viel Arbeit, können sich aber am ehesten eine Assistenz leisten.
 - **Genres folgen dem Erfolg:** Hat eine Band des Labels Erfolg, bewerben sich vermehrt Musiker mit **gleichen oder ähnlichen Genres**, fremde Genres seltener (außer ein Musiker hat mehrere Genres,
@@ -238,29 +238,35 @@ In der Wirklichkeit schicken Künstler Demos an Labels, und Talentsucher hören 
   Wertlosere Assistenzen können nur öffnen; **die Sortier-Optionen schalten erst höhere Stufen frei**. So liegt im Briefkasten nur, was man brauchen kann.
 - Ohne Assistenz sortiert man selbst: Umschlag für Umschlag öffnen. Es gibt **keine Sammelknöpfe** wie „Alles unter Stufe X wegwerfen“ ohne Assistenz; sie sind ein Teil dessen, was eine Assistenz mitbringt.
 
-**2. Der Scout** ist eine **Aktion**, mit den Einsendungen hat er nichts zu tun.
-- Das Label **schickt ihn los** (mit einem Suchauftrag: Genre und/oder Instrument oder „egal“). Er ist **lange weg** und stellt bei der Rückkehr **zwei bis drei Künstler vor**, die er besonders talentiert oder passend findet
-  (Können-Stufe 1 oder höher, mit sichtbaren Werten). Es gibt kein Geöffnet/Ungeöffnet. Man darf **beliebig viele** davon unterzeichnen; **jeder kostet** seine Prämie.
-- Der Scout wird **eingestellt (einmalig bezahlt)** und ist **unterschiedlich gut**: schneller, treffsicherer oder mit mehr Kandidaten. Später lassen sich **mehrere** anstellen und parallel losschicken.
-- Rechnung für die Startwerte: Ohne Scout kommen am Anfang rund 0,2 gute Einsendungen pro Tag. Ein einfacher Scout bringt alle **12 Stunden** zwei Kandidaten (4 pro Tag), ein guter alle **24 Stunden** drei mit höherer Qualität.
-  Die Kosten sind Zeit und die Prämien; ein Scout reicht, um ein kleines Label zu bestücken, und man muss ihn nicht ständig bedienen.
+**2. Der Scout** ist eine **Aktion**; mit den Einsendungen hat er nichts zu tun.
+- **Ohne Scout gibt es sie nicht.** Den Scout stellt man **einmalig bezahlt** ein, einen einfachen schon früh in der **Stellenbörse**. Erst dann lässt sich die Aktion nutzen.
+- Man **schickt ihn los** (mit einem Suchauftrag: Genre und/oder Instrument oder „egal“). Er ist eine **Zeit weg** (läuft auch offline) und stellt bei der Rückkehr **zwei bis drei Künstler vor**, die er für besonders
+  talentiert oder passend hält. Es gibt kein „Öffnen“: Man sieht sie **als ganze Person** (Figur, Charakter, Genres, Instrumente, Können, Prämie) und **blättert mit einem Pfeil** durch, **nicht nebeneinander**.
+  Man darf **beliebig viele** davon unterzeichnen; **jeder kostet** seine Prämie.
+- **Wen er findet:** Leute, die **noch bei keinem Label sind**: **unbekannt** (Bekanntheit 0) und **gut, aber keine Profis**: Können nur bis in die Stufe 1 (Startwert: Einfach bis 34, besser bis 44, am besten bis 54).
+  Wer bekannt oder Profi ist, findet eher selbst zu großen Labels (Einsendungen).
+- Der Scout ist **unterschiedlich gut**: schneller, treffsicherer (Können), mit mehr Kandidaten. Später lassen sich **mehrere** anstellen und **parallel** losschicken.
+- **Dauer** (Startwerte, vorher zu lang gedacht): Stufe 1 **6 Stunden** für 2 Kandidaten, Stufe 2 **5 Stunden** für 3, Stufe 3 **4 Stunden** für 3 mit höherem Können. Eine Tour am Abend ist am Morgen fertig,
+  und über den Tag reichen zwei, drei Aufbrüche. Das reicht, ein kleines Label gut zu bestücken; die Kosten sind die Prämien und, dass jeder Neue betreut werden will.
 
 Die **Wechselbörse entfällt** erstmal; ebenso die Zufallspakete (Talent-Scout-Karten, Packs) und der Fan-Musiker.
 
 ### Kartei und Besetzungsplaner
 
 Jeder Künstler unter Vertrag ist entweder **in einer Band** oder **Solokünstler** (eine Band mit einem Mitglied, kein extra Zustand „frei“). Solokünstler haben **einen eigenen Knopf** in der Band-Leiste, wie Bands.
-- **Solokünstler:** ohne Beziehungen, ohne Genre- und Besetzungs-Bonus; Auftritte und Aufnahmen kosten mehr, weil **Studiomusiker** zugebucht werden (Aufschlag zum Beispiel +50 %). Er wird nicht allein dadurch
-  unzufrieden, dass er solo ist, es gelten aber seine Wünsche wie bei jedem. Nützlich am Anfang (ein Künstler genügt) und für Musiker, die in keine Band passen.
+- **Solokünstler** sollen sich **kaum lohnen**: ohne Beziehungen, **kein Genre-, Hybrid- oder Besetzungs-Bonus** (aber auch kein Malus für „gemischte Band“), und Auftritte und Aufnahmen kosten mehr, weil
+  **Studiomusiker** zugebucht werden (Aufschlag zum Beispiel +50 %; bei **Pop** nur +20 %, denn Pop-Sänger treten oft allein auf). Gage und Besetzungs-Bonus sind niedriger als bei einer Band, die Aufmerksamkeit gleich.
+  Rentabel wird es **nur in Sonderfällen**: **Pop**, **Diva** (steht gern allein im Rampenlicht, bekommt eine Stimmungsprämie). Wer sich eigentlich eine Band wünscht, wird **unzufrieden**: **Teamplayer** und **Partytier**
+  äußern den Wunsch „Ich will in eine Band!“, der offen bleibt, solange sie solo sind. Nützlich am Anfang (ein Künstler genügt) und für Musiker, die in keine Band passen.
 - **Die Kartei** zeigt alle Künstler unter Vertrag (Passfotos, Liste) und ist der **Besetzungsplaner**: Dort steckt man Musiker zu **Entwürfen** zusammen und sieht, was dabei herauskäme (Genre-Titel, Sound,
   fehlende Instrumente, bekannte Reibung der Charaktere). Entwürfe lassen sich **merken**, ohne sie auszuführen; aus einem wird mit einem Tippen eine Band.
 - **Bands zusammenstellen („Casting“)** bleibt, ebenso **einen Musiker zu einer Band hinzufügen** oder **herausnehmen** (er ist dann Solokünstler). Das tun Labels in Wirklichkeit selten, aber manchmal.
 
 ### Keine Bandplätze
 
-Bands lassen sich **ohne Obergrenze** haben. Es bremst von selbst: Jede Band **kostet Geld** (Prämien, Instrumente, Manager) und **Aufmerksamkeit** (Wünsche, Stimmung; rote Bands laufen **online** ihrer Geduld nach,
-auch wenn viele gleichzeitig rot sind). Ein Manager betreut nur wenige Bands. Zu beachten: Der **Erfolg des Labels** (Rangliste) wäre sonst bloß eine Summe über viele kleine Bands;
-daher zählt jede weitere Band etwas weniger (1. Band 100 %, 2. 90 %, 3. 80 % … mindestens 30 %).
+Bands lassen sich **ohne Obergrenze** führen, und der **Erfolg des Labels** ist einfach die Summe des Ruhms aller Bands. Es bremst von selbst: Jede Band **kostet Geld** (Prämien, Instrumente, Manager) und
+**Aufmerksamkeit** (Wünsche, Stimmung; rote Bands laufen **online** ihrer Geduld nach, auch wenn viele gleichzeitig rot sind). Ein Manager betreut nur wenige Bands. Irgendwann ist eine Grenze erreicht, an der man nicht
+mehr alle glücklich halten kann; wer es weiter schafft, soll auch erfolgreicher sein. **Beobachten:** ob viele kleine Bands die Rangliste verzerren. Bisher ist das nicht erkennbar; gäbe es ein Problem, wäre das ein späterer Eingriff.
 
 ### Manager
 
@@ -319,15 +325,16 @@ Wir reduzieren stark und schauen dann, was wirklich fehlt.
 
 Beim ersten Login nach dem Umbau (Saison 2) bleiben **Labelname und Konto**, alles andere fängt neu an (Ruhm, Platten, Charts, Lager, Katalog). Die alten Bands kommen **als Einsendungen zurück**:
 
-- **Jede alte Band** liegt als **Umschlag** im Briefkasten, im Bereich „**Alte Bekannte**“, **ohne Verfallsdatum**. Öffnet man ihn, steht dort ein Hinweis mit Effekt: „Diese Band würde gern bei dir bleiben und
-  unterschreibt **kostenlos**.“ Man nimmt sie (ganz oder einzelne Mitglieder) oder lässt sie liegen; Wegwerfen verlangt eine **Rückfrage** („Das ist eine deiner alten Bands. Wirklich?“).
-  Das **kostenlose** Unterschreiben ist der Bonus für alte Spieler und passt zum knappen Startkapital.
+- **Jede alte Band kommt als normale Einsendung** ins Haus (ein Umschlag wie alle anderen), mit **denselben Regeln**: sie läuft nach **4 Tagen** ab (steht darauf), man kann sie wegwerfen, aufnehmen,
+  ganz oder einzelne Mitglieder. Die **Frist beginnt mit dem ersten Login nach dem Umbau**, nicht schon beim Umbau (damit niemand sie verpasst); ein kurzer Willkommenshinweis weist darauf hin.
+  Es gibt keinen besonderen Aufbewahrungsort. Unterschied: Sie **unterschreiben kostenlos** (beim Öffnen ein Hinweis: „Diese Band würde gern bei dir bleiben und unterschreibt kostenlos“) und bekommen eine **besondere Animation**.
+  Das kostenlose Unterschreiben ist der Bonus für alte Spieler und passt zum knappen Startkapital.
 - Sie behalten **Namen, Mitglieder, Aussehen, Charakter und Können**, starten aber **ohne Ruhm, Bekanntheit und Platten** und mit einem einfachen Standard-Instrument je Musiker.
   Ein besonderer Chronik-Eintrag erinnert an die alte Zeit.
 - **Beziehungen** werden nicht nur aus dem Zusammenspiel berechnet: Die **gemeinsame Bandzeit** zählt (aus der Chronik: wer ist wann beigetreten, Gründungsmitglieder seit der Gründung)
   und der **Charakter** (Passung, auch Genre und Können-Abstand). Startwert eines Paares = Zielwert der Passung × Anteil, der sich mit der gemeinsamen Zeit füllt.
 - **Startkapital:** wie ein neues Label, bei früher Erfolgreichen etwas mehr (Vorschlag: nach Platz in der Bestenliste ein kleiner Aufschlag).
-- Ohne Wechselbörse gibt es kein „Auflösen und teuer verkaufen“. Es gibt **keine Ruhmeshalle** der vorigen Saison und keine Bandplätze, die man freischalten müsste.
+- Ohne Wechselbörse gibt es kein „Auflösen und teuer verkaufen“. Es gibt keine Ruhmeshalle der vorigen Saison und keine Bandplätze, die man freischalten müsste.
 
 ## Wer wirkt auf wen (nur stabilisierende Kreisläufe)
 
@@ -354,3 +361,4 @@ Beim ersten Login nach dem Umbau (Saison 2) bleiben **Labelname und Konto**, all
 - Verfallszeit der Einsendungen (4 Tage?), Verteilung der Mengen und Preise der Assistenzen und Scouts.
 - Klangprofil (A/B-Vorspielen): erst nach den ersten Schritten.
 - Auszeichnungen: endgültige kurze Liste.
+- **Spielbeginn:** Wie fängt ein neues Label an? Vorschlag: ein paar Einsendungen im Briefkasten (mindestens zwei brauchbare, damit man gleich spielen kann), dazu der einfache Scout in der Stellenbörse.

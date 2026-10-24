@@ -938,6 +938,12 @@ defineActions({
     if (await mutate('promoStart', { musicianId: Number(id) })) toast(`${musicianById(id).firstName} ist auf Promo-Tour.`, 'ok');
   },
   watch({ id }) {
+    // Die Probe sieht man auf der Bandseite, mit ihren Werten; Auftritte laufen im Live-Fenster.
+    const act = app.state.running.find((a) => a.id === Number(id));
+    if (act?.type === 'rehearsal') {
+      navigate(`#/band/${act.bandId}`);
+      return;
+    }
     openLive(id);
   },
 });

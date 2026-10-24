@@ -279,7 +279,7 @@ es nicht, weil die Plätze auch bei Label-Ruhm 0 begrenzt sind.
 1. Konzept und Auslagerung dokumentieren (diese Dateien).
 2. Datenmodell: Wohlbefinden, Beziehungen (Paare), Songs, Spielzeit, Stimmung.
 3. Band-Leiste und Bandseite (neue Oberfläche, ohne Untermenü).
-4. Anordnungen: Proben (neue Können-Quelle), Auftritt buchen mit 3 Angeboten.
+4. Anordnungen: Proben (neue Können-Quelle), Auftritt buchen mit Kosten und Gewinn-Schätzung.
 5. Aufnehmen mit Studio und Produzent, Cover-Wahl.
 6. Wünsche, Mitteilungen, Charakter-Tabelle.
 7. Interview-Anfragen, Kurse als Einzelförderung, Instrumente gezielt, Vorspielen.

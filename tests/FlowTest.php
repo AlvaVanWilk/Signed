@@ -1201,3 +1201,56 @@ test('Musiker entlassen: nur ohne Band, Instrumente bleiben im Lager', function 
     checkEquals($gear, (int) $db->value('SELECT COUNT(*) FROM gear WHERE musician_id IS NULL OR musician_id <> ?', [$inBand]), 'Instrumente bleiben');
     checkApiError(fn () => $p->post('musicianRelease', ['musicianId' => $inBand]), 'nicht');
 });
+
+test('Bands leben offline weiter: Songs, Stimmung; rot friert ein; Beziehungen wachsen und driften', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Leben');
+    $band = foundBand($p);
+    $bandId = $band['id'];
+    $state = $p->get('state');
+    $start = $state['bands'][0]['mood'];
+    checkEquals('green', $start['level']);
+    checkEquals(0, $start['songs']);
+
+    // Drei Stunden offline: im Tempo „grün“ entstehen rund drei Songs.
+    Clock::advance(3 * 3600);
+    $mood = $p->get('state')['bands'][0]['mood'];
+    check($mood['songs'] >= 2 && $mood['songs'] <= 3, 'etwa drei Songs nach drei Stunden: ' . $mood['songs']);
+    check($mood['value'] > 40, 'noch gute Stimmung');
+
+    // Rot: Jemand ist sehr unzufrieden – offline passiert nichts mehr, nicht einmal Songs.
+    $ids = array_column($db->all('SELECT id FROM musicians WHERE band_id = ?', [$bandId]), 'id');
+    $db->exec('UPDATE musicians SET wellbeing = 10 WHERE id = ?', [$ids[0]]);
+    $db->exec("UPDATE labels SET online_at = ?", [Clock::now() - 3600]);
+    $before = $p->get('state')['bands'][0]['mood'];
+    checkEquals('red', $before['level']);
+    Clock::advance(2 * 86400);
+    $after = $p->get('state')['bands'][0]['mood'];
+    checkEquals($before['songs'], $after['songs'], 'eine rote Band schreibt offline keine Songs');
+    checkEquals($before['value'], $after['value'], 'und wird offline nicht schlechter');
+
+    // Gemeinsame Erlebnisse lassen Beziehungen wachsen.
+    $rel = $p->get('state')['bands'][0]['mood']['relations'];
+    check($rel !== [], 'Beziehungen gibt es für jedes Paar');
+    $a = $db->one('SELECT * FROM musicians WHERE id = ?', [$ids[0]]);
+    $b = $db->one('SELECT * FROM musicians WHERE id = ?', [$ids[1]]);
+    $members = array_map([Signed\Game\Repo::class, 'hydrateMusician'], [$a, $b]);
+    $repo = new Signed\Game\Repo($db, (int) $a['label_id']);
+    $key = min($ids[0], $ids[1]) . '-' . max($ids[0], $ids[1]);
+    for ($i = 0; $i < 12; $i++) {
+        Signed\Game\Mood::bond($repo, $members, 'rehearsal');
+    }
+    $grown = Signed\Game\Mood::relations($repo, $members)[$key];
+    $target = Signed\Game\Mood::relationTarget(Signed\Game\Mood::fit($members[0], $members[1]));
+    check(abs($grown - $target) < 0.1 * abs($target) + 0.4, "Beziehung nähert sich dem Ziel ($grown von $target)");
+
+    // Wer nicht mehr zusammen ist, driftet auf 0 zurück.
+    $db->exec('UPDATE musicians SET band_id = NULL WHERE id IN (?, ?)', [$ids[0], $ids[1]]);
+    foreach ($members as &$m) {
+        $m['band_id'] = null;
+    }
+    unset($m);
+    Clock::advance(3600 * 10);
+    $drifted = Signed\Game\Mood::relations($repo, $members)[$key];
+    check(abs($drifted) < abs($grown) && abs($drifted) >= 0, 'Beziehung driftet Richtung 0');
+});

@@ -12,6 +12,7 @@ final class State
     {
         $db = $repo->db;
         $now = Clock::now();
+        Mood::settle($repo, $now);
         $label = $repo->label();
         $musicians = $repo->musicians();
         $gear = $repo->gear();
@@ -76,7 +77,9 @@ final class State
         }
 
         $bandsOut = [];
+        $bandRelations = [];
         foreach ($bands as $band) {
+            $bandRelations[$band['id']] = Mood::relations($repo, $members[$band['id']] ?? [], $now);
             $list = $members[$band['id']] ?? [];
             $identity = (new Bands($repo))->syncIdentity($band, $list);
             $band['cohesion'] = min($band['cohesion'], BandCalc::maxCohesion($identity));
@@ -126,6 +129,12 @@ final class State
                 'slotReturn' => array_map('strval', array_keys($band['slot_return'])),
                 'fame' => $fame,
                 'fameOwn' => round($band['fame_own'], 1),
+                // Label-Umbau: Stimmung der Band (Ampel + Wert), geschriebene Songs, Beziehungen der Mitglieder (Paare "a-b" => −10…+10)
+                'mood' => Mood::bandMood(array_column($list, 'wellbeing')) + [
+                    'songs' => (int) floor($band['songs_written']),
+                    'patience' => round($band['patience']),
+                    'relations' => $bandRelations[$band['id']] ?? [],
+                ],
                 'cohesion' => round($band['cohesion'], 1),
                 'maxCohesion' => BandCalc::maxCohesion($identity),
                 'chemistryNotes' => BandCalc::chemistryNotes($list),
@@ -230,7 +239,7 @@ final class State
                         $practice[] = round(BandCalc::practiceGain($m, $slot, 1.0, $gearMap[$m['id']][$type] ?? null), 3);
                     }
                 }
-                return Present::musician($m, $gearIds[$m['id']] ?? []) + ['gains' => [
+                return Present::musician($m, $gearIds[$m['id']] ?? []) + ['wellbeing' => ['value' => round($m['wellbeing'], 1), 'level' => Mood::level($m['wellbeing'])], 'gains' => [
                     'practice' => $practice,
                     'auto' => array_map(static fn ($g) => round($g * Balance::AUTO_PRACTICE['share'], 3), $practice),
                     'rehearsal' => $m['band_id'] === null ? null : round(BandCalc::rehearsalGain($m, BandCalc::gearOf($m, $gearMap)), 3),

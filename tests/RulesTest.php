@@ -535,3 +535,39 @@ test('Jede Genre-Kombination (Hybrid und Crossover) lässt sich besetzen', funct
     // Musiker: Sänger mögen jedes Genre und können als zweites Instrument alles spielen.
     checkEquals($genres, array_values(array_intersect($genres, Catalog::INSTRUMENTS['vocals']['genres'])));
 });
+
+test('Beziehung: Passung nach Charakter, Genres und Können; Zielwert und Wachstum', function (): void {
+    $a = musician(['personality' => ['diva'], 'genres' => ['rock', 'punk']]);
+    $b = musician(['personality' => ['diva'], 'genres' => ['pop']]);
+    check(Signed\Game\Mood::fit($a, $b) < 0, 'zwei Divas, kein gemeinsames Genre: Reibung');
+    $c = musician(['personality' => ['teamplayer'], 'genres' => ['rock', 'punk']]);
+    $d = musician(['personality' => ['partytier'], 'genres' => ['rock', 'punk']]);
+    check(Signed\Game\Mood::fit($c, $d) > 0.4, 'Teamplayer, zwei gemeinsame Genres: gute Passung');
+    $far = musician(['skill1' => 90.0, 'genres' => ['rock']]);
+    $near = musician(['skill1' => 20.0, 'genres' => ['rock']]);
+    check(Signed\Game\Mood::fit($far, $near) < Signed\Game\Mood::fit($near, musician(['skill1' => 25.0, 'genres' => ['rock']])), 'großer Können-Abstand verschlechtert');
+    check(Signed\Game\Mood::relationTarget(1.0) === 10.0 && Signed\Game\Mood::relationTarget(-1.0) === -7.0, 'Ziel begrenzt auf ±10');
+    check(Signed\Game\Mood::relationTarget(-0.6) < 0, 'starke Reibung: nie gut');
+});
+
+test('Stimmung: Ampel nach dem Unzufriedensten, Miesepeter zieht die anderen mit runter', function (): void {
+    checkEquals('green', Signed\Game\Mood::bandMood([80.0, 70.0, 65.0])['level']);
+    checkEquals('yellow', Signed\Game\Mood::bandMood([90.0, 90.0, 50.0])['level'], 'einer gelb: Band gelb');
+    checkEquals('red', Signed\Game\Mood::bandMood([90.0, 90.0, 20.0])['level']);
+    check(Signed\Game\Mood::bandMood([90.0, 90.0, 20.0])['value'] < 60, 'der Wert folgt dem Unzufriedensten');
+    $band = ['genre' => 'rock'];
+    $a = musician(['id' => 1, 'genres' => ['rock']]);
+    $b = musician(['id' => 2, 'genres' => ['rock']]);
+    $calm = Signed\Game\Mood::target($a, $band, [$a, $b], [2 => 70.0], ['1-2' => 0.0], 0.0);
+    $foeCalm = Signed\Game\Mood::target($a, $band, [$a, $b], [2 => 70.0], ['1-2' => -8.0], 0.0);
+    $foeHit = Signed\Game\Mood::target($a, $band, [$a, $b], [2 => 10.0], ['1-2' => -8.0], 0.0);
+    $friendCalm = Signed\Game\Mood::target($a, $band, [$a, $b], [2 => 70.0], ['1-2' => 8.0], 0.0);
+    $friendHit = Signed\Game\Mood::target($a, $band, [$a, $b], [2 => 10.0], ['1-2' => 8.0], 0.0);
+    check($foeHit < $foeCalm - 5, 'ein Unzufriedener mit schlechter Beziehung zieht runter');
+    check($friendHit < $friendCalm - 2, 'auch Freunde leiden mit');
+    check($foeCalm - $foeHit > $friendCalm - $friendHit, 'bei Reibung stärker als bei Freundschaft');
+    $stau = Signed\Game\Mood::target($a, $band, [$a, $b], [2 => 70.0], ['1-2' => 0.0], 24.0);
+    check($stau < $calm - 10, 'Songstau drückt die Stimmung');
+    $mixed = Signed\Game\Mood::target($a, ['genre' => ''], [$a, $b], [2 => 70.0], ['1-2' => 0.0], 0.0);
+    check($mixed < $calm, 'gemischte Band ist schlechter drauf');
+});

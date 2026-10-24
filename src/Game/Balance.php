@@ -94,6 +94,37 @@ final class Balance
     /** Namensänderung nach dem ersten Auftritt: Gebühr; der Ruhm am alten Namen geht verloren. */
     public const RENAME_COST = 300;
     public const MIN_MEMBERS = 2;
+
+    // ---------- Label-Umbau: Stimmung, Beziehung, Songs (siehe docs/label-konzept.md) ----------
+    /**
+     * Wohlbefinden der Musiker (0–100) nähert sich einem Zielwert mit der Zeitkonstante tau (Sekunden). Ampel der Band nach dem
+     * unzufriedensten Mitglied: grün ab green, gelb ab yellow, darunter rot. Für Songtempo und Anzeige zählt der Mischwert
+     * (minWeight × unzufriedenster + Rest × Durchschnitt). Rot friert eine Band offline ein; step ist die Rechenschrittweite.
+     */
+    public const MOOD = [
+        'start' => 60.0, 'tau' => 12 * 3600, 'green' => 60.0, 'yellow' => 35.0, 'minWeight' => 0.7,
+        'step' => 1800, 'maxCatchUp' => 14 * 86400, 'onlineCredit' => 90,
+        // Einflüsse auf das Ziel: Beziehungen (je Punkt Durchschnitt), Können-Unterschied, Genre der Band, Songstau, Miesepeter
+        'relationWeight' => 3.0,
+        'gap' => ['good' => [5, 15, 4.0], 'weakFrom' => 25, 'weakPer' => 0.6, 'strongFrom' => 20, 'strongPer' => 0.5, 'max' => 20.0],
+        'genre' => ['fits' => 6.0, 'misfit' => -8.0, 'mixed' => -4.0],
+        'stau' => ['from' => 12, 'per' => 1.5, 'max' => 18.0],
+        'pull' => ['per' => 0.15, 'max' => 20.0, 'friend' => 0.5],
+        // Songs je Stunde nach Ampel, Vorrat höchstens cap
+        'songsPerHour' => ['green' => 1.0, 'yellow' => 0.5, 'red' => 0.0], 'songCap' => 24,
+        // Geduld (Sekunden Spielzeit im Roten) bis die Band geht; erst eingeschaltet, wenn die Anordnungen da sind
+        'patience' => 1800.0, 'patienceRecover' => 2.0, 'leaving' => false,
+    ];
+    /**
+     * Beziehung zwischen zwei Musikern (−10 bis +10, Start 0): Gemeinsame Erlebnisse ziehen sie zum Zielwert `base + scale × Passung`;
+     * wer nicht mehr zusammen ist, driftet je Stunde um drift auf 0 zurück.
+     */
+    public const RELATION = [
+        'max' => 10.0, 'scale' => 10.0, 'base' => 3.0, 'drift' => 0.2,
+        'bond' => ['rehearsal' => 0.12, 'gig' => 0.10, 'record' => 0.08, 'bandpromo' => 0.05],
+        'clash' => -0.5, 'teamplayer' => 0.25, 'party' => 0.3,
+        'genres' => [0 => -0.3, 1 => 0.1, 2 => 0.3, 3 => 0.4], 'gapFrom' => 30, 'gapBig' => 50, 'gapPenalty' => [-0.2, -0.4],
+    ];
     public const MAX_MEMBERS = 7;
     public const MAX_PER_INSTRUMENT = ['drums' => 1, 'guitar' => 2];
 

@@ -212,6 +212,7 @@ final class Repo
             'band_id' => $r['band_id'] === null ? null : (int) $r['band_id'],
             'band_slot' => (int) $r['band_slot'],
             'busy_until' => (int) $r['busy_until'],
+            'wellbeing' => (float) ($r['wellbeing'] ?? 60),
             'origin' => $r['origin'],
             'created_at' => (int) $r['created_at'],
         ];
@@ -366,6 +367,9 @@ final class Repo
             'slot_return' => json_decode((string) ($r['slot_return'] ?? ''), true) ?: [],
             'released' => (bool) $r['released'],
             'fame_own' => (float) $r['fame_own'],
+            'songs_written' => (float) ($r['songs_written'] ?? 0),
+            'mood_at' => (int) ($r['mood_at'] ?? 0),
+            'patience' => (float) ($r['patience'] ?? 1800),
             'busy_until' => (int) $r['busy_until'],
             'created_at' => (int) $r['created_at'],
         ];

@@ -385,6 +385,8 @@ final class Activities
             $db->exec('UPDATE bands SET band_promos = band_promos + 1 WHERE id = ?', [$bandId]);
         }
         Charts::boost($repo, $bandId, (float) ($reward['chartBoost'] ?? 0));
+        // Gemeinsam erlebt: Die Beziehungen der Mitglieder wachsen (je nach Passung).
+        Mood::bond($repo, $repo->members($bandId), $row['type']);
         $result = [
             'money' => (int) ($reward['money'] ?? 0),
             'fame' => round($fameGain, 2),

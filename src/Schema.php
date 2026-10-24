@@ -383,6 +383,24 @@ final class Schema
             [
                 'ALTER TABLE labels ADD COLUMN nav_order TEXT NULL',
             ],
+            // 23: Label-Umbau – Beziehungen zwischen Musikern, Wohlbefinden, Songs der Band, Lebenszeichen des Labels
+            [
+                'CREATE TABLE relations (
+                    id {PK},
+                    label_id INTEGER NOT NULL,
+                    a_id INTEGER NOT NULL,
+                    b_id INTEGER NOT NULL,
+                    value REAL NOT NULL DEFAULT 0,
+                    at INTEGER NOT NULL DEFAULT 0
+                ){OPTS}',
+                'CREATE UNIQUE INDEX relations_pair ON relations (a_id, b_id)',
+                'CREATE INDEX relations_label ON relations (label_id)',
+                'ALTER TABLE musicians ADD COLUMN wellbeing REAL NOT NULL DEFAULT 60',
+                'ALTER TABLE bands ADD COLUMN songs_written REAL NOT NULL DEFAULT 0',
+                'ALTER TABLE bands ADD COLUMN mood_at INTEGER NOT NULL DEFAULT 0',
+                'ALTER TABLE bands ADD COLUMN patience REAL NOT NULL DEFAULT 1800',
+                'ALTER TABLE labels ADD COLUMN online_at INTEGER NOT NULL DEFAULT 0',
+            ],
         ];
     }
 }

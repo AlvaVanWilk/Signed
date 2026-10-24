@@ -214,8 +214,33 @@ Jede neue Art braucht einen eigenen Zweck und Wunsch (Perfektionist → Proberau
 **Warnung zur Größe:** Mehr Reiter bedeuten mehr Klicken. Ich würde mit **Instrumente, Kurse, Proberaum, Auszeit und Stellenbörse** beginnen und
 **Bühnentechnik und Fahrzeuge zusammen mit Tourneen** nachlegen. Der Weg zu den hohen Stufen (Konzept „Tempo“) läuft dann über diese Bereiche, nicht über eine Bremse.
 
-**Musiker aufnehmen („Vorspielen“):** Das Label wählt Genre, Instrument und Budget und sieht dann eine kurze Liste von Kandidaten (Können,
-Charakter, Genres sichtbar), aus der es einen unter Vertrag nimmt. Statt Zufallspaketen. Auch das liegt unter „Einkaufen“ oder im Katalog (offen).
+### Woher neue Musiker kommen (Entwurf)
+
+In der Wirklichkeit bewerben sich Künstler mit Demos bei Labels, und Talentsucher („Scouts“) hören sich in Clubs und auf Festivals um. Ein Label **sucht nicht aus einem
+Katalog aller Menschen aus**. Deshalb gibt es drei Wege:
+
+1. **Bewerbungen (Demos)** landen als **Mitteilung** im Posteingang des Labels, unregelmäßig und über die Zeit gesammelt (höchstens fünf wartende, jede verfällt nach etwa
+   drei Tagen, wenn man nicht antwortet). Manchmal bewirbt sich ein **einzelner Künstler**, manchmal eine **ganze Band**:
+   - Eine **Band** kommt mit Namen, Mitgliedern und Genre, die Mitglieder **kennen sich schon** (Beziehung nicht bei 0 gestartet, gemeinsame Geschichte).
+   - **Annehmen** kostet eine Unterschriftsprämie (sichtbar), **Ablehnen** kostet nichts.
+   - Wie gut die Bewerber sind, hängt am **Erfolg des Labels**: Kleine Labels bekommen Anfänger, große berühmtere und bessere.
+2. **Scout losschicken:** Das Label gibt einen Suchauftrag (Genre und/oder Instrument oder „egal“) und ein Budget; der Scout ist eine Zeit unterwegs
+   (läuft offline weiter) und stellt bei der Rückkehr **ein bis drei Kandidaten** vor (Können, Charakter, Genres sichtbar). Mehr Budget heißt längere Suche, bessere
+   oder gezieltere Treffer. Ein Kandidat wird unter Vertrag genommen (Prämie), die anderen gehen.
+3. **Wechselbörse:** wie bisher, andere Labels bieten Musiker an.
+
+Das **Zufallspaket (Talent-Scout-Karten, Packs) und der Fan-Musiker entfallen.**
+
+### Die Kartei (Roster)
+
+Die **Kartei** ist die Liste **aller Künstler, die beim Label unter Vertrag sind**: die in Bands und die **freien**, die gerade keiner Band angehören. Sie ist keine Auswahl von
+außen, sondern der Bestand des Labels – Passfotos wie im Katalog-Entwurf, mit Schalter zur Liste, und mit den Beziehungen zu früheren Mitmusikern in den Details.
+- **Aus Kartei eine Band bilden** bleibt: Das Label stellt aus freien Musikern eine Band zusammen (Genre, Instrumente und Charakter sind sichtbar, die Beziehungen
+  noch nicht). Wer eine Band verlässt oder dessen Band sich auflöst, landet wieder in der Kartei.
+- **Freie Musiker wollen spielen:** Ein Musiker ohne Band wird mit der Zeit unzufrieden (sein Wohlbefinden sinkt), und wenn er rot wird, **verlässt er das Label**.
+  So füllt sich die Kartei nicht mit unbenutzten Musikern, und es braucht keine künstliche Grenze. Auch hier friert er offline bei Rot ein.
+- **Kartei-Obergrenze** (zum Beispiel 12 plus 2 je Bandplatz), falls die Wohlfühlregel nicht reicht.
+- Aus der Kartei lassen sich Musiker **entlassen** oder **an die Börse** stellen.
 
 ### Manager
 
@@ -261,7 +286,7 @@ später „Battle of the Bands“ gewonnen. Kleinkram wie „Erster Gig“ fäll
 
 | Bleibt | Geht (erstmal) |
 |---|---|
-| Katalog/Kartei, Wechselbörse, Entlassen, Vorspielen | Solo-Üben, Etüden, Instrument-Minispiele |
+| Kartei (Roster), Wechselbörse, Entlassen, Bewerbungen und Scout | Solo-Üben, Etüden, Instrument-Minispiele |
 | Bandproben (als Hauptquelle für Können), Kurse | Jam-Café, Straßenmusik, Open Stage, Fan-Musiker |
 | Aufnahmen (ohne Minispiele), Cover (als Wahl) | Einzel-Promo (kommt als Interview-Anfrage zurück) |
 | Gigs mit Live-Ticker und Bühne, Charts, Tantiemen | Mischpult, Master-Mix, Cover-Automat |
@@ -304,7 +329,7 @@ mehr Geld als der Bonus. Deshalb: **Mitgenommene Musiker lassen sich nicht an di
 4. Anordnungen: Proben (neue Können-Quelle), Auftritt buchen mit Kosten und Gewinn-Schätzung.
 5. Aufnehmen mit Studio und Produzent, Cover-Wahl.
 6. Wünsche, Mitteilungen, Charakter-Tabelle.
-7. Interview-Anfragen, Kurse als Einzelförderung, Instrumente gezielt, Vorspielen.
+7. Interview-Anfragen, Kurse und Einkaufen, Bewerbungen und Scout, Kartei.
 8. Manager neu.
 9. Übergang für bestehende Labels.
 10. Entfernen der ausgelagerten Teile aus dem Code.

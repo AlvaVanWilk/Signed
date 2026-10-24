@@ -1,6 +1,6 @@
 import { api } from '../api.js';
 import { face, fullName, genreTag, instrumentIcon, instrumentName } from '../cards.js';
-import { app, bandById, defineActions, musicianById, mutate } from '../core.js';
+import { app, bandById, defineActions, musicianById, mutate, navigate } from '../core.js';
 import { esc, fmt1, openModal, toast } from '../ui.js';
 
 /**
@@ -10,13 +10,13 @@ import { esc, fmt1, openModal, toast } from '../ui.js';
  */
 
 const SECTIONS = [
-  ['green', 'Bringt etwas', 'Echte Vorteile für den Sound der Band'],
-  ['fit', 'Passt gut', 'Die Charaktere verstehen sich'],
-  ['rest', 'Weitere', ''],
+  ['better', 'Verbessert den Sound oder das Verständnis', ''],
+  ['neutral', 'Neutral', ''],
+  ['worse', 'Verschlechtert', ''],
   ['blocked', 'Gerade nicht möglich', ''],
 ];
 
-const sectionOf = (c) => (c.blocked ? 'blocked' : c.green ? 'green' : c.compat >= 3.5 ? 'fit' : 'rest');
+const sectionOf = (c) => (c.blocked ? 'blocked' : c.rating);
 
 function who(c) {
   if (c.kind === 'musician') {
@@ -100,7 +100,11 @@ async function open(bandId) {
     const res = btn.dataset.kind === 'musician'
       ? await mutate('bandAddMember', { bandId, musicianId: Number(btn.dataset.musician), slot: Number(r.querySelector('[data-slot]')?.value || 1) })
       : await mutate('bandMerge', { bandId, otherId: Number(btn.dataset.join) });
-    if (res) modal.close();
+    if (res) {
+      modal.close();
+      // Bleibt die andere Band bestehen (sie hat die Laufbahn), geht es dorthin.
+      if (res.bandId && res.bandId !== bandId) navigate(`#/band/${res.bandId}`);
+    }
   });
 }
 

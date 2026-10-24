@@ -370,8 +370,8 @@ final class Api
 
     private function bandMerge(array $in, Repo $repo): array
     {
-        (new Bands($repo))->merge(self::int($in, 'bandId'), self::int($in, 'otherId'));
-        return ['state' => State::build($repo)];
+        $kept = (new Bands($repo))->merge(self::int($in, 'bandId'), self::int($in, 'otherId'));
+        return ['bandId' => $kept, 'state' => State::build($repo)];
     }
 
     private function rehearsalStop(array $in, Repo $repo): array

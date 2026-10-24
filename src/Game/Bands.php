@@ -176,8 +176,8 @@ final class Bands
             }
             $solo = count($group) === 1;
             $blocked = null;
-            if ($other['released'] || $other['records'] > 0) {
-                $blocked = $solo ? sprintf('%s hat mit der eigenen Band schon etwas aufgebaut.', $group[0]['first_name']) : sprintf('„%s“ hat schon eine eigene Laufbahn.', $other['name']);
+            if (self::hasCareer($band) && self::hasCareer($other)) {
+                $blocked = $solo ? sprintf('%s und %s haben beide schon eine eigene Laufbahn.', $group[0]['first_name'], $band['name']) : sprintf('„%s“ und „%s“ haben beide schon eine eigene Laufbahn.', $other['name'], $band['name']);
             } elseif ($other['busy_until'] > $now || $band['busy_until'] > $now) {
                 $blocked = 'Gerade beschäftigt.';
             }
@@ -242,6 +242,10 @@ final class Bands
             if ($pairs && $pairs[0]['v'] <= -3) {
                 $effects[] = ['good' => false, 'text' => sprintf('%s und %s würden sich reiben', $pairs[0]['g']['first_name'], $pairs[0]['m']['first_name'])];
             }
+            // Ausmaß der Veränderung, nur was am Zusammentun selbst hängt: Genre-Bonus (in %) und Verständnis (neutral = 3, der Startwert für Fremde).
+            // Das Können des Neuen zählt nicht, das ist eine Frage der Person und nicht der Passung.
+            $soundDelta = $soundNow > 0 ? ($soundAfter / $soundNow - 1) * 100 : 0.0;
+            $score = round(($idAfter['bonus'] / max(0.01, $idNow['bonus']) - 1) * 100 + 2 * ($avg - 3.0), 1);
             $out[] = [
                 'kind' => $solo ? 'musician' : 'band',
                 'bandId' => $other['id'],
@@ -250,39 +254,52 @@ final class Bands
                 'memberIds' => array_column($group, 'id'),
                 'blocked' => $blocked,
                 'green' => $green,
-                'soundDelta' => $soundNow > 0 ? round(($soundAfter / $soundNow - 1) * 100, 1) : 0.0,
+                'soundDelta' => round($soundDelta, 1),
+                'score' => $score,
+                'rating' => $score > 1.0 ? 'better' : ($score < -1.0 ? 'worse' : 'neutral'),
                 'compat' => round($avg, 1),
                 'effects' => $effects,
             ];
         }
-        usort($out, static fn ($a, $b) => [$a['blocked'] === null ? 1 : 0, $a['green'] ? 1 : 0, $a['compat'] >= 3.5 ? 1 : 0, $a['soundDelta'], $a['compat']]
-            <=> [$b['blocked'] === null ? 1 : 0, $b['green'] ? 1 : 0, $b['compat'] >= 3.5 ? 1 : 0, $b['soundDelta'], $b['compat']]);
-        return array_slice(array_reverse($out), 0, 80);
+        // Unmögliches zuletzt, sonst vom größten Gewinn über neutral bis zum größten Verlust.
+        usort($out, static fn ($a, $b) => [$a['blocked'] === null ? 0 : 1, -$a['score']] <=> [$b['blocked'] === null ? 0 : 1, -$b['score']]);
+        return array_slice($out, 0, 80);
     }
 
-    /** Zwei Bands tun sich zusammen: Die andere (ohne eigene Laufbahn) geht in dieser auf. */
-    public function merge(int $bandId, int $otherId): void
+    private static function hasCareer(array $band): bool
     {
-        $this->repo->db->transaction(function () use ($bandId, $otherId): void {
-            $band = $this->idleBand($bandId);
-            $other = $this->idleBand($otherId);
+        return $band['released'] || $band['records'] > 0;
+    }
+
+    /**
+     * Zwei Bands tun sich zusammen. Die Band mit Laufbahn (Auftritte, Platten) bleibt bestehen und nimmt die andere auf;
+     * hat keine eine Laufbahn, bleibt diese. Haben beide eine, geht es nicht.
+     * @return int Die Band, die übrig bleibt
+     */
+    public function merge(int $bandId, int $otherId): int
+    {
+        return $this->repo->db->transaction(function () use ($bandId, $otherId): int {
             if ($bandId === $otherId) {
                 throw new ApiError('Das ist dieselbe Band.');
             }
-            if ($other['released'] || $other['records'] > 0) {
-                throw new ApiError(sprintf('„%s“ hat schon eine eigene Laufbahn und bleibt bestehen.', $other['name']));
+            $band = $this->idleBand($bandId);
+            $other = $this->idleBand($otherId);
+            if (self::hasCareer($band) && self::hasCareer($other)) {
+                throw new ApiError('Beide haben schon eine eigene Laufbahn und bleiben eigenständig.');
             }
-            $group = $this->repo->members($otherId);
-            $members = array_merge($this->repo->members($bandId), $group);
+            [$keep, $gone] = self::hasCareer($other) ? [$other, $band] : [$band, $other];
+            $joining = $this->repo->members($gone['id']);
+            $members = array_merge($this->repo->members($keep['id']), $joining);
             self::assertLineup($members);
             $db = $this->repo->db;
-            $db->exec('UPDATE musicians SET band_id = ? WHERE band_id = ?', [$bandId, $otherId]);
-            $db->exec("DELETE FROM records WHERE band_id = ? AND status = 'open'", [$otherId]);
-            $db->exec('DELETE FROM bands WHERE id = ?', [$otherId]);
-            if (count($group) > 1) {
-                $this->repo->log('lineup', sprintf('„%s“ geht in „%s“ auf.', $other['name'], $band['name']), $bandId);
+            $db->exec('UPDATE musicians SET band_id = ? WHERE band_id = ?', [$keep['id'], $gone['id']]);
+            $db->exec("DELETE FROM records WHERE band_id = ? AND status = 'open'", [$gone['id']]);
+            $db->exec('DELETE FROM bands WHERE id = ?', [$gone['id']]);
+            if (count($joining) > 1) {
+                $this->repo->log('lineup', sprintf('„%s“ geht in „%s“ auf.', $gone['name'], $keep['name']), $keep['id']);
             }
-            $this->syncIdentity($this->repo->band($bandId));
+            $this->syncIdentity($this->repo->band($keep['id']));
+            return $keep['id'];
         });
     }
 

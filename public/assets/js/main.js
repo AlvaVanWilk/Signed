@@ -6,6 +6,7 @@ import './celebrate.js';
 import './settings.js';
 import './genre-info.js';
 import './navdrag.js';
+import './glitter.js';
 import * as auth from './views/auth.js';
 import * as bands from './views/bands.js';
 import * as label from './views/label.js';

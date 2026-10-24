@@ -1,6 +1,6 @@
 import { genreGlyph, genreName, gearModel, instrumentIcon, instrumentName, ownGear, photo, sortedGenres } from '../cards.js';
 import { actions, app, bandById, cat, defineActions, isBusy, musicianById, runningFor } from '../core.js';
-import { duration, esc, fmt0, fmt1, toast } from '../ui.js';
+import { closePopover, duration, esc, fmt0, fmt1, fmtGain, openModal, popover } from '../ui.js';
 import { blocker, blockerNotice, chemistryLabel, courseTiles, gainRange, statTile } from './bands.js';
 
 /** Label-Ebene: Band-Leiste links und die ruhige Bandseite. Stimmung als Punkt und Wort (grün, gelb, rot). */
@@ -16,7 +16,7 @@ const signed = (v) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${fmt0(Math.abs(v))}`;
 
 /** Genre-Marke: Farbe des Genres als Rand und zarte Fläche, das Symbol darin. */
 function genreTag(key) {
-  return `<span class="lb-gt g-${key}" title="${esc(genreName(key))}">${genreGlyph(key)}</span>`;
+  return `<button class="lb-gt g-${key}" data-act="tip" data-tip="${esc(genreName(key))}" aria-label="${esc(genreName(key))}">${genreGlyph(key)}</button>`;
 }
 
 /** Genres der Band; ein Solokünstler hat keine Band-Genres, dort zählen seine eigenen. */
@@ -117,9 +117,9 @@ function memberRow(b, m, members) {
         <div class="lb-ins">
           ${m.instruments.length > 1
     ? `<button class="ico switch" data-act="slotCycle" data-band="${b.id}" data-musician="${m.id}" title="${esc(instrumentName(played.type))} – tippen, um ein anderes Instrument zu wählen">${instrumentIcon(played.type, own.electric, own.hue)}<i>⇄</i></button>`
-    : `<span class="ico" title="${esc(instrumentName(played.type))}">${instrumentIcon(played.type, own.electric, own.hue)}</span>`}
+    : `<span class="ico" data-act="tip" data-tip="${esc(instrumentName(played.type))}">${instrumentIcon(played.type, own.electric, own.hue)}</span>`}
           <span class="sk" title="Können ${fmt0(played.skill)}"><i style="width:${Math.min(100, played.skill)}%"></i></span>
-          <b class="lv" title="${esc(cat().levelWords[level])}">${level}</b>
+          <b class="lv" data-act="tip" data-tip="Stufe ${level}: ${esc(cat().levelWords[level])} (Können ${fmt0(played.skill)})">${level}</b>
         </div>
       </div>
       <div class="lb-genres">${sortedGenres(m.genres).map(genreTag).join('')}</div>
@@ -154,7 +154,7 @@ function wishBlock(b, members) {
         const target = section ? `#/band/${b.id}/${section}` : '#/packs';
         // Proben startet gleich, die übrigen führen zur passenden Seite.
         const go = w.action === 'rehearsal'
-          ? `<button class="lb-pill" data-act="startActivity" data-id="${b.id}" data-type="rehearsal" ${blocker(b, members) ? 'disabled' : ''}>${label}</button>`
+          ? `<button class="lb-pill" data-act="rehearseAsk" data-id="${b.id}" ${blocker(b, members) ? 'disabled' : ''}>${label}</button>`
           : `<a class="lb-pill" href="${target}">${label}</a>`;
         return `<div class="lb-wish"><a class="lb-ph sm ${w.level}" href="#/musician/${m.id}">${photo(m)}</a><span class="say">${esc(w.text)}</span>${go}</div>`;
       }).join('')}
@@ -168,12 +168,12 @@ function act(b, members, type, section, title, text, icon, warn = false, busy = 
   const plural = (ids, one, many) => (ids.length > 1 ? many : one);
   if (r.locked) {
     const red = r.dislike.filter((id) => musicianById(id)?.wellbeing?.level === 'red');
-    return `<div class="lb-act lock" title="Erst die Stimmung mit etwas heben, das der Band gefällt.">${icon}<b>${title}</b><small>${esc(names(red))} ${plural(red, 'hat', 'haben')} keine Lust darauf.</small></div>`;
+    return `<div class="lb-act lock" data-act="tip" data-tip="${esc(names(red))} ${plural(red, 'hat', 'haben')} darauf gerade keine Lust. Erst die Stimmung mit etwas heben, das der Band gefällt.">${icon}<b>${title}</b><small>${esc(names(red))} ${plural(red, 'hat', 'haben')} keine Lust darauf.</small></div>`;
   }
   const hint = r.dislike.length ? `<small class="no">${esc(names(r.dislike))} ${plural(r.dislike, 'mag', 'mögen')} das nicht.</small>` : `<small>${text}</small>`;
   // Ohne Unterseite: Die Anordnung startet gleich (Proben).
   if (!section) {
-    return `<button class="lb-act ${busy ? 'idle' : ''}" data-act="startActivity" data-id="${b.id}" data-type="${type}" ${busy ? 'disabled' : ''}>${icon}<b>${title}</b>${hint}</button>`;
+    return `<button class="lb-act ${busy ? 'idle' : ''}" data-act="rehearseAsk" data-id="${b.id}" ${busy ? 'disabled' : ''}>${icon}<b>${title}</b>${hint}</button>`;
   }
   return `<a class="lb-act ${warn ? 'warn' : ''}" href="#/band/${b.id}/${section}">${icon}<b>${title}</b>${hint}</a>`;
 }
@@ -236,13 +236,52 @@ export function page(route) {
 }
 
 
+/** Wer die Anordnung mag oder nicht mag, als Zeilen für den Dialog. */
+function reactionLines(b, type) {
+  const r = b.mood.reactions?.[type] ?? { like: [], dislike: [] };
+  const names = (ids) => ids.map((id) => esc(musicianById(id)?.firstName ?? '')).join(', ');
+  const lines = [];
+  if (r.like.length) lines.push(`<li class="good">${names(r.like)} ${r.like.length > 1 ? 'freuen' : 'freut'} sich darüber.</li>`);
+  if (r.dislike.length) lines.push(`<li class="bad">${names(r.dislike)} ${r.dislike.length > 1 ? 'mögen' : 'mag'} das nicht.</li>`);
+  return lines.join('');
+}
+
 defineActions({
+  /** Kurzer Hinweis am Knopf (Genre, Stufe, Instrument, gesperrte Anordnung). */
+  tip({ tip }, el) {
+    popover(el, tip);
+  },
+  /** Probe: erst fragen, mit Dauer und Wirkung, dann starten. */
+  rehearseAsk({ id }) {
+    const b = bandById(id);
+    const members = b.memberIds.map(musicianById).filter(Boolean);
+    const skill = members.map((m) => `<li><b>${esc(m.firstName)}</b>: Können <em>+${fmtGain(m.gains?.rehearsal ?? 0)}</em></li>`).join('');
+    const modal = openModal({
+      className: 'lb-ask',
+      html: `
+        <div class="lb-cap">Anordnung</div>
+        <h2>Proben mit ${esc(b.name)}</h2>
+        <p class="muted">Die Band probt <b>${duration(cat().rules.rehearsalSeconds)}</b>. Solange ist sie beschäftigt.</p>
+        <h3>Was es bringt</h3>
+        <ul class="lb-ask-list">${skill}<li>Die Beziehungen untereinander wachsen, das Zusammenspiel auch.</li>${reactionLines(b, 'rehearsal')}</ul>
+        <div class="dialog-actions">
+          <button class="btn ghost" data-cancel>Abbrechen</button>
+          <button class="btn primary" data-go>Proben starten</button>
+        </div>`,
+    });
+    modal.body.querySelector('[data-cancel]').addEventListener('click', () => modal.close());
+    modal.body.querySelector('[data-go]').addEventListener('click', async () => {
+      modal.close();
+      closePopover();
+      await actions.startActivity({ id: String(b.id), type: 'rehearsal' });
+    });
+  },
   /** Beziehung antippen: wer mit wem, in Worten. */
-  relInfo({ a, b, band }) {
+  relInfo({ a, b, band }, el) {
     const x = musicianById(a);
     const y = musicianById(b);
     const v = Math.round(bandById(band)?.mood.relations?.[Number(a) < Number(b) ? `${a}-${b}` : `${b}-${a}`] ?? 0);
-    toast(`${x.firstName} und ${y.firstName} ${relWord(v)} (${signed(v)}).`);
+    popover(el, `${x.firstName} und ${y.firstName} ${relWord(v)} (${signed(v)}).`);
   },
   /** Nächstes Instrument des Musikers in der Band wählen (mit der gewohnten Rückfrage). */
   slotCycle({ band, musician }, el) {

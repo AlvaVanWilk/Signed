@@ -132,3 +132,14 @@ button.lb-act:hover:not(:disabled) { border-color: var(--lb-accent); }
 .lb-course { display: grid; gap: 10px; }
 button.lb-pill { font: inherit; font-weight: 700; font-size: 0.82rem; background: none; cursor: pointer; }
 button.lb-pill:disabled { opacity: 0.45; cursor: default; }
+
+/* Sprechblase am Knopf (liegt am body, deshalb feste Farben) */
+.lb-pop { position: absolute; z-index: 1000; max-width: min(300px, calc(100vw - 16px)); padding: 9px 13px; border-radius: 10px; background: #2c2838; color: #e8e4ef; border: 1px solid #4a4458; font-size: 0.86rem; font-weight: 600; line-height: 1.35; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45); pointer-events: none; }
+.lb-pop::after { content: ''; position: absolute; left: var(--arrow, 50%); width: 10px; height: 10px; background: #2c2838; border: 1px solid #4a4458; transform: translateX(-50%) rotate(45deg); }
+.lb-pop.up::after { bottom: -6px; border-top: 0; border-left: 0; }
+.lb-pop.down::after { top: -6px; border-bottom: 0; border-right: 0; }
+.lb-gt { cursor: pointer; padding: 0; }
+.lb-ins .lv, .lb-ins .ico:not(.switch) { cursor: pointer; }
+.lb-ask-list { margin: 0 0 14px; padding-left: 1.1em; display: grid; gap: 4px; }
+.lb-ask-list .good { color: #5fb589; } .lb-ask-list .bad { color: #d9a441; }
+.lb-ask .lb-cap { color: #8d879c; }

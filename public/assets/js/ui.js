@@ -167,3 +167,40 @@ export function promptDialog(title, value = '', { ok = 'Speichern', maxLength = 
     form.querySelector('[data-cancel]').addEventListener('click', () => modal.close());
   });
 }
+
+// ---------- Sprechblase am Knopf ----------
+
+let popoverEl = null;
+let popoverTimer = 0;
+
+export function closePopover() {
+  clearTimeout(popoverTimer);
+  popoverEl?.remove();
+  popoverEl = null;
+}
+
+/** Kurze Meldung direkt am angetippten Element (statt am Bildschirmrand); verschwindet beim nächsten Tippen, Scrollen oder nach ein paar Sekunden. */
+export function popover(anchor, text) {
+  closePopover();
+  const el = document.createElement('div');
+  el.className = 'lb-pop';
+  el.setAttribute('role', 'status');
+  el.textContent = text;
+  document.body.appendChild(el);
+  const a = anchor.getBoundingClientRect();
+  const w = el.offsetWidth;
+  const h = el.offsetHeight;
+  const left = Math.max(8, Math.min(window.innerWidth - w - 8, a.left + a.width / 2 - w / 2));
+  const above = a.top - h - 10 >= 8;
+  el.style.left = `${left + window.scrollX}px`;
+  el.style.top = `${(above ? a.top - h - 10 : a.bottom + 10) + window.scrollY}px`;
+  el.style.setProperty('--arrow', `${Math.max(12, Math.min(w - 12, a.left + a.width / 2 - left))}px`);
+  el.classList.add(above ? 'up' : 'down');
+  popoverEl = el;
+  popoverTimer = setTimeout(closePopover, 5000);
+}
+document.addEventListener('pointerdown', (e) => {
+  if (popoverEl && !e.target.closest('[data-act="tip"], [data-act="relInfo"]')) closePopover();
+}, true);
+window.addEventListener('scroll', closePopover, { passive: true });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePopover(); });

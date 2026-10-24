@@ -151,7 +151,7 @@ final class Submissions
         $this->store(self::makeBand(1, $this->repo->db), $now - 130);
     }
 
-    /** Zum Ausprobieren: acht angehörte Bewerbungen, zwei je Können-Stufe, darunter bekannte. */
+    /** Zum Ausprobieren: acht gesichtete Bewerbungen, zwei je Können-Stufe, darunter bekannte. */
     public function testFill(): void
     {
         $now = Clock::now();
@@ -197,13 +197,13 @@ final class Submissions
         }, $rows);
     }
 
-    /** Anhören starten: Nach ein paar Sekunden Arbeit sieht man, was drauf ist. */
+    /** Sichten starten: Nach ein paar Sekunden Arbeit sieht man, was drauf ist. */
     public function open(int $id): void
     {
         $row = $this->row($id);
         if ($row['opened_at'] === null) {
             if ((int) $this->repo->db->value('SELECT COUNT(*) FROM submissions WHERE label_id = ? AND opened_at > ?', [$this->repo->labelId, Clock::now()]) > 0) {
-                throw new ApiError('Du hörst gerade schon eine andere Einsendung an.');
+                throw new ApiError('Du sichtest gerade schon eine andere Einsendung.');
             }
             $this->repo->db->update('submissions', ['opened_at' => Clock::now() + Balance::SUBMISSIONS['listen']], ['id' => $id]);
         }
@@ -229,7 +229,7 @@ final class Submissions
         return $this->repo->db->transaction(function () use ($id, $picks): int {
             $row = $this->row($id);
             if ($row['opened_at'] === null || (int) $row['opened_at'] > Clock::now()) {
-                throw new ApiError('Die Einsendung musst du dir erst anhören.');
+                throw new ApiError('Die Einsendung musst du erst sichten.');
             }
             $card = json_decode($row['card'], true);
             $isBand = ($card['kind'] ?? '') === 'band';

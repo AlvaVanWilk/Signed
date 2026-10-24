@@ -1343,14 +1343,14 @@ test('Einsendungen: Willkommens-Stapel, laufender Eingang, Unterschreiben kostet
     checkEquals(5, count($state['submissions']), 'Willkommens-Stapel: fünf Einsendungen');
     checkEquals(['closed'], array_values(array_unique(array_column($state['submissions'], 'state'))), 'alle ungehört');
     check(!isset($state['submissions'][0]['firstName']), 'ungehört verrät nichts');
-    checkApiError(fn () => $p->post('submissionSign', ['submissionId' => $state['submissions'][0]['submissionId']]), 'anhören');
-    // Anhören dauert ein paar Sekunden.
+    checkApiError(fn () => $p->post('submissionSign', ['submissionId' => $state['submissions'][0]['submissionId']]), 'sichten');
+    // Sichten dauert ein paar Sekunden.
     $ids = array_column($state['submissions'], 'submissionId');
     $p->post('submissionOpen', ['submissionId' => $ids[0]]);
     checkApiError(fn () => $p->post('submissionOpen', ['submissionId' => $ids[1]]), 'schon eine andere');
     $listening = $p->get('state')['submissions'];
     checkEquals(1, count(array_filter($listening, static fn ($s) => $s['state'] === 'listening')), 'nur eine gleichzeitig');
-    check(!isset($listening[array_search($ids[0], array_column($listening, 'submissionId'), true)]['firstName']), 'beim Anhören noch nichts zu sehen');
+    check(!isset($listening[array_search($ids[0], array_column($listening, 'submissionId'), true)]['firstName']), 'beim Sichten noch nichts zu sehen');
     foreach (array_slice($ids, 1) as $id) {
         Clock::advance(Balance::SUBMISSIONS['listen'] + 1);
         $p->post('submissionOpen', ['submissionId' => $id]);
@@ -1431,7 +1431,7 @@ test('Einsendungen: Bands bewerben sich, man nimmt alle oder einzelne, sie kenne
     $p->get('state');
     $res = $p->post('submissionsTest');
     $bands = array_values(array_filter($res['state']['submissions'], static fn ($s) => $s['state'] === 'open' && $s['kind'] === 'band'));
-    check(count($bands) >= 2, 'angehörte Bands im Briefkasten');
+    check(count($bands) >= 2, 'gesichtete Bands im Briefkasten');
     $band = $bands[0];
     check(count($band['members']) >= 2 && count($band['members']) <= 4, 'zwei bis vier Mitglieder');
     checkEquals(array_sum(array_column($band['members'], 'price')), $band['price'], 'Preis = Summe');

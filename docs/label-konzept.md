@@ -223,7 +223,7 @@ In der Wirklichkeit schicken Künstler Demos an Labels, und Talentsucher hören 
 
 **1. Einsendungen** kommen von selbst ins Haus.
 - Jeden Tag kommen **Einsendungen** an, **für jedes Label eine eigene Auswahl** (ein Künstler bewirbt sich nur bei einem Label). Sie liegen als **neutrale Umschläge/Tapes** im Briefkasten.
-  Außen steht **nichts** (weder Solo noch Band). Gebaut (Testversion) als **Kassette**: Anklicken startet das **Anhören** (5 Sekunden, serverseitig, `Balance::SUBMISSIONS['listen']`), dann zeigt sie, was drauf ist; der Server verrät vorher nichts. Bisher nur einzelne Musiker, keine Bands; Assistenz und Scout fehlen noch. Anklicken **öffnet** („entblößen“, etwa 5 Sekunden) und zeigt, was drin ist: meist **Unnützes** (sehr schwach, kein erkennbares Genre),
+  Außen steht **nichts** (weder Solo noch Band). Gebaut (Testversion) als **Kassette**: Anklicken zeigt zwei Wahlmöglichkeiten, **Sichten** (5 Sekunden, serverseitig, `Balance::SUBMISSIONS['listen']`), danach wird aus der Kassette an derselben Stelle eine Visitenkarte in fast gleicher Größe und Schräglage) oder **Wegwerfen**; der Server verrät vorher nichts. Einzelne Musiker und Bands; Assistenz und Scout fehlen noch. Anklicken **öffnet** („entblößen“, etwa 5 Sekunden) und zeigt, was drin ist: meist **Unnützes** (sehr schwach, kein erkennbares Genre),
   manchmal **Gutes**. Das Öffnen hat etwas von einem Pack, soll aber **Arbeit** sein.
 - **Laufend statt einmal am Tag:** Die Einsendungen **trudeln über den Tag verteilt ein** (Zufallszeiten, nicht alle auf einmal); bei einem kleinen Label etwa alle drei Stunden eine, bei einem großen alle paar Minuten.
   Wer wartet, bekommt mehr zu tun, und offline sammeln sich Einsendungen bis zum Verfallsdatum.

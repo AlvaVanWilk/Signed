@@ -118,6 +118,8 @@ final class Balance
         'patience' => 1800.0, 'patienceRecover' => 2.0, 'leaving' => false,
         // Solokünstler: Wer sich eine Band wünscht (Teamplayer, Partytier), leidet; wer das Rampenlicht liebt (Diva), freut sich
         'solo' => ['teamplayer' => -8.0, 'partytier' => -6.0, 'diva' => 6.0],
+        // Anordnung nach Charakter (Catalog::LIKES): so viele Punkte Wohlbefinden gibt sie sofort (mag) oder nimmt sie (mag nicht)
+        'reactStep' => 14.0,
     ];
     /**
      * Beziehung zwischen zwei Musikern (−10 bis +10, Start 0): Gemeinsame Erlebnisse ziehen sie zum Zielwert `base + scale × Passung`;

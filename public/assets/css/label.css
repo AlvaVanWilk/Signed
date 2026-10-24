@@ -21,7 +21,7 @@
 /* Band-Leiste */
 .lb-side { background: var(--lb-panel); border: 1px solid var(--lb-line); border-radius: 16px; padding: 16px 14px; position: sticky; top: 14px; }
 .lb-bar { display: flex; flex-direction: column; gap: 8px; }
-.lb-bt { position: relative; display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; height: 104px; align-content: center; padding: 12px 14px 12px 18px; border-radius: 12px; border: 1px solid var(--lb-line); background: var(--lb-card); color: var(--lb-text); overflow: hidden; text-decoration: none; }
+.lb-bt { position: relative; display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; height: 118px; align-content: center; padding: 12px 14px 12px 18px; border-radius: 12px; border: 1px solid var(--lb-line); background: var(--lb-card); color: var(--lb-text); overflow: hidden; text-decoration: none; }
 .lb-bt:hover { text-decoration: none; border-color: #4a4458; }
 .lb-bt::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--g, var(--lb-muted)); }
 .lb-bt.sel { border-color: var(--lb-accent); background: var(--lb-card2); }
@@ -113,3 +113,16 @@
   .lb-genres { grid-column: 2; } .lb-rels { grid-column: 2; justify-content: flex-start; } .lb-x { grid-column: 3; grid-row: 1; }
   .lb-sum { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* Wünsche und gesperrte Anordnungen */
+.lb-wishes { padding: 14px 16px; border-radius: 12px; border: 1px solid var(--lb-line); background: var(--lb-card); display: grid; gap: 10px; }
+.lb-wishes .lb-cap { margin: 0; }
+.lb-wish { display: flex; gap: 12px; align-items: center; }
+.lb-ph.sm { width: 40px; height: 40px; border-radius: 9px; box-shadow: 0 0 0 2px var(--lb-ok); flex: none; background: #b5c4d2; }
+.lb-ph.sm.yellow { box-shadow: 0 0 0 2px var(--lb-warn); } .lb-ph.sm.red { box-shadow: 0 0 0 2px var(--lb-bad); }
+.lb-wish .say { background: var(--lb-card2); padding: 7px 13px; border-radius: 10px; font-size: 0.9rem; font-weight: 600; }
+.lb-pill { margin-left: auto; border: 1px solid var(--lb-accent); color: var(--lb-accent); font-weight: 700; font-size: 0.82rem; padding: 6px 14px; border-radius: 999px; white-space: nowrap; }
+.lb-pill:hover { text-decoration: none; background: color-mix(in srgb, var(--lb-accent) 15%, transparent); }
+.lb-act.lock { opacity: 0.55; cursor: not-allowed; }
+.lb-act small.no { color: var(--lb-warn); }
+.lb-bt .wish { width: 18px; height: 15px; fill: none; stroke: var(--lb-accent); stroke-width: 1.6; flex: none; }

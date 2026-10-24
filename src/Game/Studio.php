@@ -170,6 +170,7 @@ final class Studio
             : min($max, $band['cohesion'] + Balance::RECORD_SONG_COHESION * $accuracy * $chemistry * $rule['growth']);
         $db->update('bands', ['cohesion' => $cohesion, 'released' => 1], ['id' => $band['id']]);
         Mood::bond($this->repo, $members, 'record');
+        Mood::react($this->repo, $members, 'record');
         $db->update('records', ['songs_done' => count($results), 'song_results' => json_encode($results)], ['id' => $record['id']]);
 
         $out = [

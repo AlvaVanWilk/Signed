@@ -134,6 +134,8 @@ final class State
                     'songs' => (int) floor($band['songs_written']),
                     'patience' => round($band['patience']),
                     'relations' => $bandRelations[$band['id']] ?? [],
+                    'reactions' => Mood::reactions($list),
+                    'wishes' => Mood::wishes($list, $gearMap, (int) floor($band['songs_written'])),
                 ],
                 'cohesion' => round($band['cohesion'], 1),
                 'maxCohesion' => BandCalc::maxCohesion($identity),

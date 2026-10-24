@@ -48,7 +48,7 @@ function tile(b, selected) {
       <span class="nm">${esc(b.name)}</span>
       <span class="gl">${solo ? 'Solo · ' : ''}${esc(genres)}</span>
       <span class="mood">${moodTag(b.mood.level)}</span>
-      <span class="fame" title="Ruhm: ${esc(cat().fameNames[Math.min(pips, 3)] ?? '')}">${[0, 1, 2].map((i) => `<i class="${i < pips ? 'on' : ''}"></i>`).join('')}${b.mood.level === 'red' ? '<small>wartet auf dich</small>' : ''}</span>
+      <span class="fame" title="Ruhm: ${esc(cat().fameNames[Math.min(pips, 3)] ?? '')}">${[0, 1, 2].map((i) => `<i class="${i < pips ? 'on' : ''}"></i>`).join('')}${b.mood.level === 'red' ? '<small>wartet auf dich</small>' : ''}${b.mood.wishes?.length ? `<svg class="wish" viewBox="0 0 24 20" title="Die Band hat einen Wunsch"><path d="M3 2h18a2 2 0 012 2v9a2 2 0 01-2 2h-9l-5 4v-4H3a2 2 0 01-2-2V4a2 2 0 012-2z"/></svg>` : ''}</span>
       <span class="songs" title="Geschriebene Songs, die auf eine Aufnahme warten"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13 M9 18a3 3 0 11-6 0 3 3 0 016 0z M20 16a3 3 0 11-6 0 3 3 0 016 0z"/></svg><b>${b.mood.songs}</b></span>
     </a>`;
 }
@@ -140,6 +140,36 @@ function history(b) {
     : '<p class="muted small">Noch nichts passiert.</p>';
 }
 
+const WISH_BUTTON = { gig: ['Auftritt buchen', 'auftritte'], rehearsal: ['Proben', 'uebung'], record: ['Aufnehmen', 'studio'] };
+
+/** Wünsche der Band: wer unzufrieden ist, sagt, was ihm gefällt; ein Tipp führt zur passenden Anordnung. */
+function wishBlock(b, members) {
+  const wishes = (b.mood.wishes ?? []).slice(0, 3);
+  if (!wishes.length) return '';
+  return `
+    <section class="lb-wishes"><h2 class="lb-cap">Wünsche der Band</h2>
+      ${wishes.map((w) => {
+        const m = musicianById(w.musicianId);
+        const [label, section] = WISH_BUTTON[w.action] ?? ['Einkaufen', null];
+        const target = section ? `#/band/${b.id}/${section}` : '#/packs';
+        return `<div class="lb-wish"><a class="lb-ph sm ${w.level}" href="#/musician/${m.id}">${photo(m)}</a><span class="say">${esc(w.text)}</span><a class="lb-pill" href="${target}">${label}</a></div>`;
+      }).join('')}
+    </section>`;
+}
+
+/** Eine Anordnung: gesperrt, wenn ein roter Musiker sie ablehnt; sonst mit Hinweis, wem sie nicht gefällt. */
+function act(b, members, type, section, title, text, icon, warn = false) {
+  const r = b.mood.reactions?.[type] ?? { like: [], dislike: [], locked: false };
+  const names = (ids) => ids.map((id) => musicianById(id)?.firstName).filter(Boolean).join(', ');
+  const plural = (ids, one, many) => (ids.length > 1 ? many : one);
+  if (r.locked) {
+    const red = r.dislike.filter((id) => musicianById(id)?.wellbeing?.level === 'red');
+    return `<div class="lb-act lock" title="Erst die Stimmung mit etwas heben, das der Band gefällt.">${icon}<b>${title}</b><small>${esc(names(red))} ${plural(red, 'hat', 'haben')} keine Lust darauf.</small></div>`;
+  }
+  const hint = r.dislike.length ? `<small class="no">${esc(names(r.dislike))} ${plural(r.dislike, 'mag', 'mögen')} das nicht.</small>` : `<small>${text}</small>`;
+  return `<a class="lb-act ${warn ? 'warn' : ''}" href="#/band/${b.id}/${section}">${icon}<b>${title}</b>${hint}</a>`;
+}
+
 export function page(route) {
   const b = bandById(route.id);
   if (!b) return '<div class="empty">Diese Band gibt es nicht mehr.</div>';
@@ -160,11 +190,12 @@ export function page(route) {
       <div class="lb-hd-mood"><span class="lb-cap">Stimmung</span>${moodTag(b.mood.level).replace('class="lb-mood', 'class="lb-mood big')}</div>
     </header>
     ${notice}
+    ${wishBlock(b, members)}
     <h2 class="lb-cap lb-sec">Anordnungen</h2>
     <div class="lb-acts">
-      <a class="lb-act" href="${base}/uebung">${ICON.rehearse}<b>Proben</b><small>Können und Beziehungen wachsen</small></a>
-      <a class="lb-act ${b.mood.songs >= 12 ? 'warn' : ''}" href="${base}/studio">${ICON.record}<b>Aufnehmen</b><small>${b.mood.songs} ${b.mood.songs === 1 ? 'Song wartet' : 'Songs warten'}</small></a>
-      <a class="lb-act" href="${base}/auftritte">${ICON.gig}<b>Auftritt buchen</b><small>Kosten und Gewinn sehen</small></a>
+      ${act(b, members, 'rehearsal', 'uebung', 'Proben', 'Können und Beziehungen wachsen', ICON.rehearse)}
+      ${act(b, members, 'record', 'studio', 'Aufnehmen', `${b.mood.songs} ${b.mood.songs === 1 ? 'Song wartet' : 'Songs warten'}`, ICON.record, b.mood.songs >= 12)}
+      ${act(b, members, 'gig', 'auftritte', 'Auftritt buchen', 'Kosten und Gewinn sehen', ICON.gig)}
     </div>
     <h2 class="lb-cap lb-sec">Musiker</h2>
     <div class="lb-members">

@@ -150,6 +150,35 @@ final class Catalog
         'partytier' => 'Partytier',
     ];
 
+    /**
+     * Anordnungen nach Charakter: +1 mag er, −1 mag er nicht, fehlt = egal (siehe docs/label-konzept.md).
+     * Jeder Charakter mag mindestens eine Anordnung, damit eine rote Band immer einen Ausweg hat.
+     */
+    public const LIKES = [
+        'ehrgeizig' => ['rehearsal' => 1, 'record' => 1, 'gig' => 1, 'busking' => -1],
+        'gelassen' => ['record' => 1, 'gig' => -1, 'busking' => -1],
+        'perfektionist' => ['rehearsal' => 1, 'record' => 1, 'busking' => -1, 'openstage' => -1],
+        'chaot' => ['gig' => 1, 'openstage' => 1, 'busking' => 1, 'rehearsal' => -1],
+        'rampensau' => ['gig' => 1, 'openstage' => 1, 'busking' => 1],
+        'diva' => ['gig' => 1, 'record' => 1, 'busking' => -1, 'openstage' => -1],
+        'teamplayer' => ['rehearsal' => 1, 'record' => 1],
+        'ruhepol' => ['rehearsal' => 1, 'record' => 1],
+        'partytier' => ['gig' => 1, 'openstage' => 1, 'busking' => 1, 'rehearsal' => -1],
+    ];
+
+    /** Der Wunsch eines unzufriedenen Musikers nach Charakter: [Satz, Anordnung, die ihn erfüllt]. */
+    public const WISHES = [
+        'ehrgeizig' => ['Wir wollen weiter!', 'gig'],
+        'gelassen' => ['Lasst uns in Ruhe aufnehmen.', 'record'],
+        'perfektionist' => ['Wir müssen besser werden.', 'rehearsal'],
+        'chaot' => ['Lasst uns spontan spielen!', 'gig'],
+        'rampensau' => ['Ab auf die Bühne!', 'gig'],
+        'diva' => ['Wir haben was Besseres verdient.', 'gig'],
+        'teamplayer' => ['Lasst uns was zusammen machen.', 'rehearsal'],
+        'ruhepol' => ['Gemeinsam Musik machen wäre schön.', 'rehearsal'],
+        'partytier' => ['Wann ist der nächste Gig?', 'gig'],
+    ];
+
     /** Was eine Eigenschaft bedeutet und wie sie in der Band wirkt (Chemie). */
     public const PERSONALITY_INFO = [
         'ehrgeizig' => 'Will immer mehr erreichen. Reibt sich mit Gelassenen.',

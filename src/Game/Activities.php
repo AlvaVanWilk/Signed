@@ -52,6 +52,10 @@ final class Activities
             if ($blocker !== null) {
                 throw new ApiError($blocker);
             }
+            $refuser = Mood::refuser($members, $type);
+            if ($refuser !== null) {
+                throw new ApiError($refuser['first_name'] . ' hat darauf gerade keine Lust. Eine Anordnung, die der Band gefällt, hebt zuerst die Stimmung.');
+            }
             $gear = $this->repo->gearByMusician();
             $sound = BandCalc::bandSound($band, $members, $gear);
             $fame = BandCalc::bandFame($band, $members);
@@ -387,6 +391,7 @@ final class Activities
         Charts::boost($repo, $bandId, (float) ($reward['chartBoost'] ?? 0));
         // Gemeinsam erlebt: Die Beziehungen der Mitglieder wachsen (je nach Passung).
         Mood::bond($repo, $repo->members($bandId), $row['type']);
+        Mood::react($repo, $repo->members($bandId), $row['type']);
         $result = [
             'money' => (int) ($reward['money'] ?? 0),
             'fame' => round($fameGain, 2),

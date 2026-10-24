@@ -1254,3 +1254,25 @@ test('Solokünstler: eine Band mit einem Mitglied, ohne Genre-Bonus; der Letzte 
     checkApiError(fn () => $p->post('bandRemoveMember', ['bandId' => $band['id'], 'musicianId' => $one['id']]), 'mindestens 1');
     check($p->get('state')['label']['bandSlots']['open'] > 8, 'keine Obergrenze für Bands');
 });
+
+test('Rote Band: Anordnungen, die ein Unzufriedener nicht mag, sind gesperrt; was er mag, hebt die Stimmung', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Sperre');
+    $band = foundBand($p);
+    $ids = array_column($db->all('SELECT id FROM musicians WHERE band_id = ?', [$band['id']]), 'id');
+    // Einer wird zum Chaoten (mag Auftritte, mag keine Proben) und ist rot.
+    $db->exec("UPDATE musicians SET personality = ?, wellbeing = 10 WHERE id = ?", [json_encode(['chaot']), $ids[0]]);
+    $state = $p->get('state');
+    $mood = bandById($state, $band['id'])['mood'];
+    check($mood['reactions']['rehearsal']['locked'], 'Proben sind gesperrt');
+    check(!$mood['reactions']['gig']['locked'], 'Auftritte sind nicht gesperrt');
+    checkEquals([$ids[0]], $mood['reactions']['rehearsal']['dislike']);
+    check(count($mood['wishes']) >= 1, 'der Unzufriedene äußert einen Wunsch');
+    checkApiError(fn () => $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'rehearsal']), 'keine Lust');
+    // Straßenmusik mag der Chaot: die Anordnung geht und hebt sein Wohlbefinden nach dem Auftritt.
+    $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'busking']);
+    Clock::advance(600);
+    $p->get('state');
+    $after = (float) $db->value('SELECT wellbeing FROM musicians WHERE id = ?', [$ids[0]]);
+    check($after > 10, 'Wohlbefinden steigt nach einer Anordnung, die er mag: ' . $after);
+});

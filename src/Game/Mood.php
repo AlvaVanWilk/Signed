@@ -121,6 +121,90 @@ final class Mood
     }
 
     /** Stimmung der Band: Ampel nach dem unzufriedensten Mitglied, fließender Wert als Mischung aus ihm und dem Durchschnitt. */
+    /** Wie sehr ein Charakter (bis zu zwei Eigenschaften) eine Anordnung mag: positiv, 0 (egal) oder negativ. */
+    public static function liking(array $personality, string $type): int
+    {
+        $sum = 0;
+        foreach ($personality as $p) {
+            $sum += Catalog::LIKES[$p][$type] ?? 0;
+        }
+        return $sum;
+    }
+
+    /** Wer in der Band die Anordnung ablehnt, obwohl er schon rot ist: Dann ist sie gesperrt (man kann ihr nichts abverlangen). */
+    public static function refuser(array $members, string $type): ?array
+    {
+        foreach ($members as $m) {
+            if (self::level($m['wellbeing']) === 'red' && self::liking($m['personality'], $type) < 0) {
+                return $m;
+            }
+        }
+        return null;
+    }
+
+    /** Eine erlebte Anordnung hebt oder drückt das Wohlbefinden je nach Charakter sofort (wirkt danach langsam ab). */
+    public static function react(Repo $repo, array $members, string $type): void
+    {
+        $step = Balance::MOOD['reactStep'];
+        foreach ($members as $m) {
+            $score = self::liking($m['personality'], $type);
+            if ($score !== 0) {
+                $value = max(0.0, min(100.0, $m['wellbeing'] + $step * max(-1, min(1, $score))));
+                $repo->db->update('musicians', ['wellbeing' => round($value, 3)], ['id' => $m['id']]);
+            }
+        }
+    }
+
+    /**
+     * Reaktion der Band auf die drei Anordnungen für die Anzeige: wer mag sie, wer nicht, ist sie gesperrt.
+     * @return array<string, array{like: list<int>, dislike: list<int>, locked: bool}>
+     */
+    public static function reactions(array $members): array
+    {
+        $out = [];
+        foreach (['rehearsal' => 'rehearsal', 'gig' => 'gig', 'record' => 'record'] as $key => $type) {
+            $out[$key] = [
+                'like' => array_values(array_map(static fn ($m) => $m['id'], array_filter($members, static fn ($m) => self::liking($m['personality'], $type) > 0))),
+                'dislike' => array_values(array_map(static fn ($m) => $m['id'], array_filter($members, static fn ($m) => self::liking($m['personality'], $type) < 0))),
+                'locked' => self::refuser($members, $type) !== null,
+            ];
+        }
+        return $out;
+    }
+
+    /**
+     * Die Wünsche der Band (Anzeige): unzufriedene Musiker nennen ihren Charakter-Wunsch, wer kein Instrument hat, wünscht sich eins,
+     * und bei Songstau wollen sie aufnehmen.
+     * @param array<int, array<string, array>> $gear Instrumente je Musiker und Art
+     * @return list<array{musicianId: int, text: string, action: string, level: string}>
+     */
+    public static function wishes(array $members, array $gear, int $songs): array
+    {
+        $char = [];
+        $noGear = null;
+        foreach ($members as $m) {
+            $level = self::level($m['wellbeing']);
+            $played = $m['band_slot'] === 2 && $m['instr2'] !== null ? $m['instr2'] : $m['instr1'];
+            if ($noGear === null && !isset($gear[$m['id']][$played])) {
+                $noGear = ['musicianId' => $m['id'], 'text' => 'Ich brauche ein Instrument.', 'action' => 'gear', 'level' => $level];
+            }
+            if ($level !== 'green') {
+                [$text, $action] = Catalog::WISHES[$m['personality'][0] ?? 'gelassen'] ?? Catalog::WISHES['gelassen'];
+                $char[] = ['musicianId' => $m['id'], 'text' => $text, 'action' => $action, 'level' => $level];
+            }
+        }
+        // Die Unzufriedensten zuerst
+        usort($char, static fn ($a, $b) => ($a['level'] === 'red' ? 0 : 1) <=> ($b['level'] === 'red' ? 0 : 1));
+        $out = $char;
+        if ($noGear !== null) {
+            $out[] = $noGear;
+        }
+        if ($songs >= Balance::MOOD['stau']['from'] && $members) {
+            $out[] = ['musicianId' => $members[0]['id'], 'text' => 'Wir wollen aufnehmen!', 'action' => 'record', 'level' => 'yellow'];
+        }
+        return $out;
+    }
+
     public static function bandMood(array $wellbeing): array
     {
         if (!$wellbeing) {

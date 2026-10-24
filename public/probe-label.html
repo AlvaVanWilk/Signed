@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Signed – Probe: Label-Oberfläche</title>
+  <link rel="stylesheet" href="assets/css/app.css">
+  <style>
+    :root { --ok: #3ddc97; --warn: #ffc23d; --bad: #ff5d6c; }
+    body { margin: 0; background: #0e0c14; color: #f3eefc; font-family: system-ui, sans-serif; }
+    .top { display: flex; gap: 22px; align-items: center; padding: 12px 22px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .top a { color: #a49bbd; font-weight: 700; text-decoration: none; }
+    .top a.on { color: #fff; background: #241d34; padding: 6px 14px; border-radius: 999px; }
+    .layout { display: grid; grid-template-columns: 252px minmax(0, 1fr); gap: 20px; padding: 18px 22px 40px; max-width: 1240px; margin: 0 auto; }
+    h2.cap { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: #a49bbd; margin: 0 0 8px; }
+    .lnote { color: #a49bbd; font-size: 0.85rem; max-width: 740px; margin: 6px 0 22px; }
+
+    /* Gesichter der Stimmung */
+    .mood { --c: var(--ok); width: var(--s, 52px); height: var(--s, 52px); flex: none; display: block; }
+    .mood.yellow { --c: var(--warn); } .mood.red { --c: var(--bad); }
+
+    /* ---------- Band-Leiste ---------- */
+    .lbar { display: flex; flex-direction: column; gap: 10px; position: sticky; top: 12px; align-self: start; }
+    .bt { position: relative; display: grid; grid-template-columns: 58px 1fr; gap: 10px; align-items: center; padding: 12px 12px 12px 10px; border-radius: 16px; border: 2px solid transparent;
+      background: linear-gradient(135deg, var(--g1), var(--g2)); color: #fff; text-align: left; cursor: pointer; overflow: hidden; }
+    .bt.lactive { border-color: #fff; }
+    .bt .nm { font-weight: 900; font-size: 1.02rem; line-height: 1.1; text-shadow: 0 1px 2px rgba(0,0,0,0.35); }
+    .bt .gl { font-size: 0.72rem; opacity: 0.85; font-weight: 700; display: flex; gap: 4px; align-items: center; margin-top: 2px; }
+    .bt .row2 { display: flex; gap: 12px; align-items: center; margin-top: 7px; font-weight: 800; }
+    .bt .songs { display: inline-flex; gap: 4px; align-items: center; background: rgba(0,0,0,0.28); padding: 2px 9px; border-radius: 999px; font-size: 0.92rem; }
+    .bt .stars { color: #ffe27a; letter-spacing: -1px; font-size: 0.95rem; text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
+    .bt .stars i { font-style: normal; opacity: 0.28; }
+    .bt .wish { position: absolute; top: 8px; right: 8px; width: 24px; height: 20px; }
+    .bt .faceRing { display: grid; place-items: center; width: 58px; height: 58px; border-radius: 50%; background: rgba(0,0,0,0.28); box-shadow: inset 0 0 0 3px var(--c); --c: var(--ok); }
+    .bt .faceRing.yellow { --c: var(--warn); } .bt .faceRing.red { --c: var(--bad); }
+    .bt.lbusy::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(-45deg, rgba(0,0,0,0.3) 0 7px, transparent 7px 14px); background-size: 19.8px 19.8px; animation: stripes 0.9s linear infinite; }
+    @keyframes stripes { to { background-position: 19.8px 0; } }
+    .bt.frozen { filter: saturate(0.55); }
+    .bt .fz { display: inline-block; margin-top: 6px; font-size: 0.7rem; font-weight: 900; background: rgba(0,0,0,0.5); padding: 1px 8px; border-radius: 999px; }
+    .bt.solo { grid-template-columns: 46px 1fr; padding: 9px 10px; }
+    .bt.solo .faceRing { width: 46px; height: 46px; }
+    .bt.solo .ph { width: 28px; height: 28px; border-radius: 50%; overflow: hidden; background: #cfdbe6; display: inline-block; vertical-align: middle; }
+    .bt.solo .ph svg { width: 100%; height: 100%; display: block; }
+    .ladd { border: 2px dashed rgba(255,255,255,0.18); color: #a49bbd; background: none; border-radius: 16px; padding: 12px; font-weight: 800; cursor: pointer; }
+    .llegend { margin-top: 16px; font-size: 0.78rem; color: #a49bbd; display: grid; gap: 4px; }
+    .llegend span { display: flex; gap: 8px; align-items: center; }
+
+    /* ---------- Bandseite ---------- */
+    .pg { display: grid; gap: 18px; }
+    .hd { display: flex; gap: 16px; align-items: center; padding: 16px 18px; border-radius: 18px; background: linear-gradient(135deg, var(--g1), var(--g2)); }
+    .hd h1 { margin: 0; font-size: 1.7rem; }
+    .hd small { opacity: 0.9; font-weight: 700; }
+    .hd .lbig { margin-left: auto; display: flex; gap: 12px; align-items: center; background: rgba(0,0,0,0.28); padding: 8px 16px 8px 10px; border-radius: 999px; font-weight: 900; }
+    .acts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .act { display: grid; gap: 2px; justify-items: start; padding: 14px 16px; border-radius: 16px; border: 0; background: #241d34; color: #fff; font: inherit; text-align: left; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08); }
+    .act b { font-size: 1.05rem; } .act small { color: #a49bbd; }
+    .act .ic { font-size: 1.5rem; }
+    .act.warn { box-shadow: inset 0 0 0 2px var(--warn); }
+    .wishes { display: grid; gap: 8px; padding: 12px 14px; border-radius: 16px; background: #1c1726; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06); }
+    .wishes h3 { margin: 0 0 2px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: #a49bbd; }
+    .ws { display: flex; gap: 10px; align-items: center; }
+    .ws .bubble { background: #fff; color: #2a2233; padding: 6px 12px; border-radius: 14px 14px 14px 4px; font-weight: 700; font-size: 0.9rem; }
+    .ws .who { width: 34px; height: 34px; border-radius: 50%; overflow: hidden; background: #cfdbe6; flex: none; }
+    .ws .who svg { width: 100%; height: 100%; display: block; }
+    .ws button { margin-left: auto; border: 0; background: var(--accent, #ff4f8b); color: #fff; font-weight: 800; padding: 6px 14px; border-radius: 999px; cursor: pointer; }
+    .lmembers { display: grid; gap: 8px; }
+    .mr { display: grid; grid-template-columns: 62px minmax(120px, 1.1fr) minmax(130px, 1fr) 40px minmax(120px, auto); gap: 14px; align-items: center; padding: 10px 14px 10px 10px; border-radius: 16px; background: #1c1726; box-shadow: inset 5px 0 0 var(--lvl, #7d8291); }
+    .mr .ph { width: 62px; height: 62px; border-radius: 10px; overflow: hidden; background: linear-gradient(180deg, #cfdbe6, #b5c4d2); }
+    .mr .ph svg { width: 100%; height: 100%; display: block; }
+    .mr b { display: block; } .mr small { color: #a49bbd; }
+    .mr .sk { display: block; height: 7px; border-radius: 4px; background: rgba(255,255,255,0.1); overflow: hidden; margin-top: 4px; } .mr .sk i { display: block; height: 100%; background: var(--lvl, #7d8291); }
+    .rels { display: flex; gap: 5px; justify-content: flex-end; }
+    .rels i { width: 18px; height: 18px; border-radius: 50%; display: block; box-shadow: inset 0 0 0 2px rgba(0,0,0,0.25); cursor: pointer; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .st { padding: 12px 14px; border-radius: 16px; background: #1c1726; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06); }
+    .st span { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: #a49bbd; display: block; }
+    .st b { font-size: 1.5rem; display: block; margin: 2px 0 4px; }
+    .st ul { margin: 0; padding: 0; list-style: none; font-size: 0.78rem; color: #a49bbd; display: grid; gap: 2px; }
+    .st li b { display: inline; font-size: inherit; color: #f3eefc; }
+    .st li.up b { color: var(--ok); } .st li.down b { color: var(--bad); }
+    .foot { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .trophy { font-size: 1.6rem; width: 46px; height: 46px; display: grid; place-items: center; border-radius: 50%; background: #241d34; box-shadow: inset 0 0 0 2px #ffc23d; }
+    details.chron { background: #1c1726; border-radius: 14px; padding: 10px 14px; } details.chron summary { cursor: pointer; font-weight: 800; color: #a49bbd; }
+  </style>
+</head>
+<body>
+<nav class="top"><a href="#" style="font-style:italic;font-weight:900;background:linear-gradient(90deg,#2ec4b6,#ffd166);-webkit-background-clip:text;color:transparent;font-size:1.3rem">Signed</a>
+  <a>Übersicht</a><a class="lon">Bands</a><a>Kartei</a><a>Einkaufen</a><a>Einsendungen <b style="background:var(--accent,#ff4f8b);padding:1px 8px;border-radius:999px;font-size:0.75rem">7</b></a><a>Charts</a>
+  <span style="margin-left:auto;font-weight:800">VanWilk · 1.320 ₲</span></nav>
+<div class="layout">
+  <aside>
+    <h2 class="cap">Deine Bands</h2>
+    <div class="lbar" data-lbar></div>
+    <div class="llegend">
+      <span><svg class="mood" style="--s:20px" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="var(--c)"/></svg> grün: alle zufrieden</span>
+      <span><svg class="mood yellow" style="--s:20px" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="var(--c)"/></svg> gelb: jemand ist angespannt</span>
+      <span><svg class="mood red" style="--s:20px" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="var(--c)"/></svg> rot: sehr unzufrieden</span>
+    </div>
+  </aside>
+  <main class="pg" data-page></main>
+</div>
+<p class="lnote" style="padding:0 22px 30px;max-width:1240px;margin:0 auto">Probe mit Beispieldaten, im Spiel ist noch nichts geändert. Links die Band-Leiste (immer sichtbar), rechts die Bandseite der gewählten Band (ohne Untermenü, ohne Bühne).</p>
+<script type="module">
+  import { portrait } from './assets/js/figure.js';
+  import { instrumentSvg } from './assets/js/icons.js';
+
+  const $ = (s) => document.querySelector(s);
+  const GENRE = { pop: ['#d6336c', '#a61e4d'], rock: ['#e8590c', '#b34700'], metal: ['#5c6370', '#343a40'], punk: ['#74b816', '#4d7c0f'], jazz: ['#d99a00', '#a67700'], elektro: ['#1c7ed6', '#1864ab'], hiphop: ['#7048e8', '#5028c0'], folk: ['#2b8a3e', '#1b5e2b'] };
+  const GNAME = { pop: 'Pop', rock: 'Rock', metal: 'Metal', punk: 'Punk', jazz: 'Jazz', elektro: 'Elektro', hiphop: 'Hip-Hop', folk: 'Folk' };
+  const INSTR = { guitar: 'Gitarre', bass: 'Bass', drums: 'Schlagzeug', vocals: 'Gesang', keys: 'Keyboard', sax: 'Saxophon', violin: 'Geige', turntables: 'Turntables' };
+  const LVL = ['#7d8291', '#2fa84f', '#2f7fe0', '#b03ad6'];
+  const LVLN = ['Anfänger', 'Fortgeschritten', 'Profi', 'Virtuose'];
+  const look = (gender, skin, hair, hairColor, shirt, extra = {}) => ({ gender, skin, hair, hairColor, shirt, beard: 'none', glasses: 'none', hat: 'none', ...extra });
+  const P = {
+    lena: { first: 'Lena', last: 'Berger', instr: 'vocals', lvl: 1, skill: 0.6, wb: 'green', look: look('f', '#eac0a2', 'lang', '#8a5a33', '#ef233c'), mood: 'ehrgeizig', id: 1 },
+    finn: { first: 'Finn', last: 'Okafor', instr: 'guitar', lvl: 2, skill: 0.3, wb: 'green', look: look('m', '#6b3f27', 'locken', '#1d1612', '#2b2d42', { beard: 'stubble' }), mood: 'gelassen', id: 2 },
+    kim: { first: 'Kim', last: 'Novak', instr: 'drums', lvl: 1, skill: 0.8, wb: 'yellow', look: look('d', '#d9a27e', 'irokese', '#ff4fa3', '#06d6a0'), mood: 'chaot', id: 3 },
+    ida: { first: 'Ida', last: 'Lindqvist', instr: 'bass', lvl: 1, skill: 0.2, wb: 'green', look: look('f', '#f6d7c3', 'bob', '#e3c88a', '#3a86ff', { glasses: 'round' }), mood: 'teamplayer', id: 4 },
+    svea: { first: 'Svea', last: 'Kaya', instr: 'keys', lvl: 0, skill: 0.5, wb: 'red', look: look('f', '#c58c63', 'zopf', '#a8442a', '#ffbe0b'), mood: 'diva', id: 5 },
+    yusuf: { first: 'Yusuf', last: 'Demir', instr: 'sax', lvl: 3, skill: 0.9, wb: 'green', look: look('m', '#a86f4b', 'kurz', '#3b2a20', '#8338ec', { hat: 'fedora' }), mood: 'rampensau', id: 6 },
+  };
+  const BANDS = [
+    { id: 1, name: 'Die Nachtfalter', genres: ['rock'], title: 'Rockband', mood: 'green', songs: 7, fame: 2, members: ['lena', 'finn', 'kim', 'ida'], wish: 1, trophies: ['🥇', '🏆'] },
+    { id: 2, name: 'Neon Hasen', genres: ['pop', 'elektro'], title: 'Elektro-Pop-Band', mood: 'yellow', songs: 14, fame: 1, members: ['ida', 'yusuf', 'svea'], wish: 2, busy: true, trophies: [] },
+    { id: 3, name: 'Blech & Bass', genres: ['punk'], title: 'Punkband', mood: 'red', songs: 3, fame: 0, members: ['kim', 'svea'], wish: 1, frozen: true, trophies: [] },
+    { id: 4, name: 'Svea Kaya', genres: ['pop'], title: null, mood: 'green', songs: 4, fame: 1, solo: 'svea', trophies: [] },
+  ];
+
+  function face(level, s = 52) {
+    const mouth = { green: 'M12 24 Q20 32 28 24', yellow: 'M13 27 L27 27', red: 'M12 30 Q20 22 28 30' }[level];
+    const brows = level === 'red' ? '<path d="M10 14 L17 17 M30 14 L23 17" stroke="#2a2233" stroke-width="2.2" stroke-linecap="round"/>' : '';
+    return `<svg class="mood ${level}" style="--s:${s}px" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="var(--c)" stroke="#2a2233" stroke-width="2"/>${brows}
+      <circle cx="14" cy="18" r="2.4" fill="#2a2233"/><circle cx="26" cy="18" r="2.4" fill="#2a2233"/><path d="${mouth}" fill="none" stroke="#2a2233" stroke-width="2.4" stroke-linecap="round"/></svg>`;
+  }
+  const stars = (n) => `<span class="stars">${'★'.repeat(n)}<i>${'★'.repeat(3 - n)}</i></span>`;
+  const mix = (a, b, t) => a.map((x, i) => Math.round(x + (b[i] - x) * t));
+  const relColor = (v) => { const t = Math.min(1, Math.abs(v) / 10); const c = mix([112, 108, 128], v >= 0 ? [40, 220, 140] : [255, 80, 100], t); return `rgb(${c.join(',')})`; };
+  const bubble = '<svg class="wish" viewBox="0 0 24 20"><path d="M3 2h18a2 2 0 012 2v9a2 2 0 01-2 2h-9l-5 4v-4H3a2 2 0 01-2-2V4a2 2 0 012-2z" fill="#fff" stroke="#2a2233" stroke-width="1.4"/></svg>';
+
+  function tile(b, active) {
+    const [g1, g2] = GENRE[b.genres[0]];
+    const solo = b.solo ? P[b.solo] : null;
+    const gl = b.genres.map((g) => GNAME[g]).join(' · ');
+    return `<button class="bt ${active ? 'lactive' : ''} ${b.busy ? 'lbusy' : ''} ${b.frozen ? 'frozen' : ''} ${solo ? 'solo' : ''}" style="--g1:${g1};--g2:${g2}" data-id="${b.id}">
+      <span class="faceRing ${b.mood}">${face(b.mood, solo ? 36 : 44)}</span>
+      <span><span class="nm">${b.name}</span>
+        <span class="gl">${solo ? `<span class="ph"><span style="display:block;width:100%;height:100%">${portrait(solo.look, solo.mood)}</span></span> Solokünstlerin · ` : ''}${gl}</span>
+        <span class="row2"><span class="songs">🎵 ${b.songs}</span>${stars(b.fame)}</span>${b.frozen ? '<span class="fz">❄ wartet auf dich</span>' : ''}</span>
+      ${b.wish ? bubble : ''}</button>`;
+  }
+  function bar(activeId) {
+    $('[data-lbar]').innerHTML = BANDS.map((b) => tile(b, b.id === activeId)).join('') + '<button class="ladd">+ Band oder Solokünstler</button>';
+    document.querySelectorAll('.bt').forEach((el) => el.addEventListener('click', () => { bar(Number(el.dataset.id)); page(Number(el.dataset.id)); }));
+  }
+
+  function page(id) {
+    const b = BANDS.find((x) => x.id === id);
+    const [g1, g2] = GENRE[b.genres[0]];
+    const members = (b.solo ? [b.solo] : b.members).map((k) => P[k]);
+    const WB = { green: 'zufrieden', yellow: 'angespannt', red: 'sehr unzufrieden' };
+    const rels = (m, i) => members.filter((x) => x !== m).map((x, j) => {
+      const v = ((m.id * 7 + x.id * 13 + i * 3) % 21) - 10 + (b.mood === 'red' ? -6 : 0);
+      return `<i style="background:${relColor(Math.max(-10, Math.min(10, v)))}" title="${m.first} und ${x.first}"></i>`;
+    }).join('');
+    $('[data-page]').innerHTML = `
+      <div class="hd" style="--g1:${g1};--g2:${g2}">
+        <div><h1>${b.name}</h1><small>${b.title ?? 'Solokünstlerin'} · ${b.genres.map((g) => GNAME[g]).join(' · ')}</small></div>
+        <div class="lbig">${face(b.mood, 44)}<span>Stimmung<br><small>${WB[b.mood]}</small></span></div>
+      </div>
+      <div class="acts">
+        <button class="act"><span class="ic">🥁</span><b>Proben</b><small>Können und Beziehungen wachsen · 15 Min.</small></button>
+        <button class="act ${b.songs >= 12 ? 'lwarn' : ''}"><span class="ic">💿</span><b>Aufnehmen</b><small>${b.songs} Songs fertig${b.songs >= 12 ? ' – sie warten!' : ''}</small></button>
+        <button class="act"><span class="ic">🎤</span><b>Auftritt buchen</b><small>Kosten und Gewinn sehen</small></button>
+      </div>
+      ${b.wish ? `<div class="wishes"><h3>Wünsche der Band</h3>
+        <div class="ws"><span class="who">${portrait(members[0].look, members[0].mood)}</span><span class="bubble">${b.frozen ? 'Wir haben keine Lust mehr …' : 'Wann ist der nächste Gig?'}</span><button>Auftritt buchen</button></div>
+        ${b.wish > 1 ? `<div class="ws"><span class="who">${portrait(members[1].look, members[1].mood)}</span><span class="bubble">Ich brauche ein besseres Instrument.</span><button>Einkaufen</button></div>` : ''}</div>` : ''}
+      <div class="lmembers">${members.map((m, i) => `
+        <div class="mr" style="--lvl:${LVL[m.lvl]}">
+          <span class="ph">${portrait(m.look, m.mood)}</span>
+          <span><b>${m.first} ${m.last}</b><small>${INSTR[m.instr]} · ${LVLN[m.lvl]}</small></span>
+          <span><small>Können</small><span class="sk"><i style="width:${m.skill * 100}%"></i></span></span>
+          ${face(b.frozen ? 'red' : m.wb, 36)}
+          <span class="rels">${members.length > 1 ? rels(m, i) : '<small>solo</small>'}</span>
+        </div>`).join('')}</div>
+      <div class="stats">
+        <div class="st"><span>Sound</span><b>${b.solo ? '14' : 31 + b.fame * 4}</b><ul><li>Können Ø <b>${b.solo ? 25 : 46}</b></li><li class="up">Genre <b>${b.solo ? '–' : '+15 %'}</b></li><li>Besetzung <b>${b.solo ? '–' : '+10 %'}</b></li><li>Instrumente <b>+8 %</b></li></ul></div>
+        <div class="st"><span>Ruhm</span><b>${[0, 18, 140, 720][b.fame]}</b><ul><li>Stufe <b>${['Unbekannt', 'Lokal bekannt', 'Szenegröße', 'Star'][b.fame]}</b></li><li>Platten <b>${b.fame}</b></li><li>Auftritte <b>${b.fame * 3}</b></li></ul></div>
+        <div class="st"><span>Zusammenhalt</span><b>${b.solo ? '–' : '+4,2'}</b><ul>${b.solo ? '<li>keine Mitmusiker</li>' : '<li class="up">beste <b>+8</b></li><li class="down">schwächste <b>−3</b></li><li>Ø <b>+4,2</b></li>'}</ul></div>
+        <div class="st"><span>Stimmung</span><b>${{ green: '71', yellow: '48', red: '22' }[b.mood]}</b><ul>${b.songs >= 12 ? '<li class="down">Songs liegen rum <b>−' + (b.songs - 11) + '</b></li>' : '<li class="up">Songs <b>ok</b></li>'}<li class="up">Beziehungen <b>+8</b></li>${b.mood !== 'green' ? '<li class="down">offene Wünsche <b>−6</b></li>' : ''}<li>Genre <b>passt</b></li></ul></div>
+      </div>
+      <div class="foot">${b.trophies.map((t) => `<span class="trophy">${t}</span>`).join('')}
+        <details class="chron" style="flex:1"><summary>Chronik öffnen</summary><div style="padding-top:6px;color:#a49bbd;font-size:.85rem">Heute: ${b.members ? 'Kim hat sich über die vielen Proben geärgert.' : 'Erste Platte veröffentlicht.'}</div></details></div>`;
+  }
+  bar(1); page(1);
+</script>
+</body>
+</html>

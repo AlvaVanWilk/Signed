@@ -14,6 +14,13 @@
   <meta name="apple-mobile-web-app-title" content="Signed">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="stylesheet" href="assets/css/app.css">
+  <script>
+    // Testversion (Ordner mit „-test“): anderes Logo, damit man sie nicht mit dem echten Spiel verwechselt.
+    if (/-test(\/|$)/.test(location.pathname)) {
+      document.documentElement.classList.add('is-test');
+      document.title = 'Signed Test';
+    }
+  </script>
 </head>
 <body>
   <div id="app"><div class="boot"><span class="logo">Signed</span></div></div>

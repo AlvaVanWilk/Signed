@@ -72,6 +72,10 @@ p { margin: 0 0 0.8em; }
 }
 .logo.big { font-size: clamp(3rem, 10vw, 5rem); }
 a.logo:hover { text-decoration: none; }
+/* Testversion: Logo in Türkis-Gelb statt Pink-Orange, mit kleinem „TEST“. */
+.is-test .logo { background: linear-gradient(90deg, #2ec4b6, #ffd166); -webkit-background-clip: text; background-clip: text; position: relative; display: inline-block; }
+.is-test .logo::after { content: 'TEST'; position: absolute; top: 0.1em; left: 100%; margin-left: 0.5em; white-space: nowrap; font-size: 0.32em; font-style: normal; letter-spacing: 0.08em;
+  padding: 0.15em 0.5em; border-radius: 999px; background: #2ec4b6; color: #0e0c14; -webkit-text-fill-color: #0e0c14; }
 
 .boot { min-height: 100vh; display: grid; place-items: center; text-align: center; padding: 16px; }
 .boot .logo { font-size: 3rem; animation: pulse 1.6s ease-in-out infinite; }

@@ -215,3 +215,17 @@ button.lb-pill:disabled { opacity: 0.45; cursor: default; }
 @keyframes lb-eq { 0%, 100% { height: 4px; } 50% { height: 18px; } }
 @media (prefers-reduced-motion: reduce) { .lb-tape.playing .lb-reel, .lb-eq i { animation: none; } }
 .lb-tape .lb-sub-foot { justify-content: center; }
+
+/* Kassetten im Briefkasten: klein, lose gestreut, ohne Kachel */
+.lb-heap { display: flex; flex-wrap: wrap; gap: 6px 0; padding: 6px 4px 14px; }
+.lb-heap-item { position: relative; width: 78px; margin: 0 -2px; display: grid; justify-items: center; transform: translate(var(--x, 0), var(--y)) rotate(var(--r)); transition: transform 0.15s; }
+.lb-heap-item:hover { transform: translate(var(--x, 0), var(--y)) rotate(0deg) scale(1.12); z-index: 3; }
+.lb-heap-item small { color: var(--lb-muted); font-size: 0.66rem; margin-top: 1px; }
+.lb-mini { display: block; width: 78px; padding: 0; border: 0; background: none; cursor: pointer; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.45)); }
+.lb-mini .lb-tape-svg { width: 100%; }
+.lb-toss { position: absolute; top: -4px; right: -2px; width: 18px; height: 18px; border-radius: 50%; border: 0; background: #3a3646; color: var(--lb-text); font-size: 0.6rem; line-height: 1; cursor: pointer; opacity: 0; transition: opacity 0.15s; }
+.lb-heap-item:hover .lb-toss, .lb-toss:focus-visible { opacity: 1; }
+@media (hover: none) { .lb-toss { opacity: 0.75; } }
+.lb-heap-item.playing .lb-reel { animation: lb-spin 1.2s linear infinite; }
+.lb-prog.tiny { width: 60px; height: 4px; margin-top: 3px; } .lb-prog.tiny i { width: 100%; transform-origin: left; transition: none; animation-name: lb-fill; animation-timing-function: linear; animation-fill-mode: forwards; }
+@media (prefers-reduced-motion: reduce) { .lb-heap-item.playing .lb-reel { animation: none; } }

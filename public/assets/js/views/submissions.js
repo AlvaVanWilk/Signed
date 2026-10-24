@@ -26,23 +26,26 @@ const CASSETTE = `<svg class="lb-tape-svg" viewBox="0 0 120 80" aria-hidden="tru
   <rect x="46" y="52" width="28" height="12" rx="3" fill="#18161f"/>
 </svg>`;
 
+/** Kleine Kassette im Haufen: leicht schief und versetzt, Wurf und Anhören direkt daran. */
 function tape(s) {
   const listening = s.state === 'listening';
   const total = cat().rules.submissionListen ?? 5;
   const elapsed = listening ? Math.max(0, total - (s.opensAt - serverNow())) : 0;
+  // Streuung aus der Nummer: stabil, aber unregelmäßig
+  const h = (n) => (Math.imul(s.submissionId + n, 2654435761) >>> 0) / 4294967296;
+  const rot = Math.round(h(1) * 22 - 11);
+  const lift = Math.round(h(2) * 14 - 7);
+  const nudge = Math.round(h(3) * 10 - 5);
+  const days = Math.ceil((s.expiresAt - serverNow()) / 86400);
+  const left = days >= 1 ? `${days} T.` : 'bald weg';
   return `
-    <article class="lb-sub lb-tape ${listening ? 'playing' : ''}">
-      ${CASSETTE}
+    <div class="lb-heap-item ${listening ? 'playing' : ''}" style="--r:${rot}deg;--y:${lift}px;--x:${nudge}px">
       ${listening
-    ? `<div class="lb-listen"><span class="lb-eq"><i></i><i></i><i></i><i></i></span><b>Du hörst rein …</b>
-        <span class="lb-prog wide"><i style="animation-duration:${total}s;animation-delay:-${elapsed.toFixed(2)}s"></i></span></div>`
-    : '<div class="lb-listen"><b>Neue Einsendung</b><small class="muted">Was drauf ist, hörst du erst beim Anhören.</small></div>'}
-      <div class="lb-sub-foot">
-        ${listening ? '' : `<button class="btn small primary" data-act="submissionOpen" data-id="${s.submissionId}">Anhören</button>`}
-        <button class="btn small ghost" data-act="submissionDrop" data-id="${s.submissionId}">Wegwerfen</button>
-        <small>${expires(s)}</small>
-      </div>
-    </article>`;
+    ? `<span class="lb-mini">${CASSETTE}</span><span class="lb-prog tiny"><i style="animation-duration:${total}s;animation-delay:-${elapsed.toFixed(2)}s"></i></span>`
+    : `<button class="lb-mini" data-act="submissionOpen" data-id="${s.submissionId}" title="Anhören · ${expires(s)}">${CASSETTE}</button>
+      <button class="lb-toss" data-act="submissionDrop" data-id="${s.submissionId}" title="Wegwerfen" aria-label="Wegwerfen">✕</button>
+      <small>${left}</small>`}
+    </div>`;
 }
 
 function card(s) {
@@ -74,11 +77,15 @@ export function render() {
   const f = app.ui.subFilter ?? 'all';
   const levelOf = (s) => Math.max(...s.instruments.map((i) => cat().rules.skillLevels.filter((t) => i.skill >= t).length));
   const list = all.filter((s) => f === 'all' || (f === 'unheard' ? s.state !== 'open' : s.state === 'open' && levelOf(s) === Number(f)));
+  const cards = list.filter((x) => x.state === 'open');
+  const tapes = list.filter((x) => x.state !== 'open');
   return `
     <div class="section-head"><h1>Einsendungen</h1>${isTest() ? '<button class="btn small" data-act="submissionsTest">Test: Bewerber aller Stufen</button>' : ''}</div>
-    <p class="muted">Musiker bewerben sich von selbst bei dir. Jede Einsendung ist eine Kassette: Erst wenn du sie dir anhörst, siehst du, wer sich da bewirbt. Unterschreiben kostet einmalig eine Prämie, wegwerfen nichts. Wer zu lange liegt, zieht weiter.</p>
+    <p class="muted">Jede Einsendung ist eine Kassette: Erst wenn du sie dir anhörst, siehst du, wer sich da bewirbt. Unterschreiben kostet einmalig eine Prämie, wegwerfen nichts. Wer zu lange liegt, zieht weiter.</p>
     <div class="lb-filter">${[['all', 'Alle'], ['unheard', 'Ungehört'], ['0', 'Stufe 0'], ['1', 'Stufe 1'], ['2', 'Stufe 2'], ['3', 'Stufe 3']].map(([k, label]) => `<button class="${f === k ? 'on' : ''}" data-act="subFilter" data-key="${k}">${label}</button>`).join('')}</div>
-    ${list.length ? `<div class="lb-subs">${list.map((s) => (s.state === 'open' ? card(s) : tape(s))).join('')}</div>` : '<div class="empty">Gerade liegt nichts im Briefkasten. Es trudelt laufend etwas ein.</div>'}`;
+    ${cards.length ? `<h2 class="lb-cap">Angehört</h2><div class="lb-subs">${cards.map(card).join('')}</div>` : ''}
+    ${tapes.length ? `<h2 class="lb-cap">Im Briefkasten · ${tapes.length}</h2><div class="lb-heap">${tapes.map(tape).join('')}</div>` : ''}
+    ${list.length ? '' : '<div class="empty">Gerade liegt nichts im Briefkasten. Es trudelt laufend etwas ein.</div>'}`;
 }
 
 defineActions({

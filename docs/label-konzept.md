@@ -317,7 +317,8 @@ als Grundlage. Einzelne Wahlen verändern zum Beispiel Tempo-Gefühl, Akkordfolg
   Stimmung mit den Einflüssen, die gerade wirken); Wünsche der Band oben; **Auszeichnungen** als kleine Symbole. Die **Chronik** ist zugeklappt und lässt sich per Tippen öffnen. Keine Bühne.
 - **Übersicht des Labels:** alle geäußerten Wünsche aller Bands als **Mitteilungen** untereinander; Tippen öffnet die Band, ein Knopf erfüllt direkt.
   Dazu Geld, Charts, Rangliste.
-- **Katalog** bleibt die Künstlerkartei (Passfotos), mit Beziehungen zu früheren Mitmusikern in den Details.
+- **Katalog** ist aufgelöst (Testversion): Jeder Künstler unter Vertrag steht sofort als Band mit einem Mitglied (Solokünstler) in der Band-Leiste, auch wer gerade unterschrieben hat oder aus einer Band genommen wurde. Die Kartei als Besetzungsplaner kommt später.
+  Solokünstler ohne eigene Laufbahn (keine Platte, kein Auftritt) lassen sich in eine andere Band holen; ihre leere Solo-Band verschwindet dann.
 - **Aufnahme-Dialog** (Studio, Produzent, Songs, Cover) mit Preisen.
 
 **Gestaltung:** ruhig, dunkle Flächen in drei Stufen (Seite, Feld, Karte), ein warmer Akzent. **Farbe hat feste Bedeutungen:** Grün/Gelb/Rot nur für Stimmung,

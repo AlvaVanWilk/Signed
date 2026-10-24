@@ -256,6 +256,14 @@ final class Submissions
                     $this->repo->db->insert('relations', ['label_id' => $this->repo->labelId, 'a_id' => min($a, $b), 'b_id' => max($a, $b), 'value' => Balance::SUBMISSIONS['bandBond'], 'at' => Clock::now()]);
                 }
             }
+            // Als Band unterschrieben: Die Mitglieder bilden gleich ihre Band (sonst steht jeder als Solokünstler da).
+            if ($isBand && count($ids) > 1) {
+                try {
+                    (new Bands($this->repo))->create($card['name'], array_map(static fn ($musicianId) => ['id' => $musicianId, 'slot' => 1], $ids));
+                } catch (ApiError) {
+                    // Besetzung oder Name passen nicht: Dann bleiben sie Solokünstler und lassen sich im Label zusammenstellen.
+                }
+            }
             $left = $isBand ? array_values(array_diff_key($cards, array_flip($chosen))) : [];
             if ($left) {
                 $card['members'] = $left;

@@ -681,9 +681,16 @@ function lineupProblems(picks) {
   return problems;
 }
 
+/** Solokünstler ohne eigene Laufbahn (allein in einer Band ohne Auftritt und Platte) lassen sich in eine andere Band holen. */
+export function isFree(m) {
+  if (m.bandId === null) return true;
+  const own = bandById(m.bandId);
+  return !!own && own.memberIds.length === 1 && !own.released && own.records === 0;
+}
+
 function openCreateBand() {
   const s = app.state;
-  const free = s.musicians.filter((m) => !m.bandId);
+  const free = s.musicians.filter(isFree);
   const slots = s.label.bandSlots;
   if (s.bands.length >= slots.open) {
     toast(slots.next === null ? 'Mehr Bands kann dein Label nicht führen.' : `Deine nächste Band kannst du ab ${fmt0(slots.next)} Label-Ruhm gründen.`, 'error');
@@ -777,9 +784,9 @@ function joinNote(band, m) {
 
 function openAddMember(bandId) {
   const band = bandById(bandId);
-  const free = app.state.musicians.filter((m) => !m.bandId);
+  const free = app.state.musicians.filter((m) => m.bandId !== bandId && isFree(m));
   if (!free.length) {
-    toast('Alle Musiker spielen schon in einer Band.', 'error');
+    toast('Es gibt gerade niemanden, den du in diese Band holen kannst: Alle spielen schon in einer Band oder haben mit ihrer Solo-Band schon etwas aufgebaut.', 'error');
     return;
   }
   const modal = openModal({

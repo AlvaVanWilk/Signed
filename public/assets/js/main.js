@@ -9,7 +9,6 @@ import './navdrag.js';
 import * as auth from './views/auth.js';
 import * as bands from './views/bands.js';
 import * as label from './views/label.js';
-import * as catalog from './views/catalog.js';
 import * as charts from './views/charts.js';
 import * as help from './views/help.js';
 import { trendBadge } from './views/charts.js';
@@ -25,7 +24,6 @@ const NAV = [
   ['', 'Übersicht'],
   ['einsendungen', 'Einsendungen'],
   ['packs', 'Einkaufen'],
-  ['katalog', 'Katalog'],
   ['lager', 'Lager'],
   ['boerse', 'Börse'],
   ['charts', 'Charts'],
@@ -35,7 +33,6 @@ const VIEWS = {
   '': () => overview.render(),
   einsendungen: () => submissions.render(),
   packs: () => packs.render(),
-  katalog: () => catalog.render(),
   lager: () => storage.render(),
   bands: (route) => viewBand(route),
   band: (route) => viewBand(route),

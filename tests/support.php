@@ -39,7 +39,10 @@ final class Tests
 
 function test(string $name, callable $fn): void
 {
-    Tests::add($name, $fn);
+    Tests::add($name, static function () use ($fn): void {
+        Signed\Game\Bands::$autoSolo = true;
+        $fn();
+    });
 }
 
 function check(bool $condition, string $message = 'Bedingung nicht erfüllt'): void

@@ -32,7 +32,7 @@ export function figure(look = {}, instrument = 'guitar', { electric = false, hue
           <path d="M43 76 Q60 68 77 76 L81 108 Q60 115 39 108 Z" fill="${shirt}"/>
         </g>
         ${POSES[pose].back(skin, shirt)}
-        ${pivot(60, 74, 'fig-head', head(look, skin, sing, mood))}
+        ${pivot(60, 74, 'fig-head', head(look, skin, sing, pose === 'none' ? 'bored' : mood))}
         ${POSES[pose].front(skin, shirt, electric, hue)}
       </g>
     </svg>`;
@@ -66,6 +66,7 @@ const MOUTHS = {
 /** Mund zwischen den Ausdrücken: offene Münder schließen sich, sonst bleibt der eigene Mund (z. B. gerade beim Perfektionisten). */
 const CALM_MOUTH = { grin: 'wide', teeth: 'wide', pout: 'soft' };
 const MOODS = {
+  bored: { mouth: 'flat', eyes: 'lidded' },
   ehrgeizig: { mouth: 'smirk' },
   gelassen: { mouth: 'soft', eyes: 'lidded' },
   perfektionist: { mouth: 'flat' },

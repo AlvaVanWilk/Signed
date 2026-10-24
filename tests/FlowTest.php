@@ -186,6 +186,7 @@ test('Nachnamen wiederholen sich im eigenen Label nicht', function () {
 
 test('Jam-Café: drei passende Musiker zur Auswahl, einer gründet mit dem Gastgeber eine Band', function () {
     $db = freshDb();
+    Signed\Game\Bands::$autoSolo = false; // altes Feature: setzt Musiker ohne Band voraus (fällt im Aufräum-Schritt weg)
     $p = player($db);
     $p->post('register', ['username' => 'jammer', 'password' => 'geheim123', 'labelName' => 'Jam Records']);
     $offer = $p->post('scoutOpen', ['voucher' => true])['offer'];
@@ -341,6 +342,7 @@ test('Bandregeln: weitere Bands erst mit Label-Ruhm, niemand in zwei Bands, Genr
 
 test('Notgroschen: Reicht das Geld nicht für eine Platte, bringt Straßenmusik Geld in den Hut', function () {
     $db = freshDb();
+    Signed\Game\Bands::$autoSolo = false; // altes Feature: setzt Musiker ohne Band voraus (fällt im Aufräum-Schritt weg)
     $p = registerPlayer($db, 'Pleite');
     $band = foundBand($p);
     $db->exec('UPDATE labels SET money = 10');
@@ -633,15 +635,20 @@ test('Auflösen gibt die Musiker frei und behält ihre Bekanntheit', function ()
     $band = foundBand($p);
     $db->exec('UPDATE musicians SET fame = 4');
     $state = $p->post('bandDisband', ['bandId' => $band['id']])['state'];
-    checkEquals(0, count($state['bands']));
+    // Jeder ist danach Solokünstler (eine Band mit einem Mitglied).
+    checkEquals(3, count($state['bands']));
+    foreach ($state['bands'] as $b) {
+        checkEquals(1, count($b['memberIds']));
+    }
     foreach ($state['musicians'] as $m) {
-        checkEquals(null, $m['bandId']);
+        check($m['bandId'] !== $band['id']);
         checkEquals(4.0, $m['fame']);
     }
 });
 
 test('Wechselbörse: anbieten, bieten, überbieten, Zuschlag nach Ablauf', function () {
     $db = freshDb();
+    Signed\Game\Bands::$autoSolo = false; // altes Feature: setzt Musiker ohne Band voraus (fällt im Aufräum-Schritt weg)
     $seller = registerPlayer($db, 'Verkauf');
     $a = registerPlayer($db, 'Bieter');
     $b = registerPlayer($db, 'Konkurrenz');
@@ -685,6 +692,7 @@ test('Wechselbörse: anbieten, bieten, überbieten, Zuschlag nach Ablauf', funct
 
 test('Wechselbörse: zurückziehen ohne Gebot, Zuschlag vorzeitig, späte Gebote verlängern', function () {
     $db = freshDb();
+    Signed\Game\Bands::$autoSolo = false; // altes Feature: setzt Musiker ohne Band voraus (fällt im Aufräum-Schritt weg)
     $seller = registerPlayer($db, 'Anbieter');
     $buyer = registerPlayer($db, 'Kaeufer');
     [$m1, $m2] = $seller->get('state')['musicians'];
@@ -713,6 +721,7 @@ test('Wechselbörse: Marktwert steigt mit Können, Stufen und Ruhm', function ()
 
 test('Jam-Café: Je besser die Session, desto besser die Musiker, die sich melden', function () {
     $db = freshDb();
+    Signed\Game\Bands::$autoSolo = false; // altes Feature: setzt Musiker ohne Band voraus (fällt im Aufräum-Schritt weg)
     $p = registerPlayer($db, 'Qualitaet');
     $repo = new Signed\Game\Repo($db, $p->get('state')['label']['id']);
     $host = $p->get('state')['musicians'][0];
@@ -1081,6 +1090,7 @@ test('Fan will einsteigen: selten nach begeistertem Gig, passendes fehlendes Ins
 
 test('Jam-Café: Wer darüber eine Band gegründet hat, kann nicht noch einmal hin – auch nach dem Auflösen', function () {
     $db = freshDb();
+    Signed\Game\Bands::$autoSolo = false; // altes Feature: setzt Musiker ohne Band voraus (fällt im Aufräum-Schritt weg)
     $p = player($db);
     $p->post('register', ['username' => 'sammler', 'password' => 'geheim123', 'labelName' => 'Sammel Records']);
     $offer = $p->post('scoutOpen', ['voucher' => true])['offer'];
@@ -1193,6 +1203,7 @@ test('Musiker entlassen: nur ohne Band, Instrumente bleiben im Lager', function 
     checkApiError(fn () => $p->post('musicianRelease', ['musicianId' => $inBand]), 'aus der Band');
     $p->post('bandRemoveMember', ['bandId' => $band['id'], 'musicianId' => $inBand]);
     $db->exec('UPDATE musicians SET busy_until = 0');
+    // Herausgenommen ist er Solokünstler; auch der darf gehen.
     $gear = (int) $db->value('SELECT COUNT(*) FROM gear');
     $before = count($p->get('state')['musicians']);
     $state = $p->post('musicianRelease', ['musicianId' => $inBand])['state'];
@@ -1470,4 +1481,47 @@ test('Einsendungen: Verträglichkeit mit den eigenen Musikern, erst nach dem Sic
     checkEquals(count($res['state']['musicians']), count($compat), 'ein Eintrag je Musiker des Labels');
     check($compat[0]['target'] >= end($compat)['target'], 'beste zuerst');
     check($compat[0]['target'] <= 10 && end($compat)['target'] >= -10, 'Beziehung liegt zwischen −10 und +10');
+});
+
+test('Solokünstler: Wer unterschreibt, steht sofort als Band mit einem Mitglied da; Bands unterschreiben als Band', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Sofort');
+    $p->get('state');
+    $res = $p->post('submissionsTest');
+    $solo = array_values(array_filter($res['state']['submissions'], static fn ($s) => $s['state'] === 'open' && $s['kind'] === 'solo'))[0];
+    $before = count($res['state']['bands']);
+    $res = $p->post('submissionSign', ['submissionId' => $solo['submissionId']]);
+    checkEquals($before + 1, count($res['state']['bands']), 'sofort eine Solo-Band');
+    $new = array_values(array_filter($res['state']['bands'], static fn ($b) => $b['memberIds'] === [$res['musicianId']]))[0];
+    check(str_contains($new['name'], $solo['lastName']), 'benannt nach dem Künstler');
+    foreach ($res['state']['musicians'] as $m) {
+        check($m['bandId'] !== null, 'niemand steht ohne Band da');
+    }
+    // Eine Band wird als Band gegründet.
+    $band = array_values(array_filter($res['state']['submissions'], static fn ($s) => $s['state'] === 'open' && $s['kind'] === 'band'))[0];
+    $count = count($res['state']['bands']);
+    $res = $p->post('submissionSign', ['submissionId' => $band['submissionId']]);
+    $founded = array_values(array_filter($res['state']['bands'], static fn ($b) => $b['name'] === $band['bandName']));
+    checkEquals(1, count($founded), 'die Band ist gegründet');
+    checkEquals(count($band['members']), count($founded[0]['memberIds']));
+    checkEquals($count + 1, count($res['state']['bands']));
+});
+
+test('Solokünstler wechseln in eine Band: Die leere Solo-Band verschwindet; wer schon etwas aufgebaut hat, bleibt', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Wechsler');
+    $band = foundBand($p, 'Hauptband');
+    $res = $p->post('submissionsTest');
+    $solo = array_values(array_filter($res['state']['submissions'], static fn ($s) => $s['state'] === 'open' && $s['kind'] === 'solo'))[0];
+    $musicianId = $p->post('submissionSign', ['submissionId' => $solo['submissionId']])['musicianId'];
+    $state = $p->post('bandAddMember', ['bandId' => $band['id'], 'musicianId' => $musicianId, 'slot' => 1])['state'];
+    $mine = bandById($state, $band['id']);
+    check(in_array($musicianId, $mine['memberIds'], true), 'in der Band');
+    check(count(array_filter($state['bands'], static fn ($b) => $b['memberIds'] === [$musicianId])) === 0, 'Solo-Band ist weg');
+    // Eine Solo-Band mit Geschichte bleibt bestehen.
+    $res = $p->post('submissionsTest');
+    $solo2 = array_values(array_filter($res['state']['submissions'], static fn ($s) => $s['state'] === 'open' && $s['kind'] === 'solo'))[0];
+    $id2 = $p->post('submissionSign', ['submissionId' => $solo2['submissionId']])['musicianId'];
+    $db->exec('UPDATE bands SET released = 1 WHERE id = (SELECT band_id FROM musicians WHERE id = ?)', [$id2]);
+    checkApiError(fn () => $p->post('bandAddMember', ['bandId' => $band['id'], 'musicianId' => $id2, 'slot' => 1]), 'aufgebaut');
 });

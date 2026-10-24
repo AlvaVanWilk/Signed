@@ -478,7 +478,12 @@ final class Api
     {
         $m = $repo->musician(self::int($in, 'musicianId'));
         if ($m['band_id'] !== null) {
-            throw new ApiError('Erst aus der Band nehmen, dann entlassen.');
+            // Ein Solokünstler darf gehen (seine Solo-Band löst sich auf); wer in einer Band mit anderen spielt, muss erst herausgenommen werden.
+            if ((int) $this->db->value('SELECT COUNT(*) FROM musicians WHERE band_id = ?', [$m['band_id']]) > 1) {
+                throw new ApiError('Erst aus der Band nehmen, dann entlassen.');
+            }
+            (new Bands($repo))->disband($m['band_id']);
+            $m['band_id'] = null;
         }
         if ((int) $m['busy_until'] > \Signed\Clock::now()) {
             throw new ApiError(sprintf('%s ist gerade unterwegs.', $m['first_name']));

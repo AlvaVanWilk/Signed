@@ -4,7 +4,6 @@ import { openLive } from '../live.js';
 import { chip } from '../cards.js';
 import { closeAllModals, confirmDialog, duration, esc, fmt0, fmt1, money, openModal, timeAgo, toast } from '../ui.js';
 import { buskingHat, cancelButton, chemistryLabel, courseTiles, promoOf, practiceTile, promoTile, suggestName } from './bands.js';
-import { catalogList } from './catalog.js';
 
 /** Untermenü eines Musikers. solo = nur ohne Band. */
 export const MUSICIAN_SECTIONS = [
@@ -282,11 +281,9 @@ defineActions({
     traitInfo(musicianById(id), trait);
   },
   openMusician({ id }) {
-    // Merken, woher wir kommen: Katalog, Band oder sonstwo – dorthin führt der Zurück-Knopf, und darin wird geblättert.
+    // Merken, woher wir kommen: Band oder sonstwo – dorthin führt der Zurück-Knopf, und darin wird geblättert.
     const [, view, viewId] = location.hash.split('/');
-    if (view === 'katalog') {
-      app.ui.musicianNav = { ids: catalogList().map((x) => x.id), back: { href: '#/katalog', label: 'Katalog' } };
-    } else if (view === 'band' && bandById(Number(viewId))) {
+    if (view === 'band' && bandById(Number(viewId))) {
       const band = bandById(Number(viewId));
       app.ui.musicianNav = { ids: band.memberIds, back: { href: location.hash, label: band.name } };
     } else if (view !== 'musician') {
@@ -300,7 +297,7 @@ defineActions({
     if (!ok) return;
     if (await mutate('musicianRelease', { musicianId: m.id })) {
       toast(`${m.firstName} hat das Label verlassen.`, 'ok');
-      navigate('#/katalog');
+      navigate('#/');
     }
   },
   async toggleFavorite({ id }) {

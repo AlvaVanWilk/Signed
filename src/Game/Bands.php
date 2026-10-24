@@ -61,6 +61,58 @@ final class Bands
     }
 
     /** @param list<array{id: int, slot?: int}> $entries */
+    /**
+     * Jeder Künstler unter Vertrag ist in einer Band oder Solokünstler (eine Band mit einem Mitglied, benannt nach ihm).
+     * Wer ohne Band dasteht (frisch unterschrieben, herausgenommen, Band aufgelöst), bekommt hier seine Solo-Band.
+     */
+    /** Für Tests der alten Funktionen (Jam-Café, Börse, Einzelauftritte), die Musiker ohne Band voraussetzen. */
+    public static bool $autoSolo = true;
+
+    public static function ensureSoloBands(Repo $repo): void
+    {
+        if (!self::$autoSolo) {
+            return;
+        }
+        $db = $repo->db;
+        foreach ($db->all('SELECT * FROM musicians WHERE label_id = ? AND band_id IS NULL', [$repo->labelId]) as $row) {
+            $m = Repo::hydrateMusician($row);
+            if (Transfers::listed($db, $m['id'])) {
+                continue;
+            }
+            $name = self::fullName($m);
+            for ($n = 2; Names::bandTaken($db, $name); $n++) {
+                $name = sprintf('%s (%d)', self::fullName($m), $n);
+            }
+            $bandId = $db->insert('bands', ['label_id' => $repo->labelId, 'name' => $name, 'name_key' => Names::key($name), 'genre' => '', 'created_at' => Clock::now()]);
+            $db->update('musicians', ['band_id' => $bandId, 'band_slot' => 1], ['id' => $m['id']]);
+        }
+    }
+
+    /**
+     * Wer allein in einer noch unveröffentlichten Solo-Band steht, darf in eine andere Band wechseln; die leere Solo-Band verschwindet.
+     * @return array der Musiker ohne Band
+     */
+    private function freeFromSolo(array $m, ?int $targetBandId = null): array
+    {
+        if ($m['band_id'] === null) {
+            return $m;
+        }
+        $db = $this->repo->db;
+        $solo = $this->repo->band($m['band_id']);
+        $others = (int) $db->value('SELECT COUNT(*) FROM musicians WHERE band_id = ? AND id <> ?', [$solo['id'], $m['id']]);
+        if ($others > 0 || $m['band_id'] === $targetBandId) {
+            throw new ApiError(sprintf('%s spielt schon in einer Band.', $m['first_name']));
+        }
+        if ($solo['released'] || $solo['records'] > 0) {
+            throw new ApiError(sprintf('%s hat mit der eigenen Band schon etwas aufgebaut. Löse sie zuerst auf, wenn %s wechseln soll.', $m['first_name'], 'die Person'));
+        }
+        $db->exec('UPDATE musicians SET band_id = NULL, band_slot = 1 WHERE id = ?', [$m['id']]);
+        $db->exec("DELETE FROM records WHERE band_id = ? AND status = 'open'", [$solo['id']]);
+        $db->exec('DELETE FROM bands WHERE id = ?', [$solo['id']]);
+        $m['band_id'] = null;
+        return $m;
+    }
+
     public function create(string $name, array $entries): int
     {
         $name = self::cleanName($name, 'Der Bandname');
@@ -76,10 +128,7 @@ final class Bands
                 if (isset($members[$id])) {
                     continue;
                 }
-                $m = $this->repo->musician($id);
-                if ($m['band_id'] !== null) {
-                    throw new ApiError(sprintf('%s spielt schon in einer Band.', $m['first_name']));
-                }
+                $m = $this->freeFromSolo($this->repo->musician($id));
                 self::assertNotListed($db, $m);
                 $m['band_slot'] = self::slot($m, (int) ($entry['slot'] ?? 1));
                 $members[$id] = $m;
@@ -125,10 +174,7 @@ final class Bands
     {
         $this->repo->db->transaction(function () use ($bandId, $musicianId, $slot): void {
             $band = $this->idleBand($bandId);
-            $m = $this->repo->musician($musicianId);
-            if ($m['band_id'] !== null) {
-                throw new ApiError(sprintf('%s spielt schon in einer Band.', $m['first_name']));
-            }
+            $m = $this->freeFromSolo($this->repo->musician($musicianId), $bandId);
             self::assertNotListed($this->repo->db, $m);
             $m['band_slot'] = self::slot($m, $slot);
             $members = $this->repo->members($bandId);

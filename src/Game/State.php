@@ -14,6 +14,7 @@ final class State
         $now = Clock::now();
         Mood::settle($repo, $now);
         (new Submissions($repo))->topUp($now);
+        Bands::ensureSoloBands($repo);
         $label = $repo->label();
         $musicians = $repo->musicians();
         $gear = $repo->gear();

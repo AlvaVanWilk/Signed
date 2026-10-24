@@ -76,6 +76,10 @@
     .pl-mr { display: grid; grid-template-columns: 58px minmax(120px, 1.1fr) minmax(120px, 1fr) 76px minmax(110px, auto); gap: 16px; align-items: center; padding: 10px 16px 10px 10px; border-radius: 12px; background: var(--card); border: 1px solid var(--line); }
     .pl-mr .ph { width: 58px; height: 58px; border-radius: 50%; overflow: hidden; background: linear-gradient(180deg, #cfdbe6, #b5c4d2); box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--ring, transparent); }
     .pl-mr .ph svg { width: 100%; height: 100%; display: block; }
+    .pl-mr .ph { background: var(--split, #b5c4d2); }
+    .pl-gs { display: flex; gap: 5px; margin-top: 5px; }
+    .pl-gi { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--c); background: color-mix(in srgb, var(--c) 22%, transparent); }
+    .pl-gi svg { width: 15px; height: 15px; fill: none; stroke: color-mix(in srgb, var(--c) 55%, #fff); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
     .pl-mr b { display: block; font-weight: 700; } .pl-mr small { color: var(--muted); font-weight: 500; }
     .pl-mr .sk { display: block; height: 4px; border-radius: 2px; background: var(--off); overflow: hidden; margin-top: 7px; } .pl-mr .sk i { display: block; height: 100%; background: var(--lv); }
     .pl-rels { display: flex; gap: 6px; justify-content: flex-end; }
@@ -116,6 +120,18 @@
 
   const $ = (s) => document.querySelector(s);
   const GENRE = { pop: '#b04a72', rock: '#b8602a', metal: '#6b7280', punk: '#7b9a2e', jazz: '#b58a1c', elektro: '#3d7cb5', hiphop: '#7a5bc4', folk: '#4d8a5a' };
+  const GPATH = {
+  pop: 'M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6l-5.4 2.9 1.2-6-4.5-4.2 6.1-.7z',
+  rock: 'M13.5 2L5 13.5h6.5L10 22l9-12h-6.5z',
+  metal: 'M7.5 13V4.5a1.5 1.5 0 013 0V11 M15 11V5.5a1.5 1.5 0 013 0V14c0 4.5-2.7 7.5-6.2 7.5S6.5 19 6.5 15.5V13 M10.5 11.5a1.3 1.3 0 012.5 0v1 M13 11.5a1.2 1.2 0 012 0 M6.5 15.5l5.5-2',
+  punk: 'M12 3a9 9 0 100 18 9 9 0 100-18 M7 19L12 5l5 14 M7.5 13.5h9',
+  jazz: 'M3 16.5c4 2.5 14 2.5 18 0 M5.5 16l1.6-7.2c.4-1.7 2.2-2.3 3.4-1.2L12 9l1.5-1.4c1.2-1.1 3-.5 3.4 1.2l1.6 7.2 M7 13.5c3 1 7 1 10 0',
+  elektro: 'M2 12h4l2.5-7 3.5 14 3.5-14 2.5 7h4',
+  hiphop: 'M3 8.5h18V19H3z M7 8.5V5.5h10v3 M8 15.5a2 2 0 100-.1z M16 15.5a2 2 0 100-.1z M11 11.5h2',
+  folk: 'M5 19C5 10 11 5 20 4c-.8 9-6.2 15-15 15z M5 19l8.5-8.5',
+  };
+  const gIcon = (k) => `<span class="pl-gi" style="--c:${GENRE[k]}" title="${GNAME[k]}"><svg viewBox="0 0 24 24"><path d="${GPATH[k]}"/></svg></span>`;
+  const gSplit = (gs) => { const st = 100 / gs.length; return `linear-gradient(120deg, ${gs.map((k, i) => `color-mix(in srgb, ${GENRE[k]} 55%, #8d97a5) ${i * st}% ${(i + 1) * st}%`).join(', ')})`; };
   const GNAME = { pop: 'Pop', rock: 'Rock', metal: 'Metal', punk: 'Punk', jazz: 'Jazz', elektro: 'Elektro', hiphop: 'Hip-Hop', folk: 'Folk' };
   const INSTR = { guitar: 'Gitarre', bass: 'Bass', drums: 'Schlagzeug', vocals: 'Gesang', keys: 'Keyboard', sax: 'Saxophon' };
   const LV = ['#7d8291', '#4f9d69', '#4a86c8', '#9a5bc4'];
@@ -123,12 +139,12 @@
   const MOODW = { green: 'gut', yellow: 'angespannt', red: 'unzufrieden' };
   const look = (gender, skin, hair, hairColor, shirt, extra = {}) => ({ gender, skin, hair, hairColor, shirt, beard: 'none', glasses: 'none', hat: 'none', ...extra });
   const P = {
-    lena: { first: 'Lena', last: 'Berger', instr: 'vocals', lvl: 1, skill: 0.6, wb: 'green', look: look('f', '#eac0a2', 'lang', '#8a5a33', '#c8505a'), mood: 'ehrgeizig', id: 1 },
-    finn: { first: 'Finn', last: 'Okafor', instr: 'guitar', lvl: 2, skill: 0.3, wb: 'green', look: look('m', '#6b3f27', 'locken', '#1d1612', '#3a4258', { beard: 'stubble' }), mood: 'gelassen', id: 2 },
-    kim: { first: 'Kim', last: 'Novak', instr: 'drums', lvl: 1, skill: 0.8, wb: 'yellow', look: look('d', '#d9a27e', 'irokese', '#c0507a', '#3f8f78'), mood: 'chaot', id: 3 },
-    ida: { first: 'Ida', last: 'Lindqvist', instr: 'bass', lvl: 1, skill: 0.2, wb: 'green', look: look('f', '#f6d7c3', 'bob', '#e3c88a', '#4a6fa5', { glasses: 'round' }), mood: 'teamplayer', id: 4 },
-    svea: { first: 'Svea', last: 'Kaya', instr: 'keys', lvl: 0, skill: 0.5, wb: 'red', look: look('f', '#c58c63', 'zopf', '#a8442a', '#b8963c'), mood: 'diva', id: 5 },
-    yusuf: { first: 'Yusuf', last: 'Demir', instr: 'sax', lvl: 3, skill: 0.9, wb: 'green', look: look('m', '#a86f4b', 'kurz', '#3b2a20', '#6c4aa0', { hat: 'fedora' }), mood: 'rampensau', id: 6 },
+    lena: { genres: ['pop'], first: 'Lena', last: 'Berger', instr: 'vocals', lvl: 1, skill: 0.6, wb: 'green', look: look('f', '#eac0a2', 'lang', '#8a5a33', '#c8505a'), mood: 'ehrgeizig', id: 1 },
+    finn: { genres: ['rock','metal'], first: 'Finn', last: 'Okafor', instr: 'guitar', lvl: 2, skill: 0.3, wb: 'green', look: look('m', '#6b3f27', 'locken', '#1d1612', '#3a4258', { beard: 'stubble' }), mood: 'gelassen', id: 2 },
+    kim: { genres: ['punk'], first: 'Kim', last: 'Novak', instr: 'drums', lvl: 1, skill: 0.8, wb: 'yellow', look: look('d', '#d9a27e', 'irokese', '#c0507a', '#3f8f78'), mood: 'chaot', id: 3 },
+    ida: { genres: ['pop','elektro'], first: 'Ida', last: 'Lindqvist', instr: 'bass', lvl: 1, skill: 0.2, wb: 'green', look: look('f', '#f6d7c3', 'bob', '#e3c88a', '#4a6fa5', { glasses: 'round' }), mood: 'teamplayer', id: 4 },
+    svea: { genres: ['pop'], first: 'Svea', last: 'Kaya', instr: 'keys', lvl: 0, skill: 0.5, wb: 'red', look: look('f', '#c58c63', 'zopf', '#a8442a', '#b8963c'), mood: 'diva', id: 5 },
+    yusuf: { genres: ['jazz'], first: 'Yusuf', last: 'Demir', instr: 'sax', lvl: 3, skill: 0.9, wb: 'green', look: look('m', '#a86f4b', 'kurz', '#3b2a20', '#6c4aa0', { hat: 'fedora' }), mood: 'rampensau', id: 6 },
   };
   const BANDS = [
     { id: 1, name: 'Die Nachtfalter', genres: ['rock'], title: 'Rockband', mood: 'green', value: 71, songs: 7, fame: 2, members: ['lena', 'finn', 'kim', 'ida'], wish: 1, trophies: ['Goldene Schallplatte', 'Platz 1 der Charts'] },
@@ -194,8 +210,8 @@
       <div class="pl-members">${members.map((m, i) => {
         const wb = b.frozen ? 'red' : m.wb;
         return `<div class="pl-mr" style="--lv:${LV[m.lvl]}">
-          <span class="ph" style="--ring:${{ green: 'var(--ok)', yellow: 'var(--warn)', red: 'var(--bad)' }[wb]}">${portrait(m.look, m.mood)}</span>
-          <span><b>${m.first} ${m.last}</b><small>${INSTR[m.instr]} · ${LVN[m.lvl]}</small></span>
+          <span class="ph" style="--split:${gSplit(m.genres)};--ring:${{ green: 'var(--ok)', yellow: 'var(--warn)', red: 'var(--bad)' }[wb]}">${portrait(m.look, m.mood)}</span>
+          <span><b>${m.first} ${m.last}</b><small>${INSTR[m.instr]} · ${LVN[m.lvl]}</small><span class="pl-gs">${m.genres.map(gIcon).join('')}</span></span>
           <span><small>Können</small><span class="sk"><i style="width:${m.skill * 100}%"></i></span></span>
           <span><span class="only-a">${led(wbVal[wb], { h: 14, w: 5 })}</span><span class="only-b pl-word ${wb}"><span class="pl-dot ${wb}"></span></span></span>
           <span class="pl-rels">${members.length > 1 ? rels(m, i) : '<small>solo</small>'}</span>

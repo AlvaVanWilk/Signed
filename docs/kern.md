@@ -112,7 +112,7 @@ sind bis zu 50 % stärker als ein Duo (`MEMBER_SOUND_BONUS`). Dazu bekommen sie 
 - Bewusst kein eigener Verkaufs- oder Ruhm-Bonus fürs Genre: Der bessere Sound wirkt schon auf Ruhm, Platten und Charts.
 - Wechsel kommen in die Chronik; beim Aufnehmen zeigt das Spiel vorher, ob die Band ihr Genre verliert oder gewinnt.
 - **Band-Plätze:** bis zu 8 Bands – die ersten beiden sofort, weitere ab 50, 150, 450, 1.350, 4.050 und 12.150 Label-Ruhm (jeweils das Dreifache). Genres dürfen sich wiederholen.
-- **Namensänderung:** vor dem ersten Auftritt frei; danach kostet sie 300 ₲ und der Ruhm am alten Namen geht verloren.
+- **Namensänderung:** kostet nie Geld. Mit eigener Laufbahn (Auftritte oder Platten) geht der Ruhm am alten Namen verloren, und die Platten bleiben beim alten Namen (siehe „Ehemalige Bands“).
 
 ### Zusammenspiel und Chemie
 

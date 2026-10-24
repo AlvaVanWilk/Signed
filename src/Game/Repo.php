@@ -329,7 +329,7 @@ final class Repo
     public function bands(): array
     {
         $out = [];
-        foreach ($this->db->all('SELECT * FROM bands WHERE label_id = ? ORDER BY id', [$this->labelId]) as $row) {
+        foreach ($this->db->all('SELECT * FROM bands WHERE label_id = ? AND retired_at IS NULL ORDER BY id', [$this->labelId]) as $row) {
             $b = self::hydrateBand($row);
             $out[$b['id']] = $b;
         }
@@ -367,6 +367,7 @@ final class Repo
             // Musiker-ID => [Instrument von vorher, Zusammenspiel-Abzug], siehe Bands::setSlot()
             'slot_return' => json_decode((string) ($r['slot_return'] ?? ''), true) ?: [],
             'released' => (bool) $r['released'],
+            'retired' => ($r['retired_at'] ?? null) !== null,
             'fame_own' => (float) $r['fame_own'],
             'songs_written' => (float) ($r['songs_written'] ?? 0),
             'mood_at' => (int) ($r['mood_at'] ?? 0),

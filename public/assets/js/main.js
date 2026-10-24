@@ -21,6 +21,7 @@ import * as packs from './views/packs.js';
 import * as storage from './views/storage.js';
 import * as submissions from './views/submissions.js';
 import './views/together.js';
+import * as chronicle from './views/chronicle.js';
 
 const NAV = [
   ['', 'Übersicht'],
@@ -29,6 +30,7 @@ const NAV = [
   ['lager', 'Lager'],
   ['boerse', 'Börse'],
   ['charts', 'Charts'],
+  ['chronik', 'Chronik'],
 ];
 
 const VIEWS = {
@@ -40,6 +42,7 @@ const VIEWS = {
   band: (route) => viewBand(route),
   musician: (route) => musician.renderMusician(route),
   charts: () => charts.render(),
+  chronik: () => chronicle.render(),
   boerse: () => market.render(),
   hilfe: () => help.render(),
 };

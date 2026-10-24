@@ -439,3 +439,23 @@ button.lb-pill:disabled { opacity: 0.45; cursor: default; }
 .lb-slotmenu .lb-ins { margin: 0; padding: 4px 8px 4px 4px; border: 0; border-radius: 9px; background: transparent; cursor: pointer; font: inherit; }
 .lb-slotmenu .lb-ins:hover { background: var(--lb-card2); }
 .lb-slotmenu .lb-ins .sk { flex: 0 0 64px; }
+
+/* Zusammentun: Namenswahl */
+.tg-opts { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
+.tg-opt { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--lb-line); background: var(--lb-card); cursor: pointer; }
+.tg-opt.best { border-color: #3f7d5f; }
+.tg-opt > span { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.tg-opt small .good { color: #7fd0a6; } .tg-opt small .bad { color: #e0a45a; }
+.tg-newname { margin-left: 6px; padding: 5px 8px; border-radius: 8px; border: 1px solid var(--lb-line); background: var(--lb-card2); color: var(--lb-text); font: inherit; }
+
+/* Label-Chronik */
+.ch-list { display: flex; flex-direction: column; gap: 14px; }
+.ch-band { padding: 16px 18px; border-radius: 14px; border: 1px solid var(--lb-line); background: var(--lb-card); }
+.ch-band header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; }
+.ch-band h2 { margin: 0; }
+.ch-end { margin: 6px 0 4px; }
+.ch-tag { display: inline-block; padding: 2px 8px; border-radius: 999px; background: var(--lb-card2); font-size: .78rem; font-weight: 700; }
+.ch-events, .ch-records { list-style: none; margin: 4px 0 8px; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: .92rem; }
+.ch-events time { color: var(--lb-muted); margin-right: 6px; font-size: .82rem; }
+.ch-awards { display: flex; flex-wrap: wrap; gap: 6px; }
+.ch-award { padding: 3px 10px; border-radius: 999px; border: 1px solid var(--lb-line); font-size: .85rem; }

@@ -390,3 +390,16 @@ Beim ersten Login nach dem Umbau (Saison 2) bleiben **Labelname und Konto**, all
 - Sortierung: erst echte Vorteile (Genre-Titel, Genre-Bonus, neues Instrument bei steigendem Sound), dann gute Passung der Charaktere (Beziehungsziel ≥ 4), dann Sound-Änderung; Unmögliches zuletzt mit Grund. Suchfeld nach Namen (auch Mitglieder).
 - Band-Leiste links ist per Ziehen ordenbar (`navOrder`, Schlüssel `b<ID>`). Gelangweilte Figuren ohne Instrument zucken ab und zu die Schultern.
 - Solokünstler: keine „Band“-Wörter, „Künstler entlassen“ statt „Band auflösen“, kein ✕, kein Zusammenhalt-Feld.
+
+## Zusammentun, Namen und ehemalige Bands
+
+- **Zusammentun geht immer** (Bands wie Einzelmusiker, mit oder ohne Laufbahn). Die Liste bewertet für **beide** Seiten (Genre-Bonus, Charaktere), sortiert nach dem Mittel beider Bewertungen.
+- **Namenswahl** beim Zusammentun: Name A, Name B oder neuer Name. Ein Einzelmusiker hat keinen Namen, der bleiben könnte (nur Name der Band oder neu). Der Dialog zeigt den Ruhm danach:
+  Ruhm danach = Bekanntheit aller Mitglieder + Ruhm des Namens, der bleibt. Wer seinen Namen aufgibt, verliert den Ruhm daran.
+- **Umbenennen** kostet kein Geld. Mit Laufbahn geht der Ruhm am alten Namen verloren (wie bei „neuer Name“).
+- **Ehemalige Bands:** Gibt eine Band ihren Namen auf (umbenannt, aufgelöst, aufgegangen, Solokünstler verlässt das Label) und hat eine Laufbahn,
+  bleibt sie als Zeile in `bands` mit `retired_at` erhalten (Grund, Notiz, Ruhm am Ende `fame_final`). Ihre Platten und ihr Verlauf (Chronik-Einträge) bleiben bei ihr, nicht bei der weiterspielenden Band;
+  die Zähler der weiterspielenden Band (Platten, Auftritte, Songs) beginnen bei 0. Ohne Laufbahn gibt es nichts zu bewahren, die Band verschwindet.
+- **Label-Chronik** (Menü „Chronik“): alle ehemaligen Bands mit Gründung, Wechseln, Ende, Platten und Auszeichnungen.
+- **Tantiemen** laufen, solange die Platte höchstens auf Platz 50 der Charts steht (`Balance::ROYALTY_RANKS`); die Punkte sinken stündlich (CHART_DECAY), nach 7 Tagen endet es ohnehin.
+  Die Tantiemen gehen ans Label, der Ruhmanteil nur an aktuelle Mitglieder der Band (bei ehemaligen Bands niemand).

@@ -421,6 +421,13 @@ final class Schema
             [
                 'ALTER TABLE labels ADD COLUMN sub_order TEXT NULL',
             ],
+            // 27: Ehemalige Bands: Wer seinen Namen aufgibt (umbenannt, aufgelöst, aufgegangen), bleibt als Eintrag mit Platten und Ruhm von damals erhalten
+            [
+                'ALTER TABLE bands ADD COLUMN retired_at INTEGER NULL',
+                'ALTER TABLE bands ADD COLUMN retired_reason VARCHAR(10) NULL',
+                'ALTER TABLE bands ADD COLUMN retired_note VARCHAR(200) NULL',
+                'ALTER TABLE bands ADD COLUMN fame_final REAL NOT NULL DEFAULT 0',
+            ],
         ];
     }
 }

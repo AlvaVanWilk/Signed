@@ -370,7 +370,7 @@ final class Api
 
     private function bandMerge(array $in, Repo $repo): array
     {
-        $kept = (new Bands($repo))->merge(self::int($in, 'bandId'), self::int($in, 'otherId'));
+        $kept = (new Bands($repo))->merge(self::int($in, 'bandId'), self::int($in, 'otherId'), (string) ($in['keepName'] ?? 'a'), (string) ($in['newName'] ?? ''), (int) ($in['slot'] ?? 1));
         return ['bandId' => $kept, 'state' => State::build($repo)];
     }
 
@@ -495,7 +495,7 @@ final class Api
             if ((int) $this->db->value('SELECT COUNT(*) FROM musicians WHERE band_id = ?', [$m['band_id']]) > 1) {
                 throw new ApiError('Erst aus der Band nehmen, dann entlassen.');
             }
-            (new Bands($repo))->disband($m['band_id']);
+            (new Bands($repo))->disband($m['band_id'], 'left');
             $m['band_id'] = null;
         }
         if ((int) $m['busy_until'] > \Signed\Clock::now()) {

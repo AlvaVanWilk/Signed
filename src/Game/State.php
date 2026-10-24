@@ -50,7 +50,7 @@ final class State
         $chartEntry = array_column($albums, null, 'recordId');
         $discography = [];
         $promoted = [];
-        foreach ($db->all("SELECT id FROM bands WHERE label_id = ?", [$repo->labelId]) as $b) {
+        foreach ($db->all("SELECT id FROM bands WHERE label_id = ? AND retired_at IS NULL", [$repo->labelId]) as $b) {
             $promoted[(int) $b['id']] = (int) (Charts::promoted($db, (int) $b['id'])['id'] ?? 0);
         }
         foreach ($db->all("SELECT * FROM records WHERE label_id = ? AND status = 'done' ORDER BY finished_at DESC", [$repo->labelId]) as $row) {
@@ -261,6 +261,7 @@ final class State
             'running' => array_map([Present::class, 'activity'], $running),
             'results' => array_map([Present::class, 'result'], $results),
             'news' => array_map(static fn ($h) => ['id' => (int) $h['id'], 'kind' => $h['kind'], 'text' => $h['text'], 'createdAt' => (int) $h['created_at']], $news),
+            'chronicle' => self::chronicle($db, $repo->labelId, $discography),
             'history' => array_map(static fn ($h) => [
                 'id' => (int) $h['id'],
                 'bandId' => $h['band_id'] === null ? null : (int) $h['band_id'],
@@ -270,5 +271,37 @@ final class State
                 'createdAt' => (int) $h['created_at'],
             ], $history),
         ];
+    }
+
+    /**
+     * Ehemalige Bands des Labels mit allem, was von ihnen bleibt: Platten, Ruhm am Ende, Verlauf (Gründung, Wechsel, Ende).
+     * @param array<int, list<array>> $discography Platten je Band
+     * @return list<array<string, mixed>>
+     */
+    private static function chronicle(\Signed\Db $db, int $labelId, array $discography): array
+    {
+        $rows = $db->all('SELECT * FROM bands WHERE label_id = ? AND retired_at IS NOT NULL ORDER BY retired_at DESC, id DESC', [$labelId]);
+        if (!$rows) {
+            return [];
+        }
+        $ids = array_map(static fn ($r) => (int) $r['id'], $rows);
+        $events = [];
+        $placeholders = implode(', ', array_fill(0, count($ids), '?'));
+        foreach ($db->all("SELECT band_id, kind, text, created_at FROM history WHERE band_id IN ($placeholders) ORDER BY id ASC", $ids) as $h) {
+            $events[(int) $h['band_id']][] = ['kind' => $h['kind'], 'text' => $h['text'], 'createdAt' => (int) $h['created_at']];
+        }
+        return array_map(static fn ($r) => [
+            'id' => (int) $r['id'],
+            'name' => $r['name'],
+            'foundedAt' => (int) $r['created_at'],
+            'endedAt' => (int) $r['retired_at'],
+            'reason' => $r['retired_reason'],
+            'note' => $r['retired_note'],
+            'fameFinal' => round((float) $r['fame_final'], 1),
+            'gigsPlayed' => (int) $r['gigs_played'],
+            'records' => (int) $r['records'],
+            'discography' => $discography[(int) $r['id']] ?? [],
+            'events' => array_slice($events[(int) $r['id']] ?? [], -40),
+        ], $rows);
     }
 }

@@ -566,7 +566,7 @@ function chronicle(b) {
 }
 
 /** Auszeichnungen ergeben sich aus dem, was die Band erreicht hat. */
-function bandAwards(b) {
+export function bandAwards(b) {
   const list = [];
   if (b.gigsPlayed > 0) list.push(['🎤', 'Erster Gig', `${b.gigsPlayed} Gigs gespielt`]);
   if (b.records > 0) list.push(['💿', 'Erste Platte', `${b.records} ${b.records === 1 ? 'Platte' : 'Platten'}`]);
@@ -878,15 +878,14 @@ defineActions({
   },
   async bandRename({ id }) {
     const b = bandById(id);
-    if (b.released) {
+    if (b.released || b.records > 0) {
       const ok = await confirmDialog(
-        `Namensänderung beantragen? Unter „${b.name}“ kennt man die Band schon: Der Ruhm am Namen (${fmt1(b.fameOwn)}) geht verloren, `
-        + `die Band hat danach ${fmt1(b.fame - b.fameOwn)} statt ${fmt1(b.fame)} Ruhm. Die Änderung kostet ${money(cat().rules.renameCost)}.`,
-        { ok: 'Beantragen', danger: true },
+        `Umbenennen kostet nichts, aber unter „${b.name}“ kennt man die Band schon: Der Ruhm am Namen (${fmt1(b.fameOwn)}) geht verloren, `
+        + `die Band hat danach ${fmt1(b.fame - b.fameOwn)} statt ${fmt1(b.fame)} Ruhm. Die Platten bleiben bei „${b.name}“ (Tantiemen laufen weiter) und stehen in der Chronik.`,
+        { ok: 'Umbenennen', danger: true },
       );
       if (!ok) return;
     }
-    if (!(await confirmSpend(cat().rules.renameCost))) return;
     const name = await promptDialog('Neuer Bandname', b.name);
     if (name && name !== b.name) await mutate('bandRename', { bandId: b.id, name });
   },
@@ -895,7 +894,7 @@ defineActions({
     const members = b.memberIds.map(musicianById).filter(Boolean);
     // Besteht die Band nur aus Jam-Café-Musikern, sollen die nicht glauben, sie könnten gleich wieder jammen.
     const jamOnly = members.length > 0 && members.every((m) => m.jammed);
-    const ok = await confirmDialog(`${b.name} auflösen? Eine laufende Produktion geht verloren.${jamOnly
+    const ok = await confirmDialog(`${b.name} auflösen? Eine laufende Produktion geht verloren.${b.released || b.records > 0 ? ' Die Band bleibt mit ihren Platten in der Chronik; die Tantiemen laufen weiter.' : ''}${jamOnly
       ? ` ${members.map((m) => m.firstName).join(' und ')} haben sich im Jam-Café gefunden – ins Jam-Café können sie danach nicht noch einmal.` : ''}`, { ok: 'Auflösen', danger: true });
     if (!ok) return;
     if (await mutate('bandDisband', { bandId: b.id })) navigate('#/');

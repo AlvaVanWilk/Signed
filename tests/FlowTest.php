@@ -760,22 +760,32 @@ test('Ein Teil des Ruhms bleibt am Bandnamen, auch wenn Mitglieder gehen', funct
     check($left['fame'] < 20.0 && $left['fame'] > 20.0 * Balance::BAND_FAME_SHARE, 'Wer geht, nimmt seine Bekanntheit mit, der Name behält seinen Teil');
 });
 
-test('Namensänderung: vor dem ersten Auftritt frei, danach mit Gebühr und ohne den Ruhm des alten Namens', function () {
+test('Namensänderung: immer kostenlos; mit Laufbahn geht der Ruhm am Namen verloren und die Platten bleiben beim alten Namen', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Umbenenner');
     $band = foundBand($p);
     $money = $p->get('state')['label']['money'];
     $p->post('bandRename', ['bandId' => $band['id'], 'name' => 'Erster Versuch']);
     checkEquals($money, $p->get('state')['label']['money'], 'Vor dem ersten Auftritt kostenlos');
+    checkEquals(0, count($p->get('state')['chronicle']), 'ohne Laufbahn bleibt nichts zurück');
 
     $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'busking']);
     Clock::advance(Balance::BUSKING['songs'] * Balance::SONG_SECONDS);
-    $db->exec('UPDATE bands SET fame_own = 12 WHERE id = ?', [$band['id']]);
+    $db->exec('UPDATE bands SET fame_own = 12, records = 1 WHERE id = ?', [$band['id']]);
+    $db->exec("INSERT INTO records (label_id, band_id, title, songs_total, songs_done, song_results, status, created_at, finished_at) VALUES (?, ?, 'Erste', 3, 3, '[]', 'done', ?, ?)", [$band['labelId'] ?? 1, $band['id'], Clock::now(), Clock::now()]);
     $money = $p->get('state')['label']['money'];
     $state = $p->post('bandRename', ['bandId' => $band['id'], 'name' => 'Zweiter Versuch'])['state'];
-    checkEquals($money - Balance::RENAME_COST, $state['label']['money']);
-    checkEquals(0.0, (float) bandById($state, $band['id'])['fameOwn']);
-    checkEquals('Zweiter Versuch', bandById($state, $band['id'])['name']);
+    checkEquals($money, $state['label']['money'], 'auch danach kostenlos');
+    $now = bandById($state, $band['id']);
+    checkEquals(0.0, (float) $now['fameOwn']);
+    checkEquals('Zweiter Versuch', $now['name']);
+    checkEquals(0, $now['records'], 'die Platten gehören nicht mehr zur neuen Band');
+    checkEquals(1, count($state['chronicle']), 'die alte Band steht in der Chronik');
+    $former = $state['chronicle'][0];
+    checkEquals('Erster Versuch', $former['name']);
+    checkEquals('renamed', $former['reason']);
+    checkEquals(12.0, $former['fameFinal']);
+    checkEquals(1, count($former['discography']), 'ihre Platte bleibt bei ihr');
 });
 
 test('Instrumente: Eigenschaften ab episch, Verkauf an den Second-Hand-Laden', function () {
@@ -1548,20 +1558,24 @@ test('Zusammentun: Kandidaten nach Nutzen geordnet, Unmögliches zuletzt, Bands 
     foreach ($list as $c) {
         check(in_array($c['rating'], ['better', 'neutral', 'worse'], true), 'Bewertung');
     }
-    // Eine Band mit Laufbahn nimmt die ohne auf (und bleibt bestehen).
+    // Zusammentun mit Namenswahl: Wer den Namen aufgibt, verliert den Ruhm daran, seine Platten bleiben bei der ehemaligen Band.
     $other = $list[0];
-    $db->exec('UPDATE bands SET released = 1 WHERE id = ?', [$other['bandId']]);
-    $res = $p->post('bandMerge', ['bandId' => $band['id'], 'otherId' => $other['bandId']]);
-    checkEquals($other['bandId'], $res['bandId'], 'die mit Laufbahn bleibt');
-    $kept = bandById($res['state'], $other['bandId']);
-    check(count($kept['memberIds']) >= 2, 'beide sind dabei');
-    check(count(array_filter($res['state']['bands'], static fn ($b) => $b['id'] === $band['id'])) === 0, 'die ohne Laufbahn geht darin auf');
-    // Haben beide eine Laufbahn, geht es nicht und die Liste sagt es.
-    $rest = array_values(array_filter($res['state']['bands'], static fn ($b) => $b['id'] !== $other['bandId']));
-    if ($rest) {
-        $db->exec('UPDATE bands SET released = 1 WHERE id = ?', [$rest[0]['id']]);
-        checkApiError(fn () => $p->post('bandMerge', ['bandId' => $other['bandId'], 'otherId' => $rest[0]['id']]), 'Laufbahn');
-        $blockedList = $p->post('bandJoinCandidates', ['bandId' => $other['bandId']])['candidates'];
-        check(end($blockedList)['blocked'] !== null, 'Unmögliches steht zuletzt');
-    }
+    $db->exec('UPDATE bands SET released = 1, records = 1, fame_own = 30 WHERE id = ?', [$other['bandId']]);
+    $db->exec("INSERT INTO records (label_id, band_id, title, songs_total, songs_done, song_results, status, created_at, finished_at) VALUES (?, ?, 'Alte Platte', 3, 3, '[]', 'done', ?, ?)", [$p->get('state')['label']['id'] ?? 1, $other['bandId'], Clock::now(), Clock::now()]);
+    // Ein Einzelmusiker hat keinen Namen, den man behalten könnte.
+    checkApiError(fn () => $p->post('bandMerge', ['bandId' => $band['id'], 'otherId' => $other['bandId'], 'keepName' => 'b']), 'Namen');
+    $res = $p->post('bandMerge', ['bandId' => $band['id'], 'otherId' => $other['bandId'], 'keepName' => 'new', 'newName' => 'Zusammen Neu']);
+    checkEquals($band['id'], $res['bandId'], 'die Zeile dieser Band besteht weiter');
+    $kept = bandById($res['state'], $band['id']);
+    checkEquals('Zusammen Neu', $kept['name']);
+    check(in_array($other['memberIds'][0], $kept['memberIds'], true), 'das neue Mitglied ist dabei');
+    checkEquals(0.0, (float) $kept['fameOwn'], 'mit neuem Namen ist der Ruhm am Namen weg');
+    check(count(array_filter($res['state']['bands'], static fn ($b) => $b['id'] === $other['bandId'])) === 0, 'die andere Band steht nicht mehr in der Leiste');
+    $former = array_values(array_filter($res['state']['chronicle'], static fn ($c) => $c['id'] === $other['bandId']));
+    checkEquals(1, count($former), 'die andere Band steht in der Chronik');
+    checkEquals('merged', $former[0]['reason']);
+    checkEquals(30.0, $former[0]['fameFinal']);
+    checkEquals(1, count($former[0]['discography']), 'ihre Platte bleibt bei ihr');
+    // Tantiemen: nur bis Platz 50 der Charts
+    check(Balance::ROYALTY_RANKS === 50, 'Tantiemen enden nach Platz 50');
 });

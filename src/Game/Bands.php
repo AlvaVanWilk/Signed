@@ -145,26 +145,89 @@ final class Bands
             foreach ($members as $m) {
                 $db->update('musicians', ['band_id' => $bandId, 'band_slot' => $m['band_slot']], ['id' => $m['id']]);
             }
-            $this->repo->log('band', sprintf('Die Band „%s“ ist gegründet.', $name), $bandId);
+            $this->repo->log('band', mb_substr(sprintf('Die Band „%s“ ist gegründet von %s.', $name, implode(', ', array_map(static fn ($m) => self::fullName($m), $members))), 0, 250), $bandId);
             $this->syncIdentity($this->repo->band($bandId));
             return $bandId;
         });
     }
 
     /**
-     * Wer passt zu dieser Band? Alle Solokünstler und anderen Bands, die sich dazuholen ließen, nach Nutzen geordnet:
-     * erst echte Vorteile (Genre-Titel, Genre-Bonus, neues Instrument), dann gute Passung der Charaktere, dann der Rest; Unmögliches zuletzt.
+     * Was das Zusammentun für diese Band bedeutet: Meldungen (nur echte Pluspunkte und Verschlechterungen) und ein Maß für das Ausmaß.
+     * @param array $band Band mit ihren Vorlieben (Genre)
+     * @param list<array> $members ihre Mitglieder, $group die dazukommenden
+     * @return array{effects: list<array>, score: float, avg: float}
+     */
+    private function evaluate(array $band, array $members, array $group): array
+    {
+        $after = array_merge($members, $group);
+        $idNow = BandCalc::identity($members, $band['genre'], $band['genre2']);
+        $idAfter = BandCalc::identity($after, $band['genre'], $band['genre2']);
+        $effects = [];
+        // Gemeinsames Genre aller (nach dem Zusammentun)
+        $shared = [];
+        foreach ($idAfter['checks'] as $genre => $check) {
+            if ($check['fans'] === count($after)) {
+                $shared[] = $genre;
+            }
+        }
+        if ($shared) {
+            $effects[] = ['good' => true, 'text' => 'Gemeinsames Genre: ' . implode(' und ', array_map(static fn ($g) => Catalog::GENRES[$g]['name'], $shared))];
+            // Besetzungs-Schablone des Genres: erfüllt der Neue ein Stück davon, oder gar das letzte?
+            $genre = $idAfter['primary'] ?? $shared[0];
+            $bandName = BandCalc::title($genre, null);
+            if ($idNow['primary'] !== $genre && $idAfter['primary'] === $genre) {
+                $effects[] = ['good' => true, 'text' => sprintf('Vervollständigt die %s', $bandName)];
+            } elseif ($idAfter['primary'] === null || $idNow['primary'] !== $genre) {
+                $nowReq = $idNow['checks'][$genre]['requirements'];
+                foreach ($idAfter['checks'][$genre]['requirements'] as $i => $req) {
+                    if (!$nowReq[$i]['met'] && $req['have'] > $nowReq[$i]['have']) {
+                        $given = array_values(array_unique(array_filter(array_map([BandCalc::class, 'instrument'], $group), static fn ($t) => in_array($t, $req['instruments'], true))));
+                        $effects[] = ['good' => true, 'text' => sprintf('Bringt %s für die %s', implode(' oder ', array_map(static fn ($t) => Catalog::INSTRUMENTS[$t]['name'], $given)), $bandName)];
+                    }
+                }
+            }
+        } elseif ($idAfter['bonus'] < $idNow['bonus'] - 1e-9) {
+            $effects[] = ['good' => false, 'text' => sprintf('Kein gemeinsames Genre: Sound %d %%', (int) round(($idAfter['bonus'] / max(0.01, $idNow['bonus']) - 1) * 100))];
+        }
+        // Charakter: verstehen sie sich über das Genre hinaus gut oder reiben sie sich?
+        $pairs = [];
+        foreach ($group as $g) {
+            foreach ($members as $m) {
+                $fit = Mood::fit($g, $m);
+                $genreTerm = Balance::RELATION['genres'][min(3, count(array_intersect($g['genres'], $m['genres'])))];
+                $pairs[] = ['g' => $g, 'm' => $m, 'v' => Mood::relationTarget($fit), 'own' => $fit - $genreTerm];
+            }
+        }
+        $avg = $pairs ? array_sum(array_column($pairs, 'v')) / count($pairs) : 0.0;
+        $teamplayer = array_values(array_filter($group, static fn ($g) => in_array('teamplayer', $g['personality'], true)));
+        if ($teamplayer) {
+            $effects[] = ['good' => true, 'text' => sprintf('%s ist Teamplayer und hilft allen', $teamplayer[0]['first_name'])];
+        } else {
+            usort($pairs, static fn ($a, $b) => $b['own'] <=> $a['own']);
+            if ($pairs && $pairs[0]['own'] >= 0.2) {
+                $effects[] = ['good' => true, 'text' => sprintf('%s und %s verstehen sich gut', $pairs[0]['g']['first_name'], $pairs[0]['m']['first_name'])];
+            }
+        }
+        usort($pairs, static fn ($a, $b) => $a['v'] <=> $b['v']);
+        if ($pairs && $pairs[0]['v'] <= -3) {
+            $effects[] = ['good' => false, 'text' => sprintf('%s und %s würden sich reiben', $pairs[0]['g']['first_name'], $pairs[0]['m']['first_name'])];
+        }
+        // Ausmaß der Veränderung, nur was am Zusammentun selbst hängt: Genre-Bonus (in %) und Verständnis (neutral = 3, der Startwert für Fremde).
+        // Das Können des Neuen zählt nicht, das ist eine Frage der Person und nicht der Passung.
+        $score = round(($idAfter['bonus'] / max(0.01, $idNow['bonus']) - 1) * 100 + 2 * ($avg - 3.0), 1);
+        return ['effects' => $effects, 'score' => $score, 'avg' => $avg];
+    }
+
+    /**
+     * Wer passt zu dieser Band? Alle Solokünstler und anderen Bands, die sich zusammentun ließen. Bewertet wird für beide Seiten
+     * (die andere Band hat auch etwas davon oder davon zu befürchten); sortiert vom größten Gewinn über neutral bis zum größten Verlust.
      * @return list<array<string, mixed>>
      */
     public function joinCandidates(int $bandId): array
     {
         $band = $this->repo->band($bandId);
         $members = $this->repo->members($bandId);
-        $gear = $this->repo->gearByMusician();
         $now = Clock::now();
-        $relNow = Mood::relations($this->repo, array_map(static fn ($m) => ['band_id' => $bandId] + $m, $members));
-        $idNow = BandCalc::identity($members, $band['genre'], $band['genre2']);
-        $soundNow = BandCalc::sound($members, Mood::cohesionValue($relNow), $gear, $idNow['bonus']);
         $out = [];
         foreach ($this->repo->bands() as $other) {
             if ($other['id'] === $bandId) {
@@ -176,76 +239,15 @@ final class Bands
             }
             $solo = count($group) === 1;
             $blocked = null;
-            if (self::hasCareer($band) && self::hasCareer($other)) {
-                $blocked = $solo ? sprintf('%s und %s haben beide schon eine eigene Laufbahn.', $group[0]['first_name'], $band['name']) : sprintf('„%s“ und „%s“ haben beide schon eine eigene Laufbahn.', $other['name'], $band['name']);
-            } elseif ($other['busy_until'] > $now || $band['busy_until'] > $now) {
+            if ($other['busy_until'] > $now || $band['busy_until'] > $now) {
                 $blocked = 'Gerade beschäftigt.';
-            }
-            $after = array_merge($members, $group);
-            if ($blocked === null && ($problems = BandCalc::lineupProblems($after))) {
+            } elseif ($problems = BandCalc::lineupProblems(array_merge($members, $group))) {
                 $blocked = $problems[0];
             }
-            $relAfter = Mood::relations($this->repo, array_map(static fn ($m) => ['band_id' => $bandId] + $m, $after));
-            $idAfter = BandCalc::identity($after, $band['genre'], $band['genre2']);
-            $soundAfter = BandCalc::sound($after, Mood::cohesionValue($relAfter), $gear, $idAfter['bonus']);
-            $effects = [];
-            $green = false;
-            // Gemeinsames Genre aller (nach dem Zusammentun)
-            $shared = [];
-            foreach ($idAfter['checks'] as $genre => $check) {
-                if ($check['fans'] === count($after)) {
-                    $shared[] = $genre;
-                }
-            }
-            if ($shared) {
-                $effects[] = ['good' => true, 'text' => 'Gemeinsames Genre: ' . implode(' und ', array_map(static fn ($g) => Catalog::GENRES[$g]['name'], $shared))];
-                $green = true;
-                // Besetzungs-Schablone des Genres: erfüllt der Neue ein Stück davon, oder gar das letzte?
-                $genre = $idAfter['primary'] ?? $shared[0];
-                $bandName = BandCalc::title($genre, null);
-                if ($idNow['primary'] !== $genre && $idAfter['primary'] === $genre) {
-                    $effects[] = ['good' => true, 'text' => sprintf('Vervollständigt die %s', $bandName)];
-                } elseif ($idAfter['primary'] === null || $idNow['primary'] !== $genre) {
-                    $nowReq = $idNow['checks'][$genre]['requirements'];
-                    foreach ($idAfter['checks'][$genre]['requirements'] as $i => $req) {
-                        if (!$nowReq[$i]['met'] && $req['have'] > $nowReq[$i]['have']) {
-                            $given = array_values(array_unique(array_filter(array_map([BandCalc::class, 'instrument'], $group), static fn ($t) => in_array($t, $req['instruments'], true))));
-                            $effects[] = ['good' => true, 'text' => sprintf('Bringt %s für die %s', implode(' oder ', array_map(static fn ($t) => Catalog::INSTRUMENTS[$t]['name'], $given)), $bandName)];
-                        }
-                    }
-                }
-            } elseif ($idAfter['bonus'] < $idNow['bonus'] - 1e-9) {
-                $effects[] = ['good' => false, 'text' => sprintf('Kein gemeinsames Genre: Sound %d %%', (int) round(($idAfter['bonus'] / max(0.01, $idNow['bonus']) - 1) * 100))];
-            }
-            // Charakter: verstehen sie sich über das Genre hinaus gut oder reiben sie sich?
-            $pairs = [];
-            foreach ($group as $g) {
-                foreach ($members as $m) {
-                    $fit = Mood::fit($g, $m);
-                    $genreTerm = Balance::RELATION['genres'][min(3, count(array_intersect($g['genres'], $m['genres'])))];
-                    $pairs[] = ['g' => $g, 'm' => $m, 'v' => Mood::relationTarget($fit), 'own' => $fit - $genreTerm];
-                }
-            }
-            $avg = $pairs ? array_sum(array_column($pairs, 'v')) / count($pairs) : 0.0;
-            $teamplayer = array_values(array_filter($group, static fn ($g) => in_array('teamplayer', $g['personality'], true)));
-            if ($teamplayer) {
-                $effects[] = ['good' => true, 'text' => sprintf('%s ist Teamplayer und hilft allen', $teamplayer[0]['first_name'])];
-                $green = true;
-            } else {
-                usort($pairs, static fn ($a, $b) => $b['own'] <=> $a['own']);
-                if ($pairs && $pairs[0]['own'] >= 0.2) {
-                    $effects[] = ['good' => true, 'text' => sprintf('%s und %s verstehen sich gut', $pairs[0]['g']['first_name'], $pairs[0]['m']['first_name'])];
-                    $green = true;
-                }
-            }
-            usort($pairs, static fn ($a, $b) => $a['v'] <=> $b['v']);
-            if ($pairs && $pairs[0]['v'] <= -3) {
-                $effects[] = ['good' => false, 'text' => sprintf('%s und %s würden sich reiben', $pairs[0]['g']['first_name'], $pairs[0]['m']['first_name'])];
-            }
-            // Ausmaß der Veränderung, nur was am Zusammentun selbst hängt: Genre-Bonus (in %) und Verständnis (neutral = 3, der Startwert für Fremde).
-            // Das Können des Neuen zählt nicht, das ist eine Frage der Person und nicht der Passung.
-            $soundDelta = $soundNow > 0 ? ($soundAfter / $soundNow - 1) * 100 : 0.0;
-            $score = round(($idAfter['bonus'] / max(0.01, $idNow['bonus']) - 1) * 100 + 2 * ($avg - 3.0), 1);
+            $mine = $this->evaluate($band, $members, $group);
+            // Aus Sicht der anderen Band (ein Einzelmusiker hat keine Band-Vorteile oder -Nachteile zu verlieren)
+            $theirs = $solo ? null : $this->evaluate($other, $group, $members);
+            $score = $theirs === null ? $mine['score'] : round(($mine['score'] + $theirs['score']) / 2, 1);
             $out[] = [
                 'kind' => $solo ? 'musician' : 'band',
                 'bandId' => $other['id'],
@@ -253,12 +255,12 @@ final class Bands
                 'name' => $solo ? self::fullName($group[0]) : $other['name'],
                 'memberIds' => array_column($group, 'id'),
                 'blocked' => $blocked,
-                'green' => $green,
-                'soundDelta' => round($soundDelta, 1),
                 'score' => $score,
                 'rating' => $score > 1.0 ? 'better' : ($score < -1.0 ? 'worse' : 'neutral'),
-                'compat' => round($avg, 1),
-                'effects' => $effects,
+                'compat' => round($mine['avg'], 1),
+                'effects' => $mine['effects'],
+                'effectsOther' => $theirs['effects'] ?? [],
+                'nameOptions' => self::nameOptions($band, count($members), $other, count($group)),
             ];
         }
         // Unmögliches zuletzt, sonst vom größten Gewinn über neutral bis zum größten Verlust.
@@ -266,43 +268,115 @@ final class Bands
         return array_slice($out, 0, 80);
     }
 
+    /** Eigene Laufbahn: Auftritte oder Platten, also ein Name, der etwas wert ist. */
     private static function hasCareer(array $band): bool
     {
         return $band['released'] || $band['records'] > 0;
     }
 
-    /**
-     * Zwei Bands tun sich zusammen. Die Band mit Laufbahn (Auftritte, Platten) bleibt bestehen und nimmt die andere auf;
-     * hat keine eine Laufbahn, bleibt diese. Haben beide eine, geht es nicht.
-     * @return int Die Band, die übrig bleibt
-     */
-    public function merge(int $bandId, int $otherId): int
+    /** Bandnamen, die ein Zusammentun fortführen kann (ein Einzelmusiker hat keinen Namen, den man behalten könnte). */
+    private static function nameOptions(array $a, int $countA, array $b, int $countB): array
     {
-        return $this->repo->db->transaction(function () use ($bandId, $otherId): int {
+        $out = [];
+        if ($countA > 1) {
+            $out[] = 'a';
+        }
+        if ($countB > 1) {
+            $out[] = 'b';
+        }
+        $out[] = 'new';
+        return $out;
+    }
+
+    /**
+     * Archiviert eine Band, die ihren Namen aufgibt, als „ehemalige Band“: Name, Platten und Verlauf bleiben unter dem alten Namen,
+     * der Ruhm am Namen ist weg. Ohne eigene Laufbahn gibt es nichts zu bewahren.
+     * $continue = die Band spielt unter neuem Namen weiter (dann bleibt ihre Zeile bestehen, die Platten ziehen in die ehemalige Band um).
+     */
+    private function giveUpName(array $band, string $reason, string $note, bool $continue): void
+    {
+        $db = $this->repo->db;
+        $db->exec("DELETE FROM records WHERE band_id = ? AND status = 'open'", [$band['id']]);
+        if (!self::hasCareer($band)) {
+            if (!$continue) {
+                $db->exec('DELETE FROM bands WHERE id = ?', [$band['id']]);
+            }
+            return;
+        }
+        if (!$continue) {
+            $db->update('bands', [
+                'retired_at' => Clock::now(), 'retired_reason' => $reason, 'retired_note' => mb_substr($note, 0, 200),
+                'fame_final' => $band['fame_own'], 'fame_own' => 0, 'manager_id' => null, 'busy_until' => 0, 'promo_record_id' => null,
+            ], ['id' => $band['id']]);
+            return;
+        }
+        $shell = $db->one('SELECT * FROM bands WHERE id = ?', [$band['id']]);
+        unset($shell['id']);
+        $shell['retired_at'] = Clock::now();
+        $shell['retired_reason'] = $reason;
+        $shell['retired_note'] = mb_substr($note, 0, 200);
+        $shell['fame_final'] = $band['fame_own'];
+        $shell['fame_own'] = 0;
+        $shell['manager_id'] = null;
+        $shell['busy_until'] = 0;
+        $shell['promo_record_id'] = null;
+        $shellId = $db->insert('bands', $shell);
+        $db->exec('UPDATE records SET band_id = ? WHERE band_id = ?', [$shellId, $band['id']]);
+        $db->exec('UPDATE history SET band_id = ? WHERE band_id = ?', [$shellId, $band['id']]);
+        $db->update('bands', [
+            'fame_own' => 0, 'records' => 0, 'perfect_records' => 0, 'songs_recorded' => 0, 'gigs_since_record' => 0,
+            'gigs_played' => 0, 'promo_record_id' => null, 'released' => 0, 'live_songs' => 0, 'live_songs_needed' => 0, 'band_promos' => 0,
+        ], ['id' => $band['id']]);
+    }
+
+    /**
+     * Zwei Bands (oder Solokünstler) tun sich zusammen. Welcher Name weitermacht, entscheiden die Spielerin und der Spieler:
+     * 'a' (Name dieser Band), 'b' (Name der anderen) oder 'new' (neuer Name). Ein Einzelmusiker hat keinen Namen, der bleiben könnte.
+     * Wer seinen Namen aufgibt, verliert den Ruhm daran; seine Platten bleiben bei der ehemaligen Band (Tantiemen laufen weiter).
+     * @return int die Band, die weiterbesteht
+     */
+    public function merge(int $bandId, int $otherId, string $keepName = 'a', string $newName = '', int $slot = 1): int
+    {
+        return $this->repo->db->transaction(function () use ($bandId, $otherId, $keepName, $newName): int {
             if ($bandId === $otherId) {
                 throw new ApiError('Das ist dieselbe Band.');
             }
-            $band = $this->idleBand($bandId);
-            $other = $this->idleBand($otherId);
-            if (self::hasCareer($band) && self::hasCareer($other)) {
-                throw new ApiError('Beide haben schon eine eigene Laufbahn und bleiben eigenständig.');
+            $a = $this->idleBand($bandId);
+            $b = $this->idleBand($otherId);
+            $groupA = $this->repo->members($bandId);
+            $groupB = $this->repo->members($otherId);
+            if (!in_array($keepName, self::nameOptions($a, count($groupA), $b, count($groupB)), true)) {
+                throw new ApiError('Diesen Namen kann die Band nicht weiterführen.');
             }
-            [$keep, $gone] = self::hasCareer($other) ? [$other, $band] : [$band, $other];
-            $joining = $this->repo->members($gone['id']);
-            $members = array_merge($this->repo->members($keep['id']), $joining);
-            self::assertLineup($members);
+            self::assertLineup(array_merge($groupA, $groupB));
             $db = $this->repo->db;
-            $db->exec('UPDATE musicians SET band_id = ? WHERE band_id = ?', [$keep['id'], $gone['id']]);
-            $db->exec("DELETE FROM records WHERE band_id = ? AND status = 'open'", [$gone['id']]);
-            $db->exec('DELETE FROM bands WHERE id = ?', [$gone['id']]);
-            if (count($joining) > 1) {
-                $this->repo->log('lineup', sprintf('„%s“ geht in „%s“ auf.', $gone['name'], $keep['name']), $keep['id']);
+            [$keep, $gone, $joining] = $keepName === 'b' ? [$b, $a, $groupA] : [$a, $b, $groupB];
+            $finalName = $keep['name'];
+            if ($keepName === 'new') {
+                $finalName = self::cleanName($newName, 'Der Bandname');
+                if (Names::bandTaken($db, $finalName, null)) {
+                    throw new ApiError(sprintf('Den Bandnamen „%s“ gibt es schon.', $finalName));
+                }
             }
+            // Wer den Namen aufgibt: ehemalige Band mit allem, was daran hängt.
+            $this->giveUpName($gone, 'merged', $keepName === 'new' ? sprintf('ging mit „%s“ in „%s“ auf', $keep['name'], $finalName) : sprintf('ging in „%s“ auf', $keep['name']), false);
+            $db->exec('UPDATE musicians SET band_id = ?, band_slot = band_slot WHERE band_id = ?', [$keep['id'], $gone['id']]);
+            if ($keepName === 'new') {
+                $this->giveUpName($keep, 'renamed', sprintf('heißt jetzt „%s“', $finalName), true);
+                $db->update('bands', ['name' => $finalName, 'name_key' => Names::key($finalName)], ['id' => $keep['id']]);
+            }
+            // Ein Einzelmusiker mit zwei Instrumenten sagt, welches er in der neuen Band spielt.
+            if (count($joining) === 1 && $joining[0]['instr2'] !== null) {
+                $db->update('musicians', ['band_slot' => self::slot($joining[0], $slot)], ['id' => $joining[0]['id']]);
+            }
+            $names = implode(' und ', array_map(static fn ($m) => self::fullName($m), $joining));
+            $this->repo->log('lineup', mb_substr(sprintf('%s %s zu „%s“.', $names, count($joining) === 1 ? 'kommt' : 'kommen', $finalName), 0, 250), $keep['id']);
             $this->syncIdentity($this->repo->band($keep['id']));
             return $keep['id'];
         });
     }
 
+    /** Umbenennen kostet kein Geld, aber den Ruhm am Namen; die Platten bleiben beim alten Namen (ehemalige Band, Tantiemen laufen weiter). */
     public function rename(int $bandId, string $name): void
     {
         $band = $this->repo->band($bandId);
@@ -311,12 +385,10 @@ final class Bands
             throw new ApiError(sprintf('Den Bandnamen „%s“ gibt es schon.', $name));
         }
         $this->repo->db->transaction(function () use ($band, $name): void {
-            if ($band['released']) {
-                // Nach dem ersten Auftritt kennt man die Band unter ihrem Namen: Der Ruhm am Namen geht verloren.
-                $this->repo->spend(Balance::RENAME_COST, sprintf('Namensänderung %s', $band['name']));
-                $this->repo->db->update('bands', ['fame_own' => 0], ['id' => $band['id']]);
-                $this->repo->log('band', sprintf('%s heißt jetzt %s. Der Ruhm des alten Namens (%s) ist weg.',
-                    $band['name'], $name, number_format($band['fame_own'], 1, ',', '.')), $band['id']);
+            if (self::hasCareer($band)) {
+                $this->giveUpName($band, 'renamed', sprintf('heißt jetzt „%s“', $name), true);
+                $this->repo->log('band', sprintf('%s heißt jetzt %s. Der Ruhm des alten Namens (%s) ist weg, die Platten bleiben unter „%s“.',
+                    $band['name'], $name, number_format($band['fame_own'], 1, ',', '.'), $band['name']), $band['id']);
             }
             $this->repo->db->update('bands', ['name' => $name, 'name_key' => Names::key($name)], ['id' => $band['id']]);
         });
@@ -438,15 +510,17 @@ final class Bands
         $this->repo->db->update('bands', ['manager_id' => $managerId], ['id' => $band['id']]);
     }
 
-    public function disband(int $bandId): void
+    /** $reason: 'disbanded' (löst sich auf) oder 'left' (ein Solokünstler verlässt das Label). Eine Band mit Laufbahn bleibt als ehemalige Band erhalten. */
+    public function disband(int $bandId, string $reason = 'disbanded'): void
     {
-        $this->repo->db->transaction(function () use ($bandId): void {
+        $this->repo->db->transaction(function () use ($bandId, $reason): void {
             $band = $this->idleBand($bandId);
             $db = $this->repo->db;
             $db->exec('UPDATE musicians SET band_id = NULL, band_slot = 1 WHERE band_id = ? AND label_id = ?', [$bandId, $this->repo->labelId]);
-            $db->exec("DELETE FROM records WHERE band_id = ? AND status = 'open'", [$bandId]);
-            $db->exec('DELETE FROM bands WHERE id = ?', [$bandId]);
-            $this->repo->log('band', sprintf('Die Band „%s“ hat sich aufgelöst.', $band['name']), $bandId);
+            $this->giveUpName($band, $reason, $reason === 'left' ? 'hat das Label verlassen' : 'hat sich aufgelöst', false);
+            if ($reason !== 'left') {
+                $this->repo->log('band', sprintf('Die Band „%s“ hat sich aufgelöst.', $band['name']), $bandId);
+            }
         });
     }
 
@@ -544,6 +618,9 @@ final class Bands
     private function idleBand(int $bandId): array
     {
         $band = $this->repo->band($bandId);
+        if ($band['retired']) {
+            throw new ApiError('Diese Band gibt es nicht mehr.', 404);
+        }
         if ($band['busy_until'] > Clock::now()) {
             throw new ApiError('Die Band ist gerade beschäftigt. Warte, bis sie fertig ist.');
         }

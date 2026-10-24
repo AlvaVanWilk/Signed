@@ -154,7 +154,6 @@ final class Present
             'musicStems' => Music::STEMS,
             'packs' => $packs,
             'rules' => [
-                'renameCost' => Balance::RENAME_COST,
                 'buskingHat' => Balance::BUSKING_HAT,
                 'startMoney' => Balance::START_MONEY,
                 'songSeconds' => Balance::SONG_SECONDS,

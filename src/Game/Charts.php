@@ -254,8 +254,9 @@ final class Charts
         $now = Clock::now();
         $rows = $db->all(
             "SELECT id, band_id, title, chart_points, finished_at, boost, boost_at, rank_last, royalties_until, royalty_carry FROM records
-             WHERE label_id = ? AND status = 'done' AND chart_points > 0 AND royalties_until < ? AND finished_at >= ?",
-            [$labelId, $now, $now - Balance::CHART_MAX_AGE - self::HOUR]
+             WHERE label_id = ? AND status = 'done' AND chart_points > 0 AND royalties_until < ? AND finished_at >= ?
+               AND (rank_last IS NULL OR rank_last <= ?)",
+            [$labelId, $now, $now - Balance::CHART_MAX_AGE - self::HOUR, Balance::ROYALTY_RANKS]
         );
         foreach ($rows as $row) {
             $db->transaction(static function () use ($db, $labelId, $row, $now): void {
@@ -400,12 +401,12 @@ final class Charts
         $rows = $db->all(
             'SELECT l.id, l.name, COUNT(DISTINCT b.id) AS bands, COALESCE(SUM(m.fame), 0) AS fame
              FROM labels l
-             JOIN bands b ON b.label_id = l.id
+             JOIN bands b ON b.label_id = l.id AND b.retired_at IS NULL
              LEFT JOIN musicians m ON m.band_id = b.id
              GROUP BY l.id, l.name'
         );
         $own = [];
-        foreach ($db->all('SELECT label_id, SUM(fame_own) AS fame FROM bands GROUP BY label_id') as $r) {
+        foreach ($db->all('SELECT label_id, SUM(fame_own) AS fame FROM bands WHERE retired_at IS NULL GROUP BY label_id') as $r) {
             $own[(int) $r['label_id']] = (float) $r['fame'];
         }
         return array_map(static fn ($r) => [
@@ -424,6 +425,7 @@ final class Charts
              FROM bands b
              JOIN labels l ON l.id = b.label_id
              LEFT JOIN musicians m ON m.band_id = b.id
+             WHERE b.retired_at IS NULL
              GROUP BY b.id, b.name, b.fame_own, b.label_id, l.name'
         );
         return array_map(static fn ($r) => [

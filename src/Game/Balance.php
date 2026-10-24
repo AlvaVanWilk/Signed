@@ -90,8 +90,6 @@ final class Balance
 
     // ---------- Band ----------
     // Bands lassen sich ohne Obergrenze führen: Geld und Aufmerksamkeit bremsen von selbst (siehe docs/label-konzept.md).
-    /** Namensänderung nach dem ersten Auftritt: Gebühr; der Ruhm am alten Namen geht verloren. */
-    public const RENAME_COST = 300;
     /** Auch ein Solokünstler ist eine Band (mit einem Mitglied). Genre-Bands und der Besetzungs-Bonus beginnen ab zwei Mitgliedern. */
     public const MIN_MEMBERS = 1;
     public const GENRE_MIN_MEMBERS = 2;
@@ -442,6 +440,8 @@ final class Balance
     public const CHART_TOP_MIN_LABELS = 3;
     /** Tantiemen pro Chartpunkt und Stunde – ohne Platz-Bonus (die Punkte sind schon die Platzierung). */
     public const ROYALTY_MONEY = 0.6;
+    /** Tantiemen gibt es nur, solange die Platte unter den ersten Plätzen der Charts steht; weiter unten (und nach CHART_MAX_AGE) nicht mehr. Bis dahin sinken die Punkte stündlich (CHART_DECAY). */
+    public const ROYALTY_RANKS = 50;
     /**
      * Katalog: Jede fertige Platte verkauft sich für immer ein wenig – so viel ₲ pro Stunde und Chartpunkt (Startwert
      * der Platte), zusätzlich zu den Charts. Eine Platte mit 60 Punkten bringt so rund 14 ₲ am Tag: spürbar, wenn sich

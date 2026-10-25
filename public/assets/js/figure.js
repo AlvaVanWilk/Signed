@@ -7,6 +7,10 @@ import { HAIR_BACK, HAIR_FRONT, HATS, HAT_COLORS } from './avatar.js';
  */
 const INK = '#2a2233';
 const PANTS = '#2f3a56';
+// Weiche Licht- und Schattenflächen: halbdurchsichtig, damit sie auf jeder Farbe passen.
+const SHADE = 'fill="#140f1e" opacity="0.16"';
+const LIGHT = 'fill="#fff" opacity="0.16"';
+const gloss = (d, w = 2.2, o = 0.2) => `<path d="${d}" fill="none" stroke="#fff" stroke-width="${w}" stroke-linecap="round" opacity="${o}"/>`;
 const STROKE = `stroke="${INK}" stroke-width="2" stroke-linejoin="round"`;
 
 /**
@@ -25,18 +29,30 @@ export function figure(look = {}, instrument = 'guitar', { electric = false, hue
       <ellipse cx="60" cy="141" rx="32" ry="5" fill="rgba(0,0,0,0.25)"/>
       <g class="fig-body">
         <g ${STROKE}>
-          <rect x="46" y="104" width="11" height="30" rx="5" fill="${PANTS}"/>
-          <rect x="63" y="104" width="11" height="30" rx="5" fill="${PANTS}"/>
-          <ellipse cx="50" cy="136" rx="8" ry="4.5" fill="${INK}"/>
-          ${pivot(63, 138, 'fig-tap', `<ellipse cx="70" cy="136" rx="8" ry="4.5" fill="${INK}"/>`)}
+          <path d="M46 106 Q46 103 51.5 103 Q57 103 57 106 L56.4 133 Q51.5 135.5 46.6 133 Z" fill="${PANTS}"/>
+          <path d="M63 106 Q63 103 68.5 103 Q74 103 74 106 L73.4 133 Q68.5 135.5 63.6 133 Z" fill="${PANTS}"/>
+          ${shoe(50)}
+          ${pivot(63, 138, 'fig-tap', shoe(70))}
           <path d="M43 76 Q60 68 77 76 L81 108 Q60 115 39 108 Z" fill="${shirt}"/>
         </g>
+        <path d="M53.5 106 L55.4 132 Q53.5 133 52 132.6 Z M70.5 106 L72.4 132 Q70.5 133 69 132.6 Z" ${SHADE}/>
+        <path d="M70 75.5 Q74 75.5 77 76 L81 108 Q76 110.6 70.5 111.6 Q75 94 70 75.5 Z" ${SHADE}/>
+        <path d="M44 79 Q46 77.5 49 77 L45.5 104 Q43.5 104 42 103.2 Z" ${LIGHT}/>
+        <path d="M41 104.5 Q60 111 79 104.5" fill="none" stroke="${INK}" stroke-width="1" opacity="0.35"/>
+        <ellipse cx="60" cy="78.5" rx="15" ry="4.5" ${SHADE}/>
+        <path d="M52.5 74.2 Q60 82 67.5 74.2 Z" fill="${skin}" stroke="${INK}" stroke-width="1.4" stroke-linejoin="round"/>
+        <path d="M52.5 74.2 Q60 79 67.5 74.2 Q60 77 52.5 74.2 Z" ${SHADE}/>
         ${POSES[pose].back(skin, shirt)}
         ${pivot(60, 74, 'fig-head', head(look, skin, sing, pose === 'none' ? 'bored' : mood))}
         ${POSES[pose].front(skin, shirt, electric, hue)}
       </g>
     </svg>`;
 }
+
+/** Schuh mit Sohle und kleinem Glanz auf der Kappe. */
+const shoe = (x) => `<path d="M${x - 8} 137.6 Q${x - 8.4} 131.4 ${x - 1} 131.2 Q${x + 7.6} 131 ${x + 8} 137.6 Z" fill="${INK}"/>
+  <path d="M${x - 8} 137.6 L${x + 8} 137.6" stroke="#5a5068" stroke-width="1.4" stroke-linecap="round"/>
+  ${gloss(`M${x - 4.5} 133.4 Q${x - 1} 132.2 ${x + 2.5} 133`, 1.3, 0.28)}`;
 
 /** Kopf im Koordinatensystem des Kartenbilds (Mitte 50/42), vergrößert auf die Figur gesetzt. */
 /**
@@ -123,6 +139,8 @@ function head(look, skin, sing, mood = null) {
   if (HAIR_BACK[style]) p.push(`<path d="${HAIR_BACK[style]}" fill="${hair}"/>`);
   p.push(`<g stroke="${INK}" stroke-width="1.2"><ellipse cx="31.5" cy="45" rx="3.5" ry="4.5" fill="${skin}"/><ellipse cx="68.5" cy="45" rx="3.5" ry="4.5" fill="${skin}"/>`);
   p.push(`<ellipse cx="50" cy="43" rx="19" ry="18" fill="${skin}"/></g>`);
+  p.push(`<path d="M30.6 43 Q32.4 41.6 33 45 Q32.6 47.6 31.2 47.4" fill="none" stroke="${INK}" stroke-width="0.7" opacity="0.45"/><path d="M69.4 43 Q67.6 41.6 67 45 Q67.4 47.6 68.8 47.4" fill="none" stroke="${INK}" stroke-width="0.7" opacity="0.45"/>`);
+  p.push(`<path d="M64.5 31 Q70.6 42 66.4 53 Q60.4 60.4 50 61 Q63.6 54.6 64.5 31 Z" fill="#140f1e" opacity="0.09"/>`);
   if (look.gender === 'f' && trait(look, 'earrings') < 0.6) {
     p.push(`<g fill="#f2c14e" stroke="${INK}" stroke-width="0.7"><circle cx="31" cy="50.4" r="1.2"/><circle cx="31" cy="53.6" r="2.2"/><circle cx="69" cy="50.4" r="1.2"/><circle cx="69" cy="53.6" r="2.2"/></g>`);
   }
@@ -163,6 +181,12 @@ function head(look, skin, sing, mood = null) {
     p.push(`<path d="${HAIR_FRONT[hatted && style === 'sidecut' ? 'kurz' : style]}" fill="${hair}"/>`);
   }
   if (style === 'dutt' && !hatted) p.push(`<circle cx="50" cy="17" r="8" fill="${hair}"/>`);
+  // Weicher Glanz auf dem Haar oder der Mütze.
+  if (!hatted && style !== 'irokese' && style !== 'glatze') {
+    const g = { afro: 'M37 17 Q45 12 54 12.6', locken: 'M40 22 Q44 18.6 48 18.6', sidecut: 'M51 19.4 Q58 16.4 64 19.4' }[style] ?? 'M40 23.4 Q47 19.4 55 20';
+    p.push(gloss(g, 2, style === 'afro' ? 0.1 : 0.16));
+  }
+  if (hatted) p.push(gloss({ fedora: 'M39 19.6 Q46 16 54 16.4', cowboy: 'M39 18 Q46 14 54 14.4' }[look.hat] ?? 'M39 25.4 Q46 21.6 54 22', 2.2, 0.22));
 
   if (look.glasses === 'round') p.push(`<g fill="none" stroke="${INK}" stroke-width="1.3"><circle cx="43" cy="45" r="5"/><circle cx="57" cy="45" r="5"/><path d="M48 45 L52 45"/></g>`);
   if (look.glasses === 'square') p.push(`<g fill="none" stroke="${INK}" stroke-width="1.3"><rect x="37.5" y="41" width="10" height="8" rx="1.5"/><rect x="52.5" y="41" width="10" height="8" rx="1.5"/><path d="M47.5 45 L52.5 45"/></g>`);
@@ -178,7 +202,9 @@ function head(look, skin, sing, mood = null) {
 const arm = (d, hand, skin, shirt, cls = '') => {
   const inner = `<path d="${d}" fill="none" stroke="${INK}" stroke-width="10" stroke-linecap="round"/>
   <path d="${d}" fill="none" stroke="${shirt}" stroke-width="7" stroke-linecap="round"/>
-  <circle cx="${hand[0]}" cy="${hand[1]}" r="4.2" fill="${skin}" stroke="${INK}" stroke-width="1.6"/>`;
+  <path d="${d}" fill="none" stroke="#140f1e" stroke-width="2.4" stroke-linecap="round" opacity="0.14" transform="translate(1.6 1)"/>
+  <circle cx="${hand[0]}" cy="${hand[1]}" r="4.2" fill="${skin}" stroke="${INK}" stroke-width="1.6"/>
+  <path d="M${hand[0] + 1.2} ${hand[1] - 3.2} A3.4 3.4 0 0 1 ${hand[0] + 1.6} ${hand[1] + 3}" fill="none" stroke="#140f1e" stroke-width="1.6" opacity="0.13"/>`;
   if (!cls) return inner;
   const [x, y] = d.match(/M\s*([\d.]+)\s+([\d.]+)/).slice(1).map(Number);
   return pivot(x, y, cls, inner);
@@ -205,6 +231,8 @@ const guitarLike = (baseColor, reach, baseE, baseHue) => (skin, shirt, electric,
     <rect x="${end[0] - 5}" y="${end[1] - 4}" width="9" height="7" rx="2" fill="${electric ? INK : '#5b3a21'}" transform="rotate(25 ${end[0]} ${end[1]})"/>
     ${body}
   </g>
+  <g fill="#e8e2d4" opacity="0.9"><circle cx="${end[0] - 2.6}" cy="${end[1] - 3.2}" r="0.9"/><circle cx="${end[0] + 1.4}" cy="${end[1] - 1.4}" r="0.9"/></g>
+  ${electric ? gloss('M59 96 Q63 93.6 66 95', 1.4, 0.35) : gloss('M55.6 95 Q58.6 91.8 63 92.2', 1.6, 0.32) + `<path d="M64 112 Q75 116 81 106 Q79 115 71 116 Q66 116 64 112 Z" ${SHADE}/>`}
   ${arm(`M45 80 Q${grip[0] + 4} ${grip[1] - 6} ${grip[0]} ${grip[1]}`, grip, skin, shirt)}
   ${arm('M75 80 Q84 92 72 102', [72, 102], skin, shirt, 'fig-strum')}`;
 };
@@ -228,6 +256,8 @@ const bassLike = (skin, shirt, electric, hue) => {
     ${electric ? '' : `<circle cx="66" cy="107" r="3.4" fill="${INK}"/>`}
     <path d="M60 102 L67 108" stroke="${INK}" stroke-width="2.6"/>
   </g>
+  ${gloss('M53.6 99 Q57 94.4 63 94.2', 1.6, 0.32)}
+  <path d="M66 119 Q78 122 83 112 Q82 121 73 123 Q67 123 66 119 Z" ${SHADE}/>
   ${arm(`M45 80 Q${grip[0] + 6} ${grip[1] - 6} ${grip[0]} ${grip[1]}`, grip, skin, shirt)}
   ${arm('M75 80 Q86 94 70 106', [70, 106], skin, shirt, 'fig-strum')}`;
 };
@@ -258,13 +288,16 @@ const POSES = {
   },
   drums: {
     back: () => `
-      <g ${STROKE}><path d="M98 140 L98 96" fill="none"/>${pivot(98, 94, 'fig-cymbal', '<ellipse cx="98" cy="94" rx="14" ry="3.5" fill="#f2c14e"/>')}</g>`,
+      <g ${STROKE}><path d="M98 140 L98 96" fill="none"/>${pivot(98, 94, 'fig-cymbal', '<ellipse cx="98" cy="94" rx="14" ry="3.5" fill="#f2c14e"/><ellipse cx="98" cy="93" rx="3.4" ry="1.5" fill="#d9a531" stroke-width="0.8"/><path d="M88 93.2 Q93 92 96 92.2" fill="none" stroke="#fff" stroke-width="1" opacity="0.5"/>')}</g>`,
     front: (skin, shirt, electric, hue) => `
       <g ${STROKE}>
         <rect x="36" y="112" width="48" height="16" rx="3" fill="${hue === null ? '#e4572e' : `hsl(${hue} 72% 50%)`}"/>
         <ellipse cx="60" cy="112" rx="24" ry="6" fill="#f4efe6"/>
         <path d="M38 120 L82 120" stroke="#fff" stroke-width="2"/>
       </g>
+      <path d="M71 114.5 L84 112 L84 125 Q84 128 81 128 L71 128 Z" ${SHADE}/>
+      <g fill="#d6d9e0" stroke="${INK}" stroke-width="0.8">${[42, 52, 62, 72].map((x) => `<rect x="${x}" y="115" width="3" height="4.6" rx="1"/>`).join('')}</g>
+      ${gloss('M40 110.6 Q50 107.6 60 107.4', 1.4, 0.5)}
       ${pivot(45, 80, 'fig-hit-l', `${arm('M45 80 Q38 94 47 102', [47, 102], skin, shirt)}<path d="M47 102 L62 109" stroke="#c8a165" stroke-width="3" stroke-linecap="round"/>`)}
       ${pivot(75, 80, 'fig-hit-r', `${arm('M75 80 Q84 90 82 98', [82, 98], skin, shirt)}<path d="M82 98 L96 92" stroke="#c8a165" stroke-width="3" stroke-linecap="round"/>`)}`,
   },
@@ -277,6 +310,10 @@ const POSES = {
         <rect x="27" y="102" width="66" height="6" fill="#fff" stroke-width="1"/>
       </g>
       <g fill="${INK}">${Array.from({ length: 10 }, (_, i) => `<rect x="${30 + i * 6.4}" y="102" width="2.4" height="3.6"/>`).join('')}</g>
+      <g stroke="${INK}" stroke-width="0.5" opacity="0.35">${Array.from({ length: 10 }, (_, i) => `<path d="M${33.6 + i * 6.4} 105.6 L${33.6 + i * 6.4} 108"/>`).join('')}</g>
+      <path d="M26 109.4 L94 109.4 L94 110.6 Q94 112 92 112 L28 112 Q26 112 26 110.6 Z" ${SHADE}/>
+      ${gloss('M27 100.8 L60 100.8', 1, 0.3)}
+      <circle cx="90" cy="105" r="1.2" fill="#4fd1ff" opacity="0.8"/>
       <g class="fig-key-l">${arm('M45 80 Q38 92 42 101', [42, 101], skin, shirt)}</g>
       <g class="fig-key-r">${arm('M75 80 Q82 92 78 101', [78, 101], skin, shirt)}</g>`,
   },
@@ -289,6 +326,9 @@ const POSES = {
         <ellipse cx="40" cy="100" rx="13" ry="3.5" fill="#111"/><ellipse cx="80" cy="100" rx="13" ry="3.5" fill="#111"/>
         <ellipse cx="40" cy="100" rx="3" ry="1" fill="#ff4f8b" stroke-width="0.6"/><ellipse cx="80" cy="100" rx="3" ry="1" fill="#4fd1ff" stroke-width="0.6"/>
       </g>
+      <g fill="none" stroke="#fff" stroke-width="0.4" opacity="0.18"><ellipse cx="40" cy="100" rx="9" ry="2.4"/><ellipse cx="80" cy="100" rx="9" ry="2.4"/><ellipse cx="40" cy="100" rx="6" ry="1.6"/><ellipse cx="80" cy="100" rx="6" ry="1.6"/></g>
+      <path d="M24 109.6 L96 109.6 Q96 112 93 112 L27 112 Q24 112 24 109.6 Z" ${SHADE}/>
+      <g fill="#d6d9e0" stroke="${INK}" stroke-width="0.6"><circle cx="56" cy="106" r="1.4"/><circle cx="60" cy="106" r="1.4"/><circle cx="64" cy="106" r="1.4"/></g>
       ${arm('M45 80 Q50 92 58 99', [58, 99], skin, shirt)}
       ${arm('M75 80 Q86 88 80 98', [80, 98], skin, shirt, 'fig-scratch')}`,
   },
@@ -298,6 +338,8 @@ const POSES = {
       <path d="M61 62 Q66 66 64 74 L64 98 Q66 108 76 104 L82 94" fill="none" stroke="${INK}" stroke-width="9" stroke-linecap="round"/>
       <path d="M61 62 Q66 66 64 74 L64 98 Q66 108 76 104 L82 94" fill="none" stroke="#f2c14e" stroke-width="6" stroke-linecap="round"/>
       <path d="M78 96 L88 88 L90 96 Z" fill="#f2c14e" ${STROKE}/>
+      ${gloss('M62.6 76 L62.6 96', 1.4, 0.45)}
+      <g fill="#d9a531" stroke="${INK}" stroke-width="0.7">${[78, 84, 90].map((y) => `<circle cx="66.6" cy="${y}" r="1.5"/>`).join('')}</g>
       ${arm('M45 80 Q56 78 63 80', [63, 80], skin, shirt)}
       ${arm('M75 80 Q76 92 67 94', [67, 94], skin, shirt)}`),
   },
@@ -308,6 +350,8 @@ const POSES = {
       <path d="M62 62 L88 57" stroke="#f2c14e" stroke-width="3.5" stroke-linecap="round"/>
       <path d="M86 57 L97 50 L99 64 Z" fill="#f2c14e" ${STROKE}/>
       <rect x="70" y="56" width="10" height="6" rx="1.5" fill="#f2c14e" ${STROKE} stroke-width="1.2"/>
+      <g fill="#d9a531" stroke="${INK}" stroke-width="0.7">${[72, 75, 78].map((x) => `<rect x="${x - 0.9}" y="53" width="1.8" height="3" rx="0.6"/>`).join('')}</g>
+      ${gloss('M64 61 L69 60.1', 1, 0.5)}${gloss('M88 55.4 L95 51.6', 1, 0.45)}
       ${arm('M45 80 Q58 76 68 64', [68, 64], skin, shirt)}
       <g class="fig-key-r">${arm('M75 80 Q80 72 77 63', [77, 63], skin, shirt)}</g>`),
   },
@@ -316,6 +360,8 @@ const POSES = {
     front: (skin, shirt) => pivot(60, 62, 'fig-horn', `
       <path d="M62 61 L22 69" stroke="${INK}" stroke-width="5" stroke-linecap="round"/>
       <path d="M62 61 L22 69" stroke="#d6d9e0" stroke-width="2.6" stroke-linecap="round"/>
+      <g fill="#a9adb8">${[0, 1, 2, 3, 4].map((i) => `<circle cx="${40 + i * 3.6}" cy="${65.4 - i * 0.72}" r="0.8"/>`).join('')}</g>
+      ${gloss('M58 61.3 L44 64.1', 0.7, 0.6)}
       ${arm('M45 80 Q36 76 32 67', [32, 67], skin, shirt)}
       <g class="fig-key-r">${arm('M75 80 Q64 76 50 64', [50, 64], skin, shirt)}</g>`),
   },
@@ -326,6 +372,12 @@ const POSES = {
         <path d="M44 70 L20 58" stroke="${INK}" stroke-width="5" stroke-linecap="round"/>
         <path d="M44 70 L20 58" stroke="#5b3a21" stroke-width="2.5" stroke-linecap="round"/>
         <g transform="rotate(28 44 72)"><ellipse cx="44" cy="72" rx="9" ry="6.5" fill="#b5651d"/><ellipse cx="53" cy="72" rx="7" ry="5.5" fill="#b5651d"/></g>
+      </g>
+      <g transform="rotate(28 44 72)">
+        <path d="M44 69.6 Q45 71 44 72.6 M50 69.6 Q51 71 50 72.6" fill="none" stroke="${INK}" stroke-width="0.7"/>
+        <path d="M38 72 L58 72" stroke="#f4efe6" stroke-width="0.4" opacity="0.7"/>
+        <path d="M45 77 Q51 78 56 75.4 Q54 78.4 48 78.4 Z" ${SHADE}/>
+        ${gloss('M38 68.6 Q41 66.4 45 66.2', 1.1, 0.35)}
       </g>
       ${arm('M45 80 Q28 80 22 61', [22, 61], skin, shirt)}
       ${pivot(75, 80, 'fig-bow', `${arm('M75 80 Q78 72 62 70', [62, 70], skin, shirt)}

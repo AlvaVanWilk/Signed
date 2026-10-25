@@ -211,7 +211,7 @@ let hairClip = 0;
 
 /** Pinselzug: breit und halb durchsichtig, zweimal übereinander (weicher Rand). */
 const brush = (d, hair, dark, w = 3) => {
-  const c = tone(hair, dark ? -0.3 : 0.24);
+  const c = tone(hair, dark ? -0.13 : 0.1);
   return `<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" opacity="0.28"/><path d="${d}" fill="none" stroke="${c}" stroke-width="${f1(w * 0.55)}" stroke-linecap="round" opacity="0.4"/>`;
 };
 /** Haarform mit Pinselzügen darin (auf die Form begrenzt) und Umrandung obendrauf. */
@@ -222,7 +222,7 @@ function painted(d, hair, strokes, outline = true) {
     + (outline ? `<path d="${d}" fill="none" ${HAIR_LINE}/>` : '');
 }
 /** Schlitz im Pony: ein schmaler, nach oben spitz zulaufender Keil in dunklem Ton. */
-const slit = (x, y, hair, len = 5, lean = 0) => `<path d="M${f1(x - 0.6)} ${f1(y + 0.3)} L${f1(x + 0.6)} ${f1(y + 0.3)} L${f1(x + lean)} ${f1(y - len)} Z" fill="${tone(hair, -0.55)}"/>`;
+const slit = (x, y, hair, len = 5, lean = 0) => `<path d="M${f1(x - 0.6)} ${f1(y + 0.3)} L${f1(x + 0.6)} ${f1(y + 0.3)} L${f1(x + lean)} ${f1(y - len)} Z" fill="${tone(hair, -0.38)}"/>`;
 
 /** Punkt auf einer kubischen Kurve. */
 const bez = (a, b, c, d, t) => {
@@ -246,8 +246,22 @@ function meridians(cx, cy, rx, ry, ms, tail = 0) {
   });
 }
 
+/**
+ * Sidecut: Das Haar liegt in Bögen um einen Wirbel an der vorderen Haarkante (cx/cy) – von links über den Oberkopf und rechts hinunter.
+ */
+function swirl(cx, cy, radii) {
+  return radii.map((r, i) => {
+    const pts = [];
+    for (let k = 0; k <= 16; k++) {
+      const a = Math.PI * 1.02 + (k / 16) * Math.PI * 1.15;
+      pts.push([cx + r * Math.cos(a), cy + r * Math.sin(a) * 1.08]);
+    }
+    return [`M${pts.map(([x, y]) => `${f1(x)} ${f1(y)}`).join(' L')}`, i % 2 === 0, [2.6, 2.2, 2.8, 2.4][i % 4]];
+  });
+}
+
 /** Wie viele Schlitze der Pony hat und wie lang sie sind (Frisuren ohne Pony: keine). */
-const FRINGE = { kurz: [4, 3.6], bob: [6, 6], lang: [6, 6.6], zopf: [5, 6.6], dutt: [5, 6], sidecut: [4, 5.2] };
+const FRINGE = { kurz: [4, 3.6], bob: [6, 6], lang: [6, 6.6], zopf: [5, 6.6], dutt: [5, 6] };
 /** Vorderes Haar wie in avatar.js (M start C … p1 C … start): Pinselzüge vom Scheitel nach unten, Schlitze an der Pony-Kante. */
 function hairFront(style, hair) {
   const d = HAIR_FRONT[style];
@@ -258,7 +272,8 @@ function hairFront(style, hair) {
   // Pinselzüge über die Kuppel des Kopfes: Mitte zwischen den Seiten, oben am Scheitel
   const cx = (start[0] + top[2][0]) / 2;
   const cy = Math.max(start[1], top[2][1]);
-  const strokes = meridians(cx, cy + 2, Math.abs(top[2][0] - start[0]) / 2 + 1, cy + 2 - crown[1], [-0.95, -0.72, -0.5, -0.27, -0.05, 0.18, 0.4, 0.62, 0.84, 1]);
+  const strokes = style === 'sidecut' ? swirl(55, 29, [3.5, 6.5, 9.5, 12.5, 15.5, 18.5, 21.5])
+    : meridians(cx, cy + 2, Math.abs(top[2][0] - start[0]) / 2 + 1, cy + 2 - crown[1], [-0.95, -0.72, -0.5, -0.27, -0.05, 0.18, 0.4, 0.62, 0.84, 1]);
   const fringe = FRINGE[style];
   if (fringe) {
     const [count, len] = fringe;

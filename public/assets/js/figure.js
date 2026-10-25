@@ -215,7 +215,9 @@ const brush = (d, hair, dark, w = 3, light = 0.05) => {
   return `<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" opacity="0.28"/><path d="${d}" fill="none" stroke="${c}" stroke-width="${f1(w * 0.55)}" stroke-linecap="round" opacity="0.4"/>`;
 };
 /** Haarform mit Pinselzügen darin (auf die Form begrenzt), ohne dunkle Außenlinie; nur Locken behalten eine feine, damit man die einzelnen Locken sieht. */
-function painted(d, hair, strokes, outline = false, light = 0.05) {
+function painted(d, hair, strokes, outline = false, light = 0.05, brushed = false) {
+  // Längs-Pinselzüge wirkten in Spielgröße wie gestreiftes Haar: Glatte Frisuren bleiben eine ruhige Fläche (nur runde Teile bekommen Schatten).
+  if (!brushed) return `<path d="${d}" fill="${hair}"/>` + (outline ? `<path d="${d}" fill="none" ${HAIR_LINE}/>` : '');
   const id = `hc${++hairClip}`;
   return `<clipPath id="${id}"><path d="${d}"/></clipPath><path d="${d}" fill="${hair}"/>`
     + `<g clip-path="url(#${id})">${strokes.map(([path, dark, w]) => brush(path, hair, dark, w, light)).join('')}</g>`
@@ -300,7 +302,7 @@ const hairBack = (style, hair) => (HAIR_BACK[style] && BACK_BRUSH[style]
 const roundPainted = (cx, cy, r, hair, outline = false) => painted(`M${cx - r} ${cy} a${r} ${r} 0 1 0 ${2 * r} 0 a${r} ${r} 0 1 0 ${-2 * r} 0 Z`, hair, [
   [`M${f1(cx - r * 0.2)} ${f1(cy + r * 0.85)} Q${f1(cx + r * 0.9)} ${f1(cy + r * 0.7)} ${f1(cx + r * 0.85)} ${f1(cy - r * 0.2)}`, 1, f1(r * 0.55)],
   ...(r > 10 ? [] : [[`M${f1(cx - r * 0.7)} ${f1(cy + r * 0.1)} Q${f1(cx - r * 0.6)} ${f1(cy - r * 0.6)} ${f1(cx + r * 0.05)} ${f1(cy - r * 0.68)}`, 0, f1(r * 0.4)]]),
-], outline);
+], outline, 0.05, true);
 
 /** Lippenstift: Hautton mit Rosé gemischt und etwas dunkler – auf heller Haut zartrosa, auf dunkler ein warmes Beerenbraun. */
 function lipColor(skin) {

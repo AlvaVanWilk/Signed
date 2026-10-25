@@ -39,4 +39,5 @@ Es wird nur in der Testversion gebaut; `main` (das echte Spiel) bleibt unveränd
 ## Prüfen
 
 - `php tests/run.php` – muss grün sein.
+- Gegen MySQL/MariaDB: `SIGNED_TEST_MYSQL="mysql:host=127.0.0.1;;benutzer;;passwort" php tests/run.php` (legt die Datenbank `signed_test` jedes Mal neu an).
 - `php -S localhost:8000 -t public` zum Ausprobieren.

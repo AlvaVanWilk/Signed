@@ -349,7 +349,7 @@ final class Bands
      */
     public function merge(int $bandId, int $otherId, string $keepName = 'a', string $newName = '', int $slot = 1): int
     {
-        return $this->repo->db->transaction(function () use ($bandId, $otherId, $keepName, $newName): int {
+        return $this->repo->db->transaction(function () use ($bandId, $otherId, $keepName, $newName, $slot): int {
             if ($bandId === $otherId) {
                 throw new ApiError('Das ist dieselbe Band.');
             }

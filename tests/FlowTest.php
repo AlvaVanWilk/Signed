@@ -1586,6 +1586,20 @@ test('Zusammentun: Kandidaten nach Nutzen geordnet, Unmögliches zuletzt, Bands 
     check(Balance::ROYALTY_RANKS === 50, 'Tantiemen enden nach Platz 50');
 });
 
+test('Zusammentun: Wer zwei Instrumente spielt, sagt, welches er in der neuen Band spielt', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Zweifach');
+    $band = foundBand($p, 'Kern');
+    $res = $p->post('submissionsTest');
+    $s = array_values(array_filter($res['state']['submissions'], static fn ($s) => $s['state'] === 'open' && $s['kind'] === 'solo'))[0];
+    $p->post('submissionSign', ['submissionId' => $s['submissionId']]);
+    $solo = array_values(array_filter($p->get('state')['bands'], static fn ($b) => count($b['memberIds']) === 1))[0];
+    $id = $solo['memberIds'][0];
+    $db->exec("UPDATE musicians SET instr1 = 'keys', instr2 = 'bass', skill2 = 30 WHERE id = ?", [$id]);
+    $res = $p->post('bandMerge', ['bandId' => $band['id'], 'otherId' => $solo['id'], 'keepName' => 'a', 'slot' => 2]);
+    checkEquals(2, (int) $db->value('SELECT band_slot FROM musicians WHERE id = ?', [$id]), 'spielt das zweite Instrument');
+});
+
 test('WikiSignia: Wer entlassen wurde, behält seinen Artikel', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Wiki');

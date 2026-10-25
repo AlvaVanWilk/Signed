@@ -108,6 +108,17 @@ final class Player
 
 function freshDb(): Db
 {
+    // Mit SIGNED_TEST_MYSQL="mysql:host=…;user;pass" laufen die Tests gegen eine frische MySQL/MariaDB-Datenbank statt SQLite.
+    $mysql = getenv('SIGNED_TEST_MYSQL');
+    if ($mysql) {
+        [$dsn, $user, $pass] = array_pad(explode(';;', $mysql), 3, null);
+        $admin = new PDO($dsn, $user, $pass);
+        $admin->exec('DROP DATABASE IF EXISTS signed_test');
+        $admin->exec('CREATE DATABASE signed_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
+        $db = new Db($dsn . ';dbname=signed_test;charset=utf8mb4', $user, $pass);
+        Schema::migrate($db);
+        return $db;
+    }
     $db = new Db('sqlite::memory:');
     Schema::migrate($db);
     return $db;

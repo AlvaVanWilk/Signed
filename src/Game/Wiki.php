@@ -80,11 +80,12 @@ final class Wiki
         if (!$tokens || mb_strlen(trim($q)) < 2) {
             return ['bands' => [], 'signies' => []];
         }
-        $like = static fn (string $t) => '%' . strtr($t, ['%' => '\\%', '_' => '\\_']) . '%';
+        // Fluchtzeichen ! statt \: Ein Backslash im SQL-Text liest MySQL anders als SQLite.
+        $like = static fn (string $t) => '%' . strtr($t, ['!' => '!!', '%' => '!%', '_' => '!_']) . '%';
         $where = [];
         $params = [];
         foreach ($tokens as $t) {
-            $where[] = "(LOWER(m.first_name) LIKE ? ESCAPE '\\' OR LOWER(m.last_name) LIKE ? ESCAPE '\\')";
+            $where[] = "(LOWER(m.first_name) LIKE ? ESCAPE '!' OR LOWER(m.last_name) LIKE ? ESCAPE '!')";
             array_push($params, $like($t), $like($t));
         }
         $signies = [];
@@ -97,7 +98,7 @@ final class Wiki
         }
         $bands = [];
         foreach ($db->all(
-            "SELECT b.id, b.name, b.retired_at, b.label_id, l.name AS label_name FROM bands b JOIN labels l ON l.id = b.label_id WHERE b.name_key LIKE ? ESCAPE '\\' ORDER BY b.name LIMIT 25",
+            "SELECT b.id, b.name, b.retired_at, b.label_id, l.name AS label_name FROM bands b JOIN labels l ON l.id = b.label_id WHERE b.name_key LIKE ? ESCAPE '!' ORDER BY b.name LIMIT 25",
             [$like(implode(' ', $tokens))]
         ) as $b) {
             $bands[] = ['id' => (int) $b['id'], 'name' => $b['name'], 'status' => $b['retired_at'] !== null ? 'former' : 'active', 'label' => $b['label_name'], 'labelId' => (int) $b['label_id']];

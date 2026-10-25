@@ -272,6 +272,8 @@ Wer neu anfängt, soll **sofort etwas tun** können:
 ### Kartei und Besetzungsplaner
 
 Jeder Künstler unter Vertrag ist entweder **in einer Band** oder **Solokünstler** (eine Band mit einem Mitglied, kein extra Zustand „frei“). Solokünstler haben **einen eigenen Knopf** in der Band-Leiste, wie Bands.
+Ein Solokünstler kann einen **Künstlernamen** bekommen (Umbenennen der Solo-Band, `musicians.stage_name`). Er bleibt, wenn die Person in eine Band geht,
+steht dort vor dem echten Namen, und tritt sie wieder allein auf, heißt die Solo-Band wieder so. Wer seinen echten Namen einträgt, hat keinen mehr.
 Die **Künstlerleiste** zeigt je Knopf: Name, je Mitglied das Instrument (blass, wer keins hat), alle vertretenen Genres (voll, was alle teilen;
 gestrichelt, was nur einzelne mitbringen), Stimmung, Ruhm als Sterne und geschriebene Songs. Knöpfe lassen sich umsortieren; legt man einen
 **mitten auf einen anderen**, öffnet sich das Zusammentun-Fenster mit genau diesem Paar als Kontrollfrage.

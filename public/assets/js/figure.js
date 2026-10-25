@@ -28,7 +28,7 @@ export function figure(look = {}, instrument = 'guitar', { electric = false, hue
     <svg class="fig fig-${pose}" viewBox="0 0 120 150" aria-hidden="true">
       <ellipse cx="60" cy="141" rx="32" ry="5" fill="rgba(0,0,0,0.25)"/>
       <g class="fig-body">
-        ${look.hair === 'lang' ? hairBehind(look.hairColor || '#3b2a20') : ''}
+        ${look.hair === 'lang' ? pivot(60, 74, 'fig-head', hairBehind(look.hairColor || '#3b2a20')) : ''}
         <g ${STROKE}>
           <path d="M46 106 Q46 103 51.5 103 Q57 103 57 106 L56.4 133 Q51.5 135.5 46.6 133 Z" fill="${PANTS}"/>
           <path d="M63 106 Q63 103 68.5 103 Q74 103 74 106 L73.4 133 Q68.5 135.5 63.6 133 Z" fill="${PANTS}"/>
@@ -52,7 +52,7 @@ export function figure(look = {}, instrument = 'guitar', { electric = false, hue
 
 /**
  * Lange Haare fallen auch hinten über die Schultern: eine Haarfläche hinter dem Körper, etwas dunkler (liegt im Schatten),
- * damit zwischen den Strähnen und dem Hals kein Loch bleibt.
+ * damit zwischen den Strähnen und dem Hals kein Loch bleibt. Sie nickt mit dem Kopf mit (gleicher Drehpunkt und dieselbe Bewegung wie .fig-head).
  */
 const hairBehind = (hair) => `<path d="M33 60 C33 50 87 50 87 60 L91 101 Q60 106 29 101 Z" fill="${hair}"/><path d="M33 60 C33 50 87 50 87 60 L91 101 Q60 106 29 101 Z" ${SHADE}/>`;
 
@@ -498,7 +498,7 @@ export function portrait(look = {}, mood = null) {
   return `
     <svg class="fig fig-portrait" viewBox="14 -6 92 96" aria-hidden="true">
       <g class="fig-body">
-        ${look.hair === 'lang' ? hairBehind(look.hairColor || '#3b2a20') : ''}
+        ${look.hair === 'lang' ? pivot(60, 74, 'fig-head', hairBehind(look.hairColor || '#3b2a20')) : ''}
         <path d="M43 76 Q60 68 77 76 L81 108 Q60 115 39 108 Z" fill="${shirt}" ${STROKE}/>
         ${pivot(60, 74, 'fig-head', head(look, skin, false, mood))}
       </g>
@@ -529,7 +529,7 @@ export function stage(members, { bpm = 120, names = true, className = '', electr
         <span class="countdown" data-until="${away.until}"></span></span>${names ? `<b>${escapeHtml(m.firstName)}</b>` : ''}</div>`;
     }
     return `
-    <div class="fig-member${act ? ' clickable' : ''}${TALL.includes(m.look?.hair) || ['cowboy', 'fedora'].includes(hatOf(m.look ?? {})) ? ' tall' : ''}" style="--d:${(-((m.id * 7919) % 4300) / 1000).toFixed(2)}s"${act ? ` data-act="${act}" data-id="${m.id}" title="${escapeHtml(m.firstName)} öffnen"` : ''}>${figure(m.look, instrumentOf(m), { electric: electricOf(m), hue: hueOf(m), mood: m.personality?.[0] ?? null })}${names ? `<b>${nameOf ? nameOf(m) : escapeHtml(m.firstName)}</b>` : ''}${below(m)}</div>`;
+    <div class="fig-member${act ? ' clickable' : ''}${TALL.includes(m.look?.hair) || ['cowboy', 'fedora'].includes(hatOf(m.look ?? {})) ? ' tall' : ''}" style="--d:${(-((m.id * 7919) % 4300) / 1000).toFixed(2)}s"${act ? ` data-act="${act}" data-id="${m.id}" title="${escapeHtml(m.firstName)} öffnen"` : ''}>${figure(m.look, instrumentOf(m), { electric: electricOf(m), hue: hueOf(m), mood: m.personality?.[0] ?? null })}${names ? `<b>${nameOf ? nameOf(m) : escapeHtml(m.stageName ?? m.firstName)}</b>` : ''}${below(m)}</div>`;
   }).join('')}
   </div>`;
 }

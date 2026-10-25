@@ -200,6 +200,7 @@ final class Repo
             'label_id' => $r['label_id'] === null ? null : (int) $r['label_id'],
             'first_name' => $r['first_name'],
             'last_name' => $r['last_name'],
+            'stage_name' => ($r['stage_name'] ?? null) ?: null,
             'rarity' => $r['rarity'],
             'instr1' => $r['instr1'],
             'skill1' => (float) $r['skill1'],

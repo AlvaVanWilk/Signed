@@ -25,6 +25,7 @@ final class Present
             'id' => $m['id'],
             'firstName' => $m['first_name'],
             'lastName' => $m['last_name'],
+            'stageName' => $m['stage_name'] ?? null,
             'rarity' => $m['rarity'],
             'instruments' => $instruments,
             'fame' => self::down($m['fame']),

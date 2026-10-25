@@ -9,7 +9,7 @@
   --lb-c-mixed: linear-gradient(180deg, #a8607c, #b89d57, #a9bd3a, #6590b3, #8676b5);
 }
 .shell.with-bar {
-  display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 18px; max-width: 1360px; margin: 0 auto; padding: 22px 20px 40px 72px; align-items: start;
+  display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 18px; max-width: 1360px; margin: 0 auto; padding: 22px 20px 40px; align-items: start;
 }
 .shell.with-bar .page.lb-main { margin: 0; max-width: none; width: 100%; background: var(--lb-panel); border: 1px solid var(--lb-line); border-radius: 16px; padding: 18px; gap: 14px; }
 .lb-cap { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--lb-muted); font-weight: 700; margin: 0 0 10px; }
@@ -25,9 +25,9 @@
 /* Band-Leiste */
 .lb-side { background: var(--lb-panel); border: 1px solid var(--lb-line); border-radius: 16px; padding: 16px 14px; position: sticky; top: 14px; }
 .lb-bar { display: flex; flex-direction: column; gap: 8px; }
-.lb-bt { position: relative; display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; height: 118px; align-content: center; padding: 12px 14px 12px 18px; border-radius: 12px; border: 1px solid var(--lb-line); background: var(--lb-card); color: var(--lb-text); overflow: hidden; text-decoration: none; }
+.lb-bt { position: relative; display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; height: 118px; align-content: center; padding: 12px 14px 12px 24px; border-radius: 12px; border: 1px solid var(--lb-line); background: var(--lb-card); color: var(--lb-text); overflow: hidden; text-decoration: none; }
 .lb-bt:hover { text-decoration: none; border-color: #4a4458; }
-.lb-bt::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--g, var(--lb-c-mixed)); }
+.lb-bt::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 10px; background: var(--g, var(--lb-c-mixed)); }
 .lb-bt.sel { border-color: var(--lb-accent); background: var(--lb-card2); }
 .lb-bt .nm { font-weight: 700; font-size: 1rem; line-height: 1.15; grid-column: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lb-bt .gl { grid-column: 1; display: flex; align-items: center; gap: 8px; min-width: 0; overflow: hidden; }
@@ -49,7 +49,7 @@
 .lb-bt .songs svg { width: 20px; height: 20px; fill: none; stroke: var(--lb-accent); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .lb-bt .songs b { font-size: 1rem; line-height: 1; font-weight: 700; }
 .lb-bt.frozen { opacity: 0.78; }
-.lb-bt.busy::after { content: ''; position: absolute; left: 5px; right: 0; bottom: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--lb-accent), transparent); background-size: 60% 100%; background-repeat: no-repeat; animation: lb-run 1.8s linear infinite; }
+.lb-bt.busy::after { content: ''; position: absolute; left: 10px; right: 0; bottom: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--lb-accent), transparent); background-size: 60% 100%; background-repeat: no-repeat; animation: lb-run 1.8s linear infinite; }
 @keyframes lb-run { from { background-position: -60% 0; } to { background-position: 160% 0; } }
 @media (prefers-reduced-motion: reduce) { .lb-bt.busy::after { animation: none; background-position: 50% 0; } }
 .lb-add { border: 1px dashed var(--lb-line); color: var(--lb-muted); background: none; border-radius: 12px; padding: 11px; font: inherit; font-weight: 600; cursor: pointer; }

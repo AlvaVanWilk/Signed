@@ -1600,6 +1600,32 @@ test('Zusammentun: Wer zwei Instrumente spielt, sagt, welches er in der neuen Ba
     checkEquals(2, (int) $db->value('SELECT band_slot FROM musicians WHERE id = ?', [$id]), 'spielt das zweite Instrument');
 });
 
+test('Künstlername: Solokünstler bekommen ihn beim Umbenennen und behalten ihn in einer Band', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Kuenstler');
+    $band = foundBand($p, 'Kern');
+    $res = $p->post('submissionsTest');
+    $s = array_values(array_filter($res['state']['submissions'], static fn ($s) => $s['state'] === 'open' && $s['kind'] === 'solo'))[0];
+    $p->post('submissionSign', ['submissionId' => $s['submissionId']]);
+    $solo = array_values(array_filter($p->get('state')['bands'], static fn ($b) => count($b['memberIds']) === 1))[0];
+    $id = $solo['memberIds'][0];
+    $res = $p->post('bandRename', ['bandId' => $solo['id'], 'name' => 'DJ Kometenschweif']);
+    $m = array_values(array_filter($res['state']['musicians'], static fn ($x) => $x['id'] === $id))[0];
+    checkEquals('DJ Kometenschweif', $m['stageName']);
+    // In die Band: Der Künstlername bleibt
+    $res = $p->post('bandMerge', ['bandId' => $band['id'], 'otherId' => $solo['id'], 'keepName' => 'a', 'slot' => 1]);
+    $m = array_values(array_filter($res['state']['musicians'], static fn ($x) => $x['id'] === $id))[0];
+    checkEquals('DJ Kometenschweif', $m['stageName']);
+    // Wieder allein: Die Solo-Band heißt wie der Künstlername
+    $res = $p->post('bandRemoveMember', ['bandId' => $band['id'], 'musicianId' => $id]);
+    $own = array_values(array_filter($res['state']['bands'], static fn ($b) => $b['memberIds'] === [$id]))[0];
+    checkEquals('DJ Kometenschweif', $own['name']);
+    // Den echten Namen eintragen: kein Künstlername mehr
+    $res = $p->post('bandRename', ['bandId' => $own['id'], 'name' => $m['firstName'] . ' ' . $m['lastName']]);
+    $m = array_values(array_filter($res['state']['musicians'], static fn ($x) => $x['id'] === $id))[0];
+    checkEquals(null, $m['stageName']);
+});
+
 test('WikiSignia: Wer entlassen wurde, behält seinen Artikel', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Wiki');

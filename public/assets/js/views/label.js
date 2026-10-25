@@ -166,7 +166,7 @@ function memberRow(b, m, members, slots) {
     <div class="lb-mr" data-member-row="${m.id}">
       <a class="lb-ph ${mood}" data-act="musicianInfo" data-id="${m.id}" style="--split:linear-gradient(120deg, ${split})" title="${esc(m.firstName)} ansehen">${photo(m)}</a>
       <div class="lb-info">
-        <div class="lb-nm"><a data-act="musicianInfo" data-id="${m.id}">${esc(m.firstName)} ${esc(m.lastName)}</a>${moodTag(mood)}
+        <div class="lb-nm"><a data-act="musicianInfo" data-id="${m.id}">${m.stageName ? `${esc(m.stageName)} <small class="muted">${esc(m.firstName)} ${esc(m.lastName)}</small>` : `${esc(m.firstName)} ${esc(m.lastName)}`}</a>${moodTag(mood)}
           <span class="lb-traitrow">${m.personality.map((p) => `<button class="lb-trait" data-act="tip" data-tip="${esc(cat().personalities[p])}: ${esc(cat().personalityInfo[p])}" title="${esc(cat().personalities[p])}: ${esc(cat().personalityInfo[p])}">${esc(cat().personalities[p])}</button>`).join('')}</span></div>
         <div class="lb-ins lv-${Math.min(level, MAX_LV_STYLE)}">
           ${m.instruments.length > 1
@@ -256,7 +256,7 @@ function liveBlock(b, members, act) {
     electricOf: (m) => electric.get(m.id),
     hueOf: (m) => ownGear(m, playedInstrument(m)).hue,
     instrumentOf: (m) => (hasGear(m) ? playedInstrument(m) : 'none'),
-    nameOf: (m) => `<i class="lb-glow ${m.wellbeing?.level ?? 'green'}" data-live-glow="${m.id}"></i>${esc(m.firstName)}`,
+    nameOf: (m) => `<i class="lb-glow ${m.wellbeing?.level ?? 'green'}" data-live-glow="${m.id}"></i>${esc(m.stageName ?? m.firstName)}`,
     below: (m) => (!hasGear(m)
       ? `<span class="lb-lv lb-nogear" title="Ohne Instrument kann ${esc(m.firstName)} nicht mitspielen und lernt nichts"><span class="lb-prog" style="visibility:hidden"><i></i></span><em>${esc(instrumentName(playedOf(m).type))} fehlt</em></span>`
       : `<span class="lb-lv lv-${Math.min(steps(playedOf(m).skill, cat().rules.skillLevels), MAX_LV_STYLE)}"><span class="lb-prog" title="Weg zur nächsten Stufe"><i data-live-bar="${m.id}"></i></span><em data-live-gain="${m.id}">+0,00</em></span>`),
@@ -305,7 +305,7 @@ function roomBlock(b, members) {
     act: 'musicianInfo',
     instrumentOf: (m) => (hasGear(m) ? playedInstrument(m) : 'none'),
     hueOf: (m) => ownGear(m, playedInstrument(m)).hue,
-    nameOf: (m) => esc(m.firstName),
+    nameOf: (m) => esc(m.stageName ?? m.firstName),
   })}</div>
       <div class="lb-roominfo">
         <div><h2 class="lb-cap">${room.shared ? 'Übungsecke des Labels' : 'Proberaum'}</h2><b>${esc(room.stage)}</b> <small class="muted">Stufe ${room.level} von 3${room.shared ? ' · für alle Solokünstler gemeinsam' : ''}</small>
@@ -403,7 +403,7 @@ export function page(route) {
   return `
     <header class="lb-hd ${genresOf(b).length ? '' : 'mixed'}" ${genresOf(b).length ? `style="--g:var(--lb-c-${sortedGenres(genresOf(b))[0]})"` : ''}>
       <div>
-        <h1>${esc(b.name)} <button class="icon-btn" data-act="bandRename" data-id="${b.id}" title="Umbenennen">✎</button></h1>
+        <h1>${esc(b.name)} <button class="icon-btn" data-act="bandRename" data-id="${b.id}" title="${solo ? 'Künstlernamen geben' : 'Umbenennen'}">✎</button></h1>
         <small>${solo ? 'Solokünstler' : esc(b.title ?? 'Band')} · ${genresOf(b).length ? sortedGenres(genresOf(b)).map((g) => esc(genreName(g))).join(' · ') : 'gemischt'}</small>
       </div>
       <div class="lb-hd-mood"><span class="lb-cap">Stimmung</span>${moodTag(b.mood.level).replace('class="lb-mood', 'class="lb-mood big')}</div>
@@ -478,7 +478,7 @@ function musicianWindow(m) {
     className: 'lb-ask lb-mw',
     html: `
       <div class="lb-mw-head"><span class="lb-ph ${m.wellbeing?.level ?? 'green'}">${photo(m)}</span>
-        <div><h2>${esc(m.firstName)} ${esc(m.lastName)}</h2><small class="muted">${band && band.memberIds.length > 1 ? esc(band.name) : 'Solokünstler'}</small></div></div>
+        <div><h2>${esc(m.stageName ?? `${m.firstName} ${m.lastName}`)}</h2>${m.stageName ? `<small class="muted">${esc(m.firstName)} ${esc(m.lastName)} · </small>` : ''}<small class="muted">${band && band.memberIds.length > 1 ? esc(band.name) : 'Solokünstler'}</small></div></div>
       ${m.abilityChoice ? `<p class="lb-mw-note">${esc(m.firstName)} ist jetzt ${esc(cat().levelWords[3])} und darf eine dritte Fähigkeit wählen. <button class="btn small primary" data-choose>Wählen</button></p>` : ''}
       <div class="lb-sum">
         <div><small>Bekanntheit</small><b>${esc(cat().fameNames[m.fameLevel])}</b><small class="muted">${fmt1(m.fame)}${nextFame ? ` · nächste Stufe ab ${nextFame}` : ''}</small></div>

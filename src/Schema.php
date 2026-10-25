@@ -465,6 +465,10 @@ final class Schema
                 'ALTER TABLE bands ADD COLUMN room INTEGER NOT NULL DEFAULT 0',
                 'ALTER TABLE labels ADD COLUMN solo_room INTEGER NOT NULL DEFAULT 0',
             ],
+            // 31: Künstlername – ein Solokünstler kann einen haben und behält ihn, wenn er in eine Band geht
+            [
+                'ALTER TABLE musicians ADD COLUMN stage_name VARCHAR(60) NULL',
+            ],
         ];
     }
 }

@@ -79,9 +79,11 @@ final class Bands
             if (Transfers::listed($db, $m['id'])) {
                 continue;
             }
-            $name = self::fullName($m);
+            // Wer einen Künstlernamen hat, tritt solo wieder unter ihm auf.
+            $base = $m['stage_name'] ?? self::fullName($m);
+            $name = $base;
             for ($n = 2; Names::bandTaken($db, $name); $n++) {
-                $name = sprintf('%s (%d)', self::fullName($m), $n);
+                $name = sprintf('%s (%d)', $base, $n);
             }
             $bandId = $db->insert('bands', ['label_id' => $repo->labelId, 'name' => $name, 'name_key' => Names::key($name), 'genre' => '', 'created_at' => Clock::now()]);
             $db->update('musicians', ['band_id' => $bandId, 'band_slot' => 1], ['id' => $m['id']]);
@@ -252,7 +254,7 @@ final class Bands
                 'kind' => $solo ? 'musician' : 'band',
                 'bandId' => $other['id'],
                 'musicianId' => $solo ? $group[0]['id'] : null,
-                'name' => $solo ? self::fullName($group[0]) : $other['name'],
+                'name' => $solo ? self::shownName($group[0]) : $other['name'],
                 'memberIds' => array_column($group, 'id'),
                 'blocked' => $blocked,
                 'score' => $score,
@@ -409,6 +411,12 @@ final class Bands
                     $band['name'], $name, number_format($band['fame_own'], 1, ',', '.'), $band['name']), $band['id']);
             }
             $this->repo->db->update('bands', ['name' => $name, 'name_key' => Names::key($name)], ['id' => $band['id']]);
+            // Solokünstler: Der neue Name ist der Künstlername der Person; sie behält ihn auch in einer Band. Heißt sie wieder wie sie selbst, gibt es keinen.
+            $members = $this->repo->members($band['id']);
+            if (count($members) === 1) {
+                $m = $members[0];
+                $this->repo->db->update('musicians', ['stage_name' => $name === self::fullName($m) ? null : $name], ['id' => $m['id']]);
+            }
         });
     }
 
@@ -627,6 +635,12 @@ final class Bands
     public static function fullName(array $m): string
     {
         return $m['first_name'] . ' ' . $m['last_name'];
+    }
+
+    /** Wie die Person auftritt: Künstlername, sonst Vor- und Nachname. */
+    public static function shownName(array $m): string
+    {
+        return ($m['stage_name'] ?? null) ?: self::fullName($m);
     }
 
     private function idleBand(int $bandId): array

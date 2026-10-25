@@ -68,7 +68,7 @@
 .lb-bt.busy::after { content: ''; position: absolute; left: 10px; right: 0; bottom: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--lb-accent), transparent); background-size: 60% 100%; background-repeat: no-repeat; animation: lb-run 1.8s linear infinite; }
 @keyframes lb-run { from { background-position: -60% 0; } to { background-position: 160% 0; } }
 @media (prefers-reduced-motion: reduce) { .lb-bt.busy::after { animation: none; background-position: 50% 0; } }
-.lb-add { border: 1px dashed var(--lb-line); color: var(--lb-muted); background: none; border-radius: 12px; padding: 11px; font: inherit; font-weight: 600; cursor: pointer; }
+.lb-add { border: 1px dashed var(--lb-line); color: var(--lb-muted); background: none; border-radius: 12px; padding: 11px; font: inherit; font-weight: 600; cursor: pointer; text-align: center; text-decoration: none; display: block; }
 .lb-add:hover { color: var(--lb-text); border-color: var(--lb-accent); }
 .lb-legend { margin: 16px 0 0; display: flex; gap: 12px; flex-wrap: wrap; font-size: 0.72rem; }
 .lb-legend .lb-mood { font-size: 0.72rem; } .lb-legend .lb-mood i { width: 8px; height: 8px; }

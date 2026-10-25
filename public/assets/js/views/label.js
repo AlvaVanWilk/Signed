@@ -58,29 +58,29 @@ export function lastBandId() {
 // ---------- Band-Leiste ----------
 
 const MOOD_TIP = {
-  green: 'Stimmung gut: Alle sind zufrieden.',
-  yellow: 'Stimmung angespannt: Etwas stört. Auf der Bandseite steht, was sie sich wünschen.',
-  red: 'Stimmung unzufrieden: Die Band macht nichts mehr, bis du dich kümmerst.',
+  green: 'Gut drauf',
+  yellow: 'Angespannt',
+  red: 'Unzufrieden · macht nichts mehr',
 };
 
-/** Was ein Genre der Band gerade bringt, in einem Satz: Bonus, was fehlt, oder warum keiner. */
+/** Was ein Genre der Band gerade bringt, so kurz wie möglich: Bonus, was fehlt, oder wer es mag. */
 function genreTip(b, members, g) {
   const name = genreName(g);
   const needs = cat().genreLineup[g].map(([options, need]) => `${need > 1 ? `${need} × ` : ''}${options.map(instrumentName).join(' oder ')}`).join(', ');
   if (members.length === 1) {
     const r = cat().rules;
-    if (b.genres.includes(g)) return `${name}: Genre-Bonus solo, Sound +${Math.round((b.genreBonus - 1) * 100)} %.`;
-    if (r.soloGenres.includes(g)) return `${name}: Solo gibt es den Bonus, wenn die Person selbst ${needs} spielt.`;
-    return `${name}: Solo gibt es den Genre-Bonus nur für ${r.soloGenres.map(genreName).join(' und ')}. In einer ${name}-Band bräuchte es: ${needs}.`;
+    if (b.genres.includes(g)) return `${name} · Sound +${Math.round((b.genreBonus - 1) * 100)} %`;
+    if (r.soloGenres.includes(g)) return `${name} · Bonus mit ${needs}`;
+    return `${name} · solo kein Bonus`;
   }
-  if (b.genres.includes(g)) return `${name}: Genre-Bonus. Alle mögen ${name}, und die Besetzung passt (${b.title}, Sound +${Math.round((b.genreBonus - 1) * 100)} %).`;
+  if (b.genres.includes(g)) return `${name} · Sound +${Math.round((b.genreBonus - 1) * 100)} %`;
   const check = b.genreChecks?.[g];
   const fans = members.filter((m) => m.genres.includes(g)).map((m) => m.stageName ?? m.firstName);
   if (check?.allFans) {
     const missing = check.requirements.filter((r) => !r.met).map((r) => `${r.need - r.have > 1 ? `${r.need - r.have} × ` : ''}${r.instruments.map(instrumentName).join(' oder ')}`);
-    return `${name}: Alle mögen es, aber für den Bonus fehlt noch ${missing.join(', ')}.`;
+    return `${name} · fehlt: ${missing.join(', ')}`;
   }
-  return `${name}: nur ${fans.join(', ')}. Für den Bonus müssen es alle mögen, und dabei sein muss: ${needs}.`;
+  return `${name} · nur ${fans.join(', ')}`;
 }
 
 /**
@@ -99,26 +99,26 @@ function tile(b, selected) {
   const ins = members.map((m) => {
     const type = playedInstrument(m);
     const on = hasGear(m);
-    return `<i class="ins ${on ? '' : 'off'}" ${tip(`${m.stageName ?? m.firstName}: ${instrumentName(type)}${on ? '' : ' fehlt noch. Ohne eigenes Instrument spielt die Person kaum mit.'}`)}>${instrumentIcon(type)}</i>`;
+    return `<i class="ins ${on ? '' : 'off'}" ${tip(`${m.stageName ?? m.firstName} · ${instrumentName(type)}${on ? '' : ' fehlt'}`)}>${instrumentIcon(type)}</i>`;
   }).join('');
   const present = sortedGenres([...new Set(members.flatMap((m) => m.genres))]);
   const shared = (g) => members.every((m) => m.genres.includes(g));
   const genres = present.map((g) => `<i class="gen g-${g} ${shared(g) ? '' : 'part'}" ${tip(genreTip(b, members, g))}>${genreGlyph(g)}</i>`).join('');
   const plaqueTip = bonusGenres.length
-    ? `${b.title ?? genreName(bonusGenres[0])}: Genre-Bonus, Sound +${Math.round((b.genreBonus - 1) * 100)} %.`
-    : solo ? 'Kein Genre-Bonus. Solo gibt es ihn nur für Pop (Gesang) und Elektro (Keyboard oder Turntables).' : 'Kein Genre-Bonus: Dafür müssen alle ein Genre mögen und die Besetzung muss passen.';
+    ? `${b.title ?? genreName(bonusGenres[0])} · Sound +${Math.round((b.genreBonus - 1) * 100)} %`
+    : solo ? 'Kein Genre-Bonus · solo nur Pop, Elektro' : 'Kein Genre-Bonus';
   const plaque = `<span class="plq ${bonusGenres.length ? 'on' : ''}" ${tip(plaqueTip)}>${bonusGenres.map((g) => `<i class="tex t-${g}"></i>`).join('')}</span>`;
-  const songsText = `${b.mood.songs} geschriebene ${b.mood.songs === 1 ? 'Song wartet' : 'Songs warten'} auf eine Aufnahme${b.mood.songRate > 0 ? `. Gerade entstehen etwa ${String(Math.round(b.mood.songRate * 10) / 10).replace('.', ',')} pro Stunde.` : '. Gerade schreibt niemand.'}`;
+  const songsText = b.mood.songRate > 0 ? `~${String(Math.round(b.mood.songRate * 10) / 10).replace('.', ',')} Songs / Stunde` : 'Schreibt gerade nicht';
   const wish = b.mood.wishes?.[0];
   return `
     <a href="#/band/${b.id}" data-nav="b${b.id}" draggable="false" class="lb-bt ${selected ? 'sel' : ''} ${away ? 'busy' : ''} ${b.mood.level === 'red' ? 'frozen' : ''}">
       ${plaque}
       <span class="lamp ${b.mood.level}" ${tip(MOOD_TIP[b.mood.level] ?? '')}><i></i></span>
-      <span class="nm"><span class="nm-t">${esc(b.name)}</span><span class="stars" ${tip(`Ruhm: ${cat().fameNames[stars] ?? ''} (${stars} von 3 Sternen)`)}>${[0, 1, 2].map((i) => `<i class="${i < stars ? 'on' : ''}">★</i>`).join('')}</span></span>
+      <span class="nm"><span class="nm-t">${esc(b.name)}</span><span class="stars" ${tip(`Ruhm: ${cat().fameNames[stars] ?? ''}`)}>${[0, 1, 2].map((i) => `<i class="${i < stars ? 'on' : ''}">★</i>`).join('')}</span></span>
       <span class="gl"><span class="inss">${ins}</span>${b.mood.level === 'red' ? '<small class="waits">wartet auf dich</small>' : ''}</span>
       <span class="gens">${genres}</span>
       <span class="songs ${b.mood.songRate > 0 ? 'writing' : ''}" style="--cycle:${b.mood.songRate > 0 ? Math.min(6, Math.max(0.9, 1.6 / b.mood.songRate)).toFixed(2) : 0}s" ${tip(songsText)}><svg viewBox="0 0 24 24" aria-hidden="true"><path class="ghost" d="M9 18a3 3 0 11-6 0 3 3 0 016 0 L9 5 L20 3 L20 16 a3 3 0 11-6 0 3 3 0 016 0"/><path class="draw" pathLength="100" d="M9 18a3 3 0 11-6 0 3 3 0 016 0 L9 5 L20 3 L20 16 a3 3 0 11-6 0 3 3 0 016 0"/></svg><b>${b.mood.songs}</b></span>
-      ${wish ? `<span class="wishb ${wish.level}" ${tip(`${solo ? 'Ein Wunsch' : 'Die Band wünscht sich etwas'}: „${wish.text}“ Auf der Bandseite lässt er sich erfüllen.`)}><svg viewBox="0 0 28 22" aria-hidden="true"><path d="M8 1h17a2 2 0 012 2v12a2 2 0 01-2 2H12l-5 4v-4H8a2 2 0 01-2-2V9L1 7l5-2V3a2 2 0 012-2z"/><path class="ex" d="M16.5 5v5.5M16.5 13.3v.4"/></svg></span>` : ''}
+      ${wish ? `<span class="wishb ${wish.level}" ${tip(`„${wish.text}“`)}><svg viewBox="0 0 28 22" aria-hidden="true"><path d="M8 1h17a2 2 0 012 2v12a2 2 0 01-2 2H12l-5 4v-4H8a2 2 0 01-2-2V9L1 7l5-2V3a2 2 0 012-2z"/><path class="ex" d="M16.5 5v5.5M16.5 13.3v.4"/></svg></span>` : ''}
     </a>`;
 }
 
@@ -132,7 +132,7 @@ export function bar(selectedId) {
       <h2 class="lb-cap">Deine Bands</h2>
       <nav class="lb-bar">
         ${sorted.map((b) => tile(b, b.id === selectedId)).join('')}
-        <button class="lb-add" data-act="newBand">+ Band oder Solokünstler</button>
+        <a class="lb-add" href="#/einsendungen" title="Neue Künstler kommen über die Einsendungen. Bands bildest du, indem du Kacheln aufeinanderziehst.">+ Neue Künstler</a>
       </nav>
       <p class="lb-legend"><span class="lb-mood green"><i></i>gut</span><span class="lb-mood yellow"><i></i>angespannt</span><span class="lb-mood red"><i></i>unzufrieden</span></p>
     </aside>`;
@@ -257,7 +257,7 @@ function act(b, members, type, section, title, text, icon, warn = false, busy = 
   const plural = (ids, one, many) => (ids.length > 1 ? many : one);
   if (r.locked) {
     const red = r.dislike.filter((id) => musicianById(id)?.wellbeing?.level === 'red');
-    return `<div class="lb-act lock" data-act="tip" data-tip="${esc(names(red))} ${plural(red, 'hat', 'haben')} darauf gerade keine Lust. Erst die Stimmung mit etwas heben, das der Band gefällt.">${icon}<b>${title}</b><small>${esc(names(red))} ${plural(red, 'hat', 'haben')} keine Lust darauf.</small></div>`;
+    return `<div class="lb-act lock" data-act="tip" data-tip="${esc(names(red))}: keine Lust · erst Stimmung heben">${icon}<b>${title}</b><small>${esc(names(red))} ${plural(red, 'hat', 'haben')} keine Lust darauf.</small></div>`;
   }
   const hint = r.dislike.length ? `<small class="no">${esc(names(r.dislike))} ${plural(r.dislike, 'mag', 'mögen')} das nicht.</small>` : `<small>${text}</small>`;
   // Ohne Unterseite: Die Anordnung startet gleich (Proben).

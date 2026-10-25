@@ -57,7 +57,7 @@ function parseRoute() {
 
 /** Bandseite: ohne Unterseite die ruhige Label-Ansicht, sonst die Übung, das Studio usw. */
 function viewBand(route) {
-  if (!app.state.bands.length) return `<div class="empty">Noch keine Band. <button class="btn primary" data-act="newBand">+ Band oder Solokünstler</button></div>`;
+  if (!app.state.bands.length) return `<div class="empty">Noch keine Band. <a class="btn primary" href="#/einsendungen">Zu den Einsendungen</a></div>`;
   // Die alte Übungsseite gibt es nicht mehr: Proben starten direkt auf der Bandseite.
   return route.section && route.section !== 'uebung' ? bands.renderBand(route) : label.page(route);
 }

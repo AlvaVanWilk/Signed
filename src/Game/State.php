@@ -255,6 +255,7 @@ final class State
                 ]];
             }, $musicians)),
             'gear' => $gearOut,
+            'store' => (new Store($repo))->present(),
             'managers' => array_values(array_map(static fn ($m) => Present::manager($m, $managerBands[$m['id']] ?? []), $managers)),
             'items' => array_map(static fn ($i) => ['id' => (int) $i['id'], 'kind' => $i['kind'], 'value' => (float) $i['value']], $items),
             'bands' => $bandsOut,

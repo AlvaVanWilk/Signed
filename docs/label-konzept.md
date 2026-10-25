@@ -419,3 +419,11 @@ Beim ersten Login nach dem Umbau (Saison 2) bleiben **Labelname und Konto**, all
 - Suche über alle Labels (`wikiSearch`). Zugang über den Knopf „WikiSignia“ im Label-Menü oben rechts.
 - **Namensschutz:** Eine ehemalige Band behält ihren Namen nur geschützt, wenn sie am Ende mindestens `Balance::NAME_PROTECT_FAME` (20, erste Bekanntheitsstufe) Ruhm am Namen hatte; sonst wird der Name frei. Wiederbeleben ist noch nicht möglich.
 - **Verbundener Name** („Solo & Band“, „and the“, „und die“): behält `NAME_COMBO_KEEP` (50 %) des Ruhms beider Namen; ein ganz neuer Name behält nichts, ein vorhandener Name den vollen eigenen Ruhm, der andere Name verfällt.
+
+### Music Store (erste Version, gebaut)
+
+- Ersetzt „Einkaufen“ (Zufallspakete bleiben im Code, aber nicht mehr im Menü). Menü: Übersicht, Einsendungen, **Music Store**, Charts, WikiSignia; Lager und Börse sind nicht mehr im Menü (Seiten bestehen weiter unter `#/lager`, `#/boerse`).
+- **Regal:** 5 bis 10 Instrumente, je Art höchstens eins, für alle Labels gleich, **wechselt alle 4 Stunden** (`Balance::STORE['hours']`); es ergibt sich aus der Fensternummer (`Store::shelf($slot)`), nicht aus dem Spiel-Zufall.
+  Seltenheit mit Gewichten 50/32/14/4 (gewöhnlich bis legendär), Preis nach Seltenheit, Eigenschaften und Werten (Grundpreise 60/220/700/2100).
+- **Zurücklegen:** ein Instrument je Label, einen Tag lang (`holdHours` 24), bleibt über den Wechsel des Regals, nur für dieses Label. Gekauft werden kann jedes Instrument pro Label einmal.
+- Oberfläche: gezeichnetes Regal mit Preisschildern, Seltenheit als Lichtschein, Hinweispunkt bei Instrumenten, die jemandem im Label fehlen; Übergang: Doppeltür geht beim Betreten auf.

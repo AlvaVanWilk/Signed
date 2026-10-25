@@ -19,6 +19,7 @@ import * as musician from './views/musician.js';
 import * as overview from './views/overview.js';
 import * as packs from './views/packs.js';
 import * as storage from './views/storage.js';
+import * as store from './views/store.js';
 import * as submissions from './views/submissions.js';
 import './views/together.js';
 import * as wiki from './views/wiki.js';
@@ -26,16 +27,16 @@ import * as wiki from './views/wiki.js';
 const NAV = [
   ['', 'Übersicht'],
   ['einsendungen', 'Einsendungen'],
-  ['packs', 'Einkaufen'],
-  ['lager', 'Lager'],
-  ['boerse', 'Börse'],
+  ['store', 'Music Store'],
   ['charts', 'Charts'],
+  ['wiki', 'WikiSignia'],
 ];
 
 const VIEWS = {
   '': () => overview.render(),
   einsendungen: () => submissions.render(),
   packs: () => packs.render(),
+  store: () => store.render(),
   lager: () => storage.render(),
   bands: (route) => viewBand(route),
   band: (route) => viewBand(route),
@@ -157,7 +158,6 @@ function layout(content, route) {
       <div class="label-info">
         <span class="label-name" title="Dein Label">${esc(s.label.name)}</span>
         <button class="money-pill" data-act="openFinance" data-live-money title="Konto und Einnahmen">${money(liveMoney())}</button>
-        <a class="btn ghost small wiki-btn ${active === 'wiki' ? 'active' : ''}" href="#/wiki" title="WikiSignia: alle Bands und Signies">WikiSignia</a>
         <a class="btn ghost small help-btn ${active === 'hilfe' ? 'active' : ''}" href="#/hilfe" title="Hilfe">?</a>
         <button class="btn ghost small" data-act="logout">Abmelden</button>
       </div>
@@ -184,6 +184,7 @@ function render() {
   help.maybeStartTour();
   if (route.name === 'charts' && !app.charts) charts.loadCharts();
   if (route.name === 'wiki') wiki.ensure();
+  if (route.name === 'store') store.enter();
 }
 
 function updateCountdowns() {

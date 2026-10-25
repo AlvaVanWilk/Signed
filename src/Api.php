@@ -21,6 +21,7 @@ use Signed\Game\Repo;
 use Signed\Game\Scout;
 use Signed\Game\Submissions;
 use Signed\Game\State;
+use Signed\Game\Store;
 use Signed\Game\Wiki;
 use Signed\Game\Styles;
 use Signed\Game\Studio;
@@ -42,6 +43,9 @@ final class Api
         'state' => ['GET', true],
         'charts' => ['GET', true],
         'bandView' => ['POST', true],
+        'storeBuy' => ['POST', true],
+        'storeHold' => ['POST', true],
+        'storeRelease' => ['POST', true],
         'wikiIndex' => ['POST', true],
         'wikiLabel' => ['POST', true],
         'wikiSearch' => ['POST', true],
@@ -251,6 +255,24 @@ final class Api
     {
         $musician = (new Scout($repo))->pick(self::int($in, 'offerId'), self::int($in, 'index'));
         return ['musician' => $musician, 'state' => State::build($repo)];
+    }
+
+    private function storeBuy(array $in, Repo $repo): array
+    {
+        $res = (new Store($repo))->buy(self::int($in, 'slot'), self::int($in, 'idx'));
+        return $res + ['state' => State::build($repo)];
+    }
+
+    private function storeHold(array $in, Repo $repo): array
+    {
+        (new Store($repo))->hold(self::int($in, 'idx'));
+        return ['state' => State::build($repo)];
+    }
+
+    private function storeRelease(array $in, Repo $repo): array
+    {
+        (new Store($repo))->release();
+        return ['state' => State::build($repo)];
     }
 
     private function wikiIndex(array $in, Repo $repo): array

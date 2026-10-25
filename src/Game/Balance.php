@@ -83,6 +83,17 @@ final class Balance
             'odds' => ['common' => 0, 'rare' => 0, 'epic' => 75, 'legendary' => 25],
         ],
     ];
+    /**
+     * Music Store: Das Regal ist für alle Labels gleich und wechselt alle `hours` Stunden (aus der Uhrzeit berechnet, nicht gewürfelt).
+     * `count` = wie viele Instrumente (je Art höchstens eins), `odds` = Seltenheit (gute sind seltener), `price` = Grundpreis je Seltenheit,
+     * Eigenschaften und Werte über dem Modell machen teurer. Zurücklegen: ein Instrument je Label für `holdHours`, unabhängig vom Wechsel des Regals.
+     */
+    public const STORE = [
+        'hours' => 4, 'count' => [5, 10], 'holdHours' => 24,
+        'odds' => ['common' => 50, 'rare' => 32, 'epic' => 14, 'legendary' => 4],
+        'price' => ['common' => 60, 'rare' => 220, 'epic' => 700, 'legendary' => 2100],
+        'pricePerk' => 0.25, 'priceStat' => 0.004,
+    ];
     /** Chance auf den Tipp des Verkäufers (Läden mit tip): Eine Karte passt zu einem Musiker ohne Instrument, Bandmitglieder zuerst. */
     public const STORE_TIP_CHANCE = 0.25;
     /** Pro Scout-Stufe sinkt die Chance auf gewöhnliche Karten um diesen Anteil. */

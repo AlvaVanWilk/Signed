@@ -1661,3 +1661,43 @@ test('WikiSignia: Labels als oberste Ebene, fremde Artikel mit Label, ohne Geld-
     $byName = $b->post('wikiSearch', ['q' => mb_strtolower($musician['firstName'])]);
     check(count($byName['signies']) >= 1, 'Künstler gefunden');
 });
+
+test('Music Store: Regal für alle gleich, 5 bis 10 Instrumente je Art eines, wechselt nach vier Stunden, Kaufen und Zurücklegen', function () {
+    $db = freshDb();
+    $a = registerPlayer($db, 'StoreA');
+    $b = registerPlayer($db, 'StoreB');
+    $db->exec('UPDATE labels SET money = 100000');
+    $shelfA = $a->get('state')['store'];
+    $shelfB = $b->get('state')['store'];
+    checkEquals(array_column($shelfA['items'], 'model'), array_column($shelfB['items'], 'model'), 'für alle gleich');
+    $count = count($shelfA['items']);
+    check($count >= 5 && $count <= 10, 'fünf bis zehn Instrumente');
+    $types = array_column($shelfA['items'], 'type');
+    checkEquals(count($types), count(array_unique($types)), 'je Art höchstens eins');
+    // Kaufen
+    $item = $shelfA['items'][0];
+    $money = $a->get('state')['label']['money'];
+    $res = $a->post('storeBuy', ['slot' => $item['slot'], 'idx' => $item['idx']]);
+    checkEquals($money - $item['price'], $res['state']['label']['money']);
+    checkEquals($item['model'], $res['gear']['model']);
+    check($res['state']['store']['items'][0]['bought'] === true, 'als gekauft markiert');
+    checkApiError(fn () => $a->post('storeBuy', ['slot' => $item['slot'], 'idx' => $item['idx']]), 'schon gekauft');
+    // Zurücklegen: eines, bleibt über den Wechsel, nur für dieses Label
+    $other = $shelfA['items'][1];
+    $a->post('storeHold', ['idx' => $other['idx']]);
+    checkApiError(fn () => $a->post('storeHold', ['idx' => $shelfA['items'][2]['idx']]), 'schon ein Instrument');
+    Clock::advance(Balance::STORE['hours'] * 3600 + 60);
+    $later = $a->get('state')['store'];
+    check($later['slot'] > $shelfA['slot'], 'neues Regal');
+    check($later['hold'] !== null && $later['hold']['item']['model'] === $other['model'], 'das zurückgelegte bleibt');
+    checkEquals(null, $b->get('state')['store']['hold'], 'nur für das eigene Label');
+    $res = $a->post('storeBuy', ['slot' => $later['hold']['item']['slot'], 'idx' => $later['hold']['item']['idx']]);
+    checkEquals($other['model'], $res['gear']['model']);
+    checkEquals(null, $res['state']['store']['hold'], 'nach dem Kauf nicht mehr zurückgelegt');
+    // Alte Regale lassen sich nicht mehr kaufen
+    checkApiError(fn () => $a->post('storeBuy', ['slot' => $shelfA['slot'], 'idx' => $shelfA['items'][3]['idx']]), 'nicht mehr im Regal');
+    // Das Zurücklegen läuft nach einem Tag ab
+    $a->post('storeHold', ['idx' => $later['items'][0]['idx']]);
+    Clock::advance(Balance::STORE['holdHours'] * 3600 + 60);
+    checkEquals(null, $a->get('state')['store']['hold'], 'abgelaufen');
+});

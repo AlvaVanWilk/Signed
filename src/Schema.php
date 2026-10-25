@@ -440,6 +440,26 @@ final class Schema
                 'CREATE INDEX alumni_label ON alumni (label_id, musician_id)',
                 "INSERT INTO alumni (label_id, musician_id, left_at, reason) SELECT label_id, musician_id, created_at, 'released' FROM history WHERE musician_id IS NOT NULL AND text LIKE '%verlässt das Label.'",
             ],
+            // 29: Music Store – zurückgelegtes Instrument (eines je Label, bleibt über den Wechsel des Angebots) und schon Gekauftes
+            [
+                'CREATE TABLE store_holds (
+                    id {PK},
+                    label_id INTEGER NOT NULL,
+                    slot INTEGER NOT NULL,
+                    idx INTEGER NOT NULL,
+                    created_at INTEGER NOT NULL,
+                    expires_at INTEGER NOT NULL
+                ){OPTS}',
+                'CREATE INDEX store_holds_label ON store_holds (label_id)',
+                'CREATE TABLE store_buys (
+                    id {PK},
+                    label_id INTEGER NOT NULL,
+                    slot INTEGER NOT NULL,
+                    idx INTEGER NOT NULL,
+                    created_at INTEGER NOT NULL
+                ){OPTS}',
+                'CREATE UNIQUE INDEX store_buys_once ON store_buys (label_id, slot, idx)',
+            ],
         ];
     }
 }

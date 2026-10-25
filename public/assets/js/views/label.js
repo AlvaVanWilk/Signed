@@ -118,7 +118,7 @@ function tile(b, selected) {
       <span class="gl"><span class="inss">${ins}</span>${b.mood.level === 'red' ? '<small class="waits">wartet auf dich</small>' : ''}</span>
       <span class="gens">${genres}</span>
       <span class="songs ${b.mood.songRate > 0 ? 'writing' : ''}" style="--cycle:${b.mood.songRate > 0 ? Math.min(6, Math.max(0.9, 1.6 / b.mood.songRate)).toFixed(2) : 0}s" ${tip(songsText)}><svg viewBox="0 0 24 24" aria-hidden="true"><path class="ghost" d="M9 18a3 3 0 11-6 0 3 3 0 016 0 L9 5 L20 3 L20 16 a3 3 0 11-6 0 3 3 0 016 0"/><path class="draw" pathLength="100" d="M9 18a3 3 0 11-6 0 3 3 0 016 0 L9 5 L20 3 L20 16 a3 3 0 11-6 0 3 3 0 016 0"/></svg><b>${b.mood.songs}</b></span>
-      ${wish ? `<span class="wishb ${wish.level}" ${tip(`„${wish.text}“`)}><svg viewBox="0 0 30 28" aria-hidden="true"><path d="M15 2C22.2 2 28 6.9 28 13s-5.8 11-13 11c-1.6 0-3.1-.2-4.5-.7L3 26.5l3.1-5.8C3.6 18.7 2 16 2 13 2 6.9 7.8 2 15 2Z"/><circle class="d1" cx="9.6" cy="13" r="1.3"/><circle class="d2" cx="15" cy="13" r="1.3"/><circle class="d3" cx="20.4" cy="13" r="1.3"/></svg></span>` : ''}
+      ${wish ? `<span class="wishb ${wish.level}" style="--off:-${((b.id * 0.61) % 1.5).toFixed(2)}s" ${tip(`„${wish.text}“`)}><svg viewBox="0 0 30 28" aria-hidden="true"><path d="M15 2C22.2 2 28 6.9 28 13s-5.8 11-13 11c-1.6 0-3.1-.2-4.5-.7L3 26.5l3.1-5.8C3.6 18.7 2 16 2 13 2 6.9 7.8 2 15 2Z"/><circle class="d1" cx="9.6" cy="13" r="1.3"/><circle class="d2" cx="15" cy="13" r="1.3"/><circle class="d3" cx="20.4" cy="13" r="1.3"/></svg></span>` : ''}
     </a>`;
 }
 

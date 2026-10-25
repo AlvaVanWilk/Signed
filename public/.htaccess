@@ -1,6 +1,6 @@
-# Während der Entwicklung: Browser fragen bei jedem Laden nach neuen Versionen von JS/CSS.
+# Während der Entwicklung: Browser fragen bei jedem Laden nach neuen Versionen von JS/CSS/SVG.
 <IfModule mod_headers.c>
-  <FilesMatch "\.(js|css|html)$">
+  <FilesMatch "\.(js|css|html|svg)$">
     Header set Cache-Control "no-cache"
   </FilesMatch>
 </IfModule>

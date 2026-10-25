@@ -27,7 +27,7 @@
 .lb-side { padding: 16px 4px 16px 0; position: sticky; top: 14px; }
 /* Die Leiste scrollt für sich (eigene Fläche, bleibt am Ende stehen statt die Seite mitzunehmen); rechts Platz für die Wunsch-Blasen. */
 @media (min-width: 901px) { .lb-side { max-height: calc(100vh - 28px); overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-width: none; } .lb-side::-webkit-scrollbar { display: none; } }
-.lb-bar { display: flex; flex-direction: column; gap: 18px; padding: 10px 12px 0 0; }
+.lb-bar { display: flex; flex-direction: column; gap: 18px; padding: 10px 26px 0 0; }
 .lb-bt { position: relative; display: grid; grid-template-columns: 1fr auto; gap: 7px 10px; min-height: 118px; align-content: center; overflow: visible; padding: 12px 22px 12px 26px; border-radius: 12px; border: 1px solid var(--lb-line); background: var(--lb-card); color: var(--lb-text); text-decoration: none; }
 .lb-bt:hover { text-decoration: none; border-color: #4a4458; }
 .lb-bt::before { content: none; }
@@ -756,14 +756,14 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .lb-bt .plq.on { border-right-color: rgba(0, 0, 0, .6); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .25); }
 .lb-bt .plq .tex { flex: 1; display: block; }
 .lb-bt .plq .tex + .tex { box-shadow: inset 0 1px 0 rgba(0, 0, 0, .6); }
-.tex.t-metal { background: url(../img/tex/metal.svg) 0 0 / 12px 12px; }
-.tex.t-jazz { background: url(../img/tex/jazz.svg) 0 0 / 12px 12px; }
-.tex.t-rock { background: url(../img/tex/rock.svg) 0 0 / 12px 36px; }
-.tex.t-folk { background: url(../img/tex/folk.svg) 0 0 / 12px 14px; }
-.tex.t-pop { background: url(../img/tex/pop.svg) 0 0 / 12px 12px; }
-.tex.t-elektro { background: url(../img/tex/elektro.svg) 0 0 / 12px 18px; }
-.tex.t-hiphop { background: url(../img/tex/hiphop.svg) 0 0 / 12px 24px; }
-.tex.t-punk { background: url(../img/tex/punk.svg) 0 0 / 12px 12px; }
+.tex.t-metal { background: url(../img/tex/metal.svg?v=4) 0 0 / 12px 12px; }
+.tex.t-jazz { background: url(../img/tex/jazz.svg?v=4) 0 0 / 12px 12px; }
+.tex.t-rock { background: url(../img/tex/rock.svg?v=4) 0 0 / 12px 36px; }
+.tex.t-folk { background: url(../img/tex/folk.svg?v=4) 0 0 / 12px 14px; }
+.tex.t-pop { background: url(../img/tex/pop.svg?v=4) 0 0 / 12px 12px; }
+.tex.t-elektro { background: url(../img/tex/elektro.svg?v=4) 0 0 / 12px 18px; }
+.tex.t-hiphop { background: url(../img/tex/hiphop.svg?v=4) 0 0 / 12px 24px; }
+.tex.t-punk { background: url(../img/tex/punk.svg?v=4) 0 0 / 12px 12px; }
 
 /* Wunsch: Sprechblase ragt rechts aus der Kachel, als Hinweis zum Handeln; ist der Wunsch erfüllt, ist sie weg. */
 .lb-bt .wishb { position: absolute; right: -14px; top: 50%; transform: translateY(-50%); width: 30px; height: 24px; z-index: 3; animation: lb-wish 2.4s ease-in-out infinite; }

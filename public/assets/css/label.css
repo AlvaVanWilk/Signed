@@ -23,11 +23,12 @@
 .lb-mood.big { font-size: 1.1rem; } .lb-mood.big i { width: 12px; height: 12px; }
 
 /* Band-Leiste */
-.lb-side { background: var(--lb-panel); border: 1px solid var(--lb-line); border-radius: 16px; padding: 16px 14px; position: sticky; top: 14px; }
+/* Die Künstlerleiste liegt direkt auf der Seite (kein Kasten drumherum). */
+.lb-side { padding: 16px 4px 16px 0; position: sticky; top: 14px; }
 /* Die Leiste scrollt für sich (eigene Fläche, bleibt am Ende stehen statt die Seite mitzunehmen); rechts Platz für die Wunsch-Blasen. */
-@media (min-width: 901px) { .lb-side { max-height: calc(100vh - 28px); overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #3a3448 transparent; } }
+@media (min-width: 901px) { .lb-side { max-height: calc(100vh - 28px); overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-width: none; } .lb-side::-webkit-scrollbar { display: none; } }
 .lb-bar { display: flex; flex-direction: column; gap: 18px; padding: 10px 12px 0 0; }
-.lb-bt { position: relative; display: grid; grid-template-columns: 1fr auto; gap: 7px 10px; min-height: 118px; align-content: center; overflow: visible; padding: 12px 22px 12px 32px; border-radius: 12px; border: 1px solid var(--lb-line); background: var(--lb-card); color: var(--lb-text); text-decoration: none; }
+.lb-bt { position: relative; display: grid; grid-template-columns: 1fr auto; gap: 7px 10px; min-height: 118px; align-content: center; overflow: visible; padding: 12px 22px 12px 26px; border-radius: 12px; border: 1px solid var(--lb-line); background: var(--lb-card); color: var(--lb-text); text-decoration: none; }
 .lb-bt:hover { text-decoration: none; border-color: #4a4458; }
 .lb-bt::before { content: none; }
 .lb-bt.sel { border-color: var(--lb-accent); background: var(--lb-card2); }
@@ -750,28 +751,26 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .lb-stage-opt:hover { border-color: var(--lb-accent); background: var(--lb-card2); }
 
 /* Genre-Plakette links auf der Kachel: leer (nur Umrandung) ohne Genre-Bonus, sonst im Material des Genres; Hybrid zwei, Crossover drei Stücke übereinander. */
-.lb-bt .plq { position: absolute; left: 7px; top: 8px; bottom: 8px; width: 14px; border-radius: 4px; display: flex; flex-direction: column; overflow: hidden;
-  /* Eingelassen: eine flache Vertiefung in der Kachel, oben innen etwas Schatten, unten eine feine helle Kante */
-  background: rgba(0, 0, 0, .22); box-shadow: inset 0 1px 2px rgba(0, 0, 0, .55), 0 1px 0 rgba(255, 255, 255, .05); }
-.lb-bt .plq .tex { flex: 1; display: block; background-size: 100% auto; background-repeat: repeat-y; }
+.lb-bt .plq { position: absolute; left: 0; top: 0; bottom: 0; width: 12px; border-radius: 11px 0 0 11px; display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid var(--lb-line); }
+/* Mit Bonus: das Material füllt den Streifen, wie eine eingefasste Plakette (feine dunkle Fassung zur Kachel hin) */
+.lb-bt .plq.on { border-right-color: rgba(0, 0, 0, .6); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .25); }
+.lb-bt .plq .tex { flex: 1; display: block; }
 .lb-bt .plq .tex + .tex { box-shadow: inset 0 1px 0 rgba(0, 0, 0, .6); }
-/* Die Platte liegt in der Vertiefung: ganz flach, nur der Innenschatten der Fassung darüber */
-.lb-bt .plq.on::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; box-shadow: inset 0 1px 2px rgba(0, 0, 0, .6), inset 0 0 0 1px rgba(0, 0, 0, .35); }
-.tex.t-metal { background-image: url(../img/tex/metal.svg); }
-.tex.t-jazz { background-image: url(../img/tex/jazz.svg); }
-.tex.t-rock { background-image: url(../img/tex/rock.svg); }
-.tex.t-folk { background-image: url(../img/tex/folk.svg); }
-.tex.t-pop { background-image: url(../img/tex/pop.svg); }
-.tex.t-elektro { background-image: url(../img/tex/elektro.svg); }
-.tex.t-hiphop { background-image: url(../img/tex/hiphop.svg); }
-.tex.t-punk { background-image: url(../img/tex/punk.svg); }
+.tex.t-metal { background: url(../img/tex/metal.svg) 0 0 / 12px 12px; }
+.tex.t-jazz { background: url(../img/tex/jazz.svg) 0 0 / 12px 12px; }
+.tex.t-rock { background: url(../img/tex/rock.svg) 0 0 / 12px 36px; }
+.tex.t-folk { background: url(../img/tex/folk.svg) 0 0 / 12px 14px; }
+.tex.t-pop { background: url(../img/tex/pop.svg) 0 0 / 12px 12px; }
+.tex.t-elektro { background: url(../img/tex/elektro.svg) 0 0 / 12px 18px; }
+.tex.t-hiphop { background: url(../img/tex/hiphop.svg) 0 0 / 12px 24px; }
+.tex.t-punk { background: url(../img/tex/punk.svg) 0 0 / 12px 12px; }
 
 /* Wunsch: Sprechblase ragt rechts aus der Kachel, als Hinweis zum Handeln; ist der Wunsch erfüllt, ist sie weg. */
 .lb-bt .wishb { position: absolute; right: -14px; top: 50%; transform: translateY(-50%); width: 30px; height: 24px; z-index: 3; animation: lb-wish 2.4s ease-in-out infinite; }
 .lb-bt .wishb svg { width: 100%; height: 100%; display: block; overflow: visible; }
-.lb-bt .wishb svg path:first-child { fill: var(--lb-accent); stroke: #1a1622; stroke-width: 1.4; stroke-linejoin: round; }
-.lb-bt .wishb.red svg path:first-child { fill: var(--lb-bad); }
-.lb-bt .wishb .ex { fill: none; stroke: #1a1622; stroke-width: 2.4; stroke-linecap: round; }
+.lb-bt .wishb svg path { fill: var(--lb-card); stroke: var(--lb-accent); stroke-width: 1.8; stroke-linejoin: round; }
+.lb-bt.sel .wishb svg path { fill: var(--lb-card2); }
+.lb-bt .wishb.red svg path { stroke: var(--lb-bad); }
 @keyframes lb-wish { 0%, 100% { transform: translateY(-50%); } 50% { transform: translateY(-50%) translateX(2px); } }
 @media (prefers-reduced-motion: reduce) { .lb-bt .wishb { animation: none; } }
 

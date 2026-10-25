@@ -118,7 +118,7 @@ function tile(b, selected) {
       <span class="gl"><span class="inss">${ins}</span>${b.mood.level === 'red' ? '<small class="waits">wartet auf dich</small>' : ''}</span>
       <span class="gens">${genres}</span>
       <span class="songs ${b.mood.songRate > 0 ? 'writing' : ''}" style="--cycle:${b.mood.songRate > 0 ? Math.min(6, Math.max(0.9, 1.6 / b.mood.songRate)).toFixed(2) : 0}s" ${tip(songsText)}><svg viewBox="0 0 24 24" aria-hidden="true"><path class="ghost" d="M9 18a3 3 0 11-6 0 3 3 0 016 0 L9 5 L20 3 L20 16 a3 3 0 11-6 0 3 3 0 016 0"/><path class="draw" pathLength="100" d="M9 18a3 3 0 11-6 0 3 3 0 016 0 L9 5 L20 3 L20 16 a3 3 0 11-6 0 3 3 0 016 0"/></svg><b>${b.mood.songs}</b></span>
-      ${wish ? `<span class="wishb ${wish.level}" ${tip(`„${wish.text}“`)}><svg viewBox="0 0 28 22" aria-hidden="true"><path d="M8 1h17a2 2 0 012 2v12a2 2 0 01-2 2H12l-5 4v-4H8a2 2 0 01-2-2V9L1 7l5-2V3a2 2 0 012-2z"/><path class="ex" d="M16.5 5v5.5M16.5 13.3v.4"/></svg></span>` : ''}
+      ${wish ? `<span class="wishb ${wish.level}" ${tip(`„${wish.text}“`)}><svg viewBox="0 0 30 22" aria-hidden="true"><path d="M11 2H25a3 3 0 013 3V15a3 3 0 01-3 3H11a3 3 0 01-3-3V12.4L2.4 10 8 7.6V5a3 3 0 013-3Z"/></svg></span>` : ''}
     </a>`;
 }
 

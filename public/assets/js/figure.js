@@ -143,7 +143,7 @@ const metalBead = (x, y, r, c) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${
 export const piercingSvg = (kind, c) => ({
   brow: metalBead(58.8, 37.6, 0.75, c) + metalBead(60.3, 40.2, 0.75, c),
   // Lippenring: sitzt am Rand der Unterlippe, etwas im Uhrzeigersinn gedreht.
-  lip: `<g transform="rotate(28 54 53.6)">${metalArc('M53.4 53.1 A0.85 0.85 0 1 1 54.4 54.3', c, 0.5)}</g>`,
+  lip: `<g transform="rotate(28 54 53.2)">${metalArc('M53.4 52.7 A0.85 0.85 0 1 1 54.4 53.9', c, 0.5)}</g>`,
   // Nasenring ohne Nase: nur ein dünner halber Bogen, der am Nasenflügel hervorschaut.
   nose: `<g transform="rotate(-160 51.35 49.5)">${metalArc('M50.75 49.15 A0.75 0.75 0 0 0 51.85 49.9', c, 0.34, '0 3 3 10')}</g>`,
   // Helix: ein Ring durch den oberen Rand der Ohrmuschel, darunter ein kleiner Stecker.

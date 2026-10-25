@@ -34,8 +34,9 @@ final class Names
 
     public static function bandTaken(Db $db, string $name, ?int $exceptBandId = null): bool
     {
-        $sql = 'SELECT COUNT(*) FROM bands WHERE name_key = ?';
-        $params = [self::key($name)];
+        // Ehemalige Bands halten ihren Namen nur, wenn er etwas wert war (Balance::NAME_PROTECT_FAME).
+        $sql = 'SELECT COUNT(*) FROM bands WHERE name_key = ? AND (retired_at IS NULL OR fame_final >= ?)';
+        $params = [self::key($name), Balance::NAME_PROTECT_FAME];
         if ($exceptBandId !== null) {
             $sql .= ' AND id <> ?';
             $params[] = $exceptBandId;

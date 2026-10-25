@@ -442,6 +442,10 @@ final class Balance
     public const ROYALTY_MONEY = 0.6;
     /** Tantiemen gibt es nur, solange die Platte unter den ersten Plätzen der Charts steht; weiter unten (und nach CHART_MAX_AGE) nicht mehr. Bis dahin sinken die Punkte stündlich (CHART_DECAY). */
     public const ROYALTY_RANKS = 50;
+    /** Eine ehemalige Band behält ihren Namen geschützt (niemand sonst darf ihn nehmen), wenn sie am Ende mindestens so viel Ruhm am Namen hatte: erste Bekanntheitsstufe. */
+    public const NAME_PROTECT_FAME = 20.0;
+    /** Verbindet man zwei Namen („Solo & Band“), bleibt von dem Ruhm beider Namen dieser Anteil erhalten (bei einem ganz neuen Namen nichts). */
+    public const NAME_COMBO_KEEP = 0.5;
     /**
      * Katalog: Jede fertige Platte verkauft sich für immer ein wenig – so viel ₲ pro Stunde und Chartpunkt (Startwert
      * der Platte), zusätzlich zu den Charts. Eine Platte mit 60 Punkten bringt so rund 14 ₲ am Tag: spürbar, wenn sich

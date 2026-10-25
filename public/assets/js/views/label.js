@@ -236,7 +236,9 @@ function liveBlock(b, members, act) {
     hueOf: (m) => ownGear(m, playedInstrument(m)).hue,
     instrumentOf: (m) => (hasGear(m) ? playedInstrument(m) : 'none'),
     nameOf: (m) => `<i class="lb-glow ${m.wellbeing?.level ?? 'green'}" data-live-glow="${m.id}"></i>${esc(m.firstName)}`,
-    below: (m) => `<span class="lb-lv lv-${Math.min(steps(playedOf(m).skill, cat().rules.skillLevels), MAX_LV_STYLE)}"><span class="lb-prog" title="Weg zur nächsten Stufe"><i data-live-bar="${m.id}"></i></span><em data-live-gain="${m.id}">+0,00</em></span>`,
+    below: (m) => (!hasGear(m)
+      ? `<span class="lb-lv lb-nogear" title="Ohne Instrument kann ${esc(m.firstName)} nicht mitspielen und lernt nichts">${esc(instrumentName(playedOf(m).type))} fehlt</span>`
+      : `<span class="lb-lv lv-${Math.min(steps(playedOf(m).skill, cat().rules.skillLevels), MAX_LV_STYLE)}"><span class="lb-prog" title="Weg zur nächsten Stufe"><i data-live-bar="${m.id}"></i></span><em data-live-gain="${m.id}">+0,00</em></span>`),
   })}
     </section>`;
 }

@@ -487,3 +487,5 @@ button.lb-pill:disabled { opacity: 0.45; cursor: default; }
 @media (max-width: 640px) { .wk-box { float: none; width: auto; margin: 0 0 14px; } }
 .wk-back { display: inline-block; width: auto; }
 a.btn.wk-back { display: inline-flex; width: auto; }
+.lb-nogear { color: var(--lb-muted); font-size: .82rem; font-style: italic; }
+.tg-combos { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 4px; } .tg-combo { flex: 1 1 200px; padding: 5px 8px; border-radius: 8px; border: 1px solid var(--lb-line); background: var(--lb-card2); color: var(--lb-text); font: inherit; }

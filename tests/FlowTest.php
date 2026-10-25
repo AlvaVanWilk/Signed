@@ -1604,3 +1604,25 @@ test('WikiSignia: Wer entlassen wurde, behält seinen Artikel', function () {
     $other = registerPlayer($db, 'Wiki2');
     checkApiError(fn () => $other->post('wikiSignie', ['id' => $id]), 'gibt es nicht');
 });
+
+test('Zusammentun: ein verbundener Name behält die Hälfte des Ruhms beider Namen, Namen ehemaliger Bands sind nur mit Ruhm geschützt', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Verbinder');
+    $band = foundBand($p, 'Kern');
+    $res = $p->post('submissionsTest');
+    $solo = array_values(array_filter($res['state']['submissions'], static fn ($s) => $s['state'] === 'open' && $s['kind'] === 'solo'))[0];
+    $p->post('submissionSign', ['submissionId' => $solo['submissionId']]);
+    $other = $p->post('bandJoinCandidates', ['bandId' => $band['id']])['candidates'][0];
+    check(in_array('combo', $other['nameOptions'], true), 'Verbinden wird angeboten');
+    $db->exec('UPDATE bands SET fame_own = 40 WHERE id = ?', [$band['id']]);
+    $db->exec('UPDATE bands SET fame_own = 10 WHERE id = ?', [$other['bandId']]);
+    $res = $p->post('bandMerge', ['bandId' => $band['id'], 'otherId' => $other['bandId'], 'keepName' => 'combo', 'newName' => 'Solo & Kern']);
+    $kept = bandById($res['state'], $band['id']);
+    checkEquals('Solo & Kern', $kept['name']);
+    checkEquals(25.0, (float) $kept['fameOwn'], 'die Hälfte von 40 + 10');
+    // Ehemalige Band: Name nur geschützt, wenn er etwas galt
+    $db->exec("UPDATE bands SET retired_at = 1, fame_final = 5 WHERE id = ?", [$band['id']]);
+    check(!Signed\Game\Names::bandTaken($db, 'Solo & Kern'), 'ohne Ruhm frei');
+    $db->exec("UPDATE bands SET fame_final = 50 WHERE id = ?", [$band['id']]);
+    check(Signed\Game\Names::bandTaken($db, 'Solo & Kern'), 'mit Ruhm geschützt');
+});

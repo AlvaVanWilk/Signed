@@ -285,6 +285,7 @@ final class Bands
             $out[] = 'b';
         }
         $out[] = 'new';
+        $out[] = 'combo';
         return $out;
     }
 
@@ -363,17 +364,20 @@ final class Bands
             $db = $this->repo->db;
             [$keep, $gone, $joining] = $keepName === 'b' ? [$b, $a, $groupA] : [$a, $b, $groupB];
             $finalName = $keep['name'];
-            if ($keepName === 'new') {
+            $renamed = in_array($keepName, ['new', 'combo'], true);
+            if ($renamed) {
                 $finalName = self::cleanName($newName, 'Der Bandname');
                 if (Names::bandTaken($db, $finalName, null)) {
                     throw new ApiError(sprintf('Den Bandnamen „%s“ gibt es schon.', $finalName));
                 }
             }
             // Wer den Namen aufgibt: ehemalige Band mit allem, was daran hängt.
-            $this->giveUpName($gone, 'merged', $keepName === 'new' ? sprintf('ging mit „%s“ in „%s“ auf', $keep['name'], $finalName) : sprintf('ging in „%s“ auf', $keep['name']), false);
-            if ($keepName === 'new') {
+            $this->giveUpName($gone, 'merged', $renamed ? sprintf('ging mit „%s“ in „%s“ auf', $keep['name'], $finalName) : sprintf('ging in „%s“ auf', $keep['name']), false);
+            if ($renamed) {
                 $this->giveUpName($keep, 'renamed', sprintf('heißt jetzt „%s“', $finalName), true);
-                $db->update('bands', ['name' => $finalName, 'name_key' => Names::key($finalName)], ['id' => $keep['id']]);
+                // Ein verbundener Name („Solo & Band“) behält einen Teil des Ruhms beider Namen, ein ganz neuer nichts.
+                $carry = $keepName === 'combo' ? round(Balance::NAME_COMBO_KEEP * ($a['fame_own'] + $b['fame_own']), 1) : 0.0;
+                $db->update('bands', ['name' => $finalName, 'name_key' => Names::key($finalName), 'fame_own' => $carry], ['id' => $keep['id']]);
             }
             $db->exec('UPDATE musicians SET band_id = ?, band_slot = band_slot WHERE band_id = ?', [$keep['id'], $gone['id']]);
             // Ein Einzelmusiker mit zwei Instrumenten sagt, welches er in der neuen Band spielt.

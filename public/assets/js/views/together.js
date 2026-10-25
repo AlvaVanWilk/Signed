@@ -1,6 +1,6 @@
 import { api } from '../api.js';
 import { face, fullName, genreTag, instrumentIcon, instrumentName } from '../cards.js';
-import { app, bandById, defineActions, musicianById, mutate, navigate } from '../core.js';
+import { app, bandById, cat, defineActions, musicianById, mutate, navigate } from '../core.js';
 import { esc, fmt1, openModal, toast } from '../ui.js';
 import { suggestName } from './bands.js';
 
@@ -121,14 +121,18 @@ function chooseName(a, cand) {
   const members = [...a.memberIds, ...b.memberIds].reduce((sum, id) => sum + fame(id), 0);
   const hasValue = (x) => x.records > 0 || x.released || x.fameOwn > 0;
   const options = cand.nameOptions.map((key) => {
-    const keptOwn = key === 'a' ? a.fameOwn : key === 'b' ? b.fameOwn : 0;
+    const keptOwn = key === 'a' ? a.fameOwn : key === 'b' ? b.fameOwn : key === 'combo' ? cat().rules.nameComboKeep * (a.fameOwn + b.fameOwn) : 0;
     const gives = [key !== 'a' ? a : null, key !== 'b' ? b : null].filter((x) => x && hasValue(x));
     return { key, after: members + keptOwn, gives };
   });
   const before = a.fame + b.fame;
   const best = options.reduce((m, o) => (o.after > m.after ? o : m), options[0]);
   return new Promise((resolve) => {
-    const label = (o) => (o.key === 'a' ? `Weiter als „${esc(a.name)}“` : o.key === 'b' ? `Weiter als „${esc(b.name)}“` : 'Neuer Name');
+    const label = (o) => (o.key === 'a' ? `Weiter als „${esc(a.name)}“` : o.key === 'b' ? `Weiter als „${esc(b.name)}“` : o.key === 'combo' ? 'Beide Namen verbinden' : 'Ganz neuer Name');
+    // Solokünstler zuerst („Linus Heller & The Foxes“); bei „and the“ und „und die“ entfällt ein Artikel vor dem Bandnamen.
+    const [first, second] = a.memberIds.length === 1 || b.memberIds.length > 1 ? [a, b] : [b, a];
+    const bare = (n) => n.replace(/^(the|die|der|das)\s+/i, '');
+    const joined = (glue) => `${first.name}${glue}${glue.trim() === '&' ? second.name : bare(second.name)}`;
     const modal = openModal({
       className: 'lb-ask tg-name',
       html: `
@@ -140,6 +144,8 @@ function chooseName(a, cand) {
             <input type="radio" name="nm" value="${o.key}" ${o === best ? 'checked' : ''}>
             <span><b>${label(o)}</b>
               ${o.key === 'new' ? '<input type="text" class="tg-newname" maxlength="40" placeholder="Neuer Bandname"> <button type="button" class="btn small ghost" data-dice title="Namen vorschlagen">Würfeln</button>' : ''}
+              ${o.key === 'combo' ? `<span class="tg-combos"><input type="text" class="tg-combo" maxlength="40" value="${esc(joined(' & '))}">
+                ${[[' & ', '&'], [' and the ', 'and the'], [' und die ', 'und die']].map(([glue, text]) => `<button type="button" class="btn small ghost" data-glue="${esc(glue)}">${text}</button>`).join('')}</span>` : ''}
               <small>Ruhm danach <b>${fmt1(o.after)}</b> <span class="${o.after >= before ? 'good' : 'bad'}">(jetzt zusammen ${fmt1(before)})</span></small>
               ${o.gives.map((g) => `<small class="muted">„${esc(g.name)}“ ist dann ehemalig${g.fameOwn > 0 ? `, ${fmt1(g.fameOwn)} Ruhm am Namen weg` : ''}${g.records > 0 ? `, ${g.records} ${g.records === 1 ? 'Platte bleibt' : 'Platten bleiben'} dort` : ''}.</small>`).join('')}
             </span>
@@ -148,7 +154,13 @@ function chooseName(a, cand) {
         <div class="dialog-actions"><button class="btn ghost" data-cancel>Abbrechen</button><button class="btn primary" data-go>Zusammentun</button></div>`,
     });
     const field = modal.body.querySelector('.tg-newname');
+    const combo = modal.body.querySelector('.tg-combo');
     field?.addEventListener('focus', () => { modal.body.querySelector('input[value="new"]').checked = true; });
+    combo?.addEventListener('focus', () => { modal.body.querySelector('input[value="combo"]').checked = true; });
+    modal.body.querySelectorAll('[data-glue]').forEach((btn) => btn.addEventListener('click', () => {
+      combo.value = joined(btn.dataset.glue);
+      modal.body.querySelector('input[value="combo"]').checked = true;
+    }));
     modal.body.querySelector('[data-dice]')?.addEventListener('click', async () => {
       const name = await suggestName('band');
       if (name) field.value = name;
@@ -156,8 +168,8 @@ function chooseName(a, cand) {
     modal.body.querySelector('[data-cancel]').addEventListener('click', () => { modal.close(); resolve(null); });
     modal.body.querySelector('[data-go]').addEventListener('click', () => {
       const keepName = modal.body.querySelector('input[name="nm"]:checked').value;
-      const newName = field?.value.trim() ?? '';
-      if (keepName === 'new' && !newName) {
+      const newName = (keepName === 'combo' ? combo?.value : field?.value)?.trim() ?? '';
+      if ((keepName === 'new' || keepName === 'combo') && !newName) {
         toast('Bitte einen neuen Namen eintragen.', 'error');
         return;
       }

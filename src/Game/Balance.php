@@ -176,6 +176,11 @@ final class Balance
         // erholt sich danach wie sonst). Teamplayer trifft es stärker, Ehrgeizige weniger.
         'splitHurt' => 20.0, 'splitTrait' => ['teamplayer' => 1.6, 'ehrgeizig' => 0.5],
     ];
+    /**
+     * Künstlername: Ab dieser Bekanntheit wünscht sich ein Musiker einen (Diven und Rampensäue früher). Das Label sucht einen von drei aus,
+     * das freut ihn (Wohlbefinden +mood, höchstens bis 100).
+     */
+    public const STAGE_NAME = ['fame' => 60.0, 'fameKeen' => 20.0, 'keen' => ['diva', 'rampensau'], 'mood' => 12.0, 'choices' => 3];
     public const MAX_MEMBERS = 7;
     public const MAX_PER_INSTRUMENT = ['drums' => 1, 'guitar' => 2];
 

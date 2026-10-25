@@ -229,7 +229,9 @@ function wishBlock(b, members) {
         const [label, section] = WISH_BUTTON[w.action] ?? ['Music Store', null];
         const target = section ? `#/band/${b.id}/${section}` : '#/store';
         // Proben startet gleich, die übrigen führen zur passenden Seite.
-        const go = w.action === 'rehearsal' || w.action === 'gig'
+        const go = w.action === 'stageName'
+          ? `<button class="lb-pill" data-act="stageNameAsk" data-id="${m.id}">Namen aussuchen</button>`
+          : w.action === 'rehearsal' || w.action === 'gig'
           ? `<button class="lb-pill" data-act="${w.action === 'gig' ? 'gigAsk' : 'rehearseAsk'}" data-id="${b.id}" ${blocker(b, members) ? 'disabled' : ''}>${label}</button>`
           : `<a class="lb-pill" href="${target}">${label}</a>`;
         return `<div class="lb-wish"><a class="lb-ph sm ${w.level}" data-act="musicianInfo" data-id="${m.id}">${photo(m)}</a><span class="say">${esc(w.text)}</span>${go}</div>`;
@@ -475,7 +477,7 @@ export function page(route) {
   return `
     <header class="lb-hd ${genresOf(b).length ? '' : 'mixed'}" ${genresOf(b).length ? `style="--g:var(--lb-c-${sortedGenres(genresOf(b))[0]})"` : ''}>
       <div>
-        <h1>${esc(b.name)} <button class="icon-btn" data-act="bandRename" data-id="${b.id}" title="${solo ? 'Künstlernamen geben' : 'Umbenennen'}">✎</button></h1>
+        <h1>${esc(b.name)} ${solo ? '' : `<button class="icon-btn" data-act="bandRename" data-id="${b.id}" title="Umbenennen">✎</button>`}</h1>
         <small>${solo ? 'Solokünstler' : esc(b.title ?? 'Band')} · ${genresOf(b).length ? sortedGenres(genresOf(b)).map((g) => esc(genreName(g))).join(' · ') : 'gemischt'}</small>
       </div>
       <div class="lb-hd-mood"><span class="lb-cap">Stimmung</span>${moodTag(b.mood.level).replace('class="lb-mood', 'class="lb-mood big')}</div>
@@ -641,6 +643,35 @@ const signedMoney = (v) => `${v < 0 ? '−' : '+'}${money(Math.abs(v))}`;
 defineActions({
   genreOverview() {
     openGenreOverview();
+  },
+  /** Künstlername: Der Musiker hat sich einen gewünscht – drei Vorschläge, einer wird es. */
+  async stageNameAsk({ id }) {
+    const m = musicianById(id);
+    if (!m) return;
+    let options;
+    try {
+      options = (await api('stageNameOptions', { musicianId: m.id })).options;
+    } catch (e) {
+      toast(e.message, 'error');
+      return;
+    }
+    const modal = openModal({
+      className: 'lb-ask lb-stagename',
+      html: `
+        <div class="lb-cap">Künstlername</div>
+        <h2>${esc(m.firstName)} ${esc(m.lastName)} hätte gern einen Künstlernamen</h2>
+        <p class="muted">Unter ihm tritt ${esc(m.firstName)} künftig auf, solo und in jeder Band. Welcher soll es sein? ${esc(m.firstName)} freut sich darüber.</p>
+        <div class="lb-stage-opts">${options.map((o) => `<button class="lb-stage-opt" data-name="${esc(o)}">${esc(o)}</button>`).join('')}</div>
+        <div class="dialog-actions"><button class="btn ghost" data-close>Später</button></div>`,
+    });
+    modal.body.querySelector('[data-close]').addEventListener('click', () => modal.close());
+    modal.body.querySelectorAll('[data-name]').forEach((btn) => btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      if (await mutate('stageNameGive', { musicianId: m.id, name: btn.dataset.name })) {
+        modal.close();
+        toast(`${m.firstName} tritt jetzt als „${btn.dataset.name}“ auf.`, 'ok');
+      } else btn.disabled = false;
+    }));
   },
   gigAsk({ id }) {
     const b = bandById(id);

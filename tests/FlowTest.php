@@ -1600,7 +1600,7 @@ test('Zusammentun: Wer zwei Instrumente spielt, sagt, welches er in der neuen Ba
     checkEquals(2, (int) $db->value('SELECT band_slot FROM musicians WHERE id = ?', [$id]), 'spielt das zweite Instrument');
 });
 
-test('Künstlername: Solokünstler bekommen ihn beim Umbenennen und behalten ihn in einer Band', function () {
+test('Künstlername: Wunsch ab genug Bekanntheit (Diven früher), einer von drei Vorschlägen, macht froh, bleibt in der Band', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Kuenstler');
     $band = foundBand($p, 'Kern');
@@ -1609,21 +1609,29 @@ test('Künstlername: Solokünstler bekommen ihn beim Umbenennen und behalten ihn
     $p->post('submissionSign', ['submissionId' => $s['submissionId']]);
     $solo = array_values(array_filter($p->get('state')['bands'], static fn ($b) => count($b['memberIds']) === 1))[0];
     $id = $solo['memberIds'][0];
-    $res = $p->post('bandRename', ['bandId' => $solo['id'], 'name' => 'DJ Kometenschweif']);
+    $wants = static fn ($st) => in_array('stageName', array_column(array_values(array_filter($st['bands'], static fn ($b) => in_array($id, $b['memberIds'], true)))[0]['mood']['wishes'] ?? [], 'action'), true);
+    // Solo frei umbenennen geht nicht
+    checkApiError(fn () => $p->post('bandRename', ['bandId' => $solo['id'], 'name' => 'Irgendwas']), 'Künstlernamen');
+    // Unbekannt: kein Wunsch
+    $db->exec("UPDATE musicians SET fame = 1, personality = ? WHERE id = ?", ['["gelassen"]', $id]);
+    check(!$wants($p->get('state')), 'unbekannt: kein Wunsch');
+    // Eine Diva wünscht sich früh einen
+    $db->exec("UPDATE musicians SET fame = ?, personality = ?, wellbeing = 50 WHERE id = ?", [Balance::STAGE_NAME['fameKeen'] + 1, '["diva"]', $id]);
+    check($wants($p->get('state')), 'Diva: Wunsch nach Künstlernamen');
+    $options = $p->post('stageNameOptions', ['musicianId' => $id])['options'];
+    checkEquals(Balance::STAGE_NAME['choices'], count($options));
+    checkEquals($options, $p->post('stageNameOptions', ['musicianId' => $id])['options'], 'dieselben Vorschläge');
+    checkApiError(fn () => $p->post('stageNameGive', ['musicianId' => $id, 'name' => 'Selbst ausgedacht']), 'vorgeschlagen');
+    $res = $p->post('stageNameGive', ['musicianId' => $id, 'name' => $options[0]]);
     $m = array_values(array_filter($res['state']['musicians'], static fn ($x) => $x['id'] === $id))[0];
-    checkEquals('DJ Kometenschweif', $m['stageName']);
-    // In die Band: Der Künstlername bleibt
+    checkEquals($options[0], $m['stageName']);
+    check((float) $db->value('SELECT wellbeing FROM musicians WHERE id = ?', [$id]) >= 50 + Balance::STAGE_NAME['mood'] - 0.01, 'freut sich');
+    checkEquals($options[0], array_values(array_filter($res['state']['bands'], static fn ($b) => $b['memberIds'] === [$id]))[0]['name'], 'Solo-Band heißt so');
+    check(!$wants($res['state']), 'Wunsch erfüllt');
+    // In die Band und wieder allein: Der Name bleibt
     $res = $p->post('bandMerge', ['bandId' => $band['id'], 'otherId' => $solo['id'], 'keepName' => 'a', 'slot' => 1]);
-    $m = array_values(array_filter($res['state']['musicians'], static fn ($x) => $x['id'] === $id))[0];
-    checkEquals('DJ Kometenschweif', $m['stageName']);
-    // Wieder allein: Die Solo-Band heißt wie der Künstlername
     $res = $p->post('bandRemoveMember', ['bandId' => $band['id'], 'musicianId' => $id]);
-    $own = array_values(array_filter($res['state']['bands'], static fn ($b) => $b['memberIds'] === [$id]))[0];
-    checkEquals('DJ Kometenschweif', $own['name']);
-    // Den echten Namen eintragen: kein Künstlername mehr
-    $res = $p->post('bandRename', ['bandId' => $own['id'], 'name' => $m['firstName'] . ' ' . $m['lastName']]);
-    $m = array_values(array_filter($res['state']['musicians'], static fn ($x) => $x['id'] === $id))[0];
-    checkEquals(null, $m['stageName']);
+    checkEquals($options[0], array_values(array_filter($res['state']['bands'], static fn ($b) => $b['memberIds'] === [$id]))[0]['name']);
 });
 
 test('WikiSignia: Wer entlassen wurde, behält seinen Artikel', function () {

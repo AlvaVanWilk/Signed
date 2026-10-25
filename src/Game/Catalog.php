@@ -427,6 +427,14 @@ final class Catalog
     ];
 
     /** Bausteine für Zufallsnamen von Bands und Platten. */
+    /** Bausteine für Künstlernamen (Names::stageOptions). */
+    public const STAGE_WORDS = [
+        'single' => ['Nova', 'Kometa', 'Velvet', 'Echo', 'Lumen', 'Sirena', 'Orbit', 'Saphir', 'Mondo', 'Blitz', 'Zephyr', 'Indigo', 'Polaris', 'Neon'],
+        'after' => ['Nova', 'Sky', 'Moon', 'Fox', 'Storm', 'Star', 'Blue', 'Rose', 'Gold', 'Wolf', 'Night', 'Ray'],
+        'before' => ['Lil', 'Big', 'Young', 'Lady', 'Sir', 'Miss', 'Mister'],
+        'tag' => ['vocals' => 'MC', 'turntables' => 'DJ', 'keys' => 'DJ'],
+    ];
+
     public const NAME_WORDS = [
         'adjectives' => ['Wilde', 'Leise', 'Rostige', 'Goldene', 'Verlorene', 'Elektrische', 'Schlaflose', 'Kalte',
             'Brennende', 'Neue', 'Letzte', 'Schöne', 'Laute', 'Blaue', 'Heimliche', 'Zerbrochene'],

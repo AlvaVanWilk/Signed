@@ -272,6 +272,15 @@ final class Mood
         if ($noGear !== null) {
             $out[] = $noGear;
         }
+        // Bekannt genug und noch ohne Künstlernamen: der Wunsch nach einem (Diven und Rampensäue früher).
+        $c = Balance::STAGE_NAME;
+        foreach ($members as $m) {
+            $keen = array_intersect($m['personality'], $c['keen']) !== [];
+            if (($m['stage_name'] ?? null) === null && $m['fame'] >= ($keen ? $c['fameKeen'] : $c['fame'])) {
+                $out[] = ['musicianId' => $m['id'], 'text' => 'Ich hätte gern einen Künstlernamen.', 'action' => 'stageName', 'level' => self::level($m['wellbeing'])];
+                break;
+            }
+        }
         if ($songs >= Balance::MOOD['stau']['from'] && $members) {
             $out[] = ['musicianId' => $members[0]['id'], 'text' => 'Wir wollen aufnehmen!', 'action' => 'record', 'level' => 'yellow'];
         }

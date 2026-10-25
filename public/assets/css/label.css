@@ -24,7 +24,7 @@
 
 /* Band-Leiste */
 .lb-side { background: var(--lb-panel); border: 1px solid var(--lb-line); border-radius: 16px; padding: 16px 14px; position: sticky; top: 14px; }
-.lb-bar { display: flex; flex-direction: column; gap: 8px; }
+.lb-bar { display: flex; flex-direction: column; gap: 18px; padding-top: 10px; }
 .lb-bt { position: relative; display: grid; grid-template-columns: 1fr auto; gap: 7px 10px; min-height: 118px; align-content: center; overflow: visible; padding: 12px 14px 12px 24px; border-radius: 12px; border: 1px solid var(--lb-line); background: var(--lb-card); color: var(--lb-text); text-decoration: none; }
 .lb-bt:hover { text-decoration: none; border-color: #4a4458; }
 .lb-bt::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 10px; border-radius: 12px 0 0 12px; background: var(--g, var(--lb-c-mixed)); }
@@ -35,8 +35,10 @@
 .lb-bt .waits { font-size: .68rem; font-weight: 700; color: var(--lb-bad); margin-left: 4px; }
 .lb-bt [data-act="tip"] { cursor: help; }
 /* Studiolampe oben rechts, halb über dem Rand: leuchtet in der Farbe der Stimmung. */
-.lb-bt .lamp { position: absolute; top: -9px; right: 22px; width: 22px; height: 14px; border-radius: 7px 7px 3px 3px; background: #2a2636; border: 1px solid #423c52; display: grid; place-items: center; z-index: 2; --c: var(--lb-ok); }
-.lb-bt .lamp i { width: 11px; height: 7px; border-radius: 6px 6px 2px 2px; background: var(--c); box-shadow: 0 0 8px 2px color-mix(in srgb, var(--c) 60%, transparent), 0 -2px 10px color-mix(in srgb, var(--c) 40%, transparent); display: block; }
+.lb-bt .lamp { position: absolute; top: -10px; right: 22px; width: 26px; height: 11px; border-radius: 12px 12px 0 0; background: var(--lb-card); border: 1px solid var(--lb-line); border-bottom: 0; display: grid; place-items: end center; padding-bottom: 1px; z-index: 2; --c: var(--lb-ok); }
+.lb-bt.sel .lamp { background: var(--lb-card2); border-color: var(--lb-accent); }
+.lb-bt:hover .lamp { border-color: #4a4458; } .lb-bt.sel:hover .lamp { border-color: var(--lb-accent); }
+.lb-bt .lamp i { width: 14px; height: 7px; border-radius: 7px 7px 1px 1px; background: var(--c); box-shadow: 0 0 8px 2px color-mix(in srgb, var(--c) 60%, transparent), 0 -2px 10px color-mix(in srgb, var(--c) 40%, transparent); display: block; }
 .lb-bt .lamp.yellow { --c: var(--lb-warn); } .lb-bt .lamp.red { --c: var(--lb-bad); }
 .lb-bt .lamp.red i { animation: lb-lamp 1.6s ease-in-out infinite; }
 @keyframes lb-lamp { 50% { opacity: .45; } }
@@ -617,7 +619,7 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 /* Bei Auftritten stehen die Namen über den Köpfen, nicht im Publikum. */
 /* Namen wie Gaffa-Tape vor den Füßen auf die Bühne geklebt: alle auf derselben Höhe, jedes Stück etwas schief. */
 .lb-venue .fig-member { position: relative; }
-.lb-room.lb-venue .fig-stage .fig-member b { position: absolute; left: 50%; bottom: -6px; z-index: 3; transform: translateX(-50%) rotate(var(--tilt, -3deg)); margin: 0;
+.lb-room.lb-venue .fig-stage .fig-member b { position: absolute; left: 50%; bottom: -6px; transform: translateX(-50%) rotate(var(--tilt, -3deg)); margin: 0; z-index: auto;
   padding: 2px 9px 1px; background: #e9dfc4; color: #2a2233; font-size: .74rem; font-weight: 800; letter-spacing: .02em; white-space: nowrap; text-shadow: none;
   border-radius: 1px; box-shadow: 0 2px 3px rgba(0, 0, 0, .45); clip-path: polygon(0 6%, 4% 0, 97% 4%, 100% 0, 99% 92%, 95% 100%, 3% 96%, 0 100%); }
 .lb-room.lb-venue .fig-member b .lb-glow { display: none; }
@@ -737,3 +739,8 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .lb-gb-steps { margin: 6px 0 12px; padding-left: 18px; }
 .lb-linkbtn { margin-left: 10px; background: none; border: 0; padding: 0; color: var(--lb-accent); font: inherit; font-size: .72rem; letter-spacing: .04em; text-transform: none; cursor: pointer; text-decoration: underline; }
 .lb-gb-name { min-width: 64px; }
+
+/* Künstlername aussuchen: drei Vorschläge als große Knöpfe */
+.lb-stage-opts { display: grid; gap: 8px; margin: 14px 0; }
+.lb-stage-opt { padding: 12px 16px; border-radius: 12px; border: 1px solid var(--lb-line); background: var(--lb-card); color: var(--lb-text); font: inherit; font-size: 1.1rem; font-weight: 800; letter-spacing: .02em; cursor: pointer; text-align: left; }
+.lb-stage-opt:hover { border-color: var(--lb-accent); background: var(--lb-card2); }

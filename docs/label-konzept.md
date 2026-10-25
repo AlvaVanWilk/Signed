@@ -272,8 +272,9 @@ Wer neu anfängt, soll **sofort etwas tun** können:
 ### Kartei und Besetzungsplaner
 
 Jeder Künstler unter Vertrag ist entweder **in einer Band** oder **Solokünstler** (eine Band mit einem Mitglied, kein extra Zustand „frei“). Solokünstler haben **einen eigenen Knopf** in der Band-Leiste, wie Bands.
-Ein Solokünstler kann einen **Künstlernamen** bekommen (Umbenennen der Solo-Band, `musicians.stage_name`). Er bleibt, wenn die Person in eine Band geht,
-steht dort vor dem echten Namen, und tritt sie wieder allein auf, heißt die Solo-Band wieder so. Wer seinen echten Namen einträgt, hat keinen mehr.
+Ein Musiker **wünscht sich einen Künstlernamen**, sobald er bekannt genug ist (Ruhm 60, Diven und Rampensäue schon ab 20; `Balance::STAGE_NAME`).
+Das Label sucht einen von drei Vorschlägen aus (fest je Person, „DJ“ und „MC“ nur, wo es passt); das freut ihn (Wohlbefinden +12). Der Name bleibt in jeder Band
+und steht vor dem echten Namen; tritt er allein auf, heißt seine Solo-Band so. Solo-Bands lassen sich sonst nicht umbenennen.
 Die **Künstlerleiste** zeigt je Knopf: Name, je Mitglied das Instrument (blass, wer keins hat), alle vertretenen Genres (voll, was alle teilen;
 gestrichelt, was nur einzelne mitbringen), Stimmung, Ruhm als Sterne und geschriebene Songs. Knöpfe lassen sich umsortieren; legt man einen
 **mitten auf einen anderen**, öffnet sich das Zusammentun-Fenster mit genau diesem Paar als Kontrollfrage.

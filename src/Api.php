@@ -61,6 +61,8 @@ final class Api
         'scoutOpen' => ['POST', true],
         'scoutPick' => ['POST', true],
         'nameSuggest' => ['POST', true],
+        'stageNameOptions' => ['POST', true],
+        'stageNameGive' => ['POST', true],
         'bandCreate' => ['POST', true],
         'bandRename' => ['POST', true],
         'bandAddMember' => ['POST', true],
@@ -321,6 +323,17 @@ final class Api
     private function wikiSignie(array $in, Repo $repo): array
     {
         return Wiki::signie($repo, self::int($in, 'id'));
+    }
+
+    private function stageNameOptions(array $in, Repo $repo): array
+    {
+        return ['options' => Names::stageOptions($repo->db, $repo->musician(self::int($in, 'musicianId')))];
+    }
+
+    private function stageNameGive(array $in, Repo $repo): array
+    {
+        (new Bands($repo))->giveStageName(self::int($in, 'musicianId'), trim((string) ($in['name'] ?? '')));
+        return ['state' => State::build($repo)];
     }
 
     private function nameSuggest(array $in, Repo $repo): array

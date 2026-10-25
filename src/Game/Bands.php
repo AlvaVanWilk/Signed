@@ -400,6 +400,9 @@ final class Bands
     public function rename(int $bandId, string $name): void
     {
         $band = $this->repo->band($bandId);
+        if (count($this->repo->members($bandId)) === 1) {
+            throw new ApiError('Solokünstler heißen wie sie selbst. Einen Künstlernamen wünschen sie sich, wenn sie bekannter sind.');
+        }
         $name = self::cleanName($name, 'Der Bandname');
         if (Names::bandTaken($this->repo->db, $name, $band['id'])) {
             throw new ApiError(sprintf('Den Bandnamen „%s“ gibt es schon.', $name));
@@ -411,11 +414,32 @@ final class Bands
                     $band['name'], $name, number_format($band['fame_own'], 1, ',', '.'), $band['name']), $band['id']);
             }
             $this->repo->db->update('bands', ['name' => $name, 'name_key' => Names::key($name)], ['id' => $band['id']]);
-            // Solokünstler: Der neue Name ist der Künstlername der Person; sie behält ihn auch in einer Band. Heißt sie wieder wie sie selbst, gibt es keinen.
-            $members = $this->repo->members($band['id']);
-            if (count($members) === 1) {
-                $m = $members[0];
-                $this->repo->db->update('musicians', ['stage_name' => $name === self::fullName($m) ? null : $name], ['id' => $m['id']]);
+        });
+    }
+
+    /**
+     * Künstlername vergeben: einer der Vorschläge (Names::stageOptions). Der Musiker freut sich; tritt er solo auf, heißt seine Solo-Band jetzt so
+     * (mit Laufbahn wie beim Umbenennen: Die Platten bleiben unter dem alten Namen).
+     */
+    public function giveStageName(int $musicianId, string $name): void
+    {
+        $this->repo->db->transaction(function () use ($musicianId, $name): void {
+            $db = $this->repo->db;
+            $m = $this->repo->musician($musicianId);
+            if (($m['stage_name'] ?? null) !== null) {
+                throw new ApiError(sprintf('%s hat schon einen Künstlernamen.', $m['first_name']));
+            }
+            if (!in_array($name, Names::stageOptions($db, $m), true)) {
+                throw new ApiError('Diesen Namen hat niemand vorgeschlagen.');
+            }
+            $db->update('musicians', ['stage_name' => $name, 'wellbeing' => round(min(100.0, $m['wellbeing'] + Balance::STAGE_NAME['mood']), 3)], ['id' => $m['id']]);
+            $this->repo->log('lineup', sprintf('%s tritt jetzt als „%s“ auf.', self::fullName($m), $name), $m['band_id'], $m['id']);
+            if ($m['band_id'] !== null && count($this->repo->members($m['band_id'])) === 1) {
+                $band = $this->repo->band($m['band_id']);
+                if (self::hasCareer($band)) {
+                    $this->giveUpName($band, 'renamed', sprintf('heißt jetzt „%s“', $name), true);
+                }
+                $db->update('bands', ['name' => $name, 'name_key' => Names::key($name)], ['id' => $band['id']]);
             }
         });
     }

@@ -886,14 +886,7 @@ defineActions({
       );
       if (!ok) return;
     }
-    // Solokünstler: Der Name ist ihr Künstlername und bleibt, auch wenn sie später in eine Band gehen.
-    const solo = b.memberIds.length === 1;
-    if (solo && !(b.released || b.records > 0)) {
-      const m = musicianById(b.memberIds[0]);
-      const ok = await confirmDialog(`Ein Künstlername für ${m.firstName} ${m.lastName}: Unter ihm tritt ${m.firstName} auf, solo und auch später in einer Band. Trägst du den echten Namen ein, gibt es keinen.`, { ok: 'Weiter' });
-      if (!ok) return;
-    }
-    const name = await promptDialog(solo ? 'Künstlername' : 'Neuer Bandname', b.name);
+    const name = await promptDialog('Neuer Bandname', b.name);
     if (name && name !== b.name) await mutate('bandRename', { bandId: b.id, name });
   },
   async bandDisband({ id }) {

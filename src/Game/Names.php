@@ -32,6 +32,42 @@ final class Names
         };
     }
 
+    /**
+     * Drei Vorschläge für einen Künstlernamen, fest aus der Person abgeleitet (dieselben, solange niemand den Namen vergibt):
+     * aus Vor- oder Nachname mit einem Zusatz, ein Einzelwort, bei DJs und Rappern mit Kürzel davor. Vergebene Bandnamen fallen weg.
+     * @return list<string>
+     */
+    public static function stageOptions(Db $db, array $m): array
+    {
+        $w = Catalog::STAGE_WORDS;
+        $s = crc32('stage|' . $m['id']) ?: 1;
+        $pick = static function (array $list) use (&$s) {
+            $s ^= ($s << 13) & 0xFFFFFFFF;
+            $s ^= $s >> 17;
+            $s ^= ($s << 5) & 0xFFFFFFFF;
+            $s &= 0xFFFFFFFF;
+            return $list[$s % count($list)];
+        };
+        $first = $m['first_name'];
+        $last = $m['last_name'];
+        $played = ($m['band_slot'] ?? 1) === 2 && ($m['instr2'] ?? null) !== null ? $m['instr2'] : $m['instr1'];
+        // MC nur für Rapper (Gesang und Hip-Hop), DJ für Turntables und Keyboard.
+        $tag = $played === 'vocals' && !in_array('hiphop', $m['genres'], true) ? null : ($w['tag'][$played] ?? null);
+        $ideas = [];
+        for ($i = 0; $i < 24 && count($ideas) < Balance::STAGE_NAME['choices']; $i++) {
+            $idea = match ($i % 4) {
+                0 => $tag !== null ? sprintf('%s %s', $tag, $pick([$first, $pick($w['single'])])) : sprintf('%s %s', $first, $pick($w['after'])),
+                1 => $pick($w['single']),
+                2 => sprintf('%s %s', $pick($w['before']), $pick([$first, $last])),
+                default => sprintf('%s %s', mb_substr($first, 0, 1) . '.', $pick($w['after'])),
+            };
+            if (!in_array($idea, $ideas, true) && !self::bandTaken($db, $idea)) {
+                $ideas[] = $idea;
+            }
+        }
+        return $ideas;
+    }
+
     public static function bandTaken(Db $db, string $name, ?int $exceptBandId = null): bool
     {
         // Ehemalige Bands halten ihren Namen nur, wenn er etwas wert war (Balance::NAME_PROTECT_FAME).

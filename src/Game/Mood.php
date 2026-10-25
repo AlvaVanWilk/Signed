@@ -295,16 +295,51 @@ final class Mood
         return $mood['level'] === 'green' && $mood['value'] >= $c['songsBoost']['from'] ? $rate * $c['songsBoost']['factor'] : $rate;
     }
 
-    /** Wie viel die Mitglieder zusammen zum Songschreiben beitragen (1 = Vierer-Band ohne Songwriter, allein viel weniger; siehe Balance::SONGWRITING). */
+    /** Wie viel die Mitglieder zusammen zum Songschreiben beitragen (1 = Vierer-Band ohne besondere Züge, allein viel weniger; siehe Balance::SONGWRITING). */
     public static function crewFactor(array $members): float
     {
         $c = Balance::SONGWRITING;
         $sum = 0.0;
         foreach ($members as $m) {
-            $abilities = $m['abilities'] ?? [];
-            $sum += in_array('songwriter', $abilities, true) ? $c['writer'] : (in_array('nowriter', $abilities, true) ? $c['nowriter'] : $c['share']);
+            $share = $c['share'];
+            foreach ($m['personality'] ?? [] as $trait) {
+                $share *= Balance::TRAITS['write'][$trait] ?? 1.0;
+            }
+            $sum += $share;
         }
         return ($sum / $c['norm']) ** $c['exp'];
+    }
+
+    /** Abzug durch liegende Songs (Gemütliche nehmen es gelassener). */
+    private static function stau(array $m, float $songs): float
+    {
+        $c = Balance::MOOD['stau'];
+        $calm = in_array(Balance::TRAITS['calm']['trait'], $m['personality'], true) ? Balance::TRAITS['calm']['stau'] : 1.0;
+        return min($c['max'], max(0.0, $songs - $c['from']) * $c['per']) * $calm;
+    }
+
+    /**
+     * Abzug, wenn die Band lange nichts erlebt hat, das jemandem wichtig ist: Extrovertierte und Gesellige wollen auf die Bühne,
+     * Ehrgeizige wollen neue Platten. Die Stunden seit dem letzten Auftritt und der letzten Platte stehen in $band (stageIdle, recordIdle).
+     */
+    private static function idle(array $m, array $band): float
+    {
+        $t = Balance::TRAITS;
+        $off = 0.0;
+        if (($band['stageIdle'] ?? 0) >= $t['restless']['hours']) {
+            $off += self::traitMax($m, $t['restless']['traits'], 0.0);
+        }
+        if (($band['recordIdle'] ?? 0) >= $t['stagnant']['hours']) {
+            $off += self::traitMax($m, $t['stagnant']['traits'], 0.0);
+        }
+        return $off;
+    }
+
+    /** Größter Wert aus einer Tabelle nach Charakterzug (oder $none, wenn keiner zutrifft). */
+    public static function traitMax(array $m, array $table, float $none): float
+    {
+        $values = array_values(array_intersect_key($table, array_flip($m['personality'] ?? [])));
+        return $values ? max($values) : $none;
     }
 
     /** Faktor aufs Songschreiben je nach dem, was die Band gerade tut: Auftritt und Promo 0, Probe etwas langsamer, sonst 1. */
@@ -354,7 +389,7 @@ final class Mood
             foreach ($m['personality'] as $trait) {
                 $value += $c['solo'][$trait] ?? 0.0;
             }
-            $value -= min($c['stau']['max'], max(0.0, $songs - $c['stau']['from']) * $c['stau']['per']);
+            $value -= self::stau($m, $songs) + self::idle($m, $band);
             return max(0.0, min(100.0, $value));
         }
         // Beziehungen
@@ -381,8 +416,8 @@ final class Mood
         } else {
             $value += in_array($band['genre'], $m['genres'], true) ? $c['genre']['fits'] : $c['genre']['misfit'];
         }
-        // Songstau
-        $value -= min($c['stau']['max'], max(0.0, $songs - $c['stau']['from']) * $c['stau']['per']);
+        // Songstau, und wer lange nicht auf der Bühne war oder lange keine Platte hatte (je nach Charakter)
+        $value -= self::stau($m, $songs) + self::idle($m, $band);
         // Miesepeter: wer rot ist, zieht andere mit runter – Reibung mehr, aber auch Freunde leiden mit
         $pull = 0.0;
         foreach ($mates as $x) {
@@ -390,7 +425,7 @@ final class Mood
             if ($w < $c['yellow']) {
                 $rel = $mine[$x['id']];
                 $factor = 1 + ($rel < 0 ? -$rel / Balance::RELATION['max'] : $c['pull']['friend'] * $rel / Balance::RELATION['max']);
-                $pull += ($c['yellow'] - $w) * $c['pull']['per'] * $factor;
+                $pull += ($c['yellow'] - $w) * $c['pull']['per'] * $factor * self::traitMax($m, Balance::TRAITS['pulled'], 1.0);
             }
         }
         $value -= min($c['pull']['max'], $pull);
@@ -427,6 +462,7 @@ final class Mood
                 continue;
             }
             $relations = self::relations($repo, $members, $now);
+            [$band['stageIdle'], $band['recordIdle']] = self::idleHours($repo, $band, $now);
             $state = ['w' => array_column($members, 'wellbeing', 'id'), 'songs' => $band['songs_written']];
             $onlineSpan = min($online, $span);
             $factor = self::writeFactor($repo, $band['id'], $now - $span, $now) * self::crewFactor($members);
@@ -445,6 +481,15 @@ final class Mood
             }
             $repo->db->update('bands', ['songs_written' => round($state['songs'], 4), 'mood_at' => $now, 'patience' => $patience], ['id' => $band['id']]);
         }
+    }
+
+    /** Stunden seit dem letzten Auftritt (Gig, Straße, offene Bühne) und seit der letzten fertigen Platte (ohne: seit Gründung). */
+    public static function idleHours(Repo $repo, array $band, int $now): array
+    {
+        $stage = (int) $repo->db->value("SELECT MAX(ends_at) FROM activities WHERE band_id = ? AND type IN ('gig', 'busking', 'openstage') AND ends_at <= ?", [$band['id'], $now]);
+        $record = (int) $repo->db->value("SELECT MAX(finished_at) FROM records WHERE band_id = ? AND status = 'done'", [$band['id']]);
+        $since = static fn (int $at) => max(0.0, ($now - max($at, (int) $band['created_at'])) / 3600);
+        return [$since($stage), $since($record)];
     }
 
     /**
@@ -468,7 +513,9 @@ final class Mood
             $next = [];
             foreach ($state['w'] as $id => $w) {
                 $target = self::target($byId[$id], $band, $members, $state['w'], $relations, $state['songs']);
-                $next[$id] = $target + ($w - $target) * exp(-$dt / $c['tau']);
+                // Gemütliche rutschen langsamer nach unten
+                $calm = $target < $w && in_array(Balance::TRAITS['calm']['trait'], $byId[$id]['personality'], true) ? Balance::TRAITS['calm']['tau'] : 1.0;
+                $next[$id] = $target + ($w - $target) * exp(-$dt / ($c['tau'] * $calm));
             }
             $state['w'] = $next;
         }

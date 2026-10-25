@@ -185,13 +185,44 @@ final class Balance
      */
     public const STAGE_NAME = ['want' => ['diva' => 20.0, 'rampensau' => 40.0, 'ehrgeizig' => 120.0], 'mood' => 12.0, 'choices' => 3];
     /**
-     * Songschreiben: Jedes Mitglied trägt `share` bei, ein Songwriter `writer`. Tempo der Band = (Summe / norm) ^ exp: Zusammen sprudeln die Ideen,
-     * deshalb wächst es stärker als die Zahl der Mitglieder. Eine Vierer-Band ohne Songwriter schreibt so schnell wie MOOD['songsPerHour'],
-     * allein ohne Songwriter dauert es achtmal so lang (vier Solokünstler zusammen schaffen nur halb so viel wie die Band).
-     * Neue Musiker sind mit Chance `born` schon Songwriter (unabhängig vom Können); sonst kommt die Fähigkeit wie die anderen mit dem Aufstieg.
-     * Mit Chance `bornNo` schreibt jemand gar nicht (`nowriter`, trägt 0 bei): solo entstehen keine Songs, in der Band bremst es.
+     * Songschreiben: Jedes Mitglied trägt `share` bei, mal den Faktor seiner Charakterzüge (TRAITS['write']: Kreative viel mehr, Technische nichts).
+     * Tempo der Band = (Summe / norm) ^ exp: Zusammen sprudeln die Ideen, deshalb wächst es stärker als die Zahl der Mitglieder.
+     * Eine Vierer-Band ohne besondere Züge schreibt so schnell wie MOOD['songsPerHour'], allein dauert es achtmal so lang
+     * (vier Solokünstler zusammen schaffen nur halb so viel wie die Band); allein und kreativ etwa 0,65.
      */
-    public const SONGWRITING = ['share' => 0.25, 'writer' => 0.75, 'nowriter' => 0.0, 'norm' => 1.0, 'exp' => 1.5, 'born' => 0.08, 'bornNo' => 0.12];
+    public const SONGWRITING = ['share' => 0.25, 'norm' => 1.0, 'exp' => 1.5];
+    /**
+     * Charakterzüge: Stärke und Schwäche je Zug (Schlüssel wie Catalog::PERSONALITIES).
+     * write: Faktor auf den Beitrag zum Songschreiben. rehearsalGain: Faktor aufs Können je Probe (die Ausdauer steht in Catalog::LUST).
+     * live: Zuschläge auf die Chance, live zu glänzen oder zu patzen. stageFame: Zuschlag auf den eigenen Anteil am Ruhm bei Auftritten.
+     * recordQuality: Zuschlag auf die Qualität einer Platte je Mitglied. recordSales: Zuschlag auf den Erstverkauf je Mitglied.
+     * restless: so viele Punkte weniger Wohlbefinden-Ziel, wenn seit `hours` kein Auftritt war. stagnant: dasselbe ohne neue Platte.
+     * calm: sinkt langsamer (tau × `tau`, wenn das Ziel darunter liegt), Songstau zählt × `stau`, kleine Bühnen ärgern nicht.
+     * pulled: Faktor, wie stark Unzufriedene in der Band jemanden mit herunterziehen.
+     */
+    public const TRAITS = [
+        'write' => ['kreativ' => 3.0, 'technisch' => 0.0, 'chaot' => 1.6, 'perfektionist' => 0.6],
+        'rehearsalGain' => ['kreativ' => 0.85, 'technisch' => 1.25],
+        'live' => ['chaot' => ['highlight' => 0.04, 'mistake' => 0.04], 'ruhepol' => ['highlight' => -0.03], 'technisch' => ['mistake' => -0.03]],
+        'stageFame' => ['rampensau' => 0.2, 'partytier' => 0.15],
+        'recordQuality' => ['perfektionist' => 0.04],
+        'recordSales' => ['diva' => 0.1],
+        'restless' => ['hours' => 8, 'traits' => ['rampensau' => 6.0, 'partytier' => 5.0]],
+        'stagnant' => ['hours' => 48, 'traits' => ['ehrgeizig' => 6.0]],
+        'calm' => ['trait' => 'gelassen', 'tau' => 1.8, 'stau' => 0.5],
+        'pulled' => ['teamplayer' => 1.5],
+    ];
+    /**
+     * Versteckter Wert eines Musikers (nie angezeigt): Charakterzüge zählen je nach Lage etwa gleich (meist 0), was im Schnitt mehr hilft +1,
+     * was im Schnitt eher bremst −1; Fähigkeiten zählen nach Nutzen, Spieltechniken je 1. Die Unterschriftsprämie wächst um `price` je Punkt
+     * (höchstens bis `min`/`max` des Grundpreises): Glückstreffer kosten mehr, Pechvögel (etwa egozentrisch und technisch) sind billig.
+     */
+    public const VALUE = [
+        'traits' => ['ehrgeizig' => 1, 'teamplayer' => 1, 'ruhepol' => 1, 'kreativ' => 1, 'diva' => -1, 'technisch' => -1],
+        'abilities' => ['talent' => 2, 'charisma' => 2, 'ausstrahlung' => 1, 'nervenstark' => 1, 'gehoer' => 1, 'buehnentier' => 1, 'studiofuchs' => 1],
+        'technique' => 1,
+        'price' => 0.12, 'min' => 0.6, 'max' => 1.6,
+    ];
     public const MAX_MEMBERS = 7;
     public const MAX_PER_INSTRUMENT = ['drums' => 1, 'guitar' => 2];
 
@@ -202,6 +233,8 @@ final class Balance
     public const MIXED_BONUS = 0.8;
     /** Sound-Bonus, wenn alle Mitglieder ein Genre teilen und die Besetzung dazu passt (Genre-Band) … */
     public const GENRE_BONUS = 1.15;
+    /** Je Spieltechnik, die zu einem Genre der Band passt, so viel mehr Sound (höchstens zwei Techniken je Musiker; Catalog::ABILITIES[…]['genres']). */
+    public const TECHNIQUE_SOUND = 0.04;
     /** … und wenn sie dazu noch ein zweites Genre teilen (Hybrid, z. B. Punk-Rock). */
     public const HYBRID_BONUS = 1.25;
     /** … und wenn alle sogar ein drittes teilen (Crossover, sehr selten). Zusammenspiel wie Hybrid. */

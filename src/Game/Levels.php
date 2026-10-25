@@ -32,14 +32,31 @@ final class Levels
         return in_array($ability, $m['abilities'], true);
     }
 
+    /** Versteckter Wert eines Musikers aus Charakterzügen und Fähigkeiten (Balance::VALUE); nur für den Preis, nie angezeigt. */
+    public static function value(array $m): int
+    {
+        $v = Balance::VALUE;
+        $sum = 0;
+        foreach ($m['personality'] ?? [] as $trait) {
+            $sum += $v['traits'][$trait] ?? 0;
+        }
+        foreach ($m['abilities'] ?? [] as $ability) {
+            $sum += !empty(Catalog::ABILITIES[$ability]['technique']) ? $v['technique'] : ($v['abilities'][$ability] ?? 0);
+        }
+        return $sum;
+    }
+
     /** Spezialtechniken des Musikers. */
     public static function techniques(array $m): array
     {
         return array_values(array_filter($m['abilities'], static fn ($a) => !empty(Catalog::ABILITIES[$a]['technique'])));
     }
 
-    /** Fähigkeiten, die ein Musiker mit diesen Instrumenten noch lernen kann. */
-    public static function eligible(array $instruments, array $owned): array
+    /**
+     * Fähigkeiten, die ein Musiker mit diesen Instrumenten noch lernen kann. Spieltechniken nur, wenn er eins ihrer Genres mag
+     * ($genres; null = ohne diese Bedingung): Wer nur Pop mag, entdeckt nicht plötzlich, dass er growlen kann.
+     */
+    public static function eligible(array $instruments, array $owned, ?array $genres = null): array
     {
         $techniques = [];
         foreach ($instruments as $instrument) {
@@ -47,26 +64,23 @@ final class Levels
         }
         $options = [];
         foreach (Catalog::ABILITIES as $key => $ability) {
-            // Nicht lernbar: Nachteile (Interpret) und Songwriter für jemanden, der nicht schreibt.
-            if (!empty($ability['negative']) || ($key === 'songwriter' && in_array('nowriter', $owned, true))) {
-                continue;
-            }
-            if (!in_array($key, $owned, true) && (empty($ability['technique']) || in_array($key, $techniques, true))) {
+            $fits = empty($ability['technique']) || (in_array($key, $techniques, true) && ($genres === null || array_intersect($ability['genres'], $genres)));
+            if (!in_array($key, $owned, true) && $fits) {
                 $options[] = $key;
             }
         }
         return $options;
     }
 
-    public static function randomAbility(array $instruments, array $owned): string
+    public static function randomAbility(array $instruments, array $owned, ?array $genres = null): string
     {
-        return (string) Rng::pick(self::eligible($instruments, $owned));
+        return (string) Rng::pick(self::eligible($instruments, $owned, $genres));
     }
 
     /** @return list<string> */
-    public static function options(array $instruments, array $owned, int $count = 3): array
+    public static function options(array $instruments, array $owned, int $count = 3, ?array $genres = null): array
     {
-        return Rng::sample(self::eligible($instruments, $owned), $count);
+        return Rng::sample(self::eligible($instruments, $owned, $genres), $count);
     }
 
     /**
@@ -86,9 +100,9 @@ final class Levels
         $choice = null;
         for ($l = $m['level'] + 1; $l <= $level; $l++) {
             if ($l < 3) {
-                $gained[] = $abilities[] = self::randomAbility($instruments, $abilities);
+                $gained[] = $abilities[] = self::randomAbility($instruments, $abilities, $m['genres']);
             } else {
-                $choice = self::options($instruments, $abilities);
+                $choice = self::options($instruments, $abilities, 3, $m['genres']);
             }
         }
         $repo->db->update('musicians', [

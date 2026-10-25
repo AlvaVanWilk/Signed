@@ -43,7 +43,9 @@ final class Submissions
     {
         $p = Balance::SUBMISSIONS['price'];
         $skill = max($card['skill1'], (float) ($card['skill2'] ?? 0));
-        return (int) round($p['base'] + $p['skill'] * $skill ** 2 + $p['fame'] * $card['fame']);
+        $v = Balance::VALUE;
+        $worth = max($v['min'], min($v['max'], 1 + $v['price'] * Levels::value($card)));
+        return (int) round(($p['base'] + $p['skill'] * $skill ** 2 + $p['fame'] * $card['fame']) * $worth);
     }
 
     /** Eine Bewerbung der gewünschten Können-Stufe (0–3) mit dem Rest eines gewöhnlichen Musikers. */
@@ -59,10 +61,10 @@ final class Submissions
         $instruments = array_filter([$card['instr1'], $card['instr2']]);
         $abilities = [];
         for ($l = 1; $l <= min(2, $card['level']); $l++) {
-            $abilities[] = Levels::randomAbility($instruments, $abilities);
+            $abilities[] = Levels::randomAbility($instruments, $abilities, $card['genres']);
         }
         $card['abilities'] = $abilities;
-        $card['ability_choice'] = $card['level'] >= 3 ? Levels::options($instruments, $abilities) : null;
+        $card['ability_choice'] = $card['level'] >= 3 ? Levels::options($instruments, $abilities, 3, $card['genres']) : null;
         return $card;
     }
 
@@ -120,7 +122,7 @@ final class Submissions
                 $card['skill2'] = null;
                 $card['instr2'] = null;
                 $card['level'] = Levels::forSkill($card['skill1']);
-                $card['abilities'] = $card['level'] ? [Levels::randomAbility([$card['instr1']], [])] : [];
+                $card['abilities'] = $card['level'] ? [Levels::randomAbility([$card['instr1']], [], $card['genres'])] : [];
                 $this->store($card, $now - $i * 60);
             }
             $db->update('labels', ['submit_at' => $now], ['id' => $this->repo->labelId]);

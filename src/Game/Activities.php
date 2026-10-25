@@ -164,7 +164,7 @@ final class Activities
                 'timeline' => $sim['timeline'],
                 'reward' => [
                     'money' => $gage,
-                    'fameGains' => BandCalc::splitFame($members, $fameTotal, $gear),
+                    'fameGains' => BandCalc::splitFame($members, $fameTotal, $gear, $rehearsal === null),
                     'skill' => $skill,
                     'rehearsal' => $rehearsal,
                     'meter' => $sim['meter'],
@@ -225,7 +225,7 @@ final class Activities
                 'timeline' => $sim['timeline'],
                 'reward' => [
                     'money' => $hat,
-                    'fameGains' => BandCalc::splitFame([$m], $fameTotal, $gear),
+                    'fameGains' => BandCalc::splitFame([$m], $fameTotal, $gear, true),
                     'meter' => $sim['meter'],
                     'jam' => $type === 'jam',
                 ],

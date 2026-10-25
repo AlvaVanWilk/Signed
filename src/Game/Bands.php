@@ -203,7 +203,7 @@ final class Bands
         $avg = $pairs ? array_sum(array_column($pairs, 'v')) / count($pairs) : 0.0;
         $teamplayer = array_values(array_filter($group, static fn ($g) => in_array('teamplayer', $g['personality'], true)));
         if ($teamplayer) {
-            $effects[] = ['good' => true, 'text' => sprintf('%s ist Teamplayer und hilft allen', $teamplayer[0]['first_name'])];
+            $effects[] = ['good' => true, 'text' => sprintf('%s ist kooperativ und hilft allen', $teamplayer[0]['first_name'])];
         } else {
             usort($pairs, static fn ($a, $b) => $b['own'] <=> $a['own']);
             if ($pairs && $pairs[0]['own'] >= 0.2) {

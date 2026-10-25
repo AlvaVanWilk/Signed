@@ -244,8 +244,9 @@ heutigen Mitteln kaum weiter: Ab Stufe 1 wirken alle Können- und Bekanntheitsge
 nur noch zu 3 %. Profi bzw. Szenegröße dauert so rund 40 Stunden Spielzeit, Virtuose bzw. Star weit über 1.000 –
 praktisch unerreichbar, bis Tourneen und Manager dazukommen.
 **Tageskurse** öffnen diesen Weg als erste: ohne Bremse, aber selten und teuer (eine Stufe allein durch Kurse in rund zwei Monaten).
-**Songs** (Umbau): Das Tempo hängt an den Mitgliedern, (Summe der Beiträge)^1,5 mit 0,25 je Mitglied und 0,75 je Songwriter (`Balance::SONGWRITING`).
-Eine Vierer-Band schreibt wie bisher, Solokünstler ohne Songwriter achtmal langsamer. Bands sind so der schnellere Weg nach oben; Solo lohnt sich nur mit Songwriter, Pop/Elektro oder als Diva.
+**Songs** (Umbau): Das Tempo hängt an den Mitgliedern, (Summe der Beiträge)^1,5 mit 0,25 je Mitglied mal Charakter-Faktor (`Balance::SONGWRITING`, `Balance::TRAITS['write']`).
+Eine Vierer-Band schreibt wie bisher, Solokünstler achtmal langsamer. Bands sind so der schnellere Weg nach oben; Solo lohnt sich nur kreativ, mit Pop/Elektro oder egozentrisch.
+Der Beitrag hängt am Charakter (Kreativ ×3, Impulsiv ×1,6, Perfektionistisch ×0,6, Technisch 0; siehe label-konzept.md, Charakterzüge). Technische lernen beim Proben ×1,25 – ein Weg nach oben fürs Können, ohne die Stufen-Bremse zu ändern.
 **Große Bands** sind ein bewusster Weg nach oben: mehr Sound (+5 % je Mitglied über 2) und mehr Gage (+10 % je Mitglied über 2) – sie kosten mehr Zeit und Geld, dafür kommen sie schneller zu größeren Bühnen.
 **Fans** großer Bühnen sind ein weiterer, kleiner Weg: In Halle und Arena kommen auch epische und legendäre Musiker, so gut wie fast die Band.
 **Für neue Inhalte:** Tourneen, Manager und Co. sollen genau diese Stufen erreichbar machen (eigene, ungebremste

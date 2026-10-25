@@ -67,10 +67,29 @@ final class BandCalc
         return 1 + $perMember * max(0, $members - Balance::SIZE_BONUS_FROM);
     }
 
-    /** Sound einer Band samt Genre-Bonus. */
+    /** Sound einer Band samt Genre-Bonus und Spieltechniken, die zum Genre passen. */
     public static function bandSound(array $band, array $members, array $gear): float
     {
-        return self::sound($members, $band['cohesion'], $gear, self::identity($members, $band['genre'], $band['genre2'])['bonus']);
+        $identity = self::identity($members, $band['genre'], $band['genre2']);
+        $genres = array_values(array_filter([$identity['primary'] ?? null, $identity['second'] ?? null, $identity['third'] ?? null]));
+        return self::sound($members, $band['cohesion'], $gear, $identity['bonus'] * self::techniqueBonus($members, $genres));
+    }
+
+    /**
+     * Spieltechniken wirken nur im passenden Genre: je Technik, die zu einem Genre der Band passt, +TECHNIQUE_SOUND (höchstens zwei je Musiker).
+     * Eine Band ohne Genre (gemischt) hat nichts davon; ein Solokünstler zählt mit seinen eigenen Genres.
+     */
+    public static function techniqueBonus(array $members, array $genres): float
+    {
+        if (count($members) === 1 && !$genres) {
+            $genres = $members[0]['genres'];
+        }
+        $n = 0;
+        foreach ($members as $m) {
+            $fit = array_filter(Levels::techniques($m), static fn ($t) => array_intersect(Catalog::ABILITIES[$t]['genres'], $genres));
+            $n += min(2, count($fit));
+        }
+        return 1 + Balance::TECHNIQUE_SOUND * $n;
     }
 
     /**
@@ -177,7 +196,11 @@ final class BandCalc
         if ($model === null) {
             return 0.0;
         }
-        return self::trainingGain($m, Balance::REHEARSAL['skill'], null, $model, false);
+        $trait = 1.0;
+        foreach ($m['personality'] ?? [] as $p) {
+            $trait *= Balance::TRAITS['rehearsalGain'][$p] ?? 1.0;
+        }
+        return self::trainingGain($m, Balance::REHEARSAL['skill'] * $trait, null, $model, false);
     }
 
     /** $paced = false: ohne die Bremse der Stufen (Balance::LEVEL_PACE); dann bremst nur die Lernkurve. */
@@ -281,7 +304,7 @@ final class BandCalc
                 $calm[] = $members[$i]['first_name'];
             }
             if (in_array('teamplayer', $members[$i]['personality'], true)) {
-                $notes[] = ['good' => true, 'ids' => [$members[$i]['id']], 'text' => sprintf('%s ist Teamplayer: hilft allen', $members[$i]['first_name'])];
+                $notes[] = ['good' => true, 'ids' => [$members[$i]['id']], 'text' => sprintf('%s ist kooperativ: hilft allen', $members[$i]['first_name'])];
             }
             for ($j = $i + 1; $j < count($members); $j++) {
                 foreach ($members[$i]['personality'] as $x) {
@@ -297,16 +320,16 @@ final class BandCalc
             }
         }
         if ($calm && array_filter($notes, static fn ($n) => !$n['good'])) {
-            $notes[] = ['good' => true, 'ids' => [], 'text' => sprintf('%s ist Ruhepol: halbiert die Reibung', implode(' und ', $calm))];
+            $notes[] = ['good' => true, 'ids' => [], 'text' => sprintf('%s %s ausgeglichen: halbiert die Reibung', implode(' und ', $calm), count($calm) > 1 ? 'sind' : 'ist')];
         }
         return $notes;
     }
 
-    /** Wie viel ein Musiker vom Publikum abbekommt. */
-    public static function fameShare(array $m, ?array $model): float
+    /** Wie viel ein Musiker vom Publikum abbekommt ($stage: bei Auftritten, dann zählen auch Extrovertierte und Gesellige mehr). */
+    public static function fameShare(array $m, ?array $model, bool $stage = false): float
     {
         $p = Balance::FAME_SHARE;
-        $factor = $p['base'];
+        $factor = $p['base'] + ($stage ? Mood::traitMax($m, Balance::TRAITS['stageFame'], 0.0) : 0.0);
         if (Levels::has($m, 'ausstrahlung')) {
             $factor += $p['ausstrahlung'];
         }
@@ -330,13 +353,13 @@ final class BandCalc
      * Zugewinngemeinschaft zu gleichen Teilen verteilt.
      * @return array<int, float> Musiker-ID => Gewinn
      */
-    public static function splitFame(array $members, float $total, array $gear): array
+    public static function splitFame(array $members, float $total, array $gear, bool $stage = false): array
     {
         $count = count($members);
         if ($count === 0) {
             return [];
         }
-        $individual = array_map(static fn ($m) => $total / $count * self::fameShare($m, self::gearOf($m, $gear)), $members);
+        $individual = array_map(static fn ($m) => $total / $count * self::fameShare($m, self::gearOf($m, $gear), $stage), $members);
         $share = round(array_sum($individual) / $count, 3);
         $out = [];
         foreach ($members as $m) {

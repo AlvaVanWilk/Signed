@@ -222,7 +222,7 @@ function signBand(s) {
     note.textContent = !chosen.length ? 'Wähle mindestens einen.'
       : !left.length ? `Sie kommen alle als Band ${s.bandName} ins Label und kennen sich schon.`
       : `${andList(left.map((m) => m.firstName))} ${left.length > 1 ? 'ziehen' : 'zieht'} enttäuscht weiter. ${andList(chosen.map((m) => m.firstName))} ${chosen.length > 1 ? 'sind gekränkt und starten' : 'ist gekränkt und startet'} schlechter gelaunt`
-        + `${chosen.some(team) ? ` – ${andList(chosen.filter(team).map((m) => m.firstName))} als Teamplayer besonders` : ''}.${chosen.length === 1 ? ' Ohne die anderen gibt es keine Band, nur einen Solokünstler.' : ''}`;
+        + `${chosen.some(team) ? ` – ${andList(chosen.filter(team).map((m) => m.firstName))} (kooperativ) besonders` : ''}.${chosen.length === 1 ? ' Ohne die anderen gibt es keine Band, nur einen Solokünstler.' : ''}`;
     if (app.state.label.money < price && chosen.length) note.textContent += ' Dafür reicht das Geld gerade nicht.';
   };
   body.addEventListener('change', (e) => {

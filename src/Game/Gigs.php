@@ -120,6 +120,10 @@ final class Gigs
             return;
         }
         foreach ($members as $m) {
+            // Gemütliche ärgern sich nicht über eine kleine Bühne
+            if ($claim === 'below' && in_array(Balance::TRAITS['calm']['trait'], $m['personality'], true)) {
+                continue;
+            }
             $strong = array_intersect($m['personality'], $c['strongTraits']) ? $c['strong'] : 1.0;
             $value = max(0.0, min(100.0, $m['wellbeing'] + $delta * $strong));
             $repo->db->update('musicians', ['wellbeing' => round($value, 3)], ['id' => $m['id']]);

@@ -193,6 +193,17 @@ final class Repo
         ]);
     }
 
+    /** Früher waren Songwriter und Interpret Fähigkeiten; jetzt sind es die Charakterzüge kreativ und technisch. */
+    private static function legacyTraits(array $personality, array $abilities): array
+    {
+        foreach (['songwriter' => 'kreativ', 'nowriter' => 'technisch'] as $old => $trait) {
+            if (in_array($old, $abilities, true) && !in_array($trait, $personality, true)) {
+                $personality[] = $trait;
+            }
+        }
+        return $personality;
+    }
+
     public static function hydrateMusician(array $r): array
     {
         return [
@@ -210,11 +221,11 @@ final class Repo
             'fame' => (float) $r['fame'],
             'genres' => json_decode($r['genres'], true) ?: [],
             'level' => (int) $r['level'],
-            'abilities' => json_decode($r['abilities'], true) ?: [],
+            'abilities' => array_values(array_diff(json_decode($r['abilities'], true) ?: [], ['songwriter', 'nowriter'])),
             'ability_choice' => $r['ability_choice'] ? json_decode($r['ability_choice'], true) : null,
             'favorite' => (bool) $r['favorite'],
             'jam_at' => (int) $r['jam_at'],
-            'personality' => json_decode($r['personality'], true) ?: [],
+            'personality' => self::legacyTraits(json_decode($r['personality'], true) ?: [], json_decode($r['abilities'], true) ?: []),
             'unusual' => (bool) $r['unusual'],
             'look' => json_decode($r['look'], true) ?: [],
             'band_id' => $r['band_id'] === null ? null : (int) $r['band_id'],

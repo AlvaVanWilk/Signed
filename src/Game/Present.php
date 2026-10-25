@@ -141,8 +141,11 @@ final class Present
                 static fn ($i) => ['name' => $i['name'], 'at' => $i['at'], 'icon' => $i['icon'], 'genres' => $i['genres'], 'techniques' => $i['techniques']],
                 Catalog::INSTRUMENTS
             ),
-            'abilities' => Catalog::ABILITIES,
-            'techniqueDesc' => Catalog::TECHNIQUE_DESC,
+            // Spieltechniken: Beschreibung mit ihren beiden Genres
+            'abilities' => array_map(static fn ($a) => empty($a['technique']) ? $a : $a + [
+                'desc' => sprintf(Catalog::TECHNIQUE_DESC, Catalog::GENRES[$a['genres'][0]]['name'], Catalog::GENRES[$a['genres'][1]]['name'], (int) round(Balance::TECHNIQUE_SOUND * 100)),
+            ], Catalog::ABILITIES),
+            'techniqueDesc' => 'Spezialtechnik.',
             'levelNames' => Catalog::LEVEL_NAMES,
             'levelWords' => Catalog::LEVEL_WORDS,
             'genreLineup' => Catalog::GENRE_LINEUP,

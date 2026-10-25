@@ -579,8 +579,8 @@ test('Stimmung: Ampel nach dem Unzufriedensten, Miesepeter zieht die anderen mit
     checkEquals('red', Signed\Game\Mood::bandMood([90.0, 90.0, 20.0])['level']);
     check(Signed\Game\Mood::bandMood([90.0, 90.0, 20.0])['value'] < 60, 'der Wert folgt dem Unzufriedensten');
     $band = ['genre' => 'rock'];
-    $a = musician(['id' => 1, 'genres' => ['rock']]);
-    $b = musician(['id' => 2, 'genres' => ['rock']]);
+    $a = musician(['id' => 1, 'genres' => ['rock'], 'personality' => []]);
+    $b = musician(['id' => 2, 'genres' => ['rock'], 'personality' => []]);
     $calm = Signed\Game\Mood::target($a, $band, [$a, $b], [2 => 70.0], ['1-2' => 0.0], 0.0);
     $foeCalm = Signed\Game\Mood::target($a, $band, [$a, $b], [2 => 70.0], ['1-2' => -8.0], 0.0);
     $foeHit = Signed\Game\Mood::target($a, $band, [$a, $b], [2 => 10.0], ['1-2' => -8.0], 0.0);
@@ -640,18 +640,54 @@ test('Solo-Genre-Bonus: nur Pop (Gesang) und Elektro, und nur halb', function ()
     checkEquals(1.0, BandCalc::identity([$guitar])['bonus'], 'Rock solo: kein Bonus');
 });
 
-test('Songschreiben: jedes Mitglied trägt bei, Songwriter viel mehr; allein ohne Songwriter sehr langsam', function () {
-    $m = static fn (array $abilities = []) => ['abilities' => $abilities];
-    $c = Balance::SONGWRITING;
-    checkEquals(1.0, round(Signed\Game\Mood::crewFactor([$m(), $m(), $m(), $m()]), 4), 'Vierer-Band = Grundtempo');
-    check(Signed\Game\Mood::crewFactor([$m()]) <= 0.3, 'allein ohne Songwriter sehr langsam');
-    checkEquals(0.0, Signed\Game\Mood::crewFactor([$m(['nowriter'])]), 'wer nicht schreibt, schreibt solo gar nichts');
-    check(Signed\Game\Mood::crewFactor([$m(['nowriter']), $m(), $m(), $m()]) < Signed\Game\Mood::crewFactor([$m(), $m(), $m(), $m()]), 'und bremst die Band');
-    check(!in_array('nowriter', Signed\Game\Levels::eligible(['guitar'], []), true) && !in_array('songwriter', Signed\Game\Levels::eligible(['guitar'], ['nowriter']), true), 'nicht lernbar');
-    check(Signed\Game\Mood::crewFactor([$m(['songwriter'])]) > 2.5 * Signed\Game\Mood::crewFactor([$m()]), 'Songwriter hilft viel');
-    check(Signed\Game\Mood::crewFactor([$m(['songwriter'])]) < Signed\Game\Mood::crewFactor([$m(), $m(), $m(), $m()]), 'auch mit Songwriter allein langsamer als eine Band');
-    check(4 * Signed\Game\Mood::crewFactor([$m()]) <= 0.6 * Signed\Game\Mood::crewFactor([$m(), $m(), $m(), $m()]), 'vier Solokünstler zusammen deutlich langsamer als die Band');
-    checkEquals(round((($c['writer'] + 3 * $c['share']) / $c['norm']) ** $c['exp'], 4), round(Signed\Game\Mood::crewFactor([$m(['songwriter']), $m(), $m(), $m()]), 4));
+test('Songschreiben: jedes Mitglied trägt bei, Kreative viel mehr, Technische nichts; allein sehr langsam', function () {
+    $m = static fn (array $traits = []) => ['personality' => $traits, 'abilities' => []];
+    $f = static fn (array $members) => Signed\Game\Mood::crewFactor($members);
+    checkEquals(1.0, round($f([$m(), $m(), $m(), $m()]), 4), 'Vierer-Band = Grundtempo');
+    check($f([$m()]) <= 0.3, 'allein sehr langsam');
+    check(4 * $f([$m()]) <= 0.6 * $f([$m(), $m(), $m(), $m()]), 'vier Solokünstler zusammen deutlich langsamer als die Band');
+    check($f([$m(['kreativ'])]) > 2.5 * $f([$m()]), 'Kreative schreiben viel mehr');
+    check($f([$m(['kreativ'])]) < $f([$m(), $m(), $m(), $m()]), 'auch kreativ allein langsamer als eine Band');
+    checkEquals(0.0, $f([$m(['technisch'])]), 'Technische schreiben solo gar nichts');
+    check($f([$m(['technisch']), $m(), $m(), $m()]) < $f([$m(), $m(), $m(), $m()]), 'und bremsen die Band');
+    check($f([$m(['chaot'])]) > $f([$m()]) && $f([$m(['perfektionist'])]) < $f([$m()]), 'Impulsive schneller, Perfektionisten langsamer');
+});
+
+test('Charakterzüge: Altdaten (Songwriter, Interpret) werden zu kreativ und technisch', function () {
+    $row = ['id' => 1, 'personality' => json_encode(['ehrgeizig']), 'abilities' => json_encode(['talent', 'songwriter'])];
+    $m = (new ReflectionMethod(Signed\Game\Repo::class, 'legacyTraits'))->invoke(null, ['ehrgeizig'], ['talent', 'songwriter']);
+    checkEquals(['ehrgeizig', 'kreativ'], $m);
+    $m = (new ReflectionMethod(Signed\Game\Repo::class, 'legacyTraits'))->invoke(null, [], ['nowriter']);
+    checkEquals(['technisch'], $m);
+});
+
+test('Charakterzüge: jeder hat eine Stärke und eine Schwäche', function () {
+    $t = Balance::TRAITS;
+    $band = ['genre' => 'rock', 'stageIdle' => 30.0, 'recordIdle' => 80.0];
+    $fresh = ['genre' => 'rock', 'stageIdle' => 1.0, 'recordIdle' => 1.0];
+    $x = static fn (array $traits) => musician(['id' => 1, 'genres' => ['rock'], 'personality' => $traits]);
+    $y = musician(['id' => 2, 'genres' => ['rock'], 'personality' => []]);
+    $target = static fn (array $m, array $b, float $songs = 0.0, float $other = 70.0) => Signed\Game\Mood::target($m, $b, [$m, $y], [2 => $other], ['1-2' => 0.0], $songs);
+    // Extrovertierte und Gesellige werden unruhig ohne Auftritte, Ehrgeizige ohne neue Platte
+    check($target($x(['rampensau']), $band) < $target($x(['rampensau']), $fresh), 'extrovertiert: unruhig ohne Bühne');
+    check($target($x(['partytier']), $band) < $target($x(['partytier']), $fresh), 'gesellig: unruhig ohne Bühne');
+    check($target($x(['ehrgeizig']), $band) < $target($x(['ehrgeizig']), $fresh), 'ehrgeizig: ohne neue Platte unzufrieden');
+    checkEquals($target($x([]), $band), $target($x([]), $fresh), 'ohne solche Züge egal');
+    // Gemütliche nehmen liegende Songs gelassener
+    check($target($x(['gelassen']), $fresh, 24.0) > $target($x([]), $fresh, 24.0), 'gemütlich: Songstau zählt weniger');
+    // Kooperative leiden mit, wenn es jemandem schlecht geht
+    check($target($x(['teamplayer']), $fresh, 0.0, 10.0) < $target($x([]), $fresh, 0.0, 10.0), 'kooperativ: leidet mit');
+    // Kreative lernen beim Proben langsamer, Technische schneller
+    $model = ['klang' => 50, 'spielbarkeit' => 50, 'design' => 50, 'perks' => []];
+    $gain = static fn (array $traits) => BandCalc::rehearsalGain(musician(['personality' => $traits, 'skill1' => 30.0]), $model);
+    check($gain(['technisch']) > $gain([]) && $gain(['kreativ']) < $gain([]), 'Probe: technisch schneller, kreativ langsamer');
+    // Auf der Bühne: Extrovertierte bekommen mehr Ruhm ab
+    check(BandCalc::fameShare($x(['rampensau']), null, true) > BandCalc::fameShare($x([]), null, true), 'extrovertiert: mehr Ruhm auf der Bühne');
+    checkEquals(BandCalc::fameShare($x(['rampensau']), null, false), BandCalc::fameShare($x([]), null, false), 'aber nicht im Studio');
+    check(isset($t['recordQuality']['perfektionist'], $t['recordSales']['diva'], $t['live']['chaot'], $t['live']['ruhepol']), 'Studio- und Live-Wirkungen sind gesetzt');
+    foreach (array_keys(Signed\Game\Catalog::PERSONALITIES) as $p) {
+        check(isset(Signed\Game\Catalog::PERSONALITY_INFO[$p], Signed\Game\Catalog::LIKES[$p], Signed\Game\Catalog::LUST[$p], Signed\Game\Catalog::WISHES[$p], Signed\Game\Catalog::WISHES_SOLO[$p]), "$p ist vollständig");
+    }
 });
 
 test('Solokünstler: allein ist es einsam, Teamplayer und Rampensau leiden mehr, Diva genießt es', function () {
@@ -661,4 +697,20 @@ test('Solokünstler: allein ist es einsam, Teamplayer und Rampensau leiden mehr,
     check($t([]) < Balance::MOOD['start'], 'einsam');
     check($t(['teamplayer']) < $t(['rampensau']) && $t(['rampensau']) < $t([]), 'Teamplayer am meisten, dann Rampensau');
     check($t(['diva']) > $t([]), 'Diva freut sich');
+});
+
+test('Spieltechniken: nur lernbar, wenn man eins ihrer Genres mag, und Sound nur im passenden Genre', function () {
+    foreach (Signed\Game\Catalog::ABILITIES as $key => $a) {
+        if (!empty($a['technique'])) {
+            checkEquals(2, count($a['genres']), "$key hat zwei Genres");
+        }
+    }
+    $pop = Signed\Game\Levels::eligible(['vocals'], [], ['pop']);
+    check(!in_array('growl', $pop, true) && in_array('falsett', $pop, true), 'Pop-Sänger: Falsett ja, Growl nein');
+    check(in_array('growl', Signed\Game\Levels::eligible(['vocals'], [], ['metal']), true), 'Metal-Sänger: Growl ja');
+    $growler = ['personality' => [], 'genres' => ['metal'], 'abilities' => ['growl']];
+    check(BandCalc::techniqueBonus([$growler], ['metal']) > 1.0, 'Growl in einer Metal-Band bringt Sound');
+    checkEquals(1.0, BandCalc::techniqueBonus([$growler], ['pop']), 'in einer Pop-Band nicht');
+    checkEquals(1.0, BandCalc::techniqueBonus([$growler, $growler], []), 'gemischte Band: nichts');
+    check(BandCalc::techniqueBonus([$growler], []) > 1.0, 'solo zählen die eigenen Genres');
 });

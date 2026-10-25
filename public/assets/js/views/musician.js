@@ -98,7 +98,7 @@ function chemistryWith(m) {
   if (!notes.length) return '';
   const rub = notes.some((n) => !n.good);
   return `<div class="chem-notes">${notes.map((n) => `<div class="${n.good ? 'ok' : 'bad'}">${n.good ? '＋' : '−'} ${esc(n.text)}</div>`).join('')}
-    ${rub ? '<div class="muted small">Was hilft: ein Ruhepol in der Band (halbiert jede Reibung) oder ein Teamplayer. Oder einer von beiden wechselt die Band.</div>' : ''}</div>`;
+    ${rub ? '<div class="muted small">Was hilft: jemand Ausgeglichenes in der Band (halbiert jede Reibung) oder jemand Kooperatives. Oder einer von beiden wechselt die Band.</div>' : ''}</div>`;
 }
 
 /** Infofenster: Eigenschaft erklären und zeigen, wie sie gerade wirkt. */

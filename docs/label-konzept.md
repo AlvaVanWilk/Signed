@@ -102,6 +102,34 @@ Jeder Wunsch hat ein Symbol und einen Satz und ist mit einer passenden Anordnung
 Wünsche ergeben sich aus der Lage: **Wer kein Instrument hat, wünscht sich eins; wer mit besserem Können sein Instrument überholt hat, wünscht sich ein besseres.**
 Je länger ein Wunsch offen bleibt, desto mehr drückt er das Wohlbefinden.
 
+### Charakterzüge: Stärke und Schwäche (gebaut)
+
+Jeder Zug hat eine Stärke und eine Schwäche; welcher hilft, hängt von Band und Anordnungen ab. Namen sind Eigenschaftswörter (Menschen sind nicht ihre Eigenschaft);
+die gespeicherten Schlüssel bleiben die alten. Zahlen: `Balance::TRAITS`, Ausdauer beim Proben `Catalog::LUST`, Texte `Catalog::PERSONALITY_INFO`.
+
+| Zug (Schlüssel) | Stärke | Schwäche |
+|---|---|---|
+| Ehrgeizig (ehrgeizig) | lange Proben (×1,5) | −6 Wohlbefinden-Ziel, wenn 48 h keine neue Platte |
+| Gemütlich (gelassen) | sinkt langsamer (×1,8), Songstau zählt halb, kleine Bühnen ärgern nicht | kurze Proben, mag keine Auftritte |
+| Perfektionistisch (perfektionist) | lange Proben, Platte +0,04 Qualität | schreibt langsamer (×0,6) |
+| Impulsiv (chaot) | schreibt schneller (×1,6), live +4 % Glanz | kurze Proben, live +4 % Patzer |
+| Extrovertiert (rampensau) | Ruhm-Anteil bei Auftritten +0,2 | −6, wenn 8 h kein Auftritt; zwei reiben sich; solo unglücklich |
+| Egozentrisch (diva) | Erstverkauf +10 %, solo glücklich | will gute Bühnen; zwei reiben sich |
+| Kooperativ (teamplayer) | bessere Chemie | leidet mit Unzufriedenen ×1,5 mit, solo sehr unglücklich |
+| Ausgeglichen (ruhepol) | halbiert Reibung | live −3 % Glanz |
+| Gesellig (partytier) | Ruhm-Anteil bei Auftritten +0,15, zwei verstehen sich | −5, wenn 8 h kein Auftritt; kurze Proben |
+| Kreativ (kreativ) | schreibt viel schneller (×3) | kurze Proben (×0,7), lernt beim Proben langsamer (×0,85) |
+| Technisch (technisch) | übt wie verrückt (×1,6), lernt schneller (×1,25), live −3 % Patzer | schreibt keine Songs |
+
+Kreativ und Technisch schließen sich aus. Frühere Fähigkeiten „Songwriter“ und „Interpret“ werden beim Lesen zu Kreativ und Technisch (`Repo::legacyTraits`).
+
+**Versteckter Wert** (`Balance::VALUE`, nie angezeigt): Züge meist 0, Ehrgeizig, Kooperativ, Ausgeglichen, Kreativ +1, Egozentrisch und Technisch −1;
+Fähigkeiten nach Nutzen (Talent, Charisma +2, sonst +1), Spieltechniken +1. Die Unterschriftsprämie wächst um 12 % je Punkt (60 % bis 160 %):
+Glückstreffer kosten mehr, Pechvögel sind billig. Verteilung bei Stufe 0: Wert −2 bis +2, meist 0 oder +1.
+
+**Spieltechniken** gehören zu zwei Genres (`Catalog::ABILITIES[…]['genres']`). Man lernt nur eine, deren Genre man mag; im passenden Genre der Band
+(bei Hybrid und Crossover alle ihre Genres, solo die eigenen) bringt jede +4 % Sound (`Balance::TECHNIQUE_SOUND`, höchstens zwei je Musiker), live etwas mehr Glanz.
+
 ### Anspruch
 
 Der **Anspruch** der Band steigt mit dem Ruhm: Wer noch nichts erreicht hat, freut sich über alles, was das Label ermöglicht.
@@ -141,10 +169,10 @@ Anspruch übertrifft, macht glücklich (auch eine unzufriedene Band lässt sich 
 ## Songs schreiben
 
 - Die Band schreibt **von selbst**, im Tempo ihrer Stimmung: grün etwa 1 Song pro Stunde, gelb halb so schnell, rot gar nicht.
-- **Jedes Mitglied trägt bei** (`Balance::SONGWRITING`): je Mitglied 0,25, ein **Songwriter** (Fähigkeit) 0,75; Tempo = Summe hoch 1,5.
-  Zusammen sprudeln die Ideen, deshalb wächst es stärker als die Zahl der Mitglieder. Vierer-Band ohne Songwriter: ×1 (das Tempo oben),
-  Zweier-Band ×0,35, allein ×0,125 (ein Song in acht Stunden), allein mit Songwriter ×0,65, Vierer-Band mit einem Songwriter ×1,84.
-  Songwriter kommt wie andere Fähigkeiten mit dem Aufstieg; 8 % der neuen Musiker sind es schon von Anfang an.
+- **Jedes Mitglied trägt bei** (`Balance::SONGWRITING`): je Mitglied 0,25 mal dem Faktor seines Charakters (Kreativ ×3, Impulsiv ×1,6, Perfektionistisch ×0,6,
+  Technisch 0); Tempo = Summe hoch 1,5. Zusammen sprudeln die Ideen, deshalb wächst es stärker als die Zahl der Mitglieder.
+  Vierer-Band ohne solche Züge: ×1 (das Tempo oben), Zweier-Band ×0,35, allein ×0,125 (ein Song in acht Stunden), allein und kreativ ×0,65,
+  Vierer-Band mit einem Kreativen ×1,84; allein und technisch: gar keine Songs.
   Gegenstück **Interpret** (schreibt nicht) (12 % der neuen Musiker, nur von Anfang an, nie lernbar): trägt 0 bei. Solo entstehen so keine Songs, in einer Vierer-Band sinkt das Tempo auf ×0,65.
 - **Obergrenze 24 Songs.** Ab 12 liegenden Songs sinkt die Stimmung der Band langsam („Wir wollen aufnehmen!“).
 - Eine Platte braucht mindestens 3 Songs (EP) bzw. 7 (LP) aus diesem Vorrat; beim Aufnehmen wählt das Label, wie viele.
@@ -288,7 +316,7 @@ gestrichelt = keiner (auch bei Solokünstlern). Auf der Bandseite zeigt „Genre
 - **Solokünstler** sollen sich **kaum lohnen**: ohne Beziehungen, **kein Genre-, Hybrid- oder Besetzungs-Bonus** (aber auch kein Malus für „gemischte Band“), und Auftritte und Aufnahmen kosten mehr, weil
   **Studiomusiker** zugebucht werden (Aufschlag zum Beispiel +50 %; bei **Pop** nur +20 %, denn Pop-Sänger treten oft allein auf). Gage und Besetzungs-Bonus sind niedriger als bei einer Band, die Aufmerksamkeit gleich.
   Rentabel wird es **nur in Sonderfällen**: **Pop**, **Diva** (steht gern allein im Rampenlicht, bekommt eine Stimmungsprämie). Allein ist es **einsam** (Ziel −4 für alle);
-  **Teamplayer** (−12), **Rampensau** (−8) und **Partytier** (−6) leiden mehr, die **Diva** freut sich (+8). Solo schreibt man viel langsamer (siehe Songs schreiben), außer man ist Songwriter.
+  **Teamplayer** (−12), **Rampensau** (−8) und **Partytier** (−6) leiden mehr, die **Diva** freut sich (+8). Solo schreibt man viel langsamer (siehe Songs schreiben), außer man ist kreativ.
   Genre-Bonus solo nur für **Pop** (Gesang) und **Elektro** (Keyboard oder Turntables), und nur halb. Kein täglicher Kostenpunkt je Künstler. Wer sich eigentlich eine Band wünscht, wird **unzufrieden**: **Teamplayer** und **Partytier**
   äußern den Wunsch „Ich will in eine Band!“, der offen bleibt, solange sie solo sind. Nützlich am Anfang (ein Künstler genügt) und für Musiker, die in keine Band passen.
 - **Die Kartei** zeigt alle Künstler unter Vertrag (Passfotos, Liste) und ist der **Besetzungsplaner**: Dort steckt man Musiker zu **Entwürfen** zusammen und sieht, was dabei herauskäme (Genre-Titel, Sound,

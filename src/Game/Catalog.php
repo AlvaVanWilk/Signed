@@ -94,8 +94,9 @@ final class Catalog
     public const RAP_GENRES = ['hiphop'];
 
     /**
-     * Fähigkeiten: Ein Musiker hat so viele, wie seine Können-Stufe angibt (höchstens 3); Songwriter kann jemand auch von Anfang an zusätzlich sein.
-     * technique = an ein Instrument gebunden (siehe INSTRUMENTS[...]['techniques']).
+     * Fähigkeiten: Ein Musiker hat so viele, wie seine Können-Stufe angibt (höchstens 3).
+     * technique = an ein Instrument gebunden (siehe INSTRUMENTS[...]['techniques']) und an zwei Genres: Nur wer eins davon mag, lernt sie,
+     * und nur in einer Band dieses Genres bringt sie Sound (Balance::TECHNIQUE_SOUND).
      */
     public const ABILITIES = [
         'talent' => ['name' => 'Talent', 'icon' => '🌱', 'desc' => 'Können wächst schneller.'],
@@ -105,30 +106,27 @@ final class Catalog
         'gehoer' => ['name' => 'Absolutes Gehör', 'icon' => '👂', 'desc' => 'Mehr Spielraum in der Solo-Probe.'],
         'buehnentier' => ['name' => 'Entertainer', 'icon' => '🔥', 'desc' => 'Mehr Glanzmomente live.'],
         'studiofuchs' => ['name' => 'Studiofuchs', 'icon' => '🎚️', 'desc' => 'Leichter zu mischen im Studio.'],
-        'songwriter' => ['name' => 'Songwriter', 'icon' => '✍️', 'desc' => 'Schreibt viel schneller Songs. Wichtig für Solokünstler.'],
-        // Gegenstück: spielt gern, schreibt aber keine Songs. Kommt nur von Anfang an vor, nie durch Aufstieg (negative = keine Fähigkeit zum Lernen).
-        'nowriter' => ['name' => 'Interpret', 'icon' => '🎼', 'desc' => 'Spielt lieber, als selbst zu schreiben: schreibt keine Songs.', 'negative' => true],
-        'falsett' => ['name' => 'Falsett', 'icon' => '🪶', 'technique' => true],
-        'growl' => ['name' => 'Growl', 'icon' => '🐺', 'technique' => true],
-        'belting' => ['name' => 'Belting', 'icon' => '📣', 'technique' => true],
-        'rap' => ['name' => 'Rap', 'icon' => '🗣️', 'technique' => true],
-        'beatbox' => ['name' => 'Beatbox', 'icon' => '👄', 'technique' => true],
-        'tapping' => ['name' => 'Tapping', 'icon' => '👆', 'technique' => true],
-        'shredding' => ['name' => 'Shredding', 'icon' => '⚡', 'technique' => true],
-        'fingerstyle' => ['name' => 'Fingerstyle', 'icon' => '🤌', 'technique' => true],
-        'slap' => ['name' => 'Slap', 'icon' => '👋', 'technique' => true],
-        'walking' => ['name' => 'Walking Bass', 'icon' => '🚶', 'technique' => true],
-        'doublebass' => ['name' => 'Double Bass', 'icon' => '🦶', 'technique' => true],
-        'blastbeat' => ['name' => 'Blastbeat', 'icon' => '💥', 'technique' => true],
-        'arpeggio' => ['name' => 'Arpeggio-Läufe', 'icon' => '🌊', 'technique' => true],
-        'improvisation' => ['name' => 'Improvisation', 'icon' => '🎲', 'technique' => true],
-        'sounddesign' => ['name' => 'Sounddesign', 'icon' => '🧪', 'technique' => true],
-        'scratching' => ['name' => 'Scratching', 'icon' => '🌀', 'technique' => true],
-        'juggling' => ['name' => 'Beat Juggling', 'icon' => '🤹', 'technique' => true],
-        'zirkular' => ['name' => 'Zirkularatmung', 'icon' => '🔄', 'technique' => true],
-        'highnotes' => ['name' => 'High Notes', 'icon' => '🏔️', 'technique' => true],
-        'flageolett' => ['name' => 'Flageolett', 'icon' => '🔔', 'technique' => true],
-        'flatterzunge' => ['name' => 'Flatterzunge', 'icon' => '🦋', 'technique' => true],
+        'falsett' => ['name' => 'Falsett', 'icon' => '🪶', 'technique' => true, 'genres' => ['pop', 'jazz']],
+        'growl' => ['name' => 'Growl', 'icon' => '🐺', 'technique' => true, 'genres' => ['metal', 'punk']],
+        'belting' => ['name' => 'Belting', 'icon' => '📣', 'technique' => true, 'genres' => ['pop', 'rock']],
+        'rap' => ['name' => 'Rap', 'icon' => '🗣️', 'technique' => true, 'genres' => ['hiphop', 'pop']],
+        'beatbox' => ['name' => 'Beatbox', 'icon' => '👄', 'technique' => true, 'genres' => ['hiphop', 'elektro']],
+        'tapping' => ['name' => 'Tapping', 'icon' => '👆', 'technique' => true, 'genres' => ['metal', 'rock']],
+        'shredding' => ['name' => 'Shredding', 'icon' => '⚡', 'technique' => true, 'genres' => ['metal', 'rock']],
+        'fingerstyle' => ['name' => 'Fingerstyle', 'icon' => '🤌', 'technique' => true, 'genres' => ['folk', 'jazz']],
+        'slap' => ['name' => 'Slap', 'icon' => '👋', 'technique' => true, 'genres' => ['pop', 'rock']],
+        'walking' => ['name' => 'Walking Bass', 'icon' => '🚶', 'technique' => true, 'genres' => ['jazz', 'folk']],
+        'doublebass' => ['name' => 'Double Bass', 'icon' => '🦶', 'technique' => true, 'genres' => ['metal', 'punk']],
+        'blastbeat' => ['name' => 'Blastbeat', 'icon' => '💥', 'technique' => true, 'genres' => ['metal', 'punk']],
+        'arpeggio' => ['name' => 'Arpeggio-Läufe', 'icon' => '🌊', 'technique' => true, 'genres' => ['elektro', 'pop']],
+        'improvisation' => ['name' => 'Improvisation', 'icon' => '🎲', 'technique' => true, 'genres' => ['jazz', 'folk']],
+        'sounddesign' => ['name' => 'Sounddesign', 'icon' => '🧪', 'technique' => true, 'genres' => ['elektro', 'hiphop']],
+        'scratching' => ['name' => 'Scratching', 'icon' => '🌀', 'technique' => true, 'genres' => ['hiphop', 'elektro']],
+        'juggling' => ['name' => 'Beat Juggling', 'icon' => '🤹', 'technique' => true, 'genres' => ['hiphop', 'elektro']],
+        'zirkular' => ['name' => 'Zirkularatmung', 'icon' => '🔄', 'technique' => true, 'genres' => ['jazz', 'folk']],
+        'highnotes' => ['name' => 'High Notes', 'icon' => '🏔️', 'technique' => true, 'genres' => ['jazz', 'pop']],
+        'flageolett' => ['name' => 'Flageolett', 'icon' => '🔔', 'technique' => true, 'genres' => ['folk', 'jazz']],
+        'flatterzunge' => ['name' => 'Flatterzunge', 'icon' => '🦋', 'technique' => true, 'genres' => ['jazz', 'folk']],
     ];
 
     /** Namen der Stufen: Können-Leiter und Bekanntheits-Leiter (0–3). */
@@ -138,19 +136,24 @@ final class Catalog
     public const FAME_NAMES = ['Unbekannt', 'Lokal bekannt', 'Szenegröße', 'Star'];
 
     /** Was eine Spezialtechnik bewirkt (gilt für alle Techniken). */
-    public const TECHNIQUE_DESC = 'Spezialtechnik: mehr Glanzmomente live.';
+    public const TECHNIQUE_DESC = 'Spezialtechnik: in einer %s- oder %s-Band +%d %% Sound, live etwas mehr Glanzmomente.';
 
-    /** Charakterzüge für die Chemie. */
+    /**
+     * Charakterzüge: Jeder hat eine Stärke und eine Schwäche, je nach Lage (siehe docs/label-konzept.md, Charakterzüge).
+     * Die Schlüssel bleiben die alten (gespeichert in musicians.personality), nur die Namen sind jetzt Eigenschaftswörter.
+     */
     public const PERSONALITIES = [
         'ehrgeizig' => 'Ehrgeizig',
-        'gelassen' => 'Gelassen',
-        'perfektionist' => 'Perfektionist',
-        'chaot' => 'Chaot',
-        'rampensau' => 'Rampensau',
-        'diva' => 'Diva',
-        'teamplayer' => 'Teamplayer',
-        'ruhepol' => 'Ruhepol',
-        'partytier' => 'Partytier',
+        'gelassen' => 'Gemütlich',
+        'perfektionist' => 'Perfektionistisch',
+        'chaot' => 'Impulsiv',
+        'rampensau' => 'Extrovertiert',
+        'diva' => 'Egozentrisch',
+        'teamplayer' => 'Kooperativ',
+        'ruhepol' => 'Ausgeglichen',
+        'partytier' => 'Gesellig',
+        'kreativ' => 'Kreativ',
+        'technisch' => 'Technisch',
     ];
 
     /**
@@ -167,12 +170,15 @@ final class Catalog
         'teamplayer' => ['rehearsal' => 1, 'record' => 1],
         'ruhepol' => ['rehearsal' => 1, 'record' => 1],
         'partytier' => ['gig' => 1, 'openstage' => 1, 'busking' => 1, 'rehearsal' => -1],
+        'kreativ' => ['record' => 1, 'openstage' => 1, 'rehearsal' => -1],
+        'technisch' => ['rehearsal' => 1, 'record' => 1],
     ];
 
     /** Wie lange ein Charakter bei der Probe Lust hat, als Faktor auf Balance::REHEARSAL['lust'] (bei zwei Eigenschaften der Mittelwert). */
     public const LUST = [
         'ehrgeizig' => 1.5, 'perfektionist' => 1.5, 'teamplayer' => 1.2, 'ruhepol' => 1.2,
         'rampensau' => 0.9, 'diva' => 0.8, 'gelassen' => 0.8, 'chaot' => 0.6, 'partytier' => 0.6,
+        'kreativ' => 0.7, 'technisch' => 1.6,
     ];
 
     /** Der Wunsch eines unzufriedenen Musikers nach Charakter: [Satz, Anordnung, die ihn erfüllt]. */
@@ -186,6 +192,8 @@ final class Catalog
         'teamplayer' => ['Lasst uns was zusammen machen.', 'rehearsal'],
         'ruhepol' => ['Gemeinsam Musik machen wäre schön.', 'rehearsal'],
         'partytier' => ['Wann ist der nächste Gig?', 'gig'],
+        'kreativ' => ['Lasst uns die neuen Songs aufnehmen!', 'record'],
+        'technisch' => ['Wir sollten mehr üben.', 'rehearsal'],
     ];
 
     /** Dieselben Wünsche, wenn der Musiker allein ist (ohne „wir“ und „zusammen“). */
@@ -199,19 +207,23 @@ final class Catalog
         'teamplayer' => ['Ich würde gern mal wieder üben.', 'rehearsal'],
         'ruhepol' => ['In Ruhe Musik machen wäre schön.', 'rehearsal'],
         'partytier' => ['Wann ist der nächste Gig?', 'gig'],
+        'kreativ' => ['Ich will meine Songs aufnehmen!', 'record'],
+        'technisch' => ['Ich sollte mehr üben.', 'rehearsal'],
     ];
 
-    /** Was eine Eigenschaft bedeutet und wie sie in der Band wirkt (Chemie). */
+    /** Was eine Eigenschaft bedeutet und wie sie wirkt: Stärke und Schwäche, in einfachen Worten. */
     public const PERSONALITY_INFO = [
-        'ehrgeizig' => 'Will immer mehr erreichen. Reibt sich mit Gelassenen.',
-        'gelassen' => 'Nimmt alles locker. Reibt sich mit Ehrgeizigen.',
-        'perfektionist' => 'Alles muss genau sitzen. Reibt sich mit Chaoten.',
-        'chaot' => 'Kreativ, aber unordentlich. Reibt sich mit Perfektionisten.',
-        'rampensau' => 'Liebt die Bühne über alles. Zwei Rampensäue in einer Band reiben sich.',
-        'diva' => 'Will im Mittelpunkt stehen. Zwei Divas in einer Band reiben sich.',
-        'teamplayer' => 'Hilft allen in der Band: Die Chemie wird besser.',
-        'ruhepol' => 'Beruhigt alle: Jede Reibung in der Band zählt nur halb.',
-        'partytier' => 'Feiert gern. Zwei Partytiere in einer Band verstehen sich prächtig.',
+        'ehrgeizig' => 'Will immer weiter und übt lange. Wird unzufrieden, wenn lange keine neue Platte kommt.',
+        'gelassen' => 'Lässt sich kaum aus der Ruhe bringen und ärgert sich nicht über kleine Bühnen. Tritt aber nicht gern auf.',
+        'perfektionist' => 'Alles muss genau sitzen: übt lange, Aufnahmen werden besser. Schreibt aber langsam Songs.',
+        'chaot' => 'Macht spontan, was ihm einfällt: schreibt schnell Songs, glänzt live öfter, patzt aber auch öfter.',
+        'rampensau' => 'Liebt die Bühne: bringt mehr Ruhm bei Auftritten. Wird unruhig, wenn es lange keine gibt.',
+        'diva' => 'Will im Mittelpunkt stehen: verkauft mehr Platten und ist gern allein. Will aber gute Bühnen.',
+        'teamplayer' => 'Hilft allen in der Band, die Chemie wird besser. Leidet aber mit, wenn es jemandem schlecht geht.',
+        'ruhepol' => 'Bringt Ruhe in die Band: Streit zählt nur halb. Auf der Bühne glänzt er seltener.',
+        'partytier' => 'Feiert gern: bringt mehr Fans zu Auftritten. Wird unruhig, wenn es lange keine gibt, und übt nicht gern lange.',
+        'kreativ' => 'Hat ständig Ideen: schreibt viel schneller Songs. Übt aber ungern und lernt beim Proben langsamer.',
+        'technisch' => 'Übt wie verrückt und lernt schnell, patzt live seltener. Schreibt aber keine eigenen Songs.',
     ];
 
     /** Eigenschaften, die nicht zusammen in einem Menschen vorkommen (wären widersprüchlich). */
@@ -221,6 +233,7 @@ final class Catalog
         ['ruhepol', 'rampensau'],
         ['perfektionist', 'chaot'],
         ['ehrgeizig', 'gelassen'],
+        ['kreativ', 'technisch'],
     ];
 
     /** Paare, die sich reiben. */

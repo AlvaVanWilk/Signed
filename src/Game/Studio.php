@@ -187,6 +187,11 @@ final class Studio
         // Das Cover ist eine der Aufnahmen, aber kein Lied mit Trefferquote: Qualität aus den Musik-Spielen.
         $songs = $record['songs_total'];
         $quality = array_sum(array_column($results, 'accuracy')) / max(1, $songs);
+        // Perfektionisten holen noch etwas mehr heraus
+        foreach ($members as $m) {
+            $quality += Mood::traitMax($m, Balance::TRAITS['recordQuality'], 0.0);
+        }
+        $quality = min(1.0, $quality);
         $misses = (int) array_sum(array_column($results, 'miss'));
         $perfect = $misses === 0;
 
@@ -197,6 +202,8 @@ final class Studio
 
         $coverQuality = (float) ($record['cover']['spec']['quality'] ?? 0);
         $coverBonus = 1 + Balance::COVER['salesMax'] * $coverQuality;
+        // Egozentrische stehen gern im Mittelpunkt: Die Platte verkauft sich besser
+        $sales *= 1 + array_sum(array_map(static fn ($m) => Mood::traitMax($m, Balance::TRAITS['recordSales'], 0.0), $members));
         $money = (int) round($songs * Balance::RECORD_MONEY_PER_SONG * (0.3 + $quality ** 2) * $lp * $perfectFactor * $sales * $coverBonus);
         $fame = $songs * Balance::RECORD_FAME_PER_SONG * BandCalc::soundFactor($sound) * (0.3 + $quality ** 1.5) * $lp * $perfectFactor;
         $gains = BandCalc::splitFame($members, $fame, $gear);

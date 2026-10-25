@@ -90,7 +90,8 @@ final class State
             $list = $members[$band['id']] ?? [];
             $identity = (new Bands($repo))->syncIdentity($band, $list);
             $band['cohesion'] = min($band['cohesion'], BandCalc::maxCohesion($identity));
-            $sound = BandCalc::sound($list, $band['cohesion'], $gearMap, $identity['bonus']);
+            $identityGenres = array_values(array_filter([$identity['primary'] ?? null, $identity['second'] ?? null, $identity['third'] ?? null]));
+            $sound = BandCalc::sound($list, $band['cohesion'], $gearMap, $identity['bonus'] * BandCalc::techniqueBonus($list, $identityGenres));
             if (abs($sound - $band['sound']) >= 0.05) {
                 // Zwischenspeicher für die Charts (Kritikerwertung).
                 $db->update('bands', ['sound' => $sound], ['id' => $band['id']]);
@@ -140,7 +141,7 @@ final class State
                     'patience' => round($band['patience']),
                     'relations' => $bandRelations[$band['id']] ?? [],
                     'togetherness' => Mood::togetherness($bandRelations[$band['id']] ?? []),
-                    // Songs je Stunde, gerade jetzt (nach Mitgliedern und Songwritern; 0 bei Rot, Auftritt, Promo; langsamer beim Proben, schneller bei bester Laune)
+                    // Songs je Stunde, gerade jetzt (nach Mitgliedern und ihrem Charakter; 0 bei Rot, Auftritt, Promo; langsamer beim Proben, schneller bei bester Laune)
                     'songRate' => round(Mood::songRate(Mood::bandMood(array_column($list, 'wellbeing'))) * Mood::crewFactor($list)
                         * Mood::activityFactor($db->value('SELECT type FROM activities WHERE band_id = ? AND settled = 0 AND started_at <= ? AND ends_at > ? ORDER BY id DESC LIMIT 1', [$band['id'], $now, $now])), 3),
                     'reactions' => Mood::reactions($list),

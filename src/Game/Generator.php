@@ -69,13 +69,7 @@ final class Generator
         }
         // Aus Packs höchstens Können-Stufe 1, und dann genau eine Fähigkeit.
         $level = min(1, Levels::forSkill(max($skill1, (float) $skill2)));
-        $abilities = $level ? [Levels::randomAbility(array_filter([$instr1, $instr2]), [])] : [];
-        // Songwriter kann man auch ohne viel Können sein.
-        if (!in_array('songwriter', $abilities, true) && Rng::chance(Balance::SONGWRITING['born'])) {
-            $abilities[] = 'songwriter';
-        } elseif (!in_array('songwriter', $abilities, true) && Rng::chance(Balance::SONGWRITING['bornNo'])) {
-            $abilities[] = 'nowriter';
-        }
+        $abilities = $level ? [Levels::randomAbility(array_filter([$instr1, $instr2]), [], $genres)] : [];
 
         return [
             'first_name' => $first,

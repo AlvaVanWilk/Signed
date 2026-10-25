@@ -40,8 +40,16 @@ final class Performance
                     if (Levels::has($p, 'nervenstark')) {
                         $mistake *= 0.6;
                     }
+                    // Charakter: Impulsive glänzen und patzen öfter, Ausgeglichene glänzen seltener, Technische patzen seltener
+                    foreach ($p['personality'] ?? [] as $trait) {
+                        $mistake += Balance::TRAITS['live'][$trait]['mistake'] ?? 0.0;
+                    }
+                    $mistake = max(0.01, $mistake);
                     $highlight = 0.04 + $p['skill'] * 0.0028
                         + (Levels::techniques($p) ? 0.03 : 0) + (Levels::has($p, 'buehnentier') ? 0.05 : 0);
+                    foreach ($p['personality'] ?? [] as $trait) {
+                        $highlight += Balance::TRAITS['live'][$trait]['highlight'] ?? 0.0;
+                    }
                     $highlight = max(0.02, min(0.36, $highlight));
                     $roll = Rng::float();
                     $at = $from + Rng::float(0.5, $phaseLength - 0.5);

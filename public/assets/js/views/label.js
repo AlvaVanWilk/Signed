@@ -8,6 +8,7 @@ import { bandStems, loadStems, playStems, stemUrl } from '../music.js';
 import { blocker, blockerNotice, courseTiles, gainRange, statTile } from './bands.js';
 import { roomSvg } from '../room.js';
 import { crowdMeter, venueArt } from '../venues.js';
+import { crowdSvg, stageSvg } from '../stage.js';
 
 /** Label-Ebene: Band-Leiste links und die ruhige Bandseite. Stimmung als Punkt und Wort (grün, gelb, rot). */
 
@@ -247,6 +248,32 @@ function liveBlock(b, members, act) {
     </section>`;
 }
 
+/** Läuft ein Auftritt, sieht man die Band auf der Bühne des Orts; Zuschauen öffnet das Live-Fenster mit Ton. */
+function gigBlock(b, members, act) {
+  const stems = bandStems(members, b, act.id);
+  const electric = new Map(members.map((m, i) => [m.id, /elektrisch/.test(stemUrl(stems[i]) ?? '')]));
+  const venue = act.venue ?? 'kneipe';
+  return `
+    <section class="lb-live">
+      <div class="lb-live-head">
+        <div><h2 class="lb-cap">${members.length === 1 ? 'Steht auf der Bühne' : 'Die Band spielt'}</h2>
+          <small class="muted">${esc(act.title)} · noch <span class="countdown" data-until="${act.endsAt}"></span></small></div>
+        <span class="lb-live-btns"><button class="btn small primary" data-act="watch" data-id="${act.id}">Zuschauen</button></span>
+      </div>
+      ${venueStage(venue, b.id, members, {
+    bpm: cat().genres[sortedGenres(genresOf(b))[0]]?.bpm ?? 120,
+    electricOf: (m) => electric.get(m.id),
+    hueOf: (m) => ownGear(m, playedInstrument(m)).hue,
+    instrumentOf: (m) => (hasGear(m) ? playedInstrument(m) : 'none'),
+  })}
+    </section>`;
+}
+
+/** Bühne eines Orts mit Band und Publikum davor. */
+export function venueStage(venue, seed, members, opts) {
+  return `<div class="lb-room lb-venue v-${venue}">${stageSvg(venue, seed)}${stage(members, { ...opts, className: `in-room ${opts.className ?? ''}` })}${crowdSvg(venue, seed)}</div>`;
+}
+
 const pct = (x) => `${Math.round((x - 1) * 100)} %`;
 
 /** Proberaum: die Band in ihrem Raum (ohne laufende Probe), Stufe, Wirkung und der nächste Ausbau. */
@@ -350,7 +377,7 @@ export function page(route) {
   const members = b.memberIds.map(musicianById).filter(Boolean);
   const solo = members.length === 1;
   const running = runningFor(b.id);
-  const notice = running?.type === 'rehearsal' ? '' : blockerNotice(b, members);
+  const notice = running?.type === 'rehearsal' || running?.type === 'gig' ? '' : blockerNotice(b, members);
   const free = cat().rules.maxMembers - members.length;
   const base = `#/band/${b.id}`;
   const courses = courseTiles(members);
@@ -364,7 +391,7 @@ export function page(route) {
       <div class="lb-hd-mood"><span class="lb-cap">Stimmung</span>${moodTag(b.mood.level).replace('class="lb-mood', 'class="lb-mood big')}</div>
     </header>
     ${notice}
-    ${running?.type === 'rehearsal' ? liveBlock(b, members, running) : ''}
+    ${running?.type === 'rehearsal' ? liveBlock(b, members, running) : running?.type === 'gig' ? gigBlock(b, members, running) : ''}
     ${wishBlock(b, members)}
     <h2 class="lb-cap lb-sec">Anordnungen</h2>
     <div class="lb-acts">

@@ -130,12 +130,27 @@ function eyes(kind, skin) {
 const lids = (skin) => `<rect x="40" y="41.6" width="6" height="3.4" fill="${skin}"/><rect x="54" y="41.6" width="6" height="3.4" fill="${skin}"/>`
   + line('M40.4 45 L45.6 45') + line('M54.4 45 L59.6 45');
 
+/** Haar unter einer Mütze: nur zwei Strähnen an den Schläfen. */
+const HAT_HAIR = 'M31.2 42 C30.4 35 32.6 31.6 37 32 L37.6 38.4 C35 38.6 33 40 31.2 42 Z M68.8 42 C69.6 35 67.4 31.6 63 32 L62.4 38.4 C65 38.6 67 40 68.8 42 Z';
+
+/** Schimmer: ein breiter, sehr blasser Bogen mit etwas hellerer Mitte. */
+const sheen = (d) => `<path d="${d}" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" opacity="0.06"/><path d="${d}" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity="0.08"/>`;
+
+/** Lippenstift: Hautton mit Rosé gemischt und etwas dunkler – auf heller Haut zartrosa, auf dunkler ein warmes Beerenbraun. */
+function lipColor(skin) {
+  const n = parseInt(skin.slice(1), 16);
+  const c = [n >> 16, (n >> 8) & 255, n & 255];
+  const rose = [176, 62, 86];
+  return `rgb(${c.map((v, i) => Math.round((v * 0.45 + rose[i] * 0.55) * 0.86)).join(',')})`;
+}
+
 function head(look, skin, sing, mood = null) {
   const hair = look.hairColor || '#3b2a20';
   const style = look.hair || 'kurz';
   const hatted = look.hat && look.hat !== 'none';
   const p = [];
-  if (style === 'afro') p.push(`<circle cx="50" cy="35" r="26" fill="${hair}"/>`);
+  // Afro unter einer Mütze: etwas kleiner und tiefer, damit er seitlich unter der Mütze hervorquillt statt darüber.
+  if (style === 'afro') p.push(hatted ? `<ellipse cx="50" cy="41" rx="28" ry="21" fill="${hair}"/>` : `<circle cx="50" cy="35" r="26" fill="${hair}"/>`);
   if (HAIR_BACK[style]) p.push(`<path d="${HAIR_BACK[style]}" fill="${hair}"/>`);
   p.push(`<g stroke="${INK}" stroke-width="1.2"><ellipse cx="31.5" cy="45" rx="3.5" ry="4.5" fill="${skin}"/><ellipse cx="68.5" cy="45" rx="3.5" ry="4.5" fill="${skin}"/>`);
   p.push(`<ellipse cx="50" cy="43" rx="19" ry="18" fill="${skin}"/></g>`);
@@ -158,9 +173,10 @@ function head(look, skin, sing, mood = null) {
   if (upper) p.push(`<g class="fig-mood">${upper}</g>${calmUpper ? `<g class="fig-calm">${calmUpper}</g>` : ''}`);
   const [cheek, alpha] = blush(skin);
   p.push(`<ellipse cx="38" cy="51" rx="3.2" ry="1.9" fill="${cheek}" opacity="${alpha}"/><ellipse cx="62" cy="51" rx="3.2" ry="1.9" fill="${cheek}" opacity="${alpha}"/>`);
-  // Ein Teil der Musikerinnen hat rote Lippen: derselbe Mund, nur rot und etwas kräftiger.
+  // Ein Teil der Musikerinnen trägt Lippenstift: ein Rosenton, der aus der Hautfarbe kommt, kaum dicker als der Mund sonst.
   const lips = look.gender === 'f' && trait(look, 'lips') < 0.4;
-  const tint = (m) => (lips ? m.replace(`stroke="${INK}" stroke-width="1.2"`, 'stroke="#c2405a" stroke-width="1.8"').replace('fill="rgba(90, 30, 40, 0.45)"', 'fill="#d23a5c"') : m);
+  const lip = lipColor(skin);
+  const tint = (m) => (lips ? m.replace(`stroke="${INK}" stroke-width="1.2"`, `stroke="${lip}" stroke-width="1.45"`).replace('fill="rgba(90, 30, 40, 0.45)"', `fill="${lip}"`) : m);
   const mouth = tint(MOUTHS[face.mouth ?? 'smile']);
   const smile = changes ? `<g class="fig-mood">${mouth}</g><g class="fig-calm">${tint(MOUTHS[calmMouth])}</g>` : mouth;
   // Sänger: singender Mund beim Spielen, Lächeln beim Warten (CSS blendet um).
@@ -173,27 +189,31 @@ function head(look, skin, sing, mood = null) {
   if (look.beard === 'full') p.push(`<path d="M32 46 C32 68 68 68 68 46 C64 58 58 56 50 56 C42 56 36 58 32 46 Z" fill="${hair}"/>`);
   if (look.beard === 'stubble') p.push(`<path d="M33 47 C34 63 66 63 67 47 C63 58 37 58 33 47 Z" fill="${hair}" opacity="0.3"/>`);
 
+  // Mit Mütze schaut vom Haar nur heraus, was unter dem Rand liegt: Locken an den Seiten, sonst Strähnen an den Schläfen.
   if (style === 'locken') {
-    for (const [x, y, r] of [[35, 30, 7], [44, 24, 8], [55, 23, 8], [64, 29, 7], [32, 38, 5], [68, 38, 5]]) p.push(`<circle cx="${x}" cy="${y}" r="${r}" fill="${hair}"/>`);
+    const curls = hatted ? [[33.4, 33, 5.4], [66.6, 33, 5.4], [32, 39, 5], [68, 39, 5]] : [[35, 30, 7], [44, 24, 8], [55, 23, 8], [64, 29, 7], [32, 38, 5], [68, 38, 5]];
+    for (const [x, y, r] of curls) p.push(`<circle cx="${x}" cy="${y}" r="${r}" fill="${hair}"/>`);
   } else if (style === 'afro') {
-    p.push(`<path d="M32 40 C29 13 71 13 68 40 C60 31 40 31 32 40 Z" fill="${hair}"/>`);
-  } else if (HAIR_FRONT[style] && !(hatted && style === 'irokese')) {
+    if (!hatted) p.push(`<path d="M32 40 C29 13 71 13 68 40 C60 31 40 31 32 40 Z" fill="${hair}"/>`);
+  } else if (hatted && HAIR_FRONT[style]) {
+    if (style !== 'irokese') p.push(`<path d="${HAT_HAIR}" fill="${hair}"/>`);
+  } else if (HAIR_FRONT[style]) {
     p.push(`<path d="${HAIR_FRONT[hatted && style === 'sidecut' ? 'kurz' : style]}" fill="${hair}"/>`);
   }
   if (style === 'dutt' && !hatted) p.push(`<circle cx="50" cy="17" r="8" fill="${hair}"/>`);
-  // Weicher Glanz auf dem Haar oder der Mütze.
+  // Weicher Schimmer auf dem Haar: breit und kaum sichtbar, kein harter Streifen.
   if (!hatted && style !== 'irokese' && style !== 'glatze') {
-    const g = { afro: 'M37 17 Q45 12 54 12.6', locken: 'M40 22 Q44 18.6 48 18.6', sidecut: 'M51 19.4 Q58 16.4 64 19.4' }[style] ?? 'M40 23.4 Q47 19.4 55 20';
-    p.push(gloss(g, 2, style === 'afro' ? 0.1 : 0.16));
+    const g = { afro: 'M39 17 Q45 13.4 51 13.6', locken: 'M41 22 Q44 19.6 47 19.4', sidecut: 'M53 19.4 Q58 17.2 62 19' }[style] ?? 'M42 23 Q47 20.4 52 20.4';
+    p.push(sheen(g));
   }
-  if (hatted) p.push(gloss({ fedora: 'M39 19.6 Q46 16 54 16.4', cowboy: 'M39 18 Q46 14 54 14.4' }[look.hat] ?? 'M39 25.4 Q46 21.6 54 22', 2.2, 0.22));
 
   if (look.glasses === 'round') p.push(`<g fill="none" stroke="${INK}" stroke-width="1.3"><circle cx="43" cy="45" r="5"/><circle cx="57" cy="45" r="5"/><path d="M48 45 L52 45"/></g>`);
   if (look.glasses === 'square') p.push(`<g fill="none" stroke="${INK}" stroke-width="1.3"><rect x="37.5" y="41" width="10" height="8" rx="1.5"/><rect x="52.5" y="41" width="10" height="8" rx="1.5"/><path d="M47.5 45 L52.5 45"/></g>`);
   if (look.glasses === 'sun') p.push('<g fill="#111"><rect x="37" y="41.5" width="11" height="7" rx="3"/><rect x="52" y="41.5" width="11" height="7" rx="3"/><rect x="47" y="43.5" width="6" height="1.6"/></g>');
   if (look.hat && HATS[look.hat]) {
     const [c1, c2] = HAT_COLORS[look.hat];
-    p.push(HATS[look.hat].replaceAll('HAT2', c2).replaceAll('HAT', c1));
+    p.push(`<g stroke="${INK}" stroke-width="1.1" stroke-linejoin="round">${HATS[look.hat].replaceAll('HAT2', c2).replaceAll('HAT', c1)}</g>`);
+    p.push(sheen({ fedora: 'M41 19 Q46 16.4 51 16.4', cowboy: 'M41 17 Q46 14.4 51 14.4' }[look.hat] ?? 'M41 24.6 Q46 21.8 51 21.8'));
   }
   return `<g transform="translate(60 44) scale(1.5) translate(-50 -42)">${p.join('')}</g>`;
 }

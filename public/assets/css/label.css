@@ -589,6 +589,15 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .lb-room .fig-stage.in-room { position: relative; height: 100%; margin: 0; padding: 0 10px 8px; background: none; box-shadow: none; border: 0; align-items: flex-end; }
 .lb-room .fig-stage.in-room .fig-member b { text-shadow: 0 1px 3px rgba(0, 0, 0, .8); }
 .lb-live .lb-room { height: clamp(270px, 26vw, 360px); }
+/* Bühne eines Auftrittsorts: Bild hinten, Band in der Mitte, Publikum als Streifen vorne. */
+.lb-venue .lb-stageart { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.lb-venue .fig-stage.in-room { padding-bottom: 60px; }
+.lb-venue .lb-crowd { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 56px; pointer-events: none; }
+.crowd-bob { animation: crowd-bob 0.9s ease-in-out infinite; animation-delay: var(--d, 0s); }
+.v-kneipe .crowd-bob, .v-saal .crowd-bob { animation-duration: 1.6s; }
+@keyframes crowd-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@media (prefers-reduced-motion: reduce) { .crowd-bob { animation: none; } }
+.live .lb-venue { margin-bottom: 14px; }
 .lb-roomcard { margin: 14px 0 6px; }
 .lb-roominfo { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 4px 0; }
 .lb-roominfo p { margin: 2px 0 0; }

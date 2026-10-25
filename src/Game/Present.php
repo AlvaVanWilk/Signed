@@ -100,6 +100,8 @@ final class Present
             'endsAt' => (int) $row['ends_at'],
             'songs' => $data['songs'] ?? 0,
             'timeline' => $data['timeline'] ?? [],
+            // Ort des Auftritts (Kneipe … Arena): bestimmt, wie die Bühne aussieht.
+            'venue' => $data['reward']['venue'] ?? null,
         ] + (isset($data['reward']['rehearsal']) ? ['rehearsal' => [
             'done' => (int) $data['reward']['rehearsal']['done'],
             'credited' => (object) $data['reward']['rehearsal']['credited'],

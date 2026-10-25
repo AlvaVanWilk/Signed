@@ -443,3 +443,5 @@ Beim ersten Login nach dem Umbau (Saison 2) bleiben **Labelname und Konto**, all
 - **Gage** = Grundgage × Füllgrad × Stimmung im Saal (0,7 + 0,3 × Leistung). Füllgrad = Sound gegen Erwartung × Bekanntheit gegen Ortsgröße ((Ruhm + 10) / (Mindestruhm + 10)), mindestens 5 %: Unbekannte füllen keinen Saal. Kosten werden beim Buchen fällig.
 - Gespielt werden **aufgenommene und geschriebene Songs** (eine Platte ist keine Voraussetzung mehr); geschriebene bleiben für die Platte erhalten.
 - **Anspruch:** Ort darunter → Wohlbefinden −6 (Ehrgeizige, Diven, Rampensäue stärker), darüber → +4. Zahlen in `Balance::GIG_BOOKING`.
+- **Aussehen:** Im Buchungsfenster sieht man jeden Ort von außen (Fachwerk-Kneipe, Club mit Neonschild, Konzertsaal mit Säulen, Halle, Arena) und eine Reihe Köpfe, wie voll es wird.
+  Die Bühne innen sieht man erst beim Auftritt: auf der Bandseite und im Live-Fenster, je Ort prächtiger (Kneipe mit Teppich und Tresen bis Arena mit Leinwänden und Lichtstrahlen), mit wippendem Publikum davor (`stage.js`).

@@ -54,9 +54,7 @@ export function figure(look = {}, instrument = 'guitar', { electric = false, hue
  * Lange Haare fallen auch hinten über die Schultern: eine Haarfläche hinter dem Körper, etwas dunkler (liegt im Schatten),
  * damit zwischen den Strähnen und dem Hals kein Loch bleibt. Sie nickt mit dem Kopf mit (gleicher Drehpunkt und dieselbe Bewegung wie .fig-head).
  */
-const BEHIND = 'M33 60 C33 50 87 50 87 60 L91 101 Q60 106 29 101 Z';
-const hairBehind = (hair) => painted(BEHIND, hair, [['M36 56 C34 60 33 80 31.4 102', 1, 4.4], ['M40.6 54.6 C38.6 60 38 82 37.4 103', 0, 3.2], ['M84 56 C86 60 87 80 88.6 102', 1, 4.4], ['M79.4 54.6 C81.4 60 82 82 82.6 103', 0, 3.2]])
-  + `<path d="${BEHIND}" ${SHADE}/>` + [[34.6, 101.6, 6], [41, 102.6, 5], [79, 102.6, 5], [85.4, 101.6, 6]].map(([x, y, len]) => slit(x, y, hair, len)).join('');
+const hairBehind = (hair) => `<path d="M33 60 C33 50 87 50 87 60 L91 101 Q60 106 29 101 Z" fill="${hair}"/><path d="M33 60 C33 50 87 50 87 60 L91 101 Q60 106 29 101 Z" ${SHADE}/>`;
 
 /** Schuh mit Sohle und kleinem Glanz auf der Kappe. */
 const shoe = (x) => `<path d="M${x - 8} 137.6 Q${x - 8.4} 131.4 ${x - 1} 131.2 Q${x + 7.6} 131 ${x + 8} 137.6 Z" fill="${INK}"/>
@@ -195,115 +193,6 @@ const lids = (skin) => `<rect x="40" y="41.6" width="6" height="3.4" fill="${ski
 /** Haar unter einer Mütze: ein durchgehender Pony unter dem Rand, von Schläfe zu Schläfe (nicht in der Mitte ausgeschnitten). */
 const HAT_HAIR = 'M31.2 42.4 C30 34 33 28 40 28 H60 C67 28 70 34 68.8 42.4 C66 39.4 62 38.2 56 38 C53 37.9 51.6 38.6 50 38.6 C48.4 38.6 47 37.9 44 38 C38 38.2 34 39.4 31.2 42.4 Z';
 
-
-// ---------- Haar im gezeichneten Stil (nach Sandras Vorlage) ----------
-// Keine Linien, sondern Fülle: breite, weiche Pinselzüge in einem dunkleren und einem helleren Ton (auf die Haarform begrenzt),
-// ein glatt geschnittener Pony mit kurzen, spitz zulaufenden Schlitzen zwischen den Strähnen, feine dunkle Umrandung.
-
-/** Haarfarbe aufhellen (k > 0) oder abdunkeln (k < 0). */
-function tone(hex, k) {
-  const n = parseInt(String(hex).slice(1), 16);
-  return `rgb(${[n >> 16, (n >> 8) & 255, n & 255].map((v) => Math.round(k < 0 ? v * (1 + k) : v + (255 - v) * k)).join(',')})`;
-}
-const HAIR_LINE = `stroke="${INK}" stroke-width="0.8" stroke-linejoin="round"`;
-const f1 = (v) => Math.round(v * 10) / 10;
-let hairClip = 0;
-
-/** Pinselzug: breit und halb durchsichtig, zweimal übereinander (weicher Rand). */
-const brush = (d, hair, dark, w = 3, light = 0.05) => {
-  const c = tone(hair, dark ? -0.13 : light);
-  return `<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" opacity="0.28"/><path d="${d}" fill="none" stroke="${c}" stroke-width="${f1(w * 0.55)}" stroke-linecap="round" opacity="0.4"/>`;
-};
-/** Haarform mit Pinselzügen darin (auf die Form begrenzt), ohne dunkle Außenlinie; nur Locken behalten eine feine, damit man die einzelnen Locken sieht. */
-function painted(d, hair, strokes, outline = false, light = 0.05, brushed = false) {
-  // Längs-Pinselzüge wirkten in Spielgröße wie gestreiftes Haar: Glatte Frisuren bleiben eine ruhige Fläche (nur runde Teile bekommen Schatten).
-  if (!brushed) return `<path d="${d}" fill="${hair}"/>` + (outline ? `<path d="${d}" fill="none" ${HAIR_LINE}/>` : '');
-  const id = `hc${++hairClip}`;
-  return `<clipPath id="${id}"><path d="${d}"/></clipPath><path d="${d}" fill="${hair}"/>`
-    + `<g clip-path="url(#${id})">${strokes.map(([path, dark, w]) => brush(path, hair, dark, w, light)).join('')}</g>`
-    + (outline ? `<path d="${d}" fill="none" ${HAIR_LINE}/>` : '');
-}
-/** Schlitz im Pony: ein schmaler, nach oben spitz zulaufender Keil, etwas dunkler als das Haar; er beginnt knapp oberhalb der Kante (nicht im Gesicht). */
-const slit = (x, y, hair, len = 5, lean = 0) => `<path d="M${f1(x - 0.55)} ${f1(y - 0.5)} L${f1(x + 0.55)} ${f1(y - 0.5)} L${f1(x + lean)} ${f1(y - 0.5 - len)} Z" fill="${tone(hair, -0.24)}"/>`;
-
-/** Punkt auf einer kubischen Kurve. */
-const bez = (a, b, c, d, t) => {
-  const u = 1 - t;
-  return [0, 1].map((i) => u * u * u * a[i] + 3 * u * u * t * b[i] + 3 * u * t * t * c[i] + t * t * t * d[i]);
-};
-
-/**
- * Pinselzüge, die der Rundung des Kopfes folgen: wie Längengrade auf einer Kuppel (Mitte cx/cy, Halbachsen rx/ry).
- * m von −1 (links) bis 1 (rechts); unten laufen sie bis tail weiter senkrecht (lange Haare). Die Haarform schneidet sie zu.
- */
-function meridians(cx, cy, rx, ry, ms, tail = 0) {
-  return ms.map((m, i) => {
-    const pts = [];
-    for (let k = 1; k <= 12; k++) {
-      const a = (k / 12) * (Math.PI / 2) * 1.08;
-      pts.push([cx + rx * m * Math.sin(a), cy - ry * Math.cos(a)]);
-    }
-    if (tail) pts.push([cx + rx * m * 1.02, cy + tail]);
-    return [`M${pts.map(([x, y]) => `${f1(x)} ${f1(y)}`).join(' L')}`, i % 2 === 1, [3.2, 2.4, 2.8, 2.2][i % 4]];
-  });
-}
-
-/**
- * Sidecut: Das Haar liegt in Bögen um einen Wirbel an der vorderen Haarkante (cx/cy) – von links über den Oberkopf und rechts hinunter.
- */
-function swirl(cx, cy, radii) {
-  return radii.map((r, i) => {
-    const pts = [];
-    for (let k = 0; k <= 16; k++) {
-      const a = Math.PI * 1.02 + (k / 16) * Math.PI * 1.15;
-      pts.push([cx + r * Math.cos(a), cy + r * Math.sin(a) * 1.08]);
-    }
-    return [`M${pts.map(([x, y]) => `${f1(x)} ${f1(y)}`).join(' L')}`, i % 2 === 0, [2.6, 2.2, 2.8, 2.4][i % 4]];
-  });
-}
-
-/** Wie viele Schlitze der Pony hat und wie lang sie sind (Frisuren ohne Pony: keine). */
-const FRINGE = { kurz: [4, 3.6], bob: [6, 6], lang: [6, 6.6], zopf: [5, 6.6], dutt: [5, 6] };
-/** Vorderes Haar wie in avatar.js (M start C … p1 C … start): Pinselzüge vom Scheitel nach unten, Schlitze an der Pony-Kante. */
-function hairFront(style, hair) {
-  const d = HAIR_FRONT[style];
-  const n = d.match(/-?[\d.]+/g).map(Number);
-  const start = [n[0], n[1]], top = [[n[2], n[3]], [n[4], n[5]], [n[6], n[7]]], low = [[n[8], n[9]], [n[10], n[11]]];
-  const crown = bez(start, top[0], top[1], top[2], 0.5);
-  const slits = [];
-  // Pinselzüge über die Kuppel des Kopfes: Mitte zwischen den Seiten, oben am Scheitel
-  const cx = (start[0] + top[2][0]) / 2;
-  const cy = Math.max(start[1], top[2][1]);
-  const strokes = style === 'sidecut' ? swirl(55, 29, [3.5, 6.5, 9.5, 12.5, 15.5, 18.5, 21.5])
-    : meridians(cx, cy + 2, Math.abs(top[2][0] - start[0]) / 2 + 1, cy + 2 - crown[1], [-0.95, -0.72, -0.5, -0.27, -0.05, 0.18, 0.4, 0.62, 0.84, 1]);
-  const fringe = FRINGE[style];
-  if (fringe) {
-    const [count, len] = fringe;
-    for (let i = 1; i <= count; i++) {
-      const t = (i - 0.5 + ((i * 5) % 3) * 0.12) / count;
-      const [x, y] = bez(top[2], low[0], low[1], start, t);
-      slits.push(slit(x, y, hair, len * (0.75 + ((i * 7) % 4) * 0.1), (x - crown[0]) * -0.06));
-    }
-  }
-  return painted(d, hair, strokes, false, style === 'sidecut' ? 0.1 : 0.05) + slits.join('');
-}
-
-/** Haar hinter dem Kopf (lange Haare, Bob, Zopf): Pinselzüge nach unten, Schlitze an den Spitzen. */
-const BACK_BRUSH = {
-  lang: { strokes: meridians(50, 44, 22, 28, [-0.98, -0.86, -0.72, -0.58, 0.58, 0.72, 0.86, 0.98], 36), slits: [[31, 78, 5], [35.6, 78, 4], [64.6, 78, 4], [69, 78, 5]] },
-  bob: { strokes: meridians(50, 44, 20.5, 26, [-0.98, -0.86, -0.72, 0.72, 0.86, 0.98], 16), slits: [[33.4, 58, 4], [66.6, 58, 4]] },
-  zopf: { strokes: [['M64 40.6 C75.6 44.6 75.6 64 70 72', 1, 3.2], ['M63 44 C71.6 48 72 62 69.4 69', 0, 2.2], ['M65.6 40.4 C77.4 45 77.6 62 72.6 69', 0, 1.8]], slits: [] },
-};
-const hairBack = (style, hair) => (HAIR_BACK[style] && BACK_BRUSH[style]
-  ? painted(HAIR_BACK[style], hair, BACK_BRUSH[style].strokes) + BACK_BRUSH[style].slits.map(([x, y, len]) => slit(x, y, hair, len)).join('')
-  : '');
-
-/** Runde Haarteile (Locken, Afro, Dutt): unten rechts dunkler, oben links heller – wie Fülle von oben beleuchtet. */
-const roundPainted = (cx, cy, r, hair, outline = false) => painted(`M${cx - r} ${cy} a${r} ${r} 0 1 0 ${2 * r} 0 a${r} ${r} 0 1 0 ${-2 * r} 0 Z`, hair, [
-  [`M${f1(cx - r * 0.2)} ${f1(cy + r * 0.85)} Q${f1(cx + r * 0.9)} ${f1(cy + r * 0.7)} ${f1(cx + r * 0.85)} ${f1(cy - r * 0.2)}`, 1, f1(r * 0.55)],
-  ...(r > 10 ? [] : [[`M${f1(cx - r * 0.7)} ${f1(cy + r * 0.1)} Q${f1(cx - r * 0.6)} ${f1(cy - r * 0.6)} ${f1(cx + r * 0.05)} ${f1(cy - r * 0.68)}`, 0, f1(r * 0.4)]]),
-], outline, 0.05, true);
-
 /** Lippenstift: Hautton mit Rosé gemischt und etwas dunkler – auf heller Haut zartrosa, auf dunkler ein warmes Beerenbraun. */
 function lipColor(skin) {
   const n = parseInt(skin.slice(1), 16);
@@ -318,8 +207,8 @@ function head(look, skin, sing, mood = null) {
   const hat = hatOf(look);
   const hatted = hat !== 'none';
   const p = [];
-  if (style === 'afro') p.push(roundPainted(50, 35, 26, hair));
-  if (!hatted || style === 'lang' || style === 'bob' || style === 'zopf') p.push(hairBack(style, hair));
+  if (style === 'afro') p.push(`<circle cx="50" cy="35" r="26" fill="${hair}"/>`);
+  if (HAIR_BACK[style]) p.push(`<path d="${HAIR_BACK[style]}" fill="${hair}"/>`);
   p.push(`<g stroke="${INK}" stroke-width="1.2"><ellipse cx="31.5" cy="45" rx="3.5" ry="4.5" fill="${skin}"/><ellipse cx="68.5" cy="45" rx="3.5" ry="4.5" fill="${skin}"/>`);
   // Ohne Haare wäre der Kopf oben zu flach: Die Glatze bekommt einen etwas höheren Schädel.
   p.push(style === 'glatze' && !hatted ? `<ellipse cx="50" cy="41.2" rx="19" ry="19.8" fill="${skin}"/></g>` : `<ellipse cx="50" cy="43" rx="19" ry="18" fill="${skin}"/></g>`);
@@ -361,18 +250,16 @@ function head(look, skin, sing, mood = null) {
 
   // Mit Mütze schaut vom Haar nur der Pony unter dem Rand heraus (Locken, Afro, Dutt, Undercut und Irokese tragen keine).
   if (style === 'locken') {
-    for (const [x, y, r] of [[32, 38, 5], [68, 38, 5], [35, 30, 7], [64, 29, 7], [44, 24, 8], [55, 23, 8]]) p.push(roundPainted(x, y, r, hair, true));
+    for (const [x, y, r] of [[35, 30, 7], [44, 24, 8], [55, 23, 8], [64, 29, 7], [32, 38, 5], [68, 38, 5]]) p.push(`<circle cx="${x}" cy="${y}" r="${r}" fill="${hair}"/>`);
   } else if (style === 'afro') {
-    p.push(painted('M32 40 C29 13 71 13 68 40 C60 31 40 31 32 40 Z', hair, [['M36 36 Q40 30 46 31', 1, 3], ['M64 36 Q60 30 54 31', 1, 3]], false));
+    p.push(`<path d="M32 40 C29 13 71 13 68 40 C60 31 40 31 32 40 Z" fill="${hair}"/>`);
   } else if (hatted && HAIR_FRONT[style]) {
-    p.push(painted(HAT_HAIR, hair, [['M34 41 L36 38', 1, 2.6], ['M66 41 L64 38', 1, 2.6], ['M46 39 L47 38', 0, 2.4]]));
-    p.push([[40, 39.6, 1.8], [50, 39.4, 1.6], [60, 39.6, 1.8]].map(([x, y, len]) => slit(x, y, hair, len)).join(''));
-  } else if (style === 'irokese') {
-    p.push(painted(HAIR_FRONT.irokese, hair, [['M46.4 12 L45.4 34', 1, 3], ['M51.6 12 L52.6 34', 0, 2.4]], false, 0.1));
+    p.push(`<path d="${HAT_HAIR}" fill="${hair}"/>`);
   } else if (HAIR_FRONT[style]) {
-    p.push(hairFront(hatted && style === 'sidecut' ? 'kurz' : style, hair));
+    p.push(`<path d="${HAIR_FRONT[hatted && style === 'sidecut' ? 'kurz' : style]}" fill="${hair}"/>`);
   }
-  if (style === 'dutt' && !hatted) p.push(roundPainted(50, 17, 8, hair));
+  if (style === 'dutt' && !hatted) p.push(`<circle cx="50" cy="17" r="8" fill="${hair}"/>`);
+  // Haar ohne Glanz (wirkte wie Glas); Struktur kommt später nach Sandras Vorlage.
 
   if (look.glasses === 'round') p.push(`<g fill="none" stroke="${INK}" stroke-width="1.3"><circle cx="43" cy="45" r="5"/><circle cx="57" cy="45" r="5"/><path d="M48 45 L52 45"/></g>`);
   if (look.glasses === 'square') p.push(`<g fill="none" stroke="${INK}" stroke-width="1.3"><rect x="37.5" y="41" width="10" height="8" rx="1.5"/><rect x="52.5" y="41" width="10" height="8" rx="1.5"/><path d="M47.5 45 L52.5 45"/></g>`);

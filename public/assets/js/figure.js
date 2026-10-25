@@ -28,6 +28,7 @@ export function figure(look = {}, instrument = 'guitar', { electric = false, hue
     <svg class="fig fig-${pose}" viewBox="0 0 120 150" aria-hidden="true">
       <ellipse cx="60" cy="141" rx="32" ry="5" fill="rgba(0,0,0,0.25)"/>
       <g class="fig-body">
+        ${look.hair === 'lang' ? hairBehind(look.hairColor || '#3b2a20') : ''}
         <g ${STROKE}>
           <path d="M46 106 Q46 103 51.5 103 Q57 103 57 106 L56.4 133 Q51.5 135.5 46.6 133 Z" fill="${PANTS}"/>
           <path d="M63 106 Q63 103 68.5 103 Q74 103 74 106 L73.4 133 Q68.5 135.5 63.6 133 Z" fill="${PANTS}"/>
@@ -48,6 +49,12 @@ export function figure(look = {}, instrument = 'guitar', { electric = false, hue
       </g>
     </svg>`;
 }
+
+/**
+ * Lange Haare fallen auch hinten über die Schultern: eine Haarfläche hinter dem Körper, etwas dunkler (liegt im Schatten),
+ * damit zwischen den Strähnen und dem Hals kein Loch bleibt.
+ */
+const hairBehind = (hair) => `<path d="M33 60 C33 50 87 50 87 60 L91 101 Q60 106 29 101 Z" fill="${hair}"/><path d="M33 60 C33 50 87 50 87 60 L91 101 Q60 106 29 101 Z" ${SHADE}/>`;
 
 /** Schuh mit Sohle und kleinem Glanz auf der Kappe. */
 const shoe = (x) => `<path d="M${x - 8} 137.6 Q${x - 8.4} 131.4 ${x - 1} 131.2 Q${x + 7.6} 131 ${x + 8} 137.6 Z" fill="${INK}"/>
@@ -119,6 +126,17 @@ export function earringOf(look) {
   return { shape: shapes[Math.floor(trait(look, 'earShape') * shapes.length)], color: EAR_COLORS[Math.floor(trait(look, 'earColor') * EAR_COLORS.length)] };
 }
 export const hasLipstick = (look) => trait(look, 'lips') < (LIP_SHARE[look.gender] ?? 0);
+
+/** Piercing (wer eins hat, steht im Aussehen): Art fest aus dem Aussehen – Augenbraue, Lippe, Nase oder oben am Ohr. */
+const PIERCING_KINDS = ['brow', 'lip', 'nose', 'helix'];
+export const piercingOf = (look) => (look.piercing ? PIERCING_KINDS[Math.floor(trait(look, 'piercing') * PIERCING_KINDS.length)] : null);
+const METAL = '#d6d9e0';
+const PIERCINGS = {
+  brow: `<g fill="${METAL}" stroke="${INK}" stroke-width="0.4"><circle cx="58.6" cy="36.6" r="0.75"/><circle cx="60.2" cy="39.4" r="0.75"/></g>`,
+  lip: `<path d="M53.2 53.6 A1.4 1.4 0 1 1 54.6 55.6" fill="none" stroke="${METAL}" stroke-width="0.75" stroke-linecap="round"/>`,
+  nose: `<circle cx="52.6" cy="49.4" r="0.7" fill="${METAL}" stroke="${INK}" stroke-width="0.35"/>`,
+  helix: `<circle cx="69.6" cy="41.2" r="1.3" fill="none" stroke="${METAL}" stroke-width="0.7"/><circle cx="70.2" cy="43.6" r="0.55" fill="${METAL}"/>`,
+};
 
 /** Beide Ohrringe am Ohrläppchen (links 31, rechts 69, Höhe 50). */
 function earrings({ shape, color }) {
@@ -212,6 +230,8 @@ function head(look, skin, sing, mood = null) {
   p.push(sing
     ? `<g class="fig-singing">${pivot(50, 53.5, 'fig-mouth', `<ellipse cx="50" cy="53.5" rx="2.6" ry="2.4" fill="#7a2338" stroke="${INK}" stroke-width="0.8"/>`)}</g><g class="fig-resting">${smile}</g>`
     : smile);
+  const pierce = piercingOf(look);
+  if (pierce) p.push(PIERCINGS[pierce]);
   if (look.freckles) {
     for (const [x, y] of [[40, 49], [42.5, 50.5], [57.5, 50.5], [60, 49]]) p.push(`<circle cx="${x}" cy="${y}" r="0.6" fill="#8a4b2a" opacity="0.6"/>`);
   }
@@ -477,6 +497,7 @@ export function portrait(look = {}, mood = null) {
   return `
     <svg class="fig fig-portrait" viewBox="14 -6 92 96" aria-hidden="true">
       <g class="fig-body">
+        ${look.hair === 'lang' ? hairBehind(look.hairColor || '#3b2a20') : ''}
         <path d="M43 76 Q60 68 77 76 L81 108 Q60 115 39 108 Z" fill="${shirt}" ${STROKE}/>
         ${pivot(60, 74, 'fig-head', head(look, skin, false, mood))}
       </g>

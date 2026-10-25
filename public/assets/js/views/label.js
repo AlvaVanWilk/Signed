@@ -57,19 +57,30 @@ export function lastBandId() {
 
 // ---------- Band-Leiste ----------
 
+/**
+ * Knopf einer Band in der Leiste: Name, darunter je Mitglied das Instrument (blass, wer keins hat) und die Genres als farbige Zeichen,
+ * dann Stimmung und Ruhm als Sterne. Wie viele drin sind, sieht man an den Instrumenten – „Solo“ muss nicht mehr dastehen.
+ */
 function tile(b, selected) {
   const away = isBusy(b.busyUntil) || !!runningFor(b.id);
   const solo = b.memberIds.length === 1;
-  const genreList = genresOf(b);
-  const genres = genreList.length ? sortedGenres(genreList).map(genreName).join(' · ') : 'gemischt';
-  const pips = steps(b.fame, cat().rules.fameLevels);
-  const split = genreList.length ? `--g:var(--lb-c-${sortedGenres(genreList)[0]})` : '';
+  const genreList = sortedGenres(genresOf(b));
+  const members = b.memberIds.map(musicianById).filter(Boolean);
+  const stars = Math.min(3, steps(b.fame, cat().rules.fameLevels));
+  const split = genreList.length ? `--g:var(--lb-c-${genreList[0]})` : '';
+  const ins = members.map((m) => {
+    const type = playedInstrument(m);
+    const on = hasGear(m);
+    return `<i class="ins ${on ? '' : 'off'}" title="${esc(m.firstName)}: ${esc(instrumentName(type))}${on ? '' : ' (fehlt)'}">${instrumentIcon(type)}</i>`;
+  }).join('');
+  const genres = genreList.length
+    ? genreList.map((g) => `<i class="gen g-${g}" title="${esc(genreName(g))}">${genreGlyph(g)}</i>`).join('')
+    : '<small class="mixed" title="Kein gemeinsames Genre">gemischt</small>';
   return `
     <a href="#/band/${b.id}" data-nav="b${b.id}" draggable="false" class="lb-bt ${selected ? 'sel' : ''} ${away ? 'busy' : ''} ${b.mood.level === 'red' ? 'frozen' : ''}" style="${split}" title="${esc(b.name)}">
       <span class="nm">${esc(b.name)}</span>
-      <span class="gl">${solo ? 'Solo · ' : ''}${esc(genres)}</span>
-      <span class="mood">${moodTag(b.mood.level)}</span>
-      <span class="fame" title="Ruhm: ${esc(cat().fameNames[Math.min(pips, 3)] ?? '')}">${[0, 1, 2].map((i) => `<i class="${i < pips ? 'on' : ''}"></i>`).join('')}${b.mood.level === 'red' ? '<small>wartet auf dich</small>' : ''}${b.mood.wishes?.length ? `<svg class="wish" viewBox="0 0 24 20" title="${solo ? 'Ein Wunsch ist offen' : 'Die Band hat einen Wunsch'}"><path d="M3 2h18a2 2 0 012 2v9a2 2 0 01-2 2h-9l-5 4v-4H3a2 2 0 01-2-2V4a2 2 0 012-2z"/></svg>` : ''}</span>
+      <span class="gl"><span class="inss">${ins}</span><span class="gens">${genres}</span></span>
+      <span class="fame">${moodTag(b.mood.level)}<span class="stars" title="Ruhm: ${esc(cat().fameNames[stars] ?? '')}">${[0, 1, 2].map((i) => `<i class="${i < stars ? 'on' : ''}">★</i>`).join('')}</span>${b.mood.level === 'red' ? '<small>wartet auf dich</small>' : ''}${b.mood.wishes?.length ? `<svg class="wish" viewBox="0 0 24 20" title="${solo ? 'Ein Wunsch ist offen' : 'Die Band hat einen Wunsch'}"><path d="M3 2h18a2 2 0 012 2v9a2 2 0 01-2 2h-9l-5 4v-4H3a2 2 0 01-2-2V4a2 2 0 012-2z"/></svg>` : ''}</span>
       <span class="songs ${b.mood.songRate > 0 ? 'writing' : ''}" style="--cycle:${b.mood.songRate > 0 ? Math.min(6, Math.max(0.9, 1.6 / b.mood.songRate)).toFixed(2) : 0}s" title="Geschriebene Songs, die auf eine Aufnahme warten${b.mood.songRate > 0 ? ` · schreibt gerade etwa ${String(Math.round(b.mood.songRate * 10) / 10).replace('.', ',')} pro Std.` : ' · schreibt gerade nicht'}"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="ghost" d="M9 18a3 3 0 11-6 0 3 3 0 016 0 L9 5 L20 3 L20 16 a3 3 0 11-6 0 3 3 0 016 0"/><path class="draw" pathLength="100" d="M9 18a3 3 0 11-6 0 3 3 0 016 0 L9 5 L20 3 L20 16 a3 3 0 11-6 0 3 3 0 016 0"/></svg><b>${b.mood.songs}</b></span>
     </a>`;
 }

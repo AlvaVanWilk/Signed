@@ -48,13 +48,17 @@ function walls(level, r) {
     s += `<path d="${blob(760, 120, 52, 66, r, 12)}" fill="#2d3c40" opacity="0.9"/>`;
     s += line('M190 30 L178 80 L196 128 M178 80 L154 106', '#222a32', 2.4);
   } else if (level === 1) {
-    s += `<rect width="${W}" height="${FLOOR}" fill="#55657a"/><rect y="${FLOOR - 40}" width="${W}" height="40" fill="#4c5b6e"/>${line(`M0 ${FLOOR - 40} H${W}`, '#3e4a5a', 3)}`;
+    // Derselbe Keller, nur aufgeräumt: hellerer Anstrich, ein paar Flecken sind geblieben.
+    s += `<rect width="${W}" height="${FLOOR}" fill="#4a5462"/>`;
+    for (let i = 0; i < 4; i++) s += `<path d="${blob(30 + r() * (W - 60), 40 + r() * 160, 12 + r() * 20, 7 + r() * 10, r, 5)}" fill="#424b58" opacity="0.7"/>`;
   } else if (level === 2) {
     s += `<rect width="${W}" height="${FLOOR}" fill="#7a4e58"/>`;
     for (let x = 0; x < W; x += 46) s += `<rect x="${x}" y="0" width="23" height="${FLOOR}" fill="#835560" opacity="0.55"/>`;
   } else {
-    s += `<rect width="${W}" height="${FLOOR}" fill="#6b3f4d"/>`;
-    for (let x = 0; x < W; x += 46) s += `<rect x="${x}" y="0" width="23" height="${FLOOR}" fill="#74455a" opacity="0.55"/>`;
+    // Profi-Studio: dunkle Wände, Holzlamellen hinter der Band.
+    s += `<rect width="${W}" height="${FLOOR}" fill="#262c3d"/>`;
+    s += box(MID + 150, 34, 340, FLOOR - 40, '#5a3b2a', 4);
+    for (let x = MID + 158; x < MID + 484; x += 18) s += `<rect x="${x}" y="40" width="11" height="${FLOOR - 52}" rx="2" fill="#a06a3b"/><rect x="${x}" y="40" width="3" height="${FLOOR - 52}" fill="#fff" opacity="0.08"/>`;
   }
   return s;
 }
@@ -65,12 +69,16 @@ function floor(level, r) {
     s += `<rect y="${FLOOR}" width="${W}" height="${H - FLOOR}" fill="${level ? '#5a5a62' : '#4a4a50'}"/>`;
     for (let i = 0; i < (level ? 3 : 8); i++) s += `<path d="${blob(40 + r() * (W - 80), FLOOR + 20 + r() * 60, 20 + r() * 30, 5 + r() * 6, r, 4)}" fill="#3e3e44" opacity="0.7"/>`;
     if (level) s += `<g transform="translate(${MID} 14)"><path d="${curve([[170, 262], [230, 246], [410, 246], [470, 262], [420, 284], [220, 284]], true)}" fill="#8a4a3a" ${st(3)}/></g>`;
-  } else {
+  } else if (level === 2) {
     s += `<rect y="${FLOOR}" width="${W}" height="${H - FLOOR}" fill="#b7814e"/>`;
     for (let x = 0; x < W + 60; x += 58) s += line(`M${x} ${FLOOR} L${x - 26} ${H}`, '#8a5d36', 2);
-    s += `<g transform="translate(${MID} 14)">` + (level === 2
-      ? `<path d="${curve([[150, 262], [220, 244], [420, 244], [490, 262], [430, 288], [210, 288]], true)}" fill="#3f8f86" ${st(3)}/>`
-      : `<path d="${curve([[90, 262], [180, 240], [460, 240], [550, 262], [480, 296], [160, 296]], true)}" fill="#3f8f86" ${st(3)}/><path d="${curve([[130, 262], [200, 248], [440, 248], [510, 262], [450, 286], [190, 286]], true)}" fill="none" stroke="#f1e0b0" stroke-width="3" stroke-dasharray="10 8"/>`) + '</g>';
+    s += `<g transform="translate(${MID} 14)"><path d="${curve([[150, 262], [220, 244], [420, 244], [490, 262], [430, 288], [210, 288]], true)}" fill="#3f8f86" ${st(3)}/></g>`;
+  } else {
+    // Dunkles, geöltes Parkett mit Glanz, großer runder Teppich.
+    s += `<rect y="${FLOOR}" width="${W}" height="${H - FLOOR}" fill="#4a3226"/>`;
+    for (let x = 0; x < W + 60; x += 40) s += line(`M${x} ${FLOOR} L${x - 18} ${H}`, '#3a261c', 2);
+    s += `<rect y="${FLOOR}" width="${W}" height="14" fill="#fff" opacity="0.05"/>`;
+    s += `<g transform="translate(${MID} 14)"><path d="${curve([[70, 262], [170, 238], [470, 238], [570, 262], [490, 298], [150, 298]], true)}" fill="#6e2a3a" ${st(3)}/><path d="${curve([[120, 262], [200, 248], [440, 248], [520, 262], [450, 288], [190, 288]], true)}" fill="none" stroke="#c9a86a" stroke-width="2.4"/></g>`;
   }
   return s + line(`M0 ${FLOOR} H${W}`, INK, 3);
 }
@@ -87,8 +95,12 @@ function ceiling(level) {
   } else if (level === 1) {
     s += `<path d="M320 22 L320 56" ${st(2.5)} fill="none"/><path d="M296 74 L344 74 L332 54 L308 54 Z" fill="#e4a73e" ${st(3)}/><ellipse cx="320" cy="76" rx="9" ry="5" fill="#ffe9a8"/>`;
     s += `<path d="M300 76 L170 ${FLOOR + 40} L470 ${FLOOR + 40} L340 76 Z" fill="url(#rmCone)" opacity="0.7"/>`;
+  } else if (level === 3) {
+    s += `</g><g>`;
+    s += `<rect x="-6" y="6" width="${W + 12}" height="10" fill="#3b4256" ${st(2.5)}/><rect x="0" y="16" width="${W}" height="3" fill="#7fd0e6" opacity="0.7"/><rect x="0" y="16" width="${W}" height="16" fill="#7fd0e6" opacity="0.08"/>`;
+    for (const x of [MID + 200, MID + 320, MID + 440]) s += `<path d="M${x - 12} 16 h24 l-4 18 h-16 Z" fill="#1d1a2a" ${st(2.2)}/><path d="M${x - 8} 34 L${x - 70} ${FLOOR + 30} L${x + 70} ${FLOOR + 30} L${x + 8} 34 Z" fill="url(#rmCone)" opacity="0.45"/>`;
   } else {
-    const n = level === 2 ? 6 : 11;
+    const n = 6;
     s += `</g><g>`;
     s += `<path d="${curve([[0, 12], [160, 36], [320, 14], [480, 38], [640, 14], [800, 36], [960, 12]])}" ${st(2)} fill="none"/>`;
     const colors = ['#f2c14e', '#ee7a8a', '#7fd0e6'];
@@ -106,12 +118,25 @@ function left(level, r) {
       + `<path d="${curve([[30, 208], [62, 190], [150, 188], [178, 208], [164, 220], [44, 220]], true)}" fill="#5c5a63" ${st(3)}/>`;
   }
   if (level === 1) {
-    return box(56, 56, 66, 50, '#8fb0bd', 3) + line('M89 56 v50 M56 81 h66') + `<path d="M50 52 Q60 84 54 112 L44 112 L44 52 Z M128 52 Q118 84 124 112 L134 112 L134 52 Z" fill="#c95c4e" ${st(2.5)}/>`
-      + `<path d="${curve([[26, 214], [26, 182], [44, 172], [156, 172], [172, 182], [172, 214]], true)}" fill="#6a5a7a" ${st(3)}/><path d="M44 190 Q98 204 156 190" stroke="${INK}" stroke-width="2" fill="none" opacity="0.5"/>`;
+    // Fenster geputzt, das alte Sofa mit einer Decke drüber.
+    return box(56, 56, 66, 50, '#7f9ca8', 3) + line('M89 56 v50 M56 81 h66') + box(52, 52, 74, 58, 'none', 3)
+      + `<path d="${curve([[30, 208], [62, 188], [150, 186], [178, 208], [164, 220], [44, 220]], true)}" fill="#5c5a63" ${st(3)}/><path d="${curve([[70, 196], [110, 186], [160, 192], [150, 214], [80, 216]], true)}" fill="#7a5a4a" ${st(2.4)}/>`;
   }
-  // Akustikpaneele, bei Stufe 2 nur zum Teil
+  if (level === 3) {
+    // Schaumstoff-Akustikplatten und ein Verstärkerturm.
+    let s = '';
+    for (let i = 0; i < 4; i++) for (let k = 0; k < 3; k++) {
+      const x = 18 + i * 52, y = 40 + k * 48;
+      s += box(x, y, 46, 42, '#3a3f4e', 4, 2.4);
+      for (let j = 0; j < 3; j++) s += `<path d="M${x + 4 + j * 13} ${y + 36} l6.5 -30 l6.5 30 Z" fill="#454b5c"/>`;
+    }
+    s += box(30, 120, 110, 96, '#1d1a2a', 6) + box(38, 128, 94, 18, '#2a2636', 3, 2) + `<rect x="74" y="132" width="22" height="9" rx="2" fill="#c9a86a"/>`;
+    s += box(38, 152, 94, 56, '#2f2b3c', 4, 2) + [0, 1, 2, 3, 4, 5].map((j) => `<path d="M42 ${158 + j * 8} H128" stroke="#1d1a2a" stroke-width="2"/>`).join('');
+    return s;
+  }
+  // Akustikpaneele im gemütlichen Raum
   let s = '';
-  const cols = level === 2 ? 3 : 5;
+  const cols = 3;
   for (let i = 0; i < cols; i++) for (let k = 0; k < 2; k++) s += box(20 + i * 56, 42 + k * 60, 50, 54, k ? '#e4a73e' : '#cf5b4a', 5, 2.5) + `<path d="M${20 + i * 56} ${42 + k * 60 + 27} h50 M${20 + i * 56 + 25} ${42 + k * 60} v54" stroke="${INK}" stroke-width="1.4" opacity="0.5"/>`;
   s += `<path d="M24 214 L30 186 L54 186 L60 214 Z" fill="#b6643a" ${st(3)}/><path d="${blob(42, 166, 11, 20, r, 3)}" fill="#3f8f4a" ${st(2.5)}/><path d="${blob(30, 172, 8, 16, r, 3)}" fill="#4fa85a" ${st(2.5)}/><path d="${blob(54, 170, 8, 16, r, 3)}" fill="#4fa85a" ${st(2.5)}/>`;
   return s;
@@ -128,13 +153,16 @@ function right(level, r) {
       + `<rect x="546" y="132" width="20" height="14" fill="#cf5b4a" ${st(2)}/><rect x="574" y="136" width="30" height="10" fill="#3f8f86" ${st(2)}/>`
       + box(420, 60, 54, 72, '#f1e5c8', 3) + `<path d="${blob(447, 94, 15, 20, r, 3)}" fill="#3f6fa8"/>`;
   }
+  if (level === 3) {
+    // Goldene Platte an der Wand, Mischpult mit Bildschirm, Neonschrift.
+    let s = box(360, 44, 62, 62, '#1d1a2a', 4) + `<circle cx="391" cy="75" r="22" fill="#e6b84f" ${st(2.4)}/><circle cx="391" cy="75" r="5" fill="#1d1a2a"/><path d="M376 64 Q384 56 394 56" stroke="#fff" stroke-width="2.4" fill="none" opacity="0.45" stroke-linecap="round"/>`;
+    s += `<rect x="452" y="50" width="150" height="40" rx="10" fill="#141824" ${st(3)}/><text x="527" y="78" text-anchor="middle" font-family="system-ui, sans-serif" font-size="22" font-weight="800" letter-spacing="3" fill="none" stroke="#7fd0e6" stroke-width="2">STUDIO</text><ellipse cx="527" cy="70" rx="80" ry="22" fill="#7fd0e6" opacity="0.08"/>`;
+    s += box(470, 132, 64, 40, '#141824', 3) + `<rect x="476" y="138" width="52" height="28" fill="#2f5f8a"/><path d="M480 160 l10 -10 l8 6 l12 -12 l14 8" stroke="#7fd0e6" stroke-width="2" fill="none"/><path d="M502 172 v10" ${st(3)}/>`;
+    s += `<path d="M450 182 H630 L640 214 H440 Z" fill="#3a2a22" ${st(3)}/>` + [0, 1, 2, 3, 4, 5, 6].map((j) => `<rect x="${462 + j * 22}" y="188" width="12" height="16" rx="2" fill="#262c3d"/><circle cx="${468 + j * 22}" cy="${192 + (j % 3) * 4}" r="2.4" fill="${['#f2c14e', '#7fd0e6', '#ee7a8a'][j % 3]}"/>`).join('');
+    return s;
+  }
   let s = box(380, 40, 56, 78, '#f1e5c8', 3) + `<path d="${blob(408, 76, 16, 22, r, 3)}" fill="#cf5b4a"/>` + line('M388 102 H428', INK, 3);
   s += `<path d="${curve([[456, 214], [456, 178], [476, 166], [604, 166], [624, 178], [624, 214]], true)}" fill="#2f5f8a" ${st(3)}/><path d="M472 184 Q540 200 608 184" stroke="${INK}" stroke-width="2" fill="none" opacity="0.55"/>`;
-  if (level === 3) {
-    s += box(452, 50, 50, 64, '#2f5f8a', 3) + `<circle cx="477" cy="80" r="13" fill="#f2c14e"/>`;
-    s += `<rect x="520" y="104" width="104" height="36" rx="8" fill="#241b34" ${st(3)}/><text x="572" y="129" text-anchor="middle" font-family="Georgia,serif" font-size="21" font-weight="700" fill="#ff8fb0" letter-spacing="3">LIVE</text>`;
-    s += box(540, 82, 70, 6, '#5a3b2a', 2) + `<path d="M558 82 l0 -18 l20 0 l0 18 z M564 64 l0 -7 l8 0 l0 7" fill="#f2c14e" ${st(2.2)}/>`;
-  }
   return s;
 }
 

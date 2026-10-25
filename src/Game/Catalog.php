@@ -103,11 +103,11 @@ final class Catalog
         'charisma' => ['name' => 'Charisma', 'icon' => '💫', 'desc' => 'Mehr Ruhm bei Auftritten.'],
         'nervenstark' => ['name' => 'Nervenstark', 'icon' => '🧊', 'desc' => 'Patzt live seltener.'],
         'gehoer' => ['name' => 'Absolutes Gehör', 'icon' => '👂', 'desc' => 'Mehr Spielraum in der Solo-Probe.'],
-        'buehnentier' => ['name' => 'Bühnentier', 'icon' => '🔥', 'desc' => 'Mehr Glanzmomente live.'],
+        'buehnentier' => ['name' => 'Entertainer', 'icon' => '🔥', 'desc' => 'Mehr Glanzmomente live.'],
         'studiofuchs' => ['name' => 'Studiofuchs', 'icon' => '🎚️', 'desc' => 'Leichter zu mischen im Studio.'],
         'songwriter' => ['name' => 'Songwriter', 'icon' => '✍️', 'desc' => 'Schreibt viel schneller Songs. Wichtig für Solokünstler.'],
         // Gegenstück: spielt gern, schreibt aber keine Songs. Kommt nur von Anfang an vor, nie durch Aufstieg (negative = keine Fähigkeit zum Lernen).
-        'nowriter' => ['name' => 'Schreibt nicht', 'icon' => '🚫', 'desc' => 'Schreibt keine eigenen Songs. Solo kommt so nichts zustande, in einer Band bremst es.', 'negative' => true],
+        'nowriter' => ['name' => 'Interpret', 'icon' => '🎼', 'desc' => 'Spielt lieber, als selbst zu schreiben: schreibt keine Songs.', 'negative' => true],
         'falsett' => ['name' => 'Falsett', 'icon' => '🪶', 'technique' => true],
         'growl' => ['name' => 'Growl', 'icon' => '🐺', 'technique' => true],
         'belting' => ['name' => 'Belting', 'icon' => '📣', 'technique' => true],

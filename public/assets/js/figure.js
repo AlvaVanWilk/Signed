@@ -54,8 +54,7 @@ export function figure(look = {}, instrument = 'guitar', { electric = false, hue
  * Lange Haare fallen auch hinten über die Schultern: eine Haarfläche hinter dem Körper, etwas dunkler (liegt im Schatten),
  * damit zwischen den Strähnen und dem Hals kein Loch bleibt. Sie nickt mit dem Kopf mit (gleicher Drehpunkt und dieselbe Bewegung wie .fig-head).
  */
-const hairBehind = (hair) => `<path d="M33 60 C33 50 87 50 87 60 L91 101 Q60 106 29 101 Z" fill="${hair}"/><path d="M33 60 C33 50 87 50 87 60 L91 101 Q60 106 29 101 Z" ${SHADE}/>`
-  + ['M35 62 Q33 82 33 99', 'M84 62 Q86 82 87 99'].map((d) => `<path d="${d}" fill="none" stroke="${darker(hair, 0.4)}" stroke-width="0.9" stroke-linecap="round" opacity="0.7"/>`).join('');
+const hairBehind = (hair) => `<path d="M33 60 C33 50 87 50 87 60 L91 101 Q60 106 29 101 Z" fill="${hair}"/><path d="M33 60 C33 50 87 50 87 60 L91 101 Q60 106 29 101 Z" ${SHADE}/>`;
 
 /** Schuh mit Sohle und kleinem Glanz auf der Kappe. */
 const shoe = (x) => `<path d="M${x - 8} 137.6 Q${x - 8.4} 131.4 ${x - 1} 131.2 Q${x + 7.6} 131 ${x + 8} 137.6 Z" fill="${INK}"/>
@@ -142,12 +141,14 @@ const metalArc = (d, c, w, light = '0 2 2.2 10') => `<path d="${d}" fill="none" 
   + `<path d="${d}" pathLength="10" fill="none" stroke="#fff" stroke-width="${w * 0.45}" stroke-linecap="round" stroke-dasharray="${light}" opacity="0.85"/>`;
 const metalBead = (x, y, r, c) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${c}" stroke="${INK}" stroke-width="0.3"/><circle cx="${x - r * 0.35}" cy="${y - r * 0.35}" r="${r * 0.38}" fill="#fff" opacity="0.85"/>`;
 export const piercingSvg = (kind, c) => ({
-  brow: metalBead(58.6, 36.6, 0.75, c) + metalBead(60.2, 39.4, 0.75, c),
-  lip: metalArc('M53.4 53.9 A0.85 0.85 0 1 1 54.4 55.1', c, 0.5),
+  brow: metalBead(58.8, 37.6, 0.75, c) + metalBead(60.3, 40.2, 0.75, c),
+  // Lippenring: sitzt am Rand der Unterlippe, etwas im Uhrzeigersinn gedreht.
+  lip: `<g transform="rotate(28 54 53.6)">${metalArc('M53.4 53.1 A0.85 0.85 0 1 1 54.4 54.3', c, 0.5)}</g>`,
   // Nasenring ohne Nase: nur ein dünner halber Bogen, der am Nasenflügel hervorschaut.
   nose: `<g transform="rotate(-160 51.35 49.5)">${metalArc('M50.75 49.15 A0.75 0.75 0 0 0 51.85 49.9', c, 0.34, '0 3 3 10')}</g>`,
   // Helix: ein Ring durch den oberen Rand der Ohrmuschel, darunter ein kleiner Stecker.
-  helix: metalArc('M71.2 41.4 A1 1 0 1 1 71.2 41.39', c, 0.5, '0 6 2 10') + metalBead(71, 44.4, 0.5, c),
+  // Helix: Der Ring geht durch den Ohrrand – dort, wo er im Ohr steckt, ist er unterbrochen (nur der äußere Bogen ist zu sehen).
+  helix: metalArc('M69.9 40.5 A1.15 1.15 0 1 1 70.3 42.5', c, 0.5, '0 6 2 10') + metalBead(71, 44.4, 0.5, c),
 }[kind]);
 
 /** Beide Ohrringe am Ohrläppchen (links 31, rechts 69, Höhe 50). */
@@ -192,30 +193,6 @@ const lids = (skin) => `<rect x="40" y="41.6" width="6" height="3.4" fill="${ski
 /** Haar unter einer Mütze: ein durchgehender Pony unter dem Rand, von Schläfe zu Schläfe (nicht in der Mitte ausgeschnitten). */
 const HAT_HAIR = 'M31.2 42.4 C30 34 33 28 40 28 H60 C67 28 70 34 68.8 42.4 C66 39.4 62 38.2 56 38 C53 37.9 51.6 38.6 50 38.6 C48.4 38.6 47 37.9 44 38 C38 38.2 34 39.4 31.2 42.4 Z';
 
-/** Haarfarbe abdunkeln (k 0–1) für Strähnen. */
-function darker(hex, k) {
-  const n = parseInt(String(hex).slice(1), 16);
-  return `rgb(${[n >> 16, (n >> 8) & 255, n & 255].map((v) => Math.round(v * (1 - k))).join(',')})`;
-}
-
-/** Strähnen je Frisur: ein paar feine, dunklere Linien in Wuchsrichtung, damit das Haar nicht wie eine glatte Fläche aussieht. */
-const STRANDS = {
-  kurz: ['M41 19 Q36 26 34.6 35', 'M49 16.4 Q45 23 43.6 30.4', 'M57 17.6 Q60 24 61.4 30.6', 'M63 21 Q66.6 28 67 36'],
-  bob: ['M40 18 Q34.6 26 33 37', 'M48 15.6 Q44 22 42.4 30.6', 'M57 16.6 Q61 23 62 31', 'M64 20 Q68.6 28 68.4 37'],
-  lang: ['M40 18 Q34.6 26 33 37', 'M48 15.6 Q44 22 42.4 30.6', 'M57 16.6 Q61 23 62 31', 'M64 20 Q68.6 28 68.4 37'],
-  zopf: ['M41 19 Q36 26 34.6 35', 'M49 16.4 Q45 23 43.6 30.6', 'M57 17.6 Q61 24 62 31', 'M63 21 Q66.6 28 67 36'],
-  dutt: ['M41 20 Q37 26 35 35', 'M47 18 Q46 24 44 31', 'M53 18 Q55 24 57 31', 'M59 20 Q63 26 65 35'],
-  sidecut: ['M47 17 Q43 22 41.4 31', 'M55 15 Q57 22 58 27.6', 'M63 16 Q68 24 69 35'],
-  irokese: ['M47 14 L46 32', 'M50 13 L50 32', 'M53 14 L54 32'],
-};
-const BACK_STRANDS = {
-  lang: ['M32 48 Q30.6 62 30 76', 'M35 50 Q34.4 64 35 77', 'M68 50 Q69.6 64 68.6 77', 'M65 48 Q65.4 62 64.6 77'],
-  bob: ['M32 46 Q31 52 31 57', 'M35 46 Q34.6 52 35 57.4', 'M68 46 Q69 52 69 57', 'M65 46 Q65.4 52 65 57.4'],
-  zopf: ['M66 46 Q73 52 71 66', 'M64.6 50 Q69 56 69.4 68'],
-};
-const strands = (list, hair, w = 0.55) => (list ?? []).map((d) => `<path d="${d}" fill="none" stroke="${darker(hair, 0.32)}" stroke-width="${w}" stroke-linecap="round" opacity="0.8"/>`).join('');
-
-
 /** Lippenstift: Hautton mit Rosé gemischt und etwas dunkler – auf heller Haut zartrosa, auf dunkler ein warmes Beerenbraun. */
 function lipColor(skin) {
   const n = parseInt(skin.slice(1), 16);
@@ -231,10 +208,7 @@ function head(look, skin, sing, mood = null) {
   const hatted = hat !== 'none';
   const p = [];
   if (style === 'afro') p.push(`<circle cx="50" cy="35" r="26" fill="${hair}"/>`);
-  if (HAIR_BACK[style]) p.push(`<path d="${HAIR_BACK[style]}" fill="${hair}"/>${strands(BACK_STRANDS[style], hair)}`);
-  if (style === 'afro') {
-    for (const [x, y] of [[30, 30], [36, 20], [46, 14], [58, 14.6], [66, 21], [72, 32], [27, 42], [74, 44]]) p.push(`<path d="M${x - 1.6} ${y} a1.8 1.8 0 1 1 3.2 0.6" fill="none" stroke="${darker(hair, 0.35)}" stroke-width="0.55" stroke-linecap="round" opacity="0.8"/>`);
-  }
+  if (HAIR_BACK[style]) p.push(`<path d="${HAIR_BACK[style]}" fill="${hair}"/>`);
   p.push(`<g stroke="${INK}" stroke-width="1.2"><ellipse cx="31.5" cy="45" rx="3.5" ry="4.5" fill="${skin}"/><ellipse cx="68.5" cy="45" rx="3.5" ry="4.5" fill="${skin}"/>`);
   // Ohne Haare wäre der Kopf oben zu flach: Die Glatze bekommt einen etwas höheren Schädel.
   p.push(style === 'glatze' && !hatted ? `<ellipse cx="50" cy="41.2" rx="19" ry="19.8" fill="${skin}"/></g>` : `<ellipse cx="50" cy="43" rx="19" ry="18" fill="${skin}"/></g>`);
@@ -284,13 +258,8 @@ function head(look, skin, sing, mood = null) {
   } else if (HAIR_FRONT[style]) {
     p.push(`<path d="${HAIR_FRONT[hatted && style === 'sidecut' ? 'kurz' : style]}" fill="${hair}"/>`);
   }
-  if (style === 'dutt' && !hatted) p.push(`<circle cx="50" cy="17" r="8" fill="${hair}"/><path d="M45.6 15.4 Q50 11.6 54.4 15.6 M44.6 19 Q50 23 55.4 18.6" fill="none" stroke="${darker(hair, 0.32)}" stroke-width="0.55" stroke-linecap="round" opacity="0.8"/>`);
-  // Strähnen statt Glanz: Das Haar bekommt Struktur und wirkt nicht wie aus Glas.
-  if (!hatted && STRANDS[style]) p.push(strands(STRANDS[style], hair));
-  if (!hatted && style === 'locken') {
-    for (const [x, y] of [[35, 30], [44, 24], [55, 23], [64, 29]]) p.push(`<path d="M${x - 3} ${y + 1} a3 3 0 1 1 5 1.6" fill="none" stroke="${darker(hair, 0.35)}" stroke-width="0.55" stroke-linecap="round" opacity="0.8"/>`);
-  }
-  if (hatted && HAIR_FRONT[style]) p.push(strands(['M36 38.6 L35.4 41', 'M42 38.2 L41.6 40.6', 'M58 38.2 L58.4 40.6', 'M64 38.6 L64.6 41'], hair, 0.5));
+  if (style === 'dutt' && !hatted) p.push(`<circle cx="50" cy="17" r="8" fill="${hair}"/>`);
+  // Haar ohne Glanz (wirkte wie Glas); Struktur kommt später nach Sandras Vorlage.
 
   if (look.glasses === 'round') p.push(`<g fill="none" stroke="${INK}" stroke-width="1.3"><circle cx="43" cy="45" r="5"/><circle cx="57" cy="45" r="5"/><path d="M48 45 L52 45"/></g>`);
   if (look.glasses === 'square') p.push(`<g fill="none" stroke="${INK}" stroke-width="1.3"><rect x="37.5" y="41" width="10" height="8" rx="1.5"/><rect x="52.5" y="41" width="10" height="8" rx="1.5"/><path d="M47.5 45 L52.5 45"/></g>`);

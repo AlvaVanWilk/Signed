@@ -63,7 +63,7 @@ Tournee bzw. ausgeschriebenen Gigs (im Spiel ausgegraut markiert).
   der Genre-Auswahl.
 - Fähigkeiten: eine pro Können-Stufe. Bei Stufe 1 und 2 kommt eine zufällige dazu, bei Stufe 3 wählt man aus drei.
   Talent (Können +50 % schneller), Ausstrahlung (Promo bringt 50 % mehr Bekanntheit, etwas mehr Ruhm), Charisma (mehr Ruhm),
-  Nervenstark (verspielt sich live seltener), Absolutes Gehör (großzügigeres Timing), Bühnentier,
+  Nervenstark (verspielt sich live seltener), Absolutes Gehör (großzügigeres Timing), Entertainer (früher Bühnentier),
   Studiofuchs (grüner Bereich am Mischpult +4 %) und die Spezialtechniken passend zum Instrument.
 
 ### Sound
@@ -160,7 +160,7 @@ Das Stadion bleibt der Tournee vorbehalten.
   um 40 % Richtung 50 + 0,6 × (Gleichgewicht der Band − 50). Im Browser gleitet sie fließend und wackelt ständig
   ein wenig (rein optisch).
 - Jedes Lied hat 4 Abschnitte; in jedem kann jeder Musiker patzen
-  (Chance 24 % minus 0,26 % pro Können-Punkt) oder glänzen (steigt mit Können, Spezialtechnik und Bühnentier),
+  (Chance 24 % minus 0,26 % pro Können-Punkt) oder glänzen (steigt mit Können, Spezialtechnik und Entertainer),
   jeweils ±7–13 Punkte. Dazu pro Abschnitt Grundstimmung, Vergleich Sound zu Erwartung des Ortes und Zufall;
   ab dem zweiten Lied rückt die Leiste jedes Mal 8 % Richtung Mitte. Schwache Bands landen im Schnitt bei etwa 30 %, starke bei etwa 85 %.
 - **Fan will einsteigen** (`FanMusician`, `Balance::FAN_MUSICIAN`): Nach einem Gig mit Publikum im Schnitt ab 75 % wartet mit 1,5 %

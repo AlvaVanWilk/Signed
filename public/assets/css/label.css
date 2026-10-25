@@ -27,7 +27,7 @@
 /* Die Leiste scrollt für sich (eigene Fläche, bleibt am Ende stehen statt die Seite mitzunehmen); rechts Platz für die Wunsch-Blasen. */
 @media (min-width: 901px) { .lb-side { max-height: calc(100vh - 28px); overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #3a3448 transparent; } }
 .lb-bar { display: flex; flex-direction: column; gap: 18px; padding: 10px 12px 0 0; }
-.lb-bt { position: relative; display: grid; grid-template-columns: 1fr auto; gap: 7px 10px; min-height: 118px; align-content: center; overflow: visible; padding: 12px 22px 12px 30px; border-radius: 12px; border: 1px solid var(--lb-line); background: var(--lb-card); color: var(--lb-text); text-decoration: none; }
+.lb-bt { position: relative; display: grid; grid-template-columns: 1fr auto; gap: 7px 10px; min-height: 118px; align-content: center; overflow: visible; padding: 12px 22px 12px 32px; border-radius: 12px; border: 1px solid var(--lb-line); background: var(--lb-card); color: var(--lb-text); text-decoration: none; }
 .lb-bt:hover { text-decoration: none; border-color: #4a4458; }
 .lb-bt::before { content: none; }
 .lb-bt.sel { border-color: var(--lb-accent); background: var(--lb-card2); }
@@ -750,11 +750,13 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .lb-stage-opt:hover { border-color: var(--lb-accent); background: var(--lb-card2); }
 
 /* Genre-Plakette links auf der Kachel: leer (nur Umrandung) ohne Genre-Bonus, sonst im Material des Genres; Hybrid zwei, Crossover drei Stücke übereinander. */
-.lb-bt .plq { position: absolute; left: 0; top: 0; bottom: 0; width: 16px; border-radius: 11px 0 0 11px; border-right: 1px solid var(--lb-line); display: flex; flex-direction: column; overflow: hidden; }
-/* Mit Bonus: das Material bis an die Kante, mit einer feinen Schattenkante zum Rest der Kachel */
-.lb-bt .plq.on { border-right-color: rgba(0, 0, 0, .55); box-shadow: inset -1px 0 0 rgba(255, 255, 255, .12), 1px 0 3px rgba(0, 0, 0, .35); }
+.lb-bt .plq { position: absolute; left: 7px; top: 8px; bottom: 8px; width: 14px; border-radius: 4px; display: flex; flex-direction: column; overflow: hidden;
+  /* Eingelassen: eine flache Vertiefung in der Kachel, oben innen etwas Schatten, unten eine feine helle Kante */
+  background: rgba(0, 0, 0, .22); box-shadow: inset 0 1px 2px rgba(0, 0, 0, .55), 0 1px 0 rgba(255, 255, 255, .05); }
 .lb-bt .plq .tex { flex: 1; display: block; background-size: 100% auto; background-repeat: repeat-y; }
-.lb-bt .plq .tex + .tex { box-shadow: inset 0 1px 0 rgba(0, 0, 0, .5); }
+.lb-bt .plq .tex + .tex { box-shadow: inset 0 1px 0 rgba(0, 0, 0, .6); }
+/* Die Platte liegt in der Vertiefung: ganz flach, nur der Innenschatten der Fassung darüber */
+.lb-bt .plq.on::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; box-shadow: inset 0 1px 2px rgba(0, 0, 0, .6), inset 0 0 0 1px rgba(0, 0, 0, .35); }
 .tex.t-metal { background-image: url(../img/tex/metal.svg); }
 .tex.t-jazz { background-image: url(../img/tex/jazz.svg); }
 .tex.t-rock { background-image: url(../img/tex/rock.svg); }
@@ -762,8 +764,7 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .tex.t-pop { background-image: url(../img/tex/pop.svg); }
 .tex.t-elektro { background-image: url(../img/tex/elektro.svg); }
 .tex.t-hiphop { background-image: url(../img/tex/hiphop.svg); }
-/* Punk: Neonröhre – satt leuchtend, ohne Schimmer */
-.tex.t-punk { background: #b6ff2a; box-shadow: inset 0 0 4px 1px rgba(255, 255, 255, .55), inset -3px 0 6px rgba(80, 140, 0, .55); }
+.tex.t-punk { background-image: url(../img/tex/punk.svg); }
 
 /* Wunsch: Sprechblase ragt rechts aus der Kachel, als Hinweis zum Handeln; ist der Wunsch erfüllt, ist sie weg. */
 .lb-bt .wishb { position: absolute; right: -14px; top: 50%; transform: translateY(-50%); width: 30px; height: 24px; z-index: 3; animation: lb-wish 2.4s ease-in-out infinite; }

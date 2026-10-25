@@ -172,3 +172,35 @@ export function crowdSvg(key, seed = 1) {
   }
   return `<svg class="lb-crowd" viewBox="0 0 ${W} 110" preserveAspectRatio="xMidYMax slice" aria-hidden="true">${out}</svg>`;
 }
+
+/**
+ * Stellt die Band auf die Bühnenkante: Das Bild wird je nach Fenstergröße verschieden skaliert (slice, unten bündig),
+ * also wird der Abstand nach unten nachgemessen und angepasst. Läuft für jede Bühne, sobald sie erscheint oder ihre Größe ändert.
+ */
+function fit(box) {
+  const stageEl = box.querySelector('.fig-stage');
+  const fig = stageEl?.querySelector('.fig');
+  if (!fig) return;
+  const b = box.getBoundingClientRect();
+  if (!b.width || !b.height) return;
+  const scale = Math.max(b.width / W, b.height / H);
+  // Füße knapp hinter der Vorderkante der Bühnenoberfläche (sie ist 10 Einheiten tief).
+  const want = b.bottom - (H - TOP - 6) * scale;
+  const r = fig.getBoundingClientRect();
+  const feet = r.bottom - (r.height * 12) / 150;
+  const pad = parseFloat(getComputedStyle(stageEl).paddingBottom) || 0;
+  const next = Math.max(0, pad + (feet - want));
+  if (Math.abs(next - pad) > 0.5) stageEl.style.paddingBottom = `${next.toFixed(1)}px`;
+}
+
+if (typeof window !== 'undefined' && window.ResizeObserver && window.MutationObserver) {
+  const sizes = new ResizeObserver((entries) => entries.forEach((e) => fit(e.target)));
+  const seen = new WeakSet();
+  const scan = () => document.querySelectorAll('.lb-venue').forEach((el) => {
+    if (seen.has(el)) return;
+    seen.add(el);
+    sizes.observe(el);
+  });
+  new MutationObserver(scan).observe(document.documentElement, { childList: true, subtree: true });
+  scan();
+}

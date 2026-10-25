@@ -591,7 +591,9 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .lb-live .lb-room { height: clamp(270px, 26vw, 360px); }
 /* Bühne eines Auftrittsorts: Bild hinten, Band in der Mitte, Publikum als Streifen vorne. */
 .lb-venue .lb-stageart { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.lb-venue .fig-stage.in-room { padding-bottom: 76px; }
+.lb-venue .fig-stage.in-room { padding-bottom: 20px; }
+/* Namen bleiben über dem Publikum lesbar. */
+.lb-venue .fig-member b { position: relative; z-index: 3; }
 .lb-venue .lb-crowd { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 84px; pointer-events: none; }
 .crowd-bob { animation: crowd-bob 0.9s ease-in-out infinite; animation-delay: var(--d, 0s); }
 .v-kneipe .crowd-bob, .v-saal .crowd-bob { animation-duration: 1.6s; }

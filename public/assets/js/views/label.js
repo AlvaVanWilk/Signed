@@ -73,9 +73,13 @@ function tile(b, selected) {
     const on = hasGear(m);
     return `<i class="ins ${on ? '' : 'off'}" title="${esc(m.firstName)}: ${esc(instrumentName(type))}${on ? '' : ' (fehlt)'}">${instrumentIcon(type)}</i>`;
   }).join('');
-  const genres = genreList.length
-    ? genreList.map((g) => `<i class="gen g-${g}" title="${esc(genreName(g))}">${genreGlyph(g)}</i>`).join('')
-    : '<small class="mixed" title="Kein gemeinsames Genre">gemischt</small>';
+  // Alle Genres, die in der Band vertreten sind: voll, was alle teilen (das Genre der Band), gestrichelt und blasser, was nur einzelne mitbringen.
+  const present = sortedGenres([...new Set(members.flatMap((m) => m.genres))]);
+  const genres = present.map((g) => {
+    const all = genreList.includes(g) || solo;
+    const who = members.filter((m) => m.genres.includes(g)).map((m) => m.firstName);
+    return `<i class="gen g-${g} ${all ? '' : 'part'}" title="${esc(genreName(g))}${solo ? '' : all ? ' – alle' : ` – ${esc(who.join(', '))}`}">${genreGlyph(g)}</i>`;
+  }).join('');
   return `
     <a href="#/band/${b.id}" data-nav="b${b.id}" draggable="false" class="lb-bt ${selected ? 'sel' : ''} ${away ? 'busy' : ''} ${b.mood.level === 'red' ? 'frozen' : ''}" style="${split}" title="${esc(b.name)}">
       <span class="nm">${esc(b.name)}</span>
@@ -245,7 +249,7 @@ function liveBlock(b, members, act) {
         <span class="lb-live-btns"><button class="btn small ghost" data-act="liveSound" data-id="${act.id}">${music?.actId === act.id ? 'Ton aus' : 'Ton an'}</button>
           <button class="btn small primary" data-act="rehearsalStop" data-id="${act.id}">Probe beenden</button></span>
       </div>
-      <div class="lb-room">${roomSvg(b.room?.level ?? 0, b.id)}${stage(members, {
+      <div class="lb-room">${roomSvg(b.room?.level ?? 0, b.id, b.room?.shared ? app.state.label.name : b.name)}${stage(members, {
     className: 'in-room',
     act: 'musicianInfo',
     bpm: cat().genres[sortedGenres(genresOf(b))[0]]?.bpm ?? 120,
@@ -296,7 +300,7 @@ function roomBlock(b, members) {
   const effect = room.level ? `Proben bringen ${pct(room.skill)} mehr Können, die Band hält ${pct(room.lust)} länger durch${room.mood ? ', alle fühlen sich wohler' : ''}.` : 'Dunkel, feucht, kaputt. Hier probt niemand gern lange.';
   return `
     <section class="lb-roomcard">
-      <div class="lb-room idle">${roomSvg(room.level, b.id)}${stage(members, {
+      <div class="lb-room idle">${roomSvg(room.level, b.id, room.shared ? app.state.label.name : b.name)}${stage(members, {
     className: 'idle in-room',
     act: 'musicianInfo',
     instrumentOf: (m) => (hasGear(m) ? playedInstrument(m) : 'none'),
@@ -397,7 +401,7 @@ export function page(route) {
   const courses = courseTiles(members);
   const course = courses ? `<details class="lb-more"><summary>Kurs des Tages</summary><div class="lb-course">${courses}</div></details>` : '';
   return `
-    <header class="lb-hd" style="--g:var(--lb-c-${sortedGenres(genresOf(b))[0] ?? 'pop'})">
+    <header class="lb-hd ${genresOf(b).length ? '' : 'mixed'}" ${genresOf(b).length ? `style="--g:var(--lb-c-${sortedGenres(genresOf(b))[0]})"` : ''}>
       <div>
         <h1>${esc(b.name)} <button class="icon-btn" data-act="bandRename" data-id="${b.id}" title="Umbenennen">✎</button></h1>
         <small>${solo ? 'Solokünstler' : esc(b.title ?? 'Band')} · ${genresOf(b).length ? sortedGenres(genresOf(b)).map((g) => esc(genreName(g))).join(' · ') : 'gemischt'}</small>

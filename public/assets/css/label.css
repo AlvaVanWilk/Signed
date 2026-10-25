@@ -3,8 +3,10 @@
   --lb-panel: #121017; --lb-card: #1d1b27; --lb-card2: #252231; --lb-line: #302c3b; --lb-off: #2a2735;
   --lb-text: #e8e4ef; --lb-muted: #8d879c; --lb-accent: #c9a86a;
   --lb-ok: #5fb589; --lb-warn: #d9a441; --lb-bad: #c6585f;
-  --lb-c-pop: #a8607c; --lb-c-rock: #b0784f; --lb-c-metal: #747b86; --lb-c-punk: #8ba05e;
-  --lb-c-jazz: #b89d57; --lb-c-elektro: #6590b3; --lb-c-hiphop: #8676b5; --lb-c-folk: #6a9677;
+  --lb-c-pop: #a8607c; --lb-c-rock: #b0784f; --lb-c-metal: #747b86; --lb-c-punk: #a9bd3a;
+  --lb-c-jazz: #b89d57; --lb-c-elektro: #6590b3; --lb-c-hiphop: #8676b5; --lb-c-folk: #4a9a95;
+  /* Gemischt: kein eigenes Grau (das ist Metal), sondern ein Streifen aus mehreren Genrefarben. */
+  --lb-c-mixed: linear-gradient(180deg, #a8607c, #b89d57, #a9bd3a, #6590b3, #8676b5);
 }
 .shell.with-bar {
   display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 18px; max-width: 1360px; margin: 0 auto; padding: 22px 20px 40px 72px; align-items: start;
@@ -25,7 +27,7 @@
 .lb-bar { display: flex; flex-direction: column; gap: 8px; }
 .lb-bt { position: relative; display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; height: 118px; align-content: center; padding: 12px 14px 12px 18px; border-radius: 12px; border: 1px solid var(--lb-line); background: var(--lb-card); color: var(--lb-text); overflow: hidden; text-decoration: none; }
 .lb-bt:hover { text-decoration: none; border-color: #4a4458; }
-.lb-bt::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--g, var(--lb-muted)); }
+.lb-bt::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--g, var(--lb-c-mixed)); }
 .lb-bt.sel { border-color: var(--lb-accent); background: var(--lb-card2); }
 .lb-bt .nm { font-weight: 700; font-size: 1rem; line-height: 1.15; grid-column: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lb-bt .gl { grid-column: 1; display: flex; align-items: center; gap: 8px; min-width: 0; overflow: hidden; }
@@ -37,7 +39,7 @@
 .lb-bt .gen { width: 19px; height: 19px; border-radius: 6px; display: grid; place-items: center; border: 1px solid var(--gc); background: color-mix(in srgb, var(--gc) 24%, transparent); font-style: normal; }
 .lb-bt .gen .genre-icon { width: 12px; height: 12px; display: block; stroke: color-mix(in srgb, var(--gc) 45%, #fff); stroke-width: 2; fill: none; }
 .lb-bt .gen.g-pop { --gc: var(--lb-c-pop); } .lb-bt .gen.g-rock { --gc: var(--lb-c-rock); } .lb-bt .gen.g-metal { --gc: var(--lb-c-metal); } .lb-bt .gen.g-punk { --gc: var(--lb-c-punk); } .lb-bt .gen.g-jazz { --gc: var(--lb-c-jazz); } .lb-bt .gen.g-elektro { --gc: var(--lb-c-elektro); } .lb-bt .gen.g-hiphop { --gc: var(--lb-c-hiphop); } .lb-bt .gen.g-folk { --gc: var(--lb-c-folk); }
-.lb-bt .mixed { font-size: .7rem; color: var(--lb-muted); font-weight: 600; }
+.lb-bt .gen.part { opacity: .5; border-style: dashed; }
 .lb-bt .fame { grid-column: 1; display: flex; align-items: center; gap: 10px; white-space: nowrap; }
 .lb-bt .stars { display: inline-flex; gap: 1px; }
 .lb-bt .stars i { font-style: normal; font-size: .8rem; line-height: 1; color: #3d3949; }
@@ -56,7 +58,8 @@
 .lb-legend .lb-mood { font-size: 0.72rem; } .lb-legend .lb-mood i { width: 8px; height: 8px; }
 
 /* Bandseite */
-.lb-hd { display: flex; gap: 16px; align-items: center; padding: 18px 20px; border-radius: 12px; background: var(--lb-card2); border: 1px solid var(--lb-line); border-top: 3px solid var(--g); }
+.lb-hd { position: relative; display: flex; gap: 16px; align-items: center; padding: 18px 20px; border-radius: 12px; background: var(--lb-card2); border: 1px solid var(--lb-line); border-top: 3px solid var(--g, transparent); }
+.lb-hd.mixed::before { content: ''; position: absolute; left: -1px; right: -1px; top: -1px; height: 3px; border-radius: 12px 12px 0 0; background: linear-gradient(90deg, #a8607c, #b89d57, #a9bd3a, #6590b3, #8676b5); }
 .lb-hd h1 { margin: 0; font-size: 1.55rem; }
 .lb-hd small { color: var(--lb-muted); font-weight: 600; }
 .lb-hd-mood { margin-left: auto; display: grid; gap: 6px; justify-items: end; } .lb-hd-mood .lb-cap { margin: 0; }
@@ -603,7 +606,8 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .lb-venue .fig-stage.in-room { padding-bottom: 20px; }
 /* Bei Auftritten stehen die Namen über den Köpfen, nicht im Publikum. */
 .lb-venue .fig-member { display: flex; flex-direction: column; align-items: center; }
-.lb-venue .fig-member b { order: -1; margin: 0 0 -6px; }
+.lb-venue .fig-member b { order: -1; margin: 0 0 -4px; position: relative; z-index: 2; }
+.lb-venue .fig-member.tall b { margin-bottom: 6px; }
 .fig-member.clickable { cursor: pointer; }
 .fig-member.clickable:hover .fig { filter: drop-shadow(0 0 6px rgba(255, 233, 168, .35)); }
 .lb-venue .lb-crowd { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 84px; pointer-events: none; }
@@ -703,3 +707,7 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .lb-sign-row em { font-style: normal; font-weight: 600; white-space: nowrap; }
 .lb-sign-note { font-size: .88rem; color: var(--lb-muted); min-height: 2.6em; }
 .lb-sign-note.warn { color: #e8c75a; }
+
+/* Künstlerleiste: eine Band auf eine andere legen = zusammentun (mit Nachfrage). */
+.lb-bt.drop-target { border-color: var(--lb-accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--lb-accent) 55%, transparent), 0 0 18px color-mix(in srgb, var(--lb-accent) 30%, transparent); }
+.lb-bt.merging { opacity: .85; }

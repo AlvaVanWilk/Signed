@@ -130,13 +130,14 @@ export const hasLipstick = (look) => trait(look, 'lips') < (LIP_SHARE[look.gende
 /** Piercing (wer eins hat, steht im Aussehen): Art fest aus dem Aussehen – Augenbraue, Lippe, Nase oder oben am Ohr. */
 const PIERCING_KINDS = ['brow', 'lip', 'nose', 'helix'];
 export const piercingOf = (look) => (look.piercing ? PIERCING_KINDS[Math.floor(trait(look, 'piercing') * PIERCING_KINDS.length)] : null);
-const METAL = '#d6d9e0';
-const PIERCINGS = {
-  brow: `<g fill="${METAL}" stroke="${INK}" stroke-width="0.4"><circle cx="58.6" cy="36.6" r="0.75"/><circle cx="60.2" cy="39.4" r="0.75"/></g>`,
-  lip: `<path d="M53.2 53.6 A1.4 1.4 0 1 1 54.6 55.6" fill="none" stroke="${METAL}" stroke-width="0.75" stroke-linecap="round"/>`,
-  nose: `<circle cx="52.6" cy="49.4" r="0.7" fill="${METAL}" stroke="${INK}" stroke-width="0.35"/>`,
-  helix: `<circle cx="69.6" cy="41.2" r="1.3" fill="none" stroke="${METAL}" stroke-width="0.7"/><circle cx="70.2" cy="43.6" r="0.55" fill="${METAL}"/>`,
-};
+/** Metall der Piercings: wie die Ohrringe, wenn es welche gibt (passt zusammen), sonst Silber. Perlen-Ohrringe haben Silber dazu. */
+const pierceColor = (ear) => (!ear || ear.shape === 'pearl' ? '#d6d9e0' : ear.color);
+const piercingSvg = (kind, c) => ({
+  brow: `<g fill="${c}" stroke="${INK}" stroke-width="0.4"><circle cx="58.6" cy="36.6" r="0.75"/><circle cx="60.2" cy="39.4" r="0.75"/></g>`,
+  lip: `<path d="M53.4 53.9 A0.85 0.85 0 1 1 54.4 55.1" fill="none" stroke="${c}" stroke-width="0.55" stroke-linecap="round"/>`,
+  nose: `<circle cx="52.6" cy="49.4" r="0.7" fill="${c}" stroke="${INK}" stroke-width="0.35"/>`,
+  helix: `<circle cx="69.6" cy="41.2" r="1.3" fill="none" stroke="${c}" stroke-width="0.7"/><circle cx="70.2" cy="43.6" r="0.55" fill="${c}"/>`,
+}[kind]);
 
 /** Beide Ohrringe am Ohrläppchen (links 31, rechts 69, Höhe 50). */
 function earrings({ shape, color }) {
@@ -231,7 +232,7 @@ function head(look, skin, sing, mood = null) {
     ? `<g class="fig-singing">${pivot(50, 53.5, 'fig-mouth', `<ellipse cx="50" cy="53.5" rx="2.6" ry="2.4" fill="#7a2338" stroke="${INK}" stroke-width="0.8"/>`)}</g><g class="fig-resting">${smile}</g>`
     : smile);
   const pierce = piercingOf(look);
-  if (pierce) p.push(PIERCINGS[pierce]);
+  if (pierce) p.push(piercingSvg(pierce, pierceColor(ear)));
   if (look.freckles) {
     for (const [x, y] of [[40, 49], [42.5, 50.5], [57.5, 50.5], [60, 49]]) p.push(`<circle cx="${x}" cy="${y}" r="0.6" fill="#8a4b2a" opacity="0.6"/>`);
   }
@@ -517,6 +518,9 @@ export function playedInstrument(m) {
  * Bühne mit allen Mitgliedern. awayOf(m) liefert für jemanden, der gerade allein unterwegs ist (Üben, Promo, Kurs),
  * { until, label } – dann steht statt der Figur an seinem Platz, wann er zurück ist.
  */
+/** Frisuren und Hüte, die über den Kopf hinausragen: Der Name darüber rückt ein Stück höher. */
+const TALL = ['afro', 'dutt', 'irokese', 'locken'];
+
 export function stage(members, { bpm = 120, names = true, className = '', electricOf = () => false, hueOf = () => null, awayOf = () => null, nameOf = null, below = () => '', instrumentOf = playedInstrument, act = null } = {}) {
   return `<div class="fig-stage ${className}" style="--beat:${(60 / bpm).toFixed(3)}s">${members.map((m) => {
     const away = awayOf(m);
@@ -525,7 +529,7 @@ export function stage(members, { bpm = 120, names = true, className = '', electr
         <span class="countdown" data-until="${away.until}"></span></span>${names ? `<b>${escapeHtml(m.firstName)}</b>` : ''}</div>`;
     }
     return `
-    <div class="fig-member${act ? ' clickable' : ''}" style="--d:${(-((m.id * 7919) % 4300) / 1000).toFixed(2)}s"${act ? ` data-act="${act}" data-id="${m.id}" title="${escapeHtml(m.firstName)} öffnen"` : ''}>${figure(m.look, instrumentOf(m), { electric: electricOf(m), hue: hueOf(m), mood: m.personality?.[0] ?? null })}${names ? `<b>${nameOf ? nameOf(m) : escapeHtml(m.firstName)}</b>` : ''}${below(m)}</div>`;
+    <div class="fig-member${act ? ' clickable' : ''}${TALL.includes(m.look?.hair) || ['cowboy', 'fedora'].includes(hatOf(m.look ?? {})) ? ' tall' : ''}" style="--d:${(-((m.id * 7919) % 4300) / 1000).toFixed(2)}s"${act ? ` data-act="${act}" data-id="${m.id}" title="${escapeHtml(m.firstName)} öffnen"` : ''}>${figure(m.look, instrumentOf(m), { electric: electricOf(m), hue: hueOf(m), mood: m.personality?.[0] ?? null })}${names ? `<b>${nameOf ? nameOf(m) : escapeHtml(m.firstName)}</b>` : ''}${below(m)}</div>`;
   }).join('')}
   </div>`;
 }

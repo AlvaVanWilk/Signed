@@ -17,6 +17,7 @@ function rng(seed) {
   };
 }
 const f = (n) => Math.round(n * 10) / 10;
+const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 function curve(pts, closed = false) {
   const n = pts.length;
   const P = (i) => pts[closed ? (i + n) % n : Math.max(0, Math.min(n - 1, i))];
@@ -118,9 +119,10 @@ function left(level, r) {
       + `<path d="${curve([[30, 208], [62, 190], [150, 188], [178, 208], [164, 220], [44, 220]], true)}" fill="#5c5a63" ${st(3)}/>`;
   }
   if (level === 1) {
-    // Fenster geputzt, das alte Sofa mit einer Decke drüber.
-    return box(56, 56, 66, 50, '#7f9ca8', 3) + line('M89 56 v50 M56 81 h66') + box(52, 52, 74, 58, 'none', 3)
-      + `<path d="${curve([[30, 208], [62, 188], [150, 186], [178, 208], [164, 220], [44, 220]], true)}" fill="#5c5a63" ${st(3)}/><path d="${curve([[70, 196], [110, 186], [160, 192], [150, 214], [80, 216]], true)}" fill="#7a5a4a" ${st(2.4)}/>`;
+    // Fenster geputzt, der Schutt ist weg: zwei einfache Klappstühle.
+    const chair = (x, c) => `<path d="M${x} 214 L${x + 6} 178 M${x + 34} 214 L${x + 28} 178 M${x + 4} 192 H${x + 30}" ${st(3.4)} fill="none"/>`
+      + box(x, 172, 34, 8, c, 3, 2.6) + box(x + 3, 138, 28, 30, c, 4, 2.6) + `<path d="M${x + 6} 168 V178 M${x + 28} 168 V178" ${st(3)} fill="none"/>`;
+    return box(56, 56, 66, 50, '#7f9ca8', 3) + line('M89 56 v50 M56 81 h66') + box(52, 52, 74, 58, 'none', 3) + chair(40, '#8a8f99') + chair(104, '#a0705a');
   }
   if (level === 3) {
     // Schaumstoff-Akustikplatten und ein Verstärkerturm.
@@ -142,7 +144,7 @@ function left(level, r) {
   return s;
 }
 
-function right(level, r) {
+function right(level, r, name) {
   if (level === 0) {
     return box(540, 160, 70, 54, '#a88458', 3) + box(556, 120, 52, 42, '#b89462', 3) + line('M548 172 H600 M566 132 H602', '#6e5636')
       + `<path d="M480 214 L478 170 M520 214 L522 182 M474 170 L528 166 M474 170 L470 126" ${st(4)} fill="none"/>`
@@ -156,7 +158,10 @@ function right(level, r) {
   if (level === 3) {
     // Goldene Platte an der Wand, Mischpult mit Bildschirm, Neonschrift.
     let s = box(360, 44, 62, 62, '#1d1a2a', 4) + `<circle cx="391" cy="75" r="22" fill="#e6b84f" ${st(2.4)}/><circle cx="391" cy="75" r="5" fill="#1d1a2a"/><path d="M376 64 Q384 56 394 56" stroke="#fff" stroke-width="2.4" fill="none" opacity="0.45" stroke-linecap="round"/>`;
-    s += `<rect x="452" y="50" width="150" height="40" rx="10" fill="#141824" ${st(3)}/><text x="527" y="78" text-anchor="middle" font-family="system-ui, sans-serif" font-size="22" font-weight="800" letter-spacing="3" fill="none" stroke="#7fd0e6" stroke-width="2">STUDIO</text><ellipse cx="527" cy="70" rx="80" ry="22" fill="#7fd0e6" opacity="0.08"/>`;
+    // Neonschild mit dem Namen der Band (lange Namen werden schmaler gesetzt, damit sie aufs Schild passen).
+    const text = esc((name || 'Studio').toUpperCase());
+    const size = Math.max(11, Math.min(22, 250 / Math.max(6, (name || 'Studio').length)));
+    s += `<rect x="440" y="50" width="180" height="40" rx="10" fill="#141824" ${st(3)}/><text x="530" y="${70 + size * 0.36}" text-anchor="middle" font-family="system-ui, sans-serif" font-size="${size.toFixed(1)}" font-weight="800" letter-spacing="2" fill="none" stroke="#7fd0e6" stroke-width="${size > 15 ? 2 : 1.4}" textLength="${Math.min(164, (name || 'Studio').length * size * 0.78).toFixed(0)}" lengthAdjust="spacingAndGlyphs">${text}</text><ellipse cx="530" cy="70" rx="86" ry="22" fill="#7fd0e6" opacity="0.08"/>`;
     s += box(470, 132, 64, 40, '#141824', 3) + `<rect x="476" y="138" width="52" height="28" fill="#2f5f8a"/><path d="M480 160 l10 -10 l8 6 l12 -12 l14 8" stroke="#7fd0e6" stroke-width="2" fill="none"/><path d="M502 172 v10" ${st(3)}/>`;
     s += `<path d="M450 182 H630 L640 214 H440 Z" fill="#3a2a22" ${st(3)}/>` + [0, 1, 2, 3, 4, 5, 6].map((j) => `<rect x="${462 + j * 22}" y="188" width="12" height="16" rx="2" fill="#262c3d"/><circle cx="${468 + j * 22}" cy="${192 + (j % 3) * 4}" r="2.4" fill="${['#f2c14e', '#7fd0e6', '#ee7a8a'][j % 3]}"/>`).join('');
     return s;
@@ -167,11 +172,11 @@ function right(level, r) {
 }
 
 /** Proberaum als SVG; seed sorgt für kleine Unterschiede zwischen den Räumen verschiedener Bands. */
-export function roomSvg(level = 0, seed = 1) {
+export function roomSvg(level = 0, seed = 1, name = '') {
   const r = rng(seed * 7 + level);
   const dark = level === 0 ? 0.36 : level === 1 ? 0.16 : 0;
   return `<svg class="lb-roomart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <defs><linearGradient id="rmCone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe9a8" stop-opacity="0.5"/><stop offset="1" stop-color="#ffe9a8" stop-opacity="0"/></linearGradient></defs>
-    ${walls(level, r)}${floor(level, r)}<g transform="translate(0 14)">${left(level, r)}</g><g transform="translate(${W - 640} 14)">${right(level, r)}</g>${ceiling(level)}
+    ${walls(level, r)}${floor(level, r)}<g transform="translate(0 14)">${left(level, r)}</g><g transform="translate(${W - 640} 14)">${right(level, r, name)}</g>${ceiling(level)}
     ${dark ? `<rect width="${W}" height="${H}" fill="#0b0d14" opacity="${dark}"/>` : ''}</svg>`;
 }

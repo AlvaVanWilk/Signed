@@ -272,6 +272,9 @@ Wer neu anfängt, soll **sofort etwas tun** können:
 ### Kartei und Besetzungsplaner
 
 Jeder Künstler unter Vertrag ist entweder **in einer Band** oder **Solokünstler** (eine Band mit einem Mitglied, kein extra Zustand „frei“). Solokünstler haben **einen eigenen Knopf** in der Band-Leiste, wie Bands.
+Die **Künstlerleiste** zeigt je Knopf: Name, je Mitglied das Instrument (blass, wer keins hat), alle vertretenen Genres (voll, was alle teilen;
+gestrichelt, was nur einzelne mitbringen), Stimmung, Ruhm als Sterne und geschriebene Songs. Knöpfe lassen sich umsortieren; legt man einen
+**mitten auf einen anderen**, öffnet sich das Zusammentun-Fenster mit genau diesem Paar als Kontrollfrage.
 - **Solokünstler** sollen sich **kaum lohnen**: ohne Beziehungen, **kein Genre-, Hybrid- oder Besetzungs-Bonus** (aber auch kein Malus für „gemischte Band“), und Auftritte und Aufnahmen kosten mehr, weil
   **Studiomusiker** zugebucht werden (Aufschlag zum Beispiel +50 %; bei **Pop** nur +20 %, denn Pop-Sänger treten oft allein auf). Gage und Besetzungs-Bonus sind niedriger als bei einer Band, die Aufmerksamkeit gleich.
   Rentabel wird es **nur in Sonderfällen**: **Pop**, **Diva** (steht gern allein im Rampenlicht, bekommt eine Stimmungsprämie). Wer sich eigentlich eine Band wünscht, wird **unzufrieden**: **Teamplayer** und **Partytier**

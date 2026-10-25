@@ -63,11 +63,13 @@ function list(candidates) {
   }).join('');
 }
 
-async function open(bandId) {
+/** only: nur dieser eine Kandidat (beim Aufeinanderschieben in der Künstlerleiste) – dasselbe Fenster als Kontrollfrage. */
+async function open(bandId, only = null) {
   const band = bandById(bandId);
   let candidates;
   try {
     candidates = (await api('bandJoinCandidates', { bandId })).candidates;
+    if (only !== null) candidates = candidates.filter((c) => c.bandId === only);
   } catch (e) {
     toast(e.message, 'error');
     return;
@@ -77,13 +79,13 @@ async function open(bandId) {
     wide: true,
     className: 'tg-modal',
     html: `
-      <h2>${solo ? `${esc(band.name)} mit anderen zusammentun` : `${esc(band.name)}: mit Musiker(n) zusammentun`}</h2>
-      <input class="tg-search" type="search" placeholder="Name suchen" autocomplete="off" aria-label="Name suchen">
+      <h2>${only !== null && candidates[0] ? `${esc(band.name)} und ${esc(candidates[0].name)} zusammentun?` : solo ? `${esc(band.name)} mit anderen zusammentun` : `${esc(band.name)}: mit Musiker(n) zusammentun`}</h2>
+      ${only !== null ? '<p class="muted">So würde sich das Zusammentun auswirken. Erst mit „Zusammentun“ und der Namenswahl passiert es wirklich.</p>' : '<input class="tg-search" type="search" placeholder="Name suchen" autocomplete="off" aria-label="Name suchen">'}
       <div class="tg-list">${list(candidates)}</div>
       <p class="tg-none muted" hidden>Niemand mit diesem Namen.</p>`,
   });
   const search = modal.body.querySelector('.tg-search');
-  search.addEventListener('input', () => {
+  search?.addEventListener('input', () => {
     const q = search.value.trim().toLowerCase();
     let shown = 0;
     for (const r of modal.body.querySelectorAll('.tg-row')) {
@@ -182,5 +184,9 @@ function chooseName(a, cand) {
 defineActions({
   together({ id }) {
     open(Number(id));
+  },
+  /** In der Künstlerleiste aufeinandergeschoben: dasselbe Fenster, nur mit dem einen Paar. */
+  togetherWith({ id, other }) {
+    open(Number(id), Number(other));
   },
 });

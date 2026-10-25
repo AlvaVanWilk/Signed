@@ -1,7 +1,7 @@
 :root {
   /* Helle Genre-Farben für Bildhintergründe (die kräftigen stehen bei .g-*). */
   --c-pop: #e64980; --c-rock: #f76707; --c-metal: #868e96; --c-punk: #82c91e;
-  --c-jazz: #f0b400; --c-elektro: #339af0; --c-hiphop: #845ef7; --c-folk: #40c057;
+  --c-jazz: #f0b400; --c-elektro: #339af0; --c-hiphop: #845ef7; --c-folk: #12b8a6;
   --bg: #0e0c14;
   --bg-2: #14111c;
   --panel: #1b1726;
@@ -220,7 +220,7 @@ select { cursor: pointer; }
 .chip.genre-jazz { border-color: #ffc23d; }
 .chip.genre-elektro { border-color: #4fd1ff; }
 .chip.genre-hiphop { border-color: #b06bff; }
-.chip.genre-folk { border-color: #3ddc97; }
+.chip.genre-folk { border-color: #2dd4bf; }
 .chip.special { background: linear-gradient(90deg, rgba(176, 107, 255, 0.3), rgba(46, 196, 182, 0.3)); color: #fff; border-color: transparent; }
 .chip.skill { color: var(--accent-2); }
 .chip.skill.inactive { opacity: 0.5; }
@@ -560,7 +560,7 @@ button.tcg:hover { transform: translateY(-4px) rotate(-0.5deg); box-shadow: 0 14
 .genre-bg-jazz { --art: linear-gradient(160deg, #ffd43b, #b07d00); }
 .genre-bg-elektro { --art: linear-gradient(160deg, #74c0fc, #1864ab); }
 .genre-bg-hiphop { --art: linear-gradient(160deg, #b197fc, #5f3dc4); }
-.genre-bg-folk { --art: linear-gradient(160deg, #8ce99a, #2b8a3e); }
+.genre-bg-folk { --art: linear-gradient(160deg, #7ee3d6, #0c8f86); }
 .gear-bg { --art: radial-gradient(circle at 50% 40%, #fff6dc, #c9b38a 70%); }
 .gear-bg .tcg-art { place-items: center; }
 .manager-bg { --art: linear-gradient(160deg, #d8d3c6, #5d5648); }
@@ -714,7 +714,7 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .g-jazz, .genre-fill-jazz { --g: #d99a00; --fill: var(--g); }
 .g-elektro, .genre-fill-elektro { --g: #1c7ed6; --fill: var(--g); }
 .g-hiphop, .genre-fill-hiphop { --g: #7048e8; --fill: var(--g); }
-.g-folk, .genre-fill-folk { --g: #2b8a3e; --fill: var(--g); }
+.g-folk, .genre-fill-folk { --g: #0c8f86; --fill: var(--g); }
 .subnav-btn .genre-icon { width: 1.1em; height: 1.1em; stroke: currentColor; }
 
 .shell.with-side { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 0 8px; max-width: 1240px; margin: 0 auto; padding-left: 20px; }

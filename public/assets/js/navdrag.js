@@ -1,9 +1,10 @@
 import { api } from './api.js';
-import { app } from './core.js';
+import { actions, app } from './core.js';
 
 /**
  * Band- und Favoritenknöpfe verschieben: mit der Maus einfach ziehen, mit dem Finger kurz gedrückt halten und dann ziehen
  * (sonst scrollt die Leiste wie gewohnt). Die neue Reihenfolge merkt sich das Label (navOrder).
+ * In der Künstlerleiste lässt sich eine Band auch mitten auf eine andere legen: Dann fragt das Zusammentun-Fenster nach.
  */
 
 const HOLD_MS = 350;
@@ -24,9 +25,37 @@ function begin() {
   navigator.vibrate?.(15);
 }
 
+/** Liegt der Zeiger in der Mitte einer anderen Band (nicht am Rand), ist das ein Zusammentun statt Umsortieren. */
+function mergeTarget(x, y) {
+  const { btn } = press;
+  if (!btn.parentElement.classList.contains('lb-bar')) return null;
+  for (const el of btn.parentElement.querySelectorAll('[data-nav]')) {
+    if (el === btn) continue;
+    const r = el.getBoundingClientRect();
+    const fx = (x - r.left) / r.width;
+    const fy = (y - r.top) / r.height;
+    const inner = press.vert ? fy > 0.28 && fy < 0.72 && fx > 0 && fx < 1 : fx > 0.28 && fx < 0.72 && fy > 0 && fy < 1;
+    if (inner) return el;
+  }
+  return null;
+}
+
 function move(x, y) {
   const { btn, vert } = press;
   const nav = btn.parentElement;
+  const target = mergeTarget(x, y);
+  if (target !== press.target) {
+    press.target?.classList.remove('drop-target');
+    target?.classList.add('drop-target');
+    press.target = target;
+  }
+  if (target) {
+    const moved = pos0(btn, vert) - press.startLeft;
+    btn.style.transform = `translate(${x - press.x - (vert ? 0 : moved)}px, ${y - press.y - (vert ? moved : 0)}px) scale(0.96)`;
+    btn.classList.add('merging');
+    return;
+  }
+  btn.classList.remove('merging');
   const pos = (el) => (vert ? el.offsetTop : el.offsetLeft);
   const size = (el) => (vert ? el.offsetHeight : el.offsetWidth);
   const shift = () => ((vert ? y - press.y : x - press.x)) - (pos(btn) - press.startLeft);
@@ -39,16 +68,24 @@ function move(x, y) {
   btn.style.transform = `${vert ? 'translateY' : 'translateX'}(${shift()}px) scale(1.03)`;
 }
 
+const pos0 = (el, vert) => (vert ? el.offsetTop : el.offsetLeft);
+
 function finish(cancelled) {
   const p = press;
   press = null;
   if (!p) return;
   clearTimeout(p.timer);
   if (!p.active) return;
-  p.btn.classList.remove('dragging');
+  p.btn.classList.remove('dragging', 'merging');
   p.btn.style.transform = '';
+  p.target?.classList.remove('drop-target');
   swallowClickUntil = Date.now() + 400;
   if (cancelled || !p.btn.isConnected) return;
+  if (p.target) {
+    const id = (el) => el.dataset.nav.slice(1);
+    actions.togetherWith?.({ id: id(p.btn), other: id(p.target) });
+    return;
+  }
   const order = [...p.btn.parentElement.querySelectorAll('[data-nav]')].map((el) => el.dataset.nav);
   if (order.join() === p.before) return;
   // Die Leiste kennt nur Bands, die Favoriten-Leiste nur Musiker: Der jeweils andere Teil der Reihenfolge bleibt erhalten.

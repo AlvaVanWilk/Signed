@@ -25,12 +25,22 @@
 /* Band-Leiste */
 .lb-side { background: var(--lb-panel); border: 1px solid var(--lb-line); border-radius: 16px; padding: 16px 14px; position: sticky; top: 14px; }
 .lb-bar { display: flex; flex-direction: column; gap: 8px; }
-.lb-bt { position: relative; display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; height: 118px; align-content: center; padding: 12px 14px 12px 24px; border-radius: 12px; border: 1px solid var(--lb-line); background: var(--lb-card); color: var(--lb-text); overflow: hidden; text-decoration: none; }
+.lb-bt { position: relative; display: grid; grid-template-columns: 1fr auto; gap: 7px 10px; min-height: 118px; align-content: center; overflow: visible; padding: 12px 14px 12px 24px; border-radius: 12px; border: 1px solid var(--lb-line); background: var(--lb-card); color: var(--lb-text); text-decoration: none; }
 .lb-bt:hover { text-decoration: none; border-color: #4a4458; }
-.lb-bt::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 10px; background: var(--g, var(--lb-c-mixed)); }
+.lb-bt::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 10px; border-radius: 12px 0 0 12px; background: var(--g, var(--lb-c-mixed)); }
 .lb-bt.sel { border-color: var(--lb-accent); background: var(--lb-card2); }
 .lb-bt .nm { font-weight: 700; font-size: 1rem; line-height: 1.15; grid-column: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lb-bt .gl { grid-column: 1; display: flex; align-items: center; gap: 8px; min-width: 0; overflow: hidden; }
+.lb-bt .gl { grid-column: 1; display: flex; align-items: center; gap: 8px; min-width: 0; flex-wrap: wrap; }
+.lb-bt .gens { grid-column: 1; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-height: 19px; }
+.lb-bt .waits { font-size: .68rem; font-weight: 700; color: var(--lb-bad); margin-left: 4px; }
+.lb-bt [data-act="tip"] { cursor: help; }
+/* Studiolampe oben rechts, halb über dem Rand: leuchtet in der Farbe der Stimmung. */
+.lb-bt .lamp { position: absolute; top: -9px; right: 22px; width: 22px; height: 14px; border-radius: 7px 7px 3px 3px; background: #2a2636; border: 1px solid #423c52; display: grid; place-items: center; z-index: 2; --c: var(--lb-ok); }
+.lb-bt .lamp i { width: 11px; height: 7px; border-radius: 6px 6px 2px 2px; background: var(--c); box-shadow: 0 0 8px 2px color-mix(in srgb, var(--c) 60%, transparent), 0 -2px 10px color-mix(in srgb, var(--c) 40%, transparent); display: block; }
+.lb-bt .lamp.yellow { --c: var(--lb-warn); } .lb-bt .lamp.red { --c: var(--lb-bad); }
+.lb-bt .lamp.red i { animation: lb-lamp 1.6s ease-in-out infinite; }
+@keyframes lb-lamp { 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) { .lb-bt .lamp.red i { animation: none; } }
 .lb-bt .inss, .lb-bt .gens { display: inline-flex; align-items: center; gap: 3px; flex: none; }
 .lb-bt .inss { padding-right: 8px; border-right: 1px solid var(--lb-line); }
 .lb-bt .ins { width: 17px; height: 17px; display: block; color: var(--lb-text); }
@@ -605,9 +615,12 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .lb-venue .lb-stageart { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .lb-venue .fig-stage.in-room { padding-bottom: 20px; }
 /* Bei Auftritten stehen die Namen über den Köpfen, nicht im Publikum. */
-.lb-venue .fig-member { display: flex; flex-direction: column; align-items: center; }
-.lb-venue .fig-member b { order: -1; margin: 0 0 -4px; position: relative; z-index: 2; }
-.lb-venue .fig-member.tall b { margin-bottom: 6px; }
+/* Namen wie Gaffa-Tape vor den Füßen auf die Bühne geklebt: alle auf derselben Höhe, jedes Stück etwas schief. */
+.lb-venue .fig-member { position: relative; }
+.lb-room.lb-venue .fig-stage .fig-member b { position: absolute; left: 50%; bottom: -6px; z-index: 3; transform: translateX(-50%) rotate(var(--tilt, -3deg)); margin: 0;
+  padding: 2px 9px 1px; background: #e9dfc4; color: #2a2233; font-size: .74rem; font-weight: 800; letter-spacing: .02em; white-space: nowrap; text-shadow: none;
+  border-radius: 1px; box-shadow: 0 2px 3px rgba(0, 0, 0, .45); clip-path: polygon(0 6%, 4% 0, 97% 4%, 100% 0, 99% 92%, 95% 100%, 3% 96%, 0 100%); }
+.lb-room.lb-venue .fig-member b .lb-glow { display: none; }
 .fig-member.clickable { cursor: pointer; }
 .fig-member.clickable:hover .fig { filter: drop-shadow(0 0 6px rgba(255, 233, 168, .35)); }
 .lb-venue .lb-crowd { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 84px; pointer-events: none; }
@@ -711,3 +724,16 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 /* Künstlerleiste: eine Band auf eine andere legen = zusammentun (mit Nachfrage). */
 .lb-bt.drop-target { border-color: var(--lb-accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--lb-accent) 55%, transparent), 0 0 18px color-mix(in srgb, var(--lb-accent) 30%, transparent); }
 .lb-bt.merging { opacity: .85; }
+
+/* Genre-Bonus auf der Bandseite und in der Übersicht */
+.lb-gb { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--lb-line); background: var(--lb-card); }
+.lb-gb p { margin: 0 0 4px; }
+.lb-gb-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding: 6px 0; border-top: 1px solid var(--lb-line); }
+.lb-gb p + .lb-gb-row, .lb-gb-table .lb-gb-row:first-child { border-top: 0; }
+.lb-gb-row .ok { color: #7fd0a6; } .lb-gb-row .warn { color: #e0a45a; }
+.lb-gb-row em { font-style: normal; font-weight: 700; font-size: .78rem; padding: 1px 8px; border-radius: 999px; background: color-mix(in srgb, #7fd0a6 18%, transparent); }
+.lb-gb-needs { display: inline-flex; flex-wrap: wrap; gap: 4px 12px; font-size: .86rem; }
+.lb-gb-needs svg { width: 16px; height: 16px; vertical-align: -3px; }
+.lb-gb-steps { margin: 6px 0 12px; padding-left: 18px; }
+.lb-linkbtn { margin-left: 10px; background: none; border: 0; padding: 0; color: var(--lb-accent); font: inherit; font-size: .72rem; letter-spacing: .04em; text-transform: none; cursor: pointer; text-decoration: underline; }
+.lb-gb-name { min-width: 64px; }

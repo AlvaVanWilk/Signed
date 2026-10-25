@@ -65,14 +65,15 @@ export function render() {
         <div class="ms-sign">${SIGN}</div>
         <div class="ms-info">
           <div class="money-pill">${money(app.state.label.money)}</div>
-          <small class="muted">Neues Angebot in <b data-store-timer>${duration(Math.max(0, store.endsAt - serverNow()))}</b></small>
+          <small class="muted">${store.restock?.own ? 'Deine Lieferung bleibt' : 'Neues Angebot in'} <b data-store-timer>${duration(Math.max(0, store.endsAt - serverNow()))}</b>${store.restock?.own ? ', dann kommt wieder das Regal für alle' : ''}</small>
+          ${store.restock ? `<button class="btn small ghost ms-restock" data-act="storeRestock" ${app.state.label.money < store.restock.price ? 'disabled' : ''}>Neue Lieferung bestellen · ${money(store.restock.price)}</button>` : ''}
         </div>
       </div>
       <div class="ms-shop">
         <div class="ms-shelf">${store.items.map(cell).join('')}</div>
         ${locker()}
       </div>
-      <p class="muted ms-note">Das Regal ist für alle Labels gleich und wechselt alle paar Stunden. Von jeder Art steht höchstens ein Instrument da; gute Stücke sind selten.</p>
+      <p class="muted ms-note">Das Regal ist für alle Labels gleich und wechselt alle paar Stunden. Von jeder Art steht höchstens ein Instrument da; gute Stücke sind selten. Mit einer neuen Lieferung bekommst du sofort ein anderes Regal nur für dich, bis zum nächsten Wechsel; jede weitere kostet das Doppelte.</p>
     </div>`;
 }
 
@@ -220,6 +221,16 @@ document.addEventListener('click', (e) => {
 document.addEventListener('dragstart', (e) => { if (e.target.closest?.('.ms-cell')) e.preventDefault(); });
 
 defineActions({
+  /** Neue Lieferung: kostet Geld, das jetzige Regal ist danach weg (Zurückgelegtes bleibt). */
+  async storeRestock() {
+    const price = app.state.store.restock.price;
+    if (!await confirmDialog(`Neue Lieferung für ${money(price)} bestellen? Das jetzige Regal ist dann weg, ein zurückgelegtes Instrument bleibt.`, { ok: 'Bestellen' })) return;
+    if (await mutate('storeRestock')) {
+      doorsPending = true;
+      enter(true);
+      toast('Die neue Lieferung steht im Regal.', 'ok');
+    }
+  },
   storeItem({ slot, idx }) {
     openItem(Number(slot), Number(idx));
   },
@@ -240,10 +251,11 @@ const DOORS_SEEN = 'signed.storeDoorsSeen';
 const doorsSeen = () => { try { return localStorage.getItem(DOORS_SEEN) === '1'; } catch { return false; } };
 
 /** Beim allerersten Betreten: Doppeltür geht auf und gibt das Regal frei. Danach geht es ohne Tür hinein. */
-export function enter() {
+/** force: auch nach dem ersten Besuch (neue Lieferung – die Türen gehen auf und zeigen das frische Regal). */
+export function enter(force = false) {
   if (!doorsPending || document.querySelector('.ms-doors')) return;
   doorsPending = false;
-  if (doorsSeen() || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if ((doorsSeen() && !force) || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   try { localStorage.setItem(DOORS_SEEN, '1'); } catch { /* ohne Speicher eben jedes Mal */ }
   const doors = document.createElement('div');
   doors.className = 'ms-doors';

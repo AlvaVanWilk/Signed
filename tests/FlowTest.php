@@ -1703,6 +1703,30 @@ test('WikiSignia: Labels als oberste Ebene, fremde Artikel mit Label, ohne Geld-
     check(count($byName['signies']) >= 1, 'Künstler gefunden');
 });
 
+test('Music Store: neue Lieferung gegen Geld, nur für dieses Label, bis zum nächsten Wechsel', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Lieferung');
+    $other = registerPlayer($db, 'Nachbar');
+    $before = $p->get('state');
+    $shelf = $before['store']['items'];
+    checkEquals(Balance::STORE['restock'], $before['store']['restock']['price']);
+    $res = $p->post('storeRestock');
+    checkEquals($before['label']['money'] - Balance::STORE['restock'], $res['state']['label']['money'], 'kostet');
+    check($res['state']['store']['restock']['own'], 'eigene Lieferung');
+    check(array_column($res['state']['store']['items'], 'model') !== array_column($shelf, 'model') || array_column($res['state']['store']['items'], 'price') !== array_column($shelf, 'price'), 'anderes Regal');
+    checkEquals((int) (Balance::STORE['restock'] * Balance::STORE['restockFactor']), $res['state']['store']['restock']['price'], 'die nächste kostet das Doppelte');
+    // Kaufen aus der eigenen Lieferung
+    $item = $res['state']['store']['items'][0];
+    $p->post('storeBuy', ['slot' => $item['slot'], 'idx' => $item['idx']]);
+    // Das andere Label sieht weiter das Regal für alle
+    checkEquals(array_column($shelf, 'model'), array_column($other->get('state')['store']['items'], 'model'));
+    // Nach dem Wechsel gilt wieder das Regal für alle, der Preis ist zurück
+    Clock::advance(Balance::STORE['hours'] * 3600);
+    $after = $p->get('state')['store'];
+    check(!$after['restock']['own'], 'wieder das gemeinsame Regal');
+    checkEquals(Balance::STORE['restock'], $after['restock']['price']);
+});
+
 test('Music Store: Regal für alle gleich, 5 bis 10 Instrumente je Art eines, wechselt nach vier Stunden, Kaufen und Zurücklegen', function () {
     $db = freshDb();
     $a = registerPlayer($db, 'StoreA');

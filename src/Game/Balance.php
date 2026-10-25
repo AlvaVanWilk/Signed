@@ -94,6 +94,8 @@ final class Balance
         // Gewöhnliches ist leicht zu haben, Hochwertiges ein Sparziel (Startkapital 2.000 ₲).
         'price' => ['common' => 40, 'rare' => 320, 'epic' => 1500, 'legendary' => 5200],
         'pricePerk' => 0.25, 'priceStat' => 0.006,
+        // Neue Lieferung bestellen: ein eigenes, frisches Regal bis zum nächsten Wechsel. Jede weitere im selben Zeitfenster kostet das Doppelte.
+        'restock' => 150, 'restockFactor' => 2.0, 'restockMax' => 20,
     ];
     /**
      * Proberaum in Stufen: Jede Band (ab zwei Mitgliedern) hat ihren eigenen, Solokünstler teilen sich die Übungsecke des Labels (`soloCost` × Preis).

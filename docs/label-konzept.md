@@ -277,6 +277,8 @@ steht dort vor dem echten Namen, und tritt sie wieder allein auf, heißt die Sol
 Die **Künstlerleiste** zeigt je Knopf: Name, je Mitglied das Instrument (blass, wer keins hat), alle vertretenen Genres (voll, was alle teilen;
 gestrichelt, was nur einzelne mitbringen), Stimmung, Ruhm als Sterne und geschriebene Songs. Knöpfe lassen sich umsortieren; legt man einen
 **mitten auf einen anderen**, öffnet sich das Zusammentun-Fenster mit genau diesem Paar als Kontrollfrage.
+Oben rechts sitzt die **Studiolampe** (Stimmung, ohne Wort); alles auf der Kachel lässt sich antippen und erklärt sich. Genres: voll = bringt den Genre-Bonus,
+gestrichelt = keiner (auch bei Solokünstlern). Auf der Bandseite zeigt „Genre-Bonus“, was je Genre fehlt, „Welche Band braucht was?“ die Übersicht aller Genre-Bands.
 - **Solokünstler** sollen sich **kaum lohnen**: ohne Beziehungen, **kein Genre-, Hybrid- oder Besetzungs-Bonus** (aber auch kein Malus für „gemischte Band“), und Auftritte und Aufnahmen kosten mehr, weil
   **Studiomusiker** zugebucht werden (Aufschlag zum Beispiel +50 %; bei **Pop** nur +20 %, denn Pop-Sänger treten oft allein auf). Gage und Besetzungs-Bonus sind niedriger als bei einer Band, die Aufmerksamkeit gleich.
   Rentabel wird es **nur in Sonderfällen**: **Pop**, **Diva** (steht gern allein im Rampenlicht, bekommt eine Stimmungsprämie). Wer sich eigentlich eine Band wünscht, wird **unzufrieden**: **Teamplayer** und **Partytier**
@@ -434,7 +436,9 @@ Beim ersten Login nach dem Umbau (Saison 2) bleiben **Labelname und Konto**, all
 - **Regal:** 5 bis 10 Instrumente, je Art höchstens eins, für alle Labels gleich, **wechselt alle 4 Stunden** (`Balance::STORE['hours']`); es ergibt sich aus der Fensternummer (`Store::shelf($slot)`), nicht aus dem Spiel-Zufall.
   Seltenheit mit Gewichten 50/32/14/4 (gewöhnlich bis legendär), Preis nach Seltenheit, Eigenschaften und Werten (Grundpreise 60/220/700/2100).
 - **Zurücklegen:** ein Instrument je Label, einen Tag lang (`holdHours` 24), bleibt über den Wechsel des Regals, nur für dieses Label. Gekauft werden kann jedes Instrument pro Label einmal.
-- Oberfläche: gezeichnetes Regal mit Preisschildern, Seltenheit als Lichtschein, Hinweispunkt bei Instrumenten, die jemandem im Label fehlen; Übergang: Doppeltür geht beim Betreten auf.
+- **Neue Lieferung:** Gegen Geld (150 ₲, jede weitere im selben Fenster das Doppelte, höchstens 20; `Balance::STORE['restock']`) bekommt ein Label sofort ein eigenes Regal,
+  bis zum nächsten Wechsel; danach gilt wieder das Regal für alle. Zurückgelegtes bleibt. Die Doppeltür geht dabei wieder auf.
+- Oberfläche: gezeichnetes Regal mit Preisschildern, Seltenheit als Lichtschein, Hinweispunkt bei Instrumenten, die jemandem im Label fehlen; Übergang: Doppeltür geht beim ersten Betreten auf.
 
 ### Proberaum (gebaut)
 

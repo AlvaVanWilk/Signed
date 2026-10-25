@@ -57,9 +57,31 @@ export function lastBandId() {
 
 // ---------- Band-Leiste ----------
 
+const MOOD_TIP = {
+  green: 'Stimmung gut: Alle sind zufrieden.',
+  yellow: 'Stimmung angespannt: Etwas stört. Auf der Bandseite steht, was sie sich wünschen.',
+  red: 'Stimmung unzufrieden: Die Band macht nichts mehr, bis du dich kümmerst.',
+};
+
+/** Was ein Genre der Band gerade bringt, in einem Satz: Bonus, was fehlt, oder warum keiner. */
+function genreTip(b, members, g) {
+  const name = genreName(g);
+  const needs = cat().genreLineup[g].map(([options, need]) => `${need > 1 ? `${need} × ` : ''}${options.map(instrumentName).join(' oder ')}`).join(', ');
+  if (members.length === 1) return `${name}: Solokünstler bekommen keinen Genre-Bonus. In einer ${name}-Band bräuchte es: ${needs}, und alle mögen ${name}.`;
+  if (b.genres.includes(g)) return `${name}: Genre-Bonus. Alle mögen ${name}, und die Besetzung passt (${b.title}, Sound +${Math.round((b.genreBonus - 1) * 100)} %).`;
+  const check = b.genreChecks?.[g];
+  const fans = members.filter((m) => m.genres.includes(g)).map((m) => m.stageName ?? m.firstName);
+  if (check?.allFans) {
+    const missing = check.requirements.filter((r) => !r.met).map((r) => `${r.need - r.have > 1 ? `${r.need - r.have} × ` : ''}${r.instruments.map(instrumentName).join(' oder ')}`);
+    return `${name}: Alle mögen es, aber für den Bonus fehlt noch ${missing.join(', ')}.`;
+  }
+  return `${name}: nur ${fans.join(', ')}. Für den Bonus müssen es alle mögen, und dabei sein muss: ${needs}.`;
+}
+
 /**
- * Knopf einer Band in der Leiste: Name, darunter je Mitglied das Instrument (blass, wer keins hat) und die Genres als farbige Zeichen,
- * dann Stimmung und Ruhm als Sterne. Wie viele drin sind, sieht man an den Instrumenten – „Solo“ muss nicht mehr dastehen.
+ * Knopf einer Band in der Künstlerleiste: oben rechts die Studiolampe (Stimmung), Name, je Mitglied das Instrument (blass, wer keins hat)
+ * und Ruhm als Sterne, unten alle Genres der Band (voll: bringt den Genre-Bonus, gestrichelt: keiner). Alles darauf lässt sich antippen und erklärt sich;
+ * die übrige Fläche öffnet die Band. Wie viele drin sind, sieht man an den Instrumenten.
  */
 function tile(b, selected) {
   const away = isBusy(b.busyUntil) || !!runningFor(b.id);
@@ -68,24 +90,24 @@ function tile(b, selected) {
   const members = b.memberIds.map(musicianById).filter(Boolean);
   const stars = Math.min(3, steps(b.fame, cat().rules.fameLevels));
   const split = genreList.length ? `--g:var(--lb-c-${genreList[0]})` : '';
+  const tip = (text) => `data-act="tip" data-tip="${esc(text)}" title="${esc(text)}"`;
   const ins = members.map((m) => {
     const type = playedInstrument(m);
     const on = hasGear(m);
-    return `<i class="ins ${on ? '' : 'off'}" title="${esc(m.firstName)}: ${esc(instrumentName(type))}${on ? '' : ' (fehlt)'}">${instrumentIcon(type)}</i>`;
+    return `<i class="ins ${on ? '' : 'off'}" ${tip(`${m.stageName ?? m.firstName}: ${instrumentName(type)}${on ? '' : ' fehlt noch. Ohne eigenes Instrument spielt die Person kaum mit.'}`)}>${instrumentIcon(type)}</i>`;
   }).join('');
-  // Alle Genres, die in der Band vertreten sind: voll, was alle teilen (das Genre der Band), gestrichelt und blasser, was nur einzelne mitbringen.
   const present = sortedGenres([...new Set(members.flatMap((m) => m.genres))]);
-  const genres = present.map((g) => {
-    const all = genreList.includes(g) || solo;
-    const who = members.filter((m) => m.genres.includes(g)).map((m) => m.firstName);
-    return `<i class="gen g-${g} ${all ? '' : 'part'}" title="${esc(genreName(g))}${solo ? '' : all ? ' – alle' : ` – ${esc(who.join(', '))}`}">${genreGlyph(g)}</i>`;
-  }).join('');
+  const genres = present.map((g) => `<i class="gen g-${g} ${b.genres.includes(g) && !solo ? '' : 'part'}" ${tip(genreTip(b, members, g))}>${genreGlyph(g)}</i>`).join('');
+  const songsText = `${b.mood.songs} geschriebene ${b.mood.songs === 1 ? 'Song wartet' : 'Songs warten'} auf eine Aufnahme${b.mood.songRate > 0 ? `. Gerade entstehen etwa ${String(Math.round(b.mood.songRate * 10) / 10).replace('.', ',')} pro Stunde.` : '. Gerade schreibt niemand.'}`;
   return `
-    <a href="#/band/${b.id}" data-nav="b${b.id}" draggable="false" class="lb-bt ${selected ? 'sel' : ''} ${away ? 'busy' : ''} ${b.mood.level === 'red' ? 'frozen' : ''}" style="${split}" title="${esc(b.name)}">
+    <a href="#/band/${b.id}" data-nav="b${b.id}" draggable="false" class="lb-bt ${selected ? 'sel' : ''} ${away ? 'busy' : ''} ${b.mood.level === 'red' ? 'frozen' : ''}" style="${split}">
+      <span class="lamp ${b.mood.level}" ${tip(MOOD_TIP[b.mood.level] ?? '')}><i></i></span>
       <span class="nm">${esc(b.name)}</span>
-      <span class="gl"><span class="inss">${ins}</span><span class="gens">${genres}</span></span>
-      <span class="fame">${moodTag(b.mood.level)}<span class="stars" title="Ruhm: ${esc(cat().fameNames[stars] ?? '')}">${[0, 1, 2].map((i) => `<i class="${i < stars ? 'on' : ''}">★</i>`).join('')}</span>${b.mood.level === 'red' ? '<small>wartet auf dich</small>' : ''}${b.mood.wishes?.length ? `<svg class="wish" viewBox="0 0 24 20" title="${solo ? 'Ein Wunsch ist offen' : 'Die Band hat einen Wunsch'}"><path d="M3 2h18a2 2 0 012 2v9a2 2 0 01-2 2h-9l-5 4v-4H3a2 2 0 01-2-2V4a2 2 0 012-2z"/></svg>` : ''}</span>
-      <span class="songs ${b.mood.songRate > 0 ? 'writing' : ''}" style="--cycle:${b.mood.songRate > 0 ? Math.min(6, Math.max(0.9, 1.6 / b.mood.songRate)).toFixed(2) : 0}s" title="Geschriebene Songs, die auf eine Aufnahme warten${b.mood.songRate > 0 ? ` · schreibt gerade etwa ${String(Math.round(b.mood.songRate * 10) / 10).replace('.', ',')} pro Std.` : ' · schreibt gerade nicht'}"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="ghost" d="M9 18a3 3 0 11-6 0 3 3 0 016 0 L9 5 L20 3 L20 16 a3 3 0 11-6 0 3 3 0 016 0"/><path class="draw" pathLength="100" d="M9 18a3 3 0 11-6 0 3 3 0 016 0 L9 5 L20 3 L20 16 a3 3 0 11-6 0 3 3 0 016 0"/></svg><b>${b.mood.songs}</b></span>
+      <span class="gl"><span class="inss">${ins}</span>
+        <span class="stars" ${tip(`Ruhm: ${cat().fameNames[stars] ?? ''} (${stars} von 3 Sternen)`)}>${[0, 1, 2].map((i) => `<i class="${i < stars ? 'on' : ''}">★</i>`).join('')}</span>
+        ${b.mood.wishes?.length ? `<svg class="wish" viewBox="0 0 24 20" ${tip(`${solo ? 'Ein Wunsch ist offen' : 'Die Band hat einen Wunsch'}: „${b.mood.wishes[0].text}“`)}><path d="M3 2h18a2 2 0 012 2v9a2 2 0 01-2 2h-9l-5 4v-4H3a2 2 0 01-2-2V4a2 2 0 012-2z"/></svg>` : ''}</span>
+      <span class="gens">${genres}${b.mood.level === 'red' ? '<small class="waits">wartet auf dich</small>' : ''}</span>
+      <span class="songs ${b.mood.songRate > 0 ? 'writing' : ''}" style="--cycle:${b.mood.songRate > 0 ? Math.min(6, Math.max(0.9, 1.6 / b.mood.songRate)).toFixed(2) : 0}s" ${tip(songsText)}><svg viewBox="0 0 24 24" aria-hidden="true"><path class="ghost" d="M9 18a3 3 0 11-6 0 3 3 0 016 0 L9 5 L20 3 L20 16 a3 3 0 11-6 0 3 3 0 016 0"/><path class="draw" pathLength="100" d="M9 18a3 3 0 11-6 0 3 3 0 016 0 L9 5 L20 3 L20 16 a3 3 0 11-6 0 3 3 0 016 0"/></svg><b>${b.mood.songs}</b></span>
     </a>`;
 }
 
@@ -291,6 +313,56 @@ export function venueStage(venue, seed, members, opts) {
   return `<div class="lb-room lb-venue v-${venue}">${stageSvg(venue, seed)}${stage(members, { ...opts, className: `in-room ${opts.className ?? ''}` })}${crowdSvg(venue, seed)}</div>`;
 }
 
+/** Genre-Bonus auf der Bandseite: was die Band hat, und je Genre der Mitglieder, was zum Bonus fehlt. */
+function genreSection(b, members) {
+  const pc = (x) => `${x >= 1 ? '+' : '−'}${Math.round(Math.abs(x - 1) * 100)} %`;
+  const need = ([options, n]) => `${n > 1 ? `${n} × ` : ''}${options.map((t) => `${instrumentIcon(t)} ${esc(instrumentName(t))}`).join(' oder ')}`;
+  const genres = sortedGenres([...new Set(members.flatMap((m) => m.genres))]);
+  const head = members.length === 1
+    ? 'Solokünstler bekommen keinen Genre-Bonus. Ab zwei Mitgliedern zählt: Mögen alle dasselbe Genre und ist die Besetzung dafür da, klingt die Band besser.'
+    : b.title ? `<b>${esc(b.title)}</b>: Sound ${pc(b.genreBonus)}.`
+      : b.genreBonus < 1 ? `Gemischte Band: Niemand teilt ein Genre mit allen anderen, Sound ${pc(b.genreBonus)}.` : 'Alle teilen ein Genre, aber die Besetzung fehlt noch: kein Bonus, kein Abzug.';
+  const rows = genres.map((g) => {
+    const check = b.genreChecks?.[g];
+    const fans = members.filter((m) => m.genres.includes(g));
+    const reached = members.length > 1 && b.genres.includes(g);
+    return `<div class="lb-gb-row ${reached ? 'on' : ''}">${genreTag(g)}<b class="lb-gb-name">${esc(genreName(g))}</b>
+      <span class="${fans.length === members.length ? 'ok' : 'muted'}">${members.length === 1 ? 'mag es' : `${fans.length} von ${members.length} mögen es`}</span>
+      <span class="lb-gb-needs">${cat().genreLineup[g].map((req, i) => {
+        const met = check?.requirements?.[i]?.met;
+        return `<span class="${met ? 'ok' : 'warn'}">${met ? '✓' : '✗'} ${need(req)}</span>`;
+      }).join('')}</span>
+      ${reached ? '<em class="ok">Bonus</em>' : ''}</div>`;
+  }).join('');
+  return `
+    <h2 class="lb-cap lb-sec">Genre-Bonus <button class="lb-linkbtn" data-act="genreOverview">Welche Band braucht was?</button></h2>
+    <section class="lb-gb"><p class="muted small">${head}</p>${rows}</section>`;
+}
+
+/** Übersicht aller Genre-Bands: Besetzung und Bonus. */
+function openGenreOverview() {
+  const r = cat().rules;
+  const pc = (x) => `${x >= 1 ? '+' : '−'}${Math.round(Math.abs(x - 1) * 100)} %`;
+  const need = ([options, n]) => `${n > 1 ? `${n} × ` : ''}${options.map((t) => `${instrumentIcon(t)} ${esc(instrumentName(t))}`).join(' oder ')}`;
+  const modal = openModal({
+    wide: true,
+    className: 'lb-gb-modal',
+    html: `
+      <div class="lb-cap">Genre-Bonus</div>
+      <h2>Welche Band braucht was?</h2>
+      <p class="muted">Eine Band bekommt den Bonus, wenn <b>alle</b> Mitglieder das Genre mögen <b>und</b> die Besetzung dafür da ist. Solokünstler bekommen keinen.</p>
+      <ul class="lb-gb-steps">
+        <li><b>Genre-Band</b>: Sound ${pc(r.genreBonus)}</li>
+        <li><b>Hybrid</b> (dasselbe auch für ein zweites Genre): ${pc(r.hybridBonus)}</li>
+        <li><b>Crossover</b> (sogar ein drittes): ${pc(r.crossoverBonus)}</li>
+        <li><b>Gemischt</b> (niemand teilt ein Genre mit allen): ${pc(r.mixedBonus)}</li>
+      </ul>
+      <div class="lb-gb-table">${Object.entries(cat().genreLineup).map(([g, reqs]) => `<div class="lb-gb-row">${genreTag(g)}<b class="lb-gb-name">${esc(genreName(g))}</b><span class="lb-gb-needs">${reqs.map((q) => `<span>${need(q)}</span>`).join('')}</span></div>`).join('')}</div>
+      <div class="dialog-actions"><button class="btn primary" data-close>OK</button></div>`,
+  });
+  modal.body.querySelector('[data-close]').addEventListener('click', () => modal.close());
+}
+
 const pct = (x) => `${Math.round((x - 1) * 100)} %`;
 
 /** Proberaum: die Band in ihrem Raum (ohne laufende Probe), Stufe, Wirkung und der nächste Ausbau. */
@@ -424,6 +496,7 @@ export function page(route) {
       ${members.map((m) => memberRow(b, m, members, genreSlots(members))).join('')}
       ${free > 0 ? `<button class="lb-addm" data-act="together" data-id="${b.id}">${solo ? '+ mit anderen zusammentun' : '+ mit Musiker(n) zusammentun'}</button>` : ''}
     </div>
+    ${genreSection(b, members)}
     <h2 class="lb-cap lb-sec">Werte</h2>
     <div class="lb-sum">
       <div data-act="bandStatInfo" data-key="sound" data-id="${b.id}" data-flash="sound-${b.id}"><small>Sound</small><b>${fmt1(b.sound)}</b></div>
@@ -566,6 +639,9 @@ async function openGigs(b) {
 const signedMoney = (v) => `${v < 0 ? '−' : '+'}${money(Math.abs(v))}`;
 
 defineActions({
+  genreOverview() {
+    openGenreOverview();
+  },
   gigAsk({ id }) {
     const b = bandById(id);
     if (b) openGigs(b);

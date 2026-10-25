@@ -50,6 +50,7 @@ final class Api
         'gigOptions' => ['POST', true],
         'storeHold' => ['POST', true],
         'storeRelease' => ['POST', true],
+        'storeRestock' => ['POST', true],
         'wikiIndex' => ['POST', true],
         'wikiLabel' => ['POST', true],
         'wikiSearch' => ['POST', true],
@@ -282,6 +283,12 @@ final class Api
     private function storeHold(array $in, Repo $repo): array
     {
         (new Store($repo))->hold(self::int($in, 'idx'));
+        return ['state' => State::build($repo)];
+    }
+
+    private function storeRestock(array $in, Repo $repo): array
+    {
+        (new Store($repo))->restock();
         return ['state' => State::build($repo)];
     }
 

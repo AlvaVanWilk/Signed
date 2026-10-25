@@ -529,7 +529,7 @@ export function stage(members, { bpm = 120, names = true, className = '', electr
         <span class="countdown" data-until="${away.until}"></span></span>${names ? `<b>${escapeHtml(m.firstName)}</b>` : ''}</div>`;
     }
     return `
-    <div class="fig-member${act ? ' clickable' : ''}${TALL.includes(m.look?.hair) || ['cowboy', 'fedora'].includes(hatOf(m.look ?? {})) ? ' tall' : ''}" style="--d:${(-((m.id * 7919) % 4300) / 1000).toFixed(2)}s"${act ? ` data-act="${act}" data-id="${m.id}" title="${escapeHtml(m.firstName)} öffnen"` : ''}>${figure(m.look, instrumentOf(m), { electric: electricOf(m), hue: hueOf(m), mood: m.personality?.[0] ?? null })}${names ? `<b>${nameOf ? nameOf(m) : escapeHtml(m.stageName ?? m.firstName)}</b>` : ''}${below(m)}</div>`;
+    <div class="fig-member${act ? ' clickable' : ''}${TALL.includes(m.look?.hair) || ['cowboy', 'fedora'].includes(hatOf(m.look ?? {})) ? ' tall' : ''}" style="--d:${(-((m.id * 7919) % 4300) / 1000).toFixed(2)}s;--tilt:${((m.id * 37) % 13) - 6}deg"${act ? ` data-act="${act}" data-id="${m.id}" title="${escapeHtml(m.firstName)} öffnen"` : ''}>${figure(m.look, instrumentOf(m), { electric: electricOf(m), hue: hueOf(m), mood: m.personality?.[0] ?? null })}${names ? `<b>${nameOf ? nameOf(m) : escapeHtml(m.stageName ?? m.firstName)}</b>` : ''}${below(m)}</div>`;
   }).join('')}
   </div>`;
 }

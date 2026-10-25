@@ -469,6 +469,10 @@ final class Schema
             [
                 'ALTER TABLE musicians ADD COLUMN stage_name VARCHAR(60) NULL',
             ],
+            // 32: Music Store – eigene Lieferung eines Labels (Nummer des Regals, solange das Zeitfenster läuft)
+            [
+                'ALTER TABLE labels ADD COLUMN store_shelf INTEGER NULL',
+            ],
         ];
     }
 }

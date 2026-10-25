@@ -142,7 +142,7 @@ final class Generator
             'm' => ['kurz' => 28, 'locken' => 12, 'glatze' => 10, 'lang' => 10, 'afro' => 8, 'sidecut' => 9, 'irokese' => 5, 'dutt' => 5, 'bob' => 3],
             default => ['kurz' => 14, 'bob' => 14, 'locken' => 12, 'sidecut' => 12, 'lang' => 12, 'afro' => 10, 'irokese' => 8, 'dutt' => 8],
         };
-        return [
+        $look = [
             'gender' => $gender,
             'skin' => Rng::pick(Catalog::SKIN_TONES),
             'hair' => (string) Rng::weighted($hair),
@@ -154,6 +154,11 @@ final class Generator
             'freckles' => Rng::chance(0.12),
             'shirt' => Rng::pick(Catalog::SHIRT_COLORS),
         ];
+        // Zu Dutt, Undercut, Irokese, Locken und Afro passt keine Kopfbedeckung (wie NO_HAT in avatar.js).
+        if (in_array($look['hair'], ['dutt', 'sidecut', 'irokese', 'locken', 'afro'], true)) {
+            $look['hat'] = 'none';
+        }
+        return $look;
     }
 
     /**

@@ -116,32 +116,55 @@ export function stageSvg(key, seed = 1) {
   return `<svg class="lb-stageart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMax slice" aria-hidden="true">${scene(rng(seed))}</svg>`;
 }
 
-const HAIR = ['#3b2a20', '#c8a165', '#6b3d2a', '#2a2233', '#a0522d', '#e0c48a', '#7a4a2e', '#d9a27e'];
-const COUNT = { kneipe: 7, club: 14, saal: 18, halle: 24, arena: 30 };
+const COUNT = { kneipe: 6, club: 12, saal: 15, halle: 20, arena: 24 };
+/** Licht von der Bühne, das die Köpfe oben anstrahlt. */
+const RIM = { kneipe: '#ffd27a', club: '#ff8fc0', saal: '#ffe9c0', halle: '#9fd0ff', arena: '#ffd27a' };
+
+/** Ein Mensch von hinten als Silhouette: Kopf mit Frisur, Hals, Schultern; dazu ein Lichtsaum oben. */
+function person(x, y, k, r, color, rim, { hand = false, phone = false } = {}) {
+  const hr = 13 * k;
+  const sh = 34 * k;
+  const style = Math.floor(r() * 6);
+  let hair = '';
+  if (style === 1) hair = `<circle cx="${x + (r() - 0.5) * 6}" cy="${y - hr * 1.05}" r="${hr * 0.42}"/>`;
+  if (style === 2) hair = `<path d="M${x + hr * 0.5} ${y - hr * 0.2} Q${x + hr * 1.3} ${y + hr * 0.6} ${x + hr * 0.7} ${y + hr * 1.5} Q${x + hr * 0.4} ${y + hr * 0.6} ${x + hr * 0.2} ${y + hr * 0.4} Z"/>`;
+  if (style === 3) hair = [[-0.7, -0.5], [0, -0.95], [0.7, -0.5], [-0.95, 0.1], [0.95, 0.1]].map(([dx, dy]) => `<circle cx="${x + dx * hr}" cy="${y + dy * hr}" r="${hr * 0.5}"/>`).join('');
+  if (style === 4) hair = `<path d="M${x - hr * 1.02} ${y - hr * 0.1} Q${x - hr} ${y - hr * 1.15} ${x} ${y - hr * 1.12} Q${x + hr} ${y - hr * 1.15} ${x + hr * 1.02} ${y - hr * 0.1} Z"/><path d="M${x + hr * 0.6} ${y - hr * 0.35} Q${x + hr * 1.6} ${y - hr * 0.45} ${x + hr * 1.75} ${y - hr * 0.2} L${x + hr * 0.8} ${y - hr * 0.05} Z"/>`;
+  if (style === 5) hair = `<path d="M${x - hr * 1.05} ${y + hr * 0.2} Q${x - hr * 1.2} ${y + hr * 1.3} ${x - hr * 0.6} ${y + hr * 1.6} L${x + hr * 0.6} ${y + hr * 1.6} Q${x + hr * 1.2} ${y + hr * 1.3} ${x + hr * 1.05} ${y + hr * 0.2} Z"/>`;
+  const lean = (r() - 0.5) * 3;
+  const arm = hand ? `<path d="M${x + sh * 0.55} ${y + hr * 1.8} Q${x + sh * 0.9} ${y - hr * 0.4} ${x + sh * 0.75 + lean} ${y - hr * 2.2}" fill="none" stroke="${color}" stroke-width="${8 * k}" stroke-linecap="round"/>
+    <ellipse cx="${x + sh * 0.75 + lean}" cy="${y - hr * 2.4}" rx="${4.6 * k}" ry="${5.6 * k}"/>` : '';
+  const glow = phone ? `<rect x="${x + sh * 0.75 + lean - 4 * k}" y="${y - hr * 3.2}" width="${8 * k}" height="${12 * k}" rx="${2 * k}" fill="#dff3ff" opacity="0.9"/>
+    <ellipse cx="${x + sh * 0.75 + lean}" cy="${y - hr * 2.7}" rx="${14 * k}" ry="${12 * k}" fill="#dff3ff" opacity="0.12"/>` : '';
+  return `<g class="crowd-bob" style="--d:${(-r() * 1.4).toFixed(2)}s">
+    <g fill="${color}">
+      ${arm}
+      <path d="M${x - sh} 90 C${x - sh} ${y + hr * 1.6} ${x - sh * 0.5} ${y + hr * 1.25} ${x - hr * 0.45} ${y + hr * 0.9} L${x + hr * 0.45} ${y + hr * 0.9} C${x + sh * 0.5} ${y + hr * 1.25} ${x + sh} ${y + hr * 1.6} ${x + sh} 90 Z"/>
+      <ellipse cx="${x}" cy="${y}" rx="${hr}" ry="${hr * 1.08}"/>${hair}
+    </g>
+    <path d="M${x - hr * 0.8} ${y - hr * 0.62} Q${x} ${y - hr * 1.32} ${x + hr * 0.8} ${y - hr * 0.62}" fill="none" stroke="${rim}" stroke-width="${2.2 * k}" stroke-linecap="round" opacity="0.35"/>
+    ${glow}
+  </g>`;
+}
 
 /**
- * Publikum vorne als Streifen: Köpfe und Schultern von hinten, die im Takt wippen (CSS, Klasse .crowd-bob).
- * In Halle und Arena gehen Hände hoch, in der Arena leuchten Handys.
+ * Publikum vorne als Silhouetten im Gegenlicht (keine Gesichter, keine bunten Figuren): hinten kleiner und heller,
+ * vorne größer und dunkler. Die Köpfe wippen im Takt (CSS .crowd-bob). In Halle und Arena gehen Hände hoch,
+ * in der Arena leuchten Handys.
  */
 export function crowdSvg(key, seed = 1) {
   const r = rng(seed + 31);
-  const n = COUNT[key] ?? 7;
-  const step = W / n;
+  const n = COUNT[key] ?? 6;
+  const rim = RIM[key] ?? RIM.kneipe;
+  const big = key === 'halle' || key === 'arena';
   let out = '';
-  for (let i = 0; i < n; i++) {
-    const x = step * (i + 0.5) + (r() - 0.5) * step * 0.4;
-    const y = 42 + r() * 10;
-    const hair = HAIR[Math.floor(r() * HAIR.length)];
-    const shirt = `hsl(${Math.floor(r() * 360)} 30% 32%)`;
-    const hand = (key === 'halle' || key === 'arena') && r() > 0.55;
-    const phone = key === 'arena' && hand && r() > 0.4;
-    out += `<g class="crowd-bob" style="--d:${(-r() * 1.2).toFixed(2)}s">
-      ${hand ? `<path d="M${x + 16} ${y + 10} L${x + 22} ${y - 22}" stroke="${shirt}" stroke-width="9" stroke-linecap="round"/><circle cx="${x + 22}" cy="${y - 24}" r="5.5" fill="#c98a62" stroke="${INK}" stroke-width="2"/>` : ''}
-      ${phone ? `<rect x="${x + 17}" y="${y - 40}" width="10" height="15" rx="2" fill="#2a2233" stroke="${INK}" stroke-width="1.6"/><rect x="${x + 19}" y="${y - 38}" width="6" height="10" fill="#dff3ff"/>` : ''}
-      <path d="M${x - 26} 80 Q${x - 24} ${y + 14} ${x} ${y + 12} Q${x + 24} ${y + 14} ${x + 26} 80 Z" fill="${shirt}" stroke="${INK}" stroke-width="2.4"/>
-      <circle cx="${x}" cy="${y}" r="15" fill="${hair}" stroke="${INK}" stroke-width="2.4"/>
-      <path d="M${x - 8} ${y - 8} Q${x - 2} ${y - 12} ${x + 4} ${y - 11}" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity="0.1"/>
-    </g>`;
+  for (const [row, k, color, yBase, count] of [[0, 0.72, '#2a2238', 46, Math.round(n * 1.1)], [1, 1, '#120e1a', 60, n]]) {
+    const step = W / count;
+    for (let i = 0; i < count; i++) {
+      const x = step * (i + 0.5) + (r() - 0.5) * step * 0.5;
+      const hand = big && r() > (row ? 0.6 : 0.7);
+      out += person(x, yBase + r() * 6, k, r, color, rim, { hand, phone: key === 'arena' && hand && r() > 0.45 });
+    }
   }
-  return `<svg class="lb-crowd" viewBox="0 0 ${W} 80" preserveAspectRatio="xMidYMax slice" aria-hidden="true">${out}</svg>`;
+  return `<svg class="lb-crowd" viewBox="0 0 ${W} 90" preserveAspectRatio="xMidYMax slice" aria-hidden="true">${out}</svg>`;
 }

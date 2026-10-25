@@ -1,4 +1,4 @@
-import { HAIR_BACK, HAIR_FRONT, HATS, HAT_COLORS } from './avatar.js';
+import { HAIR_BACK, HAIR_FRONT, HATS, HAT_COLORS, hatOf } from './avatar.js';
 
 /**
  * Niedliche Ganzkörper-Figur eines Musikers: großer Kopf aus denselben Merkmalen wie das Kartenbild,
@@ -130,8 +130,8 @@ function eyes(kind, skin) {
 const lids = (skin) => `<rect x="40" y="41.6" width="6" height="3.4" fill="${skin}"/><rect x="54" y="41.6" width="6" height="3.4" fill="${skin}"/>`
   + line('M40.4 45 L45.6 45') + line('M54.4 45 L59.6 45');
 
-/** Haar unter einer Mütze: nur zwei Strähnen an den Schläfen. */
-const HAT_HAIR = 'M31.2 42 C30.4 35 32.6 31.6 37 32 L37.6 38.4 C35 38.6 33 40 31.2 42 Z M68.8 42 C69.6 35 67.4 31.6 63 32 L62.4 38.4 C65 38.6 67 40 68.8 42 Z';
+/** Haar unter einer Mütze: ein durchgehender Pony unter dem Rand, von Schläfe zu Schläfe (nicht in der Mitte ausgeschnitten). */
+const HAT_HAIR = 'M31.2 42.4 C30 34 33 28 40 28 H60 C67 28 70 34 68.8 42.4 C66 39.4 62 38.2 56 38 C53 37.9 51.6 38.6 50 38.6 C48.4 38.6 47 37.9 44 38 C38 38.2 34 39.4 31.2 42.4 Z';
 
 /** Schimmer: ein breiter, sehr blasser Bogen mit etwas hellerer Mitte. */
 const sheen = (d) => `<path d="${d}" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" opacity="0.06"/><path d="${d}" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity="0.08"/>`;
@@ -147,13 +147,14 @@ function lipColor(skin) {
 function head(look, skin, sing, mood = null) {
   const hair = look.hairColor || '#3b2a20';
   const style = look.hair || 'kurz';
-  const hatted = look.hat && look.hat !== 'none';
+  const hat = hatOf(look);
+  const hatted = hat !== 'none';
   const p = [];
-  // Afro unter einer Mütze: etwas kleiner und tiefer, damit er seitlich unter der Mütze hervorquillt statt darüber.
-  if (style === 'afro') p.push(hatted ? `<ellipse cx="50" cy="41" rx="28" ry="21" fill="${hair}"/>` : `<circle cx="50" cy="35" r="26" fill="${hair}"/>`);
+  if (style === 'afro') p.push(`<circle cx="50" cy="35" r="26" fill="${hair}"/>`);
   if (HAIR_BACK[style]) p.push(`<path d="${HAIR_BACK[style]}" fill="${hair}"/>`);
   p.push(`<g stroke="${INK}" stroke-width="1.2"><ellipse cx="31.5" cy="45" rx="3.5" ry="4.5" fill="${skin}"/><ellipse cx="68.5" cy="45" rx="3.5" ry="4.5" fill="${skin}"/>`);
-  p.push(`<ellipse cx="50" cy="43" rx="19" ry="18" fill="${skin}"/></g>`);
+  // Ohne Haare wäre der Kopf oben zu flach: Die Glatze bekommt einen etwas höheren Schädel.
+  p.push(style === 'glatze' && !hatted ? `<ellipse cx="50" cy="41.2" rx="19" ry="19.8" fill="${skin}"/></g>` : `<ellipse cx="50" cy="43" rx="19" ry="18" fill="${skin}"/></g>`);
   p.push(`<path d="M30.6 43 Q32.4 41.6 33 45 Q32.6 47.6 31.2 47.4" fill="none" stroke="${INK}" stroke-width="0.7" opacity="0.45"/><path d="M69.4 43 Q67.6 41.6 67 45 Q67.4 47.6 68.8 47.4" fill="none" stroke="${INK}" stroke-width="0.7" opacity="0.45"/>`);
   p.push(`<path d="M64.5 31 Q70.6 42 66.4 53 Q60.4 60.4 50 61 Q63.6 54.6 64.5 31 Z" fill="#140f1e" opacity="0.09"/>`);
   if (look.gender === 'f' && trait(look, 'earrings') < 0.6) {
@@ -189,14 +190,13 @@ function head(look, skin, sing, mood = null) {
   if (look.beard === 'full') p.push(`<path d="M32 46 C32 68 68 68 68 46 C64 58 58 56 50 56 C42 56 36 58 32 46 Z" fill="${hair}"/>`);
   if (look.beard === 'stubble') p.push(`<path d="M33 47 C34 63 66 63 67 47 C63 58 37 58 33 47 Z" fill="${hair}" opacity="0.3"/>`);
 
-  // Mit Mütze schaut vom Haar nur heraus, was unter dem Rand liegt: Locken an den Seiten, sonst Strähnen an den Schläfen.
+  // Mit Mütze schaut vom Haar nur der Pony unter dem Rand heraus (Locken, Afro, Dutt, Undercut und Irokese tragen keine).
   if (style === 'locken') {
-    const curls = hatted ? [[33.4, 33, 5.4], [66.6, 33, 5.4], [32, 39, 5], [68, 39, 5]] : [[35, 30, 7], [44, 24, 8], [55, 23, 8], [64, 29, 7], [32, 38, 5], [68, 38, 5]];
-    for (const [x, y, r] of curls) p.push(`<circle cx="${x}" cy="${y}" r="${r}" fill="${hair}"/>`);
+    for (const [x, y, r] of [[35, 30, 7], [44, 24, 8], [55, 23, 8], [64, 29, 7], [32, 38, 5], [68, 38, 5]]) p.push(`<circle cx="${x}" cy="${y}" r="${r}" fill="${hair}"/>`);
   } else if (style === 'afro') {
-    if (!hatted) p.push(`<path d="M32 40 C29 13 71 13 68 40 C60 31 40 31 32 40 Z" fill="${hair}"/>`);
+    p.push(`<path d="M32 40 C29 13 71 13 68 40 C60 31 40 31 32 40 Z" fill="${hair}"/>`);
   } else if (hatted && HAIR_FRONT[style]) {
-    if (style !== 'irokese') p.push(`<path d="${HAT_HAIR}" fill="${hair}"/>`);
+    p.push(`<path d="${HAT_HAIR}" fill="${hair}"/>`);
   } else if (HAIR_FRONT[style]) {
     p.push(`<path d="${HAIR_FRONT[hatted && style === 'sidecut' ? 'kurz' : style]}" fill="${hair}"/>`);
   }
@@ -210,10 +210,10 @@ function head(look, skin, sing, mood = null) {
   if (look.glasses === 'round') p.push(`<g fill="none" stroke="${INK}" stroke-width="1.3"><circle cx="43" cy="45" r="5"/><circle cx="57" cy="45" r="5"/><path d="M48 45 L52 45"/></g>`);
   if (look.glasses === 'square') p.push(`<g fill="none" stroke="${INK}" stroke-width="1.3"><rect x="37.5" y="41" width="10" height="8" rx="1.5"/><rect x="52.5" y="41" width="10" height="8" rx="1.5"/><path d="M47.5 45 L52.5 45"/></g>`);
   if (look.glasses === 'sun') p.push('<g fill="#111"><rect x="37" y="41.5" width="11" height="7" rx="3"/><rect x="52" y="41.5" width="11" height="7" rx="3"/><rect x="47" y="43.5" width="6" height="1.6"/></g>');
-  if (look.hat && HATS[look.hat]) {
-    const [c1, c2] = HAT_COLORS[look.hat];
-    p.push(`<g stroke="${INK}" stroke-width="1.1" stroke-linejoin="round">${HATS[look.hat].replaceAll('HAT2', c2).replaceAll('HAT', c1)}</g>`);
-    p.push(sheen({ fedora: 'M41 19 Q46 16.4 51 16.4', cowboy: 'M41 17 Q46 14.4 51 14.4' }[look.hat] ?? 'M41 24.6 Q46 21.8 51 21.8'));
+  if (HATS[hat]) {
+    const [c1, c2] = HAT_COLORS[hat];
+    p.push(`<g stroke="${INK}" stroke-width="1.1" stroke-linejoin="round">${HATS[hat].replaceAll('HAT2', c2).replaceAll('HAT', c1)}</g>`);
+    p.push(sheen({ fedora: 'M41 19 Q46 16.4 51 16.4', cowboy: 'M38 20 Q39.4 16 42 15' }[hat] ?? 'M41 24.6 Q46 21.8 51 21.8'));
   }
   return `<g transform="translate(60 44) scale(1.5) translate(-50 -42)">${p.join('')}</g>`;
 }

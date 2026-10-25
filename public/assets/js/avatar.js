@@ -21,8 +21,13 @@ export const HATS = {
   beanie: '<path d="M31 37 C31 13 69 13 69 37 Z" fill="HAT"/><rect x="29" y="32" width="42" height="7" rx="3" fill="HAT2"/>',
   cap: '<path d="M31 35 C30 13 70 13 69 35 Z" fill="HAT"/><path d="M60 33 C70 32 78 34 80 37 L60 37 Z" fill="HAT2"/>',
   fedora: '<path d="M31 29 C30 9 70 9 69 29 Z" fill="HAT"/><rect x="31" y="23" width="38" height="5" fill="HAT2"/><ellipse cx="50" cy="29" rx="29" ry="5" fill="HAT2"/>',
-  cowboy: '<path d="M31 30 C29 6 71 6 69 30 Z" fill="HAT"/><path d="M14 26 C24 36 76 36 86 26 C82 33 74 35 50 35 C26 35 18 33 14 26 Z" fill="HAT2"/>',
+  // Cowboyhut: Krone mit Delle oben, Hutband, breite Krempe mit hochgebogenen Enden.
+  cowboy: '<path d="M33.4 32.4 C32.6 20 34.6 13.4 40.4 12.6 C44 12.2 46.6 15.4 50 15.4 C53.4 15.4 56 12.2 59.6 12.6 C65.4 13.4 67.4 20 66.6 32.4 H33.4 Z" fill="HAT"/><path d="M33.4 27.6 H66.6 V30.4 H33.4 Z" fill="HAT2"/><path d="M15 25.6 C19 28.6 24 30.4 32 31 C38 31.4 44 31.6 50 31.6 C56 31.6 62 31.4 68 31 C76 30.4 81 28.6 85 25.6 C85.6 29.6 81 34.6 68 35.6 C62 36 56 36.2 50 36.2 C44 36.2 38 36 32 35.6 C19 34.6 14.4 29.6 15 25.6 Z" fill="HAT2"/>',
 };
+
+/** Zu diesen Frisuren passt keine Kopfbedeckung (Dutt, Undercut, Irokese, Locken, Afro): Sie tragen nie eine. */
+export const NO_HAT = ['dutt', 'sidecut', 'irokese', 'locken', 'afro'];
+export const hatOf = (look) => (!look.hat || NO_HAT.includes(look.hair) ? 'none' : look.hat);
 
 export const HAT_COLORS = { beanie: ['#ff4f8b', '#c73a6c'], cap: ['#3a86ff', '#2763c4'], fedora: ['#3b3245', '#1d1824'], cowboy: ['#a0703f', '#7a5230'] };
 
@@ -30,7 +35,8 @@ export function avatar(look = {}) {
   const skin = look.skin || '#d9a27e';
   const hair = look.hairColor || '#3b2a20';
   const style = look.hair || 'kurz';
-  const hatted = look.hat && look.hat !== 'none';
+  const hat = hatOf(look);
+  const hatted = hat !== 'none';
   const parts = [];
 
   const female = look.gender === 'f';
@@ -80,9 +86,9 @@ export function avatar(look = {}) {
     parts.push('<g fill="#111"><rect x="37" y="39" width="11" height="7" rx="3"/><rect x="52" y="39" width="11" height="7" rx="3"/><rect x="47" y="41" width="6" height="1.6"/></g>');
   }
   if (look.piercing) parts.push('<circle cx="33" cy="50" r="1.4" fill="#e6e6e6"/>');
-  if (look.hat && HATS[look.hat]) {
-    const [c1, c2] = HAT_COLORS[look.hat];
-    parts.push(HATS[look.hat].replaceAll('HAT2', c2).replaceAll('HAT', c1));
+  if (HATS[hat]) {
+    const [c1, c2] = HAT_COLORS[hat];
+    parts.push(HATS[hat].replaceAll('HAT2', c2).replaceAll('HAT', c1));
   }
 
   return `<svg class="avatar-svg" viewBox="0 0 100 100" aria-hidden="true">${parts.join('')}</svg>`;

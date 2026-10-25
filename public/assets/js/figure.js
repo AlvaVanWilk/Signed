@@ -210,15 +210,15 @@ const f1 = (v) => Math.round(v * 10) / 10;
 let hairClip = 0;
 
 /** Pinselzug: breit und halb durchsichtig, zweimal übereinander (weicher Rand). */
-const brush = (d, hair, dark, w = 3) => {
-  const c = tone(hair, dark ? -0.13 : 0.1);
+const brush = (d, hair, dark, w = 3, light = 0.05) => {
+  const c = tone(hair, dark ? -0.13 : light);
   return `<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" opacity="0.28"/><path d="${d}" fill="none" stroke="${c}" stroke-width="${f1(w * 0.55)}" stroke-linecap="round" opacity="0.4"/>`;
 };
-/** Haarform mit Pinselzügen darin (auf die Form begrenzt) und Umrandung obendrauf. */
-function painted(d, hair, strokes, outline = true) {
+/** Haarform mit Pinselzügen darin (auf die Form begrenzt), ohne dunkle Außenlinie; nur Locken behalten eine feine, damit man die einzelnen Locken sieht. */
+function painted(d, hair, strokes, outline = false, light = 0.05) {
   const id = `hc${++hairClip}`;
   return `<clipPath id="${id}"><path d="${d}"/></clipPath><path d="${d}" fill="${hair}"/>`
-    + `<g clip-path="url(#${id})">${strokes.map(([path, dark, w]) => brush(path, hair, dark, w)).join('')}</g>`
+    + `<g clip-path="url(#${id})">${strokes.map(([path, dark, w]) => brush(path, hair, dark, w, light)).join('')}</g>`
     + (outline ? `<path d="${d}" fill="none" ${HAIR_LINE}/>` : '');
 }
 /** Schlitz im Pony: ein schmaler, nach oben spitz zulaufender Keil in dunklem Ton. */
@@ -283,7 +283,7 @@ function hairFront(style, hair) {
       slits.push(slit(x, y, hair, len * (0.75 + ((i * 7) % 4) * 0.1), (x - crown[0]) * -0.06));
     }
   }
-  return painted(d, hair, strokes) + slits.join('');
+  return painted(d, hair, strokes, false, style === 'sidecut' ? 0.1 : 0.05) + slits.join('');
 }
 
 /** Haar hinter dem Kopf (lange Haare, Bob, Zopf): Pinselzüge nach unten, Schlitze an den Spitzen. */
@@ -297,10 +297,10 @@ const hairBack = (style, hair) => (HAIR_BACK[style] && BACK_BRUSH[style]
   : '');
 
 /** Runde Haarteile (Locken, Afro, Dutt): unten rechts dunkler, oben links heller – wie Fülle von oben beleuchtet. */
-const roundPainted = (cx, cy, r, hair) => painted(`M${cx - r} ${cy} a${r} ${r} 0 1 0 ${2 * r} 0 a${r} ${r} 0 1 0 ${-2 * r} 0 Z`, hair, [
+const roundPainted = (cx, cy, r, hair, outline = false) => painted(`M${cx - r} ${cy} a${r} ${r} 0 1 0 ${2 * r} 0 a${r} ${r} 0 1 0 ${-2 * r} 0 Z`, hair, [
   [`M${f1(cx - r * 0.2)} ${f1(cy + r * 0.85)} Q${f1(cx + r * 0.9)} ${f1(cy + r * 0.7)} ${f1(cx + r * 0.85)} ${f1(cy - r * 0.2)}`, 1, f1(r * 0.55)],
   ...(r > 10 ? [] : [[`M${f1(cx - r * 0.7)} ${f1(cy + r * 0.1)} Q${f1(cx - r * 0.6)} ${f1(cy - r * 0.6)} ${f1(cx + r * 0.05)} ${f1(cy - r * 0.68)}`, 0, f1(r * 0.4)]]),
-]);
+], outline);
 
 /** Lippenstift: Hautton mit Rosé gemischt und etwas dunkler – auf heller Haut zartrosa, auf dunkler ein warmes Beerenbraun. */
 function lipColor(skin) {
@@ -359,14 +359,14 @@ function head(look, skin, sing, mood = null) {
 
   // Mit Mütze schaut vom Haar nur der Pony unter dem Rand heraus (Locken, Afro, Dutt, Undercut und Irokese tragen keine).
   if (style === 'locken') {
-    for (const [x, y, r] of [[32, 38, 5], [68, 38, 5], [35, 30, 7], [64, 29, 7], [44, 24, 8], [55, 23, 8]]) p.push(roundPainted(x, y, r, hair));
+    for (const [x, y, r] of [[32, 38, 5], [68, 38, 5], [35, 30, 7], [64, 29, 7], [44, 24, 8], [55, 23, 8]]) p.push(roundPainted(x, y, r, hair, true));
   } else if (style === 'afro') {
     p.push(painted('M32 40 C29 13 71 13 68 40 C60 31 40 31 32 40 Z', hair, [['M36 36 Q40 30 46 31', 1, 3], ['M64 36 Q60 30 54 31', 1, 3]], false));
   } else if (hatted && HAIR_FRONT[style]) {
     p.push(painted(HAT_HAIR, hair, [['M34 41 L36 38', 1, 2.6], ['M66 41 L64 38', 1, 2.6], ['M46 39 L47 38', 0, 2.4]]));
     p.push([[40, 39.6, 1.8], [50, 39.4, 1.6], [60, 39.6, 1.8]].map(([x, y, len]) => slit(x, y, hair, len)).join(''));
   } else if (style === 'irokese') {
-    p.push(painted(HAIR_FRONT.irokese, hair, [['M46.4 12 L45.4 34', 1, 3], ['M51.6 12 L52.6 34', 0, 2.4]]));
+    p.push(painted(HAIR_FRONT.irokese, hair, [['M46.4 12 L45.4 34', 1, 3], ['M51.6 12 L52.6 34', 0, 2.4]], false, 0.1));
   } else if (HAIR_FRONT[style]) {
     p.push(hairFront(hatted && style === 'sidecut' ? 'kurz' : style, hair));
   }

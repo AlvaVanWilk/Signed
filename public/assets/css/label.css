@@ -769,7 +769,7 @@ a.btn.wk-back { display: inline-flex; width: auto; }
    Die Punkte heben sich leicht nacheinander, jeder in seinem eigenen Takt – wie jemand, der gleich etwas sagt. */
 .lb-bt .wishb { position: absolute; right: -12px; top: -12px; width: 30px; height: 28px; z-index: 3; }
 .lb-bt .wishb svg { width: 100%; height: 100%; display: block; overflow: visible; }
-.lb-bt .wishb svg path { fill: var(--lb-card); stroke: var(--lb-accent); stroke-width: 1.8; stroke-linejoin: round; }
+.lb-bt .wishb svg path { fill: var(--lb-card); stroke: var(--lb-accent); stroke-width: 1.3; stroke-linejoin: round; }
 .lb-bt.sel .wishb svg path { fill: var(--lb-card2); }
 .lb-bt .wishb svg circle { fill: var(--lb-accent); transform-box: fill-box; transform-origin: center; animation: lb-dot 1.9s ease-in-out infinite; }
 .lb-bt .wishb svg .d2 { animation-duration: 2.15s; animation-delay: -.5s; }

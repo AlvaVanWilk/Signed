@@ -296,6 +296,7 @@ final class Bands
     private function giveUpName(array $band, string $reason, string $note, bool $continue): void
     {
         $db = $this->repo->db;
+        $members = $this->repo->members($band['id']);
         $db->exec("DELETE FROM records WHERE band_id = ? AND status = 'open'", [$band['id']]);
         if (!self::hasCareer($band)) {
             if (!$continue) {
@@ -308,6 +309,7 @@ final class Bands
                 'retired_at' => Clock::now(), 'retired_reason' => $reason, 'retired_note' => mb_substr($note, 0, 200),
                 'fame_final' => $band['fame_own'], 'fame_own' => 0, 'manager_id' => null, 'busy_until' => 0, 'promo_record_id' => null,
             ], ['id' => $band['id']]);
+            $this->logLastMembers($members, $band['name'], $band['id']);
             return;
         }
         $shell = $db->one('SELECT * FROM bands WHERE id = ?', [$band['id']]);
@@ -327,6 +329,15 @@ final class Bands
             'fame_own' => 0, 'records' => 0, 'perfect_records' => 0, 'songs_recorded' => 0, 'gigs_since_record' => 0,
             'gigs_played' => 0, 'promo_record_id' => null, 'released' => 0, 'live_songs' => 0, 'live_songs_needed' => 0, 'band_promos' => 0,
         ], ['id' => $band['id']]);
+        $this->logLastMembers($members, $band['name'], $shellId);
+    }
+
+    /** Wer zuletzt dabei war, steht in der Geschichte der ehemaligen Band und im Artikel des Künstlers. */
+    private function logLastMembers(array $members, string $bandName, int $bandId): void
+    {
+        foreach ($members as $m) {
+            $this->repo->log('lineup', mb_substr(sprintf('%s war Mitglied von „%s“, als der Name aufgegeben wurde.', self::fullName($m), $bandName), 0, 250), $bandId, $m['id']);
+        }
     }
 
     /**
@@ -360,17 +371,18 @@ final class Bands
             }
             // Wer den Namen aufgibt: ehemalige Band mit allem, was daran hängt.
             $this->giveUpName($gone, 'merged', $keepName === 'new' ? sprintf('ging mit „%s“ in „%s“ auf', $keep['name'], $finalName) : sprintf('ging in „%s“ auf', $keep['name']), false);
-            $db->exec('UPDATE musicians SET band_id = ?, band_slot = band_slot WHERE band_id = ?', [$keep['id'], $gone['id']]);
             if ($keepName === 'new') {
                 $this->giveUpName($keep, 'renamed', sprintf('heißt jetzt „%s“', $finalName), true);
                 $db->update('bands', ['name' => $finalName, 'name_key' => Names::key($finalName)], ['id' => $keep['id']]);
             }
+            $db->exec('UPDATE musicians SET band_id = ?, band_slot = band_slot WHERE band_id = ?', [$keep['id'], $gone['id']]);
             // Ein Einzelmusiker mit zwei Instrumenten sagt, welches er in der neuen Band spielt.
             if (count($joining) === 1 && $joining[0]['instr2'] !== null) {
                 $db->update('musicians', ['band_slot' => self::slot($joining[0], $slot)], ['id' => $joining[0]['id']]);
             }
-            $names = implode(' und ', array_map(static fn ($m) => self::fullName($m), $joining));
-            $this->repo->log('lineup', mb_substr(sprintf('%s %s zu „%s“.', $names, count($joining) === 1 ? 'kommt' : 'kommen', $finalName), 0, 250), $keep['id']);
+            foreach ($joining as $m) {
+                $this->repo->log('lineup', mb_substr(sprintf('%s kommt von „%s“ zu „%s“.', self::fullName($m), $gone['name'], $finalName), 0, 250), $keep['id'], $m['id']);
+            }
             $this->syncIdentity($this->repo->band($keep['id']));
             return $keep['id'];
         });
@@ -406,9 +418,7 @@ final class Bands
             self::assertLineup($members);
 
             $this->repo->db->update('musicians', ['band_id' => $bandId, 'band_slot' => $m['band_slot']], ['id' => $m['id']]);
-            if ($band['released']) {
-                $this->repo->log('lineup', sprintf('%s steigt bei %s ein.', self::fullName($m), $band['name']), $bandId, $m['id']);
-            }
+            $this->repo->log('lineup', sprintf('%s steigt bei %s ein.', self::fullName($m), $band['name']), $bandId, $m['id']);
             $this->syncIdentity($band);
         });
     }
@@ -428,14 +438,12 @@ final class Bands
             $return = $band['slot_return'];
             unset($return[$m['id']]);
             $this->saveSlotReturn($bandId, $return);
-            if ($band['released']) {
-                $this->repo->log('lineup', sprintf(
-                    '%s verlässt %s und nimmt %s Bekanntheit mit.',
-                    self::fullName($m),
-                    $band['name'],
-                    number_format($m['fame'], 1, ',', '.')
-                ), $bandId, $m['id']);
-            }
+            $this->repo->log('lineup', sprintf(
+                '%s verlässt %s und nimmt %s Bekanntheit mit.',
+                self::fullName($m),
+                $band['name'],
+                number_format($m['fame'], 1, ',', '.')
+            ), $bandId, $m['id']);
             $this->syncIdentity($band);
         });
     }
@@ -516,8 +524,8 @@ final class Bands
         $this->repo->db->transaction(function () use ($bandId, $reason): void {
             $band = $this->idleBand($bandId);
             $db = $this->repo->db;
-            $db->exec('UPDATE musicians SET band_id = NULL, band_slot = 1 WHERE band_id = ? AND label_id = ?', [$bandId, $this->repo->labelId]);
             $this->giveUpName($band, $reason, $reason === 'left' ? 'hat das Label verlassen' : 'hat sich aufgelöst', false);
+            $db->exec('UPDATE musicians SET band_id = NULL, band_slot = 1 WHERE band_id = ? AND label_id = ?', [$bandId, $this->repo->labelId]);
             if ($reason !== 'left') {
                 $this->repo->log('band', sprintf('Die Band „%s“ hat sich aufgelöst.', $band['name']), $bandId);
             }

@@ -206,6 +206,7 @@ final class Transfers
         }
         $buyer = new Repo($db, (int) $t['best_label_id']);
         $db->update('musicians', ['label_id' => $buyer->labelId, 'band_id' => null, 'busy_until' => 0, 'favorite' => 0], ['id' => $musicianId]);
+        $db->insert('alumni', ['label_id' => $seller->labelId, 'musician_id' => $musicianId, 'left_at' => $now, 'reason' => 'sold']);
         $db->exec("UPDATE jam_offers SET status = 'declined' WHERE musician_id = ? AND status = 'open'", [$musicianId]);
         $seller->earn((int) $t['best_amount'], sprintf('Verkauf: %s', $name));
         $price = number_format((int) $t['best_amount'], 0, ',', '.');

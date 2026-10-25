@@ -403,3 +403,11 @@ Beim ersten Login nach dem Umbau (Saison 2) bleiben **Labelname und Konto**, all
 - **Label-Chronik** (Menü „Chronik“): alle ehemaligen Bands mit Gründung, Wechseln, Ende, Platten und Auszeichnungen.
 - **Tantiemen** laufen, solange die Platte höchstens auf Platz 50 der Charts steht (`Balance::ROYALTY_RANKS`); die Punkte sinken stündlich (CHART_DECAY), nach 7 Tagen endet es ohnehin.
   Die Tantiemen gehen ans Label, der Ruhmanteil nur an aktuelle Mitglieder der Band (bei ehemaligen Bands niemand).
+
+## WikiSignia
+
+- Ersetzt die Label-Chronik. Menüpunkt „WikiSignia“: Verzeichnis (Suche) aller Bands und aller **Signies** (so heißen die Musiker-Figuren, vorerst nur hier) des Labels, auch ehemalige.
+  Artikel `#/wiki/band/<id>` und `#/wiki/signie/<id>` im Wikipedia-Stil: Infobox rechts, Einleitung, Abschnitte (Mitglieder, Diskografie, Auszeichnungen, Geschichte; bei Signies Bands, Fähigkeiten, Laufbahn).
+- Ehemalige Signies (entlassen oder verkauft) stehen in der Tabelle `alumni` und behalten ihren Artikel. Texte nennen Namen statt Pronomen.
+- Wer zuletzt in einer Band war, die ihren Namen aufgibt, wird in der Geschichte der ehemaligen Band und im Artikel des Signies festgehalten; Ein- und Austritte werden immer protokolliert.
+- Wer kein Instrument hat, spielt bei der Probe nichts: seine Spur bleibt stumm.

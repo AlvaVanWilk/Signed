@@ -459,3 +459,31 @@ button.lb-pill:disabled { opacity: 0.45; cursor: default; }
 .ch-events time { color: var(--lb-muted); margin-right: 6px; font-size: .82rem; }
 .ch-awards { display: flex; flex-wrap: wrap; gap: 6px; }
 .ch-award { padding: 3px 10px; border-radius: 999px; border: 1px solid var(--lb-line); font-size: .85rem; }
+
+/* WikiSignia */
+.wk-head h1, .wk-article h1 { font-family: Georgia, 'Times New Roman', serif; font-weight: 400; margin: 0 0 6px; border-bottom: 1px solid var(--lb-line); padding-bottom: 6px; }
+.wk-article h2 { font-family: Georgia, 'Times New Roman', serif; font-weight: 400; font-size: 1.35rem; margin: 22px 0 8px; border-bottom: 1px solid var(--lb-line); padding-bottom: 4px; }
+.wk-search { margin: 8px 0 14px; } .wk-search input { width: 100%; max-width: 420px; box-sizing: border-box; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--lb-line); background: var(--lb-card); color: var(--lb-text); font: inherit; }
+.wk-back { margin-bottom: 8px; }
+.wk-index { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px 32px; }
+.wk-index ul, .wk-list, .wk-people, .wk-events { list-style: none; margin: 6px 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.wk-index h2 { font-family: Georgia, 'Times New Roman', serif; font-weight: 400; margin: 0 0 4px; }
+.wk-index li[hidden] { display: none; }
+.wk-link { color: #7fd0e6; text-decoration: none; } .wk-link:hover { text-decoration: underline; } .wk-link.former { color: #b9a77a; }
+.wk-article::after { content: ''; display: block; clear: both; }
+.wk-box { float: right; width: 280px; margin: 0 0 14px 22px; padding: 12px 14px; border: 1px solid var(--lb-line); border-radius: 12px; background: var(--lb-card); }
+.wk-box h3 { margin: 0 0 8px; text-align: center; font-size: 1.05rem; }
+.wk-box table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+.wk-box th { text-align: left; vertical-align: top; padding: 4px 8px 4px 0; color: var(--lb-muted); font-weight: 600; width: 40%; }
+.wk-box td { padding: 4px 0; }
+.wk-box-photo { width: 120px; height: 120px; margin: 0 auto 8px; border-radius: 14px; overflow: hidden; background: var(--lb-card2); }
+.wk-box-photo .photo-pic { width: 100%; height: 100%; display: block; }
+.wk-lead { font-size: 1.02rem; line-height: 1.55; }
+.wk-people li { display: flex; align-items: center; gap: 10px; }
+.wk-people li > span { display: flex; flex-direction: column; }
+.wk-ph { width: 46px; height: 46px; flex: none; border-radius: 10px; overflow: hidden; background: var(--lb-card2); display: block; }
+.wk-ph .photo-pic { width: 100%; height: 100%; display: block; }
+.wk-events time { color: var(--lb-muted); margin-right: 6px; font-size: .82rem; }
+@media (max-width: 640px) { .wk-box { float: none; width: auto; margin: 0 0 14px; } }
+.wk-back { display: inline-block; width: auto; }
+a.btn.wk-back { display: inline-flex; width: auto; }

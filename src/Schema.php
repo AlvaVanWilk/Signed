@@ -428,6 +428,18 @@ final class Schema
                 'ALTER TABLE bands ADD COLUMN retired_note VARCHAR(200) NULL',
                 'ALTER TABLE bands ADD COLUMN fame_final REAL NOT NULL DEFAULT 0',
             ],
+            // 28: WikiSignia – wer dem Label einmal angehörte (entlassen oder verkauft), bleibt dort mit seinem Artikel erhalten
+            [
+                'CREATE TABLE alumni (
+                    id {PK},
+                    label_id INTEGER NOT NULL,
+                    musician_id INTEGER NOT NULL,
+                    left_at INTEGER NOT NULL,
+                    reason VARCHAR(10) NOT NULL
+                ){OPTS}',
+                'CREATE INDEX alumni_label ON alumni (label_id, musician_id)',
+                "INSERT INTO alumni (label_id, musician_id, left_at, reason) SELECT label_id, musician_id, created_at, 'released' FROM history WHERE musician_id IS NOT NULL AND text LIKE '%verlässt das Label.'",
+            ],
         ];
     }
 }

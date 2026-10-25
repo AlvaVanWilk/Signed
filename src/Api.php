@@ -21,6 +21,7 @@ use Signed\Game\Repo;
 use Signed\Game\Scout;
 use Signed\Game\Submissions;
 use Signed\Game\State;
+use Signed\Game\Wiki;
 use Signed\Game\Styles;
 use Signed\Game\Studio;
 use Signed\Game\Transfers;
@@ -41,6 +42,9 @@ final class Api
         'state' => ['GET', true],
         'charts' => ['GET', true],
         'bandView' => ['POST', true],
+        'wikiIndex' => ['POST', true],
+        'wikiBand' => ['POST', true],
+        'wikiSignie' => ['POST', true],
         'buyPack' => ['POST', true],
         'packPick' => ['POST', true],
         'scoutOpen' => ['POST', true],
@@ -245,6 +249,21 @@ final class Api
     {
         $musician = (new Scout($repo))->pick(self::int($in, 'offerId'), self::int($in, 'index'));
         return ['musician' => $musician, 'state' => State::build($repo)];
+    }
+
+    private function wikiIndex(array $in, Repo $repo): array
+    {
+        return Wiki::index($repo);
+    }
+
+    private function wikiBand(array $in, Repo $repo): array
+    {
+        return Wiki::band($repo, self::int($in, 'id'));
+    }
+
+    private function wikiSignie(array $in, Repo $repo): array
+    {
+        return Wiki::signie($repo, self::int($in, 'id'));
     }
 
     private function nameSuggest(array $in, Repo $repo): array
@@ -509,7 +528,8 @@ final class Api
             $this->db->exec("UPDATE jam_offers SET status = 'declined' WHERE musician_id = ? AND status = 'open'", [$m['id']]);
             // Label 0 gibt es nicht: Der Musiker verschwindet aus allem, alte Einträge (Chronik, Platten) bleiben gültig.
             $this->db->update('musicians', ['label_id' => 0, 'favorite' => 0], ['id' => $m['id']]);
-            $repo->log('lineup', sprintf('%s %s verlässt das Label.', $m['first_name'], $m['last_name']));
+            $this->db->insert('alumni', ['label_id' => $repo->labelId, 'musician_id' => $m['id'], 'left_at' => \Signed\Clock::now(), 'reason' => 'released']);
+            $repo->log('lineup', sprintf('%s %s verlässt das Label.', $m['first_name'], $m['last_name']), null, $m['id']);
         });
         return ['state' => State::build($repo)];
     }

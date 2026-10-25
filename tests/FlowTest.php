@@ -767,7 +767,7 @@ test('Namensänderung: immer kostenlos; mit Laufbahn geht der Ruhm am Namen verl
     $money = $p->get('state')['label']['money'];
     $p->post('bandRename', ['bandId' => $band['id'], 'name' => 'Erster Versuch']);
     checkEquals($money, $p->get('state')['label']['money'], 'Vor dem ersten Auftritt kostenlos');
-    checkEquals(0, count($p->get('state')['chronicle']), 'ohne Laufbahn bleibt nichts zurück');
+    checkEquals(0, count(array_filter($p->post('wikiIndex')['bands'], static fn ($b) => $b['status'] === 'former')), 'ohne Laufbahn bleibt nichts zurück');
 
     $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'busking']);
     Clock::advance(Balance::BUSKING['songs'] * Balance::SONG_SECONDS);
@@ -780,12 +780,15 @@ test('Namensänderung: immer kostenlos; mit Laufbahn geht der Ruhm am Namen verl
     checkEquals(0.0, (float) $now['fameOwn']);
     checkEquals('Zweiter Versuch', $now['name']);
     checkEquals(0, $now['records'], 'die Platten gehören nicht mehr zur neuen Band');
-    checkEquals(1, count($state['chronicle']), 'die alte Band steht in der Chronik');
-    $former = $state['chronicle'][0];
+    $wiki = $p->post('wikiIndex');
+    $oldBands = array_values(array_filter($wiki['bands'], static fn ($b) => $b['status'] === 'former'));
+    checkEquals(1, count($oldBands), 'die alte Band steht in der WikiSignia');
+    $former = $p->post('wikiBand', ['id' => $oldBands[0]['id']]);
     checkEquals('Erster Versuch', $former['name']);
     checkEquals('renamed', $former['reason']);
-    checkEquals(12.0, $former['fameFinal']);
-    checkEquals(1, count($former['discography']), 'ihre Platte bleibt bei ihr');
+    checkEquals(12.0, $former['fame']);
+    checkEquals(1, count($former['records']), 'ihre Platte bleibt bei ihr');
+    checkEquals('former', $former['status']);
 });
 
 test('Instrumente: Eigenschaften ab episch, Verkauf an den Second-Hand-Laden', function () {
@@ -1571,11 +1574,33 @@ test('Zusammentun: Kandidaten nach Nutzen geordnet, Unmögliches zuletzt, Bands 
     check(in_array($other['memberIds'][0], $kept['memberIds'], true), 'das neue Mitglied ist dabei');
     checkEquals(0.0, (float) $kept['fameOwn'], 'mit neuem Namen ist der Ruhm am Namen weg');
     check(count(array_filter($res['state']['bands'], static fn ($b) => $b['id'] === $other['bandId'])) === 0, 'die andere Band steht nicht mehr in der Leiste');
-    $former = array_values(array_filter($res['state']['chronicle'], static fn ($c) => $c['id'] === $other['bandId']));
-    checkEquals(1, count($former), 'die andere Band steht in der Chronik');
-    checkEquals('merged', $former[0]['reason']);
-    checkEquals(30.0, $former[0]['fameFinal']);
-    checkEquals(1, count($former[0]['discography']), 'ihre Platte bleibt bei ihr');
+    $former = $p->post('wikiBand', ['id' => $other['bandId']]);
+    checkEquals('merged', $former['reason']);
+    checkEquals(30.0, $former['fame']);
+    checkEquals(1, count($former['records']), 'ihre Platte bleibt bei ihr');
+    $joined = $p->post('wikiSignie', ['id' => $other['memberIds'][0]]);
+    checkEquals('current', $joined['status']);
+    check(count($joined['events']) >= 1, 'der Wechsel steht in seiner Laufbahn');
     // Tantiemen: nur bis Platz 50 der Charts
     check(Balance::ROYALTY_RANKS === 50, 'Tantiemen enden nach Platz 50');
+});
+
+test('WikiSignia: Wer entlassen wurde, behält seinen Artikel', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Wiki');
+    $band = foundBand($p);
+    $id = $band['memberIds'][0];
+    $p->post('bandRemoveMember', ['bandId' => $band['id'], 'musicianId' => $id]);
+    $p->post('musicianRelease', ['musicianId' => $id]);
+    $index = $p->post('wikiIndex');
+    $entry = array_values(array_filter($index['signies'], static fn ($s) => $s['id'] === $id));
+    checkEquals(1, count($entry));
+    checkEquals('former', $entry[0]['status']);
+    $article = $p->post('wikiSignie', ['id' => $id]);
+    checkEquals('former', $article['status']);
+    checkEquals('released', $article['reason']);
+    check(count($article['bands']) >= 1, 'seine Band steht im Artikel');
+    // Fremde Künstler gibt es für dieses Label nicht
+    $other = registerPlayer($db, 'Wiki2');
+    checkApiError(fn () => $other->post('wikiSignie', ['id' => $id]), 'gibt es nicht');
 });

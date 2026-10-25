@@ -254,7 +254,8 @@ function stopMusic() {
 function startMusic(act) {
   stopMusic();
   const band = bandById(act.bandId);
-  const players = band.memberIds.map(musicianById).filter(Boolean);
+  // Wer kein Instrument hat, spielt nichts: seine Spur bleibt stumm.
+  const players = band.memberIds.map(musicianById).filter(Boolean).filter(hasGear);
   const groups = bandStems(players, band, act.id).map((stem) => [stem]);
   const mine = { actId: act.id, player: null };
   music = mine;
@@ -364,6 +365,7 @@ export function page(route) {
     <div class="lb-foot">
       <a class="btn ghost small" href="${base}/auszeichnungen">Auszeichnungen</a>
       <a class="btn ghost small" href="${base}/promo">Promo</a>
+      <a class="btn ghost small" href="#/wiki/band/${b.id}">WikiSignia</a>
       ${solo
     ? `<button class="btn danger ghost small" data-act="musicianRelease" data-id="${members[0].id}">Künstler entlassen</button>`
     : `<button class="btn danger ghost small" data-act="bandDisband" data-id="${b.id}">Band auflösen</button>`}
@@ -410,9 +412,9 @@ function musicianWindow(m) {
       <h3 class="lb-cap">Können</h3><ul class="lb-mw-list">${ins}</ul>
       ${abilities ? `<h3 class="lb-cap">Fähigkeiten</h3><ul class="lb-mw-list plain">${abilities}</ul>` : ''}
       ${notes.length ? `<h3 class="lb-cap">Mit den anderen</h3><ul class="lb-mw-list plain">${notes.map((n) => `<li class="${n.good ? 'good' : 'bad'}">${n.good ? '+' : '–'} ${esc(n.text)}</li>`).join('')}</ul>` : ''}
-      <div class="dialog-actions"><button class="btn primary" data-close>Schließen</button></div>`,
+      <div class="dialog-actions"><a class="btn ghost" href="#/wiki/signie/${m.id}" data-close>Artikel in der WikiSignia</a><button class="btn primary" data-close>Schließen</button></div>`,
   });
-  modal.body.querySelector('[data-close]').addEventListener('click', () => modal.close());
+  modal.body.querySelectorAll('[data-close]').forEach((el) => el.addEventListener('click', () => modal.close()));
   modal.body.querySelector('[data-choose]')?.addEventListener('click', () => {
     modal.close();
     actions.chooseAbility({ id: String(m.id) });

@@ -1,0 +1,175 @@
+import { api } from '../api.js';
+import { abilityInfo, genreName, instrumentName, photo } from '../cards.js';
+import { app, cat, defineActions, rerender } from '../core.js';
+import { esc, fmt1, toast } from '../ui.js';
+import { bandAwards } from './bands.js';
+
+/**
+ * WikiSignia: Artikel zu jeder Band und jedem Künstler („Signie“), die dem Label einmal angehörten, auch zu ehemaligen.
+ * Die Artikel laden bei Bedarf vom Server; der Text wird hier aus den Angaben zusammengesetzt (ohne Pronomen: Namen statt „er/sie“).
+ */
+
+const REASON = { renamed: 'Umbenannt', merged: 'Zusammengegangen', disbanded: 'Aufgelöst', left: 'Hat das Label verlassen' };
+const LEFT = { released: 'Hat das Label verlassen', sold: 'Zu einem anderen Label gewechselt' };
+
+const day = (ts) => new Date(ts * 1000).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
+const list = (items) => (items.length > 1 ? `${items.slice(0, -1).join(', ')} und ${items.at(-1)}` : items[0] ?? '');
+const name = (m) => `${m.firstName} ${m.lastName}`;
+
+let loading = null;
+
+function parse() {
+  const [, kind = '', id = ''] = location.hash.replace(/^#\/?/, '').split('/');
+  return kind === 'band' || kind === 'signie' ? { kind, id: Number(id) } : { kind: '', id: 0 };
+}
+
+/** Lädt, was die aktuelle Adresse braucht (Verzeichnis immer, dazu den Artikel). */
+export async function ensure() {
+  const { kind, id } = parse();
+  const key = kind ? `${kind}:${id}` : 'index';
+  if (loading === key) return;
+  const wiki = app.wiki ?? (app.wiki = { index: null, article: null, key: '', at: 0 });
+  // Bei erneutem Aufruf nach ein paar Sekunden frisch laden (neue Bands, neue Einträge).
+  if (wiki.key === key && Date.now() - wiki.at < 15000) return;
+  loading = key;
+  try {
+    if (!wiki.index || !kind) wiki.index = await api('wikiIndex', {});
+    wiki.article = kind ? await api(kind === 'band' ? 'wikiBand' : 'wikiSignie', { id }) : null;
+    wiki.key = key;
+    wiki.at = Date.now();
+  } catch (e) {
+    toast(e.message, 'error');
+    wiki.key = key;
+    wiki.article = null;
+    wiki.missing = true;
+  } finally {
+    loading = null;
+  }
+  rerender();
+}
+
+const link = (kind, id, text, former = false) => `<a class="wk-link ${former ? 'former' : ''}" href="#/wiki/${kind}/${id}">${esc(text)}</a>`;
+
+function searchBox() {
+  return `<div class="wk-search"><input type="search" data-wiki-search placeholder="WikiSignia durchsuchen" autocomplete="off" aria-label="WikiSignia durchsuchen"></div>`;
+}
+
+function indexPage(index) {
+  const item = (kind, e) => `<li data-wiki-item="${esc(e.name.toLowerCase())}">${link(kind, e.id, e.name, e.status === 'former')}${e.status === 'former' ? ' <small class="muted">ehemalig</small>' : ''}</li>`;
+  return `
+    <div class="wk-head"><h1>WikiSignia</h1><p class="muted">Alle Bands und Signies, die dem Label je angehörten.</p></div>
+    ${searchBox()}
+    <div class="wk-index">
+      <section><h2>Bands</h2>${index.bands.length ? `<ul>${index.bands.map((b) => item('band', b)).join('')}</ul>` : '<p class="muted">Noch keine Band.</p>'}</section>
+      <section><h2>Signies</h2>${index.signies.length ? `<ul>${index.signies.map((s) => item('signie', s)).join('')}</ul>` : '<p class="muted">Noch niemand.</p>'}</section>
+    </div>
+    <p class="muted wk-none" hidden>Dazu gibt es keinen Artikel.</p>`;
+}
+
+const row = (label, value) => (value ? `<tr><th>${label}</th><td>${value}</td></tr>` : '');
+
+function timeline(events) {
+  return events.length ? `<ul class="wk-events">${events.map((e) => `<li><time>${day(e.createdAt)}</time> ${esc(e.text)}</li>`).join('')}</ul>` : '';
+}
+
+function bandPage(b) {
+  const former = b.status === 'former';
+  const genres = b.genres.map(genreName);
+  const lead = former
+    ? `<b>${esc(b.name)}</b> war eine Band des Labels und bestand vom ${day(b.foundedAt)} bis zum ${day(b.endedAt)}. ${esc(b.name)} ${esc(b.note ?? 'wurde beendet')}.`
+    : `<b>${esc(b.name)}</b> ist ${b.title ? `eine ${esc(b.title)}` : 'eine Band'} mit ${b.members.length} ${b.members.length === 1 ? 'Mitglied' : 'Mitgliedern'}, gegründet am ${day(b.foundedAt)}.`;
+  const awards = bandAwards({ gigsPlayed: b.gigsPlayed, records: b.recordCount, discography: b.records, options: { gig: { venueKey: '' } } });
+  const records = b.records.map((r) => `<li><b>„${esc(r.title)}“</b> <small class="muted">${r.format}${r.perfect ? ' · perfekt' : ''} · ${r.best ? `bester Platz ${r.best}` : 'nie in den Charts'}</small></li>`).join('');
+  return `
+    <div class="wk-article">
+      <aside class="wk-box"><h3>${esc(b.name)}</h3><table>
+        ${row('Status', former ? (REASON[b.reason] ?? 'Ehemalig') : 'Aktiv')}
+        ${row('Gegründet', day(b.foundedAt))}
+        ${row('Beendet', b.endedAt ? day(b.endedAt) : '')}
+        ${row('Genre', esc(list(genres)))}
+        ${row(former ? 'Ruhm am Namen zuletzt' : 'Ruhm', fmt1(b.fame))}
+        ${row('Platten', b.recordCount || '')}
+        ${row('Auftritte', b.gigsPlayed || '')}
+      </table></aside>
+      <h1>${esc(b.name)}</h1>
+      <p class="wk-lead">${lead}</p>
+      ${b.members.length ? `<h2>Mitglieder</h2><ul class="wk-people">${b.members.map(person).join('')}</ul>` : ''}
+      ${b.formerMembers.length ? `<h2>${former ? 'Mitglieder' : 'Ehemalige Mitglieder'}</h2><ul class="wk-people">${b.formerMembers.map(person).join('')}</ul>` : ''}
+      ${records ? `<h2>Diskografie</h2><ul class="wk-list">${records}</ul>` : ''}
+      ${awards.length ? `<h2>Auszeichnungen</h2><div class="ch-awards">${awards.map(([icon, title, sub]) => `<span class="ch-award" title="${esc(sub)}">${icon} ${esc(title)}</span>`).join('')}</div>` : ''}
+      ${b.events.length ? `<h2>Geschichte</h2>${timeline(b.events)}` : ''}
+    </div>`;
+}
+
+function person(m) {
+  return `<li><a class="wk-ph" href="#/wiki/signie/${m.id}">${photo(m)}</a><span>${link('signie', m.id, name(m))}<small class="muted">${esc(list(m.instruments.map((i) => instrumentName(i.type))))}</small></span></li>`;
+}
+
+function signiePage(m) {
+  const rules = cat();
+  const genres = m.genres.map(genreName);
+  const instruments = m.instruments.map((i) => instrumentName(i.type));
+  const stay = m.status === 'current'
+    ? `Seit dem ${day(m.joinedAt)} beim Label.`
+    : `Gehörte vom ${day(m.joinedAt)} bis zum ${day(m.leftAt)} zum Label (${esc((LEFT[m.reason] ?? 'ausgeschieden').toLowerCase())}).`;
+  const bands = m.bands.map((b) => `<li>${link('band', b.id, b.name, b.status === 'former')}${b.now ? ' <small class="muted">aktuell</small>' : ''}${b.status === 'former' ? ' <small class="muted">ehemalig</small>' : ''}</li>`).join('');
+  const abilities = m.abilities.map((a) => {
+    const info = abilityInfo(a);
+    return `<li><b>${info.icon} ${esc(info.name)}</b> <small class="muted">${esc(info.desc)}</small></li>`;
+  }).join('');
+  return `
+    <div class="wk-article">
+      <aside class="wk-box"><div class="wk-box-photo">${photo(m)}</div><h3>${esc(name(m))}</h3><table>
+        ${row('Status', m.status === 'current' ? 'Beim Label' : esc(LEFT[m.reason] ?? 'Ausgeschieden'))}
+        ${row('Instrumente', esc(m.instruments.map((i) => `${instrumentName(i.type)} (${rules.levelNames[Math.min(rules.rules.skillLevels.filter((t) => i.skill >= t).length, 3)]})`).join(', ')))}
+        ${row('Genres', esc(list(genres)))}
+        ${row('Charakter', esc(list(m.personality.map((p) => rules.personalities[p]))))}
+        ${row('Bekanntheit', `${esc(rules.fameNames[m.fameLevel])} (${fmt1(m.fame)})`)}
+        ${row('Beim Label seit', day(m.joinedAt))}
+        ${row('Ausgeschieden', m.leftAt ? day(m.leftAt) : '')}
+      </table></aside>
+      <h1>${esc(name(m))}</h1>
+      <p class="wk-lead"><b>${esc(name(m))}</b> ist Signie und spielt ${esc(list(instruments))}${genres.length ? `, am liebsten ${esc(list(genres))}` : ''}. ${stay}</p>
+      ${bands ? `<h2>Bands</h2><ul class="wk-list">${bands}</ul>` : ''}
+      ${abilities ? `<h2>Fähigkeiten</h2><ul class="wk-list">${abilities}</ul>` : ''}
+      ${m.events.length ? `<h2>Laufbahn</h2>${timeline(m.events)}` : ''}
+    </div>`;
+}
+
+export function render() {
+  const wiki = app.wiki;
+  const { kind } = parse();
+  const back = kind ? '<a class="btn ghost small wk-back" href="#/wiki">← Verzeichnis</a>' : '';
+  if (!wiki || wiki.key !== (kind ? `${kind}:${parse().id}` : 'index')) return '<div class="empty">Die WikiSignia lädt …</div>';
+  if (kind && !wiki.article) return `${back}<div class="empty">Diesen Artikel gibt es nicht.</div>`;
+  if (!kind) return indexPage(wiki.index);
+  return `${back}${searchBox()}${kind === 'band' ? bandPage(wiki.article) : signiePage(wiki.article)}`;
+}
+
+/** Suche: Auf dem Verzeichnis filtert sie, auf einem Artikel springt sie zum ersten Treffer. */
+document.addEventListener('input', (e) => {
+  const field = e.target.closest?.('[data-wiki-search]');
+  if (!field) return;
+  const q = field.value.trim().toLowerCase();
+  const items = [...document.querySelectorAll('[data-wiki-item]')];
+  let shown = 0;
+  for (const el of items) {
+    const hit = !q || el.dataset.wikiItem.includes(q);
+    el.hidden = !hit;
+    if (hit) shown++;
+  }
+  const none = document.querySelector('.wk-none');
+  if (none) none.hidden = shown > 0 || !items.length;
+});
+document.addEventListener('keydown', (e) => {
+  const field = e.target.closest?.('[data-wiki-search]');
+  if (!field || e.key !== 'Enter') return;
+  const q = field.value.trim().toLowerCase();
+  const index = app.wiki?.index;
+  if (!q || !index) return;
+  const hit = [...index.bands.map((b) => ['band', b]), ...index.signies.map((s) => ['signie', s])].find(([, x]) => x.name.toLowerCase().includes(q));
+  if (hit) location.hash = `#/wiki/${hit[0]}/${hit[1].id}`;
+  else toast('Dazu gibt es keinen Artikel.', 'info');
+});
+
+defineActions({});

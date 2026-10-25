@@ -21,7 +21,7 @@ import * as packs from './views/packs.js';
 import * as storage from './views/storage.js';
 import * as submissions from './views/submissions.js';
 import './views/together.js';
-import * as chronicle from './views/chronicle.js';
+import * as wiki from './views/wiki.js';
 
 const NAV = [
   ['', 'Übersicht'],
@@ -30,7 +30,7 @@ const NAV = [
   ['lager', 'Lager'],
   ['boerse', 'Börse'],
   ['charts', 'Charts'],
-  ['chronik', 'Chronik'],
+  ['wiki', 'WikiSignia'],
 ];
 
 const VIEWS = {
@@ -42,7 +42,7 @@ const VIEWS = {
   band: (route) => viewBand(route),
   musician: (route) => musician.renderMusician(route),
   charts: () => charts.render(),
-  chronik: () => chronicle.render(),
+  wiki: () => wiki.render(),
   boerse: () => market.render(),
   hilfe: () => help.render(),
 };
@@ -183,6 +183,7 @@ function render() {
   showResults();
   help.maybeStartTour();
   if (route.name === 'charts' && !app.charts) charts.loadCharts();
+  if (route.name === 'wiki') wiki.ensure();
 }
 
 function updateCountdowns() {

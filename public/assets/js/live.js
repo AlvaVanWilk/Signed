@@ -3,7 +3,7 @@ import { duration, esc, openModal } from './ui.js';
 import { getAudio } from './audio.js';
 import { bandStems, loadStems, playStems, stemUrl } from './music.js';
 import { playedInstrument, stage } from './figure.js';
-import { ownGear } from './cards.js';
+import { gearModel, ownGear } from './cards.js';
 
 const ICONS = { song: '🎵', mistake: '😬', highlight: '🔥', crowd: '👥' };
 
@@ -31,8 +31,10 @@ export function openLive(activityId) {
   const songSeconds = cat().rules.songSeconds;
   const total = activity.endsAt - activity.startedAt;
   const players = band ? band.memberIds.map(musicianById).filter(Boolean) : solo ? [solo] : [];
+  // Wer kein Instrument hat, spielt nichts: seine Spur bleibt stumm.
+  const plays = (m) => app.state.gear.some((g) => g.musicianId === m.id && gearModel(g.model).type === playedInstrument(m));
   const stems = bandStems(players, band, activity.id);
-  const groups = stems.map((stem) => [stem]);
+  const groups = stems.map((stem, i) => (plays(players[i]) ? [stem] : []));
   // Wer eine E-Gitarren-Aufnahme spielt, hält auch eine E-Gitarre.
   const electric = new Map(players.map((m, i) => [m.id, /elektrisch/.test(stemUrl(stems[i]) ?? '')]));
 

@@ -221,8 +221,8 @@ function painted(d, hair, strokes, outline = false, light = 0.05) {
     + `<g clip-path="url(#${id})">${strokes.map(([path, dark, w]) => brush(path, hair, dark, w, light)).join('')}</g>`
     + (outline ? `<path d="${d}" fill="none" ${HAIR_LINE}/>` : '');
 }
-/** Schlitz im Pony: ein schmaler, nach oben spitz zulaufender Keil in dunklem Ton. */
-const slit = (x, y, hair, len = 5, lean = 0) => `<path d="M${f1(x - 0.6)} ${f1(y + 0.3)} L${f1(x + 0.6)} ${f1(y + 0.3)} L${f1(x + lean)} ${f1(y - len)} Z" fill="${tone(hair, -0.38)}"/>`;
+/** Schlitz im Pony: ein schmaler, nach oben spitz zulaufender Keil, etwas dunkler als das Haar; er beginnt knapp oberhalb der Kante (nicht im Gesicht). */
+const slit = (x, y, hair, len = 5, lean = 0) => `<path d="M${f1(x - 0.55)} ${f1(y - 0.5)} L${f1(x + 0.55)} ${f1(y - 0.5)} L${f1(x + lean)} ${f1(y - 0.5 - len)} Z" fill="${tone(hair, -0.24)}"/>`;
 
 /** Punkt auf einer kubischen Kurve. */
 const bez = (a, b, c, d, t) => {

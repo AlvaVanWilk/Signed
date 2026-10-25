@@ -28,6 +28,7 @@ const NAV = [
   ['', 'Übersicht'],
   ['einsendungen', 'Einsendungen'],
   ['store', 'Music Store'],
+  ['lager', 'Lager'],
   ['charts', 'Charts'],
   ['wiki', 'WikiSignia'],
 ];

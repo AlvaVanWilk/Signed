@@ -142,7 +142,7 @@ function lift() {
   if (!drag) return;
   drag.active = true;
   const ghost = drag.cell.querySelector('.ms-ico').cloneNode(true);
-  ghost.classList.add('ms-ghost');
+  ghost.className = 'ms-ghost';
   document.body.appendChild(ghost);
   drag.ghost = ghost;
   drag.cell.classList.add('lifting');
@@ -150,11 +150,24 @@ function lift() {
   place(drag.x, drag.y);
 }
 
+/** Folgt dem Finger: höchstens einmal je Bild, ohne Übergänge (sonst ruckelt es). */
+let frame = 0;
 function place(x, y) {
-  drag.ghost.style.transform = `translate(${x - 56}px, ${y - 70}px) rotate(-6deg)`;
-  const over = document.elementFromPoint(x, y)?.closest('[data-store-drop]');
-  document.querySelectorAll('[data-store-drop]').forEach((el) => el.classList.toggle('over', el === over));
-  drag.over = over;
+  if (!drag) return;
+  drag.px = x;
+  drag.py = y;
+  if (frame) return;
+  frame = requestAnimationFrame(() => {
+    frame = 0;
+    if (!drag?.ghost) return;
+    drag.ghost.style.transform = `translate3d(${drag.px - 56}px, ${drag.py - 70}px, 0) rotate(-6deg)`;
+    const over = document.elementFromPoint(drag.px, drag.py)?.closest('[data-store-drop]') ?? null;
+    if (over !== drag.over) {
+      drag.over?.classList.remove('over');
+      over?.classList.add('over');
+      drag.over = over;
+    }
+  });
 }
 
 async function drop(cancelled) {

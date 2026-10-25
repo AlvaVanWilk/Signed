@@ -325,38 +325,33 @@ function gearFinish(model) {
 }
 
 export function gearCard(g, { act = null, data = {}, size = '', extra = '', skill = null, up = null } = {}) {
+  // Instrument als Kachel im Stil des Music Store (keine Sammelkarte): Bild auf Filz, Name, Seltenheit, drei Werte als Balken.
   const model = { ...gearModel(g.model), ...(g.klang ? { klang: g.klang, spielbarkeit: g.spielbarkeit, design: g.design } : {}) };
   const needed = 100 - model.spielbarkeit;
   const holder = g.musicianId ? musicianById(g.musicianId) : null;
   skill ??= holder?.instruments.find((i) => i.type === model.type)?.skill ?? null;
-  const threshold = skill === null ? fmt0(needed)
-    : `<b class="${skill >= needed ? 'ok' : 'bad'}" title="${skill >= needed ? 'Erreicht' : 'Noch nicht erreicht'}: Können ${fmt0(skill)}">${fmt0(needed)}</b>`;
-  // Wie viel Klang das Instrument bringt: voll erst ab dem nötigen Können, darunter deutlich weniger.
   const rules = cat().rules;
   const full = (model.klang / 100) * rules.gearMaxBonus;
   const now = skill === null ? null : full * Math.min(1, needed <= 0 ? 1 : skill / needed) ** rules.gearUnlockCurve;
-  const klangText = now === null || now >= full - 0.001
-    ? `Klang <em>+${percent(full)}</em> ab Können ${threshold}`
-    : `Klang jetzt <em>+${percent(now)}</em> · voll <b>+${percent(full)}</b> ab Können ${threshold}`;
+  const reach = skill === null ? `voller Klang ab Können ${fmt0(needed)}`
+    : skill >= needed ? `voller Klang (+${percent(full)})` : `jetzt +${percent(now)}, voll ab Können <b class="bad">${fmt0(needed)}</b>`;
   const arrow = (up ?? g.upgrades?.some((u) => u.bandId)) ? upArrow(up ? { musicianId: holder?.id ?? null } : { gear: g }) : '';
   const finish = gearFinish(model);
   const perks = (g.perks ?? []).map((p) => cat().gearPerks[p]).filter(Boolean);
-  return tcg({
-    rarity: model.rarity,
-    theme: `gear-bg finish-${finish.tier}`,
-    style: `--hue:${finish.hue}`,
-    name: model.name,
-    art: `<span class="tcg-icon">${instrumentIcon(model.type, model.electric, finish.tier === 1 || finish.tier === 2 ? finish.hue : null)}</span>${arrow}
-      ${perks.length ? `<span class="tcg-abilities">${perks.map((p) => `<i title="${esc(p.name)}: ${esc(p.desc)}">${p.icon}</i>`).join('')}</span>` : ''}`,
-    type: `Instrument<em>${esc(instrumentName(model.type))}${finish.tier ? ` · ${FINISH_NAMES[finish.tier]}` : ''}</em>`,
-    text: `<span>${klangText}</span>${perks.length ? `<span>${perks.map((p) => `<b>${esc(p.name)}</b>`).join(' · ')}</span>` : ''}`,
-    stats: [[model.klang, 'Klang'], [model.spielbarkeit, 'Spielb.'], [model.design, 'Design']],
-    overlay: finish.tier === 3 ? sparkles(6, model.klang * 7 + model.design) : '',
-    act,
-    data,
-    size,
-    extra,
-  });
+  const attrs = act ? ` data-act="${act}" ${Object.entries(data).map(([k, v]) => `data-${k}="${esc(v)}"`).join(' ')}` : '';
+  const bar = (label, v) => `<span class="gt-bar"><i>${label}</i><s><b style="width:${v}%"></b></s><em>${fmt0(v)}</em></span>`;
+  return `
+    <div class="gt r-${model.rarity} ${size}"${attrs}>
+      <div class="gt-art"><span class="gt-ico">${instrumentIcon(model.type, model.electric, finish.tier === 1 || finish.tier === 2 ? finish.hue : null)}</span>
+        <b class="gt-rar">${esc(rarityName(model.rarity))}</b>${arrow}${perks.length ? `<span class="gt-perks">${perks.map((p) => `<i title="${esc(p.name)}: ${esc(p.desc)}">${p.icon}</i>`).join('')}</span>` : ''}</div>
+      <div class="gt-body">
+        <b class="gt-name">${esc(model.name)}</b>
+        <small class="muted">${esc(instrumentName(model.type))}${finish.tier ? ` · ${FINISH_NAMES[finish.tier]}` : ''}${holder ? ` · spielt ${esc(holder.firstName)}` : ''}</small>
+        ${size === 'sm' ? '' : `<span class="gt-bars">${bar('Klang', model.klang)}${bar('Spielb.', model.spielbarkeit)}${bar('Design', model.design)}</span>`}
+        <small class="gt-reach">${reach}</small>
+        ${extra ? `<span class="gt-extra">${extra}</span>` : ''}
+      </div>
+    </div>`;
 }
 
 export function managerSkills(skills) {

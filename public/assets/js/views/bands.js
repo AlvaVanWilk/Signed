@@ -601,7 +601,7 @@ function openGearPicker(musicianId, type) {
       const played = m.instruments.find((i) => i.type === type)?.skill ?? 0;
       return `
         <h2>${esc(instrumentName(type))} für ${esc(m.firstName)}</h2>
-        ${options.length ? `<div class="tcg-grid">${options.map((g) => {
+        ${options.length ? `<div class="gt-list">${options.map((g) => {
           const upgrade = g.upgrades?.find((u) => u.musicianId === m.id);
           return gearCard(g, {
             skill: played,

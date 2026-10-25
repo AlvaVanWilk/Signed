@@ -1,4 +1,7 @@
-import { bandById, cat, defineActions, gearById, musicianById, mutate } from './core.js';
+import { app, bandById, cat, defineActions, gearById, musicianById, mutate } from './core.js';
+
+/** Das eigene Instrument einer Art, das ein Musiker gerade hat (ID oder null). */
+const app_gearOf = (m, type) => app.state.gear.find((x) => x.musicianId === m.id && cat().gear[x.model]?.type === type)?.id ?? null;
 import { fullName, gearCard, gearModel } from './cards.js';
 import { confirmDialog, esc, fmt0, fmt1, money, openModal, toast } from './ui.js';
 
@@ -53,6 +56,9 @@ export function openGear(gearId) {
             <button class="btn primary small" data-assign="${m.id}">Einlegen</button>
           </li>`;
       }).join('');
+      // Alle anderen, die so ein Instrument spielen (auch wenn es ihren Sound nicht hebt)
+      const better = new Set((g.upgrades ?? []).map((u) => u.musicianId));
+      const others = holder ? [] : app.state.musicians.filter((m) => !better.has(m.id) && m.instruments.some((i) => i.type === model.type));
       return `
         <div class="gear-detail">
           ${gearCard(g)}
@@ -62,7 +68,9 @@ export function openGear(gearId) {
               <p>Gespielt von <b>${esc(fullName(holder))}</b>${holderBand ? ` in ${esc(holderBand.name)}` : ''}.</p>
               <button class="btn small" data-unassign>Ins Lager legen</button>` : `
               <h3>Wer damit besser klingt</h3>
-              ${rows ? `<ul class="gear-upgrades">${rows}</ul>` : '<p class="muted">Im Moment würde niemand damit besser klingen.</p>'}`}
+              ${rows ? `<ul class="gear-upgrades">${rows}</ul>` : '<p class="muted">Im Moment würde niemand damit besser klingen.</p>'}
+              ${others.length ? `<h3>Geben an</h3><ul class="gear-upgrades">${others.map((m) => `<li><span><b>${esc(fullName(m))}</b>${m.bandId ? ` <span class="muted">· ${esc(bandById(m.bandId)?.name ?? '')}</span>` : ''}</span>
+                <span class="small muted">${gearById(app_gearOf(m, model.type)) ? 'hat schon eins' : 'hat keins'}</span><button class="btn small" data-assign="${m.id}">Einlegen</button></li>`).join('')}</ul>` : ''}`}
             ${(g.perks ?? []).length ? `<h3>Eigenschaften</h3><ul class="perk-list">${g.perks.map((p) => cat().gearPerks[p]).filter(Boolean)
               .map((p) => `<li>${p.icon} <b>${esc(p.name)}</b> – ${esc(p.desc)}</li>`).join('')}</ul>` : ''}
             <p class="muted small">Klang: wie viel das Instrument zum Sound beiträgt. Spielbarkeit: ab welchem Können der volle Klang kommt

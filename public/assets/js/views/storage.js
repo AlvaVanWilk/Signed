@@ -1,36 +1,47 @@
-import { fullName, gearCard, gearModel, instrumentName, managerCard } from '../cards.js';
-import { app, bandById, cat, defineActions, mutate } from '../core.js';
+import { fullName, gearHue, gearModel, instrumentIcon, instrumentName, managerCard } from '../cards.js';
+import { app, bandById, cat, defineActions, musicianById, mutate } from '../core.js';
 import { assignGear } from '../gear.js';
 import { esc, fmt0, toast } from '../ui.js';
 
+/** Ein Instrument im Flightcase: Schaumstoff innen, Klebeband mit dem Namen dessen, der es spielt. */
+function flightcase(g) {
+  const model = gearModel(g.model);
+  const holder = g.musicianId ? musicianById(g.musicianId) : null;
+  const finish = g.design >= 60 && g.design < 85 ? gearHue(g) : null;
+  return `
+    <button class="lg-case r-${model.rarity} ${holder ? 'used' : 'free'}" data-act="openGear" data-id="${g.id}" title="${esc(model.name)}">
+      <span class="lg-lid"></span>
+      <span class="lg-foam"><span class="lg-ico">${instrumentIcon(model.type, !!model.electric, gearHue(g) ?? finish)}</span></span>
+      <span class="lg-tape">${holder ? esc(holder.firstName) : 'frei'}</span>
+      <small class="lg-name">${esc(model.name)}</small>
+    </button>`;
+}
+
 export function render() {
   const s = app.state;
-  const byType = {};
-  for (const g of s.gear) {
-    const type = gearModel(g.model).type;
-    (byType[type] ||= []).push(g);
-  }
+  const free = s.gear.filter((g) => !g.musicianId);
+  const used = s.gear.filter((g) => g.musicianId);
   return `
-    <div class="section-head">
-      <h1>Lager</h1>
+    <div class="lg-page">
+      <div class="lg-wall">
+        <h1 class="lg-sign">LAGER</h1>
+        <p class="lg-sub">Was frei ist, wartet auf jemanden. Ein Tipp aufs Case zeigt, wem es am meisten bringt.</p>
+        <h2 class="lg-cap">Frei <small>${free.length}</small></h2>
+        ${free.length ? `<div class="lg-rack">${free.map(flightcase).join('')}</div>` : '<p class="lg-empty">Nichts frei. Neues gibt es im Music Store.</p>'}
+        <h2 class="lg-cap">Im Einsatz <small>${used.length}</small></h2>
+        ${used.length ? `<div class="lg-rack">${used.map(flightcase).join('')}</div>` : '<p class="lg-empty">Noch spielt niemand ein eigenes Instrument.</p>'}
+      </div>
     </div>
 
-    <section>
-      <h2>Instrumente</h2>
-      ${s.gear.length ? Object.entries(byType).map(([type, items]) => `
-        <h3>${esc(instrumentName(type))}</h3>
-        <div class="tcg-grid">${items.map((g) => gearCard(g, { act: 'openGear', data: { id: g.id }, extra: assignSelect(g, type) })).join('')}</div>`).join('') : '<div class="empty">Noch keine Instrumente.</div>'}
-    </section>
-
-    <section>
+    ${s.managers.length ? `<section>
       <h2>Manager</h2>
-      ${s.managers.length ? `<div class="tcg-grid">${s.managers.map((m) => managerCard(m, { extra: managedBands(m) })).join('')}</div>` : '<div class="empty">Noch kein Manager.</div>'}
-    </section>
+      <div class="tcg-grid">${s.managers.map((m) => managerCard(m, { extra: managedBands(m) })).join('')}</div>
+    </section>` : ''}
 
-    <section>
+    ${s.items.length ? `<section>
       <h2>Fan-Karten</h2>
-      ${s.items.length ? `<div class="card-grid">${s.items.map(itemCard).join('')}</div>` : '<div class="empty">Keine Fan-Karten.</div>'}
-    </section>`;
+      <div class="card-grid">${s.items.map(itemCard).join('')}</div>
+    </section>` : ''}`;
 }
 
 function assignSelect(g, type) {

@@ -91,8 +91,9 @@ final class Balance
     public const STORE = [
         'hours' => 4, 'count' => [5, 10], 'holdHours' => 24,
         'odds' => ['common' => 50, 'rare' => 32, 'epic' => 14, 'legendary' => 4],
-        'price' => ['common' => 60, 'rare' => 220, 'epic' => 700, 'legendary' => 2100],
-        'pricePerk' => 0.25, 'priceStat' => 0.004,
+        // Gewöhnliches ist leicht zu haben, Hochwertiges ein Sparziel (Startkapital 2.000 ₲).
+        'price' => ['common' => 40, 'rare' => 320, 'epic' => 1500, 'legendary' => 5200],
+        'pricePerk' => 0.25, 'priceStat' => 0.006,
     ];
     /**
      * Proberaum in Stufen: Jede Band (ab zwei Mitgliedern) hat ihren eigenen, Solokünstler teilen sich die Übungsecke des Labels (`soloCost` × Preis).

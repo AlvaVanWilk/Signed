@@ -73,6 +73,8 @@ final class Generator
         // Songwriter kann man auch ohne viel Können sein.
         if (!in_array('songwriter', $abilities, true) && Rng::chance(Balance::SONGWRITING['born'])) {
             $abilities[] = 'songwriter';
+        } elseif (!in_array('songwriter', $abilities, true) && Rng::chance(Balance::SONGWRITING['bornNo'])) {
+            $abilities[] = 'nowriter';
         }
 
         return [

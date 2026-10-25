@@ -47,6 +47,10 @@ final class Levels
         }
         $options = [];
         foreach (Catalog::ABILITIES as $key => $ability) {
+            // Nicht lernbar: Nachteile (Schreibt nicht) und Songwriter für jemanden, der nicht schreibt.
+            if (!empty($ability['negative']) || ($key === 'songwriter' && in_array('nowriter', $owned, true))) {
+                continue;
+            }
             if (!in_array($key, $owned, true) && (empty($ability['technique']) || in_array($key, $techniques, true))) {
                 $options[] = $key;
             }

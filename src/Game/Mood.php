@@ -301,7 +301,8 @@ final class Mood
         $c = Balance::SONGWRITING;
         $sum = 0.0;
         foreach ($members as $m) {
-            $sum += in_array('songwriter', $m['abilities'] ?? [], true) ? $c['writer'] : $c['share'];
+            $abilities = $m['abilities'] ?? [];
+            $sum += in_array('songwriter', $abilities, true) ? $c['writer'] : (in_array('nowriter', $abilities, true) ? $c['nowriter'] : $c['share']);
         }
         return ($sum / $c['norm']) ** $c['exp'];
     }

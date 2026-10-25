@@ -151,7 +151,7 @@ test('Generator: höchstens zwei Instrumente, Spezialisten sind besser', functio
         check(isset(Catalog::INSTRUMENTS[$m['instr1']]));
         check($m['genres'] !== [] && count($m['genres']) === count(array_unique($m['genres'])));
         check($m['level'] <= 1, 'Aus Packs höchstens Können-Stufe 1');
-        checkEquals($m['level'], count(array_diff($m['abilities'], ['songwriter'])) + ($m['level'] && $m['abilities'] === ['songwriter'] ? 1 : 0), 'So viele Fähigkeiten wie Stufen (Songwriter auch zusätzlich)');
+        checkEquals($m['level'], count(array_diff($m['abilities'], ['songwriter', 'nowriter'])) + ($m['level'] && array_diff($m['abilities'], ['songwriter', 'nowriter']) === [] ? 1 : 0), 'So viele Fähigkeiten wie Stufen (Songwriter auch zusätzlich)');
         checkEquals(0.0, $m['fame'], 'Neue Musiker haben keinen Ruhm');
         if ($m['instr2'] !== null) {
             $multi++;
@@ -645,6 +645,9 @@ test('Songschreiben: jedes Mitglied trägt bei, Songwriter viel mehr; allein ohn
     $c = Balance::SONGWRITING;
     checkEquals(1.0, round(Signed\Game\Mood::crewFactor([$m(), $m(), $m(), $m()]), 4), 'Vierer-Band = Grundtempo');
     check(Signed\Game\Mood::crewFactor([$m()]) <= 0.3, 'allein ohne Songwriter sehr langsam');
+    checkEquals(0.0, Signed\Game\Mood::crewFactor([$m(['nowriter'])]), 'wer nicht schreibt, schreibt solo gar nichts');
+    check(Signed\Game\Mood::crewFactor([$m(['nowriter']), $m(), $m(), $m()]) < Signed\Game\Mood::crewFactor([$m(), $m(), $m(), $m()]), 'und bremst die Band');
+    check(!in_array('nowriter', Signed\Game\Levels::eligible(['guitar'], []), true) && !in_array('songwriter', Signed\Game\Levels::eligible(['guitar'], ['nowriter']), true), 'nicht lernbar');
     check(Signed\Game\Mood::crewFactor([$m(['songwriter'])]) > 2.5 * Signed\Game\Mood::crewFactor([$m()]), 'Songwriter hilft viel');
     check(Signed\Game\Mood::crewFactor([$m(['songwriter'])]) < Signed\Game\Mood::crewFactor([$m(), $m(), $m(), $m()]), 'auch mit Songwriter allein langsamer als eine Band');
     check(4 * Signed\Game\Mood::crewFactor([$m()]) <= 0.6 * Signed\Game\Mood::crewFactor([$m(), $m(), $m(), $m()]), 'vier Solokünstler zusammen deutlich langsamer als die Band');

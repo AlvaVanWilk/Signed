@@ -189,8 +189,9 @@ final class Balance
      * deshalb wächst es stärker als die Zahl der Mitglieder. Eine Vierer-Band ohne Songwriter schreibt so schnell wie MOOD['songsPerHour'],
      * allein ohne Songwriter dauert es achtmal so lang (vier Solokünstler zusammen schaffen nur halb so viel wie die Band).
      * Neue Musiker sind mit Chance `born` schon Songwriter (unabhängig vom Können); sonst kommt die Fähigkeit wie die anderen mit dem Aufstieg.
+     * Mit Chance `bornNo` schreibt jemand gar nicht (`nowriter`, trägt 0 bei): solo entstehen keine Songs, in der Band bremst es.
      */
-    public const SONGWRITING = ['share' => 0.25, 'writer' => 0.75, 'norm' => 1.0, 'exp' => 1.5, 'born' => 0.08];
+    public const SONGWRITING = ['share' => 0.25, 'writer' => 0.75, 'nowriter' => 0.0, 'norm' => 1.0, 'exp' => 1.5, 'born' => 0.08, 'bornNo' => 0.12];
     public const MAX_MEMBERS = 7;
     public const MAX_PER_INSTRUMENT = ['drums' => 1, 'guitar' => 2];
 

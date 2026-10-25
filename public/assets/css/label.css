@@ -27,7 +27,7 @@
 /* Die Leiste scrollt für sich (eigene Fläche, bleibt am Ende stehen statt die Seite mitzunehmen); rechts Platz für die Wunsch-Blasen. */
 @media (min-width: 901px) { .lb-side { max-height: calc(100vh - 28px); overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #3a3448 transparent; } }
 .lb-bar { display: flex; flex-direction: column; gap: 18px; padding: 10px 12px 0 0; }
-.lb-bt { position: relative; display: grid; grid-template-columns: 1fr auto; gap: 7px 10px; min-height: 118px; align-content: center; overflow: visible; padding: 12px 22px 12px 40px; border-radius: 12px; border: 1px solid var(--lb-line); background: var(--lb-card); color: var(--lb-text); text-decoration: none; }
+.lb-bt { position: relative; display: grid; grid-template-columns: 1fr auto; gap: 7px 10px; min-height: 118px; align-content: center; overflow: visible; padding: 12px 22px 12px 30px; border-radius: 12px; border: 1px solid var(--lb-line); background: var(--lb-card); color: var(--lb-text); text-decoration: none; }
 .lb-bt:hover { text-decoration: none; border-color: #4a4458; }
 .lb-bt::before { content: none; }
 .lb-bt.sel { border-color: var(--lb-accent); background: var(--lb-card2); }
@@ -750,20 +750,20 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .lb-stage-opt:hover { border-color: var(--lb-accent); background: var(--lb-card2); }
 
 /* Genre-Plakette links auf der Kachel: leer (nur Umrandung) ohne Genre-Bonus, sonst im Material des Genres; Hybrid zwei, Crossover drei Stücke übereinander. */
-.lb-bt .plq { position: absolute; left: 8px; top: 8px; bottom: 8px; width: 20px; border-radius: 6px; border: 1px solid var(--lb-line); background: var(--lb-card); display: flex; flex-direction: column; overflow: hidden; }
-.lb-bt.sel .plq { background: var(--lb-card2); }
-.lb-bt .plq.on { border-color: rgba(0, 0, 0, .35); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08); }
-.lb-bt .plq .tex { flex: 1; display: block; }
-.lb-bt .plq .tex + .tex { border-top: 1px solid rgba(0, 0, 0, .45); }
-.tex.t-metal { background: radial-gradient(circle at 50% 7px, #eef0f3 0 1.4px, #4a505a 1.9px, transparent 2.4px), radial-gradient(circle at 50% calc(100% - 7px), #eef0f3 0 1.4px, #4a505a 1.9px, transparent 2.4px),
-  repeating-linear-gradient(180deg, rgba(255, 255, 255, .1) 0 1px, rgba(0, 0, 0, .1) 1px 2px), linear-gradient(90deg, #666d79, #cfd4db 42%, #8a909b 58%, #bcc1c9 82%, #636a76); }
-.tex.t-punk { background: #a8ff1e; }
-.tex.t-rock { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='60'%3E%3Cpath d='M3 0 L8 12 L5 22 L12 34 L9 46 L14 60' fill='none' stroke='%23ff6a00' stroke-width='3.4' opacity='.35'/%3E%3Cpath d='M3 0 L8 12 L5 22 L12 34 L9 46 L14 60' fill='none' stroke='%23ffb347' stroke-width='1.1'/%3E%3Cpath d='M8 12 L17 16 M12 34 L19 30 M5 22 L0 28 M9 46 L2 52' stroke='%23ff7a1a' stroke-width='.9' fill='none'/%3E%3C/svg%3E"), radial-gradient(circle at 60% 30%, #5a2414, transparent 60%), #241210; background-size: 20px 60px, auto, auto; }
-.tex.t-folk { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='40'%3E%3Cpath d='M10 0 V40' stroke='%23d8f5c8' stroke-width='1.1' opacity='.55'/%3E%3Cpath d='M10 6 L3 1 M10 6 L17 1 M10 16 L2 10 M10 16 L18 10 M10 26 L3 20 M10 26 L17 20 M10 36 L2 30 M10 36 L18 30' stroke='%23d8f5c8' stroke-width='.7' opacity='.45' fill='none'/%3E%3C/svg%3E"), linear-gradient(90deg, #2f7a44, #4fa565 50%, #2f7a44); background-size: 20px 40px, auto; }
-.tex.t-pop { background: radial-gradient(circle, rgba(255, 255, 255, .95) 0 .7px, transparent 1.1px) 0 0 / 6px 7px, radial-gradient(circle, rgba(255, 255, 255, .6) 0 .6px, transparent 1px) 3px 4px / 9px 11px, linear-gradient(180deg, #ff7ab3, #d94f92 55%, #b8457e); }
-.tex.t-elektro { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='44'%3E%3Cpath d='M13 0 L6 15 L11 15 L4 31' fill='none' stroke='%237fdcff' stroke-width='3.2' opacity='.3'/%3E%3Cpath d='M13 0 L6 15 L11 15 L4 31' fill='none' stroke='%23c9f1ff' stroke-width='1'/%3E%3Cpath d='M17 26 L13 34 L16 34 L12 44' fill='none' stroke='%237fdcff' stroke-width='.8' opacity='.8'/%3E%3C/svg%3E"), linear-gradient(180deg, #0f2140, #183a6b); background-size: 20px 44px, auto; }
-.tex.t-hiphop { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='52'%3E%3Cellipse cx='6' cy='9' rx='6' ry='5' fill='%23ff4f8b' opacity='.9'/%3E%3Cpath d='M4 13 V22 M8 13 V18' stroke='%23ff4f8b' stroke-width='1.6' stroke-linecap='round'/%3E%3Cellipse cx='15' cy='27' rx='5' ry='4.5' fill='%23f2c14e' opacity='.9'/%3E%3Cpath d='M15 31 V40' stroke='%23f2c14e' stroke-width='1.5' stroke-linecap='round'/%3E%3Cellipse cx='5' cy='42' rx='4.5' ry='4' fill='%234fd1ff' opacity='.85'/%3E%3Ccircle cx='12' cy='15' r='1' fill='%23fff' opacity='.7'/%3E%3Ccircle cx='3' cy='31' r='.9' fill='%23fff' opacity='.6'/%3E%3C/svg%3E"), linear-gradient(180deg, #3a2a5c, #2a1f45); background-size: 20px 52px, auto; }
-.tex.t-jazz { background: repeating-linear-gradient(180deg, rgba(255, 255, 255, .08) 0 1px, transparent 1px 3px), linear-gradient(90deg, #7a5a22, #e8c56a 42%, #b08a3a 58%, #dcb65e 82%, #74561f); }
+.lb-bt .plq { position: absolute; left: 0; top: 0; bottom: 0; width: 16px; border-radius: 11px 0 0 11px; border-right: 1px solid var(--lb-line); display: flex; flex-direction: column; overflow: hidden; }
+/* Mit Bonus: das Material bis an die Kante, mit einer feinen Schattenkante zum Rest der Kachel */
+.lb-bt .plq.on { border-right-color: rgba(0, 0, 0, .55); box-shadow: inset -1px 0 0 rgba(255, 255, 255, .12), 1px 0 3px rgba(0, 0, 0, .35); }
+.lb-bt .plq .tex { flex: 1; display: block; background-size: 100% auto; background-repeat: repeat-y; }
+.lb-bt .plq .tex + .tex { box-shadow: inset 0 1px 0 rgba(0, 0, 0, .5); }
+.tex.t-metal { background-image: url(../img/tex/metal.svg); }
+.tex.t-jazz { background-image: url(../img/tex/jazz.svg); }
+.tex.t-rock { background-image: url(../img/tex/rock.svg); }
+.tex.t-folk { background-image: url(../img/tex/folk.svg); }
+.tex.t-pop { background-image: url(../img/tex/pop.svg); }
+.tex.t-elektro { background-image: url(../img/tex/elektro.svg); }
+.tex.t-hiphop { background-image: url(../img/tex/hiphop.svg); }
+/* Punk: Neonröhre – satt leuchtend, ohne Schimmer */
+.tex.t-punk { background: #b6ff2a; box-shadow: inset 0 0 4px 1px rgba(255, 255, 255, .55), inset -3px 0 6px rgba(80, 140, 0, .55); }
 
 /* Wunsch: Sprechblase ragt rechts aus der Kachel, als Hinweis zum Handeln; ist der Wunsch erfüllt, ist sie weg. */
 .lb-bt .wishb { position: absolute; right: -14px; top: 50%; transform: translateY(-50%); width: 30px; height: 24px; z-index: 3; animation: lb-wish 2.4s ease-in-out infinite; }

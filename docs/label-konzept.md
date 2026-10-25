@@ -145,6 +145,7 @@ Anspruch übertrifft, macht glücklich (auch eine unzufriedene Band lässt sich 
   Zusammen sprudeln die Ideen, deshalb wächst es stärker als die Zahl der Mitglieder. Vierer-Band ohne Songwriter: ×1 (das Tempo oben),
   Zweier-Band ×0,35, allein ×0,125 (ein Song in acht Stunden), allein mit Songwriter ×0,65, Vierer-Band mit einem Songwriter ×1,84.
   Songwriter kommt wie andere Fähigkeiten mit dem Aufstieg; 8 % der neuen Musiker sind es schon von Anfang an.
+  Gegenstück **Schreibt nicht** (12 % der neuen Musiker, nur von Anfang an, nie lernbar): trägt 0 bei. Solo entstehen so keine Songs, in einer Vierer-Band sinkt das Tempo auf ×0,65.
 - **Obergrenze 24 Songs.** Ab 12 liegenden Songs sinkt die Stimmung der Band langsam („Wir wollen aufnehmen!“).
 - Eine Platte braucht mindestens 3 Songs (EP) bzw. 7 (LP) aus diesem Vorrat; beim Aufnehmen wählt das Label, wie viele.
 

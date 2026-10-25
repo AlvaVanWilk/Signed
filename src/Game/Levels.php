@@ -108,6 +108,7 @@ final class Levels
             'abilities' => json_encode(array_merge($m['abilities'], [$ability])),
             'ability_choice' => null,
         ], ['id' => $musicianId]);
+        $repo->log('level', sprintf('%s lernt „%s“.', Bands::fullName($m), Catalog::ABILITIES[$ability]['name'] ?? $ability), $m['band_id'], $musicianId);
     }
 
     private static function step(float $value, array $thresholds): int

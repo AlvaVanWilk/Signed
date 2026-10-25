@@ -411,3 +411,11 @@ Beim ersten Login nach dem Umbau (Saison 2) bleiben **Labelname und Konto**, all
 - Ehemalige Signies (entlassen oder verkauft) stehen in der Tabelle `alumni` und behalten ihren Artikel. Texte nennen Namen statt Pronomen.
 - Wer zuletzt in einer Band war, die ihren Namen aufgibt, wird in der Geschichte der ehemaligen Band und im Artikel des Signies festgehalten; Ein- und Austritte werden immer protokolliert.
 - Wer kein Instrument hat, spielt bei der Probe nichts: seine Spur bleibt stumm.
+
+### WikiSignia über alle Labels
+
+- Oberste Ebene ist das **Label**: Verzeichnis `#/wiki` (eigenes Label mit Bands und Signies, dazu die anderen), Labelseite `#/wiki/label/<id>`, Artikel zeigen ihr Label. Auch Künstler und Bands fremder Labels sind lesbar; von fremden Labels sieht man nur Einträge ohne Geld (lineup, band, record, level).
+- Protokolliert werden für jeden Künstler: Unterschrift, Bandwechsel, Stufenaufstiege (Können und Bekanntheit), gelernte Fähigkeiten, Platten, Ende.
+- Suche über alle Labels (`wikiSearch`). Zugang über den Knopf „WikiSignia“ im Label-Menü oben rechts.
+- **Namensschutz:** Eine ehemalige Band behält ihren Namen nur geschützt, wenn sie am Ende mindestens `Balance::NAME_PROTECT_FAME` (20, erste Bekanntheitsstufe) Ruhm am Namen hatte; sonst wird der Name frei. Wiederbeleben ist noch nicht möglich.
+- **Verbundener Name** („Solo & Band“, „and the“, „und die“): behält `NAME_COMBO_KEEP` (50 %) des Ruhms beider Namen; ein ganz neuer Name behält nichts, ein vorhandener Name den vollen eigenen Ruhm, der andere Name verfällt.

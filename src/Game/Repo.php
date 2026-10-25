@@ -107,8 +107,14 @@ final class Repo
         if ($fame === null || $gain <= 0) {
             return 0.0;
         }
-        $gain *= Levels::pace(Levels::forFame((float) $fame));
+        $before = Levels::forFame((float) $fame);
+        $gain *= Levels::pace($before);
         $this->db->exec('UPDATE musicians SET fame = fame + ? WHERE id = ? AND label_id = ?', [$gain, $musicianId, $this->labelId]);
+        $after = Levels::forFame((float) $fame + $gain);
+        if ($after > $before) {
+            $m = $this->db->one('SELECT first_name, last_name, band_id FROM musicians WHERE id = ?', [$musicianId]);
+            $this->log('level', sprintf('%s %s ist jetzt %s.', $m['first_name'], $m['last_name'], Catalog::FAME_NAMES[$after]), $m['band_id'] === null ? null : (int) $m['band_id'], $musicianId);
+        }
         return $gain;
     }
 

@@ -767,7 +767,7 @@ test('Namensänderung: immer kostenlos; mit Laufbahn geht der Ruhm am Namen verl
     $money = $p->get('state')['label']['money'];
     $p->post('bandRename', ['bandId' => $band['id'], 'name' => 'Erster Versuch']);
     checkEquals($money, $p->get('state')['label']['money'], 'Vor dem ersten Auftritt kostenlos');
-    checkEquals(0, count(array_filter($p->post('wikiIndex')['bands'], static fn ($b) => $b['status'] === 'former')), 'ohne Laufbahn bleibt nichts zurück');
+    checkEquals(0, count(array_filter(wikiOwn($p)['bands'], static fn ($b) => $b['status'] === 'former')), 'ohne Laufbahn bleibt nichts zurück');
 
     $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'busking']);
     Clock::advance(Balance::BUSKING['songs'] * Balance::SONG_SECONDS);
@@ -780,7 +780,7 @@ test('Namensänderung: immer kostenlos; mit Laufbahn geht der Ruhm am Namen verl
     checkEquals(0.0, (float) $now['fameOwn']);
     checkEquals('Zweiter Versuch', $now['name']);
     checkEquals(0, $now['records'], 'die Platten gehören nicht mehr zur neuen Band');
-    $wiki = $p->post('wikiIndex');
+    $wiki = wikiOwn($p);
     $oldBands = array_values(array_filter($wiki['bands'], static fn ($b) => $b['status'] === 'former'));
     checkEquals(1, count($oldBands), 'die alte Band steht in der WikiSignia');
     $former = $p->post('wikiBand', ['id' => $oldBands[0]['id']]);
@@ -1592,7 +1592,7 @@ test('WikiSignia: Wer entlassen wurde, behält seinen Artikel', function () {
     $id = $band['memberIds'][0];
     $p->post('bandRemoveMember', ['bandId' => $band['id'], 'musicianId' => $id]);
     $p->post('musicianRelease', ['musicianId' => $id]);
-    $index = $p->post('wikiIndex');
+    $index = wikiOwn($p);
     $entry = array_values(array_filter($index['signies'], static fn ($s) => $s['id'] === $id));
     checkEquals(1, count($entry));
     checkEquals('former', $entry[0]['status']);
@@ -1600,9 +1600,12 @@ test('WikiSignia: Wer entlassen wurde, behält seinen Artikel', function () {
     checkEquals('former', $article['status']);
     checkEquals('released', $article['reason']);
     check(count($article['bands']) >= 1, 'seine Band steht im Artikel');
-    // Fremde Künstler gibt es für dieses Label nicht
+    // Auch andere Labels können den Artikel lesen; er nennt das frühere Label
     $other = registerPlayer($db, 'Wiki2');
-    checkApiError(fn () => $other->post('wikiSignie', ['id' => $id]), 'gibt es nicht');
+    $seen = $other->post('wikiSignie', ['id' => $id]);
+    checkEquals('former', $seen['status']);
+    checkEquals(1, count($seen['formerLabels']));
+    checkApiError(fn () => $other->post('wikiSignie', ['id' => 999999]), 'gibt es nicht');
 });
 
 test('Zusammentun: ein verbundener Name behält die Hälfte des Ruhms beider Namen, Namen ehemaliger Bands sind nur mit Ruhm geschützt', function () {
@@ -1625,4 +1628,36 @@ test('Zusammentun: ein verbundener Name behält die Hälfte des Ruhms beider Nam
     check(!Signed\Game\Names::bandTaken($db, 'Solo & Kern'), 'ohne Ruhm frei');
     $db->exec("UPDATE bands SET fame_final = 50 WHERE id = ?", [$band['id']]);
     check(Signed\Game\Names::bandTaken($db, 'Solo & Kern'), 'mit Ruhm geschützt');
+});
+
+/** WikiSignia-Verzeichnis des eigenen Labels. */
+function wikiOwn($p): array
+{
+    $own = array_values(array_filter($p->post('wikiIndex')['labels'], static fn ($l) => $l['own']))[0];
+    return $p->post('wikiLabel', ['id' => $own['id']]);
+}
+
+test('WikiSignia: Labels als oberste Ebene, fremde Artikel mit Label, ohne Geld-Einträge, Suche über alle', function () {
+    $db = freshDb();
+    $a = registerPlayer($db, 'WikiA');
+    $b = registerPlayer($db, 'WikiB');
+    $bandA = foundBand($a, 'Alpha Wiki');
+    $labels = $b->post('wikiIndex')['labels'];
+    check(count($labels) >= 2 && $labels[0]['own'], 'das eigene Label steht zuerst');
+    // Eine fremde Band ist lesbar und nennt ihr Label
+    $article = $b->post('wikiBand', ['id' => $bandA['id']]);
+    checkEquals('Alpha Wiki', $article['name']);
+    check($article['label']['own'] === false && $article['label']['name'] !== '', 'Label steht dabei');
+    foreach ($article['events'] as $e) {
+        check(in_array($e['kind'], ['lineup', 'band', 'record', 'level'], true), 'nur öffentliche Einträge');
+    }
+    // Ein fremder Künstler ebenfalls
+    $musician = $article['members'][0];
+    $sig = $b->post('wikiSignie', ['id' => $musician['id']]);
+    check($sig['label']['own'] === false, 'Label des Künstlers');
+    // Suche über alle Labels
+    $found = $b->post('wikiSearch', ['q' => 'alpha wi']);
+    check(count($found['bands']) >= 1 && $found['bands'][0]['label'] !== '', 'gefunden mit Label');
+    $byName = $b->post('wikiSearch', ['q' => mb_strtolower($musician['firstName'])]);
+    check(count($byName['signies']) >= 1, 'Künstler gefunden');
 });

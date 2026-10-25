@@ -43,6 +43,8 @@ final class Api
         'charts' => ['GET', true],
         'bandView' => ['POST', true],
         'wikiIndex' => ['POST', true],
+        'wikiLabel' => ['POST', true],
+        'wikiSearch' => ['POST', true],
         'wikiBand' => ['POST', true],
         'wikiSignie' => ['POST', true],
         'buyPack' => ['POST', true],
@@ -254,6 +256,16 @@ final class Api
     private function wikiIndex(array $in, Repo $repo): array
     {
         return Wiki::index($repo);
+    }
+
+    private function wikiLabel(array $in, Repo $repo): array
+    {
+        return Wiki::label($repo, self::int($in, 'id'));
+    }
+
+    private function wikiSearch(array $in, Repo $repo): array
+    {
+        return Wiki::search($repo, (string) ($in['q'] ?? ''));
     }
 
     private function wikiBand(array $in, Repo $repo): array

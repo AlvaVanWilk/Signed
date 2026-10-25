@@ -233,6 +233,10 @@ final class Studio
             $songs,
             $perfect ? ' – eine perfekte Platte!' : '.'
         ), $band['id']);
+        // In der WikiSignia steht bei jedem Künstler, an welchen Platten er beteiligt war.
+        foreach ($members as $m) {
+            $this->repo->log('record', mb_substr(sprintf('%s nimmt mit %s „%s“ auf (%s).', Bands::fullName($m), $band['name'], $record['title'], $format), 0, 250), $band['id'], $m['id']);
+        }
 
         if ($firstRecord) {
             Scout::grant($this->repo, 'die erste Platte deines Labels.');

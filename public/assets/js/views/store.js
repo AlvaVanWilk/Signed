@@ -236,11 +236,15 @@ const DOOR = `
   <span class="panel top"></span><span class="panel bottom"></span>
   <span class="glass"></span><span class="handle"></span>`;
 
-/** Beim Betreten aus einer anderen Seite: Doppeltür geht auf und gibt das Regal frei. */
+const DOORS_SEEN = 'signed.storeDoorsSeen';
+const doorsSeen = () => { try { return localStorage.getItem(DOORS_SEEN) === '1'; } catch { return false; } };
+
+/** Beim allerersten Betreten: Doppeltür geht auf und gibt das Regal frei. Danach geht es ohne Tür hinein. */
 export function enter() {
   if (!doorsPending || document.querySelector('.ms-doors')) return;
   doorsPending = false;
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (doorsSeen() || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  try { localStorage.setItem(DOORS_SEEN, '1'); } catch { /* ohne Speicher eben jedes Mal */ }
   const doors = document.createElement('div');
   doors.className = 'ms-doors';
   doors.innerHTML = `<div class="ms-door l">${DOOR}<b>MUSIC</b></div><div class="ms-door r">${DOOR}<b>STORE</b></div><span class="ms-glow"></span>`;

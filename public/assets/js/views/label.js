@@ -7,6 +7,7 @@ import { playedInstrument, stage } from '../figure.js';
 import { bandStems, loadStems, playStems, stemUrl } from '../music.js';
 import { blocker, blockerNotice, courseTiles, gainRange, statTile } from './bands.js';
 import { roomSvg } from '../room.js';
+import { crowdMeter, venueArt } from '../venues.js';
 
 /** Label-Ebene: Band-Leiste links und die ruhige Bandseite. Stimmung als Punkt und Wort (grün, gelb, rot). */
 
@@ -450,7 +451,8 @@ function musicianWindow(m) {
   });
 }
 
-const VENUE_ICON = { kneipe: '🍺', club: '🪩', saal: '🎭', halle: '🏛️', arena: '🏟️' };
+/** Wie voll der Ort voraussichtlich wird, in Worten. */
+const fillWord = (f) => (f >= 0.9 ? 'voll' : f >= 0.6 ? 'gut besucht' : f >= 0.3 ? 'halb leer' : 'fast leer');
 const KNOWN = { some: '<li class="warn">Erst wenige kennen die Band: nicht alle Plätze werden verkauft.</li>', no: '<li class="bad">Kaum jemand kennt die Band: der Ort bleibt fast leer.</li>' };
 const FIT = { green: ['ok', 'Sound passt'], yellow: ['knapp', 'Sound knapp: der Saal wird nicht ganz voll'], red: ['bad', 'Sound zu schwach: der Saal bleibt halb leer'] };
 
@@ -474,17 +476,24 @@ async function openGigs(b) {
     const [cls, fitText] = FIT[o.fit];
     const claim = o.claim === 'below' ? `<li class="bad">Unter ihrem Anspruch: die Band ärgert sich.</li>`
       : o.claim === 'above' ? `<li class="good">Eine größere Bühne: die Band freut sich.</li>` : '';
+    const tooPoor = app.state.label.money < o.cost;
     return `
       <div class="gg-row ${o.blocked ? 'blocked' : ''} ${o === best ? 'best' : ''}">
-        <div class="gg-venue"><span class="gg-ico">${VENUE_ICON[o.key] ?? ''}</span><span><b>${esc(o.place)}</b><small class="muted">${esc(o.name)} · ${o.songs} Songs · etwa ${o.minutes} Min.</small></span>${o === best ? '<em class="gg-best">bester Gewinn</em>' : ''}</div>
-        <div class="gg-money">
-          <span><small>Kosten</small><b>${money(o.cost)}</b></span>
-          <span><small>Gage</small><b>${o.gage[0] === o.gage[1] ? money(o.gage[0]) : `${money(o.gage[0])} – ${money(o.gage[1])}`}</b></span>
-          <span class="${o.profit[0] >= 0 ? 'good' : o.profit[1] < 0 ? 'bad' : 'warn'}"><small>Gewinn</small><b>${range(o.profit)}</b></span>
-          <span><small>Ruhm</small><b>+${fmt1(o.fame)}</b></span>
+        <div class="gg-art">${venueArt(o.key)}${o === best ? '<em class="gg-best">bester Gewinn</em>' : ''}</div>
+        <div class="gg-main">
+          <div class="gg-head"><b>${esc(o.place)}</b><small>${esc(o.name)} · ${o.songs} Songs · etwa ${o.minutes} Min.</small></div>
+          <div class="gg-crowd">${crowdMeter(o.fill ?? 0)}<span>Publikum: <b>${fillWord(o.fill ?? 0)}</b></span></div>
+          <ul class="gg-notes"><li class="${cls === 'ok' ? 'good' : cls === 'bad' ? 'bad' : 'warn'}">${fitText}</li>${KNOWN[o.known] ?? ''}${claim}${o.blocked ? `<li class="bad">${esc(o.blocked)}</li>` : ''}</ul>
         </div>
-        <ul class="gg-notes"><li class="${cls === 'ok' ? 'good' : cls === 'bad' ? 'bad' : 'warn'}">${fitText}</li>${KNOWN[o.known] ?? ''}${claim}${o.blocked ? `<li class="bad">${esc(o.blocked)}</li>` : ''}</ul>
-        <button class="btn ${o === best ? 'primary' : ''} small" data-book="${o.key}" ${o.blocked || app.state.label.money < o.cost ? 'disabled' : ''}>${app.state.label.money < o.cost ? 'Zu teuer' : 'Buchen'}</button>
+        <div class="gg-side">
+          <div class="gg-money">
+            <span><small>Kosten</small><b>${money(o.cost)}</b></span>
+            <span><small>Gage</small><b>${o.gage[0] === o.gage[1] ? money(o.gage[0]) : `${money(o.gage[0])} – ${money(o.gage[1])}`}</b></span>
+            <span class="${o.profit[0] >= 0 ? 'good' : o.profit[1] < 0 ? 'bad' : 'warn'}"><small>Gewinn</small><b>${range(o.profit)}</b></span>
+            <span><small>Ruhm</small><b>+${fmt1(o.fame)}</b></span>
+          </div>
+          <button class="btn ${o === best ? 'primary' : ''} small" data-book="${o.key}" ${o.blocked || tooPoor ? 'disabled' : ''}>${tooPoor ? 'Zu teuer' : 'Buchen'}</button>
+        </div>
       </div>`;
   };
   const modal = openModal({

@@ -262,6 +262,38 @@ const bassLike = (skin, shirt, electric, hue) => {
   ${arm('M75 80 Q86 94 70 106', [70, 106], skin, shirt, 'fig-strum')}`;
 };
 
+/** Bläser und Geige ohne Arme, damit sie beim Spielen und in der Pause gleich aussehen. */
+const SAX = `
+  <path d="M61 62 Q66 66 64 74 L64 98 Q66 108 76 104 L82 94" fill="none" stroke="${INK}" stroke-width="9" stroke-linecap="round"/>
+  <path d="M61 62 Q66 66 64 74 L64 98 Q66 108 76 104 L82 94" fill="none" stroke="#f2c14e" stroke-width="6" stroke-linecap="round"/>
+  <path d="M78 96 L88 88 L90 96 Z" fill="#f2c14e" ${STROKE}/>
+  ${gloss('M62.6 76 L62.6 96', 1.4, 0.45)}
+  <g fill="#d9a531" stroke="${INK}" stroke-width="0.7">${[78, 84, 90].map((y) => `<circle cx="66.6" cy="${y}" r="1.5"/>`).join('')}</g>`;
+const TRUMPET = `
+  <path d="M62 62 L88 57" stroke="${INK}" stroke-width="6" stroke-linecap="round"/>
+  <path d="M62 62 L88 57" stroke="#f2c14e" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M86 57 L97 50 L99 64 Z" fill="#f2c14e" ${STROKE}/>
+  <rect x="70" y="56" width="10" height="6" rx="1.5" fill="#f2c14e" ${STROKE} stroke-width="1.2"/>
+  <g fill="#d9a531" stroke="${INK}" stroke-width="0.7">${[72, 75, 78].map((x) => `<rect x="${x - 0.9}" y="53" width="1.8" height="3" rx="0.6"/>`).join('')}</g>
+  ${gloss('M64 61 L69 60.1', 1, 0.5)}${gloss('M88 55.4 L95 51.6', 1, 0.45)}`;
+const FLUTE = `
+  <path d="M62 61 L22 69" stroke="${INK}" stroke-width="5" stroke-linecap="round"/>
+  <path d="M62 61 L22 69" stroke="#d6d9e0" stroke-width="2.6" stroke-linecap="round"/>
+  <g fill="#a9adb8">${[0, 1, 2, 3, 4].map((i) => `<circle cx="${40 + i * 3.6}" cy="${65.4 - i * 0.72}" r="0.8"/>`).join('')}</g>
+  ${gloss('M58 61.3 L44 64.1', 0.7, 0.6)}`;
+const VIOLIN = `
+  <g ${STROKE}>
+    <path d="M44 70 L20 58" stroke="${INK}" stroke-width="5" stroke-linecap="round"/>
+    <path d="M44 70 L20 58" stroke="#5b3a21" stroke-width="2.5" stroke-linecap="round"/>
+    <g transform="rotate(28 44 72)"><ellipse cx="44" cy="72" rx="9" ry="6.5" fill="#b5651d"/><ellipse cx="53" cy="72" rx="7" ry="5.5" fill="#b5651d"/></g>
+  </g>
+  <g transform="rotate(28 44 72)">
+    <path d="M44 69.6 Q45 71 44 72.6 M50 69.6 Q51 71 50 72.6" fill="none" stroke="${INK}" stroke-width="0.7"/>
+    <path d="M38 72 L58 72" stroke="#f4efe6" stroke-width="0.4" opacity="0.7"/>
+    <path d="M45 77 Q51 78 56 75.4 Q54 78.4 48 78.4 Z" ${SHADE}/>
+    ${gloss('M38 68.6 Q41 66.4 45 66.2', 1.1, 0.35)}
+  </g>`;
+
 const POSES = {
   // Ohne Instrument: Er steht nur dabei, die Arme hängen.
   none: {
@@ -332,56 +364,57 @@ const POSES = {
       ${arm('M45 80 Q50 92 58 99', [58, 99], skin, shirt)}
       ${arm('M75 80 Q86 88 80 98', [80, 98], skin, shirt, 'fig-scratch')}`,
   },
+  // Bläser und Geige: beim Spielen am Mund oder unterm Kinn, in der Pause (Bühne still) weg vom Gesicht.
   sax: {
     back: () => '',
-    front: (skin, shirt) => pivot(60, 62, 'fig-horn', `
-      <path d="M61 62 Q66 66 64 74 L64 98 Q66 108 76 104 L82 94" fill="none" stroke="${INK}" stroke-width="9" stroke-linecap="round"/>
-      <path d="M61 62 Q66 66 64 74 L64 98 Q66 108 76 104 L82 94" fill="none" stroke="#f2c14e" stroke-width="6" stroke-linecap="round"/>
-      <path d="M78 96 L88 88 L90 96 Z" fill="#f2c14e" ${STROKE}/>
-      ${gloss('M62.6 76 L62.6 96', 1.4, 0.45)}
-      <g fill="#d9a531" stroke="${INK}" stroke-width="0.7">${[78, 84, 90].map((y) => `<circle cx="66.6" cy="${y}" r="1.5"/>`).join('')}</g>
-      ${arm('M45 80 Q56 78 63 80', [63, 80], skin, shirt)}
-      ${arm('M75 80 Q76 92 67 94', [67, 94], skin, shirt)}`),
+    front: (skin, shirt) => `
+      <g class="fig-play">${pivot(60, 62, 'fig-horn', `${SAX}
+        ${arm('M45 80 Q56 78 63 80', [63, 80], skin, shirt)}
+        ${arm('M75 80 Q76 92 67 94', [67, 94], skin, shirt)}`)}</g>
+      <g class="fig-rest">
+        ${arm('M45 80 Q40 92 42 103', [42, 103], skin, shirt)}
+        <path d="M53 75 L59 84 M67 75 L61 84" stroke="${INK}" stroke-width="1" opacity="0.7"/>
+        <g transform="translate(-4 20) rotate(-8 61 62)">${SAX}</g>
+        ${arm('M75 80 Q82 94 72 104', [72, 104], skin, shirt)}
+      </g>`,
   },
   trumpet: {
     back: () => '',
-    front: (skin, shirt) => pivot(60, 62, 'fig-horn', `
-      <path d="M62 62 L88 57" stroke="${INK}" stroke-width="6" stroke-linecap="round"/>
-      <path d="M62 62 L88 57" stroke="#f2c14e" stroke-width="3.5" stroke-linecap="round"/>
-      <path d="M86 57 L97 50 L99 64 Z" fill="#f2c14e" ${STROKE}/>
-      <rect x="70" y="56" width="10" height="6" rx="1.5" fill="#f2c14e" ${STROKE} stroke-width="1.2"/>
-      <g fill="#d9a531" stroke="${INK}" stroke-width="0.7">${[72, 75, 78].map((x) => `<rect x="${x - 0.9}" y="53" width="1.8" height="3" rx="0.6"/>`).join('')}</g>
-      ${gloss('M64 61 L69 60.1', 1, 0.5)}${gloss('M88 55.4 L95 51.6', 1, 0.45)}
-      ${arm('M45 80 Q58 76 68 64', [68, 64], skin, shirt)}
-      <g class="fig-key-r">${arm('M75 80 Q80 72 77 63', [77, 63], skin, shirt)}</g>`),
+    front: (skin, shirt) => `
+      <g class="fig-play">${pivot(60, 62, 'fig-horn', `${TRUMPET}
+        ${arm('M45 80 Q58 76 68 64', [68, 64], skin, shirt)}
+        <g class="fig-key-r">${arm('M75 80 Q80 72 77 63', [77, 63], skin, shirt)}</g>`)}</g>
+      <g class="fig-rest">
+        ${arm('M45 80 Q40 92 42 103', [42, 103], skin, shirt)}
+        <g transform="translate(80 104) rotate(72) translate(-75 -59)">${TRUMPET}</g>
+        ${arm('M75 80 Q81 92 79 103', [79, 103], skin, shirt)}
+      </g>`,
   },
   flute: {
     back: () => '',
-    front: (skin, shirt) => pivot(60, 62, 'fig-horn', `
-      <path d="M62 61 L22 69" stroke="${INK}" stroke-width="5" stroke-linecap="round"/>
-      <path d="M62 61 L22 69" stroke="#d6d9e0" stroke-width="2.6" stroke-linecap="round"/>
-      <g fill="#a9adb8">${[0, 1, 2, 3, 4].map((i) => `<circle cx="${40 + i * 3.6}" cy="${65.4 - i * 0.72}" r="0.8"/>`).join('')}</g>
-      ${gloss('M58 61.3 L44 64.1', 0.7, 0.6)}
-      ${arm('M45 80 Q36 76 32 67', [32, 67], skin, shirt)}
-      <g class="fig-key-r">${arm('M75 80 Q64 76 50 64', [50, 64], skin, shirt)}</g>`),
+    front: (skin, shirt) => `
+      <g class="fig-play">${pivot(60, 62, 'fig-horn', `${FLUTE}
+        ${arm('M45 80 Q36 76 32 67', [32, 67], skin, shirt)}
+        <g class="fig-key-r">${arm('M75 80 Q64 76 50 64', [50, 64], skin, shirt)}</g>`)}</g>
+      <g class="fig-rest">
+        ${arm('M45 80 Q40 92 42 103', [42, 103], skin, shirt)}
+        <g transform="translate(80 104) rotate(-88) translate(-50 -63.4)">${FLUTE}</g>
+        ${arm('M75 80 Q81 92 79 103', [79, 103], skin, shirt)}
+      </g>`,
   },
   violin: {
     back: () => '',
     front: (skin, shirt) => `
-      <g ${STROKE}>
-        <path d="M44 70 L20 58" stroke="${INK}" stroke-width="5" stroke-linecap="round"/>
-        <path d="M44 70 L20 58" stroke="#5b3a21" stroke-width="2.5" stroke-linecap="round"/>
-        <g transform="rotate(28 44 72)"><ellipse cx="44" cy="72" rx="9" ry="6.5" fill="#b5651d"/><ellipse cx="53" cy="72" rx="7" ry="5.5" fill="#b5651d"/></g>
-      </g>
-      <g transform="rotate(28 44 72)">
-        <path d="M44 69.6 Q45 71 44 72.6 M50 69.6 Q51 71 50 72.6" fill="none" stroke="${INK}" stroke-width="0.7"/>
-        <path d="M38 72 L58 72" stroke="#f4efe6" stroke-width="0.4" opacity="0.7"/>
-        <path d="M45 77 Q51 78 56 75.4 Q54 78.4 48 78.4 Z" ${SHADE}/>
-        ${gloss('M38 68.6 Q41 66.4 45 66.2', 1.1, 0.35)}
-      </g>
-      ${arm('M45 80 Q28 80 22 61', [22, 61], skin, shirt)}
-      ${pivot(75, 80, 'fig-bow', `${arm('M75 80 Q78 72 62 70', [62, 70], skin, shirt)}
-        <path d="M44 60 L86 80" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>`)}`,
+      <g class="fig-play">${VIOLIN}
+        ${arm('M45 80 Q28 80 22 61', [22, 61], skin, shirt)}
+        ${pivot(75, 80, 'fig-bow', `${arm('M75 80 Q78 72 62 70', [62, 70], skin, shirt)}
+          <path d="M44 60 L86 80" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>`)}</g>
+      <g class="fig-rest">
+        <g transform="translate(41 103) rotate(70) translate(-23 -59.5)">${VIOLIN}</g>
+        ${arm('M45 80 Q39 92 41 103', [41, 103], skin, shirt)}
+        <path d="M80 98 L84 134" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>
+        ${arm('M75 80 Q81 92 79 103', [79, 103], skin, shirt)}
+      </g>`,
   },
 };
 

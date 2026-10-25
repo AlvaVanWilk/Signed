@@ -147,7 +147,7 @@ final class Store
         });
     }
 
-    /** Zurücklegen lassen: nur eines je Label; es bleibt, auch wenn das Regal wechselt. */
+    /** Zurücklegen lassen: nur eines je Label (ein neues ersetzt das alte); es bleibt, auch wenn das Regal wechselt. */
     public function hold(int $idx): void
     {
         $this->repo->db->transaction(function () use ($idx): void {
@@ -155,12 +155,10 @@ final class Store
             $slot = self::slot($now);
             $item = $this->find($slot, $idx);
             $this->present();
-            if ($this->repo->db->one('SELECT id FROM store_holds WHERE label_id = ?', [$this->repo->labelId]) !== null) {
-                throw new ApiError('Du hast schon ein Instrument zurücklegen lassen. Kaufe es oder gib es zurück.');
-            }
             if ((int) $this->repo->db->value('SELECT COUNT(*) FROM store_buys WHERE label_id = ? AND slot = ? AND idx = ?', [$this->repo->labelId, $slot, $item['idx']]) > 0) {
                 throw new ApiError('Das hast du schon gekauft.');
             }
+            $this->repo->db->exec('DELETE FROM store_holds WHERE label_id = ?', [$this->repo->labelId]);
             $this->repo->db->insert('store_holds', ['label_id' => $this->repo->labelId, 'slot' => $slot, 'idx' => $idx, 'created_at' => $now, 'expires_at' => $now + Balance::STORE['holdHours'] * 3600]);
         });
     }

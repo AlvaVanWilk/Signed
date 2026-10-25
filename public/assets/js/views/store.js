@@ -1,7 +1,7 @@
-import { gearCard, gearHue, instrumentIcon, instrumentName, rarityName } from '../cards.js';
+import { gearHue, instrumentIcon, instrumentName, rarityName } from '../cards.js';
 import { playedInstrument } from '../figure.js';
 import { app, cat, defineActions, mutate, refresh, serverNow } from '../core.js';
-import { confirmDialog, duration, esc, money, openModal, toast } from '../ui.js';
+import { confirmDialog, duration, esc, fmt0, money, openModal, percent, toast } from '../ui.js';
 
 /**
  * Music Store: ein Regal mit 5 bis 10 Instrumenten (je Art höchstens eins), für alle Labels gleich, das alle paar Stunden wechselt.
@@ -43,16 +43,17 @@ function cell(item) {
 function locker() {
   const hold = app.state.store.hold;
   if (!hold) {
-    return `<div class="ms-locker empty"><b>Zurückgelegt</b><span>Tipp ein Instrument an und lass es einen Tag für dich zurücklegen. Eines je Label.</span></div>`;
+    return `<div class="ms-locker empty" data-store-drop><b>Zurückgelegt</b><span class="ms-drophint">Instrument hierher ziehen</span><span>Es bleibt einen Tag für dich da, auch wenn das Regal wechselt. Eines je Label.</span></div>`;
   }
   const item = hold.item;
   return `
-    <div class="ms-locker">
+    <div class="ms-locker" data-store-drop>
       <b>Für dich zurückgelegt</b>
       <button class="ms-cell small r-${item.rarity}" data-act="storeItem" data-slot="${item.slot}" data-idx="${item.idx}">
         <span class="ms-ico">${icon(item)}</span><span class="ms-tag"><small>${esc(cat().gear[item.model].name)}</small>${money(item.price)}</span>
       </button>
       <small class="muted">noch <span data-store-hold="${hold.expiresAt}">${duration(Math.max(0, hold.expiresAt - serverNow()))}</span></small>
+      <small class="ms-drophint">Ein anderes hierher ziehen ersetzt es</small>
     </div>`;
 }
 
@@ -75,22 +76,44 @@ export function render() {
     </div>`;
 }
 
-/** Ein Instrument im Detail: Karte, Preis, wer es braucht, Kaufen und Zurücklegen. */
+const FINISH = ['', 'Farbvariante', 'Sonderlackierung', 'Gold-Edition'];
+const finishOf = (item) => (item.design >= 85 ? 3 : item.design >= 60 ? 2 : item.design >= 30 ? 1 : 0);
+
+/** Werte als Balken mit Zahl (Klang, Spielbarkeit, Design). */
+const stat = (label, value, note) => `<div class="ms-stat"><span>${label}</span><i><b style="width:${value}%"></b></i><em>${fmt0(value)}</em>${note ? `<small>${note}</small>` : ''}</div>`;
+
+/** Ein Instrument im Detail, im Stil des Ladens (kein Sammelkarten-Look): Bild auf Filz, Werte, Preisschild, Kaufen und Zurücklegen. */
 function openItem(slot, idx) {
   const store = app.state.store;
   const item = [...store.items, ...(store.hold ? [store.hold.item] : [])].find((i) => i.slot === slot && i.idx === idx);
   if (!item) return;
+  const model = cat().gear[item.model];
   const need = needing(item);
   const isHold = !!store.hold && store.hold.item.slot === slot && store.hold.item.idx === idx;
-  const holdBusy = !!store.hold && !isHold;
+  const canHold = !item.bought && !isHold && item.slot === store.slot;
+  const rules = cat().rules;
+  const full = (item.klang / 100) * rules.gearMaxBonus;
+  const perks = (item.perks ?? []).map((p) => cat().gearPerks[p]).filter(Boolean);
+  const finish = finishOf(item);
   const modal = openModal({
     className: 'ms-detail',
     html: `
-      <div class="ms-detail-card">${gearCard({ ...item, musicianId: null })}</div>
-      <p class="ms-need-line">${need.length ? `Dafür gibt es jemanden ohne ${esc(instrumentName(item.type))}: <b>${esc(need.map((m) => m.firstName).join(', '))}</b>.` : `Im Label hat gerade niemand eine Lücke bei „${esc(instrumentName(item.type))}“.`}</p>
-      <div class="dialog-actions">
-        ${isHold ? '<button class="btn ghost" data-release>Zurückgeben</button>' : `<button class="btn ghost" data-hold ${item.bought || holdBusy ? 'disabled' : ''} title="${holdBusy ? 'Du hast schon ein Instrument zurücklegen lassen' : 'Einen Tag lang für dich aufbewahren'}">Zurücklegen</button>`}
-        <button class="btn primary" data-buy ${item.bought || app.state.label.money < item.price ? 'disabled' : ''}>${item.bought ? 'Schon gekauft' : `Kaufen · ${money(item.price)}`}</button>
+      <div class="ms-sheet r-${item.rarity}">
+        <div class="ms-sheet-art"><span class="ms-ico big">${icon(item)}</span><b class="ms-rar">${esc(rarityName(item.rarity))}</b></div>
+        <div class="ms-sheet-body">
+          <h2>${esc(model.name)}</h2>
+          <small class="muted">${esc(instrumentName(item.type))}${finish ? ` · ${FINISH[finish]}` : ''}</small>
+          ${stat('Klang', item.klang, `macht den Sound bis +${percent(full)} besser`)}
+          ${stat('Spielbarkeit', item.spielbarkeit, `voller Klang ab Können ${fmt0(100 - item.spielbarkeit)}`)}
+          ${stat('Design', item.design, finish ? FINISH[finish] : 'schlicht')}
+          ${perks.length ? `<ul class="ms-perks">${perks.map((p) => `<li>${p.icon} <b>${esc(p.name)}</b> <small class="muted">${esc(p.desc)}</small></li>`).join('')}</ul>` : ''}
+          <p class="ms-need-line">${need.length ? `Fehlt gerade: <b>${esc(need.map((m) => m.firstName).join(', '))}</b>` : `Im Label fehlt gerade niemandem ein Instrument dieser Art.`}</p>
+          <div class="ms-buy">
+            <span class="ms-price">${item.bought ? 'gekauft' : money(item.price)}</span>
+            ${isHold ? '<button class="btn ghost small" data-release>Zurückgeben</button>' : `<button class="btn ghost small" data-hold ${canHold ? '' : 'disabled'}>${store.hold ? 'Stattdessen zurücklegen' : 'Zurücklegen'}</button>`}
+            <button class="btn primary" data-buy ${item.bought || app.state.label.money < item.price ? 'disabled' : ''}>${item.bought ? 'Schon gekauft' : 'Kaufen'}</button>
+          </div>
+        </div>
       </div>`,
   });
   const done = (res) => {
@@ -99,7 +122,7 @@ function openItem(slot, idx) {
   };
   modal.body.querySelector('[data-buy]')?.addEventListener('click', async () => {
     const res = done(await mutate('storeBuy', { slot, idx }));
-    if (res) toast(`${cat().gear[item.model].name} liegt jetzt im Lager.`, 'ok');
+    if (res) toast(`${model.name} liegt jetzt im Lager.`, 'ok');
   });
   modal.body.querySelector('[data-hold]')?.addEventListener('click', async () => {
     if (done(await mutate('storeHold', { idx }))) toast('Zurückgelegt: Das Instrument bleibt einen Tag für dich da.', 'ok');
@@ -108,6 +131,80 @@ function openItem(slot, idx) {
     if (await confirmDialog('Das Instrument wieder ins Regal stellen? Es kann dann verschwinden, wenn das Angebot wechselt.', { ok: 'Zurückgeben' })) done(await mutate('storeRelease'));
   });
 }
+
+// ---------- Ziehen aufs Zurücklegen ----------
+// Mit der Maus einfach ziehen, mit dem Finger kurz halten und dann ziehen. Ein neues Instrument ersetzt das zurückgelegte.
+
+let drag = null;
+let swallowUntil = 0;
+
+function lift() {
+  if (!drag) return;
+  drag.active = true;
+  const ghost = drag.cell.querySelector('.ms-ico').cloneNode(true);
+  ghost.classList.add('ms-ghost');
+  document.body.appendChild(ghost);
+  drag.ghost = ghost;
+  drag.cell.classList.add('lifting');
+  navigator.vibrate?.(12);
+  place(drag.x, drag.y);
+}
+
+function place(x, y) {
+  drag.ghost.style.transform = `translate(${x - 56}px, ${y - 70}px) rotate(-6deg)`;
+  const over = document.elementFromPoint(x, y)?.closest('[data-store-drop]');
+  document.querySelectorAll('[data-store-drop]').forEach((el) => el.classList.toggle('over', el === over));
+  drag.over = over;
+}
+
+async function drop(cancelled) {
+  const d = drag;
+  drag = null;
+  if (!d) return;
+  clearTimeout(d.timer);
+  if (!d.active) return;
+  swallowUntil = Date.now() + 400;
+  d.ghost.remove();
+  d.cell.classList.remove('lifting');
+  document.querySelectorAll('[data-store-drop]').forEach((el) => el.classList.remove('over'));
+  if (cancelled || !d.over) return;
+  const slot = Number(d.cell.dataset.slot);
+  if (slot !== app.state.store.slot) return;
+  if (await mutate('storeHold', { idx: Number(d.cell.dataset.idx) })) toast('Zurückgelegt: Das Instrument bleibt einen Tag für dich da.', 'ok');
+}
+
+document.addEventListener('pointerdown', (e) => {
+  const cell = e.target.closest('.ms-shelf .ms-cell');
+  if (!cell || e.button > 0 || cell.classList.contains('sold') || cell.classList.contains('held')) return;
+  drag = { cell, x: e.clientX, y: e.clientY, active: false, touch: e.pointerType !== 'mouse' };
+  if (drag.touch) drag.timer = setTimeout(lift, 300);
+});
+document.addEventListener('pointermove', (e) => {
+  if (!drag) return;
+  drag.x = e.clientX;
+  drag.y = e.clientY;
+  if (!drag.active) {
+    if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 7) return;
+    if (drag.touch) {
+      clearTimeout(drag.timer);
+      drag = null;
+      return;
+    }
+    lift();
+  }
+  if (drag?.active) place(e.clientX, e.clientY);
+});
+document.addEventListener('pointerdown', (e) => { if (drag) { drag.x0 = e.clientX; drag.y0 = e.clientY; } });
+document.addEventListener('pointerup', () => drop(false));
+document.addEventListener('pointercancel', () => drop(true));
+document.addEventListener('touchmove', (e) => { if (drag?.active) e.preventDefault(); }, { passive: false });
+document.addEventListener('click', (e) => {
+  if (Date.now() < swallowUntil && e.target.closest('.ms-cell')) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+}, true);
+document.addEventListener('dragstart', (e) => { if (e.target.closest?.('.ms-cell')) e.preventDefault(); });
 
 defineActions({
   storeItem({ slot, idx }) {
@@ -136,7 +233,7 @@ export function enter() {
   doors.innerHTML = `<div class="ms-door l">${DOOR}<b>MUSIC</b></div><div class="ms-door r">${DOOR}<b>STORE</b></div><span class="ms-glow"></span>`;
   document.body.appendChild(doors);
   requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(() => doors.classList.add('open'), 260)));
-  setTimeout(() => doors.remove(), 2300);
+  setTimeout(() => doors.remove(), 2500);
 }
 
 // Zähler: sekündlich; läuft das Regal ab, kommt der neue Stand vom Server.

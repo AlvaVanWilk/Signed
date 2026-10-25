@@ -66,8 +66,8 @@ const MOUTHS = {
 /** Mund zwischen den Ausdrücken: offene Münder schließen sich, sonst bleibt der eigene Mund (z. B. gerade beim Perfektionisten). */
 const CALM_MOUTH = { grin: 'wide', teeth: 'wide', pout: 'soft' };
 const MOODS = {
-  // Gelangweilt (kein Instrument): ganz normales Gesicht, nur die Augen schweifen teilnahmslos umher (CSS fig-look)
-  bored: {},
+  // Gelangweilt (kein Instrument): normale Augen, gerader Mund
+  bored: { mouth: 'flat' },
   ehrgeizig: { mouth: 'smirk' },
   gelassen: { mouth: 'soft', eyes: 'lidded' },
   perfektionist: { mouth: 'flat' },
@@ -105,8 +105,8 @@ function eyes(kind, skin) {
   if (kind === 'happy') {
     return `<g class="fig-shut">${line('M40.6 45.6 Q43 42.8 45.4 45.6', 1.4) + line('M54.6 45.6 Q57 42.8 59.4 45.6', 1.4)}</g><g class="fig-open">${open}</g>`;
   }
-  const dots = `<g class="fig-look"><ellipse cx="43" cy="45" rx="2.3" ry="2.8" fill="${INK}"/><ellipse cx="57" cy="45" rx="2.3" ry="2.8" fill="${INK}"/>
-    <circle cx="43.8" cy="44" r="0.8" fill="#fff"/><circle cx="57.8" cy="44" r="0.8" fill="#fff"/></g>`;
+  const dots = `<ellipse cx="43" cy="45" rx="2.3" ry="2.8" fill="${INK}"/><ellipse cx="57" cy="45" rx="2.3" ry="2.8" fill="${INK}"/>
+    <circle cx="43.8" cy="44" r="0.8" fill="#fff"/><circle cx="57.8" cy="44" r="0.8" fill="#fff"/>`;
   return dots;
 }
 

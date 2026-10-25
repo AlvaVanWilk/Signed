@@ -1684,8 +1684,10 @@ test('Music Store: Regal für alle gleich, 5 bis 10 Instrumente je Art eines, we
     checkApiError(fn () => $a->post('storeBuy', ['slot' => $item['slot'], 'idx' => $item['idx']]), 'schon gekauft');
     // Zurücklegen: eines, bleibt über den Wechsel, nur für dieses Label
     $other = $shelfA['items'][1];
+    // Ein neues Zurückgelegtes ersetzt das alte
+    $a->post('storeHold', ['idx' => $shelfA['items'][2]['idx']]);
     $a->post('storeHold', ['idx' => $other['idx']]);
-    checkApiError(fn () => $a->post('storeHold', ['idx' => $shelfA['items'][2]['idx']]), 'schon ein Instrument');
+    checkEquals($other['model'], $a->get('state')['store']['hold']['item']['model'], 'das neue ersetzt das alte');
     Clock::advance(Balance::STORE['hours'] * 3600 + 60);
     $later = $a->get('state')['store'];
     check($later['slot'] > $shelfA['slot'], 'neues Regal');

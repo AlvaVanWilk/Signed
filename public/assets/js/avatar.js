@@ -1,3 +1,6 @@
+// Ohrringe und Lippenstift kommen aus figure.js (gegenseitiger Import, nur zur Laufzeit benutzt).
+import { earringOf, hasLipstick } from './figure.js';
+
 /**
  * Profilbild aus zufälligen Merkmalen. Bewusst ohne ausgearbeitetes Gesicht: nur Kopf, Frisur und Accessoires.
  */
@@ -51,10 +54,10 @@ export function avatar(look = {}) {
   parts.push(`<ellipse cx="33" cy="45" rx="3.5" ry="5" fill="${skin}"/><ellipse cx="67" cy="45" rx="3.5" ry="5" fill="${skin}"/>`);
   if (female) parts.push(`<path d="M43 69 L57 69 L50.5 80 L49.5 80 Z" fill="${skin}"/>`);
   parts.push(`<ellipse cx="50" cy="42" rx="${female ? 16 : 17}" ry="20" fill="${skin}"/>`);
-  if (female) {
-    parts.push('<path d="M45 53 C47.5 51.6 52.5 51.6 55 53 C52.5 56.4 47.5 56.4 45 53 Z" fill="#c2405a"/>');
-    parts.push('<g fill="#f2c14e"><circle cx="33.5" cy="51" r="1.3"/><circle cx="33.5" cy="55" r="2.6"/><circle cx="66.5" cy="51" r="1.3"/><circle cx="66.5" cy="55" r="2.6"/></g>');
-  }
+  // Lippenstift und Ohrringe wie bei den Figuren: nur ein Teil trägt sie (earringOf/hasLipstick).
+  if (hasLipstick(look)) parts.push('<path d="M45 53 C47.5 51.6 52.5 51.6 55 53 C52.5 56.4 47.5 56.4 45 53 Z" fill="#b85068"/>');
+  const ear = earringOf(look);
+  if (ear) parts.push(`<g fill="${ear.color}"><circle cx="33.5" cy="51.6" r="1.5"/><circle cx="66.5" cy="51.6" r="1.5"/></g>`);
 
   if (style === 'locken') {
     for (const [x, y, r] of [[36, 30, 7], [44, 24, 8], [54, 23, 8], [63, 29, 7], [33, 38, 5], [67, 38, 5]]) {

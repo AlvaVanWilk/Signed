@@ -236,6 +236,7 @@ function liveBlock(b, members, act) {
       </div>
       <div class="lb-room">${roomSvg(b.room?.level ?? 0, b.id)}${stage(members, {
     className: 'in-room',
+    act: 'musicianInfo',
     bpm: cat().genres[sortedGenres(genresOf(b))[0]]?.bpm ?? 120,
     electricOf: (m) => electric.get(m.id),
     hueOf: (m) => ownGear(m, playedInstrument(m)).hue,
@@ -261,6 +262,7 @@ function gigBlock(b, members, act) {
         <span class="lb-live-btns"><button class="btn small primary" data-act="watch" data-id="${act.id}">Zuschauen</button></span>
       </div>
       ${venueStage(venue, b.id, members, {
+    act: 'musicianInfo',
     bpm: cat().genres[sortedGenres(genresOf(b))[0]]?.bpm ?? 120,
     electricOf: (m) => electric.get(m.id),
     hueOf: (m) => ownGear(m, playedInstrument(m)).hue,
@@ -285,6 +287,7 @@ function roomBlock(b, members) {
     <section class="lb-roomcard">
       <div class="lb-room idle">${roomSvg(room.level, b.id)}${stage(members, {
     className: 'idle in-room',
+    act: 'musicianInfo',
     instrumentOf: (m) => (hasGear(m) ? playedInstrument(m) : 'none'),
     hueOf: (m) => ownGear(m, playedInstrument(m)).hue,
     nameOf: (m) => esc(m.firstName),

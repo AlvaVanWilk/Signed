@@ -592,8 +592,11 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 /* Bühne eines Auftrittsorts: Bild hinten, Band in der Mitte, Publikum als Streifen vorne. */
 .lb-venue .lb-stageart { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .lb-venue .fig-stage.in-room { padding-bottom: 20px; }
-/* Namen bleiben über dem Publikum lesbar. */
-.lb-venue .fig-member b { position: relative; z-index: 3; }
+/* Bei Auftritten stehen die Namen über den Köpfen, nicht im Publikum. */
+.lb-venue .fig-member { display: flex; flex-direction: column; align-items: center; }
+.lb-venue .fig-member b { order: -1; margin: 0 0 -6px; }
+.fig-member.clickable { cursor: pointer; }
+.fig-member.clickable:hover .fig { filter: drop-shadow(0 0 6px rgba(255, 233, 168, .35)); }
 .lb-venue .lb-crowd { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 84px; pointer-events: none; }
 .crowd-bob { animation: crowd-bob 0.9s ease-in-out infinite; animation-delay: var(--d, 0s); }
 .v-kneipe .crowd-bob, .v-saal .crowd-bob { animation-duration: 1.6s; }

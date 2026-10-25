@@ -101,8 +101,37 @@ const MOODS = {
  */
 function trait(look, salt) {
   let h = 2166136261;
-  for (const ch of `${salt}|${look.skin}|${look.hair}|${look.hairColor}|${look.shirt}|${look.glasses}|${look.hat}`) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  for (const ch of `${salt}|${look.gender}|${look.skin}|${look.hair}|${look.hairColor}|${look.shirt}|${look.glasses}|${look.hat}`) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
   return ((h >>> 0) % 100) / 100;
+}
+
+/**
+ * Ohrringe: nur ein Teil trägt welche (Frauen etwa die Hälfte, diverse Personen gut ein Drittel, Männer wenige und dann schlicht),
+ * in verschiedenen Formen und Farben. Fest aus dem Aussehen abgeleitet, wie die anderen Merkmale.
+ */
+const EAR_SHAPES = ['stud', 'hoop', 'drop', 'dangle', 'double', 'pearl'];
+const EAR_COLORS = ['#f2c14e', '#d6d9e0', '#e8a89a', '#4fc1b8', '#3a3448', '#d0475a'];
+const EAR_SHARE = { f: 0.55, d: 0.35, m: 0.12 };
+const LIP_SHARE = { f: 0.4, d: 0.3, m: 0 };
+export function earringOf(look) {
+  if (trait(look, 'earrings') >= (EAR_SHARE[look.gender] ?? 0)) return null;
+  const shapes = look.gender === 'm' ? ['stud', 'hoop', 'double'] : EAR_SHAPES;
+  return { shape: shapes[Math.floor(trait(look, 'earShape') * shapes.length)], color: EAR_COLORS[Math.floor(trait(look, 'earColor') * EAR_COLORS.length)] };
+}
+export const hasLipstick = (look) => trait(look, 'lips') < (LIP_SHARE[look.gender] ?? 0);
+
+/** Beide Ohrringe am Ohrläppchen (links 31, rechts 69, Höhe 50). */
+function earrings({ shape, color }) {
+  const one = (x) => ({
+    stud: `<circle cx="${x}" cy="50.6" r="1.3" fill="${color}"/>`,
+    pearl: `<circle cx="${x}" cy="51" r="1.7" fill="#f4efe6"/><circle cx="${x - 0.5}" cy="50.4" r="0.5" fill="#fff" stroke="none"/>`,
+    hoop: `<circle cx="${x}" cy="52.6" r="2.4" fill="none" stroke="${color}" stroke-width="1.1"/>`,
+    drop: `<circle cx="${x}" cy="50.4" r="1.1" fill="${color}"/><circle cx="${x}" cy="53.6" r="2.1" fill="${color}"/>`,
+    dangle: `<path d="M${x} 50.2 V53" stroke="${color}" stroke-width="0.8"/><path d="M${x} 52.6 L${x + 1.8} 55.2 L${x} 57.8 L${x - 1.8} 55.2 Z" fill="${color}"/>`,
+    double: `<circle cx="${x}" cy="50.6" r="1.1" fill="${color}"/><circle cx="${x + (x < 50 ? 0.6 : -0.6)}" cy="47.6" r="0.9" fill="${color}"/>`,
+  }[shape]);
+  // Dunkle Kontur nur um gefüllte Formen; der Creolen-Ring ist selbst eine Linie.
+  return shape === 'hoop' ? `<g>${one(31)}${one(69)}</g>` : `<g stroke="${INK}" stroke-width="0.6">${one(31)}${one(69)}</g>`;
 }
 
 /** Bäckchen passend zur Haut: auf heller Haut rosa, auf dunkler ein dezentes warmes Rotbraun. */
@@ -157,9 +186,8 @@ function head(look, skin, sing, mood = null) {
   p.push(style === 'glatze' && !hatted ? `<ellipse cx="50" cy="41.2" rx="19" ry="19.8" fill="${skin}"/></g>` : `<ellipse cx="50" cy="43" rx="19" ry="18" fill="${skin}"/></g>`);
   p.push(`<path d="M30.6 43 Q32.4 41.6 33 45 Q32.6 47.6 31.2 47.4" fill="none" stroke="${INK}" stroke-width="0.7" opacity="0.45"/><path d="M69.4 43 Q67.6 41.6 67 45 Q67.4 47.6 68.8 47.4" fill="none" stroke="${INK}" stroke-width="0.7" opacity="0.45"/>`);
   p.push(`<path d="M64.5 31 Q70.6 42 66.4 53 Q60.4 60.4 50 61 Q63.6 54.6 64.5 31 Z" fill="#140f1e" opacity="0.09"/>`);
-  if (look.gender === 'f' && trait(look, 'earrings') < 0.6) {
-    p.push(`<g fill="#f2c14e" stroke="${INK}" stroke-width="0.7"><circle cx="31" cy="50.4" r="1.2"/><circle cx="31" cy="53.6" r="2.2"/><circle cx="69" cy="50.4" r="1.2"/><circle cx="69" cy="53.6" r="2.2"/></g>`);
-  }
+  const ear = earringOf(look);
+  if (ear) p.push(earrings(ear));
   // Gesicht: Augen, Brauen und Mund nach dem Charakter, rote Bäckchen – beim Singen ein runder Mund.
   const face = MOODS[mood] ?? {};
   p.push(pivot(50, 45, 'fig-eyes', eyes(face.eyes, skin)));
@@ -175,7 +203,7 @@ function head(look, skin, sing, mood = null) {
   const [cheek, alpha] = blush(skin);
   p.push(`<ellipse cx="38" cy="51" rx="3.2" ry="1.9" fill="${cheek}" opacity="${alpha}"/><ellipse cx="62" cy="51" rx="3.2" ry="1.9" fill="${cheek}" opacity="${alpha}"/>`);
   // Ein Teil der Musikerinnen trägt Lippenstift: ein Rosenton, der aus der Hautfarbe kommt, kaum dicker als der Mund sonst.
-  const lips = look.gender === 'f' && trait(look, 'lips') < 0.4;
+  const lips = hasLipstick(look);
   const lip = lipColor(skin);
   const tint = (m) => (lips ? m.replace(`stroke="${INK}" stroke-width="1.2"`, `stroke="${lip}" stroke-width="1.45"`).replace('fill="rgba(90, 30, 40, 0.45)"', `fill="${lip}"`) : m);
   const mouth = tint(MOUTHS[face.mouth ?? 'smile']);
@@ -468,7 +496,7 @@ export function playedInstrument(m) {
  * Bühne mit allen Mitgliedern. awayOf(m) liefert für jemanden, der gerade allein unterwegs ist (Üben, Promo, Kurs),
  * { until, label } – dann steht statt der Figur an seinem Platz, wann er zurück ist.
  */
-export function stage(members, { bpm = 120, names = true, className = '', electricOf = () => false, hueOf = () => null, awayOf = () => null, nameOf = null, below = () => '', instrumentOf = playedInstrument } = {}) {
+export function stage(members, { bpm = 120, names = true, className = '', electricOf = () => false, hueOf = () => null, awayOf = () => null, nameOf = null, below = () => '', instrumentOf = playedInstrument, act = null } = {}) {
   return `<div class="fig-stage ${className}" style="--beat:${(60 / bpm).toFixed(3)}s">${members.map((m) => {
     const away = awayOf(m);
     if (away) {
@@ -476,7 +504,7 @@ export function stage(members, { bpm = 120, names = true, className = '', electr
         <span class="countdown" data-until="${away.until}"></span></span>${names ? `<b>${escapeHtml(m.firstName)}</b>` : ''}</div>`;
     }
     return `
-    <div class="fig-member" style="--d:${(-((m.id * 7919) % 4300) / 1000).toFixed(2)}s">${figure(m.look, instrumentOf(m), { electric: electricOf(m), hue: hueOf(m), mood: m.personality?.[0] ?? null })}${names ? `<b>${nameOf ? nameOf(m) : escapeHtml(m.firstName)}</b>` : ''}${below(m)}</div>`;
+    <div class="fig-member${act ? ' clickable' : ''}" style="--d:${(-((m.id * 7919) % 4300) / 1000).toFixed(2)}s"${act ? ` data-act="${act}" data-id="${m.id}" title="${escapeHtml(m.firstName)} öffnen"` : ''}>${figure(m.look, instrumentOf(m), { electric: electricOf(m), hue: hueOf(m), mood: m.personality?.[0] ?? null })}${names ? `<b>${nameOf ? nameOf(m) : escapeHtml(m.firstName)}</b>` : ''}${below(m)}</div>`;
   }).join('')}
   </div>`;
 }

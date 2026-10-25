@@ -66,7 +66,7 @@ final class Activities
 
             $rehearsal = null;
             if ($type === 'rehearsal') {
-                [$duration, $limit] = Mood::rehearsalLimits($members);
+                [$duration, $limit] = Mood::rehearsalLimits($members, Rooms::rules(Rooms::level($this->repo, $band, count($members)))['lust']);
                 $songs = max(1, intdiv($duration, Balance::REHEARSAL['songSpan']));
                 $title = 'Bandprobe';
                 $sim = ['timeline' => self::rehearsalTimeline($members, $songs, $duration), 'meter' => 0.0, 'perf' => 0.0];
@@ -579,9 +579,10 @@ final class Activities
             return;
         }
         $gear = $repo->gearByMusician();
+        $room = Rooms::rules(Rooms::level($repo, $repo->band($bandId), count($members)));
         $gains = [];
         foreach ($members as $m) {
-            $gains[$m['id']] = BandCalc::rehearsalGain($m, BandCalc::gearOf($m, $gear)) * $f;
+            $gains[$m['id']] = BandCalc::rehearsalGain($m, BandCalc::gearOf($m, $gear)) * $room['skill'] * $f;
         }
         $credited = (array) $r['credited'];
         foreach ($gains as $id => $g) {
@@ -590,6 +591,7 @@ final class Activities
         $levelUps = self::applySkill($repo, $gains);
         Mood::bond($repo, $members, 'rehearsal', null, $f);
         Mood::react($repo, $members, 'rehearsal', $f);
+        Mood::roomMood($repo, $repo->members($bandId), $room['mood'], $f);
         $r['done'] += $dt;
         $r['credited'] = $credited;
         $r['levelUps'] = array_merge($r['levelUps'], $levelUps);

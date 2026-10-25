@@ -460,6 +460,11 @@ final class Schema
                 ){OPTS}',
                 'CREATE UNIQUE INDEX store_buys_once ON store_buys (label_id, slot, idx)',
             ],
+            // 30: Proberaum – jede Band (ab zwei Mitgliedern) hat ihren eigenen, Solokünstler teilen sich die Übungsecke des Labels
+            [
+                'ALTER TABLE bands ADD COLUMN room INTEGER NOT NULL DEFAULT 0',
+                'ALTER TABLE labels ADD COLUMN solo_room INTEGER NOT NULL DEFAULT 0',
+            ],
         ];
     }
 }

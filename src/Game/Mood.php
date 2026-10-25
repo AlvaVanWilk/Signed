@@ -176,6 +176,18 @@ final class Mood
     }
 
     /** Eine erlebte Anordnung hebt oder drückt das Wohlbefinden je nach Charakter sofort (wirkt danach langsam ab). */
+    /** Ein schöner Proberaum tut allen gut: Wohlbefinden je Bezugszeit der Probe. */
+    public static function roomMood(Repo $repo, array $members, float $perUnit, float $factor): void
+    {
+        if ($perUnit == 0.0) {
+            return;
+        }
+        foreach ($members as $m) {
+            $value = max(0.0, min(100.0, $m['wellbeing'] + $perUnit * $factor));
+            $repo->db->update('musicians', ['wellbeing' => round($value, 3)], ['id' => $m['id']]);
+        }
+    }
+
     public static function react(Repo $repo, array $members, string $type, float $factor = 1.0): void
     {
         $step = Balance::MOOD['reactStep'];
@@ -192,13 +204,13 @@ final class Mood
      * Wie lange die Band probt: bis das erste Mitglied keine Lust mehr hat (Charakter) oder wer die Probe nicht mag zu unzufrieden wird.
      * @return array{0: int, 1: array{id: int, why: string}} Sekunden und wer die Probe beendet
      */
-    public static function rehearsalLimits(array $members): array
+    public static function rehearsalLimits(array $members, float $lustFactor = 1.0): array
     {
         $c = Balance::REHEARSAL;
         $best = null;
         foreach ($members as $m) {
             $factors = array_map(static fn ($p) => Catalog::LUST[$p] ?? 1.0, $m['personality']);
-            $lust = $c['lust'] * ($factors ? array_sum($factors) / count($factors) : 1.0);
+            $lust = $c['lust'] * $lustFactor * ($factors ? array_sum($factors) / count($factors) : 1.0);
             $why = 'lust';
             $score = max(-1, min(1, self::liking($m['personality'], 'rehearsal')));
             if ($score < 0) {

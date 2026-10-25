@@ -94,6 +94,19 @@ final class Balance
         'price' => ['common' => 60, 'rare' => 220, 'epic' => 700, 'legendary' => 2100],
         'pricePerk' => 0.25, 'priceStat' => 0.004,
     ];
+    /**
+     * Proberaum in Stufen: Jede Band (ab zwei Mitgliedern) hat ihren eigenen, Solokünstler teilen sich die Übungsecke des Labels (`soloCost` × Preis).
+     * skill = Faktor auf das Können je Probe, lust = Faktor darauf, wie lange die Band Lust hat, mood = Wohlbefinden je 15 Minuten Probe für alle.
+     */
+    public const ROOM = [
+        'levels' => [
+            ['name' => 'Bruchbude', 'cost' => 0, 'skill' => 1.0, 'lust' => 1.0, 'mood' => 0.0],
+            ['name' => 'Aufgeräumter Keller', 'cost' => 400, 'skill' => 1.08, 'lust' => 1.15, 'mood' => 1.0],
+            ['name' => 'Gemütlicher Proberaum', 'cost' => 1200, 'skill' => 1.16, 'lust' => 1.3, 'mood' => 2.5],
+            ['name' => 'Profi-Proberaum', 'cost' => 3000, 'skill' => 1.25, 'lust' => 1.5, 'mood' => 4.0],
+        ],
+        'soloCost' => 0.5,
+    ];
     /** Chance auf den Tipp des Verkäufers (Läden mit tip): Eine Karte passt zu einem Musiker ohne Instrument, Bandmitglieder zuerst. */
     public const STORE_TIP_CHANCE = 0.25;
     /** Pro Scout-Stufe sinkt die Chance auf gewöhnliche Karten um diesen Anteil. */

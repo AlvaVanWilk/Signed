@@ -22,6 +22,7 @@ use Signed\Game\Scout;
 use Signed\Game\Submissions;
 use Signed\Game\State;
 use Signed\Game\Store;
+use Signed\Game\Rooms;
 use Signed\Game\Wiki;
 use Signed\Game\Styles;
 use Signed\Game\Studio;
@@ -44,6 +45,7 @@ final class Api
         'charts' => ['GET', true],
         'bandView' => ['POST', true],
         'storeBuy' => ['POST', true],
+        'roomUpgrade' => ['POST', true],
         'storeHold' => ['POST', true],
         'storeRelease' => ['POST', true],
         'wikiIndex' => ['POST', true],
@@ -255,6 +257,12 @@ final class Api
     {
         $musician = (new Scout($repo))->pick(self::int($in, 'offerId'), self::int($in, 'index'));
         return ['musician' => $musician, 'state' => State::build($repo)];
+    }
+
+    private function roomUpgrade(array $in, Repo $repo): array
+    {
+        Rooms::upgrade($repo, self::int($in, 'bandId'));
+        return ['state' => State::build($repo)];
     }
 
     private function storeBuy(array $in, Repo $repo): array

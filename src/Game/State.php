@@ -34,6 +34,11 @@ final class State
                 $members[$m['band_id']][] = $m;
             }
         }
+        // Proberaum: Faktor auf das Können je Probe, je Band
+        $roomSkill = [];
+        foreach ($bands as $band) {
+            $roomSkill[$band['id']] = Rooms::rules(Rooms::level($repo, $band, count($members[$band['id']] ?? [])))['skill'];
+        }
         $managerBands = [];
         foreach ($bands as $band) {
             if ($band['manager_id'] !== null) {
@@ -123,6 +128,7 @@ final class State
                 'managerId' => $band['manager_id'],
                 'managerLevel' => $level,
                 'memberIds' => array_map(static fn ($m) => $m['id'], $list),
+                'room' => Rooms::present($repo, $band, count($list)),
                 'sound' => $sound,
                 'slotPreview' => $slotPreview,
                 'slotReturn' => array_map('strval', array_keys($band['slot_return'])),
@@ -153,8 +159,8 @@ final class State
                 'busyUntil' => $band['busy_until'],
                 'options' => [
                     'busking' => ['songs' => Balance::BUSKING['songs']],
-                    'rehearsal' => (static function () use ($list): array {
-                        [$seconds, $limit] = Mood::rehearsalLimits($list);
+                    'rehearsal' => (static function () use ($list, $repo, $band): array {
+                        [$seconds, $limit] = Mood::rehearsalLimits($list, Rooms::rules(Rooms::level($repo, $band, count($list)))['lust']);
                         return ['seconds' => $seconds, 'limit' => $limit];
                     })(),
                     'openstage' => [
@@ -240,7 +246,7 @@ final class State
             'market' => (new Transfers($repo))->market(),
             'packOffer' => $packOffer,
             'finance' => Charts::income($db, $repo->labelId, $albums),
-            'musicians' => array_values(array_map(static function ($m) use ($gearIds, $gearMap) {
+            'musicians' => array_values(array_map(static function ($m) use ($gearIds, $gearMap, $roomSkill) {
                 // Was Üben bringt, damit man entscheiden kann: Solo-Probe (bei 100 % Treffern) je Instrument, Bandprobe fürs Band-Instrument.
                 $practice = [];
                 foreach ([1 => $m['instr1'], 2 => $m['instr2']] as $slot => $type) {
@@ -251,7 +257,7 @@ final class State
                 return Present::musician($m, $gearIds[$m['id']] ?? []) + ['wellbeing' => ['value' => round($m['wellbeing'], 1), 'level' => Mood::level($m['wellbeing'])], 'gains' => [
                     'practice' => $practice,
                     'auto' => array_map(static fn ($g) => round($g * Balance::AUTO_PRACTICE['share'], 3), $practice),
-                    'rehearsal' => $m['band_id'] === null ? null : round(BandCalc::rehearsalGain($m, BandCalc::gearOf($m, $gearMap)), 3),
+                    'rehearsal' => $m['band_id'] === null ? null : round(BandCalc::rehearsalGain($m, BandCalc::gearOf($m, $gearMap)) * ($roomSkill[$m['band_id']] ?? 1.0), 3),
                 ]];
             }, $musicians)),
             'gear' => $gearOut,

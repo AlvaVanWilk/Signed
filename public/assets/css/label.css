@@ -582,3 +582,14 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .ms-buy { display: flex; align-items: center; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
 .ms-price { margin-right: auto; padding: 4px 12px 3px; border-radius: 3px; background: #f1e4c4; color: #2c2012; font-weight: 800; font-size: 1.1rem; transform: rotate(-2deg); box-shadow: 0 2px 4px rgba(0, 0, 0, .5); }
 @media (max-width: 600px) { .ms-sheet { grid-template-columns: 1fr; } }
+
+/* Proberaum: Raum als Bühne, die Band steht davor */
+.lb-room { position: relative; height: clamp(250px, 24vw, 340px); border-radius: 14px; overflow: hidden; border: 1px solid var(--lb-line); }
+.lb-room .lb-roomart { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.lb-room .fig-stage.in-room { position: relative; height: 100%; margin: 0; padding: 0 10px 8px; background: none; box-shadow: none; border: 0; align-items: flex-end; }
+.lb-room .fig-stage.in-room .fig-member b { text-shadow: 0 1px 3px rgba(0, 0, 0, .8); }
+.lb-live .lb-room { height: clamp(270px, 26vw, 360px); }
+.lb-roomcard { margin: 14px 0 6px; }
+.lb-roominfo { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 4px 0; }
+.lb-roominfo p { margin: 2px 0 0; }
+.lb-roominfo h2 { margin: 0 0 2px; }

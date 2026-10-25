@@ -1703,3 +1703,46 @@ test('Music Store: Regal für alle gleich, 5 bis 10 Instrumente je Art eines, we
     Clock::advance(Balance::STORE['holdHours'] * 3600 + 60);
     checkEquals(null, $a->get('state')['store']['hold'], 'abgelaufen');
 });
+
+test('Proberaum: eigener Raum je Band, gemeinsame Übungsecke für Solokünstler, Ausbau wirkt aufs Proben', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Raum');
+    $db->exec('UPDATE labels SET money = 100000');
+    $band = foundBand($p, 'Kellerkinder');
+    $state = $p->get('state');
+    $b = bandById($state, $band['id']);
+    checkEquals(0, $b['room']['level']);
+    checkEquals('Bruchbude', $b['room']['name']);
+    $gainBefore = mById($state, $b['memberIds'][0])['gains']['rehearsal'];
+    $lustBefore = $b['options']['rehearsal']['seconds'];
+    $money = $state['label']['money'];
+    $state = $p->post('roomUpgrade', ['bandId' => $band['id']])['state'];
+    $b = bandById($state, $band['id']);
+    checkEquals(1, $b['room']['level']);
+    checkEquals($money - Balance::ROOM['levels'][1]['cost'], $state['label']['money']);
+    if ($gainBefore > 0) {
+        check(mById($state, $b['memberIds'][0])['gains']['rehearsal'] > $gainBefore, 'mehr Können je Probe');
+    }
+    check($b['options']['rehearsal']['seconds'] >= $lustBefore, 'länger Lust');
+    // Solokünstler teilen sich die Übungsecke (halber Preis)
+    $res = $p->post('submissionsTest');
+    $solo = array_values(array_filter($res['state']['submissions'], static fn ($s) => $s['state'] === 'open' && $s['kind'] === 'solo'))[0];
+    $p->post('submissionSign', ['submissionId' => $solo['submissionId']]);
+    $state = $p->get('state');
+    $soloBand = array_values(array_filter($state['bands'], static fn ($x) => count($x['memberIds']) === 1))[0];
+    check($soloBand['room']['shared'], 'gemeinsame Übungsecke');
+    checkEquals((int) round(Balance::ROOM['levels'][1]['cost'] * Balance::ROOM['soloCost']), $soloBand['room']['next']['cost']);
+    $state = $p->post('roomUpgrade', ['bandId' => $soloBand['id']])['state'];
+    foreach (array_filter($state['bands'], static fn ($x) => count($x['memberIds']) === 1) as $x) {
+        checkEquals(1, $x['room']['level'], 'gilt für alle Solokünstler');
+    }
+    // Ganz ausgebaut geht nicht weiter
+    $p->post('roomUpgrade', ['bandId' => $band['id']]);
+    $p->post('roomUpgrade', ['bandId' => $band['id']]);
+    checkApiError(fn () => $p->post('roomUpgrade', ['bandId' => $band['id']]), 'voll ausgebaut');
+});
+
+function mById(array $state, int $id): array
+{
+    return array_values(array_filter($state['musicians'], static fn ($m) => $m['id'] === $id))[0];
+}

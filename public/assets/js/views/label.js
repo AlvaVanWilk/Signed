@@ -1,10 +1,11 @@
 import { abilityInfo, genreGlyph, genreName, gearModel, instrumentIcon, instrumentName, ownGear, photo, sortedGenres } from '../cards.js';
 import { actions, app, bandById, cat, defineActions, isBusy, mutate, musicianById, runningFor, serverNow } from '../core.js';
-import { closePopover, duration, esc, fmt0, fmt1, fmtGain, money, openModal, popover } from '../ui.js';
+import { closePopover, confirmDialog, duration, esc, fmt0, fmt1, fmtGain, money, openModal, popover } from '../ui.js';
 import { getAudio } from '../audio.js';
 import { playedInstrument, stage } from '../figure.js';
 import { bandStems, loadStems, playStems, stemUrl } from '../music.js';
 import { blocker, blockerNotice, courseTiles, gainRange, statTile } from './bands.js';
+import { roomSvg } from '../room.js';
 
 /** Label-Ebene: Band-Leiste links und die ruhige Bandseite. Stimmung als Punkt und Wort (grün, gelb, rot). */
 
@@ -230,7 +231,8 @@ function liveBlock(b, members, act) {
         <span class="lb-live-btns"><button class="btn small ghost" data-act="liveSound" data-id="${act.id}">${music?.actId === act.id ? 'Ton aus' : 'Ton an'}</button>
           <button class="btn small primary" data-act="rehearsalStop" data-id="${act.id}">Probe beenden</button></span>
       </div>
-      ${stage(members, {
+      <div class="lb-room">${roomSvg(b.room?.level ?? 0, b.id)}${stage(members, {
+    className: 'in-room',
     bpm: cat().genres[sortedGenres(genresOf(b))[0]]?.bpm ?? 120,
     electricOf: (m) => electric.get(m.id),
     hueOf: (m) => ownGear(m, playedInstrument(m)).hue,
@@ -239,7 +241,30 @@ function liveBlock(b, members, act) {
     below: (m) => (!hasGear(m)
       ? `<span class="lb-lv lb-nogear" title="Ohne Instrument kann ${esc(m.firstName)} nicht mitspielen und lernt nichts"><span class="lb-prog" style="visibility:hidden"><i></i></span><em>${esc(instrumentName(playedOf(m).type))} fehlt</em></span>`
       : `<span class="lb-lv lv-${Math.min(steps(playedOf(m).skill, cat().rules.skillLevels), MAX_LV_STYLE)}"><span class="lb-prog" title="Weg zur nächsten Stufe"><i data-live-bar="${m.id}"></i></span><em data-live-gain="${m.id}">+0,00</em></span>`),
-  })}
+  })}</div>
+    </section>`;
+}
+
+const pct = (x) => `${Math.round((x - 1) * 100)} %`;
+
+/** Proberaum: die Band in ihrem Raum (ohne laufende Probe), Stufe, Wirkung und der nächste Ausbau. */
+function roomBlock(b, members) {
+  const room = b.room;
+  if (!room) return '';
+  const effect = room.level ? `Proben bringen ${pct(room.skill)} mehr Können, die Band hält ${pct(room.lust)} länger durch${room.mood ? ', alle fühlen sich wohler' : ''}.` : 'Dunkel, feucht, kaputt. Hier probt niemand gern lange.';
+  return `
+    <section class="lb-roomcard">
+      <div class="lb-room idle">${roomSvg(room.level, b.id)}${stage(members, {
+    className: 'idle in-room',
+    instrumentOf: (m) => (hasGear(m) ? playedInstrument(m) : 'none'),
+    hueOf: (m) => ownGear(m, playedInstrument(m)).hue,
+    nameOf: (m) => esc(m.firstName),
+  })}</div>
+      <div class="lb-roominfo">
+        <div><h2 class="lb-cap">${room.shared ? 'Übungsecke des Labels' : 'Proberaum'}</h2><b>${esc(room.stage)}</b> <small class="muted">Stufe ${room.level} von 3${room.shared ? ' · für alle Solokünstler gemeinsam' : ''}</small>
+          <p class="muted small">${effect}</p></div>
+        ${room.next ? `<button class="btn small" data-act="roomUpgrade" data-id="${b.id}" ${app.state.label.money < room.next.cost ? 'disabled' : ''}>Ausbauen: ${esc(room.next.name)} · ${fmt0(room.next.cost)} ₲</button>` : '<span class="muted small">voll ausgebaut</span>'}
+      </div>
     </section>`;
 }
 
@@ -346,6 +371,7 @@ export function page(route) {
       ${act(b, members, 'gig', 'auftritte', 'Auftritt buchen', 'Kosten und Gewinn sehen', ICON.gig)}
     </div>
     ${course}
+    ${running?.type === 'rehearsal' ? '' : roomBlock(b, members)}
     <h2 class="lb-cap lb-sec">Musiker</h2>
     <div class="lb-members">
       ${members.map((m) => memberRow(b, m, members, genreSlots(members))).join('')}
@@ -424,6 +450,13 @@ function musicianWindow(m) {
 }
 
 defineActions({
+  async roomUpgrade({ id }) {
+    const b = bandById(id);
+    const next = b.room?.next;
+    if (!next) return;
+    const ok = await confirmDialog(`${b.room.shared ? 'Übungsecke' : 'Proberaum'} ausbauen zu „${next.name}“ für ${fmt0(next.cost)} ₲? Danach bringen Proben ${pct(next.skill)} mehr Können, die Band hält ${pct(next.lust)} länger durch${next.mood ? ' und fühlt sich beim Proben wohler' : ''}.${b.room.shared ? ' Gilt für alle Solokünstler.' : ''}`, { ok: 'Ausbauen' });
+    if (ok) await mutate('roomUpgrade', { bandId: b.id });
+  },
   musicianInfo({ id }) {
     musicianById(id) && musicianWindow(musicianById(id));
   },

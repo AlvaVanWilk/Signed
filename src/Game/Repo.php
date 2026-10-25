@@ -374,6 +374,7 @@ final class Repo
             'slot_return' => json_decode((string) ($r['slot_return'] ?? ''), true) ?: [],
             'released' => (bool) $r['released'],
             'retired' => ($r['retired_at'] ?? null) !== null,
+            'room' => (int) ($r['room'] ?? 0),
             'fame_own' => (float) $r['fame_own'],
             'songs_written' => (float) ($r['songs_written'] ?? 0),
             'mood_at' => (int) ($r['mood_at'] ?? 0),

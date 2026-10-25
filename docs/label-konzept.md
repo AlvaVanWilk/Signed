@@ -427,3 +427,10 @@ Beim ersten Login nach dem Umbau (Saison 2) bleiben **Labelname und Konto**, all
   Seltenheit mit Gewichten 50/32/14/4 (gewöhnlich bis legendär), Preis nach Seltenheit, Eigenschaften und Werten (Grundpreise 60/220/700/2100).
 - **Zurücklegen:** ein Instrument je Label, einen Tag lang (`holdHours` 24), bleibt über den Wechsel des Regals, nur für dieses Label. Gekauft werden kann jedes Instrument pro Label einmal.
 - Oberfläche: gezeichnetes Regal mit Preisschildern, Seltenheit als Lichtschein, Hinweispunkt bei Instrumenten, die jemandem im Label fehlen; Übergang: Doppeltür geht beim Betreten auf.
+
+### Proberaum (gebaut)
+
+- Jede Band ab zwei Mitgliedern hat ihren eigenen Proberaum (`bands.room`), Solokünstler teilen sich die **Übungsecke des Labels** (`labels.solo_room`, halber Preis).
+- Stufen (`Balance::ROOM`): Bruchbude → Aufgeräumter Keller (400 ₲) → Gemütlicher Proberaum (1.200 ₲) → Profi-Proberaum (3.000 ₲). Wirkung: Können je Probe ×1,08/1,16/1,25,
+  die Band hält ×1,15/1,3/1,5 länger durch, Wohlbefinden +1/+2,5/+4 je 15 Minuten Probe für alle. Beim Zusammentun bleibt der bessere Raum.
+- Auf der Bandseite steht die Band in ihrem Raum (gezeichnet in `room.js`, vier Stufen); während einer Probe spielt sie dort.

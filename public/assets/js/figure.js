@@ -213,7 +213,7 @@ function head(look, skin, sing, mood = null) {
   if (HATS[hat]) {
     const [c1, c2] = HAT_COLORS[hat];
     p.push(`<g stroke="${INK}" stroke-width="1.1" stroke-linejoin="round">${HATS[hat].replaceAll('HAT2', c2).replaceAll('HAT', c1)}</g>`);
-    p.push(sheen({ fedora: 'M41 19 Q46 16.4 51 16.4', cowboy: 'M38 20 Q39.4 16 42 15' }[hat] ?? 'M41 24.6 Q46 21.8 51 21.8'));
+    p.push(sheen({ fedora: 'M41 23 Q46 20.4 51 20.4', cowboy: 'M38 20 Q39.4 16 42 15' }[hat] ?? 'M41 24.6 Q46 21.8 51 21.8'));
   }
   return `<g transform="translate(60 44) scale(1.5) translate(-50 -42)">${p.join('')}</g>`;
 }

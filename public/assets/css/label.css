@@ -40,7 +40,7 @@
 .lb-bt .waits { font-size: .68rem; font-weight: 700; color: var(--lb-bad); margin-left: 4px; }
 .lb-bt [data-act="tip"] { cursor: help; }
 /* Studiolampe oben rechts, halb über dem Rand: leuchtet in der Farbe der Stimmung. */
-.lb-bt .lamp { position: absolute; top: -10px; right: 22px; width: 26px; height: 11px; border-radius: 12px 12px 0 0; background: var(--lb-card); border: 1px solid var(--lb-line); border-bottom: 0; display: grid; place-items: end center; padding-bottom: 1px; z-index: 2; --c: var(--lb-ok); }
+.lb-bt .lamp { position: absolute; top: -10px; left: 24px; width: 26px; height: 11px; border-radius: 12px 12px 0 0; background: var(--lb-card); border: 1px solid var(--lb-line); border-bottom: 0; display: grid; place-items: end center; padding-bottom: 1px; z-index: 2; --c: var(--lb-ok); }
 .lb-bt.sel .lamp { background: var(--lb-card2); border-color: var(--lb-accent); }
 .lb-bt:hover .lamp { border-color: #4a4458; } .lb-bt.sel:hover .lamp { border-color: var(--lb-accent); }
 .lb-bt .lamp i { width: 14px; height: 7px; border-radius: 7px 7px 1px 1px; background: var(--c); box-shadow: 0 0 8px 2px color-mix(in srgb, var(--c) 60%, transparent), 0 -2px 10px color-mix(in srgb, var(--c) 40%, transparent); display: block; }
@@ -765,14 +765,19 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .tex.t-hiphop { background: url(../img/tex/hiphop.svg?v=4) 0 0 / 12px 24px; }
 .tex.t-punk { background: url(../img/tex/punk.svg?v=4) 0 0 / 12px 12px; }
 
-/* Wunsch: Sprechblase ragt rechts aus der Kachel, als Hinweis zum Handeln; ist der Wunsch erfüllt, ist sie weg. */
-.lb-bt .wishb { position: absolute; right: -14px; top: 50%; transform: translateY(-50%); width: 30px; height: 24px; z-index: 3; animation: lb-wish 2.4s ease-in-out infinite; }
+/* Wunsch: Sprechblase oben rechts auf der Ecke (nur Umriss, drei Punkte darin); ist der Wunsch erfüllt, ist sie weg.
+   Die Punkte heben sich leicht nacheinander, jeder in seinem eigenen Takt – wie jemand, der gleich etwas sagt. */
+.lb-bt .wishb { position: absolute; right: -12px; top: -12px; width: 30px; height: 28px; z-index: 3; }
 .lb-bt .wishb svg { width: 100%; height: 100%; display: block; overflow: visible; }
 .lb-bt .wishb svg path { fill: var(--lb-card); stroke: var(--lb-accent); stroke-width: 1.8; stroke-linejoin: round; }
 .lb-bt.sel .wishb svg path { fill: var(--lb-card2); }
+.lb-bt .wishb svg circle { fill: var(--lb-accent); transform-box: fill-box; transform-origin: center; animation: lb-dot 1.9s ease-in-out infinite; }
+.lb-bt .wishb svg .d2 { animation-duration: 2.15s; animation-delay: -.5s; }
+.lb-bt .wishb svg .d3 { animation-duration: 1.7s; animation-delay: -1.1s; }
 .lb-bt .wishb.red svg path { stroke: var(--lb-bad); }
-@keyframes lb-wish { 0%, 100% { transform: translateY(-50%); } 50% { transform: translateY(-50%) translateX(2px); } }
-@media (prefers-reduced-motion: reduce) { .lb-bt .wishb { animation: none; } }
+.lb-bt .wishb.red svg circle { fill: var(--lb-bad); }
+@keyframes lb-dot { 0%, 60%, 100% { transform: translateY(0); opacity: .55; } 30% { transform: translateY(-1.6px); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .lb-bt .wishb svg circle { animation: none; opacity: 1; } }
 
 /* Gesperrt, aber antippbar: sieht ausgegraut aus, ein Tipp zeigt den Grund. */
 [aria-disabled="true"] { opacity: .5; cursor: help; }

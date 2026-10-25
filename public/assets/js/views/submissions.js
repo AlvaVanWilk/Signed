@@ -95,11 +95,9 @@ function card(s) {
     </div>`;
 }
 
-/** Karte einer Band: vorn die Instrumente aller, hinten die Gesichter mit ihren Eigenschaften (Gesicht antippen = wählen). */
+/** Karte einer Band: vorn die Instrumente aller, hinten die Gesichter mit ihren Eigenschaften (antippen = mehr erfahren, wie bei Einzelnen). */
 function bandCard(s) {
-  const picked = app.ui.subPick?.[s.submissionId] ?? new Set(s.members.map((m) => m.index));
-  const chosen = s.members.filter((m) => picked.has(m.index));
-  const price = chosen.reduce((a, m) => a + m.price, 0);
+  const price = s.members.reduce((a, m) => a + m.price, 0);
   const genres = [...new Set(s.members.flatMap((m) => m.genres))].slice(0, 4);
   return `
     <div class="lb-flipper band ${flipped(s) ? 'flipped' : ''}" data-act="subFlip" data-id="${s.submissionId}">
@@ -107,16 +105,16 @@ function bandCard(s) {
         <div class="lb-fr-name"><small class="muted">Band</small> <b>${esc(s.bandName)}</b></div>
         <div class="lb-fr-row">${genreTags(genres)}</div>
         <div class="lb-card-ins grid">${s.members.map((m) => instrumentRow(m.instruments[0], true)).join('')}</div>
-        ${iconFoot(s, price, chosen.length > 0)}
+        ${iconFoot(s, price, true)}
       </article>
       <article class="lb-face back">
         <div class="lb-band-faces">${s.members.map((m) => `
-          <div class="lb-bm ${picked.has(m.index) ? 'on' : ''}">
-            <button class="lb-ph sm" style="--split:linear-gradient(120deg, ${split(m.genres)})" data-act="subPick" data-id="${s.submissionId}" data-index="${m.index}" aria-pressed="${picked.has(m.index)}"
-              title="${esc(m.firstName)} · ${money(m.price)} – antippen zum Wählen">${photo(m)}<i class="lb-tick">${picked.has(m.index) ? '✓' : ''}</i></button>
+          <div class="lb-bm">
+            <button class="lb-ph sm" style="--split:linear-gradient(120deg, ${split(m.genres)})" data-act="subInfo" data-id="${s.submissionId}" data-index="${m.index}"
+              title="Mehr über ${esc(m.firstName)}">${photo(m)}</button>
             <div class="lb-bm-traits">${traitChips(m, 'subInfo', s.submissionId, m.index)}</div>
           </div>`).join('')}</div>
-        ${iconFoot(s, price, chosen.length > 0)}
+        ${iconFoot(s, price, true)}
       </article>
     </div>`;
 }
@@ -184,6 +182,66 @@ function openInfo(s, m) {
          ${bad.length ? `<h4>Schwierig mit</h4>${bad.map(row).join('')}` : ''}
          ${!good.length && !bad.length ? '<p class="muted">Mit niemandem besonders gut oder schlecht – die Beziehungen wachsen langsam auf ein mittleres Niveau.</p>' : ''}`;
   }).catch((e) => { const box = modal.body.querySelector('[data-compat]'); if (box) box.textContent = e.message; });
+}
+
+// ---------- Band unterschreiben ----------
+
+const andList = (names) => (names.length > 1 ? `${names.slice(0, -1).join(', ')} und ${names.at(-1)}` : names[0] ?? '');
+
+/**
+ * Band unterschreiben: Alle sind vorgewählt. Wer abgewählt wird, zieht weiter – und wer bleibt, ist gekränkt
+ * (Teamplayer besonders, Ehrgeizige weniger). Das steht im Fenster, bevor man unterschreibt.
+ */
+function signBand(s) {
+  const picked = new Set(s.members.map((m) => m.index));
+  const team = (m) => m.personality.includes('teamplayer');
+  const modal = openModal({
+    className: 'lb-sign-modal',
+    html: `
+      <div class="lb-cap">Unterschreiben</div>
+      <h2>${esc(s.bandName)}</h2>
+      <p class="muted">Wen nimmst du? Am liebsten kommen sie alle zusammen.</p>
+      <div class="lb-sign-list">${s.members.map((m) => `
+        <label class="lb-sign-row"><input type="checkbox" data-pick="${m.index}" checked>
+          <span class="lb-ph sm" style="--split:linear-gradient(120deg, ${split(m.genres)})">${photo(m)}</span>
+          <span><b>${esc(m.firstName)} ${esc(m.lastName)}</b><small class="muted">${esc(instrumentName(m.instruments[0].type))} · ${esc(m.personality.map((p) => cat().personalities[p]).join(', '))}</small></span>
+          <em>${money(m.price)}</em></label>`).join('')}</div>
+      <p class="lb-sign-note" data-note></p>
+      <div class="dialog-actions"><button class="btn ghost" data-close>Abbrechen</button><button class="btn primary" data-ok></button></div>`,
+  });
+  const body = modal.body;
+  const update = () => {
+    const chosen = s.members.filter((m) => picked.has(m.index));
+    const left = s.members.filter((m) => !picked.has(m.index));
+    const price = chosen.reduce((a, m) => a + m.price, 0);
+    const ok = body.querySelector('[data-ok]');
+    ok.textContent = `Aufnehmen · ${money(price)}`;
+    ok.disabled = !chosen.length || app.state.label.money < price;
+    const note = body.querySelector('[data-note]');
+    note.className = `lb-sign-note ${left.length && chosen.length ? 'warn' : ''}`;
+    note.textContent = !chosen.length ? 'Wähle mindestens einen.'
+      : !left.length ? `Sie kommen alle als Band ${s.bandName} ins Label und kennen sich schon.`
+      : `${andList(left.map((m) => m.firstName))} ${left.length > 1 ? 'ziehen' : 'zieht'} enttäuscht weiter. ${andList(chosen.map((m) => m.firstName))} ${chosen.length > 1 ? 'sind gekränkt und starten' : 'ist gekränkt und startet'} schlechter gelaunt`
+        + `${chosen.some(team) ? ` – ${andList(chosen.filter(team).map((m) => m.firstName))} als Teamplayer besonders` : ''}.${chosen.length === 1 ? ' Ohne die anderen gibt es keine Band, nur einen Solokünstler.' : ''}`;
+    if (app.state.label.money < price && chosen.length) note.textContent += ' Dafür reicht das Geld gerade nicht.';
+  };
+  body.addEventListener('change', (e) => {
+    const box = e.target.closest('[data-pick]');
+    if (!box) return;
+    if (box.checked) picked.add(Number(box.dataset.pick));
+    else picked.delete(Number(box.dataset.pick));
+    update();
+  });
+  body.querySelector('[data-close]').addEventListener('click', () => modal.close());
+  body.querySelector('[data-ok]').addEventListener('click', async (e) => {
+    e.target.disabled = true;
+    const res = await mutate('submissionSign', { submissionId: s.submissionId, members: [...picked] });
+    if (res) {
+      modal.close();
+      toast(picked.size === s.members.length ? `${s.bandName} hat unterschrieben.` : 'Unterschrieben.', 'ok');
+    } else update();
+  });
+  update();
 }
 
 // ---------- Verschieben ----------
@@ -290,37 +348,23 @@ defineActions({
     else app.ui.subFlipped.add(sid);
     el.classList.toggle('flipped');
   },
-  /** Unterschreiben nach Rückfrage: „… für … ₲ in das Label aufnehmen?“ */
+  /** Unterschreiben nach Rückfrage: „… für … ₲ in das Label aufnehmen?“ Bei Bands wählt man dort, wen man nimmt. */
   async subSign({ id }) {
     const s = app.state.submissions.find((x) => x.submissionId === Number(id));
-    const members = s.kind === 'band' ? s.members.filter((m) => (app.ui.subPick?.[id] ?? new Set(s.members.map((x) => x.index))).has(m.index)) : [s];
-    const names = members.map((m) => m.firstName);
-    const who = names.length > 1 ? `${names.slice(0, -1).join(', ')} und ${names.at(-1)}` : names[0];
-    const price = s.kind === 'band' ? members.reduce((a, m) => a + m.price, 0) : s.price;
-    if (await confirmDialog(`${who} für ${money(price)} in das Label aufnehmen?`, { ok: 'Aufnehmen' })) await actions.submissionSign({ id: String(id) });
+    if (s.kind === 'band') {
+      signBand(s);
+      return;
+    }
+    if (await confirmDialog(`${s.firstName} für ${money(s.price)} in das Label aufnehmen?`, { ok: 'Aufnehmen' })) await actions.submissionSign({ id: String(id) });
   },
   subInfo({ id, index }) {
     const s = app.state.submissions.find((x) => x.submissionId === Number(id));
     openInfo(s, s.kind === 'band' ? s.members.find((m) => m.index === Number(index)) : s);
   },
-  subPick({ id, index }) {
-    const s = app.state.submissions.find((x) => x.submissionId === Number(id));
-    app.ui.subPick ??= {};
-    const set = app.ui.subPick[id] ?? new Set(s.members.map((m) => m.index));
-    if (set.has(Number(index))) set.delete(Number(index));
-    else set.add(Number(index));
-    app.ui.subPick[id] = set;
-    rerender();
-  },
   async submissionSign({ id }) {
     const s = app.state.submissions.find((x) => x.submissionId === Number(id));
-    const body = { submissionId: Number(id) };
-    if (s.kind === 'band') body.members = [...(app.ui.subPick?.[id] ?? new Set(s.members.map((m) => m.index)))];
-    const res = await mutate('submissionSign', body);
-    if (res) {
-      delete app.ui.subPick?.[id];
-      toast(s.kind === 'band' ? 'Unterschrieben.' : `${s.firstName} ${s.lastName} hat unterschrieben.`, 'ok');
-    }
+    const res = await mutate('submissionSign', { submissionId: Number(id) });
+    if (res) toast(`${s.firstName} ${s.lastName} hat unterschrieben.`, 'ok');
   },
   async submissionOpen({ id }) {
     app.ui.subSel = null;

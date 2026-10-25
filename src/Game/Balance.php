@@ -170,6 +170,9 @@ final class Balance
         'skill' => [0 => [6, 33], 1 => [35, 58], 2 => [60, 83], 3 => [85, 98]],
         'fameChance' => 0.3, 'fame' => [5, 110],
         'price' => ['base' => 40, 'skill' => 0.05, 'fame' => 1.5],
+        // Nur einen Teil einer Band aufnehmen: Die anderen ziehen enttäuscht weiter, wer bleibt, ist gekränkt (Wohlbefinden sinkt einmalig,
+        // erholt sich danach wie sonst). Teamplayer trifft es stärker, Ehrgeizige weniger.
+        'splitHurt' => 20.0, 'splitTrait' => ['teamplayer' => 1.6, 'ehrgeizig' => 0.5],
     ];
     public const MAX_MEMBERS = 7;
     public const MAX_PER_INSTRUMENT = ['drums' => 1, 'guitar' => 2];

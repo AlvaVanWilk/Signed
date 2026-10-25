@@ -233,8 +233,11 @@ In der Wirklichkeit schicken Künstler Demos an Labels, und Talentsucher hören 
 - **Genres folgen dem Erfolg:** Hat eine Band des Labels Erfolg, bewerben sich vermehrt Musiker mit **gleichen oder ähnlichen Genres**, fremde Genres seltener (außer ein Musiker hat mehrere Genres,
   dann kann auch ein fremdes dabei sein).
 - **Aufnehmen kostet eine einmalige Unterschriftsprämie**, die alle Gagen des Künstlers zusammenfasst, fürs ganze Leben: groß = teurer als klein, bekannt = teurer als unbekannt.
-  Grundform je Musiker: `40 + 0,05 × Können² + 1,5 × Bekanntheit` (Können 50 ≈ 165 ₲, Können 80 ≈ 360 ₲). Ablehnen ist kostenlos. Von einer **Band** kann man alle aufnehmen oder **einzelne Mitglieder**;
-  die anderen bleiben zurück. Mitglieder einer Band **kennen sich schon**, ihre Beziehung startet nicht bei 0.
+  Grundform je Musiker: `40 + 0,05 × Können² + 1,5 × Bekanntheit` (Können 50 ≈ 165 ₲, Können 80 ≈ 360 ₲). Ablehnen ist kostenlos. Von einer **Band** kann man alle aufnehmen oder **einzelne Mitglieder**:
+  Auf der Karte öffnet jedes Gesicht die Detailansicht wie bei Einzelnen; gewählt wird erst im Fenster „Unterschreiben“ (alle vorgewählt).
+  Wer nicht mitgenommen wird, **zieht enttäuscht weiter** (die Einsendung ist danach weg), und wer kommt, ist **gekränkt**: Wohlbefinden startet um 20 niedriger
+  (Teamplayer ×1,6, Ehrgeizige ×0,5; `Balance::SUBMISSIONS['splitHurt']`) und erholt sich danach wie sonst. Das Fenster sagt das vor dem Unterschreiben.
+  Mitglieder einer Band **kennen sich schon**, ihre Beziehung startet nicht bei 0.
 - **Entlassen** bringt **20 %** der **bezahlten** Prämie zurück (nicht des aktuellen Werts, sonst könnte man trainieren und mit Gewinn entlassen).
 
 **Assistenz** (in der Wirklichkeit „A&R-Assistenz“; in Signed *Assistenz*). Wird in der **Stellenbörse** wie ein Manager **einmalig bezahlt**.

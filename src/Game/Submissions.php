@@ -224,7 +224,13 @@ final class Submissions
      * @param list<int>|null $picks Nummern der Mitglieder (nur bei Bands); null = alle
      * @return int ID des (ersten) neuen Musikers
      */
-    public function sign(int $id, ?array $picks = null): int
+/** „Anna, Ben und Cem“ */
+    private static function names(array $names): string
+    {
+        return count($names) > 1 ? implode(', ', array_slice($names, 0, -1)) . ' und ' . end($names) : (string) ($names[0] ?? '');
+    }
+
+        public function sign(int $id, ?array $picks = null): int
     {
         return $this->repo->db->transaction(function () use ($id, $picks): int {
             $row = $this->row($id);
@@ -264,13 +270,22 @@ final class Submissions
                     // Besetzung oder Name passen nicht: Dann bleiben sie Solokünstler und lassen sich im Label zusammenstellen.
                 }
             }
+            // Nicht alle genommen: Die anderen ziehen enttäuscht weiter, die Aufgenommenen sind gekränkt.
             $left = $isBand ? array_values(array_diff_key($cards, array_flip($chosen))) : [];
             if ($left) {
-                $card['members'] = $left;
-                $this->repo->db->update('submissions', ['card' => json_encode($card, JSON_UNESCAPED_UNICODE)], ['id' => $id]);
-            } else {
-                $this->repo->db->exec('DELETE FROM submissions WHERE id = ?', [$id]);
+                $c = Balance::SUBMISSIONS;
+                foreach ($chosen as $k => $i) {
+                    $factor = 1.0;
+                    foreach ($cards[$i]['personality'] ?? [] as $trait) {
+                        $factor *= $c['splitTrait'][$trait] ?? 1.0;
+                    }
+                    $this->repo->db->update('musicians', ['wellbeing' => round(max(0.0, Balance::MOOD['start'] - $c['splitHurt'] * $factor), 3)], ['id' => $ids[$k]]);
+                }
+                $this->repo->log('submission', sprintf('%s %s ohne die anderen von %s gekommen. %s enttäuscht weitergezogen.',
+                    self::names(array_map(static fn ($i) => $cards[$i]['first_name'], $chosen)), count($chosen) > 1 ? 'sind' : 'ist', $card['name'],
+                    self::names(array_map(static fn ($x) => $x['first_name'], $left)) . (count($left) > 1 ? ' sind' : ' ist')), null, $ids[0]);
             }
+            $this->repo->db->exec('DELETE FROM submissions WHERE id = ?', [$id]);
             return $ids[0];
         });
     }

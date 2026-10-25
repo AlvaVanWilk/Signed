@@ -269,7 +269,7 @@ button.lb-pill:disabled { opacity: 0.45; cursor: default; }
 .lb-sub-left { color: var(--lb-muted); font-size: 0.7rem; text-align: right; }
 .lb-band-head { display: flex; gap: 8px; align-items: baseline; } .lb-band-head b { font-size: 0.95rem; }
 .lb-band-faces { display: flex; gap: 8px; justify-content: center; }
-.lb-bm { display: grid; gap: 3px; justify-items: center; opacity: 0.55; } .lb-bm.on { opacity: 1; }
+.lb-bm { display: grid; gap: 3px; justify-items: center; }
 .lb-bm .lb-ph.sm { width: 42px; height: 42px; border-radius: 9px; box-shadow: none; }
 .lb-bm .ico { width: 20px; height: 20px; display: block; } .lb-bm .ico svg { width: 100%; height: 100%; }
 .lb-bm .lv { font-size: 0.78rem; color: var(--lc); }
@@ -311,8 +311,8 @@ button.lb-pill:disabled { opacity: 0.45; cursor: default; }
 .lb-card2 .lb-drop { padding: 4px 8px; font-size: 0.7rem; }
 .lb-card2.band { grid-template-rows: auto 1fr auto; }
 .lb-band-faces { align-items: center; gap: 6px; }
-.lb-bm { display: grid; gap: 2px; justify-items: center; padding: 0; border: 0; background: none; cursor: pointer; color: inherit; font: inherit; opacity: 0.5; }
-.lb-bm.on { opacity: 1; }
+.lb-bm { display: grid; gap: 2px; justify-items: center; padding: 0; border: 0; background: none; color: inherit; font: inherit; opacity: 1; }
+.lb-bm .lb-ph { cursor: pointer; }
 .lb-bm .lb-ph.sm { position: relative; width: 38px; height: 38px; }
 .lb-bm .lb-tick { position: absolute; right: -4px; bottom: -4px; width: 14px; height: 14px; border-radius: 50%; background: var(--lb-card); border: 1px solid var(--lb-line); color: var(--lb-accent); font-style: normal; font-size: 0.6rem; font-weight: 800; display: grid; place-items: center; line-height: 1; }
 .lb-bm-row { display: inline-flex; gap: 3px; align-items: center; } .lb-bm-row .ico { width: 16px; height: 16px; display: block; } .lb-bm-row .ico svg { width: 100%; height: 100%; }
@@ -680,3 +680,14 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .gg-notes { list-style: none; margin: 0; padding: 0; font-size: .8rem; display: flex; flex-wrap: wrap; gap: 2px 14px; }
 .gg-notes .good { color: #7fd0a6; } .gg-notes .bad { color: #e0a45a; } .gg-notes .warn { color: #e8c75a; }
 @media (max-width: 760px) { .gg-row { grid-template-columns: 110px 1fr; } .gg-art { align-self: start; } .gg-side { grid-column: 1 / -1; } .gg-money { grid-template-columns: repeat(4, auto); justify-content: space-between; gap: 4px 10px; } }
+
+/* Band unterschreiben: Mitglieder zum An- und Abwählen, darunter, was das bedeutet. */
+.lb-sign-list { display: flex; flex-direction: column; gap: 6px; margin: 12px 0; }
+.lb-sign-row { display: grid; grid-template-columns: auto auto 1fr auto; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--lb-line); background: var(--lb-card); cursor: pointer; }
+.lb-sign-row:has(input:not(:checked)) { opacity: .55; }
+.lb-sign-row input { width: 18px; height: 18px; accent-color: var(--lb-accent); }
+.lb-sign-row .lb-ph.sm { width: 40px; height: 40px; }
+.lb-sign-row > span:not(.lb-ph) { display: flex; flex-direction: column; min-width: 0; }
+.lb-sign-row em { font-style: normal; font-weight: 600; white-space: nowrap; }
+.lb-sign-note { font-size: .88rem; color: var(--lb-muted); min-height: 2.6em; }
+.lb-sign-note.warn { color: #e8c75a; }

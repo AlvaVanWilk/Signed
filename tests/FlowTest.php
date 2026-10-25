@@ -1459,19 +1459,20 @@ test('Einsendungen: Bands bewerben sich, man nimmt alle oder einzelne, sie kenne
     $band = $bands[0];
     check(count($band['members']) >= 2 && count($band['members']) <= 4, 'zwei bis vier Mitglieder');
     checkEquals(array_sum(array_column($band['members'], 'price')), $band['price'], 'Preis = Summe');
-    // Nur das erste Mitglied aufnehmen: die anderen bleiben auf der Einsendung.
-    $res = $p->post('submissionSign', ['submissionId' => $band['submissionId'], 'members' => [0]]);
-    $left = array_values(array_filter($res['state']['submissions'], static fn ($s) => $s['submissionId'] === $band['submissionId']))[0];
-    checkEquals(count($band['members']) - 1, count($left['members']));
-    // Den Rest aufnehmen: Sie kennen sich (Beziehung von Anfang an).
+    // Alle aufnehmen: Sie kennen sich (Beziehung von Anfang an) und bleiben gut gelaunt.
     $before = count($res['state']['musicians']);
     $res = $p->post('submissionSign', ['submissionId' => $band['submissionId']]);
-    checkEquals($before + count($left['members']), count($res['state']['musicians']));
-    $ids = array_slice(array_column($res['state']['musicians'], 'id'), -count($left['members']));
-    if (count($ids) >= 2) {
-        $pair = $db->one('SELECT value FROM relations WHERE a_id = ? AND b_id = ?', [min($ids[0], $ids[1]), max($ids[0], $ids[1])]);
-        check($pair !== null && $pair['value'] > 0, 'Beziehung startet nicht bei 0');
-    }
+    checkEquals($before + count($band['members']), count($res['state']['musicians']));
+    $ids = array_slice(array_column($res['state']['musicians'], 'id'), -count($band['members']));
+    $pair = $db->one('SELECT value FROM relations WHERE a_id = ? AND b_id = ?', [min($ids[0], $ids[1]), max($ids[0], $ids[1])]);
+    check($pair !== null && $pair['value'] > 0, 'Beziehung startet nicht bei 0');
+    check((float) $db->value('SELECT wellbeing FROM musicians WHERE id = ?', [$ids[0]]) >= Balance::MOOD['start'] - 0.01, 'alle genommen: niemand gekränkt');
+    // Nur einen aus einer anderen Band: Die anderen ziehen weiter, der Aufgenommene ist gekränkt.
+    $other = $bands[1];
+    $res = $p->post('submissionSign', ['submissionId' => $other['submissionId'], 'members' => [0]]);
+    check(!in_array($other['submissionId'], array_column($res['state']['submissions'], 'submissionId'), true), 'Rest zieht weiter');
+    $solo = end($res['state']['musicians']);
+    check((float) $db->value('SELECT wellbeing FROM musicians WHERE id = ?', [$solo['id']]) < Balance::MOOD['start'] - 5, 'gekränkt');
     checkApiError(fn () => $p->post('submissionSign', ['submissionId' => $band['submissionId']]), 'nicht mehr');
 });
 

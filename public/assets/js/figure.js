@@ -55,7 +55,7 @@ export function figure(look = {}, instrument = 'guitar', { electric = false, hue
  * damit zwischen den Strähnen und dem Hals kein Loch bleibt. Sie nickt mit dem Kopf mit (gleicher Drehpunkt und dieselbe Bewegung wie .fig-head).
  */
 const BEHIND = 'M33 60 C33 50 87 50 87 60 L91 101 Q60 106 29 101 Z';
-const hairBehind = (hair) => painted(BEHIND, hair, [['M35 60 Q33.6 82 33 102', 1, 4.4], ['M40 58 Q39 82 39.4 103', 0, 3.2], ['M85 60 Q86.4 82 87 102', 1, 4.4], ['M80 58 Q81 82 80.6 103', 0, 3.2]])
+const hairBehind = (hair) => painted(BEHIND, hair, [['M36 56 C34 60 33 80 31.4 102', 1, 4.4], ['M40.6 54.6 C38.6 60 38 82 37.4 103', 0, 3.2], ['M84 56 C86 60 87 80 88.6 102', 1, 4.4], ['M79.4 54.6 C81.4 60 82 82 82.6 103', 0, 3.2]])
   + `<path d="${BEHIND}" ${SHADE}/>` + [[34.6, 101.6, 6], [41, 102.6, 5], [79, 102.6, 5], [85.4, 101.6, 6]].map(([x, y, len]) => slit(x, y, hair, len)).join('');
 
 /** Schuh mit Sohle und kleinem Glanz auf der Kappe. */
@@ -230,6 +230,22 @@ const bez = (a, b, c, d, t) => {
   return [0, 1].map((i) => u * u * u * a[i] + 3 * u * u * t * b[i] + 3 * u * t * t * c[i] + t * t * t * d[i]);
 };
 
+/**
+ * Pinselzüge, die der Rundung des Kopfes folgen: wie Längengrade auf einer Kuppel (Mitte cx/cy, Halbachsen rx/ry).
+ * m von −1 (links) bis 1 (rechts); unten laufen sie bis tail weiter senkrecht (lange Haare). Die Haarform schneidet sie zu.
+ */
+function meridians(cx, cy, rx, ry, ms, tail = 0) {
+  return ms.map((m, i) => {
+    const pts = [];
+    for (let k = 1; k <= 12; k++) {
+      const a = (k / 12) * (Math.PI / 2) * 1.08;
+      pts.push([cx + rx * m * Math.sin(a), cy - ry * Math.cos(a)]);
+    }
+    if (tail) pts.push([cx + rx * m * 1.02, cy + tail]);
+    return [`M${pts.map(([x, y]) => `${f1(x)} ${f1(y)}`).join(' L')}`, i % 2 === 1, [3.2, 2.4, 2.8, 2.2][i % 4]];
+  });
+}
+
 /** Wie viele Schlitze der Pony hat und wie lang sie sind (Frisuren ohne Pony: keine). */
 const FRINGE = { kurz: [4, 3.6], bob: [6, 6], lang: [6, 6.6], zopf: [5, 6.6], dutt: [5, 6], sidecut: [4, 5.2] };
 /** Vorderes Haar wie in avatar.js (M start C … p1 C … start): Pinselzüge vom Scheitel nach unten, Schlitze an der Pony-Kante. */
@@ -238,16 +254,11 @@ function hairFront(style, hair) {
   const n = d.match(/-?[\d.]+/g).map(Number);
   const start = [n[0], n[1]], top = [[n[2], n[3]], [n[4], n[5]], [n[6], n[7]]], low = [[n[8], n[9]], [n[10], n[11]]];
   const crown = bez(start, top[0], top[1], top[2], 0.5);
-  const strokes = [];
   const slits = [];
-  // Pinselzüge: vom Scheitel fächerförmig zur Kante, abwechselnd dunkel und hell, unterschiedlich breit
-  for (let i = 0; i <= 8; i++) {
-    const [ex, ey] = bez(top[2], low[0], low[1], start, i / 8);
-    const sx = crown[0] + (ex - crown[0]) * 0.25;
-    const sy = crown[1] - 1;
-    const mx = (sx + ex) / 2 + (ex - crown[0]) * 0.22;
-    strokes.push([`M${f1(sx)} ${f1(sy)} Q${f1(mx)} ${f1((sy + ey) / 2)} ${f1(ex)} ${f1(ey + 1)}`, i % 2 === 1, [3.4, 2.4, 3, 2.2][i % 4]]);
-  }
+  // Pinselzüge über die Kuppel des Kopfes: Mitte zwischen den Seiten, oben am Scheitel
+  const cx = (start[0] + top[2][0]) / 2;
+  const cy = Math.max(start[1], top[2][1]);
+  const strokes = meridians(cx, cy + 2, Math.abs(top[2][0] - start[0]) / 2 + 1, cy + 2 - crown[1], [-0.95, -0.72, -0.5, -0.27, -0.05, 0.18, 0.4, 0.62, 0.84, 1]);
   const fringe = FRINGE[style];
   if (fringe) {
     const [count, len] = fringe;
@@ -262,9 +273,9 @@ function hairFront(style, hair) {
 
 /** Haar hinter dem Kopf (lange Haare, Bob, Zopf): Pinselzüge nach unten, Schlitze an den Spitzen. */
 const BACK_BRUSH = {
-  lang: { strokes: [['M30 46 L29 78', 1, 3.4], ['M34.4 46 L34.6 78', 0, 2.6], ['M37.6 48 L37.8 78', 1, 2], ['M70 46 L71 78', 1, 3.4], ['M65.6 46 L65.4 78', 0, 2.6], ['M62.4 48 L62.2 78', 1, 2]], slits: [[31, 78, 5], [35.6, 78, 4], [64.6, 78, 4], [69, 78, 5]] },
-  bob: { strokes: [['M31 44 L30.4 58', 1, 3], ['M35 44 L35 58', 0, 2.4], ['M69 44 L69.6 58', 1, 3], ['M65 44 L65 58', 0, 2.4]], slits: [[33.4, 58, 4], [66.6, 58, 4]] },
-  zopf: { strokes: [['M65 42 Q75 52 71.6 70', 1, 3.2], ['M63.6 46 Q70 56 70.6 66', 0, 2.2]], slits: [] },
+  lang: { strokes: meridians(50, 44, 22, 28, [-0.98, -0.86, -0.72, -0.58, 0.58, 0.72, 0.86, 0.98], 36), slits: [[31, 78, 5], [35.6, 78, 4], [64.6, 78, 4], [69, 78, 5]] },
+  bob: { strokes: meridians(50, 44, 20.5, 26, [-0.98, -0.86, -0.72, 0.72, 0.86, 0.98], 16), slits: [[33.4, 58, 4], [66.6, 58, 4]] },
+  zopf: { strokes: [['M64 40.6 C75.6 44.6 75.6 64 70 72', 1, 3.2], ['M63 44 C71.6 48 72 62 69.4 69', 0, 2.2], ['M65.6 40.4 C77.4 45 77.6 62 72.6 69', 0, 1.8]], slits: [] },
 };
 const hairBack = (style, hair) => (HAIR_BACK[style] && BACK_BRUSH[style]
   ? painted(HAIR_BACK[style], hair, BACK_BRUSH[style].strokes) + BACK_BRUSH[style].slits.map(([x, y, len]) => slit(x, y, hair, len)).join('')

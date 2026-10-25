@@ -1,6 +1,7 @@
+import { api } from '../api.js';
 import { abilityInfo, genreGlyph, genreName, gearModel, instrumentIcon, instrumentName, ownGear, photo, sortedGenres } from '../cards.js';
 import { actions, app, bandById, cat, defineActions, isBusy, mutate, musicianById, runningFor, serverNow } from '../core.js';
-import { closePopover, confirmDialog, duration, esc, fmt0, fmt1, fmtGain, money, openModal, popover } from '../ui.js';
+import { closePopover, confirmDialog, duration, esc, fmt0, fmt1, fmtGain, money, openModal, popover, toast } from '../ui.js';
 import { getAudio } from '../audio.js';
 import { playedInstrument, stage } from '../figure.js';
 import { bandStems, loadStems, playStems, stemUrl } from '../music.js';
@@ -189,8 +190,8 @@ function wishBlock(b, members) {
         const [label, section] = WISH_BUTTON[w.action] ?? ['Music Store', null];
         const target = section ? `#/band/${b.id}/${section}` : '#/store';
         // Proben startet gleich, die übrigen führen zur passenden Seite.
-        const go = w.action === 'rehearsal'
-          ? `<button class="lb-pill" data-act="rehearseAsk" data-id="${b.id}" ${blocker(b, members) ? 'disabled' : ''}>${label}</button>`
+        const go = w.action === 'rehearsal' || w.action === 'gig'
+          ? `<button class="lb-pill" data-act="${w.action === 'gig' ? 'gigAsk' : 'rehearseAsk'}" data-id="${b.id}" ${blocker(b, members) ? 'disabled' : ''}>${label}</button>`
           : `<a class="lb-pill" href="${target}">${label}</a>`;
         return `<div class="lb-wish"><a class="lb-ph sm ${w.level}" data-act="musicianInfo" data-id="${m.id}">${photo(m)}</a><span class="say">${esc(w.text)}</span>${go}</div>`;
       }).join('')}
@@ -209,7 +210,7 @@ function act(b, members, type, section, title, text, icon, warn = false, busy = 
   const hint = r.dislike.length ? `<small class="no">${esc(names(r.dislike))} ${plural(r.dislike, 'mag', 'mögen')} das nicht.</small>` : `<small>${text}</small>`;
   // Ohne Unterseite: Die Anordnung startet gleich (Proben).
   if (!section) {
-    return `<button class="lb-act ${busy ? 'idle' : ''}" data-act="rehearseAsk" data-id="${b.id}" ${busy ? 'disabled' : ''}>${icon}<b>${title}</b>${busy ? `<small>${members.length === 1 ? 'Gerade beschäftigt.' : 'Die Band ist gerade beschäftigt.'}</small>` : hint}</button>`;
+    return `<button class="lb-act ${busy ? 'idle' : ''}" data-act="${type === 'gig' ? 'gigAsk' : 'rehearseAsk'}" data-id="${b.id}" ${busy ? 'disabled' : ''}>${icon}<b>${title}</b>${busy ? `<small>${members.length === 1 ? 'Gerade beschäftigt.' : 'Die Band ist gerade beschäftigt.'}</small>` : hint}</button>`;
   }
   return `<a class="lb-act ${warn ? 'warn' : ''}" href="#/band/${b.id}/${section}">${icon}<b>${title}</b>${hint}</a>`;
 }
@@ -368,10 +369,10 @@ export function page(route) {
     <div class="lb-acts">
       ${act(b, members, 'rehearsal', null, 'Proben', `bis zu ${mins(b.options.rehearsal.seconds)} · Können ${gainRange(members.map((m) => m.gains?.rehearsal ?? 0))} je ${mins(cat().rules.rehearsalSeconds)}`, ICON.rehearse, false, !!blocker(b, members))}
       ${act(b, members, 'record', 'studio', 'Aufnehmen', `${b.mood.songs} ${b.mood.songs === 1 ? 'Song wartet' : 'Songs warten'}`, ICON.record, b.mood.songs >= 12)}
-      ${act(b, members, 'gig', 'auftritte', 'Auftritt buchen', 'Kosten und Gewinn sehen', ICON.gig)}
+      ${act(b, members, 'gig', null, 'Auftritt buchen', 'Orte, Kosten und Gewinn sehen', ICON.gig, false, !!blocker(b, members))}
     </div>
     ${course}
-    ${running?.type === 'rehearsal' ? '' : roomBlock(b, members)}
+    ${running ? '' : roomBlock(b, members)}
     <h2 class="lb-cap lb-sec">Musiker</h2>
     <div class="lb-members">
       ${members.map((m) => memberRow(b, m, members, genreSlots(members))).join('')}
@@ -449,7 +450,71 @@ function musicianWindow(m) {
   });
 }
 
+const VENUE_ICON = { kneipe: '🍺', club: '🪩', saal: '🎭', halle: '🏛️', arena: '🏟️' };
+const FIT = { green: ['ok', 'Sound passt'], yellow: ['knapp', 'Sound knapp: der Saal wird nicht ganz voll'], red: ['bad', 'Sound zu schwach: der Saal bleibt halb leer'] };
+
+/** Auftritt buchen: alle passenden Orte mit Kosten, Gewinn-Schätzung, Ruhm, ob der Sound reicht und wie die Band den Ort findet. */
+async function openGigs(b) {
+  let data;
+  try {
+    data = await api('gigOptions', { bandId: b.id });
+  } catch (e) {
+    toast(e.message, 'error');
+    return;
+  }
+  const members = b.memberIds.map(musicianById).filter(Boolean);
+  const r = b.mood.reactions?.gig ?? { like: [], dislike: [] };
+  const names = (ids) => ids.map((id) => musicianById(id)?.firstName).filter(Boolean).join(', ');
+  const playable = data.options.filter((o) => !o.blocked);
+  const best = playable.reduce((m, o) => (!m || o.profit[0] + o.profit[1] > m.profit[0] + m.profit[1] ? o : m), null);
+  const strong = cat().rules;
+  const range = ([a, c]) => (a === c ? signedMoney(a) : `${signedMoney(a)} bis ${signedMoney(c)}`);
+  const row = (o) => {
+    const [cls, fitText] = FIT[o.fit];
+    const claim = o.claim === 'below' ? `<li class="bad">Unter ihrem Anspruch: die Band ärgert sich.</li>`
+      : o.claim === 'above' ? `<li class="good">Eine größere Bühne: die Band freut sich.</li>` : '';
+    return `
+      <div class="gg-row ${o.blocked ? 'blocked' : ''} ${o === best ? 'best' : ''}">
+        <div class="gg-venue"><span class="gg-ico">${VENUE_ICON[o.key] ?? ''}</span><span><b>${esc(o.place)}</b><small class="muted">${esc(o.name)} · ${o.songs} Songs · etwa ${o.minutes} Min.</small></span>${o === best ? '<em class="gg-best">bester Gewinn</em>' : ''}</div>
+        <div class="gg-money">
+          <span><small>Kosten</small><b>${money(o.cost)}</b></span>
+          <span><small>Gage</small><b>${o.gage[0] === o.gage[1] ? money(o.gage[0]) : `${money(o.gage[0])} – ${money(o.gage[1])}`}</b></span>
+          <span class="${o.profit[0] >= 0 ? 'good' : o.profit[1] < 0 ? 'bad' : 'warn'}"><small>Gewinn</small><b>${range(o.profit)}</b></span>
+          <span><small>Ruhm</small><b>+${fmt1(o.fame)}</b></span>
+        </div>
+        <ul class="gg-notes"><li class="${cls === 'ok' ? 'good' : cls === 'bad' ? 'bad' : 'warn'}">${fitText}</li>${claim}${o.blocked ? `<li class="bad">${esc(o.blocked)}</li>` : ''}</ul>
+        <button class="btn ${o === best ? 'primary' : ''} small" data-book="${o.key}" ${o.blocked || app.state.label.money < o.cost ? 'disabled' : ''}>${app.state.label.money < o.cost ? 'Zu teuer' : 'Buchen'}</button>
+      </div>`;
+  };
+  const modal = openModal({
+    wide: true,
+    className: 'gg-modal',
+    html: `
+      <div class="lb-cap">Anordnung</div>
+      <h2>Auftritt buchen für ${esc(b.name)}</h2>
+      <p class="muted small">Sound der Band ${fmt1(data.sound)} · ${data.songs} ${data.songs === 1 ? 'Song' : 'Songs'} spielbar (aufgenommen und geschrieben).
+        Die Kosten sind fest, der Gewinn hängt vom Abend ab.${r.like.length ? ` ${esc(names(r.like))} ${r.like.length > 1 ? 'freuen' : 'freut'} sich auf die Bühne.` : ''}${r.dislike.length ? ` ${esc(names(r.dislike))} ${r.dislike.length > 1 ? 'mögen' : 'mag'} keine Auftritte.` : ''}</p>
+      <div class="gg-list">${data.options.map(row).join('')}</div>`,
+  });
+  modal.body.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-book]');
+    if (!btn) return;
+    btn.disabled = true;
+    const res = await mutate('activityStart', { bandId: b.id, type: 'gig', venue: btn.dataset.book });
+    if (res) {
+      modal.close();
+      toast(`${b.name} ist auf dem Weg zum Auftritt.`, 'ok');
+    } else btn.disabled = false;
+  });
+}
+
+const signedMoney = (v) => `${v < 0 ? '−' : '+'}${money(Math.abs(v))}`;
+
 defineActions({
+  gigAsk({ id }) {
+    const b = bandById(id);
+    if (b) openGigs(b);
+  },
   async roomUpgrade({ id }) {
     const b = bandById(id);
     const next = b.room?.next;

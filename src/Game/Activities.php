@@ -38,13 +38,13 @@ final class Activities
         return null;
     }
 
-    public function start(int $bandId, string $type, int $songs = 0): array
+    public function start(int $bandId, string $type, int $songs = 0, ?string $venue = null): array
     {
         if (!in_array($type, self::BAND_TYPES, true)) {
             throw new ApiError('Unbekannte Aktivität.');
         }
         $db = $this->repo->db;
-        return $db->transaction(function () use ($db, $bandId, $type, $songs): array {
+        return $db->transaction(function () use ($db, $bandId, $type, $songs, $venue): array {
             $now = Clock::now();
             $band = $this->repo->band($bandId);
             $members = $this->repo->members($bandId);
@@ -85,6 +85,25 @@ final class Activities
                     $fameBase = $cfg['fame'] * BandCalc::falloff($fame, $cfg['falloff']);
                     $expect = $cfg['expect'];
                     $title = 'Open Stage: ' . Rng::pick(Catalog::OPEN_STAGES);
+                } elseif ($venue !== null) {
+                    // Auftritt buchen: fester Ort mit Kosten; die Gage hängt am Abend (siehe Gigs::gage)
+                    $options = array_column(Gigs::options($this->repo, $band, $members)['options'], null, 'key');
+                    $opt = $options[$venue] ?? throw new ApiError('Diesen Ort kann die Band nicht buchen.');
+                    if ($opt['blocked'] !== null) {
+                        throw new ApiError($opt['blocked']);
+                    }
+                    $this->repo->spend($opt['cost'], sprintf('Auftritt: %s', $opt['place']));
+                    $songs = $opt['songs'];
+                    $venueRow = array_values(array_filter(Balance::VENUES, static fn ($v) => $v['key'] === $venue))[0];
+                    $negotiator = BandCalc::managerBonus($manager, $level, 'verhandler', Balance::NEGOTIATOR_BONUS);
+                    $draw = BandCalc::freshness($band['gigs_since_record']);
+                    $booking = ['base' => (int) round(BandCalc::gagePerSong($venueRow + ['progress' => 0.5], $negotiator, count($members)) * $songs * $draw), 'claim' => $opt['claim'], 'cost' => $opt['cost']];
+                    $fameBase = $venueRow['fame'] * $draw;
+                    $expect = $venueRow['expect'];
+                    $venueKey = $venue;
+                    $title = sprintf('Auftritt: %s (%s)', $opt['place'], $venueRow['name']);
+                    // Gespielt werden aufgenommene und geschriebene Songs; geschriebene bleiben für die nächste Platte erhalten.
+                    Gigs::moodOnBooking($this->repo, $members, $opt['claim']);
                 } else {
                     if ($band['records'] < 1) {
                         throw new ApiError('Richtige Gigs gibt es erst, wenn die Band eine Platte produziert hat.');
@@ -109,6 +128,9 @@ final class Activities
                 $sim = Performance::simulate(array_map([self::class, 'player'], $members), $sound, (float) $expect, $songs);
                 if ($type === 'busking') {
                     $gage = self::hat($this->repo, $sim['perf']);
+                }
+                if (isset($booking)) {
+                    $gage = Gigs::gage($booking['base'], $sound, (float) $expect, $sim['perf']);
                 }
                 // Ruhm: Größe des Auftritts × Sound × Publikum, plus etwas Zufall.
                 $fameTotal = 0.0;
@@ -523,7 +545,7 @@ final class Activities
         return Present::activity($this->repo->db->one('SELECT * FROM activities WHERE id = ?', [$id]));
     }
 
-    private static function player(array $m): array
+    public static function player(array $m): array
     {
         return [
             'name' => $m['first_name'],

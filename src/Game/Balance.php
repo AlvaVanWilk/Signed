@@ -322,6 +322,19 @@ final class Balance
         ['key' => 'halle', 'name' => 'Halle', 'minFame' => 600, 'gage' => 380, 'fame' => 2.0, 'expect' => 58],
         ['key' => 'arena', 'name' => 'Arena', 'minFame' => 2500, 'gage' => 900, 'fame' => 4.0, 'expect' => 75],
     ];
+    /**
+     * Auftritt buchen: je Ort feste Kosten (Miete, Technik), Länge in Liedern. Die Gage hängt am Auftritt: Füllgrad nach Sound gegen Erwartung
+     * (`fillMin` bis voll) mal Stimmung im Saal (`perfBase + perfWeight × Leistung`). Solokünstler buchen Studiomusiker dazu (`soloCost`, Pop billiger).
+     * Wie die Band einen Ort findet: unter ihrem Anspruch ärgert er (`below`), darüber freut er (`above`), je Charakter stärker (`strong`).
+     */
+    public const GIG_BOOKING = [
+        'cost' => ['kneipe' => 20, 'club' => 90, 'saal' => 350, 'halle' => 1100, 'arena' => 3200],
+        'songs' => ['kneipe' => 3, 'club' => 4, 'saal' => 5, 'halle' => 7, 'arena' => 9],
+        'fillMin' => 0.3, 'perfBase' => 0.7, 'perfWeight' => 0.3,
+        'soloCost' => 1.5, 'soloCostPop' => 1.2,
+        'above' => 4.0, 'below' => -6.0, 'strong' => 1.7, 'strongTraits' => ['ehrgeizig', 'diva', 'rampensau'],
+        'reach' => 2, 'estimateRuns' => 6,
+    ];
     /** Lieder pro Gig ohne Manager; mit Manager kommen pro (effektiver) Stufe welche dazu. */
     public const GIG_SONG_CAP = 3;
     /** Ein richtiger Gig hat mindestens so viele Lieder. */

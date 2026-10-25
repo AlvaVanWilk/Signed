@@ -1746,3 +1746,34 @@ function mById(array $state, int $id): array
 {
     return array_values(array_filter($state['musicians'], static fn ($m) => $m['id'] === $id))[0];
 }
+
+test('Auftritt buchen: Orte mit Kosten und Gewinn-Schätzung, Gage liegt in der Spanne, Songs nötig, Ort unter Anspruch ärgert', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Booker');
+    $band = foundBand($p, 'Bühnenreif');
+    // Ohne Songs geht nichts
+    $opts = $p->post('gigOptions', ['bandId' => $band['id']]);
+    check($opts['options'][0]['blocked'] !== null, 'ohne Songs gesperrt');
+    $db->exec('UPDATE bands SET songs_written = 6 WHERE id = ?', [$band['id']]);
+    $opts = $p->post('gigOptions', ['bandId' => $band['id']]);
+    $kneipe = $opts['options'][0];
+    checkEquals('kneipe', $kneipe['key']);
+    checkEquals(null, $kneipe['blocked']);
+    check($kneipe['gage'][0] <= $kneipe['gage'][1], 'Spanne');
+    checkEquals($kneipe['gage'][0] - $kneipe['cost'], $kneipe['profit'][0]);
+    check(count($opts['options']) >= 2, 'auch Orte über dem Anspruch');
+    $money = $p->get('state')['label']['money'];
+    $res = $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'gig', 'venue' => 'kneipe']);
+    checkEquals($money - $kneipe['cost'], $res['state']['label']['money'], 'Kosten sofort');
+    Clock::advance($kneipe['songs'] * Balance::SONG_SECONDS + 5);
+    $after = $p->get('state');
+    $gage = $after['label']['money'] - ($money - $kneipe['cost']);
+    check($gage > 0, 'Gage kommt an');
+    check($gage >= $kneipe['gage'][0] * 0.6 && $gage <= $kneipe['gage'][1] * 1.4, 'Gage etwa in der Schätzung');
+    // Ort unter dem Anspruch: Stimmung sinkt
+    $db->exec('UPDATE bands SET fame_own = 200 WHERE id = ?', [$band['id']]);
+    $before = array_sum(array_map(static fn ($m) => (float) $m['wellbeing'], $db->all('SELECT wellbeing FROM musicians WHERE band_id = ?', [$band['id']])));
+    $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'gig', 'venue' => 'kneipe']);
+    $afterMood = array_sum(array_map(static fn ($m) => (float) $m['wellbeing'], $db->all('SELECT wellbeing FROM musicians WHERE band_id = ?', [$band['id']])));
+    check($afterMood < $before, 'unter der Würde ärgert');
+});

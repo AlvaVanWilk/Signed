@@ -434,3 +434,12 @@ Beim ersten Login nach dem Umbau (Saison 2) bleiben **Labelname und Konto**, all
 - Stufen (`Balance::ROOM`): Bruchbude → Aufgeräumter Keller (400 ₲) → Gemütlicher Proberaum (1.200 ₲) → Profi-Proberaum (3.000 ₲). Wirkung: Können je Probe ×1,08/1,16/1,25,
   die Band hält ×1,15/1,3/1,5 länger durch, Wohlbefinden +1/+2,5/+4 je 15 Minuten Probe für alle. Beim Zusammentun bleibt der bessere Raum.
 - Auf der Bandseite steht die Band in ihrem Raum (gezeichnet in `room.js`, vier Stufen); während einer Probe spielt sie dort.
+
+### Auftritt buchen (gebaut, erste Version)
+
+- Knopf „Auftritt buchen“ auf der Bandseite (und beim Wunsch „Ab auf die Bühne!“) öffnet die Orte: vom kleinsten bis zwei Stufen über dem Anspruch der Band (Anspruch = Ort nach Bandruhm).
+- Je Ort: **feste Kosten** (Kneipe 20, Club 90, Saal 350, Halle 1.100, Arena 3.200 ₲; Solokünstler ×1,5, Pop ×1,2 für Studiomusiker), Länge in Songs (3/4/5/7/9),
+  **Gage-Spanne und Gewinn** (aus sechs durchgespielten Abenden), erwarteter Ruhm, Ampel „Sound passt / knapp / zu schwach“ und wie die Band den Ort findet.
+- **Gage** = Grundgage × Füllgrad (Sound gegen Erwartung, mindestens 30 %) × Stimmung im Saal (0,7 + 0,3 × Leistung). Kosten werden beim Buchen fällig.
+- Gespielt werden **aufgenommene und geschriebene Songs** (eine Platte ist keine Voraussetzung mehr); geschriebene bleiben für die Platte erhalten.
+- **Anspruch:** Ort darunter → Wohlbefinden −6 (Ehrgeizige, Diven, Rampensäue stärker), darüber → +4. Zahlen in `Balance::GIG_BOOKING`.

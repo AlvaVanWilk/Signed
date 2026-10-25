@@ -23,6 +23,7 @@ use Signed\Game\Submissions;
 use Signed\Game\State;
 use Signed\Game\Store;
 use Signed\Game\Rooms;
+use Signed\Game\Gigs;
 use Signed\Game\Wiki;
 use Signed\Game\Styles;
 use Signed\Game\Studio;
@@ -46,6 +47,7 @@ final class Api
         'bandView' => ['POST', true],
         'storeBuy' => ['POST', true],
         'roomUpgrade' => ['POST', true],
+        'gigOptions' => ['POST', true],
         'storeHold' => ['POST', true],
         'storeRelease' => ['POST', true],
         'wikiIndex' => ['POST', true],
@@ -259,6 +261,12 @@ final class Api
         return ['musician' => $musician, 'state' => State::build($repo)];
     }
 
+    private function gigOptions(array $in, Repo $repo): array
+    {
+        $band = $repo->band(self::int($in, 'bandId'));
+        return Gigs::options($repo, $band, $repo->members($band['id']));
+    }
+
     private function roomUpgrade(array $in, Repo $repo): array
     {
         Rooms::upgrade($repo, self::int($in, 'bandId'));
@@ -380,7 +388,7 @@ final class Api
 
     private function activityStart(array $in, Repo $repo): array
     {
-        $activity = (new Activities($repo))->start(self::int($in, 'bandId'), self::str($in, 'type'), (int) ($in['songs'] ?? 0));
+        $activity = (new Activities($repo))->start(self::int($in, 'bandId'), self::str($in, 'type'), (int) ($in['songs'] ?? 0), isset($in['venue']) ? (string) $in['venue'] : null);
         return ['activity' => $activity, 'state' => State::build($repo)];
     }
 

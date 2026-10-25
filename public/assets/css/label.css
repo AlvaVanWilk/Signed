@@ -644,3 +644,22 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .lg-case.free .lg-tape { background: #f2c14e; }
 .lg-name { position: absolute; bottom: -20px; left: 0; right: 0; text-align: center; font-size: .74rem; color: #c9ccd4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lg-rack { padding-bottom: 14px; }
+
+/* Auftritt buchen */
+.gg-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.gg-row { display: grid; grid-template-columns: minmax(190px, 1fr) auto auto; grid-template-areas: 'venue money book' 'notes notes notes'; gap: 6px 18px; align-items: center; padding: 12px; border-radius: 12px; border: 1px solid var(--lb-line); background: var(--lb-card); }
+.gg-row.best { border-color: #3f7d5f; background: linear-gradient(90deg, rgba(92, 170, 130, .12), transparent 60%), var(--lb-card); }
+.gg-row.blocked { opacity: .55; }
+.gg-venue { grid-area: venue; display: flex; align-items: center; gap: 10px; min-width: 0; flex-wrap: wrap; }
+.gg-venue span:not(.gg-ico) { display: flex; flex-direction: column; min-width: 0; }
+.gg-ico { font-size: 1.6rem; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 10px; background: var(--lb-card2); flex: none; }
+.gg-best { font-style: normal; font-size: .7rem; padding: 1px 8px; border-radius: 999px; background: #2f8f7c; color: #fff; }
+.gg-money { grid-area: money; display: grid; grid-template-columns: repeat(4, minmax(64px, auto)); gap: 4px 18px; }
+.gg-row > [data-book] { grid-area: book; }
+.gg-money span { display: flex; flex-direction: column; }
+.gg-money small { font-size: .7rem; color: var(--lb-muted); text-transform: uppercase; letter-spacing: .05em; }
+.gg-money b { font-size: .95rem; white-space: nowrap; }
+.gg-money .good b { color: #7fd0a6; } .gg-money .bad b { color: #e0a45a; } .gg-money .warn b { color: #e8c75a; }
+.gg-notes { grid-area: notes; list-style: none; margin: 0; padding: 0; font-size: .82rem; display: flex; flex-wrap: wrap; gap: 2px 16px; }
+.gg-notes .good { color: #7fd0a6; } .gg-notes .bad { color: #e0a45a; } .gg-notes .warn { color: #e8c75a; }
+@media (max-width: 760px) { .gg-row { grid-template-columns: 1fr auto; grid-template-areas: 'venue book' 'money money' 'notes notes'; } .gg-money { grid-template-columns: repeat(2, auto); } }

@@ -330,7 +330,8 @@ final class Balance
     public const GIG_BOOKING = [
         'cost' => ['kneipe' => 20, 'club' => 90, 'saal' => 350, 'halle' => 1100, 'arena' => 3200],
         'songs' => ['kneipe' => 3, 'club' => 4, 'saal' => 5, 'halle' => 7, 'arena' => 9],
-        'fillMin' => 0.3, 'perfBase' => 0.7, 'perfWeight' => 0.3,
+        // Füllgrad = Sound gegen Erwartung × Bekanntheit gegen Größe des Ortes ((Ruhm + fameSoft) / (Mindestruhm + fameSoft)); Unbekannte füllen keinen Saal.
+        'fillMin' => 0.05, 'fameSoft' => 10, 'perfBase' => 0.7, 'perfWeight' => 0.3,
         'soloCost' => 1.5, 'soloCostPop' => 1.2,
         'above' => 4.0, 'below' => -6.0, 'strong' => 1.7, 'strongTraits' => ['ehrgeizig', 'diva', 'rampensau'],
         'reach' => 2, 'estimateRuns' => 6,

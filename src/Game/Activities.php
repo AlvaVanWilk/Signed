@@ -97,7 +97,7 @@ final class Activities
                     $venueRow = array_values(array_filter(Balance::VENUES, static fn ($v) => $v['key'] === $venue))[0];
                     $negotiator = BandCalc::managerBonus($manager, $level, 'verhandler', Balance::NEGOTIATOR_BONUS);
                     $draw = BandCalc::freshness($band['gigs_since_record']);
-                    $booking = ['base' => (int) round(BandCalc::gagePerSong($venueRow + ['progress' => 0.5], $negotiator, count($members)) * $songs * $draw), 'claim' => $opt['claim'], 'cost' => $opt['cost']];
+                    $booking = ['venue' => $venueRow, 'base' => (int) round(BandCalc::gagePerSong($venueRow + ['progress' => 0.5], $negotiator, count($members)) * $songs * $draw), 'claim' => $opt['claim'], 'cost' => $opt['cost']];
                     $fameBase = $venueRow['fame'] * $draw;
                     $expect = $venueRow['expect'];
                     $venueKey = $venue;
@@ -130,7 +130,7 @@ final class Activities
                     $gage = self::hat($this->repo, $sim['perf']);
                 }
                 if (isset($booking)) {
-                    $gage = Gigs::gage($booking['base'], $sound, (float) $expect, $sim['perf']);
+                    $gage = Gigs::gage($booking['base'], Gigs::fill($sound, $booking['venue'], $fame), $sim['perf']);
                 }
                 // Ruhm: Größe des Auftritts × Sound × Publikum, plus etwas Zufall.
                 $fameTotal = 0.0;

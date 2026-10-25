@@ -440,6 +440,6 @@ Beim ersten Login nach dem Umbau (Saison 2) bleiben **Labelname und Konto**, all
 - Knopf „Auftritt buchen“ auf der Bandseite (und beim Wunsch „Ab auf die Bühne!“) öffnet die Orte: vom kleinsten bis zwei Stufen über dem Anspruch der Band (Anspruch = Ort nach Bandruhm).
 - Je Ort: **feste Kosten** (Kneipe 20, Club 90, Saal 350, Halle 1.100, Arena 3.200 ₲; Solokünstler ×1,5, Pop ×1,2 für Studiomusiker), Länge in Songs (3/4/5/7/9),
   **Gage-Spanne und Gewinn** (aus sechs durchgespielten Abenden), erwarteter Ruhm, Ampel „Sound passt / knapp / zu schwach“ und wie die Band den Ort findet.
-- **Gage** = Grundgage × Füllgrad (Sound gegen Erwartung, mindestens 30 %) × Stimmung im Saal (0,7 + 0,3 × Leistung). Kosten werden beim Buchen fällig.
+- **Gage** = Grundgage × Füllgrad × Stimmung im Saal (0,7 + 0,3 × Leistung). Füllgrad = Sound gegen Erwartung × Bekanntheit gegen Ortsgröße ((Ruhm + 10) / (Mindestruhm + 10)), mindestens 5 %: Unbekannte füllen keinen Saal. Kosten werden beim Buchen fällig.
 - Gespielt werden **aufgenommene und geschriebene Songs** (eine Platte ist keine Voraussetzung mehr); geschriebene bleiben für die Platte erhalten.
 - **Anspruch:** Ort darunter → Wohlbefinden −6 (Ehrgeizige, Diven, Rampensäue stärker), darüber → +4. Zahlen in `Balance::GIG_BOOKING`.

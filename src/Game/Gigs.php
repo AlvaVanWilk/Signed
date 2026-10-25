@@ -41,11 +41,19 @@ final class Gigs
         return (int) round($c['cost'][$key] * $factor);
     }
 
-    /** Gage bei gegebener Leistung: Grundgage × Füllgrad (Sound gegen Erwartung) × Stimmung im Saal. */
-    public static function gage(int $base, float $sound, float $expect, float $perf): int
+    /** Wie voll der Ort wird: Sound gegen Erwartung und Bekanntheit gegen die Größe des Ortes (eine unbekannte Band füllt keinen Saal). */
+    public static function fill(float $sound, array $venue, float $fame): float
     {
         $c = Balance::GIG_BOOKING;
-        $fill = max($c['fillMin'], min(1.0, $sound / max(1.0, $expect)));
+        $soundFill = min(1.0, $sound / max(1.0, (float) $venue['expect']));
+        $fameFill = min(1.0, ($fame + $c['fameSoft']) / ($venue['minFame'] + $c['fameSoft']));
+        return max($c['fillMin'], $soundFill * $fameFill);
+    }
+
+    /** Gage bei gegebener Leistung: Grundgage × Füllgrad × Stimmung im Saal. */
+    public static function gage(int $base, float $fill, float $perf): int
+    {
+        $c = Balance::GIG_BOOKING;
         return (int) round($base * $fill * ($c['perfBase'] + $c['perfWeight'] * $perf));
     }
 
@@ -75,12 +83,13 @@ final class Gigs
             $fames = [];
             for ($k = 0; $k < $c['estimateRuns']; $k++) {
                 $sim = Performance::simulate($players, $sound, (float) $venue['expect'], $songs);
-                $gages[] = self::gage($base, $sound, (float) $venue['expect'], $sim['perf']);
+                $gages[] = self::gage($base, self::fill($sound, $venue, $fame), $sim['perf']);
                 $fames[] = $venue['fame'] * $draw * BandCalc::soundFactor($sound) * $sim['perf'] * $songs;
             }
             sort($gages);
             $cost = self::cost($key, $members, $band);
             $ratio = $sound / max(1.0, (float) $venue['expect']);
+            $fill = self::fill($sound, $venue, $fame);
             $out[] = [
                 'key' => $key,
                 'name' => $venue['name'],
@@ -92,7 +101,9 @@ final class Gigs
                 'profit' => [$gages[0] - $cost, $gages[count($gages) - 1] - $cost],
                 'fame' => round(array_sum($fames) / count($fames), 1),
                 'expect' => $venue['expect'],
+                'fill' => round($fill, 2),
                 'fit' => $ratio >= 1.0 ? 'green' : ($ratio >= 0.75 ? 'yellow' : 'red'),
+                'known' => $fame + Balance::GIG_BOOKING['fameSoft'] >= $venue['minFame'] + Balance::GIG_BOOKING['fameSoft'] ? 'yes' : (($fame + Balance::GIG_BOOKING['fameSoft']) / ($venue['minFame'] + Balance::GIG_BOOKING['fameSoft']) >= 0.5 ? 'some' : 'no'),
                 'claim' => $i < $claim ? 'below' : ($i > $claim ? 'above' : 'fit'),
                 'blocked' => $available < $songs ? sprintf('Dafür braucht die Band %d Songs (hat %d).', $songs, $available) : null,
             ];

@@ -451,6 +451,7 @@ function musicianWindow(m) {
 }
 
 const VENUE_ICON = { kneipe: '🍺', club: '🪩', saal: '🎭', halle: '🏛️', arena: '🏟️' };
+const KNOWN = { some: '<li class="warn">Erst wenige kennen die Band: nicht alle Plätze werden verkauft.</li>', no: '<li class="bad">Kaum jemand kennt die Band: der Ort bleibt fast leer.</li>' };
 const FIT = { green: ['ok', 'Sound passt'], yellow: ['knapp', 'Sound knapp: der Saal wird nicht ganz voll'], red: ['bad', 'Sound zu schwach: der Saal bleibt halb leer'] };
 
 /** Auftritt buchen: alle passenden Orte mit Kosten, Gewinn-Schätzung, Ruhm, ob der Sound reicht und wie die Band den Ort findet. */
@@ -482,7 +483,7 @@ async function openGigs(b) {
           <span class="${o.profit[0] >= 0 ? 'good' : o.profit[1] < 0 ? 'bad' : 'warn'}"><small>Gewinn</small><b>${range(o.profit)}</b></span>
           <span><small>Ruhm</small><b>+${fmt1(o.fame)}</b></span>
         </div>
-        <ul class="gg-notes"><li class="${cls === 'ok' ? 'good' : cls === 'bad' ? 'bad' : 'warn'}">${fitText}</li>${claim}${o.blocked ? `<li class="bad">${esc(o.blocked)}</li>` : ''}</ul>
+        <ul class="gg-notes"><li class="${cls === 'ok' ? 'good' : cls === 'bad' ? 'bad' : 'warn'}">${fitText}</li>${KNOWN[o.known] ?? ''}${claim}${o.blocked ? `<li class="bad">${esc(o.blocked)}</li>` : ''}</ul>
         <button class="btn ${o === best ? 'primary' : ''} small" data-book="${o.key}" ${o.blocked || app.state.label.money < o.cost ? 'disabled' : ''}>${app.state.label.money < o.cost ? 'Zu teuer' : 'Buchen'}</button>
       </div>`;
   };

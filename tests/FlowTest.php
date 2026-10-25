@@ -1762,6 +1762,9 @@ test('Auftritt buchen: Orte mit Kosten und Gewinn-Schätzung, Gage liegt in der 
     check($kneipe['gage'][0] <= $kneipe['gage'][1], 'Spanne');
     checkEquals($kneipe['gage'][0] - $kneipe['cost'], $kneipe['profit'][0]);
     check(count($opts['options']) >= 2, 'auch Orte über dem Anspruch');
+    // Eine unbekannte Band verdient am meisten im kleinsten Ort, nicht im großen Saal
+    $best = array_reduce($opts['options'], static fn ($m, $o) => $m === null || $o['profit'][1] > $m['profit'][1] ? $o : $m);
+    checkEquals('kneipe', $best['key'], 'Unbekannte: Kneipe lohnt am meisten');
     $money = $p->get('state')['label']['money'];
     $res = $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'gig', 'venue' => 'kneipe']);
     checkEquals($money - $kneipe['cost'], $res['state']['label']['money'], 'Kosten sofort');

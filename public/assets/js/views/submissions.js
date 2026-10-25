@@ -1,7 +1,7 @@
 import { genreGlyph, genreName, instrumentIcon, instrumentName, photo, sortedGenres } from '../cards.js';
 import { api } from '../api.js';
 import { actions, app, cat, defineActions, mutate, musicianById, rerender, serverNow } from '../core.js';
-import { confirmDialog, esc, money, openModal, toast } from '../ui.js';
+import { confirmDialog, esc, money, off, openModal, toast } from '../ui.js';
 import { levelClass, levelProgress, relColor } from './label.js';
 
 /**
@@ -47,7 +47,7 @@ function tape(s, busy) {
       <div class="lb-tape-big" data-act="subSel" data-id="${s.submissionId}" title="${expires(s)}">${cassette(s.hint)}
         ${listening ? `<span class="lb-prog tiny"><i style="animation-duration:${total}s;animation-delay:-${elapsed.toFixed(2)}s"></i></span>` : ''}
         ${sel ? `<div class="lb-tape-menu">
-          <button class="btn small primary" data-act="submissionOpen" data-id="${s.submissionId}" ${busy ? 'disabled title="Du sichtest gerade schon eine andere"' : ''}>Sichten</button>
+          <button class="btn small primary" data-act="submissionOpen" data-id="${s.submissionId}" ${off(busy ? 'Du sichtest gerade schon eine andere Kassette.' : '')}>Sichten</button>
           <button class="btn small ghost" data-act="submissionDrop" data-id="${s.submissionId}">Wegwerfen</button>
           <small>${expires(s)}</small></div>` : ''}
       </div>
@@ -70,7 +70,7 @@ function iconFoot(s, price, enough) {
   return `<div class="lb-card-foot">
     <b class="lb-price" title="${expires(s)}">${money(price)}</b>
     <button class="lb-iconbtn drop" data-act="submissionDrop" data-id="${s.submissionId}" title="Wegwerfen" aria-label="Wegwerfen">✕</button>
-    <button class="lb-iconbtn sign" data-act="subSign" data-id="${s.submissionId}" ${money0 < price || !enough ? 'disabled' : ''} title="Unterschreiben – ${money(price)}" aria-label="Unterschreiben">${PEN}</button>
+    <button class="lb-iconbtn sign" data-act="subSign" data-id="${s.submissionId}" ${off(money0 < price ? `Dafür fehlen noch ${money(price - money0)}.` : !enough ? 'Wähle mindestens einen aus.' : '')} title="Unterschreiben – ${money(price)}" aria-label="Unterschreiben">${PEN}</button>
   </div>`;
 }
 

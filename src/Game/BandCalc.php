@@ -101,10 +101,14 @@ final class BandCalc
             ];
         }
         $eligible = array_keys(array_filter($checks, static fn ($c) => $c['allFans'] && $c['lineup']));
+        // Solokünstler: nur Pop oder Elektro, und nur ein Genre (kein Hybrid allein).
+        if ($count === 1) {
+            $eligible = array_values(array_filter(Balance::SOLO_GENRES, static fn ($g) => $checks[$g]['fans'] === 1 && $checks[$g]['lineup']));
+        }
         $primary = in_array($prefer, $eligible, true) ? $prefer : ($eligible[0] ?? null);
         $second = null;
         $third = null;
-        if ($primary !== null) {
+        if ($primary !== null && $count > 1) {
             // Auch das zweite und dritte Genre brauchen ihre Besetzung (Punk-Rock ohne Bass gibt es nicht).
             $shared = array_values(array_filter($eligible, static fn ($g) => $g !== $primary));
             $second = in_array($preferSecond, $shared, true) ? $preferSecond : ($shared[0] ?? null);
@@ -121,10 +125,10 @@ final class BandCalc
             'primary' => $primary,
             'second' => $second,
             'third' => $third,
-            'title' => $primary === null ? null : self::title($primary, $second, $third),
+            'title' => $primary === null ? null : ($count === 1 ? Catalog::GENRES[$primary]['name'] . ' solo' : self::title($primary, $second, $third)),
             'bonus' => match (true) {
-                // Ein Solokünstler hat weder Genre-Bonus noch den Malus einer „gemischten“ Band.
-                $count < Balance::GENRE_MIN_MEMBERS => 1.0,
+                // Ein Solokünstler hat nie den Malus einer „gemischten“ Band; Bonus nur solo in Pop oder Elektro, und nur zum Teil.
+                $count < Balance::GENRE_MIN_MEMBERS => $primary === null ? 1.0 : 1 + (Balance::GENRE_BONUS - 1) * Balance::SOLO_GENRE_SHARE,
                 // Teilen alle ein Genre, fehlt aber noch die Besetzung dafür, gibt es keinen Bonus – aber auch keinen Abzug.
                 $primary === null => array_filter($checks, static fn ($c) => $c['allFans']) ? 1.0 : Balance::MIXED_BONUS,
                 $second === null => Balance::GENRE_BONUS,

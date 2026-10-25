@@ -1235,10 +1235,11 @@ test('Bands leben offline weiter: Songs, Stimmung; rot friert ein; Beziehungen w
     checkEquals('green', $start['level']);
     checkEquals(0, $start['songs']);
 
-    // Drei Stunden offline: im Tempo „grün“ entstehen rund drei Songs.
+    // Drei Stunden offline: im Tempo „grün“ entstehen rund drei Songs mal dem, was die Mitglieder beitragen.
+    $crew = Signed\Game\Mood::crewFactor(array_map([Signed\Game\Repo::class, 'hydrateMusician'], $db->all('SELECT * FROM musicians WHERE band_id = ?', [$bandId])));
     Clock::advance(3 * 3600);
     $mood = $p->get('state')['bands'][0]['mood'];
-    check($mood['songs'] >= 2 && $mood['songs'] <= 3, 'etwa drei Songs nach drei Stunden: ' . $mood['songs']);
+    check(abs($mood['songs'] - 3 * $crew) <= 1.01, sprintf('etwa %.1f Songs nach drei Stunden: %d', 3 * $crew, $mood['songs']));
     check($mood['value'] > 40, 'noch gute Stimmung');
 
     // Rot: Jemand ist sehr unzufrieden – offline passiert nichts mehr, nicht einmal Songs.
@@ -1260,7 +1261,7 @@ test('Bands leben offline weiter: Songs, Stimmung; rot friert ein; Beziehungen w
     $members = array_map([Signed\Game\Repo::class, 'hydrateMusician'], [$a, $b]);
     $repo = new Signed\Game\Repo($db, (int) $a['label_id']);
     $key = min($ids[0], $ids[1]) . '-' . max($ids[0], $ids[1]);
-    for ($i = 0; $i < 12; $i++) {
+    for ($i = 0; $i < 24; $i++) {
         Signed\Game\Mood::bond($repo, $members, 'rehearsal');
     }
     $grown = Signed\Game\Mood::relations($repo, $members)[$key];
@@ -1295,7 +1296,8 @@ test('Rote Band: Anordnungen, die ein Unzufriedener nicht mag, sind gesperrt; wa
     $p = registerPlayer($db, 'Sperre');
     $band = foundBand($p);
     $ids = array_column($db->all('SELECT id FROM musicians WHERE band_id = ?', [$band['id']]), 'id');
-    // Einer wird zum Chaoten (mag Auftritte, mag keine Proben) und ist rot.
+    // Einer wird zum Chaoten (mag Auftritte, mag keine Proben) und ist rot; die anderen haben keine Vorlieben.
+    $db->exec("UPDATE musicians SET personality = '[]' WHERE band_id = ?", [$band['id']]);
     $db->exec("UPDATE musicians SET personality = ?, wellbeing = 10 WHERE id = ?", [json_encode(['chaot']), $ids[0]]);
     $state = $p->get('state');
     $mood = bandById($state, $band['id'])['mood'];
@@ -1612,11 +1614,13 @@ test('Künstlername: Wunsch ab genug Bekanntheit (Diven früher), einer von drei
     $wants = static fn ($st) => in_array('stageName', array_column(array_values(array_filter($st['bands'], static fn ($b) => in_array($id, $b['memberIds'], true)))[0]['mood']['wishes'] ?? [], 'action'), true);
     // Solo frei umbenennen geht nicht
     checkApiError(fn () => $p->post('bandRename', ['bandId' => $solo['id'], 'name' => 'Irgendwas']), 'Künstlernamen');
-    // Unbekannt: kein Wunsch
-    $db->exec("UPDATE musicians SET fame = 1, personality = ? WHERE id = ?", ['["gelassen"]', $id]);
+    // Unbekannt: kein Wunsch – und wer gelassen ist, will auch berühmt keinen
+    $db->exec("UPDATE musicians SET fame = 1, personality = ? WHERE id = ?", ['["diva"]', $id]);
     check(!$wants($p->get('state')), 'unbekannt: kein Wunsch');
+    $db->exec("UPDATE musicians SET fame = 500, personality = ? WHERE id = ?", ['["gelassen"]', $id]);
+    check(!$wants($p->get('state')), 'gelassen: kein Wunsch');
     // Eine Diva wünscht sich früh einen
-    $db->exec("UPDATE musicians SET fame = ?, personality = ?, wellbeing = 50 WHERE id = ?", [Balance::STAGE_NAME['fameKeen'] + 1, '["diva"]', $id]);
+    $db->exec("UPDATE musicians SET fame = ?, personality = ?, wellbeing = 50 WHERE id = ?", [Balance::STAGE_NAME['want']['diva'] + 1, '["diva"]', $id]);
     check($wants($p->get('state')), 'Diva: Wunsch nach Künstlernamen');
     $options = $p->post('stageNameOptions', ['musicianId' => $id])['options'];
     checkEquals(Balance::STAGE_NAME['choices'], count($options));
@@ -1777,7 +1781,7 @@ test('Music Store: Regal für alle gleich, 5 bis 10 Instrumente je Art eines, we
     checkEquals(null, $a->get('state')['store']['hold'], 'abgelaufen');
 });
 
-test('Proberaum: eigener Raum je Band, gemeinsame Übungsecke für Solokünstler, Ausbau wirkt aufs Proben', function () {
+test('Proberaum: eigener Raum je Band und je Solokünstler, Ausbau wirkt aufs Proben', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Raum');
     $db->exec('UPDATE labels SET money = 100000');
@@ -1797,18 +1801,21 @@ test('Proberaum: eigener Raum je Band, gemeinsame Übungsecke für Solokünstler
         check(mById($state, $b['memberIds'][0])['gains']['rehearsal'] > $gainBefore, 'mehr Können je Probe');
     }
     check($b['options']['rehearsal']['seconds'] >= $lustBefore, 'länger Lust');
-    // Solokünstler teilen sich die Übungsecke (halber Preis)
-    $res = $p->post('submissionsTest');
-    $solo = array_values(array_filter($res['state']['submissions'], static fn ($s) => $s['state'] === 'open' && $s['kind'] === 'solo'))[0];
-    $p->post('submissionSign', ['submissionId' => $solo['submissionId']]);
-    $state = $p->get('state');
-    $soloBand = array_values(array_filter($state['bands'], static fn ($x) => count($x['memberIds']) === 1))[0];
-    check($soloBand['room']['shared'], 'gemeinsame Übungsecke');
-    checkEquals((int) round(Balance::ROOM['levels'][1]['cost'] * Balance::ROOM['soloCost']), $soloBand['room']['next']['cost']);
-    $state = $p->post('roomUpgrade', ['bandId' => $soloBand['id']])['state'];
-    foreach (array_filter($state['bands'], static fn ($x) => count($x['memberIds']) === 1) as $x) {
-        checkEquals(1, $x['room']['level'], 'gilt für alle Solokünstler');
+    // Jeder Solokünstler hat seine eigene Übungsecke (voller Preis, gilt nur für ihn)
+    $p->post('submissionsTest');
+    for ($i = 0; $i < 2; $i++) {
+        $res = $p->post('submissionsTest');
+        $solo = array_values(array_filter($res['state']['submissions'], static fn ($s) => $s['state'] === 'open' && $s['kind'] === 'solo'))[0];
+        $p->post('submissionSign', ['submissionId' => $solo['submissionId']]);
     }
+    $state = $p->get('state');
+    $solos = array_values(array_filter($state['bands'], static fn ($x) => count($x['memberIds']) === 1));
+    check(count($solos) >= 2, 'zwei Solokünstler');
+    check($solos[0]['room']['solo'], 'eigene Übungsecke');
+    checkEquals(Balance::ROOM['levels'][1]['cost'], $solos[0]['room']['next']['cost']);
+    $state = $p->post('roomUpgrade', ['bandId' => $solos[0]['id']])['state'];
+    checkEquals(1, bandById($state, $solos[0]['id'])['room']['level']);
+    checkEquals(0, bandById($state, $solos[1]['id'])['room']['level'], 'die anderen behalten ihre');
     // Ganz ausgebaut geht nicht weiter
     $p->post('roomUpgrade', ['bandId' => $band['id']]);
     $p->post('roomUpgrade', ['bandId' => $band['id']]);

@@ -272,11 +272,11 @@ final class Mood
         if ($noGear !== null) {
             $out[] = $noGear;
         }
-        // Bekannt genug und noch ohne Künstlernamen: der Wunsch nach einem (Diven und Rampensäue früher).
-        $c = Balance::STAGE_NAME;
+        // Noch ohne Künstlernamen: Diven, Rampensäue und Ehrgeizige wünschen sich einen, sobald sie bekannt genug sind (je nach Charakter).
+        $want = Balance::STAGE_NAME['want'];
         foreach ($members as $m) {
-            $keen = array_intersect($m['personality'], $c['keen']) !== [];
-            if (($m['stage_name'] ?? null) === null && $m['fame'] >= ($keen ? $c['fameKeen'] : $c['fame'])) {
+            $from = min(array_map(static fn ($trait) => $want[$trait] ?? INF, $m['personality'] ?: ['']));
+            if (($m['stage_name'] ?? null) === null && $m['fame'] >= $from) {
                 $out[] = ['musicianId' => $m['id'], 'text' => 'Ich hätte gern einen Künstlernamen.', 'action' => 'stageName', 'level' => self::level($m['wellbeing'])];
                 break;
             }
@@ -293,6 +293,17 @@ final class Mood
         $c = Balance::MOOD;
         $rate = $c['songsPerHour'][$mood['level']];
         return $mood['level'] === 'green' && $mood['value'] >= $c['songsBoost']['from'] ? $rate * $c['songsBoost']['factor'] : $rate;
+    }
+
+    /** Wie viel die Mitglieder zusammen zum Songschreiben beitragen (1 = Vierer-Band ohne Songwriter, allein viel weniger; siehe Balance::SONGWRITING). */
+    public static function crewFactor(array $members): float
+    {
+        $c = Balance::SONGWRITING;
+        $sum = 0.0;
+        foreach ($members as $m) {
+            $sum += in_array('songwriter', $m['abilities'] ?? [], true) ? $c['writer'] : $c['share'];
+        }
+        return ($sum / $c['norm']) ** $c['exp'];
     }
 
     /** Faktor aufs Songschreiben je nach dem, was die Band gerade tut: Auftritt und Promo 0, Probe etwas langsamer, sonst 1. */
@@ -337,7 +348,8 @@ final class Mood
         $value = $c['start'];
         $mates = array_values(array_filter($members, static fn ($x) => $x['id'] !== $m['id']));
         if (!$mates) {
-            // Solokünstler: keine Beziehungen, kein Genre der Band; es zählen Charakter (Band-Wunsch oder Rampenlicht) und Songstau.
+            // Solokünstler: keine Beziehungen, kein Genre der Band; es zählen Einsamkeit, Charakter (Band-Wunsch oder Rampenlicht) und Songstau.
+            $value += $c['soloBase'];
             foreach ($m['personality'] as $trait) {
                 $value += $c['solo'][$trait] ?? 0.0;
             }
@@ -416,7 +428,7 @@ final class Mood
             $relations = self::relations($repo, $members, $now);
             $state = ['w' => array_column($members, 'wellbeing', 'id'), 'songs' => $band['songs_written']];
             $onlineSpan = min($online, $span);
-            $factor = self::writeFactor($repo, $band['id'], $now - $span, $now);
+            $factor = self::writeFactor($repo, $band['id'], $now - $span, $now) * self::crewFactor($members);
             $state = self::run($state, $members, $band, $relations, $span - $onlineSpan, true, $factor);
             $state = self::run($state, $members, $band, $relations, $onlineSpan, false, $factor);
             $after = self::bandMood($state['w']);

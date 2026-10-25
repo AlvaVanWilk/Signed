@@ -1,7 +1,7 @@
 import { api } from '../api.js';
 import { abilityInfo, genreGlyph, genreName, gearModel, instrumentIcon, instrumentName, ownGear, photo, sortedGenres } from '../cards.js';
 import { actions, app, bandById, cat, defineActions, isBusy, mutate, musicianById, runningFor, serverNow } from '../core.js';
-import { closePopover, confirmDialog, duration, esc, fmt0, fmt1, fmtGain, money, openModal, popover, toast } from '../ui.js';
+import { closePopover, confirmDialog, duration, esc, fmt0, fmt1, fmtGain, money, off, openModal, popover, toast } from '../ui.js';
 import { getAudio } from '../audio.js';
 import { playedInstrument, stage } from '../figure.js';
 import { bandStems, loadStems, playStems, stemUrl } from '../music.js';
@@ -67,7 +67,12 @@ const MOOD_TIP = {
 function genreTip(b, members, g) {
   const name = genreName(g);
   const needs = cat().genreLineup[g].map(([options, need]) => `${need > 1 ? `${need} × ` : ''}${options.map(instrumentName).join(' oder ')}`).join(', ');
-  if (members.length === 1) return `${name}: Solokünstler bekommen keinen Genre-Bonus. In einer ${name}-Band bräuchte es: ${needs}, und alle mögen ${name}.`;
+  if (members.length === 1) {
+    const r = cat().rules;
+    if (b.genres.includes(g)) return `${name}: Genre-Bonus solo, Sound +${Math.round((b.genreBonus - 1) * 100)} %.`;
+    if (r.soloGenres.includes(g)) return `${name}: Solo gibt es den Bonus, wenn die Person selbst ${needs} spielt.`;
+    return `${name}: Solo gibt es den Genre-Bonus nur für ${r.soloGenres.map(genreName).join(' und ')}. In einer ${name}-Band bräuchte es: ${needs}.`;
+  }
   if (b.genres.includes(g)) return `${name}: Genre-Bonus. Alle mögen ${name}, und die Besetzung passt (${b.title}, Sound +${Math.round((b.genreBonus - 1) * 100)} %).`;
   const check = b.genreChecks?.[g];
   const fans = members.filter((m) => m.genres.includes(g)).map((m) => m.stageName ?? m.firstName);
@@ -79,17 +84,17 @@ function genreTip(b, members, g) {
 }
 
 /**
- * Knopf einer Band in der Künstlerleiste: oben rechts die Studiolampe (Stimmung), Name, je Mitglied das Instrument (blass, wer keins hat)
- * und Ruhm als Sterne, unten alle Genres der Band (voll: bringt den Genre-Bonus, gestrichelt: keiner). Alles darauf lässt sich antippen und erklärt sich;
- * die übrige Fläche öffnet die Band. Wie viele drin sind, sieht man an den Instrumenten.
+ * Knopf einer Band in der Künstlerleiste. Links die Plakette: leer ohne Genre-Bonus, mit Bonus im Material des Genres (Hybrid: zwei, Crossover: drei).
+ * Oben rechts die Studiolampe (Stimmung), Name mit Ruhm-Sternen, je Mitglied das Instrument (blass, wer keins hat), unten alle Genres der Band
+ * (deckend, was alle mögen; gestrichelt, was nur einzelne mitbringen). Ein Wunsch ragt als Sprechblase rechts heraus. Alles darauf erklärt sich beim Antippen;
+ * die übrige Fläche öffnet die Band.
  */
 function tile(b, selected) {
   const away = isBusy(b.busyUntil) || !!runningFor(b.id);
   const solo = b.memberIds.length === 1;
-  const genreList = sortedGenres(genresOf(b));
+  const bonusGenres = b.genreBonus > 1 ? sortedGenres(b.genres) : [];
   const members = b.memberIds.map(musicianById).filter(Boolean);
   const stars = Math.min(3, steps(b.fame, cat().rules.fameLevels));
-  const split = genreList.length ? `--g:var(--lb-c-${genreList[0]})` : '';
   const tip = (text) => `data-act="tip" data-tip="${esc(text)}" title="${esc(text)}"`;
   const ins = members.map((m) => {
     const type = playedInstrument(m);
@@ -97,17 +102,23 @@ function tile(b, selected) {
     return `<i class="ins ${on ? '' : 'off'}" ${tip(`${m.stageName ?? m.firstName}: ${instrumentName(type)}${on ? '' : ' fehlt noch. Ohne eigenes Instrument spielt die Person kaum mit.'}`)}>${instrumentIcon(type)}</i>`;
   }).join('');
   const present = sortedGenres([...new Set(members.flatMap((m) => m.genres))]);
-  const genres = present.map((g) => `<i class="gen g-${g} ${b.genres.includes(g) && !solo ? '' : 'part'}" ${tip(genreTip(b, members, g))}>${genreGlyph(g)}</i>`).join('');
+  const shared = (g) => members.every((m) => m.genres.includes(g));
+  const genres = present.map((g) => `<i class="gen g-${g} ${shared(g) ? '' : 'part'}" ${tip(genreTip(b, members, g))}>${genreGlyph(g)}</i>`).join('');
+  const plaqueTip = bonusGenres.length
+    ? `${b.title ?? genreName(bonusGenres[0])}: Genre-Bonus, Sound +${Math.round((b.genreBonus - 1) * 100)} %.`
+    : solo ? 'Kein Genre-Bonus. Solo gibt es ihn nur für Pop (Gesang) und Elektro (Keyboard oder Turntables).' : 'Kein Genre-Bonus: Dafür müssen alle ein Genre mögen und die Besetzung muss passen.';
+  const plaque = `<span class="plq ${bonusGenres.length ? 'on' : ''}" ${tip(plaqueTip)}>${bonusGenres.map((g) => `<i class="tex t-${g}"></i>`).join('')}</span>`;
   const songsText = `${b.mood.songs} geschriebene ${b.mood.songs === 1 ? 'Song wartet' : 'Songs warten'} auf eine Aufnahme${b.mood.songRate > 0 ? `. Gerade entstehen etwa ${String(Math.round(b.mood.songRate * 10) / 10).replace('.', ',')} pro Stunde.` : '. Gerade schreibt niemand.'}`;
+  const wish = b.mood.wishes?.[0];
   return `
-    <a href="#/band/${b.id}" data-nav="b${b.id}" draggable="false" class="lb-bt ${selected ? 'sel' : ''} ${away ? 'busy' : ''} ${b.mood.level === 'red' ? 'frozen' : ''}" style="${split}">
+    <a href="#/band/${b.id}" data-nav="b${b.id}" draggable="false" class="lb-bt ${selected ? 'sel' : ''} ${away ? 'busy' : ''} ${b.mood.level === 'red' ? 'frozen' : ''}">
+      ${plaque}
       <span class="lamp ${b.mood.level}" ${tip(MOOD_TIP[b.mood.level] ?? '')}><i></i></span>
-      <span class="nm">${esc(b.name)}</span>
-      <span class="gl"><span class="inss">${ins}</span>
-        <span class="stars" ${tip(`Ruhm: ${cat().fameNames[stars] ?? ''} (${stars} von 3 Sternen)`)}>${[0, 1, 2].map((i) => `<i class="${i < stars ? 'on' : ''}">★</i>`).join('')}</span>
-        ${b.mood.wishes?.length ? `<svg class="wish" viewBox="0 0 24 20" ${tip(`${solo ? 'Ein Wunsch ist offen' : 'Die Band hat einen Wunsch'}: „${b.mood.wishes[0].text}“`)}><path d="M3 2h18a2 2 0 012 2v9a2 2 0 01-2 2h-9l-5 4v-4H3a2 2 0 01-2-2V4a2 2 0 012-2z"/></svg>` : ''}</span>
-      <span class="gens">${genres}${b.mood.level === 'red' ? '<small class="waits">wartet auf dich</small>' : ''}</span>
+      <span class="nm"><span class="nm-t">${esc(b.name)}</span><span class="stars" ${tip(`Ruhm: ${cat().fameNames[stars] ?? ''} (${stars} von 3 Sternen)`)}>${[0, 1, 2].map((i) => `<i class="${i < stars ? 'on' : ''}">★</i>`).join('')}</span></span>
+      <span class="gl"><span class="inss">${ins}</span>${b.mood.level === 'red' ? '<small class="waits">wartet auf dich</small>' : ''}</span>
+      <span class="gens">${genres}</span>
       <span class="songs ${b.mood.songRate > 0 ? 'writing' : ''}" style="--cycle:${b.mood.songRate > 0 ? Math.min(6, Math.max(0.9, 1.6 / b.mood.songRate)).toFixed(2) : 0}s" ${tip(songsText)}><svg viewBox="0 0 24 24" aria-hidden="true"><path class="ghost" d="M9 18a3 3 0 11-6 0 3 3 0 016 0 L9 5 L20 3 L20 16 a3 3 0 11-6 0 3 3 0 016 0"/><path class="draw" pathLength="100" d="M9 18a3 3 0 11-6 0 3 3 0 016 0 L9 5 L20 3 L20 16 a3 3 0 11-6 0 3 3 0 016 0"/></svg><b>${b.mood.songs}</b></span>
+      ${wish ? `<span class="wishb ${wish.level}" ${tip(`${solo ? 'Ein Wunsch' : 'Die Band wünscht sich etwas'}: „${wish.text}“ Auf der Bandseite lässt er sich erfüllen.`)}><svg viewBox="0 0 28 22" aria-hidden="true"><path d="M8 1h17a2 2 0 012 2v12a2 2 0 01-2 2H12l-5 4v-4H8a2 2 0 01-2-2V9L1 7l5-2V3a2 2 0 012-2z"/><path class="ex" d="M16.5 5v5.5M16.5 13.3v.4"/></svg></span>` : ''}
     </a>`;
 }
 
@@ -232,7 +243,7 @@ function wishBlock(b, members) {
         const go = w.action === 'stageName'
           ? `<button class="lb-pill" data-act="stageNameAsk" data-id="${m.id}">Namen aussuchen</button>`
           : w.action === 'rehearsal' || w.action === 'gig'
-          ? `<button class="lb-pill" data-act="${w.action === 'gig' ? 'gigAsk' : 'rehearseAsk'}" data-id="${b.id}" ${blocker(b, members) ? 'disabled' : ''}>${label}</button>`
+          ? `<button class="lb-pill" data-act="${w.action === 'gig' ? 'gigAsk' : 'rehearseAsk'}" data-id="${b.id}" ${off(blocker(b, members)?.text)}>${label}</button>`
           : `<a class="lb-pill" href="${target}">${label}</a>`;
         return `<div class="lb-wish"><a class="lb-ph sm ${w.level}" data-act="musicianInfo" data-id="${m.id}">${photo(m)}</a><span class="say">${esc(w.text)}</span>${go}</div>`;
       }).join('')}
@@ -251,7 +262,8 @@ function act(b, members, type, section, title, text, icon, warn = false, busy = 
   const hint = r.dislike.length ? `<small class="no">${esc(names(r.dislike))} ${plural(r.dislike, 'mag', 'mögen')} das nicht.</small>` : `<small>${text}</small>`;
   // Ohne Unterseite: Die Anordnung startet gleich (Proben).
   if (!section) {
-    return `<button class="lb-act ${busy ? 'idle' : ''}" data-act="${type === 'gig' ? 'gigAsk' : 'rehearseAsk'}" data-id="${b.id}" ${busy ? 'disabled' : ''}>${icon}<b>${title}</b>${busy ? `<small>${members.length === 1 ? 'Gerade beschäftigt.' : 'Die Band ist gerade beschäftigt.'}</small>` : hint}</button>`;
+    const why = busy ? (blocker(b, members)?.text ?? (members.length === 1 ? 'Gerade beschäftigt.' : 'Die Band ist gerade beschäftigt.')) : '';
+    return `<button class="lb-act ${busy ? 'idle' : ''}" data-act="${type === 'gig' ? 'gigAsk' : 'rehearseAsk'}" data-id="${b.id}" ${off(why)}>${icon}<b>${title}</b>${busy ? `<small>${members.length === 1 ? 'Gerade beschäftigt.' : 'Die Band ist gerade beschäftigt.'}</small>` : hint}</button>`;
   }
   return `<a class="lb-act ${warn ? 'warn' : ''}" href="#/band/${b.id}/${section}">${icon}<b>${title}</b>${hint}</a>`;
 }
@@ -273,7 +285,7 @@ function liveBlock(b, members, act) {
         <span class="lb-live-btns"><button class="btn small ghost" data-act="liveSound" data-id="${act.id}">${music?.actId === act.id ? 'Ton aus' : 'Ton an'}</button>
           <button class="btn small primary" data-act="rehearsalStop" data-id="${act.id}">Probe beenden</button></span>
       </div>
-      <div class="lb-room">${roomSvg(b.room?.level ?? 0, b.id, b.room?.shared ? app.state.label.name : b.name)}${stage(members, {
+      <div class="lb-room">${roomSvg(b.room?.level ?? 0, b.id, b.name)}${stage(members, {
     className: 'in-room',
     act: 'musicianInfo',
     bpm: cat().genres[sortedGenres(genresOf(b))[0]]?.bpm ?? 120,
@@ -321,13 +333,13 @@ function genreSection(b, members) {
   const need = ([options, n]) => `${n > 1 ? `${n} × ` : ''}${options.map((t) => `${instrumentIcon(t)} ${esc(instrumentName(t))}`).join(' oder ')}`;
   const genres = sortedGenres([...new Set(members.flatMap((m) => m.genres))]);
   const head = members.length === 1
-    ? 'Solokünstler bekommen keinen Genre-Bonus. Ab zwei Mitgliedern zählt: Mögen alle dasselbe Genre und ist die Besetzung dafür da, klingt die Band besser.'
+    ? (b.title ? `<b>${esc(b.title)}</b>: Sound ${pc(b.genreBonus)} (solo gibt es den halben Bonus, und nur für ${cat().rules.soloGenres.map(genreName).join(' und ')}).` : `Solo gibt es den Genre-Bonus nur für ${cat().rules.soloGenres.map(genreName).join(' und ')}, halb so groß wie in einer Band. Ab zwei Mitgliedern zählt: Mögen alle dasselbe Genre und ist die Besetzung dafür da, klingt die Band besser.`)
     : b.title ? `<b>${esc(b.title)}</b>: Sound ${pc(b.genreBonus)}.`
       : b.genreBonus < 1 ? `Gemischte Band: Niemand teilt ein Genre mit allen anderen, Sound ${pc(b.genreBonus)}.` : 'Alle teilen ein Genre, aber die Besetzung fehlt noch: kein Bonus, kein Abzug.';
   const rows = genres.map((g) => {
     const check = b.genreChecks?.[g];
     const fans = members.filter((m) => m.genres.includes(g));
-    const reached = members.length > 1 && b.genres.includes(g);
+    const reached = b.genres.includes(g);
     return `<div class="lb-gb-row ${reached ? 'on' : ''}">${genreTag(g)}<b class="lb-gb-name">${esc(genreName(g))}</b>
       <span class="${fans.length === members.length ? 'ok' : 'muted'}">${members.length === 1 ? 'mag es' : `${fans.length} von ${members.length} mögen es`}</span>
       <span class="lb-gb-needs">${cat().genreLineup[g].map((req, i) => {
@@ -352,7 +364,7 @@ function openGenreOverview() {
     html: `
       <div class="lb-cap">Genre-Bonus</div>
       <h2>Welche Band braucht was?</h2>
-      <p class="muted">Eine Band bekommt den Bonus, wenn <b>alle</b> Mitglieder das Genre mögen <b>und</b> die Besetzung dafür da ist. Solokünstler bekommen keinen.</p>
+      <p class="muted">Eine Band bekommt den Bonus, wenn <b>alle</b> Mitglieder das Genre mögen <b>und</b> die Besetzung dafür da ist. Solokünstler bekommen ihn nur für ${cat().rules.soloGenres.map(genreName).join(' und ')}, und nur halb (Sound ${pc(1 + (r.genreBonus - 1) * r.soloGenreShare)}).</p>
       <ul class="lb-gb-steps">
         <li><b>Genre-Band</b>: Sound ${pc(r.genreBonus)}</li>
         <li><b>Hybrid</b> (dasselbe auch für ein zweites Genre): ${pc(r.hybridBonus)}</li>
@@ -374,7 +386,7 @@ function roomBlock(b, members) {
   const effect = room.level ? `Proben bringen ${pct(room.skill)} mehr Können, die Band hält ${pct(room.lust)} länger durch${room.mood ? ', alle fühlen sich wohler' : ''}.` : 'Dunkel, feucht, kaputt. Hier probt niemand gern lange.';
   return `
     <section class="lb-roomcard">
-      <div class="lb-room idle">${roomSvg(room.level, b.id, room.shared ? app.state.label.name : b.name)}${stage(members, {
+      <div class="lb-room idle">${roomSvg(room.level, b.id, b.name)}${stage(members, {
     className: 'idle in-room',
     act: 'musicianInfo',
     instrumentOf: (m) => (hasGear(m) ? playedInstrument(m) : 'none'),
@@ -382,9 +394,9 @@ function roomBlock(b, members) {
     nameOf: (m) => esc(m.stageName ?? m.firstName),
   })}</div>
       <div class="lb-roominfo">
-        <div><h2 class="lb-cap">${room.shared ? 'Übungsecke des Labels' : 'Proberaum'}</h2><b>${esc(room.stage)}</b> <small class="muted">Stufe ${room.level} von 3${room.shared ? ' · für alle Solokünstler gemeinsam' : ''}</small>
+        <div><h2 class="lb-cap">${room.solo ? 'Eigene Übungsecke' : 'Proberaum'}</h2><b>${esc(room.stage)}</b> <small class="muted">Stufe ${room.level} von 3</small>
           <p class="muted small">${effect}</p></div>
-        ${room.next ? `<button class="btn small" data-act="roomUpgrade" data-id="${b.id}" ${app.state.label.money < room.next.cost ? 'disabled' : ''}>Ausbauen: ${esc(room.next.name)} · ${fmt0(room.next.cost)} ₲</button>` : '<span class="muted small">voll ausgebaut</span>'}
+        ${room.next ? `<button class="btn small" data-act="roomUpgrade" data-id="${b.id}" ${off(app.state.label.money < room.next.cost ? `Dafür fehlen noch ${fmt0(room.next.cost - app.state.label.money)} ₲.` : '')}>Ausbauen: ${esc(room.next.name)} · ${fmt0(room.next.cost)} ₲</button>` : '<span class="muted small">voll ausgebaut</span>'}
       </div>
     </section>`;
 }
@@ -612,7 +624,7 @@ async function openGigs(b) {
             <span class="${o.profit[0] >= 0 ? 'good' : o.profit[1] < 0 ? 'bad' : 'warn'}"><small>Gewinn</small><b>${range(o.profit)}</b></span>
             <span><small>Ruhm</small><b>+${fmt1(o.fame)}</b></span>
           </div>
-          <button class="btn ${o === best ? 'primary' : ''} small" data-book="${o.key}" ${o.blocked || tooPoor ? 'disabled' : ''}>${tooPoor ? 'Zu teuer' : 'Buchen'}</button>
+          <button class="btn ${o === best ? 'primary' : ''} small" data-book="${o.key}" ${off(o.blocked || (tooPoor ? `Dafür fehlen noch ${money(o.cost - app.state.label.money)}.` : ''))}>${tooPoor ? 'Zu teuer' : 'Buchen'}</button>
         </div>
       </div>`;
   };
@@ -681,7 +693,7 @@ defineActions({
     const b = bandById(id);
     const next = b.room?.next;
     if (!next) return;
-    const ok = await confirmDialog(`${b.room.shared ? 'Übungsecke' : 'Proberaum'} ausbauen zu „${next.name}“ für ${fmt0(next.cost)} ₲? Danach bringen Proben ${pct(next.skill)} mehr Können, die Band hält ${pct(next.lust)} länger durch${next.mood ? ' und fühlt sich beim Proben wohler' : ''}.${b.room.shared ? ' Gilt für alle Solokünstler.' : ''}`, { ok: 'Ausbauen' });
+    const ok = await confirmDialog(`${b.room.solo ? 'Übungsecke' : 'Proberaum'} ausbauen zu „${next.name}“ für ${fmt0(next.cost)} ₲? Danach bringen Proben ${pct(next.skill)} mehr Können, die Band hält ${pct(next.lust)} länger durch${next.mood ? ' und fühlt sich beim Proben wohler' : ''}.`, { ok: 'Ausbauen' });
     if (ok) await mutate('roomUpgrade', { bandId: b.id });
   },
   musicianInfo({ id }) {

@@ -180,6 +180,21 @@ export function closePopover() {
 }
 
 /** Kurze Meldung direkt am angetippten Element (statt am Bildschirmrand); verschwindet beim nächsten Tippen, Scrollen oder nach ein paar Sekunden. */
+/**
+ * Gesperrter Knopf, der sich trotzdem antippen lässt und dann kurz sagt, warum es nicht geht (statt still „disabled“).
+ * why leer: nicht gesperrt.
+ */
+export const off = (why) => (why ? `aria-disabled="true" data-why="${esc(why)}"` : '');
+
+// Ein Tipp auf etwas Gesperrtes zeigt den Grund und löst sonst nichts aus (vor allen anderen Klick-Behandlungen).
+document.addEventListener('click', (e) => {
+  const el = e.target.closest?.('[aria-disabled="true"][data-why]');
+  if (!el) return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  popover(el, el.dataset.why);
+}, true);
+
 export function popover(anchor, text) {
   closePopover();
   const el = document.createElement('div');

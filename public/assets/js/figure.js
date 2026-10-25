@@ -135,7 +135,8 @@ const pierceColor = (ear) => (!ear || ear.shape === 'pearl' ? '#d6d9e0' : ear.co
 const piercingSvg = (kind, c) => ({
   brow: `<g fill="${c}" stroke="${INK}" stroke-width="0.4"><circle cx="58.6" cy="36.6" r="0.75"/><circle cx="60.2" cy="39.4" r="0.75"/></g>`,
   lip: `<path d="M53.4 53.9 A0.85 0.85 0 1 1 54.4 55.1" fill="none" stroke="${c}" stroke-width="0.55" stroke-linecap="round"/>`,
-  nose: `<circle cx="52.6" cy="49.4" r="0.7" fill="${c}" stroke="${INK}" stroke-width="0.35"/>`,
+  // Nasenring ohne Nase: nur ein dünner halber Bogen, der am Nasenflügel hervorschaut.
+  nose: `<g transform="rotate(-160 51.35 49.5)"><path d="M50.75 49.15 A0.75 0.75 0 0 0 51.85 49.9" fill="none" stroke="${c}" stroke-width="0.34" stroke-linecap="round"/></g>`,
   helix: `<circle cx="69.6" cy="41.2" r="1.3" fill="none" stroke="${c}" stroke-width="0.7"/><circle cx="70.2" cy="43.6" r="0.55" fill="${c}"/>`,
 }[kind]);
 

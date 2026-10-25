@@ -473,6 +473,11 @@ final class Schema
             [
                 'ALTER TABLE labels ADD COLUMN store_shelf INTEGER NULL',
             ],
+            // 33: Jeder Solokünstler bekommt einen eigenen Proberaum; er übernimmt die Stufe der bisherigen gemeinsamen Übungsecke
+            [
+                'UPDATE bands SET room = (SELECT l.solo_room FROM labels l WHERE l.id = bands.label_id)
+                    WHERE (SELECT COUNT(*) FROM musicians m WHERE m.band_id = bands.id) = 1 AND room < (SELECT l.solo_room FROM labels l WHERE l.id = bands.label_id)',
+            ],
         ];
     }
 }

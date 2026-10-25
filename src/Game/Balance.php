@@ -98,7 +98,7 @@ final class Balance
         'restock' => 150, 'restockFactor' => 2.0, 'restockMax' => 20,
     ];
     /**
-     * Proberaum in Stufen: Jede Band (ab zwei Mitgliedern) hat ihren eigenen, Solokünstler teilen sich die Übungsecke des Labels (`soloCost` × Preis).
+     * Proberaum in Stufen: Jede Band hat ihren eigenen, auch jeder Solokünstler (zum vollen Preis).
      * skill = Faktor auf das Können je Probe, lust = Faktor darauf, wie lange die Band Lust hat, mood = Wohlbefinden je 15 Minuten Probe für alle.
      */
     public const ROOM = [
@@ -108,7 +108,6 @@ final class Balance
             ['name' => 'Gemütlicher Proberaum', 'cost' => 1200, 'skill' => 1.16, 'lust' => 1.3, 'mood' => 2.5],
             ['name' => 'Profi-Proberaum', 'cost' => 3000, 'skill' => 1.25, 'lust' => 1.5, 'mood' => 4.0],
         ],
-        'soloCost' => 0.5,
     ];
     /** Chance auf den Tipp des Verkäufers (Läden mit tip): Eine Karte passt zu einem Musiker ohne Instrument, Bandmitglieder zuerst. */
     public const STORE_TIP_CHANCE = 0.25;
@@ -120,6 +119,9 @@ final class Balance
     /** Auch ein Solokünstler ist eine Band (mit einem Mitglied). Genre-Bands und der Besetzungs-Bonus beginnen ab zwei Mitgliedern. */
     public const MIN_MEMBERS = 1;
     public const GENRE_MIN_MEMBERS = 2;
+    /** Solokünstler können den Genre-Bonus nur in Genres bekommen, deren Besetzung eine Person erfüllt – und nur zum Teil (Anteil am Bonus). */
+    public const SOLO_GENRES = ['pop', 'elektro'];
+    public const SOLO_GENRE_SHARE = 0.5;
     public const SIZE_BONUS_FROM = 2;
 
     // ---------- Label-Umbau: Stimmung, Beziehung, Songs (siehe docs/label-konzept.md) ----------
@@ -144,8 +146,9 @@ final class Balance
         'songsActivity' => ['stop' => ['gig', 'busking', 'openstage', 'bandpromo'], 'rehearsal' => 0.6],
         // Geduld (Sekunden Spielzeit im Roten) bis die Band geht; erst eingeschaltet, wenn die Anordnungen da sind
         'patience' => 1800.0, 'patienceRecover' => 2.0, 'leaving' => false,
-        // Solokünstler: Wer sich eine Band wünscht (Teamplayer, Partytier), leidet; wer das Rampenlicht liebt (Diva), freut sich
-        'solo' => ['teamplayer' => -8.0, 'partytier' => -6.0, 'diva' => 6.0],
+        // Allein ist es einsam (soloBase für alle); wer eine Band oder Publikum um sich braucht, leidet stärker, Diven genießen es
+        'soloBase' => -4.0,
+        'solo' => ['teamplayer' => -12.0, 'rampensau' => -8.0, 'partytier' => -6.0, 'diva' => 8.0],
         // Anordnung nach Charakter (Catalog::LIKES): so viele Punkte Wohlbefinden gibt sie sofort (mag) oder nimmt sie (mag nicht)
         'reactStep' => 14.0,
     ];
@@ -177,10 +180,17 @@ final class Balance
         'splitHurt' => 20.0, 'splitTrait' => ['teamplayer' => 1.6, 'ehrgeizig' => 0.5],
     ];
     /**
-     * Künstlername: Ab dieser Bekanntheit wünscht sich ein Musiker einen (Diven und Rampensäue früher). Das Label sucht einen von drei aus,
-     * das freut ihn (Wohlbefinden +mood, höchstens bis 100).
+     * Künstlername: Nicht jeder will einen. Wer ihn sich wünscht, hängt am Charakter (Eigenschaft => ab welchem Ruhm): Diven früh, Rampensäue etwas später,
+     * Ehrgeizige erst, wenn sie richtig bekannt sind. Das Label sucht einen von drei aus, das freut (Wohlbefinden +mood, höchstens bis 100).
      */
-    public const STAGE_NAME = ['fame' => 60.0, 'fameKeen' => 20.0, 'keen' => ['diva', 'rampensau'], 'mood' => 12.0, 'choices' => 3];
+    public const STAGE_NAME = ['want' => ['diva' => 20.0, 'rampensau' => 40.0, 'ehrgeizig' => 120.0], 'mood' => 12.0, 'choices' => 3];
+    /**
+     * Songschreiben: Jedes Mitglied trägt `share` bei, ein Songwriter `writer`. Tempo der Band = (Summe / norm) ^ exp: Zusammen sprudeln die Ideen,
+     * deshalb wächst es stärker als die Zahl der Mitglieder. Eine Vierer-Band ohne Songwriter schreibt so schnell wie MOOD['songsPerHour'],
+     * allein ohne Songwriter dauert es achtmal so lang (vier Solokünstler zusammen schaffen nur halb so viel wie die Band).
+     * Neue Musiker sind mit Chance `born` schon Songwriter (unabhängig vom Können); sonst kommt die Fähigkeit wie die anderen mit dem Aufstieg.
+     */
+    public const SONGWRITING = ['share' => 0.25, 'writer' => 0.75, 'norm' => 1.0, 'exp' => 1.5, 'born' => 0.08];
     public const MAX_MEMBERS = 7;
     public const MAX_PER_INSTRUMENT = ['drums' => 1, 'guitar' => 2];
 

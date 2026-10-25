@@ -151,7 +151,7 @@ test('Generator: höchstens zwei Instrumente, Spezialisten sind besser', functio
         check(isset(Catalog::INSTRUMENTS[$m['instr1']]));
         check($m['genres'] !== [] && count($m['genres']) === count(array_unique($m['genres'])));
         check($m['level'] <= 1, 'Aus Packs höchstens Können-Stufe 1');
-        checkEquals($m['level'], count($m['abilities']), 'So viele Fähigkeiten wie Stufen');
+        checkEquals($m['level'], count(array_diff($m['abilities'], ['songwriter'])) + ($m['level'] && $m['abilities'] === ['songwriter'] ? 1 : 0), 'So viele Fähigkeiten wie Stufen (Songwriter auch zusätzlich)');
         checkEquals(0.0, $m['fame'], 'Neue Musiker haben keinen Ruhm');
         if ($m['instr2'] !== null) {
             $multi++;
@@ -628,4 +628,34 @@ test('Genre: gemeinsames Genre ohne Besetzung gibt weder Bonus noch Abzug, kein 
     checkEquals(1.0, BandCalc::identity([$folkA, $folkB])['bonus'], 'gleiches Genre, Besetzung fehlt');
     checkEquals(Balance::MIXED_BONUS, BandCalc::identity([$folkA, $metal])['bonus'], 'verschiedene Genres');
     checkEquals(Balance::GENRE_BONUS, BandCalc::identity([$folkA, $violin])['bonus'], 'gleiches Genre mit Besetzung');
+});
+
+test('Solo-Genre-Bonus: nur Pop (Gesang) und Elektro, und nur halb', function () {
+    $singer = ['genres' => ['pop'], 'instr1' => 'vocals', 'instr2' => null, 'band_slot' => 1];
+    $keys = ['genres' => ['elektro'], 'instr1' => 'keys', 'instr2' => null, 'band_slot' => 1];
+    $guitar = ['genres' => ['rock'], 'instr1' => 'guitar', 'instr2' => null, 'band_slot' => 1];
+    $half = 1 + (Balance::GENRE_BONUS - 1) * Balance::SOLO_GENRE_SHARE;
+    checkEquals(round($half, 4), round(BandCalc::identity([$singer])['bonus'], 4), 'Pop solo');
+    checkEquals(round($half, 4), round(BandCalc::identity([$keys])['bonus'], 4), 'Elektro solo');
+    checkEquals(1.0, BandCalc::identity([$guitar])['bonus'], 'Rock solo: kein Bonus');
+});
+
+test('Songschreiben: jedes Mitglied trägt bei, Songwriter viel mehr; allein ohne Songwriter sehr langsam', function () {
+    $m = static fn (array $abilities = []) => ['abilities' => $abilities];
+    $c = Balance::SONGWRITING;
+    checkEquals(1.0, round(Signed\Game\Mood::crewFactor([$m(), $m(), $m(), $m()]), 4), 'Vierer-Band = Grundtempo');
+    check(Signed\Game\Mood::crewFactor([$m()]) <= 0.3, 'allein ohne Songwriter sehr langsam');
+    check(Signed\Game\Mood::crewFactor([$m(['songwriter'])]) > 2.5 * Signed\Game\Mood::crewFactor([$m()]), 'Songwriter hilft viel');
+    check(Signed\Game\Mood::crewFactor([$m(['songwriter'])]) < Signed\Game\Mood::crewFactor([$m(), $m(), $m(), $m()]), 'auch mit Songwriter allein langsamer als eine Band');
+    check(4 * Signed\Game\Mood::crewFactor([$m()]) <= 0.6 * Signed\Game\Mood::crewFactor([$m(), $m(), $m(), $m()]), 'vier Solokünstler zusammen deutlich langsamer als die Band');
+    checkEquals(round((($c['writer'] + 3 * $c['share']) / $c['norm']) ** $c['exp'], 4), round(Signed\Game\Mood::crewFactor([$m(['songwriter']), $m(), $m(), $m()]), 4));
+});
+
+test('Solokünstler: allein ist es einsam, Teamplayer und Rampensau leiden mehr, Diva genießt es', function () {
+    $band = ['genre' => '', 'room' => 0];
+    $solo = static fn (array $traits) => ['id' => 1, 'personality' => $traits, 'genres' => ['pop'], 'skill1' => 30.0, 'skill2' => null, 'instr1' => 'vocals', 'instr2' => null, 'band_slot' => 1, 'abilities' => []];
+    $t = static fn (array $traits) => Signed\Game\Mood::target($solo($traits), $band, [$solo($traits)], [], [], 0.0);
+    check($t([]) < Balance::MOOD['start'], 'einsam');
+    check($t(['teamplayer']) < $t(['rampensau']) && $t(['rampensau']) < $t([]), 'Teamplayer am meisten, dann Rampensau');
+    check($t(['diva']) > $t([]), 'Diva freut sich');
 });

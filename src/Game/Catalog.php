@@ -94,7 +94,7 @@ final class Catalog
     public const RAP_GENRES = ['hiphop'];
 
     /**
-     * Fähigkeiten: Ein Musiker hat so viele, wie seine Können-Stufe angibt (höchstens 3).
+     * Fähigkeiten: Ein Musiker hat so viele, wie seine Können-Stufe angibt (höchstens 3); Songwriter kann jemand auch von Anfang an zusätzlich sein.
      * technique = an ein Instrument gebunden (siehe INSTRUMENTS[...]['techniques']).
      */
     public const ABILITIES = [
@@ -105,6 +105,7 @@ final class Catalog
         'gehoer' => ['name' => 'Absolutes Gehör', 'icon' => '👂', 'desc' => 'Mehr Spielraum in der Solo-Probe.'],
         'buehnentier' => ['name' => 'Bühnentier', 'icon' => '🔥', 'desc' => 'Mehr Glanzmomente live.'],
         'studiofuchs' => ['name' => 'Studiofuchs', 'icon' => '🎚️', 'desc' => 'Leichter zu mischen im Studio.'],
+        'songwriter' => ['name' => 'Songwriter', 'icon' => '✍️', 'desc' => 'Schreibt viel schneller Songs. Wichtig für Solokünstler.'],
         'falsett' => ['name' => 'Falsett', 'icon' => '🪶', 'technique' => true],
         'growl' => ['name' => 'Growl', 'icon' => '🐺', 'technique' => true],
         'belting' => ['name' => 'Belting', 'icon' => '📣', 'technique' => true],

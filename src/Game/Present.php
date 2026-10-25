@@ -189,6 +189,8 @@ final class Present
                 'recordMaxSongs' => Balance::RECORD_MAX_SONGS,
                 'gigMinSongs' => Balance::GIG_MIN_SONGS,
                 'genreBonus' => Balance::GENRE_BONUS,
+                'soloGenres' => Balance::SOLO_GENRES,
+                'soloGenreShare' => Balance::SOLO_GENRE_SHARE,
                 'hybridBonus' => Balance::HYBRID_BONUS,
                 'promoSeconds' => Balance::PROMO_SECONDS,
                 'rehearsalSeconds' => Balance::REHEARSAL['seconds'],

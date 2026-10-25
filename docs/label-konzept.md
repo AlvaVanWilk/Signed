@@ -141,6 +141,10 @@ Anspruch übertrifft, macht glücklich (auch eine unzufriedene Band lässt sich 
 ## Songs schreiben
 
 - Die Band schreibt **von selbst**, im Tempo ihrer Stimmung: grün etwa 1 Song pro Stunde, gelb halb so schnell, rot gar nicht.
+- **Jedes Mitglied trägt bei** (`Balance::SONGWRITING`): je Mitglied 0,25, ein **Songwriter** (Fähigkeit) 0,75; Tempo = Summe hoch 1,5.
+  Zusammen sprudeln die Ideen, deshalb wächst es stärker als die Zahl der Mitglieder. Vierer-Band ohne Songwriter: ×1 (das Tempo oben),
+  Zweier-Band ×0,35, allein ×0,125 (ein Song in acht Stunden), allein mit Songwriter ×0,65, Vierer-Band mit einem Songwriter ×1,84.
+  Songwriter kommt wie andere Fähigkeiten mit dem Aufstieg; 8 % der neuen Musiker sind es schon von Anfang an.
 - **Obergrenze 24 Songs.** Ab 12 liegenden Songs sinkt die Stimmung der Band langsam („Wir wollen aufnehmen!“).
 - Eine Platte braucht mindestens 3 Songs (EP) bzw. 7 (LP) aus diesem Vorrat; beim Aufnehmen wählt das Label, wie viele.
 
@@ -272,7 +276,7 @@ Wer neu anfängt, soll **sofort etwas tun** können:
 ### Kartei und Besetzungsplaner
 
 Jeder Künstler unter Vertrag ist entweder **in einer Band** oder **Solokünstler** (eine Band mit einem Mitglied, kein extra Zustand „frei“). Solokünstler haben **einen eigenen Knopf** in der Band-Leiste, wie Bands.
-Ein Musiker **wünscht sich einen Künstlernamen**, sobald er bekannt genug ist (Ruhm 60, Diven und Rampensäue schon ab 20; `Balance::STAGE_NAME`).
+Nicht jeder **wünscht sich einen Künstlernamen**; das hängt am Charakter (`Balance::STAGE_NAME`): Diven ab Ruhm 20, Rampensäue ab 40, Ehrgeizige ab 120, alle anderen nie.
 Das Label sucht einen von drei Vorschlägen aus (fest je Person, „DJ“ und „MC“ nur, wo es passt); das freut ihn (Wohlbefinden +12). Der Name bleibt in jeder Band
 und steht vor dem echten Namen; tritt er allein auf, heißt seine Solo-Band so. Solo-Bands lassen sich sonst nicht umbenennen.
 Die **Künstlerleiste** zeigt je Knopf: Name, je Mitglied das Instrument (blass, wer keins hat), alle vertretenen Genres (voll, was alle teilen;
@@ -282,7 +286,9 @@ Oben rechts sitzt die **Studiolampe** (Stimmung, ohne Wort); alles auf der Kache
 gestrichelt = keiner (auch bei Solokünstlern). Auf der Bandseite zeigt „Genre-Bonus“, was je Genre fehlt, „Welche Band braucht was?“ die Übersicht aller Genre-Bands.
 - **Solokünstler** sollen sich **kaum lohnen**: ohne Beziehungen, **kein Genre-, Hybrid- oder Besetzungs-Bonus** (aber auch kein Malus für „gemischte Band“), und Auftritte und Aufnahmen kosten mehr, weil
   **Studiomusiker** zugebucht werden (Aufschlag zum Beispiel +50 %; bei **Pop** nur +20 %, denn Pop-Sänger treten oft allein auf). Gage und Besetzungs-Bonus sind niedriger als bei einer Band, die Aufmerksamkeit gleich.
-  Rentabel wird es **nur in Sonderfällen**: **Pop**, **Diva** (steht gern allein im Rampenlicht, bekommt eine Stimmungsprämie). Wer sich eigentlich eine Band wünscht, wird **unzufrieden**: **Teamplayer** und **Partytier**
+  Rentabel wird es **nur in Sonderfällen**: **Pop**, **Diva** (steht gern allein im Rampenlicht, bekommt eine Stimmungsprämie). Allein ist es **einsam** (Ziel −4 für alle);
+  **Teamplayer** (−12), **Rampensau** (−8) und **Partytier** (−6) leiden mehr, die **Diva** freut sich (+8). Solo schreibt man viel langsamer (siehe Songs schreiben), außer man ist Songwriter.
+  Genre-Bonus solo nur für **Pop** (Gesang) und **Elektro** (Keyboard oder Turntables), und nur halb. Kein täglicher Kostenpunkt je Künstler. Wer sich eigentlich eine Band wünscht, wird **unzufrieden**: **Teamplayer** und **Partytier**
   äußern den Wunsch „Ich will in eine Band!“, der offen bleibt, solange sie solo sind. Nützlich am Anfang (ein Künstler genügt) und für Musiker, die in keine Band passen.
 - **Die Kartei** zeigt alle Künstler unter Vertrag (Passfotos, Liste) und ist der **Besetzungsplaner**: Dort steckt man Musiker zu **Entwürfen** zusammen und sieht, was dabei herauskäme (Genre-Titel, Sound,
   fehlende Instrumente, bekannte Reibung der Charaktere). Entwürfe lassen sich **merken**, ohne sie auszuführen; aus einem wird mit einem Tippen eine Band.
@@ -443,7 +449,7 @@ Beim ersten Login nach dem Umbau (Saison 2) bleiben **Labelname und Konto**, all
 
 ### Proberaum (gebaut)
 
-- Jede Band ab zwei Mitgliedern hat ihren eigenen Proberaum (`bands.room`), Solokünstler teilen sich die **Übungsecke des Labels** (`labels.solo_room`, halber Preis).
+- Jede Band hat ihren eigenen Proberaum (`bands.room`), auch jeder Solokünstler (seine **eigene Übungsecke**, voller Preis). Die frühere gemeinsame Übungsecke (`labels.solo_room`) ist abgelöst; ihre Stufe haben die Solokünstler übernommen.
 - Stufen (`Balance::ROOM`): Bruchbude → Aufgeräumter Keller (400 ₲) → Gemütlicher Proberaum (1.200 ₲) → Profi-Proberaum (3.000 ₲). Wirkung: Können je Probe ×1,08/1,16/1,25,
   die Band hält ×1,15/1,3/1,5 länger durch, Wohlbefinden +1/+2,5/+4 je 15 Minuten Probe für alle. Beim Zusammentun bleibt der bessere Raum.
 - Auf der Bandseite steht die Band in ihrem Raum (gezeichnet in `room.js`, vier Stufen); während einer Probe spielt sie dort.

@@ -1,7 +1,7 @@
 import { gearHue, instrumentIcon, instrumentName, rarityName } from '../cards.js';
 import { playedInstrument } from '../figure.js';
 import { app, cat, defineActions, mutate, refresh, serverNow } from '../core.js';
-import { confirmDialog, duration, esc, fmt0, money, openModal, percent, toast } from '../ui.js';
+import { confirmDialog, duration, esc, fmt0, money, off, openModal, percent, toast } from '../ui.js';
 
 /**
  * Music Store: ein Regal mit 5 bis 10 Instrumenten (je Art höchstens eins), für alle Labels gleich, das alle paar Stunden wechselt.
@@ -66,7 +66,7 @@ export function render() {
         <div class="ms-info">
           <div class="money-pill">${money(app.state.label.money)}</div>
           <small class="muted">${store.restock?.own ? 'Deine Lieferung bleibt' : 'Neues Angebot in'} <b data-store-timer>${duration(Math.max(0, store.endsAt - serverNow()))}</b>${store.restock?.own ? ', dann kommt wieder das Regal für alle' : ''}</small>
-          ${store.restock ? `<button class="btn small ghost ms-restock" data-act="storeRestock" ${app.state.label.money < store.restock.price ? 'disabled' : ''}>Neue Lieferung bestellen · ${money(store.restock.price)}</button>` : ''}
+          ${store.restock ? `<button class="btn small ghost ms-restock" data-act="storeRestock" ${off(app.state.label.money < store.restock.price ? `Dafür fehlen noch ${money(store.restock.price - app.state.label.money)}.` : '')}>Neue Lieferung bestellen · ${money(store.restock.price)}</button>` : ''}
         </div>
       </div>
       <div class="ms-shop">
@@ -111,8 +111,8 @@ function openItem(slot, idx) {
           <p class="ms-need-line">${need.length ? `Fehlt gerade: <b>${esc(need.map((m) => m.firstName).join(', '))}</b>` : `Im Label fehlt gerade niemandem ein Instrument dieser Art.`}</p>
           <div class="ms-buy">
             <span class="ms-price">${item.bought ? 'gekauft' : money(item.price)}</span>
-            ${isHold ? '<button class="btn ghost small" data-release>Zurückgeben</button>' : `<button class="btn ghost small" data-hold ${canHold ? '' : 'disabled'}>${store.hold ? 'Stattdessen zurücklegen' : 'Zurücklegen'}</button>`}
-            <button class="btn primary" data-buy ${item.bought || app.state.label.money < item.price ? 'disabled' : ''}>${item.bought ? 'Schon gekauft' : 'Kaufen'}</button>
+            ${isHold ? '<button class="btn ghost small" data-release>Zurückgeben</button>' : `<button class="btn ghost small" data-hold ${off(canHold ? '' : item.bought ? 'Das hast du schon gekauft.' : 'Zurücklegen geht nur mit Instrumenten aus dem Regal, das gerade dasteht.')}>${store.hold ? 'Stattdessen zurücklegen' : 'Zurücklegen'}</button>`}
+            <button class="btn primary" data-buy ${off(item.bought ? 'Das hast du schon gekauft.' : app.state.label.money < item.price ? `Dafür fehlen noch ${money(item.price - app.state.label.money)}.` : '')}>${item.bought ? 'Schon gekauft' : 'Kaufen'}</button>
           </div>
         </div>
       </div>`,

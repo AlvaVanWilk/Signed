@@ -72,6 +72,9 @@ function locker() {
 
 export function render() {
   const store = app.state.store;
+  // Das legendäre steht für sich in einer Vitrine, die anderen im Regal, je Fach durch einen Holzsteg getrennt.
+  const star = store.items.find((i) => i.tier === 3) ?? null;
+  const rest = store.items.filter((i) => i !== star);
   return `
     <div class="ms-page">
       <div class="ms-top">
@@ -85,8 +88,9 @@ export function render() {
         <div class="ms-promo">${store.gold
     ? '<b>Heute ganz besonders:</b> ein legendäres Instrument!'
     : '<b>Angebot des Tages</b><span>Besondere Stücke, nur heute</span>'}</div>
-        <div class="ms-offer">
-          <div class="ms-shelf">${store.items.map(cell).join('')}</div>
+        <div class="ms-offer ${star ? 'has-vitrine' : ''}">
+          ${star ? `<div class="ms-vitrine"><span class="ms-glass" aria-hidden="true"></span>${cell(star)}<span class="ms-plinth" aria-hidden="true"></span></div>` : ''}
+          <div class="ms-shelf">${rest.map(cell).join('<i class="ms-post" aria-hidden="true"></i>')}</div>
           ${locker()}
         </div>
       </div>
@@ -199,7 +203,7 @@ async function drop(cancelled) {
 }
 
 document.addEventListener('pointerdown', (e) => {
-  const cell = e.target.closest('.ms-shelf .ms-cell');
+  const cell = e.target.closest('.ms-offer .ms-cell');
   if (!cell || e.button > 0 || cell.classList.contains('sold') || cell.classList.contains('held')) return;
   drag = { cell, x: e.clientX, y: e.clientY, active: false, touch: e.pointerType !== 'mouse' };
   if (drag.touch) drag.timer = setTimeout(lift, 300);

@@ -185,13 +185,14 @@ final class Balance
      */
     public const INTERVIEW = ['perDay' => 1.0, 'ttl' => 8 * 3600, 'seconds' => [900, 1200, 1800, 2700], 'topSpan' => 600.0, 'maxCatchUp' => 86400];
     /**
-     * Posteingang: Bewerbungen von Leuten fürs Label (Assistenz; später Scout, Lehrer, Manager). Im Schnitt `perDay` am Tag, jede liegt `ttl`.
+     * Posteingang: Bewerbungen von Leuten fürs Label (Praktikum, Assistenz, Scout, Lehrer, Coach, Manager). Im Schnitt `perDay` am Tag, jede liegt `ttl`;
+     * es liegen aber immer mindestens `minOpen` da (möglichst verschiedene).
      * Wie gut die Bewerber sind, folgt dem Erfolg des Labels, aber gesättigt (oben offen): Güte = Erfolg / (Erfolg + `half`).
      * Eine Stufe bewirbt sich erst ab ihrer Güte `from`; die beste erreichbare kommt am häufigsten (`weights`: beste, zweitbeste, Rest).
      * `minSuccess`: ab welchem Erfolg sich diese Art überhaupt bewirbt.
      */
     public const JOBS = [
-        'perDay' => 3.0, 'ttl' => 2 * 86400, 'maxCatchUp' => 2 * 86400, 'half' => 300.0, 'weights' => [3, 2, 1],
+        'perDay' => 3.0, 'minOpen' => 4, 'ttl' => 2 * 86400, 'maxCatchUp' => 2 * 86400, 'half' => 300.0, 'weights' => [3, 2, 1],
         'roles' => [
             'intern' => ['weight' => 2, 'minSuccess' => 0.0], 'assistant' => ['weight' => 1, 'minSuccess' => 0.0], 'scout' => ['weight' => 1, 'minSuccess' => 0.0],
             'teacher' => ['weight' => 2, 'minSuccess' => 0.0], 'coach' => ['weight' => 1, 'minSuccess' => 5.0],

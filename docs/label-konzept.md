@@ -284,7 +284,7 @@ Jede neue Art braucht einen eigenen Zweck und Wunsch (Perfektionist → Proberau
 (Interviews für die eigenen Musiker, `Inbox`) und **Bewerbungen** (Leute fürs Label; gebaut ist die Assistenz, Scout, Lehrer und Manager folgen).
 Alles läuft ab (Demos 4 Tage, Anfragen 8 Stunden, Bewerbungen 2 Tage; die Restzeit steht darauf) und lässt sich mit dem Lesezeichen merken
 („Gespeichert“; ablaufen tut es trotzdem). Die Zahl am Menüpunkt zählt, was nicht gemerkt ist. **Ohne Assistenz** liegt alles gemischt auf einem Stapel.
-- **Bewerbungen** kommen im Schnitt drei am Tag (`Balance::JOBS`); Scout und eine einfache Assistenz liegen von Anfang an da (solange es keine Assistenz gibt, immer eine), Manager erst ab Erfolg 15. Wie gut die Bewerber sind, folgt dem Erfolg
+- **Bewerbungen** kommen im Schnitt drei am Tag (`Balance::JOBS`), es liegen aber **immer mindestens vier** da, möglichst verschiedene Stellen. Scout und Praktikum liegen von Anfang an da; solange niemand im Büro arbeitet, immer ein Praktikum. Manager erst ab Erfolg 15. Wie gut die Bewerber sind, folgt dem Erfolg
   **gesättigt**: Güte = Erfolg / (Erfolg + 300), also oben offen, nie ganz 1. Jede Stufe bewirbt sich erst ab ihrer Güte; die beste erreichbare kommt am häufigsten.
 - **Assistenz** (gebaut, `Assistant`): einmalig bezahlt (400 ₲), alle gleich gut; es gibt keine Stufen mehr, man ersetzt keine durch eine bessere.
   Jede **sortiert den Posteingang** (Reiter Demos, Anfragen, Bewerbungen, Gespeichert; Notizen auf der Übersicht). Dazu hat jede eine **Aufgabe**,

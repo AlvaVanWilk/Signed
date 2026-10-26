@@ -1640,7 +1640,9 @@ test('Zusammentun: ein verbundener Name behält die Hälfte des Ruhms beider Nam
     $band = foundBand($p, 'Kern');
     $res = $p->post('submissionsTest');
     $solo = array_values(array_filter($res['state']['submissions'], static fn ($s) => $s['state'] === 'open' && $s['kind'] === 'solo'))[0];
-    $p->post('submissionSign', ['submissionId' => $solo['submissionId']]);
+    $id = $p->post('submissionSign', ['submissionId' => $solo['submissionId']])['musicianId'];
+    // Ein Instrument, das in der Band noch fehlt (sonst passt die Besetzung nicht).
+    $db->exec("UPDATE musicians SET instr1 = 'keys', instr2 = NULL, skill2 = NULL WHERE id = ?", [$id]);
     $other = $p->post('bandJoinCandidates', ['bandId' => $band['id']])['candidates'][0];
     check(in_array('combo', $other['nameOptions'], true), 'Verbinden wird angeboten');
     $db->exec('UPDATE bands SET fame_own = 40 WHERE id = ?', [$band['id']]);
@@ -2031,7 +2033,8 @@ test('Privatlehrer: für ein Instrument und einen Musiker gebucht, Können wäch
     $db->exec('UPDATE musicians SET skill1 = 40 WHERE id = ?', [$guitar['id']]);
     $state = $p->post('mailTest')['state'];
     $teachers = array_values(array_filter($state['mail'], static fn ($m) => $m['kind'] === 'job' && $m['role'] === 'teacher'));
-    checkEquals(3, count($teachers));
+    // Neben den Test-Briefen können sich weitere Lehrkräfte beworben haben: je Stufe eine nehmen.
+    $teachers = array_values(array_map(static fn ($t) => array_values(array_filter($teachers, static fn ($x) => $x['tier'] === $t))[0], [1, 2, 3]));
     // Eine Lehrkraft für Gitarre auf Stufe 2 bauen, damit es sicher passt.
     $job = $teachers[1];
     $row = $db->one('SELECT data FROM mail WHERE id = ?', [$job['mailId']]);
@@ -2217,4 +2220,18 @@ test('Praktikum: günstig, sortiert nur die Post, lässt sich als Assistenz übe
     $state = $p2->get('state');
     checkEquals(null, $state['assistant'], 'weg');
     check((bool) array_filter($state['mail'], static fn ($m) => $m['kind'] === 'job' && $m['role'] === 'assistant'), 'danach liegt eine Bewerbung für eine Assistenz da');
+});
+
+test('Bewerbungen: Es liegen immer ein paar da, möglichst verschiedene; ohne Büro immer ein Praktikum', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Viele');
+    $jobs = array_values(array_filter($p->get('state')['mail'], static fn ($m) => $m['kind'] === 'job'));
+    check(count($jobs) >= Balance::JOBS['minOpen'], 'gleich zu Beginn mehrere: ' . count($jobs));
+    check(count(array_unique(array_column($jobs, 'role'))) >= 3, 'verschiedene Stellen');
+    check(in_array('intern', array_column($jobs, 'role'), true) && in_array('scout', array_column($jobs, 'role'), true));
+    // Alle weg: Es kommen gleich wieder welche.
+    $db->exec("DELETE FROM mail WHERE kind = 'job'");
+    $jobs = array_values(array_filter($p->get('state')['mail'], static fn ($m) => $m['kind'] === 'job'));
+    check(count($jobs) >= Balance::JOBS['minOpen']);
+    check(in_array('intern', array_column($jobs, 'role'), true), 'ohne Büro wieder ein Praktikum');
 });

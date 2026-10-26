@@ -95,26 +95,6 @@ final class Inbox
         $db = $this->repo->db;
         $c = Balance::JOBS;
         $at = (int) $db->value('SELECT job_at FROM labels WHERE id = ?', [$this->repo->labelId]);
-        // Solange es keine Assistenz gibt, liegt immer eine einfache Bewerbung dafür da (eine Assistenz hilft früh).
-        // Solange niemand die Post sortiert, liegt immer eine Bewerbung dafür da: zu Beginn ein Praktikum, später eine Assistenz.
-        if ((int) $db->value("SELECT COUNT(*) FROM staff WHERE label_id = ? AND role IN ('assistant', 'intern')", [$this->repo->labelId]) === 0
-            && !array_filter($db->all("SELECT data FROM mail WHERE label_id = ? AND kind = 'job'", [$this->repo->labelId]), static fn ($r) => in_array(json_decode($r['data'], true)['role'] ?? '', ['assistant', 'intern'], true))) {
-            $this->store('job', self::applicant($at === 0 ? 'intern' : 'assistant', 0.0, 1), $now, $c['ttl']);
-        }
-        if ($at === 0) {
-            // Willkommens-Brief: Ein einfacher Scout bewirbt sich gleich zu Beginn (die Assistenz steht oben).
-            if ((int) $db->value("SELECT COUNT(*) FROM staff WHERE label_id = ? AND role = 'scout'", [$this->repo->labelId]) === 0) {
-                $this->store('job', self::applicant('scout', 0.0, 1), $now, $c['ttl']);
-            }
-            $db->update('labels', ['job_at' => $now], ['id' => $this->repo->labelId]);
-            return;
-        }
-        $interval = 86400 / $c['perDay'];
-        $at = max($at, $now - $c['maxCatchUp']);
-        $count = (int) floor(($now - $at) / $interval);
-        if ($count <= 0) {
-            return;
-        }
         $roles = array_filter($c['roles'], static fn ($r) => $success >= $r['minSuccess']);
         $own = [];
         $genres = [];
@@ -125,14 +105,42 @@ final class Inbox
                 $own[] = $m['instr2'];
             }
         }
+        $labelId = $this->repo->labelId;
+        $openRoles = static fn () => array_map(static fn ($r) => json_decode($r['data'], true)['role'] ?? '', $db->all("SELECT data FROM mail WHERE label_id = ? AND kind = 'job' AND expires_at > ?", [$labelId, $now]));
+        $add = function (string $role, int $created, ?int $tier = null) use ($success, $own, $genres, $c): void {
+            $this->store('job', self::applicant($role, self::quality($success), $tier, $own, $genres), $created, $c['ttl']);
+        };
+        // Solange niemand die Post sortiert, liegt immer ein Praktikum dafür da.
+        if ((int) $db->value("SELECT COUNT(*) FROM staff WHERE label_id = ? AND role IN ('assistant', 'intern')", [$this->repo->labelId]) === 0
+            && !array_intersect($openRoles(), ['assistant', 'intern'])) {
+            $add('intern', $now, 1);
+        }
+        if ($at === 0) {
+            // Willkommens-Brief: Ein einfacher Scout bewirbt sich gleich zu Beginn.
+            if ((int) $db->value("SELECT COUNT(*) FROM staff WHERE label_id = ? AND role = 'scout'", [$this->repo->labelId]) === 0) {
+                $add('scout', $now, 1);
+            }
+            $at = $now;
+        }
+        // Laufend neue Bewerbungen, im Schnitt perDay am Tag.
+        $interval = 86400 / $c['perDay'];
+        $at = max($at, $now - $c['maxCatchUp']);
+        $count = (int) floor(($now - $at) / $interval);
         for ($i = 1; $i <= $count; $i++) {
             $created = (int) ($at + $i * $interval);
             if ($roles && $created + $c['ttl'] > $now) {
-                $role = (string) Rng::weighted(array_map(static fn ($r) => $r['weight'], $roles));
-                $this->store('job', self::applicant($role, self::quality($success), null, $own, $genres), $created, $c['ttl']);
+                $add((string) Rng::weighted(array_map(static fn ($r) => $r['weight'], $roles)), $created);
             }
         }
-        $db->update('labels', ['job_at' => (int) ($at + $count * $interval)], ['id' => $this->repo->labelId]);
+        $db->update('labels', ['job_at' => (int) ($at + max(0, $count) * $interval)], ['id' => $this->repo->labelId]);
+        // Und es liegen immer ein paar da (minOpen), möglichst verschiedene.
+        $open = $openRoles();
+        for ($k = count($open); $k < $c['minOpen'] && $roles; $k++) {
+            $fresh = array_diff_key($roles, array_flip($open)) ?: $roles;
+            $role = (string) Rng::weighted(array_map(static fn ($r) => $r['weight'], $fresh));
+            $add($role, $now - $k * 60);
+            $open[] = $role;
+        }
     }
 
     /** Eine Bewerbung: Person, Rolle und Stufe. Die beste Stufe, die sich bei dieser Güte schon bewirbt, kommt am häufigsten. */

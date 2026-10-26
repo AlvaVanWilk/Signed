@@ -1913,7 +1913,9 @@ test('Posteingang: Bewerbungen werden mit dem Erfolg besser (gesättigt), Assist
     // Ohne Erfolg keine Assistenz-Bewerbungen.
     Clock::advance(2 * 86400);
     $jobs = array_values(array_filter($p->get('state')['mail'], static fn ($m) => $m['kind'] === 'job'));
-    checkEquals(['scout'], array_values(array_unique(array_column($jobs, 'role'))), 'kleines Label: nur Scouts, keine Assistenz');
+    check(in_array('scout', array_column($jobs, 'role'), true), 'Scout gleich zu Beginn');
+    check(count(array_filter($jobs, static fn ($m) => $m['role'] === 'assistant' && $m['tier'] === 1)) >= 1, 'Assistenz (Praktikum) gleich zu Beginn');
+    check(!array_filter($jobs, static fn ($m) => $m['role'] === 'manager'), 'Manager erst mit etwas Erfolg');
     checkEquals(null, $p->get('state')['assistant']);
     $state = $p->post('mailTest')['state'];
     $jobs = array_values(array_filter($state['mail'], static fn ($m) => $m['kind'] === 'job' && $m['role'] === 'assistant'));

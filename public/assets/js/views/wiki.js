@@ -78,8 +78,29 @@ function indexPage(index, own) {
 }
 
 function labelPage(l) {
+  const active = l.bands.filter((b) => b.status !== 'former').length;
+  const signed = l.signies.filter((s) => s.status !== 'former').length;
+  const lead = `<b>${esc(l.name)}</b> ist ein Plattenlabel, gegründet am ${day(l.foundedAt)}. ${signed
+    ? `Unter Vertrag ${signed === 1 ? 'steht ein Signie' : `stehen ${signed} Signies`} in ${active === 1 ? 'einer Band' : `${active} Bands`}${l.recordCount ? `; erschienen ${l.recordCount === 1 ? 'ist eine Platte' : `sind ${l.recordCount} Platten`}` : ''}.`
+    : 'Noch steht niemand unter Vertrag.'}`;
+  const top = l.topRecords.map((r) => `<li><b>„${esc(r.title)}“</b> von ${link('band', r.bandId, r.band)} <small class="muted">${r.topped ? 'Platz 1' : `bester Platz ${r.best}`}${r.perfect ? ' · perfekt' : ''}</small></li>`).join('');
   return `
-    <div class="wk-head"><h1>${esc(l.name)}</h1><p class="muted">Label${l.own ? ' (deins)' : ''}</p></div>
+    <div class="wk-article">
+      <aside class="wk-box"><h3>${esc(l.name)}</h3><table>
+        ${row('Gegründet', day(l.foundedAt))}
+        ${row('Erfolg', fmt1(l.success))}
+        ${row('Platten', l.recordCount || '')}
+        ${row('Nummer-1-Hits', l.numberOnes || '')}
+        ${row('Perfekte Platten', l.perfectCount || '')}
+        ${row('Auftritte', l.gigs || '')}
+      </table></aside>
+      <h1>${esc(l.name)}</h1>
+      <p class="muted">Label${l.own ? ' (deins)' : ''}</p>
+      <p class="wk-lead">${lead}</p>
+      ${top ? `<h2>Größte Erfolge</h2><ul class="wk-list">${top}</ul>` : ''}
+      ${l.topBands.length ? `<h2>Bekannteste Bands</h2><ul class="wk-list">${l.topBands.map((b) => `<li>${link('band', b.id, b.name)} <small class="muted">Ruhm ${fmt1(b.fame)}</small></li>`).join('')}</ul>` : ''}
+      ${l.milestones.length ? `<h2>Geschichte</h2><ul class="wk-events">${l.milestones.map((m) => `<li><time>${day(m.at)}</time> ${esc(m.text)}</li>`).join('')}</ul>` : ''}
+    </div>
     ${lists(l)}`;
 }
 

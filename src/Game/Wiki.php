@@ -62,14 +62,57 @@ final class Wiki
         return ['labels' => $labels];
     }
 
-    /** Seite eines Labels: seine Bands und Signies. */
+    /** Seite eines Labels: Gründung, Erfolg, größte Erfolge, Meilensteine, dazu seine Bands und Signies. Für alle lesbar. */
     public static function label(Repo $repo, int $id): array
     {
-        $l = $repo->db->one('SELECT id, name FROM labels WHERE id = ?', [$id]);
+        $db = $repo->db;
+        $l = $db->one('SELECT id, name, created_at FROM labels WHERE id = ?', [$id]);
         if ($l === null) {
             throw new ApiError('Dieses Label gibt es nicht.', 404);
         }
-        return ['id' => $id, 'name' => $l['name'], 'own' => $id === $repo->labelId] + self::lists($repo->db, $id);
+        $owner = $id === $repo->labelId ? $repo : new Repo($db, $id);
+        $bands = [];
+        foreach ($owner->bands() as $b) {
+            $bands[] = ['id' => $b['id'], 'name' => $b['name'], 'fame' => round(BandCalc::bandFame($b, $owner->members($b['id'])), 1), 'gigs' => $b['gigs_played']];
+        }
+        usort($bands, static fn ($a, $b) => $b['fame'] <=> $a['fame']);
+        $records = $db->all(
+            "SELECT r.title, r.songs_total, r.perfect, r.rank_best, r.topped, r.finished_at, b.id AS band_id, b.name AS band_name
+             FROM records r JOIN bands b ON b.id = r.band_id WHERE r.label_id = ? AND r.status = 'done' ORDER BY r.finished_at",
+            [$id]
+        );
+        $present = static fn ($r) => [
+            'title' => $r['title'], 'bandId' => (int) $r['band_id'], 'band' => $r['band_name'], 'best' => $r['rank_best'] === null ? null : (int) $r['rank_best'],
+            'topped' => (bool) $r['topped'], 'perfect' => (bool) $r['perfect'], 'at' => (int) $r['finished_at'],
+        ];
+        $charted = array_values(array_filter($records, static fn ($r) => $r['rank_best'] !== null));
+        usort($charted, static fn ($a, $b) => [(int) $a['rank_best'], (int) $a['finished_at']] <=> [(int) $b['rank_best'], (int) $b['finished_at']]);
+        // Meilensteine: erste Band, erste Platte, erste Nummer 1, erste perfekte Platte.
+        $milestones = [];
+        $firstBand = $db->one('SELECT name, created_at FROM bands WHERE label_id = ? ORDER BY created_at, id LIMIT 1', [$id]);
+        if ($firstBand !== null) {
+            $milestones[] = ['at' => (int) $firstBand['created_at'], 'text' => sprintf('Die erste Band: %s.', $firstBand['name'])];
+        }
+        foreach ([[static fn ($r) => true, 'Die erste Platte: „%s“ von %s.'], [static fn ($r) => (bool) $r['topped'], 'Zum ersten Mal auf Platz 1: „%s“ von %s.'], [static fn ($r) => (bool) $r['perfect'], 'Die erste perfekte Platte: „%s“ von %s.']] as [$test, $text]) {
+            foreach ($records as $r) {
+                if ($test($r)) {
+                    $milestones[] = ['at' => (int) $r['finished_at'], 'text' => sprintf($text, $r['title'], $r['band_name'])];
+                    break;
+                }
+            }
+        }
+        usort($milestones, static fn ($a, $b) => $a['at'] <=> $b['at']);
+        return [
+            'id' => $id, 'name' => $l['name'], 'own' => $id === $repo->labelId, 'foundedAt' => (int) $l['created_at'],
+            'success' => round(array_sum(array_column($bands, 'fame')), 1),
+            'recordCount' => count($records),
+            'numberOnes' => count(array_filter($records, static fn ($r) => (bool) $r['topped'])),
+            'perfectCount' => count(array_filter($records, static fn ($r) => (bool) $r['perfect'])),
+            'gigs' => array_sum(array_column($bands, 'gigs')),
+            'topBands' => array_slice($bands, 0, 3),
+            'topRecords' => array_map($present, array_slice($charted, 0, 5)),
+            'milestones' => $milestones,
+        ] + self::lists($db, $id);
     }
 
     /** Suche über alle Labels (Bands und Signies, höchstens je 25 Treffer). */

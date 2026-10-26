@@ -95,8 +95,13 @@ final class Inbox
         $db = $this->repo->db;
         $c = Balance::JOBS;
         $at = (int) $db->value('SELECT job_at FROM labels WHERE id = ?', [$this->repo->labelId]);
+        // Solange es keine Assistenz gibt, liegt immer eine einfache Bewerbung dafür da (eine Assistenz hilft früh).
+        if ((int) $db->value("SELECT COUNT(*) FROM staff WHERE label_id = ? AND role = 'assistant'", [$this->repo->labelId]) === 0
+            && !array_filter($db->all("SELECT data FROM mail WHERE label_id = ? AND kind = 'job'", [$this->repo->labelId]), static fn ($r) => (json_decode($r['data'], true)['role'] ?? '') === 'assistant')) {
+            $this->store('job', self::applicant('assistant', 0.0, 1), $now, $c['ttl']);
+        }
         if ($at === 0) {
-            // Willkommens-Brief: Ein einfacher Scout bewirbt sich gleich zu Beginn.
+            // Willkommens-Brief: Ein einfacher Scout bewirbt sich gleich zu Beginn (die Assistenz steht oben).
             if ((int) $db->value("SELECT COUNT(*) FROM staff WHERE label_id = ? AND role = 'scout'", [$this->repo->labelId]) === 0) {
                 $this->store('job', self::applicant('scout', 0.0, 1), $now, $c['ttl']);
             }

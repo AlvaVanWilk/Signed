@@ -47,21 +47,17 @@ function scatter(id) {
 const levelCount = (skill) => Math.min(3, cat().rules.skillLevels.filter((t) => skill >= t).length);
 const levelOf = (s) => Math.max(...(s.kind === 'band' ? s.members : [s]).flatMap((m) => m.instruments.map((i) => i.skill)).map(levelCount));
 
-/** Kassette: Anklicken zeigt „Sichten“ oder „Wegwerfen“ direkt auf ihr. Sonst steht nichts darunter. */
+/** Kassette: Antippen hört sie gleich an (ein paar Sekunden), das kleine × wirft sie ungehört weg. */
 function tape(s, busy) {
   const listening = s.state === 'listening';
   const total = cat().rules.submissionListen ?? 5;
   const elapsed = listening ? Math.max(0, total - (s.opensAt - serverNow())) : 0;
-  const sel = !listening && app.ui.subSel === s.submissionId;
   return `
-    <div class="lb-tapeitem ${listening ? 'playing' : ''} ${sel ? 'sel' : ''}">
-      <div class="lb-tape-big" data-act="subSel" data-id="${s.submissionId}" title="${expires(s)}">${cassette(s.hint)}
+    <div class="lb-tapeitem ${listening ? 'playing' : ''}">
+      <div class="lb-tape-big" ${listening ? '' : `data-act="submissionOpen" data-id="${s.submissionId}" ${off(busy ? 'Du hörst gerade schon eine andere Kassette an.' : '')}`} title="${listening ? 'Wird angehört …' : 'Anhören'}">${cassette(s.hint)}
         ${listening ? `<span class="lb-prog tiny"><i style="animation-duration:${total}s;animation-delay:-${elapsed.toFixed(2)}s"></i></span>` : ''}
-        ${sel ? `<div class="lb-tape-menu">
-          <button class="btn small primary" data-act="submissionOpen" data-id="${s.submissionId}" ${off(busy ? 'Du sichtest gerade schon eine andere Kassette.' : '')}>Sichten</button>
-          <button class="btn small ghost" data-act="submissionDrop" data-id="${s.submissionId}">Wegwerfen</button>
-          <small>${expires(s)}</small></div>` : ''}
       </div>
+      ${listening ? '' : `<button class="lb-tape-x" data-act="submissionDrop" data-id="${s.submissionId}" title="Ungehört wegwerfen" aria-label="Ungehört wegwerfen">✕</button>`}
     </div>`;
 }
 
@@ -278,10 +274,10 @@ export function render() {
     : 'Gerade liegt nichts im Briefkasten. Es trudelt laufend etwas ein.';
   return `
     <div class="section-head"><h1>Posteingang</h1>${isTest() ? '<span class="lb-test"><button class="btn small" data-act="submissionsTest" data-closed="1">Test: neue Kassetten</button><button class="btn small" data-act="submissionsTest">Test: gesichtete Bewerber</button><button class="btn small" data-act="mailTest">Test: Briefe</button></span>' : ''}</div>
-    <p class="muted">Hier kommt alles an: Kassetten von Musikern, die zu dir wollen, Interview-Anfragen für deine Leute und Bewerbungen fürs Label. Jede Kassette musst du erst anhören. Alles liegt nur eine Weile, dann ist es weg.</p>
+    <p class="muted">Hier kommt alles an: Kassetten von Musikern, die zu dir wollen, Interview-Anfragen für deine Leute und Bewerbungen fürs Label. Tipp eine Kassette an, dann hörst du sie an. Alles liegt nur eine Weile, dann ist es weg.</p>
     ${(s.scouts ?? []).map(scoutBar).join('')}
     ${(s.tutors ?? []).map(tutorBar).join('')}
-    ${a ? assistantBar(a) : '<p class="lb-assist-hint muted small">Ohne Assistenz liegt alles auf einem Stapel. Wenn dein Label bekannter wird, bewerben sich Leute, die die Post für dich sortieren.</p>'}
+    ${a ? assistantBar(a) : '<p class="lb-assist-hint muted small">Ohne Assistenz liegt alles auf einem Stapel. Eine Assistenz sortiert die Post für dich und hört Kassetten an. Schau bei den Bewerbungen.</p>'}
     <div class="lb-boxes">${tabs.map(([k, label, n]) => `<button class="${box === k ? 'on' : ''}" data-act="subBox" data-key="${k}">${label} <small>${n}</small></button>`).join('')}</div>
     ${showDemos ? `<div class="lb-filter">${[['all', 'Alle'], ['unheard', 'Ungehört'], ['0', 'Stufe 0'], ['1', 'Stufe 1'], ['2', 'Stufe 2'], ['3', 'Stufe 3']].map(([k, label]) => `<button class="${f === k ? 'on' : ''}" data-act="subFilter" data-key="${k}">${label}</button>`).join('')}</div>` : ''}
     ${shownLetters.length || demos.length ? `<div class="lb-slots" data-slots>${shownLetters.map(letterSlot).join('')}${demos.map((x) => slot(x, busy)).join('')}</div>` : `<div class="empty">${empty}</div>`}`;
@@ -648,19 +644,7 @@ document.addEventListener('pointerup', () => dragEnd(false));
 document.addEventListener('pointercancel', () => dragEnd(true));
 document.addEventListener('click', (e) => { if (Date.now() < swallowUntil) { e.stopPropagation(); e.preventDefault(); } }, true);
 
-// Ein Tipp neben die Kassette nimmt ihre Auswahl wieder weg.
-document.addEventListener('click', (e) => {
-  if (app.ui?.subSel != null && document.querySelector('[data-slots]') && !e.target.closest('.lb-tapeitem')) {
-    app.ui.subSel = null;
-    rerender();
-  }
-});
-
 defineActions({
-  subSel({ id }) {
-    app.ui.subSel = app.ui.subSel === Number(id) ? null : Number(id);
-    rerender();
-  },
   subBox({ key }) {
     app.ui.subBox = key;
     rerender();
@@ -699,7 +683,6 @@ defineActions({
     if (res) toast(`${s.firstName} ${s.lastName} hat unterschrieben.`, 'ok');
   },
   async submissionOpen({ id }) {
-    app.ui.subSel = null;
     await mutate('submissionOpen', { submissionId: Number(id) });
   },
   async submissionDrop({ id }) {

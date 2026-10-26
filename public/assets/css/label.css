@@ -1022,3 +1022,6 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .bb-day h3 { margin: 0 0 2px; font-size: .86rem; }
 .bb-mini { display: flex; gap: 8px; align-items: center; font-size: .8rem; }
 .bb-empty { margin: 0; color: #f1e6d2; opacity: .8; font-size: .88rem; }
+.lb-tapeitem { position: relative; }
+.lb-tape-x { position: absolute; right: 8px; bottom: 10px; width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--lb-line); background: rgba(20, 18, 27, .9); color: var(--lb-muted); font-size: .7rem; line-height: 1; padding: 0; cursor: pointer; z-index: 3; }
+.lb-tape-x:hover { color: var(--lb-text); border-color: var(--lb-accent); }

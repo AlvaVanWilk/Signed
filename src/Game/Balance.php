@@ -193,7 +193,7 @@ final class Balance
     public const JOBS = [
         'perDay' => 3.0, 'ttl' => 2 * 86400, 'maxCatchUp' => 2 * 86400, 'half' => 300.0, 'weights' => [3, 2, 1],
         'roles' => [
-            'assistant' => ['weight' => 1, 'minSuccess' => 10.0], 'scout' => ['weight' => 1, 'minSuccess' => 0.0],
+            'assistant' => ['weight' => 1, 'minSuccess' => 0.0], 'scout' => ['weight' => 1, 'minSuccess' => 0.0],
             'teacher' => ['weight' => 2, 'minSuccess' => 0.0], 'coach' => ['weight' => 1, 'minSuccess' => 5.0],
             'manager' => ['weight' => 1, 'minSuccess' => 15.0],
         ],
@@ -531,7 +531,7 @@ final class Balance
         'kinds' => [['Kurs', 50, 600, 3.0, 80], ['Workshop', 35, 1800, 5.0, 150], ['Meisterklasse', 15, 3600, 8.0, 300]],
         'levels' => ['Anfänger', 'Fortgeschrittene', 'Profis'],
         'priceFactor' => [1, 3, 8],
-        'perDay' => 3,
+        'perDay' => 1,
     ];
     /**
      * Etüden: Noten pro Sekunde je Rolle bei Können 0 und 100, dazwischen nach Können^ETUDE_CURVE.

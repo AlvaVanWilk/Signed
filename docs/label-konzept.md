@@ -264,7 +264,7 @@ nicht pro Spieler gewürfelt), wie bei den Tageskursen. Man sieht vorher Preis u
 | Reiter | Was | Wirkung | Wann |
 |---|---|---|---|
 | **Instrumente** | gezielt für einen Musiker, in verschiedener Güte | Klang, Sound, Wohlbefinden (Wünsche), nötig zum Proben | von Anfang an |
-| **Kurse** | einzelne Musiker fördern; mehrere Kurse, aus denen man wählt (Instrument, Dauer, Preis), täglich gleich für alle (gebaut: drei am Tag mit verschiedenen Instrumenten, `Balance::COURSE['perDay']`; jeder Musiker einmal am Tag) | Können (ohne Bremse), Wohlbefinden je Charakter (Ehrgeizige mögen Kurse) | von Anfang an |
+| **Kurse** | einzelne Musiker fördern; mehrere Kurse, aus denen man wählt (Instrument, Dauer, Preis), täglich gleich für alle (gebaut: einer am Tag, `Balance::COURSE['perDay']`; die Woche steht auf dem Schwarzen Brett) | Können (ohne Bremse), Wohlbefinden je Charakter (Ehrgeizige mögen Kurse) | von Anfang an |
 | **Proberaum** | Ausstattung **einer Band**, in Stufen | Proben bringen mehr Können und stärken die Beziehung | früh, teure Stufen später |
 | **Auszeit** | Wochenende, Urlaub, Ausflug für **eine Band** | hebt die Stimmung (Gelassene und Ruhepole freuen sich besonders), Band ist dabei für eine Zeit nicht verfügbar | mittel; Preis steigt mit der Bandgröße |
 | **Bühnentechnik** | Licht, Ton, Show, Stufen | größere Orte füllen sich leichter (Erwartung sinkt), Diva und Rampensau freuen sich | mit größeren Bühnen |
@@ -284,7 +284,7 @@ Jede neue Art braucht einen eigenen Zweck und Wunsch (Perfektionist → Proberau
 (Interviews für die eigenen Musiker, `Inbox`) und **Bewerbungen** (Leute fürs Label; gebaut ist die Assistenz, Scout, Lehrer und Manager folgen).
 Alles läuft ab (Demos 4 Tage, Anfragen 8 Stunden, Bewerbungen 2 Tage; die Restzeit steht darauf) und lässt sich mit dem Lesezeichen merken
 („Gespeichert“; ablaufen tut es trotzdem). Die Zahl am Menüpunkt zählt, was nicht gemerkt ist. **Ohne Assistenz** liegt alles gemischt auf einem Stapel.
-- **Bewerbungen** kommen im Schnitt zwei am Tag (`Balance::JOBS`), erst ab etwas Erfolg (Assistenz ab 10). Wie gut die Bewerber sind, folgt dem Erfolg
+- **Bewerbungen** kommen im Schnitt drei am Tag (`Balance::JOBS`); Scout und eine einfache Assistenz liegen von Anfang an da (solange es keine Assistenz gibt, immer eine), Manager erst ab Erfolg 15. Wie gut die Bewerber sind, folgt dem Erfolg
   **gesättigt**: Güte = Erfolg / (Erfolg + 300), also oben offen, nie ganz 1. Jede Stufe bewirbt sich erst ab ihrer Güte; die beste erreichbare kommt am häufigsten.
 - **Assistenz** (gebaut, `Assistant`): einmalig bezahlt (Praktikum 250 ₲, Assistenz 900, Senior 2.500, Leitung 6.000). Sie sortiert die Post in
   Reiter (Demos, Anfragen, Bewerbungen, Gespeichert), hört jeden Tag Demos an (20 / 60 / 150 / 400, die ältesten zuerst, gemerkte nicht; mehrere
@@ -317,7 +317,7 @@ In der Wirklichkeit schicken Künstler Demos an Labels, und Talentsucher hören 
 
 **1. Einsendungen** kommen von selbst ins Haus.
 - Jeden Tag kommen **Einsendungen** an, **für jedes Label eine eigene Auswahl** (ein Künstler bewirbt sich nur bei einem Label). Sie liegen als **neutrale Umschläge/Tapes** im Briefkasten.
-  Außen steht **nichts** (weder Solo noch Band). Gebaut (Testversion) als **Kassette**: Anklicken zeigt zwei Wahlmöglichkeiten, **Sichten** (5 Sekunden, serverseitig, `Balance::SUBMISSIONS['listen']`), danach wird aus der Kassette an derselben Stelle eine Visitenkarte in fast gleicher Größe und Schräglage) oder **Wegwerfen**; der Server verrät vorher nichts. Einzelne Musiker und Bands; Assistenz und Scout fehlen noch. Anklicken **öffnet** („entblößen“, etwa 5 Sekunden) und zeigt, was drin ist: meist **Unnützes** (sehr schwach, kein erkennbares Genre),
+  Außen steht **nichts** (weder Solo noch Band). Gebaut (Testversion) als **Kassette**: Antippen hört sie gleich an, ein kleines × wirft sie ungehört weg (früher: zwei Wahlmöglichkeiten, **Sichten** (5 Sekunden, serverseitig, `Balance::SUBMISSIONS['listen']`), danach wird aus der Kassette an derselben Stelle eine Visitenkarte in fast gleicher Größe und Schräglage) oder **Wegwerfen**; der Server verrät vorher nichts. Einzelne Musiker und Bands; Assistenz und Scout fehlen noch. Anklicken **öffnet** („entblößen“, etwa 5 Sekunden) und zeigt, was drin ist: meist **Unnützes** (sehr schwach, kein erkennbares Genre),
   manchmal **Gutes**. Das Öffnen hat etwas von einem Pack, soll aber **Arbeit** sein.
 - **Laufend statt einmal am Tag:** Die Einsendungen **trudeln über den Tag verteilt ein** (Zufallszeiten, nicht alle auf einmal); bei einem kleinen Label etwa alle drei Stunden eine, bei einem großen alle paar Minuten.
   Wer wartet, bekommt mehr zu tun, und offline sammeln sich Einsendungen bis zum Verfallsdatum.
@@ -527,6 +527,8 @@ Beim ersten Login nach dem Umbau (Saison 2) bleiben **Labelname und Konto**, all
 ### WikiSignia über alle Labels
 
 - Oberste Ebene ist das **Label**: Verzeichnis `#/wiki` (eigenes Label mit Bands und Signies, dazu die anderen), Labelseite `#/wiki/label/<id>`, Artikel zeigen ihr Label. Auch Künstler und Bands fremder Labels sind lesbar; von fremden Labels sieht man nur Einträge ohne Geld (lineup, band, record, level).
+- **Labelartikel:** Gründung, Erfolg (Summe des Ruhms), Zahl der Platten, Nummer-1-Hits, perfekte Platten und Auftritte, die größten Erfolge
+  (beste Chartplätze), die bekanntesten Bands und Meilensteine (erste Band, erste Platte, erste Nummer 1, erste perfekte Platte).
 - Protokolliert werden für jeden Künstler: Unterschrift, Bandwechsel, Stufenaufstiege (Können und Bekanntheit), gelernte Fähigkeiten, Platten, Ende.
 - Suche über alle Labels (`wikiSearch`). Zugang über den Knopf „WikiSignia“ im Label-Menü oben rechts.
 - **Namensschutz:** Eine ehemalige Band behält ihren Namen nur geschützt, wenn sie am Ende mindestens `Balance::NAME_PROTECT_FAME` (20, erste Bekanntheitsstufe) Ruhm am Namen hatte; sonst wird der Name frei. Wiederbeleben ist noch nicht möglich.

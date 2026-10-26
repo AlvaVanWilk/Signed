@@ -294,6 +294,13 @@ Alles läuft ab (Demos 4 Tage, Anfragen 8 Stunden, Bewerbungen 2 Tage; die Restz
 - **Songwriting-Coach** (gebaut): gebucht für **1 Tag und eine Band** (oder einen Solokünstler; 400 / 1.200 / 3.000 ₲). In der Zeit entstehen
   Songs 1,5- / 1,75- / 2-mal so schnell, und die Songs aus dieser Zeit machen die nächste Platte besser (+4 / +8 / +12 % Qualität, anteilig nach
   gecoachten Songs; `bands.coached_songs`). Eine Band hat höchstens einen Coach zugleich (`Balance::COACH`).
+- **Manager** (gebaut, `Managers`): bewerben sich ab Erfolg 15, einmalig bezahlt und teuer (1.500 / 5.000 / 15.000 ₲, Stärke 1 / 3 / 5).
+  Jeder hat ein bis zwei **Schwerpunkt-Genres** (oft eins, das im Label gespielt wird), einen **Stil** (Charakterzug) und ein bis zwei Wirkungen:
+  **Verhandler** (Gage), **PR-Profi** (Ruhm bei Auftritten), **Netzwerker** (Interviews bringen +10 % je Stärke), **Vermittler** (was der Band
+  nicht gefällt, ärgert sie 15 % je Stärke weniger, höchstens 80 %), **Gespür** (zeigt alle Charakterzüge seiner Musiker).
+  **Passung** zur Band = Faktor auf die Stärke: gemeinsame Genres 0 / 1 / 2 → ×0,6 / ×1 / ×1,25, dazu +0,2 × Anteil der Mitglieder mit seinem
+  Stil (widersprüchlicher Zug zählt minus), zwischen 0,4 und 1,45. Wie bisher bis zu drei Bands, die Stärke wird geteilt. Eingesetzt wird er
+  auf der Bandseite („Manager wählen“); die Bewerbung zeigt vorher, zu welchen Bands er passt (`Balance::MANAGER_STAFF`).
 
 In der Wirklichkeit schicken Künstler Demos an Labels, und Talentsucher hören sich um. Ein Label sucht nicht aus einem Katalog aller Menschen aus. Zwei Wege, die nichts miteinander zu tun haben:
 

@@ -111,7 +111,9 @@ final class Inbox
         }
         $roles = array_filter($c['roles'], static fn ($r) => $success >= $r['minSuccess']);
         $own = [];
+        $genres = [];
         foreach ($this->repo->musicians() as $m) {
+            $genres = array_merge($genres, $m['genres']);
             $own[] = $m['instr1'];
             if ($m['instr2'] !== null) {
                 $own[] = $m['instr2'];
@@ -121,14 +123,14 @@ final class Inbox
             $created = (int) ($at + $i * $interval);
             if ($roles && $created + $c['ttl'] > $now) {
                 $role = (string) Rng::weighted(array_map(static fn ($r) => $r['weight'], $roles));
-                $this->store('job', self::applicant($role, self::quality($success), null, $own), $created, $c['ttl']);
+                $this->store('job', self::applicant($role, self::quality($success), null, $own, $genres), $created, $c['ttl']);
             }
         }
         $db->update('labels', ['job_at' => (int) ($at + $count * $interval)], ['id' => $this->repo->labelId]);
     }
 
     /** Eine Bewerbung: Person, Rolle und Stufe. Die beste Stufe, die sich bei dieser Güte schon bewirbt, kommt am häufigsten. */
-    public static function applicant(string $role, float $quality, ?int $tier = null, array $ownInstruments = []): array
+    public static function applicant(string $role, float $quality, ?int $tier = null, array $ownInstruments = [], array $ownGenres = []): array
     {
         $tiers = self::tiers($role);
         if ($tier === null) {
@@ -148,6 +150,9 @@ final class Inbox
                 : (string) Rng::weighted(array_map(static fn ($i) => $i['weight'], Catalog::INSTRUMENTS));
             $out['genre'] = Rng::chance($c['genreChance']) ? (string) Rng::pick(Catalog::INSTRUMENTS[$out['instrument']]['genres']) : null;
         }
+        if ($role === 'manager') {
+            $out += Managers::applicant($tier, $ownGenres);
+        }
         return $out;
     }
 
@@ -159,6 +164,7 @@ final class Inbox
             'scout' => Balance::SCOUT_STAFF['tiers'],
             'teacher' => Balance::TEACHER['tiers'],
             'coach' => Balance::COACH['tiers'],
+            'manager' => Balance::MANAGER_STAFF['tiers'],
             default => throw new ApiError('Unbekannte Bewerbung.'),
         };
     }
@@ -181,7 +187,13 @@ final class Inbox
     public function list(int $now): array
     {
         $rows = $this->repo->db->all('SELECT * FROM mail WHERE label_id = ? AND expires_at > ? ORDER BY created_at DESC, id DESC', [$this->repo->labelId, $now]);
-        return array_map(static function (array $r): array {
+        $bands = null;
+        // Manager: wie gut er zu jeder Band passen würde.
+        $fits = function (array $d) use (&$bands): object {
+            $bands ??= array_map(fn ($b) => $this->repo->members($b['id']), $this->repo->bands());
+            return (object) array_map(static fn ($members) => round(Managers::fit($d, $members), 2), $bands);
+        };
+        return array_map(static function (array $r) use ($fits): array {
             $d = json_decode($r['data'], true);
             $base = ['mailId' => (int) $r['id'], 'kind' => $r['kind'], 'createdAt' => (int) $r['created_at'], 'expiresAt' => (int) $r['expires_at'], 'saved' => (bool) $r['saved']];
             if ($r['kind'] === 'interview') {
@@ -199,6 +211,8 @@ final class Inbox
                 'seconds' => $tier['seconds'] ?? null, 'candidates' => $tier['candidates'] ?? null, 'maxSkill' => $tier['maxSkill'] ?? (isset($tier['skill']) ? $tier['skill'][1] : null),
                 'instrument' => $d['instrument'] ?? null, 'genre' => $d['genre'] ?? null, 'gain' => $tier['gain'] ?? null,
                 'speed' => $tier['speed'] ?? null, 'quality' => $tier['quality'] ?? null,
+                'level' => $tier['level'] ?? null, 'skills' => $d['skills'] ?? null, 'genres' => $d['genres'] ?? null, 'style' => $d['style'] ?? null,
+                'fits' => $d['role'] === 'manager' ? $fits($d) : null,
                 'firstName' => $d['first_name'], 'lastName' => $d['last_name'], 'look' => $d['look'],
             ];
         }, $rows);
@@ -233,10 +247,13 @@ final class Inbox
                 throw new ApiError(sprintf('%s ist gerade unterwegs.', $m['first_name']));
             }
             $db->exec('DELETE FROM mail WHERE id = ?', [$id]);
+            // Netzwerker: Ein Manager mit guten Kontakten holt mehr aus dem Interview.
+            [$manager, $level] = Managers::of($this->repo, $m['band_id']);
+            $gain = self::interviewGain($d) * (1 + BandCalc::managerBonus($manager, $level, 'netzwerker', Balance::MANAGER_STAFF['network']));
             return (new Activities($this->repo))->insertSolo($m['id'], 'interview', $now, $endsAt, [
                 'title' => sprintf('Interview: %s bei %s', Bands::fullName($m), $d['medium']),
                 'songs' => 0,
-                'reward' => ['fame' => self::interviewGain($d), 'medium' => $d['medium']],
+                'reward' => ['fame' => round($gain, 2), 'medium' => $d['medium']],
             ]);
         });
     }
@@ -281,6 +298,16 @@ final class Inbox
                 return 0;
             }
             $this->repo->spend((int) $tier['price'], sprintf('Eingestellt: %s %s (%s)', $d['first_name'], $d['last_name'], $roleName));
+            if ($d['role'] === 'manager') {
+                $managerId = $this->repo->insertManager([
+                    'first_name' => $d['first_name'], 'last_name' => $d['last_name'], 'look' => $d['look'],
+                    'rarity' => [1 => 'common', 2 => 'epic', 3 => 'legendary'][(int) $d['tier']], 'level' => (int) $tier['level'],
+                    'skills' => $d['skills'], 'genres' => $d['genres'], 'style' => $d['style'],
+                ]);
+                $db->exec('DELETE FROM mail WHERE id = ?', [$id]);
+                $this->repo->log('staff', sprintf('%s %s ist jetzt Manager bei uns.', $d['first_name'], $d['last_name']));
+                return $managerId;
+            }
             if ($d['role'] === 'assistant') {
                 // Was bisher liegen blieb, erledigen die alten; die neue fängt jetzt an.
                 (new Assistant($this->repo))->work(Clock::now());
@@ -327,6 +354,7 @@ final class Inbox
         }
         $own = array_values(array_unique(array_column($this->repo->musicians(), 'instr1')));
         foreach ([1, 2, 3] as $tier) {
+            $this->store('job', self::applicant('manager', 1.0, $tier, [], ['rock']), $now - 40 - $tier, Balance::JOBS['ttl']);
             $this->store('job', self::applicant('teacher', 1.0, $tier, $own ?: ['guitar']), $now - 20 - $tier, Balance::JOBS['ttl']);
             $this->store('job', self::applicant('coach', 1.0, $tier), $now - 30 - $tier, Balance::JOBS['ttl']);
         }

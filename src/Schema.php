@@ -534,6 +534,11 @@ final class Schema
                 'ALTER TABLE bands ADD COLUMN coached_songs REAL NOT NULL DEFAULT 0',
                 'ALTER TABLE bands ADD COLUMN coach_bonus REAL NOT NULL DEFAULT 0',
             ],
+            // 41: Manager aus dem Posteingang – Schwerpunkt-Genres und Stil (Charakterzug); alte Manager ohne beides passen überall mittel
+            [
+                'ALTER TABLE managers ADD COLUMN genres TEXT NULL',
+                'ALTER TABLE managers ADD COLUMN style VARCHAR(16) NULL',
+            ],
         ];
     }
 }

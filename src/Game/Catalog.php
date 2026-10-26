@@ -254,6 +254,7 @@ final class Catalog
     public const STAFF_ROLES = [
         'assistant' => ['name' => 'Assistenz', 'tiers' => [1 => 'Praktikum', 2 => 'Assistenz', 3 => 'Senior-Assistenz', 4 => 'Leitung Posteingang']],
         'scout' => ['name' => 'Scout', 'tiers' => [1 => 'Scout', 2 => 'Erfahrener Scout', 3 => 'Top-Scout']],
+        'manager' => ['name' => 'Manager', 'tiers' => [1 => 'Manager', 2 => 'Erfahrener Manager', 3 => 'Star-Manager']],
         'teacher' => ['name' => 'Privatunterricht', 'tiers' => [1 => 'Lehrkraft', 2 => 'Profi-Lehrkraft', 3 => 'Meister-Lehrkraft']],
         'coach' => ['name' => 'Songwriting-Coach', 'tiers' => [1 => 'Songwriting-Coach', 2 => 'Erfahrener Coach', 3 => 'Hit-Coach']],
     ];
@@ -272,6 +273,7 @@ final class Catalog
         'lust' => '%s hatte bei der Probe schnell keine Lust mehr.',
         'rehearsal' => 'Bei der Probe hast du %s besser kennengelernt.',
         'time' => '%s ist jetzt schon eine Weile bei euch.',
+        'manager' => '%2$s kennt %1$s inzwischen gut.',
     ];
     /** Anordnungen im Satz („Lust auf …“). */
     public const TRAIT_REVEAL_ORDERS = [
@@ -362,7 +364,9 @@ final class Catalog
         'prprofi' => ['name' => 'PR-Profi', 'desc' => 'Mehr Ruhm bei Auftritten seiner Bands.', 'active' => true],
         'scout' => ['name' => 'Scout', 'desc' => 'Weniger gewöhnliche Karten in allen Packs des Labels – auch ohne Band. Der beste Scout zählt.', 'active' => true],
         'tourplaner' => ['name' => 'Tourplaner', 'desc' => 'Mehr und passendere Locations bei Tourneen.', 'active' => false],
-        'netzwerker' => ['name' => 'Netzwerker', 'desc' => 'Zugang zu ausgeschriebenen und exklusiven Gigs.', 'active' => false],
+        'netzwerker' => ['name' => 'Netzwerker', 'desc' => 'Interviews seiner Musiker bringen mehr Bekanntheit.', 'active' => true],
+        'vermittler' => ['name' => 'Vermittler', 'desc' => 'Wenn seiner Band etwas nicht gefällt, ärgert sie sich weniger.', 'active' => true],
+        'gespuer' => ['name' => 'Gespür', 'desc' => 'Kennt seine Musiker genau: zeigt dir alle ihre Charakterzüge.', 'active' => true],
     ];
 
     /**

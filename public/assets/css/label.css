@@ -985,3 +985,9 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .lb-pick-row[aria-disabled=true] { opacity: .5; }
 .lb-pick-row small { display: block; }
 .lb-tutor { margin: 8px 0; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--lb-line); background: var(--lb-card); font-size: .88rem; color: var(--lb-muted); display: grid; gap: 3px; }
+.lb-mgr { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--lb-line); border-radius: 12px; background: var(--lb-card); }
+.lb-mgr > span:nth-child(2) { flex: 1; }
+.lb-mgr small { display: block; }
+.lb-pick-row.on { border-color: var(--lb-accent); }
+.lb-pick-row em { margin-left: auto; font-style: normal; color: var(--lb-muted); font-size: .8rem; }
+.lb-pick-row > span:nth-child(2) { flex: 1; }

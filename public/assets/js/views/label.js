@@ -1,6 +1,6 @@
 import { api } from '../api.js';
 import { abilityInfo, genreGlyph, hiddenTraits, genreName, gearModel, instrumentIcon, instrumentName, ownGear, photo, sortedGenres } from '../cards.js';
-import { actions, app, bandById, cat, defineActions, isBusy, mutate, musicianById, runningFor, serverNow } from '../core.js';
+import { actions, app, bandById, cat, defineActions, isBusy, managerById, mutate, musicianById, runningFor, serverNow } from '../core.js';
 import { closePopover, confirmDialog, duration, esc, fmt0, fmt1, fmtGain, money, off, openModal, popover, toast } from '../ui.js';
 import { getAudio } from '../audio.js';
 import { playedInstrument, stage } from '../figure.js';
@@ -254,6 +254,55 @@ function wishBlock(b, members) {
 }
 
 /** Eine Anordnung: gesperrt, wenn ein roter Musiker sie ablehnt; sonst mit Hinweis, wem sie nicht gefällt. */
+/** Wie gut ein Manager zu einer Band passt, in Worten. */
+export const fitWord = (f) => (f >= 1.2 ? 'passt sehr gut' : f >= 0.95 ? 'passt gut' : f >= 0.7 ? 'passt so lala' : 'passt schlecht');
+const skillNames = (m) => m.skills.map((k) => cat().managerSkills[k]?.name ?? k).join(', ');
+
+/** Manager der Band: wer, wie gut er passt, was er bewirkt. Ohne Manager im Label steht hier nichts. */
+function managerBlock(b) {
+  const all = app.state.managers ?? [];
+  if (!all.length) return '';
+  const m = b.managerId ? managerById(b.managerId) : null;
+  return `<h2 class="lb-cap lb-sec">Manager</h2>
+    <div class="lb-mgr">${m
+      ? `<span class="lb-ph sm">${photo({ id: m.id, look: m.look })}</span><span><b>${esc(m.firstName)} ${esc(m.lastName)}</b> ${fitWord(b.managerFit ?? 1)}<small class="muted">${esc(skillNames(m))} · Stärke ${fmt1(b.managerLevel)}${m.bandIds.length > 1 ? ` (geteilt mit ${m.bandIds.length - 1} ${m.bandIds.length === 2 ? 'Band' : 'Bands'})` : ''}</small></span>`
+      : '<span class="muted">Noch kein Manager für diese Band.</span>'}
+      <button class="btn small" data-act="managerPick" data-id="${b.id}">${m ? 'Ändern' : 'Manager wählen'}</button></div>`;
+}
+
+function managerPicker(bandId) {
+  const b = bandById(bandId);
+  const max = cat().rules.managerMaxBands;
+  const modal = openModal({
+    className: 'lb-rules-modal',
+    render: () => `
+      <div class="lb-cap">Manager</div>
+      <h2>Wer kümmert sich um ${esc(b.name)}?</h2>
+      <p class="muted">Ein Manager kann bis zu ${max} Bands betreuen, teilt seine Kraft dann aber auf. Am meisten bringt er, wenn Genre und Stil zur Band passen.</p>
+      <div class="lb-pick">${app.state.managers.map((m) => {
+        const mine = m.id === b.managerId;
+        const full = !mine && m.bandIds.length >= max;
+        const fit = m.fits?.[b.id] ?? 1;
+        return `<button class="lb-pick-row ${mine ? 'on' : ''}" data-manager="${mine ? '' : m.id}" ${off(full ? `${m.firstName} betreut schon ${max} Bands.` : '')}>
+          <span class="lb-ph sm">${photo({ id: m.id, look: m.look })}</span>
+          <span><b>${esc(m.firstName)} ${esc(m.lastName)}</b> ${mine ? '· betreut diese Band' : `· ${fitWord(fit)}`}
+            <small class="muted">${m.genres.length ? `${m.genres.map((g) => esc(genreName(g))).join(', ')} · ` : ''}${m.style ? `Stil: ${esc(cat().personalities[m.style])} · ` : ''}${esc(skillNames(m))} · ${m.bandIds.length}/${max} Bands</small></span>
+          ${mine ? '<em>Abziehen</em>' : ''}</button>`;
+      }).join('')}</div>
+      <div class="dialog-actions"><button class="btn ghost" data-close>Schließen</button></div>`,
+  });
+  modal.body.addEventListener('click', async (e) => {
+    if (e.target.closest('[data-close]')) return modal.close();
+    const row = e.target.closest('[data-manager]');
+    if (!row || row.getAttribute('aria-disabled') === 'true') return;
+    const id = row.dataset.manager ? Number(row.dataset.manager) : null;
+    if (await mutate('bandSetManager', { bandId: b.id, managerId: id })) {
+      modal.close();
+      toast(id ? `${managerById(id).firstName} kümmert sich jetzt um ${b.name}.` : 'Manager abgezogen.', 'ok');
+    }
+  });
+}
+
 /** Gebuchter Coach oder Lehrer: kurz auf der Bandseite, damit man sieht, dass gerade jemand hilft. */
 function tutorNotice(b, members) {
   const lines = (app.state.tutors ?? []).filter((t) => (t.role === 'coach' ? t.bandId === b.id : members.some((m) => m.id === t.musicianId))).map((t) => (t.role === 'coach'
@@ -533,6 +582,7 @@ export function page(route) {
       ${act(b, members, 'gig', null, 'Auftritt buchen', 'Orte, Kosten und Gewinn sehen', ICON.gig, false, !!blocker(b, members))}
     </div>
     ${course}
+    ${managerBlock(b)}
     ${running ? '' : roomBlock(b, members)}
     <h2 class="lb-cap lb-sec">Musiker</h2>
     <div class="lb-members">
@@ -684,6 +734,9 @@ async function openGigs(b) {
 const signedMoney = (v) => `${v < 0 ? '−' : '+'}${money(Math.abs(v))}`;
 
 defineActions({
+  managerPick({ id }) {
+    managerPicker(Number(id));
+  },
   genreOverview() {
     openGenreOverview();
   },

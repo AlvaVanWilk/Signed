@@ -191,10 +191,14 @@ final class Mood
     public static function react(Repo $repo, array $members, string $type, float $factor = 1.0): void
     {
         $step = Balance::MOOD['reactStep'];
+        // Vermittler: Was der Band nicht gefällt, ärgert sie mit einem guten Manager weniger.
+        [$manager, $level] = Managers::of($repo, $members[0]['band_id'] ?? null);
+        $c = Balance::MANAGER_STAFF;
+        $soften = 1 - min($c['mediatorMax'], BandCalc::managerBonus($manager, $level, 'vermittler', $c['mediator']));
         foreach ($members as $m) {
             $score = self::liking($m['personality'], $type);
             if ($score !== 0) {
-                $value = max(0.0, min(100.0, $m['wellbeing'] + $step * max(-1, min(1, $score)) * $factor));
+                $value = max(0.0, min(100.0, $m['wellbeing'] + $step * max(-1, min(1, $score)) * $factor * ($score < 0 ? $soften : 1.0)));
                 $repo->db->update('musicians', ['wellbeing' => round($value, 3)], ['id' => $m['id']]);
             }
         }

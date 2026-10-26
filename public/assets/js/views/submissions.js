@@ -2,7 +2,7 @@ import { genreGlyph, genreName, hiddenTraits, traitNames, instrumentIcon, instru
 import { api } from '../api.js';
 import { actions, app, bandById, cat, defineActions, isBusy, mutate, musicianById, rerender, serverNow } from '../core.js';
 import { confirmDialog, esc, money, off, openModal, toast } from '../ui.js';
-import { levelClass, levelProgress, relColor } from './label.js';
+import { fitWord, levelClass, levelProgress, relColor } from './label.js';
 
 /**
  * Posteingang: Demos (Musiker bewerben sich von selbst beim Label), Interview-Anfragen und Bewerbungen fürs Label.
@@ -175,7 +175,8 @@ function jobLetter(m) {
   const what = m.role === 'assistant' ? `öffnet ${m.perDay} Demos am Tag${m.tier >= 2 ? ', sortiert nach Regeln' : ''}`
     : m.role === 'scout' ? `${m.candidates} Talente in ${mins(m.seconds)} (Können bis ${m.maxSkill})`
     : m.role === 'teacher' ? `${days(m.seconds)} für einen Musiker: +${m.gain} Können (bis ${m.maxSkill})${m.genre ? `, bei ${genreName(m.genre)} mehr` : ''}`
-    : m.role === 'coach' ? `${days(m.seconds)} für eine Band: Songs ${fmtFactor(m.speed)} so schnell, Platte +${Math.round(m.quality * 100)} %` : '';
+    : m.role === 'coach' ? `${days(m.seconds)} für eine Band: Songs ${fmtFactor(m.speed)} so schnell, Platte +${Math.round(m.quality * 100)} %`
+    : m.role === 'manager' ? `${m.genres.map((g) => genreName(g)).join(', ')} · ${m.skills.map((k) => cat().managerSkills[k]?.name ?? k).join(', ')}` : '';
   const book = ['teacher', 'coach'].includes(m.role);
   return `
     <article class="lb-letter job">
@@ -362,6 +363,35 @@ function reportDialog(mailId) {
       return;
     }
     if (e.target.closest('[data-close]')) modal.close();
+  });
+}
+
+// ---------- Manager einstellen ----------
+
+/** Bewerbung eines Managers: was er kann, wofür er steht und zu welcher Band er passen würde. */
+function managerDialog(m) {
+  const best = app.state.bands.map((b) => ({ b, f: m.fits?.[b.id] ?? 1 })).sort((x, y) => y.f - x.f).slice(0, 3);
+  const modal = openModal({
+    className: 'lb-rules-modal',
+    html: `
+      <div class="lb-cap">Bewerbung</div>
+      <div class="lb-info-head"><span class="lb-ph">${photo({ id: m.mailId, look: m.look })}</span>
+        <div><h2>${esc(m.firstName)} ${esc(m.lastName)}</h2><small class="muted">${esc(roleName(m))} · Stärke ${m.level}</small></div></div>
+      <h3>Kann</h3>
+      <ul class="lb-trait-list">${m.skills.map((k) => `<li><b>${esc(cat().managerSkills[k]?.name ?? k)}</b> ${esc(cat().managerSkills[k]?.desc ?? '')}</li>`).join('')}</ul>
+      <h3>Am liebsten</h3>
+      <p>${m.genres.map((g) => esc(genreName(g))).join(' und ')}, Stil: ${esc(cat().personalities[m.style] ?? '')}. Bands mit diesem Genre und Musiker mit diesem Charakterzug passen am besten.</p>
+      ${best.length ? `<p class="muted">${best.map(({ b, f }) => `${esc(b.name)}: ${fitWord(f)}`).join(' · ')}</p>` : ''}
+      <div class="dialog-actions"><button class="btn ghost" data-close>Abbrechen</button><button class="btn primary" data-ok ${off(app.state.label.money < m.price ? `Dafür fehlen noch ${money(m.price - app.state.label.money)}.` : '')}>Einstellen · ${money(m.price)}</button></div>`,
+  });
+  modal.body.addEventListener('click', async (e) => {
+    if (e.target.closest('[data-close]')) return modal.close();
+    const ok = e.target.closest('[data-ok]');
+    if (!ok || ok.getAttribute('aria-disabled') === 'true') return;
+    if (await mutate('mailHire', { mailId: m.mailId })) {
+      modal.close();
+      toast(`${m.firstName} ist jetzt Manager. Auf der Seite einer Band kannst du ${m.firstName} einsetzen.`, 'ok');
+    }
   });
 }
 
@@ -680,6 +710,10 @@ defineActions({
   },
   async mailHire({ id }) {
     const m = app.state.mail.find((x) => x.mailId === Number(id));
+    if (m?.role === 'manager') {
+      managerDialog(m);
+      return;
+    }
     if (!m || !(await confirmDialog(`${m.firstName} ${m.lastName} für ${money(m.price)} einstellen? Du bezahlst nur einmal.`, { ok: 'Einstellen' }))) return;
     if (await mutate('mailHire', { mailId: Number(id) })) toast(`${m.firstName} arbeitet jetzt für dich.`, 'ok');
   },

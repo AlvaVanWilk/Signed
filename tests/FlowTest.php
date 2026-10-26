@@ -2105,3 +2105,56 @@ test('Songwriting-Coach: eine Band schreibt in der Zeit schneller, die gecoachte
     Clock::advance(Balance::COACH['tiers'][3]['seconds']);
     checkEquals([], $p->get('state')['tutors']);
 });
+
+test('Manager als Bewerbung: Passung nach Genre und Stil, Netzwerker, Vermittler und Gespür wirken', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Chefin');
+    $band = foundBand($p);
+    $db->exec('UPDATE labels SET money = 100000');
+    $state = $p->post('mailTest')['state'];
+    $jobs = array_values(array_filter($state['mail'], static fn ($m) => $m['kind'] === 'job' && $m['role'] === 'manager'));
+    checkEquals([1, 2, 3], array_values(array_unique(array_column($jobs, 'tier'))));
+    $top = array_values(array_filter($jobs, static fn ($m) => $m['tier'] === 3))[0];
+    // Festlegen: Rock, Netzwerker und Gespür, Stil, den keiner hat.
+    $row = $db->one('SELECT data FROM mail WHERE id = ?', [$top['mailId']]);
+    $d = json_decode($row['data'], true);
+    $d['genres'] = ['rock'];
+    $d['skills'] = ['netzwerker', 'gespuer'];
+    $d['style'] = 'ruhepol';
+    $db->update('mail', ['data' => json_encode($d)], ['id' => $top['mailId']]);
+    $db->exec("UPDATE musicians SET personality = '[\"ehrgeizig\"]', known_traits = '[]'");
+    $res = $p->post('mailHire', ['mailId' => $top['mailId']]);
+    checkEquals(100000 - Balance::MANAGER_STAFF['tiers'][3]['price'], $res['state']['label']['money']);
+    $managerId = $res['staffId'];
+    $manager = array_values(array_filter($res['state']['managers'], static fn ($m) => $m['id'] === $managerId))[0];
+    checkEquals(['rock'], $manager['genres']);
+    checkEquals(1.0, (float) $manager['fits']->{$band['id']}, 'Rock-Band, Stil ohne Wirkung: passt mittel');
+    // Andere Genres passen schlechter.
+    $repo = new Signed\Game\Repo($db, (int) $res['state']['label']['id']);
+    $members = $repo->members($band['id']);
+    check(Signed\Game\Managers::fit(['genres' => ['jazz'], 'style' => null], $members) < 0.7, 'fremdes Genre');
+    check(Signed\Game\Managers::fit(['genres' => ['rock'], 'style' => 'ehrgeizig'], $members) > 1.1, 'gleicher Stil passt besser');
+    $state = $p->post('bandSetManager', ['bandId' => $band['id'], 'managerId' => $managerId])['state'];
+    $b = bandById($state, $band['id']);
+    checkEquals(5.0, (float) $b['managerLevel']);
+    // Gespür: Die Züge sind jetzt alle bekannt.
+    foreach ($state['musicians'] as $m) {
+        checkEquals(0, $m['hiddenTraits'], 'Gespür zeigt alle Züge');
+    }
+    // Netzwerker: Interviews bringen mehr.
+    $state = $p->post('mailTest')['state'];
+    $iv = array_values(array_filter($state['mail'], static fn ($m) => $m['kind'] === 'interview'))[0];
+    $res = $p->post('mailAccept', ['mailId' => $iv['mailId']]);
+    $data = json_decode((string) $db->value('SELECT data FROM activities WHERE id = ?', [$res['activity']['id']]), true);
+    check(abs($data['reward']['fame'] - $iv['fame'] * (1 + 5 * Balance::MANAGER_STAFF['network'])) < 0.02, 'Netzwerker: +50 %');
+    // Vermittler dämpft schlechte Laune: Wer Straßenmusik nicht mag (ehrgeizig), verliert weniger.
+    $drop = static function () use ($db, $repo, $band): float {
+        $db->exec('UPDATE musicians SET wellbeing = 60 WHERE band_id = ?', [$band['id']]);
+        Signed\Game\Mood::react($repo, $repo->members($band['id']), 'busking');
+        return 60 - (float) $db->value('SELECT wellbeing FROM musicians WHERE band_id = ? LIMIT 1', [$band['id']]);
+    };
+    $without = $drop();
+    $db->update('managers', ['skills' => json_encode(['vermittler'])], ['id' => $managerId]);
+    $with = $drop();
+    check($without > 0 && $with < $without * 0.5, "Vermittler: $without → $with");
+});

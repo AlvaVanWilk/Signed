@@ -18,6 +18,7 @@ final class State
         (new Inbox($repo))->topUp($now, $submissions->success());
         (new Scouting($repo))->settle($now);
         (new Tutors($repo))->settle($now);
+        Managers::settle($repo);
         (new Assistant($repo))->work($now);
         Bands::ensureSoloBands($repo);
         $label = $repo->label();
@@ -104,7 +105,8 @@ final class State
             $fame = BandCalc::bandFame($band, $list);
             $chemistry = BandCalc::chemistry($list);
             $manager = $band['manager_id'] !== null ? ($managers[$band['manager_id']] ?? null) : null;
-            $level = BandCalc::managerLevel($manager, count($managerBands[$band['manager_id']] ?? []));
+            $fit = $manager === null ? null : Managers::fit($manager, $list);
+            $level = round(BandCalc::managerLevel($manager, count($managerBands[$band['manager_id']] ?? [])) * ($fit ?? 1.0), 2);
             $venue = BandCalc::venue($fame);
             $open = $openRecords[$band['id']] ?? null;
             $draw = BandCalc::freshness($band['gigs_since_record']);
@@ -135,6 +137,7 @@ final class State
                 'genreChecks' => $identity['checks'],
                 'managerId' => $band['manager_id'],
                 'managerLevel' => $level,
+                'managerFit' => $fit === null ? null : round($fit, 2),
                 'memberIds' => array_map(static fn ($m) => $m['id'], $list),
                 'room' => Rooms::present($repo, $band, count($list)),
                 'sound' => $sound,
@@ -276,7 +279,10 @@ final class State
             }, $musicians)),
             'gear' => $gearOut,
             'store' => (new Store($repo))->present(),
-            'managers' => array_values(array_map(static fn ($m) => Present::manager($m, $managerBands[$m['id']] ?? []), $managers)),
+            // Je Manager, wie gut er zu jeder Band passt (für die Auswahl).
+            'managers' => array_values(array_map(static fn ($m) => Present::manager($m, $managerBands[$m['id']] ?? []) + [
+                'fits' => (object) array_map(static fn ($list) => round(Managers::fit($m, $list), 2), $members),
+            ], $managers)),
             'items' => array_map(static fn ($i) => ['id' => (int) $i['id'], 'kind' => $i['kind'], 'value' => (float) $i['value']], $items),
             'bands' => $bandsOut,
             'running' => array_map([Present::class, 'activity'], $running),

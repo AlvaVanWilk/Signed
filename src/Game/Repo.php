@@ -347,6 +347,8 @@ final class Repo
             'level' => $m['level'],
             'skills' => json_encode($m['skills']),
             'look' => json_encode($m['look']),
+            'genres' => isset($m['genres']) ? json_encode($m['genres']) : null,
+            'style' => $m['style'] ?? null,
             'created_at' => Clock::now(),
         ]);
     }
@@ -361,6 +363,8 @@ final class Repo
             'level' => (int) $r['level'],
             'skills' => json_decode($r['skills'], true) ?: [],
             'look' => json_decode($r['look'], true) ?: [],
+            'genres' => json_decode((string) ($r['genres'] ?? ''), true) ?: [],
+            'style' => $r['style'] ?? null,
         ];
     }
 
@@ -428,7 +432,7 @@ final class Repo
             return [null, 0.0];
         }
         $manager = $this->manager($band['manager_id']);
-        return [$manager, BandCalc::managerLevel($manager, $this->managerBandCount($manager['id']))];
+        return [$manager, round(BandCalc::managerLevel($manager, $this->managerBandCount($manager['id'])) * Managers::fit($manager, $this->members($band['id'])), 2)];
     }
 
     // ---------- Platten ----------

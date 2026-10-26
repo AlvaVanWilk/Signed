@@ -195,6 +195,7 @@ final class Balance
         'roles' => [
             'assistant' => ['weight' => 1, 'minSuccess' => 10.0], 'scout' => ['weight' => 1, 'minSuccess' => 0.0],
             'teacher' => ['weight' => 2, 'minSuccess' => 0.0], 'coach' => ['weight' => 1, 'minSuccess' => 5.0],
+            'manager' => ['weight' => 1, 'minSuccess' => 15.0],
         ],
     ];
     /**
@@ -209,6 +210,23 @@ final class Balance
             3 => ['price' => 2500, 'seconds' => 2 * 86400, 'gain' => 16.0, 'maxSkill' => 100, 'from' => 0.6],
         ],
         'genreChance' => 0.4, 'genreFactor' => 1.3, 'ownInstrument' => 0.7,
+    ];
+    /**
+     * Manager aus dem Posteingang: einmalig bezahlt und teuer. Stufe wie bisher (`level`, geteilt durch die Zahl der Bands, höchstens
+     * MANAGER_MAX_BANDS), dazu ein bis zwei Schwerpunkt-Genres und ein Stil (Charakterzug). Passung zur Band: `fit` nach gemeinsamen Genres
+     * (0, 1, 2), `style` mal Anteil der Mitglieder mit demselben Zug (mit widersprüchlichem Zug minus), begrenzt auf `fitRange`.
+     * Wirkungen je Stufe: Verhandler (NEGOTIATOR_BONUS, Gage), PR-Profi (PR_BONUS, Ruhm bei Auftritten), Netzwerker (`network`, Interviews bringen mehr),
+     * Vermittler (`mediator`, schlechte Laune nach Anordnungen fällt schwächer aus, höchstens `mediatorMax`), Gespür (zeigt alle Charakterzüge der Band).
+     */
+    public const MANAGER_STAFF = [
+        'tiers' => [
+            1 => ['price' => 1500, 'level' => 1, 'skills' => 1, 'from' => 0.0],
+            2 => ['price' => 5000, 'level' => 3, 'skills' => 2, 'from' => 0.35],
+            3 => ['price' => 15000, 'level' => 5, 'skills' => 2, 'from' => 0.7],
+        ],
+        'skills' => ['verhandler', 'prprofi', 'netzwerker', 'vermittler', 'gespuer'],
+        'fit' => [0 => 0.6, 1 => 1.0, 2 => 1.25], 'style' => 0.2, 'fitRange' => [0.4, 1.45],
+        'network' => 0.1, 'mediator' => 0.15, 'mediatorMax' => 0.8,
     ];
     /**
      * Songwriting-Coach: gebucht für `seconds` und genau eine Band oder einen Solokünstler. In der Zeit entstehen Songs × `speed`, und die Songs

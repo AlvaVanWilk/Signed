@@ -70,6 +70,8 @@ final class Present
             'level' => $m['level'],
             'skills' => $m['skills'],
             'look' => (object) $m['look'],
+            'genres' => $m['genres'] ?? [],
+            'style' => $m['style'] ?? null,
             'bandIds' => $bandIds,
         ];
     }

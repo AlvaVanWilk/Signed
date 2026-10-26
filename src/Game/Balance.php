@@ -594,6 +594,16 @@ final class Balance
     public const RECORD_ESTIMATE = ['low' => 0.4];
     /** Drei neue Cover-Entwürfe kosten ein kleines Honorar fürs Grafikbüro. */
     public const COVER_REDRAW = 25;
+    /**
+     * Wer das Cover gestaltet: Honorar, wie klar und glänzend es wird (Wertigkeit 1–3 der Zutaten, cover.js) und wie viel besser sich die Platte
+     * verkauft (Erstverkauf). Ein Bandlogo, das schon auf einer früheren Platte war, verkauft dazu `COVER_LOGO_SALES` mehr (Wiedererkennung).
+     */
+    public const COVER_DESIGNERS = [
+        'student' => ['name' => 'Kunststudentin', 'fee' => 20, 'rarity' => 0, 'sales' => 0.0],
+        'agentur' => ['name' => 'Agentur', 'fee' => 150, 'rarity' => 2, 'sales' => 0.03],
+        'star' => ['name' => 'Star-Designerin', 'fee' => 600, 'rarity' => 3, 'sales' => 0.06],
+    ];
+    public const COVER_LOGO_SALES = 0.03;
     /** Früher: Studiozeit als Grundpreis plus pro Lied (nur noch für die Erstattung alter, offener Produktionen). */
     public const RECORD_COST = 150;
     public const RECORD_COST_PER_SONG = 80;

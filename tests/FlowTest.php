@@ -440,7 +440,7 @@ test('Platte produzieren, dann Gigs spielen, dann die nächste Platte', function
     $db->exec('UPDATE bands SET songs_written = 4 WHERE id = ?', [$band['id']]);
     checkApiError(fn () => $p->post('recordStart', ['producer' => 'roxy'] + $start), 'Produzenten');
     $state = $p->post('recordStart', $start)['state'];
-    checkEquals($money - Signed\Game\Studio::cost(3, 3, 'diamond'), $state['label']['money']);
+    checkEquals($money - Signed\Game\Studio::cost(3, 3, 'diamond') - Balance::COVER_DESIGNERS['student']['fee'], $state['label']['money'], 'Studio, Produzent und Cover');
     checkEquals('Debüt', bandById($state, $band['id'])['record']['open']['title']);
     checkEquals(1, (int) floor((float) $db->value('SELECT songs_written FROM bands WHERE id = ?', [$band['id']])), 'Die Songs kommen aus dem Vorrat');
     checkApiError(fn () => $p->post('recordStart', ['title' => 'Noch eine'] + $start), 'nimmt gerade auf');
@@ -2164,4 +2164,37 @@ test('Manager als Bewerbung: Passung nach Genre und Stil, Netzwerker, Vermittler
     $db->update('managers', ['skills' => json_encode(['vermittler'])], ['id' => $managerId]);
     $with = $drop();
     check($without > 0 && $with < $without * 0.5, "Vermittler: $without → $with");
+});
+
+test('Cover: Designer machen es klarer und verkaufen mehr, das Bandlogo wird einmal gewählt und hilft ab der zweiten Platte', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Grafik');
+    $band = foundBand($p);
+    $db->exec('UPDATE labels SET money = 100000');
+    $db->exec('UPDATE musicians SET wellbeing = 90');
+    $db->exec('UPDATE bands SET songs_written = 10 WHERE id = ?', [$band['id']]);
+    $opts = $p->post('recordOptions', ['bandId' => $band['id'], 'songs' => 3]);
+    checkEquals(null, $opts['logo']);
+    checkApiError(fn () => $p->post('recordStart', ['bandId' => $band['id'], 'title' => 'Feuer', 'songs' => 3, 'studio' => 0, 'producer' => 'none', 'cover' => $opts['covers'][0], 'designer' => 'star', 'logo' => ['font' => 'comic', 'color' => 'gold']]), 'Schrift');
+    checkApiError(fn () => $p->post('recordStart', ['bandId' => $band['id'], 'title' => 'Feuer', 'songs' => 3, 'studio' => 0, 'producer' => 'none', 'cover' => $opts['covers'][0], 'designer' => 'picasso']), 'gestalten');
+    $money = (int) $db->value('SELECT money FROM labels');
+    $p->post('recordStart', ['bandId' => $band['id'], 'title' => 'Feuer', 'songs' => 3, 'studio' => 0, 'producer' => 'none', 'cover' => $opts['covers'][0], 'designer' => 'star', 'logo' => ['font' => 'block', 'color' => 'gold']]);
+    checkEquals($money - Signed\Game\Studio::cost(3, 0, 'none') - Balance::COVER_DESIGNERS['star']['fee'], (int) $db->value('SELECT money FROM labels'));
+    $cover = json_decode((string) $db->value('SELECT cover FROM records WHERE band_id = ? ORDER BY id DESC LIMIT 1', [$band['id']]), true);
+    checkEquals([3, 3, 3, 3], $cover['spec']['rarity'], 'Star-Designerin: Gold');
+    checkEquals(['font' => 'block', 'color' => 'gold'], $cover['spec']['logo']);
+    checkEquals(Balance::COVER_DESIGNERS['star']['sales'], (float) $cover['sales'], 'erste Platte: noch ohne Wiedererkennung');
+    Clock::advance(3 * Balance::RECORD_SECONDS_PER_SONG + 5);
+    $state = $p->get('state');
+    checkEquals(['font' => 'block', 'color' => 'gold'], bandById($state, $band['id'])['logo']);
+    // Zweite Platte: Das Logo bleibt (ein neues wird nicht genommen) und verkauft mit.
+    $db->exec('UPDATE musicians SET wellbeing = 90');
+    $db->exec('UPDATE bands SET live_songs = live_songs_needed, band_promos = 99 WHERE id = ?', [$band['id']]);
+    $opts = $p->post('recordOptions', ['bandId' => $band['id'], 'songs' => 3]);
+    checkEquals(true, $opts['logoSales']);
+    $p->post('recordStart', ['bandId' => $band['id'], 'title' => 'Ohne Wort', 'songs' => 3, 'studio' => 0, 'producer' => 'none', 'cover' => $opts['covers'][0], 'designer' => 'student', 'logo' => ['font' => 'serif', 'color' => 'rot']]);
+    $cover = json_decode((string) $db->value('SELECT cover FROM records WHERE band_id = ? ORDER BY id DESC LIMIT 1', [$band['id']]), true);
+    checkEquals([0, 0, 0, 0], $cover['spec']['rarity'], 'Kunststudentin: blass');
+    checkEquals('block', $cover['spec']['logo']['font'], 'Logo bleibt');
+    checkEquals(Balance::COVER_LOGO_SALES, (float) $cover['sales']);
 });

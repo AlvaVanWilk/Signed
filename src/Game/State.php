@@ -165,6 +165,7 @@ final class State
                 'chemistry' => $chemistry,
                 'songsRecorded' => $band['songs_recorded'],
                 'records' => $band['records'],
+                'logo' => $band['logo'],
                 'perfectRecords' => $band['perfect_records'],
                 'gigsPlayed' => $band['gigs_played'],
                 'gigsSinceRecord' => $band['gigs_since_record'],

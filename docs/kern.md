@@ -287,7 +287,9 @@ Bei Können 70 entspricht +16 etwa zwölf Stunden Proben; für Anfänger lohnt e
   Je Stufe darunter −6 Wohlbefinden (Egozentrische und Perfektionistische × 1,5), je Stufe darüber +3.
 - Der Dialog zeigt für jede Wahl Kosten, Qualität und den erwarteten Ertrag: Erstverkauf plus Tantiemen, solange sie chartet
   (Summe des Chart-Verlaufs über 7 Tage; untere Schätzung 40 %). Teure Produzenten lohnen sich erst für starke, bekannte Bands.
-- **Cover:** Das Grafikbüro legt drei Entwürfe vor (Motiv, Farben, Stil, Anordnung), neue kosten 25 ₲. Das Cover wirkt nicht aufs Spiel.
+- **Cover:** Das Grafikbüro legt drei Entwürfe vor (Motiv, Farben, Stil, Anordnung), neue kosten 25 ₲. Wer es gestaltet, kostet dazu und hebt den
+  Erstverkauf: Kunststudentin 20 ₲ (+0 %), Agentur 150 ₲ (+3 %), Star-Designerin 600 ₲ (+6 %). Ein Bandlogo, das schon auf einer früheren Platte war, +3 %.
+  Erstverkauf × (1 + Designer + Logo); Tantiemen und Chartpunkte bleiben unberührt.
 - Fertig: Können 0,12 × Lieder × Qualität für alle Mitglieder, Zusammenspiel und Beziehungen wie nach einer Anordnung.
 - Fertig: Erstverkauf = Lieder × 60 ₲ × (0,3 + Qualität²) × LP-Bonus × Perfekt-Bonus × Verkäufe,
   Ruhm = Lieder × 0,6 × Soundfaktor × (0,3 + Qualität^1,5) × LP-Bonus × Perfekt-Bonus.

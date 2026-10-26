@@ -418,6 +418,7 @@ final class Repo
             'songs_written' => (float) ($r['songs_written'] ?? 0),
             'coached_songs' => (float) ($r['coached_songs'] ?? 0),
             'coach_bonus' => (float) ($r['coach_bonus'] ?? 0),
+            'logo' => json_decode((string) ($r['logo'] ?? ''), true) ?: null,
             'mood_at' => (int) ($r['mood_at'] ?? 0),
             'patience' => (float) ($r['patience'] ?? 1800),
             'busy_until' => (int) $r['busy_until'],

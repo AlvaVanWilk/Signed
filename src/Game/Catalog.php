@@ -358,6 +358,26 @@ final class Catalog
         'layout' => ['mitte', 'riesig', 'muster', 'schraeg'],
     ];
 
+    /** Bandlogo: Schrift und Farbe, einmal bei der ersten Platte gewählt, danach auf jedem Cover (gezeichnet in cover.js). */
+    public const LOGO_FONTS = ['block' => 'Kräftig', 'serif' => 'Klassisch', 'script' => 'Geschwungen', 'mono' => 'Schreibmaschine', 'round' => 'Rund', 'marker' => 'Filzstift'];
+    public const LOGO_COLORS = ['weiss' => 'Weiß', 'gold' => 'Gold', 'rot' => 'Rot', 'tuerkis' => 'Türkis', 'pink' => 'Pink', 'schwarz' => 'Schwarz'];
+    /** Steckt eines dieser Wörter im Plattentitel, zeigen die Cover-Entwürfe das passende Motiv. */
+    public const COVER_WORDS = [
+        'blitz' => ['blitz', 'donner', 'gewitter', 'strom', 'energie', 'thunder', 'lightning'],
+        'herz' => ['herz', 'liebe', 'love', 'heart', 'kuss'],
+        'stern' => ['stern', 'star', 'sterne', 'galaxie', 'himmel'],
+        'mond' => ['mond', 'nacht', 'moon', 'night', 'traum'],
+        'totenkopf' => ['tod', 'toten', 'skull', 'geist', 'gruft', 'grusel'],
+        'auge' => ['auge', 'augen', 'blick', 'sehen', 'eye'],
+        'welle' => ['welle', 'meer', 'ozean', 'see', 'wasser', 'surf', 'strand', 'wave'],
+        'rakete' => ['rakete', 'weltall', 'space', 'flug', 'rocket', 'mars'],
+        'krone' => ['krone', 'könig', 'königin', 'king', 'queen', 'gold'],
+        'katze' => ['katze', 'kater', 'cat', 'miau', 'tiger'],
+        'pilz' => ['pilz', 'wald', 'zauber', 'märchen'],
+        'flamme' => ['feuer', 'flamme', 'fire', 'brand', 'heiß', 'glut', 'sommer'],
+        'vinyl' => ['platte', 'vinyl', 'musik', 'song', 'radio', 'disco'],
+    ];
+
     /** active = wirkt schon im Kern; die anderen brauchen spätere Features. */
     public const MANAGER_SKILLS = [
         'verhandler' => ['name' => 'Verhandler', 'desc' => 'Mehr Gage bei Gigs seiner Bands.', 'active' => true],

@@ -991,3 +991,10 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .lb-pick-row.on { border-color: var(--lb-accent); }
 .lb-pick-row em { margin-left: auto; font-style: normal; color: var(--lb-muted); font-size: .8rem; }
 .lb-pick-row > span:nth-child(2) { flex: 1; }
+.rc-designers .rc-card { min-width: 0; }
+.rc-logos { display: flex; flex-wrap: wrap; gap: 6px; }
+.rc-logo { padding: 6px 12px; border-radius: 10px; border: 1px solid var(--lb-line); background: #2b2836; font-size: 1rem; font-weight: 700; cursor: pointer; text-shadow: 0 1px 2px rgba(0, 0, 0, .6); }
+.rc-logo.on { border-color: var(--lb-accent); box-shadow: 0 0 0 2px var(--lb-accent); }
+.rc-swatches { display: flex; gap: 8px; margin: 8px 0 4px; }
+.rc-swatch { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--lb-line); cursor: pointer; padding: 0; }
+.rc-swatch.on { box-shadow: 0 0 0 3px var(--lb-accent); }

@@ -539,6 +539,10 @@ final class Schema
                 'ALTER TABLE managers ADD COLUMN genres TEXT NULL',
                 'ALTER TABLE managers ADD COLUMN style VARCHAR(16) NULL',
             ],
+            // 42: Bandlogo (Schrift und Farbe), bei der ersten Platte gewählt und auf allen weiteren Covern
+            [
+                'ALTER TABLE bands ADD COLUMN logo TEXT NULL',
+            ],
         ];
     }
 }

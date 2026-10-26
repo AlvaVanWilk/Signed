@@ -77,6 +77,17 @@ export const LAYOUTS = {
   schraeg: { name: 'Schräg' },
 };
 
+/** Bandlogo: Schriften (nur Systemschriften, nichts nachladen) und Farben; die Namen stehen in Catalog::LOGO_FONTS / LOGO_COLORS. */
+export const LOGO_FONTS = {
+  block: '"Arial Black", "Helvetica Neue", Impact, sans-serif',
+  serif: 'Georgia, "Times New Roman", serif',
+  script: '"Snell Roundhand", "Brush Script MT", "Segoe Script", cursive',
+  mono: '"Courier New", Courier, monospace',
+  round: '"Cooper Black", "Arial Rounded MT Bold", Georgia, serif',
+  marker: '"Marker Felt", "Comic Sans MS", "Chalkboard SE", cursive',
+};
+export const LOGO_COLORS = { weiss: '#ffffff', gold: '#f2c14e', rot: '#e63946', tuerkis: '#2ec4b6', pink: '#ff70a6', schwarz: '#111111' };
+
 /** Punkte je Wertigkeit (gewöhnlich, grün, blau, gold) – daraus die Cover-Güte. */
 export const RARITY_POINTS = [0, 1, 2, 4];
 export const RARITY_NAMES = ['gewöhnlich', 'grün', 'blau', 'gold'];
@@ -134,7 +145,8 @@ function styled(style, motif, p, layout, id) {
       return {
         defs: `<filter id="${id}w" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency="0.06" numOctaves="3" seed="7"/><feDisplacementMap in="SourceGraphic" scale="7"/><feGaussianBlur stdDeviation="0.7"/></filter>`,
         bg: `<rect width="100" height="100" fill="#fbf7f0"/><g filter="url(#${id}w)" opacity="0.5"><circle cx="24" cy="26" r="22" fill="${p.accent}"/><circle cx="78" cy="74" r="26" fill="${p.bg}"/></g>`,
-        art: `<g filter="url(#${id}w)" opacity="0.88">${placed(layout, shape(`fill="${p.main}"`))}</g>`,
+        // Dünner Tuschestrich über der Farbe, damit man das Motiv erkennt.
+        art: `<g filter="url(#${id}w)" opacity="0.88">${placed(layout, shape(`fill="${p.main}"`))}</g>${placed(layout, shape(`fill="none" stroke="${p.ink}" stroke-width="0.8" opacity="0.55" ${thick}`))}`,
       };
     case 'kaleido': {
       const ring = [0, 90, 180, 270].map((a, i) => `<g transform="rotate(${a} 50 50)" opacity="${i % 2 ? 0.55 : 0.85}">${placed(layout, shape(`fill="${i % 2 ? p.accent : p.main}"`))}</g>`).join('');
@@ -191,8 +203,12 @@ export function coverSvg(spec, { band = '', title = '', className = '' } = {}) {
     : 'saturate(1.15) contrast(1.05)';
   const textColor = ['holzschnitt', 'aquarell'].includes(spec.style) ? p.ink : '#fff';
   const font = STYLES[spec.style].font;
+  // Mit Bandlogo steht der Name immer in derselben Schrift und Farbe (Wiedererkennung).
+  const logoFont = spec.logo ? LOGO_FONTS[spec.logo.font] ?? font : font;
+  const logoColor = spec.logo ? LOGO_COLORS[spec.logo.color] ?? textColor : textColor;
+  const logoStroke = spec.logo?.color === 'schwarz' ? '#ffffff' : p.ink;
   const text = (band || title) ? `
-    <text x="50" y="11" text-anchor="middle" font-family='${font}' font-size="8" font-weight="700" fill="${textColor}" stroke="${p.ink}" stroke-width="0.4" paint-order="stroke">${esc(band)}</text>
+    <text x="50" y="11" text-anchor="middle" font-family='${logoFont}' font-size="8" font-weight="700" fill="${logoColor}" stroke="${logoStroke}" stroke-width="${spec.logo ? 0.6 : 0.4}" paint-order="stroke">${esc(band)}</text>
     <text x="50" y="95" text-anchor="middle" font-family='${font}' font-size="5" fill="${textColor}" opacity="0.9">${esc(title)}</text>` : '';
   return `<svg class="cover ${gold ? 'cover-gold' : ''} ${className}" viewBox="0 0 100 100" role="img" aria-label="Plattencover">
     <defs>${s.defs}

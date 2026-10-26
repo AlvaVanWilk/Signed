@@ -108,7 +108,7 @@ final class Studio
     }
 
     /** Erstverkauf und Chartpunkte einer Platte dieser Qualität. */
-    private static function returns(array $band, array $members, array $gear, int $songs, float $quality, float $sound): array
+    private static function returns(array $band, array $members, array $gear, int $songs, float $quality, float $sound, float $coverSales = 0.0): array
     {
         $perfect = $quality >= Balance::RECORD_PERFECT_FROM;
         $lp = 1 + Balance::RECORD_LP_BONUS * max(0, $songs - Balance::RECORD_MIN_SONGS);
@@ -116,7 +116,7 @@ final class Studio
         $sales = 1 + min(Balance::RECORD_FAME_SALES_MAX, BandCalc::bandFame($band, $members) / Balance::RECORD_FAME_SALES);
         // Egozentrische stehen gern im Mittelpunkt, Kultobjekte verkaufen sich: Die Platte verkauft sich besser
         $sales *= 1 + array_sum(array_map(static fn ($m) => Mood::traitMax($m, Balance::TRAITS['recordSales'], 0.0) + Gear::value(BandCalc::gearOf($m, $gear), 'cult'), $members));
-        $money = (int) round($songs * Balance::RECORD_MONEY_PER_SONG * (0.3 + $quality ** 2) * $lp * $perfectFactor * $sales);
+        $money = (int) round($songs * Balance::RECORD_MONEY_PER_SONG * (0.3 + $quality ** 2) * $lp * $perfectFactor * $sales * (1 + $coverSales));
         $hit = array_sum(array_map(static fn ($m) => Gear::value(BandCalc::gearOf($m, $gear), 'hit'), $members));
         $points = round(Charts::points($songs, $quality, $sound, $perfect) * (1 + $hit), 1);
         return [$money, $points];
@@ -158,21 +158,27 @@ final class Studio
             'sound' => round($sound, 1),
             'blocker' => self::blocker($band, count($members), $this->repo->openRecord($bandId)),
             'options' => $out,
+            'logo' => $band['logo'],
+            'logoSales' => $band['logo'] !== null && $band['records'] > 0,
         ];
     }
 
     /** Aufnahme starten: Geld, Songs aus dem Vorrat, Band ins Studio. Die Platte erscheint, wenn die Zeit um ist. */
-    public function start(int $bandId, string $title, int $songs, int $studio, string $producer, array $cover): array
+    public function start(int $bandId, string $title, int $songs, int $studio, string $producer, array $cover, string $designer = 'student', mixed $logo = null): array
     {
         $title = Bands::cleanName($title, 'Der Plattentitel', 60);
         if ($songs < Balance::RECORD_MIN_SONGS || $songs > Balance::RECORD_MAX_SONGS) {
             throw new ApiError(sprintf('Eine Platte hat %d bis %d Lieder.', Balance::RECORD_MIN_SONGS, Balance::RECORD_MAX_SONGS));
         }
-        $spec = Cover::validate($cover);
+        $newLogo = Cover::logo($logo);
         $db = $this->repo->db;
-        return $db->transaction(function () use ($db, $bandId, $title, $songs, $studio, $producer, $spec): array {
+        return $db->transaction(function () use ($db, $bandId, $title, $songs, $studio, $producer, $cover, $designer, $newLogo): array {
             $now = Clock::now();
             $band = $this->repo->band($bandId);
+            // Das Bandlogo wird einmal gewählt; danach steht es auf jedem Cover und hilft beim Verkauf (Wiedererkennung).
+            $logo = $band['logo'] ?? $newLogo;
+            $spec = Cover::validate($cover, $designer, $logo);
+            $coverSales = Balance::COVER_DESIGNERS[$designer]['sales'] + ($band['logo'] !== null && $band['records'] > 0 ? Balance::COVER_LOGO_SALES : 0.0);
             $members = $this->repo->members($bandId);
             $blocker = self::blocker($band, count($members), $this->repo->openRecord($bandId)) ?? Activities::blocker($band, $members, $now);
             if ($blocker !== null) {
@@ -192,6 +198,10 @@ final class Studio
             }
             $p = Balance::PRODUCERS[$producer];
             $this->repo->spend(self::cost($songs, $studio, $producer), $producer === 'none' ? 'Studio: ' . Balance::STUDIOS[$studio]['name'] : sprintf('Studio: %s mit %s', Balance::STUDIOS[$studio]['name'], $p['name']));
+            $this->repo->spend(Balance::COVER_DESIGNERS[$designer]['fee'], sprintf('Cover: %s', Balance::COVER_DESIGNERS[$designer]['name']));
+            if ($band['logo'] === null && $newLogo !== null) {
+                $db->update('bands', ['logo' => json_encode($newLogo)], ['id' => $bandId]);
+            }
             $quality = min(1.0, self::quality($members, $gear, $studio, $producer) + Tutors::recordBonus($band, $songs));
             $endsAt = $now + $songs * Balance::RECORD_SECONDS_PER_SONG;
             // Die gecoachten Songs sind damit verbraucht; ohne sie gibt es auch keinen Zuschlag mehr.
@@ -217,7 +227,7 @@ final class Studio
                 'songs_done' => 0,
                 'song_results' => '[]',
                 'status' => 'open',
-                'cover' => json_encode(['spec' => $spec]),
+                'cover' => json_encode(['spec' => $spec, 'sales' => $coverSales]),
                 'studio' => Balance::STUDIOS[$studio]['key'],
                 'producer' => $producer,
                 'quality' => round($quality, 4),
@@ -272,7 +282,7 @@ final class Studio
         Mood::bond($this->repo, $members, 'record');
         Mood::react($this->repo, $this->repo->members($band['id']), 'record');
 
-        [$money, $chartPoints] = self::returns($band, $members, $gear, $songs, $quality, $sound);
+        [$money, $chartPoints] = self::returns($band, $members, $gear, $songs, $quality, $sound, (float) ($record['cover']['sales'] ?? 0.0));
         $lp = 1 + Balance::RECORD_LP_BONUS * max(0, $songs - Balance::RECORD_MIN_SONGS);
         $fame = $songs * Balance::RECORD_FAME_PER_SONG * BandCalc::soundFactor($sound) * (0.3 + $quality ** 1.5) * $lp * ($perfect ? Balance::RECORD_PERFECT_BONUS : 1.0);
         $gains = BandCalc::splitFame($members, $fame, $gear);

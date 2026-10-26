@@ -395,6 +395,11 @@ mehr alle glücklich halten kann; wer es weiter schafft, soll auch erfolgreicher
 Das Label wählt aus **drei Entwürfen** (Designer günstig / solide / aufwendig), erzeugt aus den bisherigen Bausteinen (Motiv, Farben, Stil, Anordnung).
 Ein stimmiger Stil zum Genre zählt. Kein Automat.
 
+Gebaut: **Wer gestaltet** – Kunststudentin (20 ₲, blass), Agentur (150 ₲, klar mit Glanz, Erstverkauf +3 %), Star-Designerin (600 ₲, Gold mit
+Folie, +6 %; `Balance::COVER_DESIGNERS`). Das **Bandlogo** (Schrift und Farbe) wählt man bei der ersten Platte; es steht danach auf jedem Cover,
+und ab der zweiten Platte verkauft es 3 % mehr (Wiedererkennung, `bands.logo`). Steckt ein passendes Wort im **Titel** („Herz“, „Feuer“, „Mond“ …,
+`Catalog::COVER_WORDS`), zeigen alle Entwürfe dieses Motiv. Die Schriften sind Systemschriften und sehen je nach Gerät etwas anders aus.
+
 ### Klang der Band („Profil“) – später
 
 Idee: Die Band spielt manchmal **zwei Versionen** eines Songs vor, das Label wählt eine. Aus den Wahlen entsteht ein Klangprofil. Machbar ohne neue

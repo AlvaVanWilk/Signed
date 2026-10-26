@@ -7,9 +7,10 @@ use Signed\ApiError;
 use Signed\Rng;
 
 /**
- * Plattencover: Das Grafikbüro legt drei Entwürfe vor (Motiv, Farben, Stil, Anordnung aus Catalog::COVER_PARTS), das Label wählt einen.
- * Neue Entwürfe kosten ein kleines Honorar (Balance::COVER_REDRAW). Das Cover sieht nur schön aus und wirkt nicht aufs Spiel.
- * Gezeichnet wird es im Browser (cover.js); alle Zutaten erscheinen in klarer Fassung (Wertigkeit 2, ohne Folie).
+ * Plattencover: Das Grafikbüro legt drei Entwürfe vor (Motiv, Farben, Stil, Anordnung aus Catalog::COVER_PARTS), das Label wählt einen
+ * und wer ihn gestaltet (Balance::COVER_DESIGNERS: teurer = klarer, mit Glanz, und die Platte verkauft sich etwas besser). Das Motiv folgt dem
+ * Titel, wenn ein passendes Wort darin steckt (im Browser, Catalog::COVER_WORDS). Neue Entwürfe kosten ein kleines Honorar (Balance::COVER_REDRAW).
+ * Gezeichnet wird es im Browser (cover.js), mit dem Bandlogo, sobald die Band eins hat.
  */
 final class Cover
 {
@@ -41,9 +42,12 @@ final class Cover
         return self::drafts();
     }
 
-    /** Ein gewähltes Cover prüfen: nur bekannte Zutaten. */
-    public static function validate(array $in): array
+    /** Ein gewähltes Cover prüfen: nur bekannte Zutaten; der Designer bestimmt, wie klar und glänzend es wird. */
+    public static function validate(array $in, string $designer = 'student', ?array $logo = null): array
     {
+        if (!isset(Balance::COVER_DESIGNERS[$designer])) {
+            throw new ApiError('Wer soll das Cover gestalten?');
+        }
         $spec = [];
         foreach (Catalog::COVER_PARTS as $key => $options) {
             $value = $in[$key] ?? null;
@@ -52,11 +56,23 @@ final class Cover
             }
             $spec[$key] = $value;
         }
-        return self::spec($spec);
+        return self::spec($spec, Balance::COVER_DESIGNERS[$designer]['rarity']) + ['designer' => $designer] + ($logo !== null ? ['logo' => $logo] : []);
     }
 
-    private static function spec(array $parts): array
+    /** Bandlogo prüfen: bekannte Schrift und Farbe. */
+    public static function logo(mixed $in): ?array
     {
-        return $parts + ['rarity' => [2, 2, 2, 2], 'quality' => 0.0];
+        if (!is_array($in) || !isset($in['font'], $in['color'])) {
+            return null;
+        }
+        if (!isset(Catalog::LOGO_FONTS[$in['font']]) || !isset(Catalog::LOGO_COLORS[$in['color']])) {
+            throw new ApiError('Diese Schrift oder Farbe gibt es nicht.');
+        }
+        return ['font' => (string) $in['font'], 'color' => (string) $in['color']];
+    }
+
+    private static function spec(array $parts, int $rarity = 2): array
+    {
+        return $parts + ['rarity' => array_fill(0, 4, $rarity), 'quality' => 0.0];
     }
 }

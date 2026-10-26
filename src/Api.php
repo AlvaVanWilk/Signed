@@ -672,7 +672,9 @@ final class Api
             self::int($in, 'songs'),
             self::int($in, 'studio'),
             (string) ($in['producer'] ?? 'none'),
-            is_array($in['cover'] ?? null) ? $in['cover'] : []
+            is_array($in['cover'] ?? null) ? $in['cover'] : [],
+            (string) ($in['designer'] ?? 'student'),
+            $in['logo'] ?? null
         );
         return ['activity' => $activity, 'state' => State::build($repo)];
     }

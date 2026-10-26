@@ -1,6 +1,7 @@
 import { api } from '../api.js';
 import { app, bandById, cat, defineActions, mutate, serverNow } from '../core.js';
 import { coverHtml } from '../play.js';
+import { LOGO_COLORS, LOGO_FONTS } from '../cover.js';
 import { playedInstrument, stage } from '../figure.js';
 import { producerFigure } from '../producers.js';
 import { studioSvg } from '../studio.js';
@@ -30,6 +31,22 @@ const CLAIM = (gap, b) => (gap < 0 ? ['no', `Das ist unter ${solo(b) ? 'der' : '
 /** Was im Dialog gewählt ist (bleibt beim Neuzeichnen erhalten). */
 let pick = null;
 
+/** Steckt ein passendes Wort im Titel, zeigen alle Entwürfe dieses Motiv. */
+function titleMotif(title) {
+  const t = title.toLowerCase();
+  for (const [motif, words] of Object.entries(cat().coverWords ?? {})) {
+    if (words.some((w) => t.includes(w))) return motif;
+  }
+  return null;
+}
+
+/** Die Entwürfe so, wie sie aus dem Druck kämen: Motiv aus dem Titel, Klarheit vom Designer, Logo der Band. */
+function shownCovers(b) {
+  const motif = titleMotif(pick.title);
+  const r = cat().rules.coverDesigners[pick.designer].rarity;
+  return pick.covers.map((c) => ({ ...c, motif: motif ?? c.motif, rarity: [r, r, r, r], logo: b.logo ?? pick.logo }));
+}
+
 function optionFor(data, producer, studio) {
   return data.options.find((o) => o.producer === producer && o.studio === studio);
 }
@@ -54,13 +71,20 @@ function dialogHtml(b, data) {
       <p class="muted">Songs entstehen von selbst, solange ${esc(who(b, true))} gut gelaunt ist.</p>
       <div class="dialog-actions"><button class="btn primary" data-close>Okay</button></div>`;
   }
-  const cur = optionFor(data, pick.producer, pick.studio);
+  const opt = optionFor(data, pick.producer, pick.studio);
+  const designers = cat().rules.coverDesigners;
+  const designer = designers[pick.designer];
+  // Cover: Honorar dazu, und ein guter Designer (und ein bekanntes Logo) verkaufen etwas mehr.
+  const coverSales = designer.sales + (data.logoSales ? cat().rules.coverLogoSales : 0);
+  const cur = { ...opt, cost: opt.cost + designer.fee, money: Math.round(opt.money * (1 + coverSales)) };
   const can = !cur.refusal && app.state.label.money >= cur.cost && pick.cover !== null && pick.title.trim() !== '';
   const why = cur.refusal ?? (app.state.label.money < cur.cost ? `Dafür fehlen noch ${money(cur.cost - app.state.label.money)}.` : pick.title.trim() === '' ? 'Die Platte braucht einen Titel.' : '');
   const [claimCls, claimText] = CLAIM(cur.claim, b);
   const total = (x) => cur.money + x;
   const low = total(cur.royalties[0]) - cur.cost;
   const high = total(cur.royalties[1]) - cur.cost;
+  const covers = shownCovers(b);
+  const motif = titleMotif(pick.title);
   return `
     <div class="lb-cap">Aufnehmen</div><h2>${esc(b.name)} ${solo(b) ? 'geht' : 'geht'} ins Studio</h2>
     <div class="rc-row"><span class="rc-label">Lieder</span>
@@ -96,9 +120,17 @@ function dialogHtml(b, data) {
     <h3 class="rc-h">Titel</h3>
     <span class="input-dice"><input data-r="title" maxlength="60" value="${esc(pick.title)}" placeholder="Titel der Platte"><button class="btn small" data-r="dice" title="Zufälliger Titel">🎲</button></span>
 
-    <h3 class="rc-h">Cover <small class="muted">Entwürfe vom Grafikbüro</small></h3>
-    <div class="rc-covers">${pick.covers.map((c, i) => `<button class="rc-cover ${pick.cover === i ? 'on' : ''}" data-r="cover" data-v="${i}">${coverHtml(c, { band: b.name, title: pick.title || ' ' })}</button>`).join('')}</div>
+    <h3 class="rc-h">Cover <small class="muted">${motif ? 'Motiv passend zum Titel' : 'Entwürfe vom Grafikbüro'}</small></h3>
+    <div class="rc-cards rc-designers">${Object.entries(designers).map(([k, d]) => `<button class="rc-card ${pick.designer === k ? 'on' : ''}" data-r="designer" data-v="${k}">
+      <b>${esc(d.name)}</b><small>${money(d.fee)}${d.sales ? ` · verkauft +${Math.round(d.sales * 100)} %` : ''}</small></button>`).join('')}</div>
+    <div class="rc-covers">${covers.map((c, i) => `<button class="rc-cover ${pick.cover === i ? 'on' : ''}" data-r="cover" data-v="${i}">${coverHtml(c, { band: b.name, title: pick.title || ' ' })}</button>`).join('')}</div>
     <button class="btn small ghost" data-r="redraw" ${off(app.state.label.money < cat().rules.coverRedraw ? 'Dafür reicht das Geld nicht.' : '')}>Neue Entwürfe · ${money(cat().rules.coverRedraw)}</button>
+    ${b.logo ? `<p class="muted small">Das Bandlogo steht auf jedem Cover${data.logoSales ? `; Fans erkennen es wieder: verkauft +${Math.round(cat().rules.coverLogoSales * 100)} %` : ''}.</p>` : `
+    <h3 class="rc-h">Bandlogo <small class="muted">gilt ab jetzt für alle Platten</small></h3>
+    <div class="rc-logos">${Object.entries(cat().logoFonts).map(([k, name]) => `<button class="rc-logo ${pick.logo.font === k ? 'on' : ''}" data-r="logoFont" data-v="${k}" title="${esc(name)}"
+      style="font-family:${LOGO_FONTS[k].replaceAll('"', "'")};color:${LOGO_COLORS[pick.logo.color]}">${esc(b.name)}</button>`).join('')}</div>
+    <div class="rc-swatches">${Object.entries(cat().logoColors).map(([k, name]) => `<button class="rc-swatch ${pick.logo.color === k ? 'on' : ''}" data-r="logoColor" data-v="${k}" title="${esc(name)}" aria-label="${esc(name)}" style="background:${LOGO_COLORS[k]}"></button>`).join('')}</div>
+    <p class="muted small">Ab der nächsten Platte erkennen Fans das Logo wieder, sie verkauft sich dann ${Math.round(cat().rules.coverLogoSales * 100)} % besser.</p>`}
 
     <div class="dialog-actions"><button class="btn ghost" data-close>Abbrechen</button>
       <button class="btn primary" data-r="start" ${off(can ? '' : why || 'Bitte wähle ein Cover.')}>Ins Studio · ${money(cur.cost)}</button></div>`;
@@ -115,7 +147,7 @@ async function recordAsk(bandId) {
     toast(e.message, 'error');
     return;
   }
-  pick = { bandId, songs: data.songs, producer: 'none', studio: 0, title: '', covers: data.covers ?? [], cover: 0 };
+  pick = { bandId, songs: data.songs, producer: 'none', studio: 0, title: '', covers: data.covers ?? [], cover: 0, designer: 'student', logo: { font: 'block', color: 'weiss' } };
   const modal = openModal({ className: 'rc-modal', wide: true, render: () => dialogHtml(bandById(bandId) ?? b, data) });
   const reload = async () => {
     try {
@@ -126,7 +158,17 @@ async function recordAsk(bandId) {
     }
   };
   modal.body.addEventListener('input', (e) => {
-    if (e.target.dataset.r === 'title') pick.title = e.target.value;
+    if (e.target.dataset.r !== 'title') return;
+    const before = titleMotif(pick.title);
+    pick.title = e.target.value;
+    // Neues Motiv aus dem Titel: gleich zeigen (sonst erst beim Verlassen des Feldes).
+    if (titleMotif(pick.title) !== before) {
+      const pos = e.target.selectionStart;
+      modal.refresh();
+      const input = modal.body.querySelector('[data-r="title"]');
+      input?.focus();
+      input?.setSelectionRange(pos, pos);
+    }
   });
   modal.body.addEventListener('change', (e) => {
     if (e.target.dataset.r === 'title') modal.refresh();
@@ -159,6 +201,15 @@ async function recordAsk(bandId) {
       case 'cover':
         pick.cover = Number(v);
         break;
+      case 'designer':
+        pick.designer = v;
+        break;
+      case 'logoFont':
+        pick.logo.font = v;
+        break;
+      case 'logoColor':
+        pick.logo.color = v;
+        break;
       case 'dice':
         pick.title = await suggestName('record');
         break;
@@ -171,7 +222,10 @@ async function recordAsk(bandId) {
         break;
       }
       case 'start': {
-        const res = await mutate('recordStart', { bandId, title: pick.title, songs: pick.songs, studio: pick.studio, producer: pick.producer, cover: pick.covers[pick.cover] });
+        const res = await mutate('recordStart', {
+          bandId, title: pick.title, songs: pick.songs, studio: pick.studio, producer: pick.producer,
+          cover: shownCovers(bandById(bandId) ?? b)[pick.cover], designer: pick.designer, logo: (bandById(bandId) ?? b).logo ? null : pick.logo,
+        });
         if (res) {
           modal.close();
           toast(`${solo(b) ? who(b) : b.name} ist im Studio.`, 'ok');

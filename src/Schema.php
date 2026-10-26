@@ -497,6 +497,10 @@ final class Schema
                 'ALTER TABLE records ADD COLUMN quality REAL NULL',
                 [Migrations::class, 'dropOpenRecords'],
             ],
+            // 38: Einsendungen merken: gespeichert (statt im Eingang); ablaufen tun sie trotzdem
+            [
+                'ALTER TABLE submissions ADD COLUMN saved INTEGER NOT NULL DEFAULT 0',
+            ],
         ];
     }
 }

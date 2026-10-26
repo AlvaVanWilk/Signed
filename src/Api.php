@@ -83,6 +83,7 @@ final class Api
         'submissionDrop' => ['POST', true],
         'submissionOpen' => ['POST', true],
         'submissionOrder' => ['POST', true],
+        'submissionSave' => ['POST', true],
         'submissionCompat' => ['POST', true],
         'submissionsTest' => ['POST', true],
         'practiceAuto' => ['POST', true],
@@ -420,6 +421,12 @@ final class Api
     private function submissionOpen(array $in, Repo $repo): array
     {
         (new Submissions($repo))->open(self::int($in, 'submissionId'));
+        return ['state' => State::build($repo)];
+    }
+
+    private function submissionSave(array $in, Repo $repo): array
+    {
+        (new Submissions($repo))->save(self::int($in, 'submissionId'), !empty($in['saved']));
         return ['state' => State::build($repo)];
     }
 

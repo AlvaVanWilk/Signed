@@ -270,6 +270,10 @@ Jede neue Art braucht einen eigenen Zweck und Wunsch (Perfektionist → Proberau
 
 ### Woher neue Musiker kommen
 
+**Einsendungen** (gebaut): Jede liegt 4 Tage (`Balance::SUBMISSIONS['ttl']`); die Restzeit steht auf jeder Kassette und Karte (rot in den letzten 12 Stunden).
+Mit dem Lesezeichen wandert eine Einsendung von „Eingang“ nach „Gespeichert“ (`submissions.saved`) und zurück; ablaufen tut sie trotzdem.
+Die Zahl am Menüpunkt zählt nur den Eingang.
+
 In der Wirklichkeit schicken Künstler Demos an Labels, und Talentsucher hören sich um. Ein Label sucht nicht aus einem Katalog aller Menschen aus. Zwei Wege, die nichts miteinander zu tun haben:
 
 **1. Einsendungen** kommen von selbst ins Haus.

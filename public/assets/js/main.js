@@ -156,7 +156,7 @@ function layout(content, route) {
   return `
     <header class="topbar">
       <a class="logo" href="#/">Signed</a>
-      <nav class="nav">${NAV.map(([key, label]) => `<a href="#/${key}" class="${key === active ? 'active' : ''}">${label}${key === 'boerse' ? marketBadge(active === 'boerse') : ''}${key === 'einsendungen' && s.submissions?.length ? ` <span class="nav-badge">${s.submissions.length}</span>` : ''}${key === 'store' && s.store?.gold ? ' <span class="nav-gold" title="Heute ein legendäres Instrument im Angebot">★</span>' : ''}</a>`).join('')}</nav>
+      <nav class="nav">${NAV.map(([key, label]) => `<a href="#/${key}" class="${key === active ? 'active' : ''}">${label}${key === 'boerse' ? marketBadge(active === 'boerse') : ''}${key === 'einsendungen' && s.submissions?.some((x) => !x.saved) ? ` <span class="nav-badge">${s.submissions.filter((x) => !x.saved).length}</span>` : ''}${key === 'store' && s.store?.gold ? ' <span class="nav-gold" title="Heute ein legendäres Instrument im Angebot">★</span>' : ''}</a>`).join('')}</nav>
       <div class="label-info">
         <span class="label-name" title="Dein Label">${esc(s.label.name)}</span>
         <button class="money-pill" data-act="openFinance" data-live-money title="Konto und Einnahmen">${money(liveMoney())}</button>

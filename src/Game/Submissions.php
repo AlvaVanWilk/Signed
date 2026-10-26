@@ -171,7 +171,7 @@ final class Submissions
     {
         $rows = $this->repo->db->all('SELECT * FROM submissions WHERE label_id = ? AND expires_at > ? ORDER BY created_at DESC, id DESC', [$this->repo->labelId, $now]);
         return array_map(static function (array $r) use ($now): array {
-            $base = ['submissionId' => (int) $r['id'], 'expiresAt' => (int) $r['expires_at']];
+            $base = ['submissionId' => (int) $r['id'], 'expiresAt' => (int) $r['expires_at'], 'saved' => (bool) ($r['saved'] ?? 0)];
             if ($r['opened_at'] === null) {
                 return $base + ['state' => 'closed'];
             }
@@ -310,6 +310,13 @@ final class Submissions
         }
         usort($out, static fn ($a, $b) => $b['target'] <=> $a['target']);
         return $out;
+    }
+
+    /** Merken (oder wieder in den Eingang legen). Gemerkte laufen trotzdem ab. */
+    public function save(int $id, bool $saved): void
+    {
+        $this->row($id);
+        $this->repo->db->update('submissions', ['saved' => $saved ? 1 : 0], ['id' => $id]);
     }
 
     public function drop(int $id): void

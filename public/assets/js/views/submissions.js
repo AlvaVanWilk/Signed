@@ -18,6 +18,17 @@ function expires(s) {
   return left >= 86400 ? `läuft ab in ${Math.ceil(left / 86400)} Tagen` : `läuft ab in ${Math.max(1, Math.ceil(left / 3600))} Std.`;
 }
 
+/** Kurz und sichtbar auf jeder Einsendung: wie lange sie noch da ist (rot ab den letzten 12 Stunden). */
+function leftPill(s) {
+  const left = s.expiresAt - serverNow();
+  const text = left >= 86400 ? `noch ${Math.ceil(left / 86400)} ${Math.ceil(left / 86400) === 1 ? 'Tag' : 'Tage'}` : `noch ${Math.max(1, Math.ceil(left / 3600))} Std.`;
+  return `<span class="lb-left ${left < 12 * 3600 ? 'soon' : ''}" title="Danach zieht ${s.kind === 'band' ? 'die Band' : 'die Einsendung'} weiter">${text}</span>`;
+}
+
+const BOOKMARK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg>';
+/** Merken: legt die Einsendung zu den gespeicherten (oder zurück in den Eingang). */
+const saveBtn = (s) => `<button class="lb-save ${s.saved ? 'on' : ''}" data-act="subSave" data-id="${s.submissionId}" data-saved="${s.saved ? '' : '1'}" title="${s.saved ? 'Zurück in den Eingang' : 'Merken'}" aria-label="${s.saved ? 'Zurück in den Eingang' : 'Merken'}">${BOOKMARK}</button>`;
+
 /** Die Kassette: Außen steht nichts drauf – man muss sie sichten, um zu wissen, was drin ist. */
 const cassette = (hint = null) => `<span class="lb-tape-wrap"><svg class="lb-tape-svg" viewBox="0 0 120 80" aria-hidden="true">
   <rect x="4" y="6" width="112" height="68" rx="9" fill="#2b2836" stroke="#4a4458" stroke-width="2"/>
@@ -124,7 +135,7 @@ function slot(s, busy) {
   // Eine eben gesichtete Kassette wird an ihrem Platz zur Karte (kurzes Umdrehen, nur beim ersten Zeigen).
   const fresh = s.state === 'open' && !app.ui.subSeen.has(s.submissionId);
   if (s.state === 'open') app.ui.subSeen.add(s.submissionId);
-  return `<div class="lb-slotitem ${fresh ? 'fresh' : ''}" data-sid="${s.submissionId}" style="${scatter(s.submissionId)}">${inner}</div>`;
+  return `<div class="lb-slotitem ${fresh ? 'fresh' : ''}" data-sid="${s.submissionId}" style="${scatter(s.submissionId)}">${inner}<span class="lb-slotbar">${leftPill(s)}${saveBtn(s)}</span></div>`;
 }
 
 /** Eigene Reihenfolge: Neues zuerst, danach die gemerkte Anordnung. */
@@ -139,13 +150,17 @@ export function render() {
   // Beim ersten Besuch gilt alles Gesichtete als schon gesehen (kein Umdrehen auf einen Schlag).
   app.ui.subSeen ??= new Set(all.filter((x) => x.state === 'open').map((x) => x.submissionId));
   const f = app.ui.subFilter ?? 'all';
-  const list = ordered(all).filter((s) => f === 'all' || (f === 'unheard' ? s.state !== 'open' : s.state === 'open' && levelOf(s) === Number(f)));
+  const box = app.ui.subBox ?? 'inbox';
+  const inBox = all.filter((s) => (box === 'saved') === !!s.saved);
+  const list = ordered(inBox).filter((s) => f === 'all' || (f === 'unheard' ? s.state !== 'open' : s.state === 'open' && levelOf(s) === Number(f)));
+  const savedCount = all.filter((s) => s.saved).length;
   const busy = all.some((x) => x.state === 'listening');
   return `
     <div class="section-head"><h1>Einsendungen</h1>${isTest() ? '<span class="lb-test"><button class="btn small" data-act="submissionsTest" data-closed="1">Test: neue Kassetten</button><button class="btn small" data-act="submissionsTest">Test: gesichtete Bewerber aller Stufen</button></span>' : ''}</div>
-    <p class="muted">Jede Einsendung ist eine Kassette. Tipp sie an und sichte sie, dann siehst du, wer sich da bewirbt – ein Musiker oder eine ganze Band. Unterschreiben kostet einmalig eine Prämie, wegwerfen nichts. Wer zu lange liegt, zieht weiter. Du kannst alles frei hin und her schieben.</p>
+    <p class="muted">Jede Einsendung ist eine Kassette. Tipp sie an und sichte sie, dann siehst du, wer sich da bewirbt – ein Musiker oder eine ganze Band. Unterschreiben kostet einmalig eine Prämie, wegwerfen nichts. Nach 4 Tagen zieht jede Einsendung weiter, auch gemerkte. Du kannst alles frei hin und her schieben.</p>
+    <div class="lb-boxes">${[['inbox', 'Eingang', all.length - savedCount], ['saved', 'Gespeichert', savedCount]].map(([k, label, n]) => `<button class="${box === k ? 'on' : ''}" data-act="subBox" data-key="${k}">${label} <small>${n}</small></button>`).join('')}</div>
     <div class="lb-filter">${[['all', 'Alle'], ['unheard', 'Ungehört'], ['0', 'Stufe 0'], ['1', 'Stufe 1'], ['2', 'Stufe 2'], ['3', 'Stufe 3']].map(([k, label]) => `<button class="${f === k ? 'on' : ''}" data-act="subFilter" data-key="${k}">${label}</button>`).join('')}</div>
-    ${list.length ? `<div class="lb-slots" data-slots>${list.map((x) => slot(x, busy)).join('')}</div>` : '<div class="empty">Gerade liegt nichts im Briefkasten. Es trudelt laufend etwas ein.</div>'}`;
+    ${list.length ? `<div class="lb-slots" data-slots>${list.map((x) => slot(x, busy)).join('')}</div>` : `<div class="empty">${box === 'saved' ? 'Noch nichts gemerkt. Mit dem Lesezeichen an einer Einsendung legst du sie hierher – ablaufen tut sie trotzdem.' : 'Gerade liegt nichts im Briefkasten. Es trudelt laufend etwas ein.'}</div>`}`;
 }
 
 // ---------- Info-Fenster: Eigenschaften und wer zu wem passt ----------
@@ -335,6 +350,13 @@ defineActions({
   subSel({ id }) {
     app.ui.subSel = app.ui.subSel === Number(id) ? null : Number(id);
     rerender();
+  },
+  subBox({ key }) {
+    app.ui.subBox = key;
+    rerender();
+  },
+  async subSave({ id, saved }) {
+    if (await mutate('submissionSave', { submissionId: Number(id), saved: !!saved })) toast(saved ? 'Gemerkt – du findest sie unter „Gespeichert“.' : 'Zurück im Eingang.', 'ok');
   },
   subFilter({ key }) {
     app.ui.subFilter = key;

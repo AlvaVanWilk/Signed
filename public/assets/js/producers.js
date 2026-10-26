@@ -62,33 +62,41 @@ function mo() {
       <circle cx="40" cy="50" r="0.6" fill="#5a3420"/><circle cx="42.5" cy="51.4" r="0.6" fill="#5a3420"/><circle cx="60" cy="50" r="0.6" fill="#5a3420"/>`)}`;
 }
 
-/** 2 – Etabliert: Profi mit grauer Strähne im Bob, schwarzem Blazer, Headset, Tablet und feiner Brille. */
-function vera() {
-  const skin = '#f0c8a8';
-  const blazer = '#262433';
+/** 2 – Etabliert: Roxy – cooler Rock-Look: asymmetrischer lila Vokuhila mit rasierter Seite, Lederjacke mit Nieten, große Kreolen, Plateaustiefel, Platte unterm Arm. */
+function roxy() {
+  const skin = '#c68a63';
+  const jacket = '#1c1a20';
+  const hair = '#b9a2e8';
+  const roots = '#4a3a6a';
+  const boot = (x) => `<path d="M${x - 8} 136 Q${x - 8.6} 128 ${x - 1} 127.6 Q${x + 7.6} 127.4 ${x + 8} 136 Z" fill="${INK}"/><rect x="${x - 8.4}" y="135.4" width="16.8" height="3.6" rx="1.2" fill="#3a3448" stroke="${INK}" stroke-width="1.2"/>`;
   return `
-    <g ${STROKE}>${legs('#262433')}${shoe(50, '#7a2338')}${shoe(70, '#7a2338')}${torso(blazer)}</g>
-    <path d="M54 72 L60 92 L66 72 Z" fill="#f4f1ea" stroke="${INK}" stroke-width="1.2"/>
-    <path d="M46 75 L57 84 L54 100 L44 92 Z" fill="#33303f" stroke="${INK}" stroke-width="1.1"/><path d="M74 75 L63 84 L66 100 L76 92 Z" fill="#33303f" stroke="${INK}" stroke-width="1.1"/>
-    <circle cx="60" cy="96" r="1.2" fill="#c9ccd4"/><circle cx="60" cy="102" r="1.2" fill="#c9ccd4"/>
-    <path d="M70 75.5 Q74 75.5 77 76 L81 108 Q76 110.6 70.5 111.6 Q75 94 70 75.5 Z" ${SHADE}/>
-    <!-- Tablet mit Pegelanzeige -->
-    <g transform="rotate(10 80 98)"><rect x="73" y="86" width="16" height="22" rx="2.4" fill="#1c1d28" stroke="${INK}" stroke-width="1.6"/>
-      ${[0, 1, 2, 3, 4].map((i) => `<rect x="${75.6 + i * 2.4}" y="${100 - [6, 10, 13, 8, 4][i]}" width="1.6" height="${[6, 10, 13, 8, 4][i]}" fill="${['#3ddc97', '#3ddc97', '#ffd25a', '#3ddc97', '#3ddc97'][i]}"/>`).join('')}</g>
-    ${arm('M44 80 Q40 94 46 102', [46, 102], skin, blazer)}
-    ${arm('M76 80 Q82 90 80 98', [80, 98], skin, blazer)}
+    <g ${STROKE}>${legs('#2a2630')}</g>
+    ${boot(50)}${boot(70)}
+    <g ${STROKE}>${torso(jacket)}</g>
+    <path d="M53 72 L60 98 L67 72 Z" fill="#f4f1ea" stroke="${INK}" stroke-width="1.2"/>
+    <circle cx="60" cy="86" r="3.6" fill="${INK}"/><circle cx="60" cy="86" r="1.1" fill="#e0475a"/>
+    <path d="M45 75 L56 82 L52 102 L42 96 Z" fill="#2a2732" stroke="${INK}" stroke-width="1.1"/><path d="M75 75 L64 82 L68 102 L78 96 Z" fill="#2a2732" stroke="${INK}" stroke-width="1.1"/>
+    <g fill="#d6d9e0">${[[45.4, 76.4], [48.6, 75], [71.4, 75], [74.6, 76.4]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.1"/>`).join('')}</g>
+    <path d="M44 79 Q46 77.5 49 77 L45.5 104 Q43.5 104 42 103.2 Z" ${LIGHT}/>
+    <!-- Schallplatte unterm Arm -->
+    <circle cx="84" cy="98" r="10" fill="#14121a" stroke="${INK}" stroke-width="1.4"/><circle cx="84" cy="98" r="7" fill="none" stroke="#3a3842" stroke-width="0.5"/><circle cx="84" cy="98" r="3.2" fill="#ffd25a"/><circle cx="84" cy="98" r="0.8" fill="${INK}"/>
+    ${arm('M44 80 Q38 94 44 104', [44, 104], skin, jacket)}
+    ${arm('M76 80 Q86 88 86 100', [86, 100], skin, jacket)}
     <path d="M52.5 74.2 Q60 82 67.5 74.2 Z" fill="${skin}" stroke="${INK}" stroke-width="1.4"/>
     ${headAt(`
-      <path d="M26.5 44 C25 18 75 18 73.5 44 L74 57 Q68 60.5 64.5 56 L64 46 L36 46 L35.5 56 Q32 60.5 26 57 Z" fill="#2a1f1c"/>
+      <!-- Vokuhila: rechts lang bis auf die Schulter -->
+      <path d="M58 30 C70 30 74 40 72 52 C71 60 74 66 70 72 Q64 70 66 60 C67 52 66 44 62 40 Z" fill="${hair}" stroke="${INK}" stroke-width="1"/>
       ${face(skin)}
-      <path d="M30 44 C29 22 71 22 70 44 C68 37 64 33 58 31.4 C55 35 47 37.6 38 37 C35 38.4 32 41 30 44 Z" fill="#2a1f1c"/>
-      <path d="M44 24.4 C52 22.4 62 25 66 31 C62 28.6 56 27.4 50 28.4 Z" fill="#c9ccd4"/>
-      <g fill="none" stroke="#8a6418" stroke-width="0.9"><rect x="38.4" y="42.4" width="9.2" height="6" rx="2.6"/><rect x="52.4" y="42.4" width="9.2" height="6" rx="2.6"/><path d="M47.6 45 L52.4 45"/></g>
-      <!-- Headset -->
-      <path d="M30.5 41 C30 22 70 22 69.5 41" fill="none" stroke="${INK}" stroke-width="1.6"/>
-      <rect x="27.6" y="40" width="5" height="8" rx="2" fill="#3a3a44" stroke="${INK}" stroke-width="0.9"/>
-      <path d="M30 47.5 Q33 56 42 55" fill="none" stroke="${INK}" stroke-width="1"/><circle cx="42.6" cy="55" r="1.4" fill="#3a3a44"/>
-      ${line('M40 39.4 Q43 38.4 46 39.6', 1)}${line('M54 39.6 Q57 38.4 60 39.4', 1)}`)}`;
+      <!-- rasierte Seite links -->
+      <path d="M31.2 44 C30.6 35 34 29 41 27 L41 36 C37 37 33 40 31.2 44 Z" fill="${roots}" opacity="0.45"/>
+      <!-- Pony schräg über die Stirn -->
+      <path d="M39 30 C46 21 64 21 70 31 C72 36 71 42 69 46 C66 40 60 37 52 36 C48 35.6 44 37 40.5 40 C40 36 39.4 33 39 30 Z" fill="${hair}" stroke="${INK}" stroke-width="1"/>
+      <path d="M42 30.5 C48 25 60 25 66 30" fill="none" stroke="${roots}" stroke-width="1.6" opacity="0.6"/>
+      <path d="M52 36 Q60 37 67 43" fill="none" stroke="#fff" stroke-width="0.8" opacity="0.4"/>
+      ${line('M40 39.6 Q43 38.2 46 39.4', 1.3)}${line('M54 39.4 Q57 38.2 60 39.6', 1.3)}
+      <!-- Kreolen -->
+      <circle cx="31" cy="52" r="3.6" fill="none" stroke="#f2c14e" stroke-width="1"/><circle cx="69" cy="52" r="3.6" fill="none" stroke="#f2c14e" stroke-width="1"/>
+      <path d="M46 52.6 Q50 55 54 52.6" fill="none" stroke="#7a2338" stroke-width="1.6" stroke-linecap="round"/>`)}`;
 }
 
 /** 3 – Hitproduzent: viel Gold – Goldketten, Ringe, Glitzerjacke, goldene Brille, Goldzahn und weiße Sneaker mit Goldkappen. */
@@ -149,12 +157,13 @@ function legend() {
     <g>${Array.from({ length: 13 }, (_, i) => { const t = i / 12; const x = 46 + t * 28; const y = 76 + Math.sin(t * Math.PI) * 30; return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.5" fill="#8a4a2a" stroke="${INK}" stroke-width="0.5"/>`; }).join('')}</g>
     ${headAt(`
       <!-- lange Haare hinten bis über die Schultern -->
-      <path d="M29 40 C27 18 73 18 71 40 L73 66 Q66 70 62 62 L50 60 L38 62 Q34 70 27 66 Z" fill="${hair}" stroke="${INK}" stroke-width="1.1"/>
+      <path d="M29.6 36 C29 30 32 28 33 34 L33 52 L67 52 L67 34 C68 28 71 30 70.4 36 L73 66 Q66 70 62 62 L50 60 L38 62 Q34 70 27 66 Z" fill="${hair}" stroke="${INK}" stroke-width="1.1"/>
       <path d="M30.6 50 L28.6 64 M69.4 50 L71.4 64" stroke="${hairShade}" stroke-width="1" fill="none"/>
       ${face(skin, { mouth: 'none' })}
       <!-- Stirn frei, Haar oben zurückgelegt und etwas schütter -->
-      <path d="M31 38 C32 22 68 22 69 38 C66 30 58 27 50 27 C42 27 34 30 31 38 Z" fill="${hair}" stroke="${INK}" stroke-width="1"/>
-      <path d="M33 38 Q31 46 33 52 M67 38 Q69 46 67 52" stroke="${hair}" stroke-width="3" fill="none"/>
+      <!-- oben licht, an den Seiten lang -->
+      <path d="M31.4 44 C30.6 36 32 31 35 28.6 C34 33 33.6 38 34 44 Z M68.6 44 C69.4 36 68 31 65 28.6 C66 33 66.4 38 66 44 Z" fill="${hair}" stroke="${INK}" stroke-width="0.9"/>
+      <path d="M42 27 Q46 25.4 50 27 M50 26.4 Q55 25 58.6 27.4" stroke="${hairShade}" stroke-width="0.9" fill="none"/>
       <!-- runde rote Sonnenbrille -->
       <g stroke="${INK}" stroke-width="0.9"><circle cx="43" cy="45" r="5" fill="#d0342c"/><circle cx="57" cy="45" r="5" fill="#d0342c"/></g>
       <path d="M48 45 L52 45" stroke="${INK}" stroke-width="1"/><path d="M40.6 42.6 Q42 41.6 43.6 42 M54.6 42.6 Q56 41.6 57.6 42" stroke="#fff" stroke-width="0.8" fill="none" opacity="0.7"/>
@@ -165,7 +174,7 @@ function legend() {
       <path d="M43 52 Q47 50 50 51.6 Q53 50 57 52 Q53 54.6 50 53.4 Q47 54.6 43 52 Z" fill="${hairShade}" stroke="${INK}" stroke-width="0.7"/>`)}`;
 }
 
-export const PRODUCERS = { mo, vera, diamond, legend };
+export const PRODUCERS = { mo, roxy, diamond, legend };
 
 /** Ganze Figur eines Produzenten (120 × 150 wie die Signies). */
 export function producerFigure(key) {

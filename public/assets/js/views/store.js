@@ -29,6 +29,8 @@ function icon(item) {
 }
 
 function cell(item) {
+  // Gekauft: Das Fach bleibt leer stehen.
+  if (item.bought) return '<span class="ms-cell empty" aria-label="Gekauft"><b class="ms-soldcard">Verkauft</b></span>';
   const need = needing(item);
   const star = item.tier === 3;
   return `
@@ -36,9 +38,39 @@ function cell(item) {
       ${star ? '<span class="ms-rays" aria-hidden="true"></span>' : ''}
       <span class="ms-ico">${icon(item)}</span>
       ${need.length ? '<i class="ms-need" title="Dafür gibt es jemanden ohne Instrument"></i>' : ''}
-      ${star ? '<b class="ms-ribbon gold">Legendär</b>' : ''}
+      ${item.tier === 2 ? '<b class="ms-sticker blue">Top-Angebot</b>' : ''}
       <span class="ms-tag"><small>${esc(cat().gear[item.model].name)}</small>${money(item.price)}</span>
     </button>`;
+}
+
+/** Wimpelkette über dem Schaufenster. */
+function garland() {
+  const colors = ['#f2c14e', '#efe4c6', '#b8432f', '#2f6f6a'];
+  const n = 16;
+  const w = 1000 / n;
+  const sag = (x) => 6 + 10 * Math.sin((x / 1000) * Math.PI);
+  const flags = Array.from({ length: n }, (_, i) => {
+    const x = i * w + 6;
+    const y1 = sag(x);
+    const y2 = sag(x + w - 12);
+    return `<path d="M${x.toFixed(1)} ${y1.toFixed(1)} L${(x + w - 12).toFixed(1)} ${y2.toFixed(1)} L${(x + (w - 12) / 2).toFixed(1)} ${((y1 + y2) / 2 + 26).toFixed(1)} Z" fill="${colors[i % 4]}"/>`;
+  }).join('');
+  return `<svg class="ms-garland" viewBox="0 0 1000 44" preserveAspectRatio="none" aria-hidden="true"><path d="M0 6 Q500 26 1000 6" fill="none" stroke="#2a1d12" stroke-width="2"/>${flags}</svg>`;
+}
+
+/** Schaufenster fürs legendäre Instrument: über dem Regal, mit Wimpeln, Aufsteller und Stickern. Gekauft: leere Vitrine. */
+function showcase(star) {
+  const kind = (star.bonuses ?? []).find((b) => b.slot === 'gold')?.kind;
+  const info = cat().gearBonusInfo[kind] ?? { name: 'Einzelstück', ad: '' };
+  return `
+    <div class="ms-window ${star.bought ? 'sold' : ''}">
+      ${garland()}
+      <div class="ms-window-row">
+        <div class="ms-rollup"><small>Einzelstück</small><b>${esc(info.name)}</b><span>${esc(info.ad ?? '')}</span></div>
+        <div class="ms-vitrine"><span class="ms-glass" aria-hidden="true"></span>${star.bought ? '<span class="ms-cell empty"><b class="ms-soldcard">Verkauft – an dich!</b></span>' : cell(star)}<span class="ms-plinth" aria-hidden="true"></span></div>
+        <div class="ms-stickers">${star.bought ? '' : '<span class="ms-burst">Nur<br>heute!</span><span class="ms-sticker gold">Legendär</span>'}</div>
+      </div>
+    </div>`;
 }
 
 /** Grundausstattung: klein an der Wand, immer da. */
@@ -54,9 +86,9 @@ function basic(item) {
 
 export function render() {
   const store = app.state.store;
-  // Das legendäre steht für sich in einer Vitrine, die anderen im Regal, je Fach durch einen Holzsteg getrennt.
+  // Das legendäre steht extra im Schaufenster über dem Regal; im Regal immer gleich viele Fächer (gekaufte bleiben leer).
   const star = store.items.find((i) => i.tier === 3) ?? null;
-  const rest = store.items.filter((i) => i !== star);
+  const shelf = store.items.filter((i) => i !== star);
   return `
     <div class="ms-page">
       <div class="ms-top">
@@ -67,20 +99,15 @@ export function render() {
         </div>
       </div>
       <div class="ms-shop ${store.gold ? 'gold' : ''}">
-        <div class="ms-promo">${store.gold
-    ? '<b>Heute ganz besonders:</b> ein legendäres Instrument!'
-    : '<b>Angebot des Tages</b><span>Besondere Stücke, nur heute</span>'}</div>
-        <div class="ms-offer ${star ? 'has-vitrine' : ''}">
-          ${star ? `<div class="ms-vitrine"><span class="ms-glass" aria-hidden="true"></span>${cell(star)}<span class="ms-plinth" aria-hidden="true"></span></div>` : ''}
-          ${rest.length ? `<div class="ms-shelf">${rest.map(cell).join('<i class="ms-post" aria-hidden="true"></i>')}</div>` : ''}
-          ${!store.items.length ? '<p class="ms-empty">Alles aus dem heutigen Angebot hast du schon. Morgen gibt es Neues.</p>' : ''}
-        </div>
+        ${star ? `<div class="ms-promo ${star.bought ? '' : 'gold'}">${star.bought ? '<b>Im Schaufenster</b><span>Das Einzelstück von heute gehört jetzt dir.</span>' : '<b>Heute ganz besonders:</b> ein legendäres Instrument!'}</div>${showcase(star)}` : ''}
+        <div class="ms-promo"><b>Angebot des Tages</b><span>Besondere Stücke, nur heute</span></div>
+        <div class="ms-shelf">${shelf.map(cell).join('<i class="ms-post" aria-hidden="true"></i>')}</div>
       </div>
       <div class="ms-basics">
         <div class="ms-basics-head"><b>Grundausstattung</b><span>Jedes Instrument, immer da</span></div>
         <div class="ms-wall">${store.basics.map(basic).join('')}</div>
       </div>
-      <p class="muted ms-note">Das Angebot ist für alle Labels gleich und wechselt jeden Morgen. Was du kaufst, ist für dich weg. Meist sind es seltene Instrumente, ab und zu ein episches – und ganz selten ein legendäres. Die Grundausstattung gibt es immer, so oft du willst.</p>
+      <p class="muted ms-note">Das Angebot ist für alle Labels gleich und wechselt jeden Morgen. Meist sind es seltene Instrumente, ab und zu ein episches – und ganz selten ein legendäres. Die Grundausstattung gibt es immer, so oft du willst.</p>
     </div>`;
 }
 

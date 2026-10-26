@@ -486,10 +486,12 @@ Beim ersten Login nach dem Umbau (Saison 2) bleiben **Labelname und Konto**, all
   Ein graues Instrument braucht jeder, und man kann es beliebig lange weiterspielen – deshalb gibt es keinen Druck mehr, das Regal neu zu füllen.
 - **Angebot des Tages** (oben, ein Werbebereich wie im echten Laden): für alle Labels gleich, **wechselt jeden Morgen** (`Balance::STORE`: `hours` 24, `offset` 4 Uhr UTC);
   es ergibt sich aus der Tagesnummer (`Store::shelf($slot)`), nicht aus dem Spiel-Zufall. Je Art höchstens eins:
-  2–3 seltene (grün), mit 35 % dazu ein episches (blau), mit 13 % ein legendäres (gold, etwa einmal die Woche; dann ein seltenes weniger).
+  Im Regal immer drei Fächer (`offer.shelf`), meist seltene (grün), mit 35 % ist eins davon episch (blau, mit Sticker „Top-Angebot“).
+  Mit 13 % kommt ein legendäres dazu (gold, etwa einmal die Woche) – es steht extra im **Schaufenster** über dem Regal.
   Preise 320 / 1.500 / 5.200 ₲ × Güte. Jedes Angebot kauft ein Label einmal.
-- **Gold wird beworben:** Werbeschild in Gold, Strahlen hinter dem doppelt breiten Platz, goldener Rahmen, Stern am Menüpunkt „Music Store“ und einmal je Angebot ein Hinweis, wo man gerade ist.
-- Gekaufte Angebote verschwinden aus dem Regal (es zeigt nur so viele Fächer, wie gefüllt sind). Zurücklegen gibt es nicht mehr.
+- **Gold wird beworben:** Schaufenster mit Wimpelkette, Vitrine mit Strahlen, Aufsteller „Einzelstück“ mit der goldenen Fähigkeit und einem Werbespruch
+  (`Catalog::GEAR_BONUS_INFO[…]['ad']`), Sticker „Nur heute!“ und „Legendär“, goldenes Werbeschild und Rahmen, Stern am Menüpunkt und einmal je Angebot ein Hinweis.
+- Gekauftes hinterlässt ein leeres Fach („Verkauft“), die Vitrine bleibt leer stehen. Zurücklegen gibt es nicht mehr.
 - Die frühere „Neue Lieferung“ gegen Geld gibt es nicht mehr.
 - Oberfläche: gezeichnetes Regal mit Preisschildern, Seltenheit als Lichtschein, Hinweispunkt bei Instrumenten, die jemandem im Label fehlen; Übergang: Doppeltür geht beim ersten Betreten auf.
 

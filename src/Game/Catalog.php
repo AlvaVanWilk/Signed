@@ -346,11 +346,11 @@ final class Catalog
         'lust' => ['name' => 'Ausdauer', 'desc' => 'Hält beim Proben {v} länger durch.'],
         'learn' => ['name' => 'Lernhilfe', 'desc' => 'Lernt beim Proben und im Studio {v} mehr.'],
         'sound' => ['name' => 'Klang', 'desc' => 'Sound {v} besser.'],
-        'magnet' => ['name' => 'Publikumsmagnet', 'desc' => 'Bei Auftritten {v} mehr Ruhm.'],
-        'cult' => ['name' => 'Kultobjekt', 'desc' => 'Platten verkaufen sich {v} besser.'],
-        'studio' => ['name' => 'Studio-Legende', 'desc' => 'Platten werden {v} besser.'],
-        'show' => ['name' => 'Showstück', 'desc' => 'Live {v} öfter Glanzmomente.'],
-        'hit' => ['name' => 'Hitmaschine', 'desc' => 'Platten bekommen {v} mehr Chartpunkte.'],
+        'magnet' => ['name' => 'Publikumsmagnet', 'desc' => 'Bei Auftritten {v} mehr Ruhm.', 'ad' => 'Zieht alle Blicke auf die Bühne.'],
+        'cult' => ['name' => 'Kultobjekt', 'desc' => 'Platten verkaufen sich {v} besser.', 'ad' => 'Bringt Glück – und verkauft Platten.'],
+        'studio' => ['name' => 'Studio-Legende', 'desc' => 'Platten werden {v} besser.', 'ad' => 'Klingt im Studio wie ein Traum.'],
+        'show' => ['name' => 'Showstück', 'desc' => 'Live {v} öfter Glanzmomente.', 'ad' => 'Der Hingucker für jede Bühne.'],
+        'hit' => ['name' => 'Hitmaschine', 'desc' => 'Platten bekommen {v} mehr Chartpunkte.', 'ad' => 'Macht aus Songs Hits.'],
     ];
 
     /** Früher: besondere Eigenschaften epischer und legendärer Instrumente (heute GEAR_BONUS_INFO, siehe Gear::legacy). */

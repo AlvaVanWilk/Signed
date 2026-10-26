@@ -1742,7 +1742,7 @@ test('Music Store: Grundausstattung – jedes graue Modell immer da, beliebig of
     check($blue >= 90 && $blue <= 170, 'Blau in etwa jedem dritten Angebot: ' . $blue);
 });
 
-test('Music Store: Angebot für alle gleich, wechselt täglich, Gekauftes verschwindet', function () {
+test('Music Store: Angebot für alle gleich, wechselt täglich, immer drei Fächer, Gekauftes hinterlässt ein leeres', function () {
     $db = freshDb();
     $a = registerPlayer($db, 'StoreA');
     $b = registerPlayer($db, 'StoreB');
@@ -1751,7 +1751,7 @@ test('Music Store: Angebot für alle gleich, wechselt täglich, Gekauftes versch
     $shelfB = $b->get('state')['store'];
     checkEquals(array_column($shelfA['items'], 'model'), array_column($shelfB['items'], 'model'), 'für alle gleich');
     $count = count($shelfA['items']);
-    check($count >= 2 && $count <= 6, 'ein paar Angebote');
+    checkEquals(Balance::STORE['offer']['shelf'], count(array_filter($shelfA['items'], fn ($i) => $i['tier'] < 3)), 'immer gleich viele Fächer');
     $types = array_column($shelfA['items'], 'type');
     checkEquals(count($types), count(array_unique($types)), 'je Art höchstens eins');
     // Kaufen: das Fach verschwindet, nochmal geht nicht
@@ -1760,8 +1760,9 @@ test('Music Store: Angebot für alle gleich, wechselt täglich, Gekauftes versch
     $res = $a->post('storeBuy', ['slot' => $item['slot'], 'idx' => $item['idx']]);
     checkEquals($money - $item['price'], $res['state']['label']['money']);
     checkEquals($item['model'], $res['gear']['model']);
-    checkEquals($count - 1, count($res['state']['store']['items']), 'gekauftes Fach ist weg');
-    checkEquals($count, count($b->get('state')['store']['items']), 'beim anderen Label noch da');
+    checkEquals($count, count($res['state']['store']['items']), 'das Fach bleibt');
+    check($res['state']['store']['items'][0]['bought'], 'leer: gekauft');
+    check(!$b->get('state')['store']['items'][0]['bought'], 'beim anderen Label noch da');
     checkApiError(fn () => $a->post('storeBuy', ['slot' => $item['slot'], 'idx' => $item['idx']]), 'schon gekauft');
     // Nach dem Wechsel ist das alte Angebot weg
     Clock::advance($shelfA['endsAt'] - Clock::now() + 60);

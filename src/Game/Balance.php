@@ -86,12 +86,13 @@ final class Balance
     /**
      * Music Store: unten die Grundausstattung (jedes gewöhnliche Modell, immer da, beliebig oft), oben das Angebot des Tages.
      * Das Angebot wechselt alle `hours` Stunden (um `offset` Uhr UTC, also früh morgens) und ist für alle Labels gleich:
-     * `green` seltene Instrumente, mit der Chance `blue` dazu ein episches und mit der Chance `gold` ein legendäres (im Schnitt etwa einmal die Woche).
+     * Im Regal stehen immer `shelf` Instrumente, meist seltene, mit der Chance `blue` ist eins davon episch. Mit der Chance `gold` kommt
+     * ein legendäres dazu (im Schnitt etwa einmal die Woche) – das steht extra im Schaufenster über dem Regal.
      * Jedes Angebot kauft ein Label höchstens einmal.
      */
     public const STORE = [
         'hours' => 24, 'offset' => 4,
-        'offer' => ['green' => [2, 3], 'blue' => 0.35, 'gold' => 0.13],
+        'offer' => ['shelf' => 3, 'blue' => 0.35, 'gold' => 0.13],
         // Gewöhnliches ist leicht zu haben, Hochwertiges ein Sparziel (Startkapital 2.000 ₲).
         'price' => ['common' => 40, 'rare' => 320, 'epic' => 1500, 'legendary' => 5200],
     ];

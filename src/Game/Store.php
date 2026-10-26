@@ -69,7 +69,7 @@ final class Store
         };
     }
 
-    /** @return list<array<string, mixed>> das Angebot dieses Tages: das legendäre (falls es eins gibt) zuerst, dann das epische, dann die seltenen */
+    /** @return list<array<string, mixed>> das Angebot dieses Tages: die Fächer des Regals, dann (falls es eins gibt) das legendäre fürs Schaufenster */
     public static function shelf(int $slot): array
     {
         $r = self::stream($slot);
@@ -80,16 +80,15 @@ final class Store
             $j = $r($i + 1);
             [$types[$i], $types[$j]] = [$types[$j], $types[$i]];
         }
-        $rarities = [];
-        if ($r(10000) < $o['gold'] * 10000) {
+        // Das Regal: immer gleich viele Fächer, eins davon mit etwas Glück episch. Dahinter (zuletzt) vielleicht ein legendäres fürs Schaufenster.
+        $gold = $r(10000) < $o['gold'] * 10000;
+        $rarities = array_fill(0, $o['shelf'], 'rare');
+        if ($r(10000) < $o['blue'] * 10000) {
+            $rarities[$r($o['shelf'])] = 'epic';
+        }
+        if ($gold) {
             $rarities[] = 'legendary';
         }
-        if ($r(10000) < $o['blue'] * 10000) {
-            $rarities[] = 'epic';
-        }
-        // Das legendäre steht doppelt so breit; dafür ein seltenes weniger, damit alles in eine Reihe passt.
-        $green = max(1, $o['green'][0] + $r($o['green'][1] - $o['green'][0] + 1) - ($rarities && $rarities[0] === 'legendary' ? 1 : 0));
-        $rarities = array_merge($rarities, array_fill(0, $green, 'rare'));
         $items = [];
         foreach (array_slice($rarities, 0, count($types)) as $idx => $rarity) {
             $type = $types[$idx];
@@ -112,18 +111,18 @@ final class Store
         return $items;
     }
 
-    /** Das Angebot für dieses Label: nur, was es noch nicht gekauft hat (gekaufte Fächer verschwinden), dazu die Grundausstattung. */
+    /** Das Angebot für dieses Label: Gekauftes bleibt als leeres Fach stehen (bought), dazu die Grundausstattung. */
     public function present(): array
     {
         $slot = self::slot(Clock::now());
         $bought = array_map('intval', array_column($this->repo->db->all('SELECT idx FROM store_buys WHERE label_id = ? AND slot = ?', [$this->repo->labelId, $slot]), 'idx'));
-        $items = array_values(array_filter(self::shelf($slot), static fn ($i) => !in_array($i['idx'], $bought, true)));
+        $items = array_map(static fn ($i) => $i + ['bought' => in_array($i['idx'], $bought, true)], self::shelf($slot));
         return [
             'slot' => $slot,
             'endsAt' => self::endsAt($slot),
             'items' => $items,
-            // Ein legendäres Instrument im Angebot, das dieses Label noch nicht gekauft hat: wird groß beworben.
-            'gold' => (bool) array_filter($items, static fn ($i) => $i['tier'] === 3),
+            // Ein legendäres Instrument im Schaufenster, das dieses Label noch nicht gekauft hat: wird groß beworben.
+            'gold' => (bool) array_filter($items, static fn ($i) => $i['tier'] === 3 && !$i['bought']),
             'basics' => self::basics(),
         ];
     }

@@ -109,19 +109,18 @@ final class Store
             }
             $model = $models[$r(count($models))];
             $base = Catalog::GEAR[$model];
-            $spread = Balance::GEAR_VARIANCE;
-            $stats = [];
-            foreach (['klang', 'spielbarkeit', 'design'] as $stat) {
-                $stats[$stat] = max(1, min(100, $base[$stat] + $r(2 * $spread + 1) - $spread));
+            // Boni wie Gear::roll, aber aus dem festen Zufall des Regals (alle Labels sehen dasselbe)
+            $tier = Gear::tier($rarity);
+            $bonuses = [];
+            foreach (['green' => 1, 'blue' => 2, 'gold' => 3] as $place => $from) {
+                if ($tier >= $from) {
+                    $kinds = array_keys(Balance::GEAR_BONUS[$place]);
+                    $bonuses[] = Gear::make($place, $kinds[$r(count($kinds))], $tier, $r(1001) / 1000);
+                }
             }
-            $perks = [];
-            $pool = array_keys(Catalog::GEAR_PERKS);
-            for ($n = Balance::GEAR_PERKS[$rarity] ?? 0; $n > 0 && $pool; $n--) {
-                array_push($perks, ...array_splice($pool, $r(count($pool)), 1));
-            }
-            $diff = ($stats['klang'] - $base['klang']) + ($stats['design'] - $base['design']);
-            $price = (int) (round($c['price'][$rarity] * (1 + $c['pricePerk'] * count($perks)) * (1 + $c['priceStat'] * $diff) / 5) * 5);
-            $items[] = ['idx' => $idx, 'slot' => $slot, 'model' => $model, 'type' => $type, 'rarity' => $rarity] + $stats + ['perks' => $perks, 'price' => max(5, $price)];
+            $stats = ['klang' => $base['klang'], 'spielbarkeit' => $base['spielbarkeit'], 'design' => $base['design']];
+            $price = (int) (round($c['price'][$rarity] * Gear::priceFactor($bonuses) / 5) * 5);
+            $items[] = ['idx' => $idx, 'slot' => $slot, 'model' => $model, 'type' => $type, 'rarity' => $rarity, 'tier' => $tier] + $stats + ['perks' => [], 'bonuses' => $bonuses, 'price' => max(5, $price)];
         }
         return $items;
     }
@@ -185,7 +184,7 @@ final class Store
             $this->repo->spend($item['price'], sprintf('Music Store: %s', Catalog::GEAR[$item['model']]['name']));
             $this->repo->db->insert('store_buys', ['label_id' => $this->repo->labelId, 'slot' => $slot, 'idx' => $idx, 'created_at' => Clock::now()]);
             $this->repo->db->exec('DELETE FROM store_holds WHERE label_id = ? AND slot = ? AND idx = ?', [$this->repo->labelId, $slot, $idx]);
-            $id = $this->repo->insertGear($item['model'], ['klang' => $item['klang'], 'spielbarkeit' => $item['spielbarkeit'], 'design' => $item['design'], 'perks' => $item['perks']]);
+            $id = $this->repo->insertGear($item['model'], ['klang' => $item['klang'], 'spielbarkeit' => $item['spielbarkeit'], 'design' => $item['design'], 'perks' => [], 'bonuses' => $item['bonuses']]);
             return ['gear' => Present::gear($this->repo->gear()[$id])];
         });
     }

@@ -69,7 +69,7 @@ final class Gigs
         $negotiator = BandCalc::managerBonus($manager, $level, 'verhandler', Balance::NEGOTIATOR_BONUS);
         $draw = BandCalc::freshness($band['gigs_since_record']);
         $available = self::songsAvailable($band);
-        $players = array_map([Activities::class, 'player'], $members);
+        $players = array_map(static fn ($m) => Activities::player($m, $gear), $members);
         $out = [];
         foreach (Balance::VENUES as $i => $venue) {
             if ($i > $claim + $c['reach']) {

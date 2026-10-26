@@ -52,8 +52,8 @@ final class Present
     {
         return [
             'id' => $g['id'], 'model' => $g['model'], 'musicianId' => $g['musician_id'],
-            'klang' => $g['klang'], 'spielbarkeit' => $g['spielbarkeit'], 'design' => $g['design'],
-            'perks' => $g['perks'] ?? [],
+            'tier' => Gear::modelTier($g['model']),
+            'bonuses' => $g['bonuses'] ?? [],
             'sellPrice' => Bands::sellPrice($g),
         ];
     }
@@ -154,7 +154,7 @@ final class Present
             'personalityInfo' => Catalog::PERSONALITY_INFO,
             'managerSkills' => Catalog::MANAGER_SKILLS,
             'gear' => Catalog::GEAR,
-            'gearPerks' => Catalog::GEAR_PERKS,
+            'gearBonusInfo' => Catalog::GEAR_BONUS_INFO,
             'music' => Music::manifest(),
             'musicParts' => Music::parts(),
             'musicStems' => Music::STEMS,
@@ -169,7 +169,6 @@ final class Present
                 'managerMaxBands' => Balance::MANAGER_MAX_BANDS,
                 'recordCost' => Balance::RECORD_COST,
                 'recordCostPerSong' => Balance::RECORD_COST_PER_SONG,
-                'gearMaxBonus' => Balance::GEAR_MAX_BONUS,
                 'noGearFactor' => Balance::NO_GEAR_FACTOR,
                 'negotiatorBonus' => Balance::NEGOTIATOR_BONUS,
                 'gigFreshMin' => Balance::GIG_FRESH['min'],
@@ -187,7 +186,6 @@ final class Present
                 'memberGageBonus' => Balance::MEMBER_GAGE_BONUS,
                 'minMembers' => Balance::MIN_MEMBERS,
                 'cohesionFloor' => Balance::COHESION_FLOOR,
-                'gearUnlockCurve' => Balance::GEAR_UNLOCK_CURVE,
                 'recordMinSongs' => Balance::RECORD_MIN_SONGS,
                 'recordMaxSongs' => Balance::RECORD_MAX_SONGS,
                 'gigMinSongs' => Balance::GIG_MIN_SONGS,

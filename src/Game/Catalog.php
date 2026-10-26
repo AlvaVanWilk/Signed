@@ -321,7 +321,19 @@ final class Catalog
      * Instrumentenmodelle. klang = maximaler Sound-Bonus, spielbarkeit = hoch heißt leicht spielbar
      * (entfaltet sich schon bei wenig Können), design = Bonus auf Ruhm.
      */
-    /** Besondere Eigenschaften epischer und legendärer Instrumente; Stärke in Balance (PERK_*). */
+    /** Boni der Instrumente (Balance::GEAR_BONUS): Name und Text, {v} = Stärke in Prozent. */
+    public const GEAR_BONUS_INFO = [
+        'lust' => ['name' => 'Ausdauer', 'desc' => 'Hält beim Proben {v} länger durch.'],
+        'learn' => ['name' => 'Lernhilfe', 'desc' => 'Lernt beim Proben und im Studio {v} mehr.'],
+        'sound' => ['name' => 'Klang', 'desc' => 'Sound {v} besser.'],
+        'magnet' => ['name' => 'Publikumsmagnet', 'desc' => 'Bei Auftritten {v} mehr Ruhm.'],
+        'cult' => ['name' => 'Kultobjekt', 'desc' => 'Platten verkaufen sich {v} besser.'],
+        'studio' => ['name' => 'Studio-Legende', 'desc' => 'Platten werden {v} besser.'],
+        'show' => ['name' => 'Showstück', 'desc' => 'Live {v} öfter Glanzmomente.'],
+        'hit' => ['name' => 'Hitmaschine', 'desc' => 'Platten bekommen {v} mehr Chartpunkte.'],
+    ];
+
+    /** Früher: besondere Eigenschaften epischer und legendärer Instrumente (heute GEAR_BONUS_INFO, siehe Gear::legacy). */
     public const GEAR_PERKS = [
         'stage' => ['name' => 'Bühnenmagnet', 'icon' => '✨', 'desc' => 'Wer es spielt, bekommt bei Auftritten mehr Bekanntheit.'],
         'teacher' => ['name' => 'Lehrmeister', 'icon' => '📚', 'desc' => 'Wer darauf übt, lernt schneller (Können).'],

@@ -189,7 +189,7 @@ final class Studio
         $quality = array_sum(array_column($results, 'accuracy')) / max(1, $songs);
         // Perfektionisten holen noch etwas mehr heraus
         foreach ($members as $m) {
-            $quality += Mood::traitMax($m, Balance::TRAITS['recordQuality'], 0.0);
+            $quality += Mood::traitMax($m, Balance::TRAITS['recordQuality'], 0.0) + Gear::value(BandCalc::gearOf($m, $gear), 'studio');
         }
         $quality = min(1.0, $quality);
         $misses = (int) array_sum(array_column($results, 'miss'));
@@ -203,7 +203,7 @@ final class Studio
         $coverQuality = (float) ($record['cover']['spec']['quality'] ?? 0);
         $coverBonus = 1 + Balance::COVER['salesMax'] * $coverQuality;
         // Egozentrische stehen gern im Mittelpunkt: Die Platte verkauft sich besser
-        $sales *= 1 + array_sum(array_map(static fn ($m) => Mood::traitMax($m, Balance::TRAITS['recordSales'], 0.0), $members));
+        $sales *= 1 + array_sum(array_map(static fn ($m) => Mood::traitMax($m, Balance::TRAITS['recordSales'], 0.0) + Gear::value(BandCalc::gearOf($m, $gear), 'cult'), $members));
         $money = (int) round($songs * Balance::RECORD_MONEY_PER_SONG * (0.3 + $quality ** 2) * $lp * $perfectFactor * $sales * $coverBonus);
         $fame = $songs * Balance::RECORD_FAME_PER_SONG * BandCalc::soundFactor($sound) * (0.3 + $quality ** 1.5) * $lp * $perfectFactor;
         $gains = BandCalc::splitFame($members, $fame, $gear);
@@ -216,8 +216,8 @@ final class Studio
         );
         $fameGain = round(array_sum($gains), 1);
         $firstRecord = (int) $db->value("SELECT COUNT(*) FROM records WHERE label_id = ? AND status = 'done'", [$this->repo->labelId]) === 0;
-        $studio = count(array_filter($members, static fn ($m) => BandCalc::hasPerk(BandCalc::gearOf($m, $gear), 'studio')));
-        $chartPoints = round(Charts::points($songs, $quality, $sound, $perfect) * (1 + Balance::PERK_STUDIO * $studio), 1);
+        $hit = array_sum(array_map(static fn ($m) => Gear::value(BandCalc::gearOf($m, $gear), 'hit'), $members));
+        $chartPoints = round(Charts::points($songs, $quality, $sound, $perfect) * (1 + $hit), 1);
         $now = Clock::now();
         $db->update('records', [
             'status' => 'done',

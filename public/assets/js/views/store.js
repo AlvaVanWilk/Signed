@@ -1,4 +1,4 @@
-import { gearHue, instrumentIcon, instrumentName, rarityName } from '../cards.js';
+import { bonusList, gearIcon, gearTier, instrumentName, rarityName, whoCanPlay } from '../cards.js';
 import { playedInstrument } from '../figure.js';
 import { app, cat, defineActions, mutate, refresh, serverNow } from '../core.js';
 import { confirmDialog, duration, esc, fmt0, money, off, openModal, percent, toast } from '../ui.js';
@@ -24,8 +24,7 @@ const hasGear = (m) => app.state.gear.some((g) => g.musicianId === m.id && cat()
 const needing = (item) => app.state.musicians.filter((m) => playedType(m) === item.type && !hasGear(m));
 
 function icon(item) {
-  const model = cat().gear[item.model];
-  return instrumentIcon(item.type, !!model.electric, gearHue(item));
+  return gearIcon(item);
 }
 
 function cell(item) {
@@ -77,11 +76,6 @@ export function render() {
     </div>`;
 }
 
-const FINISH = ['', 'Farbvariante', 'Sonderlackierung', 'Gold-Edition'];
-const finishOf = (item) => (item.design >= 85 ? 3 : item.design >= 60 ? 2 : item.design >= 30 ? 1 : 0);
-
-/** Werte als Balken mit Zahl (Klang, Spielbarkeit, Design). */
-const stat = (label, value, note) => `<div class="ms-stat"><span>${label}</span><i><b style="width:${value}%"></b></i><em>${fmt0(value)}</em>${note ? `<small>${note}</small>` : ''}</div>`;
 
 /** Ein Instrument im Detail, im Stil des Ladens (kein Sammelkarten-Look): Bild auf Filz, Werte, Preisschild, Kaufen und Zurücklegen. */
 function openItem(slot, idx) {
@@ -92,22 +86,16 @@ function openItem(slot, idx) {
   const need = needing(item);
   const isHold = !!store.hold && store.hold.item.slot === slot && store.hold.item.idx === idx;
   const canHold = !item.bought && !isHold && item.slot === store.slot;
-  const rules = cat().rules;
-  const full = (item.klang / 100) * rules.gearMaxBonus;
-  const perks = (item.perks ?? []).map((p) => cat().gearPerks[p]).filter(Boolean);
-  const finish = finishOf(item);
   const modal = openModal({
     className: 'ms-detail',
     html: `
-      <div class="ms-sheet r-${item.rarity}">
+      <div class="ms-sheet r-${item.rarity} t-${gearTier(item)}">
         <div class="ms-sheet-art"><span class="ms-ico big">${icon(item)}</span><b class="ms-rar">${esc(rarityName(item.rarity))}</b></div>
         <div class="ms-sheet-body">
           <h2>${esc(model.name)}</h2>
-          <small class="muted">${esc(instrumentName(item.type))}${finish ? ` · ${FINISH[finish]}` : ''}</small>
-          ${stat('Klang', item.klang, `macht den Sound bis +${percent(full)} besser`)}
-          ${stat('Spielbarkeit', item.spielbarkeit, `voller Klang ab Können ${fmt0(100 - item.spielbarkeit)}`)}
-          ${stat('Design', item.design, finish ? FINISH[finish] : 'schlicht')}
-          ${perks.length ? `<ul class="ms-perks">${perks.map((p) => `<li>${p.icon} <b>${esc(p.name)}</b> <small class="muted">${esc(p.desc)}</small></li>`).join('')}</ul>` : ''}
+          <small class="muted">${esc(instrumentName(item.type))}</small>
+          ${bonusList(item.bonuses ?? [])}
+          <p class="gt-reach">${whoCanPlay(item)}</p>
           <p class="ms-need-line">${need.length ? `Fehlt gerade: <b>${esc(need.map((m) => m.firstName).join(', '))}</b>` : `Im Label fehlt gerade niemandem ein Instrument dieser Art.`}</p>
           <div class="ms-buy">
             <span class="ms-price">${item.bought ? 'gekauft' : money(item.price)}</span>

@@ -204,13 +204,13 @@ final class Mood
      * Wie lange die Band probt: bis das erste Mitglied keine Lust mehr hat (Charakter) oder wer die Probe nicht mag zu unzufrieden wird.
      * @return array{0: int, 1: array{id: int, why: string}} Sekunden und wer die Probe beendet
      */
-    public static function rehearsalLimits(array $members, float $lustFactor = 1.0): array
+    public static function rehearsalLimits(array $members, float $lustFactor = 1.0, array $gear = []): array
     {
         $c = Balance::REHEARSAL;
         $best = null;
         foreach ($members as $m) {
             $factors = array_map(static fn ($p) => Catalog::LUST[$p] ?? 1.0, $m['personality']);
-            $lust = $c['lust'] * $lustFactor * ($factors ? array_sum($factors) / count($factors) : 1.0);
+            $lust = $c['lust'] * $lustFactor * ($factors ? array_sum($factors) / count($factors) : 1.0) * (1 + Gear::value(BandCalc::gearOf($m, $gear), 'lust'));
             $why = 'lust';
             $score = max(-1, min(1, self::liking($m['personality'], 'rehearsal')));
             if ($score < 0) {

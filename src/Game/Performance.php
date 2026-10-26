@@ -47,6 +47,7 @@ final class Performance
                     foreach ($p['personality'] ?? [] as $trait) {
                         $highlight += Balance::TRAITS['live'][$trait]['highlight'] ?? 0.0;
                     }
+                    $highlight += $p['show'] ?? 0.0;
                     $highlight = max(0.02, min(0.36, $highlight));
                     $roll = Rng::float();
                     $at = $from + Rng::float(0.5, $phaseLength - 0.5);

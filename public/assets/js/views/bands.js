@@ -169,7 +169,7 @@ const STAT_INFO = {
       return `<p>Wie gut die Band zusammen klingt.</p>
         <h3>Woraus er sich zusammensetzt</h3>
         <ul>
-          <li>Jeder Musiker: sein <b>Können</b> × sein <b>Instrument</b>. Ein gutes Instrument bringt bis +${Math.round(r.gearMaxBonus * 100)} %, ohne eigenes Instrument zählt nur ${Math.round(r.noGearFactor * 100)} %.</li>
+          <li>Jeder Musiker: sein <b>Können</b> × sein <b>Instrument</b>. Ab einem blauen Instrument kommt Klang dazu, ohne eigenes Instrument zählt nur ${Math.round(r.noGearFactor * 100)} %.</li>
           <li>Der Durchschnitt zählt ${Math.round(r.soundMeanWeight * 100)} %, der <b>Schwächste</b> ${Math.round((1 - r.soundMeanWeight) * 100)} %: Eine schwache Stelle zieht runter.</li>
           <li>Verschiedene Instrumente: +${Math.round(r.lineupBonus * 100)} % je weiterem, höchstens +${Math.round(r.lineupBonus * r.lineupBonusMaxTypes * 100)} %.</li>
           <li><b>Volle Bühne</b>: +${Math.round(r.memberSoundBonus * 100)} % für jedes Mitglied über ${r.minMembers}.</li>

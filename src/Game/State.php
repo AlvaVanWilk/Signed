@@ -162,8 +162,8 @@ final class State
                 'busyUntil' => $band['busy_until'],
                 'options' => [
                     'busking' => ['songs' => Balance::BUSKING['songs']],
-                    'rehearsal' => (static function () use ($list, $repo, $band): array {
-                        [$seconds, $limit] = Mood::rehearsalLimits($list, Rooms::rules(Rooms::level($repo, $band, count($list)))['lust']);
+                    'rehearsal' => (static function () use ($list, $repo, $band, $gearMap): array {
+                        [$seconds, $limit] = Mood::rehearsalLimits($list, Rooms::rules(Rooms::level($repo, $band, count($list)))['lust'], $gearMap);
                         return ['seconds' => $seconds, 'limit' => $limit];
                     })(),
                     'openstage' => [

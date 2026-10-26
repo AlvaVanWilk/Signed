@@ -2,8 +2,8 @@ import { app, bandById, cat, defineActions, gearById, musicianById, mutate } fro
 
 /** Das eigene Instrument einer Art, das ein Musiker gerade hat (ID oder null). */
 const app_gearOf = (m, type) => app.state.gear.find((x) => x.musicianId === m.id && cat().gear[x.model]?.type === type)?.id ?? null;
-import { fullName, gearCard, gearModel } from './cards.js';
-import { confirmDialog, esc, fmt0, fmt1, money, openModal, toast } from './ui.js';
+import { fullName, gearCard, gearModel, gearTier } from './cards.js';
+import { confirmDialog, esc, fmt0, fmt1, money, off, openModal, toast } from './ui.js';
 
 /** Sound vorher → nachher, wie ihn der Server für ein freies Instrument ausgerechnet hat. */
 export function soundChange(u) {
@@ -40,7 +40,8 @@ export function openGear(gearId) {
       const g = gearById(gearId);
       if (!g) return '<div class="empty">Dieses Instrument gibt es nicht mehr.</div>';
       const model = gearModel(g.model);
-      const needed = 100 - g.spielbarkeit;
+      const tier = gearTier(g);
+      const needed = tier ? cat().rules.skillLevels[tier - 1] : 0;
       const holder = g.musicianId ? musicianById(g.musicianId) : null;
       const holderBand = holder?.bandId ? bandById(holder.bandId) : null;
       const rows = (g.upgrades ?? []).map((u) => {
@@ -52,8 +53,7 @@ export function openGear(gearId) {
           <li>
             <span><b>${esc(fullName(m))}</b> <span class="muted">· ${band ? esc(band.name) : 'ohne Band'}</span></span>
             ${soundChange(u)}
-            <span class="small">Können <b class="${skill >= needed ? 'ok' : 'bad'}">${fmt0(skill)}</b> / voll ab ${fmt0(needed)}</span>
-            <button class="btn primary small" data-assign="${m.id}">Einlegen</button>
+            ${skill >= needed ? `<button class="btn primary small" data-assign="${m.id}">Einlegen</button>` : `<button class="btn small" ${off(`${m.stageName ?? m.firstName} braucht noch ${Math.ceil(needed - skill)} Können, um dieses Instrument zu spielen.`)}>Einlegen</button>`}
           </li>`;
       }).join('');
       // Alle anderen, die so ein Instrument spielen (auch wenn es ihren Sound nicht hebt)
@@ -71,10 +71,8 @@ export function openGear(gearId) {
               ${rows ? `<ul class="gear-upgrades">${rows}</ul>` : '<p class="muted">Im Moment würde niemand damit besser klingen.</p>'}
               ${others.length ? `<h3>Geben an</h3><ul class="gear-upgrades">${others.map((m) => `<li><span><b>${esc(fullName(m))}</b>${m.bandId ? ` <span class="muted">· ${esc(bandById(m.bandId)?.name ?? '')}</span>` : ''}</span>
                 <span class="small muted">${gearById(app_gearOf(m, model.type)) ? 'hat schon eins' : 'hat keins'}</span><button class="btn small" data-assign="${m.id}">Einlegen</button></li>`).join('')}</ul>` : ''}`}
-            ${(g.perks ?? []).length ? `<h3>Eigenschaften</h3><ul class="perk-list">${g.perks.map((p) => cat().gearPerks[p]).filter(Boolean)
-              .map((p) => `<li>${p.icon} <b>${esc(p.name)}</b> – ${esc(p.desc)}</li>`).join('')}</ul>` : ''}
-            <p class="muted small">Klang: wie viel das Instrument zum Sound beiträgt. Spielbarkeit: ab welchem Können der volle Klang kommt
-              (grün = erreicht, rot = noch nicht). Design: mehr Ruhm bei Auftritten und ein besonderes Aussehen.</p>
+            <p class="muted small">Grau: einfach ein Instrument. Grün: hilft beim Üben. Blau: dazu mehr Klang. Gold: dazu etwas Besonderes.
+              Spielen darf es nur, wer am Instrument gut genug ist: grün ab Fortgeschritten, blau ab Profi, gold als Virtuose.</p>
             <div class="dialog-actions"><button class="btn ghost small" data-sell>An den Second-Hand-Laden verkaufen · ${money(g.sellPrice)}</button></div>
           </div>
         </div>`;

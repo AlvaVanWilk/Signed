@@ -7,14 +7,55 @@ import { esc, fmt0, fmt1, percent } from './ui.js';
 export const instrumentName = (type) => cat().instruments[type]?.name ?? type;
 /** Emoji für Stellen, die nur Text können (Auswahllisten, Canvas). */
 export const instrumentEmoji = (type) => cat().instruments[type]?.icon ?? '🎵';
-/** Gezeichnetes Symbol; electric zeigt die E-Gitarre. */
-export const instrumentIcon = (type, electric = false, hue = null) => instrumentSvg(type, electric, hue) ?? instrumentEmoji(type);
+/** Gezeichnetes Symbol; electric zeigt die E-Gitarre, tier die Güteklasse 0–3 (null = bisheriges Aussehen). */
+export const instrumentIcon = (type, electric = false, hue = null, tier = null) => instrumentSvg(type, electric, hue, tier) ?? instrumentEmoji(type);
 
-/** Farbe eines Instruments für Symbole und Figuren: Farbvariante und Sonderlackierung färben, sonst Grundfarbe. */
+/** Güteklasse eines Instruments: 0 grau (gewöhnlich), 1 grün (selten), 2 blau (episch), 3 gold (legendär). */
+export const TIER = { common: 0, rare: 1, epic: 2, legendary: 3 };
+export const gearTier = (g) => g.tier ?? TIER[cat().gear[g.model]?.rarity] ?? 0;
+
+/** Farbe eines Instruments für Symbole und Figuren: Blaue (epische) gibt es in vielen Lackfarben, fest je Instrument; sonst Grundfarbe. */
 export function gearHue(g) {
-  const model = { ...gearModel(g.model), ...(g.klang ? { klang: g.klang, spielbarkeit: g.spielbarkeit, design: g.design } : {}) };
-  const finish = gearFinish(model);
-  return finish.tier === 1 || finish.tier === 2 ? finish.hue : null;
+  if (gearTier(g) !== 2) return null;
+  const seed = g.id ?? ((g.slot ?? 0) * 31 + (g.idx ?? 0) * 7);
+  return (seed * 47 + 200) % 360;
+}
+
+/** Symbol eines bestimmten Instruments (mit Klasse und Farbe). */
+export const gearIcon = (g) => {
+  const model = cat().gear[g.model];
+  return instrumentIcon(model.type, !!model.electric, gearHue(g), gearTier(g));
+};
+
+const BONUS_SLOT = { green: 'Übung', blue: 'Klang', gold: 'Besonders' };
+/** Ein Bonus in einfachen Worten, z. B. „Ausdauer: Hält beim Proben +20 % länger durch.“ */
+export function bonusText(b) {
+  const info = cat().gearBonusInfo[b.kind] ?? { name: b.kind, desc: '{v}' };
+  return { name: info.name, slot: BONUS_SLOT[b.slot] ?? '', text: info.desc.replace('{v}', `+${Math.round(b.value * 100)}\u00a0%`) };
+}
+/** Liste der Boni, jeder in seiner Farbe (grün, blau, gold). Graue Instrumente haben keine. */
+export function bonusList(bonuses = [], short = false) {
+  if (!bonuses.length) return '<p class="gb-none">Keine Boni – einfach ein Instrument.</p>';
+  return `<ul class="gb-list">${bonuses.map((b) => {
+    const t = bonusText(b);
+    return `<li class="gb-${b.slot}"><i></i><b>${esc(t.name)}</b>${short ? '' : ` <span>${esc(t.text)}</span>`}</li>`;
+  }).join('')}</ul>`;
+}
+
+/**
+ * Wer im Label dieses Instrument spielen kann (Können-Stufe am Instrument ≥ Klasse).
+ * Kann es noch niemand: wer am nächsten dran ist und wie viel Können fehlt.
+ */
+export function whoCanPlay(g) {
+  const model = cat().gear[g.model];
+  const tier = gearTier(g);
+  const need = tier ? cat().rules.skillLevels[tier - 1] : 0;
+  const players = (app.state?.musicians ?? []).map((m) => ({ m, skill: m.instruments.find((i) => i.type === model.type)?.skill })).filter((x) => x.skill !== undefined);
+  if (!players.length) return 'Im Label spielt niemand dieses Instrument.';
+  const can = players.filter((x) => x.skill >= need);
+  if (can.length) return `Spielen können: ${can.map((x) => esc(x.m.stageName ?? x.m.firstName)).join(', ')}`;
+  const near = players.sort((a, b) => b.skill - a.skill)[0];
+  return `Noch niemand. Am nächsten: ${esc(near.m.stageName ?? near.m.firstName)} (braucht noch ${Math.ceil(need - near.skill)} Können)`;
 }
 
 /** Wie das eigene Instrument eines Musikers aussieht: elektrisch? welche Farbe? Bei fremden Musikern unbekannt. */
@@ -309,46 +350,24 @@ export function gearModel(key) {
 }
 
 /**
- * Instrumentenkarte. skill = Können dessen, der es spielt (oder spielen soll): Die Schwelle für vollen Klang
- * wird grün, wenn er sie erreicht, sonst rot. Ohne skill nimmt die Karte ihren aktuellen Besitzer.
- * Ein grüner Pfeil zeigt, dass ein freies Instrument jemandem in einer Band helfen würde.
+ * Instrumentenkarte im Stil des Music Store: Bild auf Filz in der Farbe seiner Klasse (grau, grün, blau, gold), Name, Boni in ihren Farben,
+ * wer es spielen kann. Ein grüner Pfeil zeigt, dass ein freies Instrument jemandem in einer Band helfen würde.
  */
-/**
- * Aussehen nach Design: ab 30 eine eigene Farbe, ab 60 Sonderlackierung mit Metallic-Hintergrund,
- * ab 85 Gold-Edition mit Glitzern. Der Farbton hängt fest an den Werten des einzelnen Instruments.
- */
-const FINISH_NAMES = ['', 'Farbvariante', 'Sonderlackierung', 'Gold-Edition'];
-function gearFinish(model) {
-  const tier = model.design >= 85 ? 3 : model.design >= 60 ? 2 : model.design >= 30 ? 1 : 0;
-  const hue = (model.klang * 31 + model.design * 17 + model.spielbarkeit * 7) % 360;
-  return { tier, hue };
-}
-
-export function gearCard(g, { act = null, data = {}, size = '', extra = '', skill = null, up = null } = {}) {
-  // Instrument als Kachel im Stil des Music Store (keine Sammelkarte): Bild auf Filz, Name, Seltenheit, drei Werte als Balken.
-  const model = { ...gearModel(g.model), ...(g.klang ? { klang: g.klang, spielbarkeit: g.spielbarkeit, design: g.design } : {}) };
-  const needed = 100 - model.spielbarkeit;
+export function gearCard(g, { act = null, data = {}, size = '', extra = '', up = null } = {}) {
+  const model = gearModel(g.model);
   const holder = g.musicianId ? musicianById(g.musicianId) : null;
-  skill ??= holder?.instruments.find((i) => i.type === model.type)?.skill ?? null;
-  const rules = cat().rules;
-  const full = (model.klang / 100) * rules.gearMaxBonus;
-  const now = skill === null ? null : full * Math.min(1, needed <= 0 ? 1 : skill / needed) ** rules.gearUnlockCurve;
-  const reach = skill === null ? `voller Klang ab Können ${fmt0(needed)}`
-    : skill >= needed ? `voller Klang (+${percent(full)})` : `jetzt +${percent(now)}, voll ab Können <b class="bad">${fmt0(needed)}</b>`;
   const arrow = (up ?? g.upgrades?.some((u) => u.bandId)) ? upArrow(up ? { musicianId: holder?.id ?? null } : { gear: g }) : '';
-  const finish = gearFinish(model);
-  const perks = (g.perks ?? []).map((p) => cat().gearPerks[p]).filter(Boolean);
   const attrs = act ? ` data-act="${act}" ${Object.entries(data).map(([k, v]) => `data-${k}="${esc(v)}"`).join(' ')}` : '';
-  const bar = (label, v) => `<span class="gt-bar"><i>${label}</i><s><b style="width:${v}%"></b></s><em>${fmt0(v)}</em></span>`;
+  const tier = gearTier(g);
   return `
-    <div class="gt r-${model.rarity} ${size}"${attrs}>
-      <div class="gt-art"><span class="gt-ico">${instrumentIcon(model.type, model.electric, finish.tier === 1 || finish.tier === 2 ? finish.hue : null)}</span>
-        <b class="gt-rar">${esc(rarityName(model.rarity))}</b>${arrow}${perks.length ? `<span class="gt-perks">${perks.map((p) => `<i title="${esc(p.name)}: ${esc(p.desc)}">${p.icon}</i>`).join('')}</span>` : ''}</div>
+    <div class="gt r-${model.rarity} t-${tier} ${size}"${attrs}>
+      <div class="gt-art"><span class="gt-ico">${gearIcon(g)}</span>
+        <b class="gt-rar">${esc(rarityName(model.rarity))}</b>${arrow}</div>
       <div class="gt-body">
         <b class="gt-name">${esc(model.name)}</b>
-        <small class="muted">${esc(instrumentName(model.type))}${finish.tier ? ` · ${FINISH_NAMES[finish.tier]}` : ''}${holder ? ` · spielt ${esc(holder.firstName)}` : ''}</small>
-        ${size === 'sm' ? '' : `<span class="gt-bars">${bar('Klang', model.klang)}${bar('Spielb.', model.spielbarkeit)}${bar('Design', model.design)}</span>`}
-        <small class="gt-reach">${reach}</small>
+        <small class="muted">${esc(instrumentName(model.type))}${holder ? ` · spielt ${esc(holder.stageName ?? holder.firstName)}` : ''}</small>
+        ${bonusList(g.bonuses ?? [], size === 'sm')}
+        ${size === 'sm' ? '' : `<small class="gt-reach">${whoCanPlay(g)}</small>`}
         ${extra ? `<span class="gt-extra">${extra}</span>` : ''}
       </div>
     </div>`;

@@ -54,15 +54,28 @@ test('Genre ergibt sich aus der Besetzung: alle mögen es und die Instrumente pa
 
 test('Ohne Instrument klingt es nach wenig, schon ein einfaches hilft', function () {
     $m = musician(['genres' => ['pop']]);
-    check(BandCalc::memberValue($m, Catalog::GEAR['gtr_sunburst']) > 2 * BandCalc::memberValue($m, null));
+    check(BandCalc::memberValue($m, Catalog::GEAR['gtr_school']) >= 2 * BandCalc::memberValue($m, null));
 });
 
-test('Gutes Instrument entfaltet sich nur in fähigen Händen', function () {
-    $model = Catalog::GEAR['gtr_sunburst'];
-    $weak = BandCalc::gearBonus($model, 15);
-    $good = BandCalc::gearBonus($model, 70);
-    check($good > $weak * 3, "schwach $weak, gut $good");
-    checkEquals($model['klang'] / 100 * Balance::GEAR_MAX_BONUS, $good);
+test('Instrumente: Klasse je Können-Stufe, Boni je Klasse, zu gute zählen ohne Boni', function () {
+    $gold = Signed\Game\Gear::roll('legendary');
+    checkEquals(['green', 'blue', 'gold'], array_column($gold, 'slot'));
+    checkEquals([], Signed\Game\Gear::roll('common'));
+    foreach ($gold as $b) {
+        $range = Balance::GEAR_BONUS[$b['slot']][$b['kind']];
+        [$lo, $hi] = $range[3] ?? $range;
+        check($b['value'] >= $lo && $b['value'] <= $hi, 'im Bereich der Klasse');
+    }
+    $model = Catalog::GEAR['gtr_sunburst'] + ['key' => 'gtr_sunburst', 'bonuses' => $gold];
+    $pro = musician(['id' => 7, 'instr1' => 'guitar', 'skill1' => 90.0]);
+    $novice = musician(['id' => 8, 'instr1' => 'guitar', 'skill1' => 40.0]);
+    check(Signed\Game\Gear::playable($pro, 'gtr_sunburst') && !Signed\Game\Gear::playable($novice, 'gtr_sunburst'));
+    checkEquals(45.0, Signed\Game\Gear::missingSkill($novice, 'gtr_sunburst'));
+    $map = [7 => ['guitar' => $model], 8 => ['guitar' => $model]];
+    check(BandCalc::gearBonus(BandCalc::gearOf($pro, $map), 90) > 0.3, 'Virtuose bekommt den Klang-Bonus');
+    checkEquals(0.0, BandCalc::gearBonus(BandCalc::gearOf($novice, $map), 40), 'zu gut: ohne Boni');
+    check(Signed\Game\Gear::priceFactor([Signed\Game\Gear::make('green', 'lust', 1, 1.0)]) > Signed\Game\Gear::priceFactor([Signed\Game\Gear::make('green', 'lust', 1, 0.0)]), 'besser gewürfelt = teurer');
+    checkEquals(3, count(Signed\Game\Gear::legacy(['id' => 1, 'model' => 'gtr_sunburst', 'klang' => 88, 'spielbarkeit' => 38, 'design' => 80, 'perks' => ['stage']])), 'alte Instrumente bekommen Boni');
 });
 
 test('Zusammenspiel erhöht den Sound', function () {

@@ -131,7 +131,7 @@ Die Unterschriftsprämie wächst um 12 % je Punkt (60 % bis 160 %): Glückstreff
 Gelost wird aus denen, die zu Instrument und gemochten Genres passen (mag er nur untypische Genres: aus allen des Instruments).
 Im passenden Genre der Band (bei Hybrid und Crossover alle ihre Genres, solo die eigenen) bringt sie +4 % Sound (`Balance::TECHNIQUE_SOUND`), live etwas mehr Glanz.
 **Fähigkeiten** (Talent, Charisma, Nervenstark, Absolutes Gehör, Entertainer, Studiofuchs, Ausstrahlung) gibt es nicht mehr; stattdessen schaltet jede
-Können-Stufe eine bessere Klasse von Instrumenten frei (siehe Instrumente).
+Können-Stufe eine bessere Klasse von Instrumenten frei (Zahlen in docs/kern.md, Instrumente).
 
 ### Anspruch
 

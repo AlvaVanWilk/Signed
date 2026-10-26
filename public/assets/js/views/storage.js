@@ -1,4 +1,4 @@
-import { fullName, gearHue, gearModel, instrumentIcon, instrumentName, managerCard } from '../cards.js';
+import { fullName, gearIcon, gearModel, instrumentIcon, instrumentName, managerCard } from '../cards.js';
 import { app, bandById, cat, defineActions, musicianById, mutate } from '../core.js';
 import { assignGear } from '../gear.js';
 import { esc, fmt0, toast } from '../ui.js';
@@ -7,11 +7,10 @@ import { esc, fmt0, toast } from '../ui.js';
 function flightcase(g) {
   const model = gearModel(g.model);
   const holder = g.musicianId ? musicianById(g.musicianId) : null;
-  const finish = g.design >= 60 && g.design < 85 ? gearHue(g) : null;
   return `
     <button class="lg-case r-${model.rarity} ${holder ? 'used' : 'free'}" data-act="openGear" data-id="${g.id}" title="${esc(model.name)}">
       <span class="lg-lid"></span>
-      <span class="lg-foam"><span class="lg-ico">${instrumentIcon(model.type, !!model.electric, gearHue(g) ?? finish)}</span></span>
+      <span class="lg-foam"><span class="lg-ico">${gearIcon(g)}</span></span>
       <span class="lg-tape">${holder ? esc(holder.firstName) : 'frei'}</span>
       <small class="lg-name">${esc(model.name)}</small>
     </button>`;

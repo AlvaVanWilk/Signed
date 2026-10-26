@@ -21,9 +21,14 @@ final class BandCalc
         return $slot === 2 && $m['instr2'] !== null ? (float) $m['skill2'] : (float) $m['skill1'];
     }
 
+    /** Gespieltes Instrument; ist es zu gut für sein Können (alte Zuteilung), zählt es wie eines ohne Boni. */
     public static function gearOf(array $m, array $gear): ?array
     {
-        return $gear[$m['id']][self::instrument($m)] ?? null;
+        $model = $gear[$m['id']][self::instrument($m)] ?? null;
+        if ($model !== null && isset($model['key'], $m['skill1']) && !Gear::playable($m, $model['key'])) {
+            $model['bonuses'] = [];
+        }
+        return $model;
     }
 
     /** Beitrag eines Musikers: Können × Instrument (Symbiose). */
@@ -34,15 +39,10 @@ final class BandCalc
         return $skill * $gear;
     }
 
-    /** Ein gutes Instrument entfaltet sich nur in fähigen Händen. */
+    /** Klang-Bonus des Instruments (blau): ab der Klasse episch, wer es spielen darf, bekommt ihn ganz. */
     public static function gearBonus(?array $model, float $skill): float
     {
-        if ($model === null) {
-            return 0.0;
-        }
-        $required = 100 - $model['spielbarkeit'];
-        $unlock = $required <= 0 ? 1.0 : min(1.0, $skill / $required) ** Balance::GEAR_UNLOCK_CURVE;
-        return $model['klang'] / 100 * Balance::GEAR_MAX_BONUS * $unlock;
+        return Gear::value($model, 'sound');
     }
 
     /** @param float $bonus Genre-Bonus der Band (1 = keine Genre-Einheit), siehe identity() */
@@ -172,12 +172,6 @@ final class BandCalc
         return str_contains($name, '-') ? $name . '-Band' : $name . 'band';
     }
 
-    /** Hat das Instrument diese Eigenschaft (Catalog::GEAR_PERKS)? */
-    public static function hasPerk(?array $model, string $perk): bool
-    {
-        return $model !== null && in_array($perk, $model['perks'] ?? [], true);
-    }
-
     /**
      * Können-Zuwachs: Talent und ein Lehrmeister-Instrument beschleunigen, je besser jemand schon ist,
      * desto langsamer geht es.
@@ -207,9 +201,7 @@ final class BandCalc
     public static function trainingGain(array $m, float $base, ?int $slot = null, ?array $model = null, bool $paced = true): float
     {
         $talent = 1.0;
-        if (self::hasPerk($model, 'teacher')) {
-            $talent *= Balance::PERK_TEACHER;
-        }
+        $talent *= 1 + Gear::value($model, 'learn');
         if ($paced) {
             $talent *= Levels::pace(Levels::forSkill(self::skill($m, $slot)));
         }
@@ -333,11 +325,8 @@ final class BandCalc
         if ($m['unusual']) {
             $factor += $p['unusual'];
         }
-        if ($model !== null) {
-            $factor += $model['design'] / 100 * $p['design'];
-        }
-        if (self::hasPerk($model, 'stage')) {
-            $factor += Balance::PERK_STAGE;
+        if ($stage) {
+            $factor += Gear::value($model, 'magnet');
         }
         return $factor;
     }

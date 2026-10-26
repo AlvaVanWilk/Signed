@@ -257,8 +257,8 @@ final class Repo
     public function gear(): array
     {
         $out = [];
-        foreach ($this->db->all('SELECT id, model, musician_id, klang, spielbarkeit, design, perks FROM gear WHERE label_id = ? ORDER BY id', [$this->labelId]) as $row) {
-            $out[(int) $row['id']] = [
+        foreach ($this->db->all('SELECT id, model, musician_id, klang, spielbarkeit, design, perks, bonuses FROM gear WHERE label_id = ? ORDER BY id', [$this->labelId]) as $row) {
+            $item = [
                 'id' => (int) $row['id'],
                 'model' => $row['model'],
                 'musician_id' => $row['musician_id'] === null ? null : (int) $row['musician_id'],
@@ -267,6 +267,9 @@ final class Repo
                 'design' => (int) $row['design'],
                 'perks' => json_decode((string) $row['perks'], true) ?: [],
             ];
+            $bonuses = json_decode((string) ($row['bonuses'] ?? ''), true);
+            $item['bonuses'] = is_array($bonuses) ? $bonuses : Gear::legacy($item);
+            $out[(int) $row['id']] = $item;
         }
         return $out;
     }
@@ -279,7 +282,7 @@ final class Repo
             $model = Catalog::GEAR[$item['model']] ?? null;
             if ($item['musician_id'] !== null && $model !== null) {
                 // Die Werte des einzelnen Instruments gehen vor die des Modells.
-                $stats = ['klang' => $item['klang'], 'spielbarkeit' => $item['spielbarkeit'], 'design' => $item['design'], 'perks' => $item['perks']];
+                $stats = ['klang' => $item['klang'], 'spielbarkeit' => $item['spielbarkeit'], 'design' => $item['design'], 'perks' => $item['perks'], 'bonuses' => $item['bonuses']];
                 $map[$item['musician_id']][$model['type']] = $stats + $model + ['key' => $item['model'], 'gearId' => $item['id']];
             }
         }
@@ -297,6 +300,7 @@ final class Repo
             'spielbarkeit' => $stats['spielbarkeit'],
             'design' => $stats['design'],
             'perks' => json_encode($stats['perks'] ?? []),
+            'bonuses' => json_encode($stats['bonuses'] ?? Gear::roll(Catalog::GEAR[$model]['rarity'])),
             'created_at' => Clock::now(),
         ]);
     }

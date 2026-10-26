@@ -478,6 +478,10 @@ final class Schema
                 'UPDATE bands SET room = (SELECT l.solo_room FROM labels l WHERE l.id = bands.label_id)
                     WHERE (SELECT COUNT(*) FROM musicians m WHERE m.band_id = bands.id) = 1 AND room < (SELECT l.solo_room FROM labels l WHERE l.id = bands.label_id)',
             ],
+            // 34: Instrumente in Güteklassen – farbige Boni (grün, blau, gold) je Instrument; leer = aus den alten Werten abgeleitet (Gear::legacy)
+            [
+                'ALTER TABLE gear ADD COLUMN bonuses TEXT NULL',
+            ],
         ];
     }
 }

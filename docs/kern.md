@@ -346,12 +346,18 @@ Jam-Café für den Gastgeber vorbei. Lehnt man alle ab, verfällt die Auswahl un
 
 ### Instrumente
 
-- Jedes Exemplar: Klang, Spielbarkeit und Design je Modellwert ± bis zu 12.
-- Ohne eigenes Instrument zählt ein Musiker im Sound nur halb (× 0,5).
-- Eigenschaften: epische Instrumente haben eine, legendäre zwei. Bühnenmagnet: Anteil am Auftrittsruhm +0,15.
-  Lehrmeister: Können-Gewinn × 1,3. Studioklang: Chartpunkte einer Platte +6 % pro Mitglied mit so einem Instrument.
-- Aussehen nach Design: ab 30 eigene Farbe, ab 60 Sonderlackierung, ab 85 Gold-Edition mit Glitzern.
-- Verkauf an den Second-Hand-Laden: 25 / 80 / 260 / 750 ₲ je Seltenheit, +25 % pro Eigenschaft.
+- **Güteklassen** (`Gear`): gewöhnlich 0 (grau), selten 1 (grün), episch 2 (blau), legendär 3 (gold) – dieselben Farben wie die Können-Stufen.
+  Spielen darf ein Musiker nur Instrumente bis zu seiner Können-Stufe am jeweiligen Instrument (grün ab 35, blau ab 60, gold ab 85).
+  Kaufen darf das Label alles; beim Anlegen steht, wie viel Können noch fehlt. Ist eins aus alter Zeit zu gut, zählt es wie eins ohne Boni.
+- Ohne eigenes Instrument zählt ein Musiker im Sound nur halb (× 0,5); ein graues Instrument hebt das auf, mehr nicht.
+- **Boni** je Klasse (`Balance::GEAR_BONUS`), innerhalb ihrer Spanne gewürfelt:
+  grün (ab selten) einer von Ausdauer beim Proben (+10–45 %) oder Lernhilfe (+5–24 % Können je Probe und Platte);
+  blau (ab episch) Klang: Sound des Musikers +20–35 % (episch) bzw. +35–50 % (legendär);
+  gold (legendär) eins von: Publikumsmagnet (Ruhm-Anteil bei Auftritten +0,15–0,35), Kultobjekt (Erstverkauf +10–25 %),
+  Studio-Legende (Plattenqualität +0,03–0,06), Showstück (live +3–6 % Glanzchance), Hitmaschine (Chartpunkte +10–25 %).
+- Preis und Verkaufswert × 0,8 bis × 1,3 nach Güte innerhalb der Klasse. Verkauf: 25 / 80 / 260 / 750 ₲ je Seltenheit.
+- Ältere Instrumente bekommen ihre Boni aus Klang, Spielbarkeit, Design und Extras abgeleitet (`Gear::legacy`).
+- Aussehen je Klasse (bisher für Gitarre und E-Gitarre gezeichnet, `icons.js`): grau schlicht, grün hochwertig, blau in vielen Lackfarben, gold ein Einzelstück.
 - Die Instrumentenarten kommen so oft wie die Musiker, die sie spielen (gleiche Gewichte).
 
 ### Läden

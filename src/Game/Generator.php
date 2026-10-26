@@ -108,7 +108,8 @@ final class Generator
         foreach (['klang', 'spielbarkeit', 'design'] as $stat) {
             $stats[$stat] = max(1, min(100, $base[$stat] + Rng::int(-$spread, $spread)));
         }
-        $stats['perks'] = Rng::sample(array_keys(Catalog::GEAR_PERKS), Balance::GEAR_PERKS[$base['rarity']] ?? 0);
+        $stats['perks'] = [];
+        $stats['bonuses'] = Gear::roll($base['rarity']);
         return $stats;
     }
 

@@ -584,6 +584,11 @@ final class Bands
             if ($type !== $m['instr1'] && $type !== $m['instr2']) {
                 throw new ApiError(sprintf('%s spielt kein Instrument der Art %s.', $m['first_name'], Catalog::INSTRUMENTS[$type]['name']));
             }
+            // Bessere Instrumente erst mit genug Können (Klasse ≤ Können-Stufe)
+            $missing = Gear::missingSkill($m, $item['model']);
+            if ($missing > 0) {
+                throw new ApiError(sprintf('%s braucht noch %d Können, um dieses Instrument zu spielen.', $m['stage_name'] ?? $m['first_name'], (int) ceil($missing)));
+            }
             // Pro Instrumentenart hat ein Musiker ein Instrument; das bisherige kommt zurück ins Lager.
             $sameType = array_keys(array_filter(Catalog::GEAR, static fn ($g) => $g['type'] === $type));
             $placeholders = implode(', ', array_fill(0, count($sameType), '?'));
@@ -599,7 +604,7 @@ final class Bands
     public static function sellPrice(array $item): int
     {
         $rarity = Catalog::GEAR[$item['model']]['rarity'] ?? 'common';
-        return (int) round(Balance::GEAR_SELL[$rarity] * (1 + Balance::GEAR_SELL_PERK * count($item['perks'] ?? [])));
+        return (int) round(Balance::GEAR_SELL[$rarity] * Gear::priceFactor($item['bonuses'] ?? []));
     }
 
     /** Instrument an den Second-Hand-Laden verkaufen; wer es spielt, steht danach ohne da. */

@@ -512,7 +512,7 @@ test('Umbesetzung: Bekanntheit geht mit, der Zusammenhalt folgt den Beziehungen'
     check(bandById($state, $band['id'])['cohesion'] < 100.0, 'Ein Neuer, den noch keiner kennt, drückt den Zusammenhalt');
 });
 
-test('Instrumente zuweisen: nur passende Art, eins pro Art', function () {
+test('Instrumente zuweisen: nur passende Art, eins pro Art, bessere Klassen erst mit genug Können', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Gear');
     $state = $p->get('state');
@@ -524,6 +524,10 @@ test('Instrumente zuweisen: nur passende Art, eins pro Art', function () {
 
     checkApiError(fn () => $p->post('gearAssign', ['gearId' => $guitar, 'musicianId' => $singer['id']]), 'spielt kein');
     $p->post('gearAssign', ['gearId' => $micA, 'musicianId' => $singer['id']]);
+    // Legendär erst als Virtuose (Können 85)
+    $db->exec('UPDATE musicians SET skill1 = 40 WHERE id = ?', [$singer['id']]);
+    checkApiError(fn () => $p->post('gearAssign', ['gearId' => $micB, 'musicianId' => $singer['id']]), 'braucht noch 45 Können');
+    $db->exec('UPDATE musicians SET skill1 = 86 WHERE id = ?', [$singer['id']]);
     $state = $p->post('gearAssign', ['gearId' => $micB, 'musicianId' => $singer['id']])['state'];
     $assigned = array_values(array_filter($state['gear'], static fn ($g) => $g['musicianId'] === $singer['id']));
     checkEquals(1, count($assigned));
@@ -782,18 +786,18 @@ test('Namensänderung: immer kostenlos; mit Laufbahn geht der Ruhm am Namen verl
     checkEquals('former', $former['status']);
 });
 
-test('Instrumente: Eigenschaften ab episch, Verkauf an den Second-Hand-Laden', function () {
+test('Instrumente: farbige Boni je Klasse (grau keiner, grün 1, blau 2, gold 3), Verkauf an den Second-Hand-Laden', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Verkaeufer');
     $db->exec('UPDATE labels SET money = 100000');
     $offer = $p->post('buyPack', ['pack' => 'werkstatt', 'type' => 'guitar'])['offer'];
     foreach ($offer['cards'] as $card) {
         $rarity = Signed\Game\Catalog::GEAR[$card['gear']['model']]['rarity'];
-        checkEquals(Balance::GEAR_PERKS[$rarity], count($card['gear']['perks']));
+        checkEquals(Signed\Game\Gear::tier($rarity), count($card['gear']['stats']['bonuses'] ?? $card['gear']['bonuses'] ?? []));
     }
     $state = $p->post('packPick', ['offerId' => $offer['id'], 'index' => 0])['state'];
     $gear = end($state['gear']);
-    check(count($gear['perks']) >= 1, 'Gespeichert');
+    checkEquals($gear['tier'], count($gear['bonuses']), 'Gespeichert');
     $money = $state['label']['money'];
     $res = $p->post('gearSell', ['gearId' => $gear['id']]);
     checkEquals($gear['sellPrice'], $res['price']);

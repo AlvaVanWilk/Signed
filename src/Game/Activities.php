@@ -66,7 +66,7 @@ final class Activities
 
             $rehearsal = null;
             if ($type === 'rehearsal') {
-                [$duration, $limit] = Mood::rehearsalLimits($members, Rooms::rules(Rooms::level($this->repo, $band, count($members)))['lust']);
+                [$duration, $limit] = Mood::rehearsalLimits($members, Rooms::rules(Rooms::level($this->repo, $band, count($members)))['lust'], $gear);
                 $songs = max(1, intdiv($duration, Balance::REHEARSAL['songSpan']));
                 $title = 'Bandprobe';
                 $sim = ['timeline' => self::rehearsalTimeline($members, $songs, $duration), 'meter' => 0.0, 'perf' => 0.0];
@@ -125,7 +125,7 @@ final class Activities
                     $venueKey = $venue['key'];
                     $title = sprintf('Gig: %s (%s)', Rng::pick(Catalog::VENUE_NAMES[$venue['key']]), $venue['name']);
                 }
-                $sim = Performance::simulate(array_map([self::class, 'player'], $members), $sound, (float) $expect, $songs);
+                $sim = Performance::simulate(array_map(static fn ($m) => self::player($m, $gear), $members), $sound, (float) $expect, $songs);
                 if ($type === 'busking') {
                     $gage = self::hat($this->repo, $sim['perf']);
                 }
@@ -210,7 +210,7 @@ final class Activities
                 $expect = $cfg['expect'];
                 $title = 'Straßenmusik: ' . Rng::pick(Catalog::STREETS);
             }
-            $sim = Performance::simulate([self::player($m)], $sound, (float) $expect, $songs);
+            $sim = Performance::simulate([self::player($m, $gear)], $sound, (float) $expect, $songs);
             $fameTotal *= BandCalc::soundFactor($sound) * $sim['perf'];
             $hat = $type === 'busking' ? self::hat($this->repo, $sim['perf']) : 0;
 
@@ -545,13 +545,16 @@ final class Activities
         return Present::activity($this->repo->db->one('SELECT * FROM activities WHERE id = ?', [$id]));
     }
 
-    public static function player(array $m): array
+    /** Wer auf der Bühne steht, für die Simulation (mit Charakter und dem goldenen Bonus „Showstück“ seines Instruments). */
+    public static function player(array $m, array $gear = []): array
     {
         return [
             'name' => $m['first_name'],
             'instrument' => BandCalc::instrument($m),
             'skill' => BandCalc::skill($m),
             'abilities' => $m['abilities'],
+            'personality' => $m['personality'] ?? [],
+            'show' => Gear::value(BandCalc::gearOf($m, $gear), 'show'),
         ];
     }
 

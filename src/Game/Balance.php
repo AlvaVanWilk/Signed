@@ -93,7 +93,6 @@ final class Balance
         'odds' => ['common' => 50, 'rare' => 32, 'epic' => 14, 'legendary' => 4],
         // Gewöhnliches ist leicht zu haben, Hochwertiges ein Sparziel (Startkapital 2.000 ₲).
         'price' => ['common' => 40, 'rare' => 320, 'epic' => 1500, 'legendary' => 5200],
-        'pricePerk' => 0.25, 'priceStat' => 0.006,
         // Neue Lieferung bestellen: ein eigenes, frisches Regal bis zum nächsten Wechsel. Jede weitere im selben Zeitfenster kostet das Doppelte.
         'restock' => 150, 'restockFactor' => 2.0, 'restockMax' => 20,
     ];
@@ -237,22 +236,37 @@ final class Balance
     public const HYBRID_BONUS = 1.25;
     /** … und wenn alle sogar ein drittes teilen (Crossover, sehr selten). Zusammenspiel wie Hybrid. */
     public const CROSSOVER_BONUS = 1.3;
-    /** Maximaler Bonus eines Instruments mit Klang 100 (+50 %). */
-    public const GEAR_MAX_BONUS = 0.5;
-    /** Wie schnell sich der Klang mit dem Können entfaltet: (Können / nötiges Können) hoch diesem Wert. */
-    public const GEAR_UNLOCK_CURVE = 2.0;
     /** Ohne eigenes Instrument spielt man auf irgendwas Geliehenem – das klingt nach nichts. */
     public const NO_GEAR_FACTOR = 0.5;
-    /** Jedes Instrument weicht pro Wert bis zu so viel vom Modell ab. */
+    /** Alte Werte (Klang, Spielbarkeit, Design) streuen so viel um das Modell; heute nur noch Grundlage für Gear::legacy. */
     public const GEAR_VARIANCE = 12;
-    /** Eigenschaften je Seltenheit (siehe Catalog::GEAR_PERKS) und ihre Stärke. */
+    /** Früher: Eigenschaften je Seltenheit (nur noch für alte Migrationen). */
     public const GEAR_PERKS = ['common' => 0, 'rare' => 0, 'epic' => 1, 'legendary' => 2];
-    public const PERK_STAGE = 0.15;
-    public const PERK_TEACHER = 1.3;
-    public const PERK_STUDIO = 0.06;
-    /** Verkauf an den Second-Hand-Laden: Grundpreis je Seltenheit, je Eigenschaft +25 %. */
+    /** Verkauf an den Second-Hand-Laden: Grundpreis je Seltenheit, mal Güte innerhalb der Klasse (GEAR_PRICE_SPREAD). */
     public const GEAR_SELL = ['common' => 25, 'rare' => 80, 'epic' => 260, 'legendary' => 750];
-    public const GEAR_SELL_PERK = 0.25;
+    /**
+     * Boni der Instrumente nach Platz (grün = Übung, blau = Klang, gold = etwas Besonderes) und Art; Spanne je Klasse (1–3) oder für alle.
+     * lust: hält beim Proben länger durch; learn: lernt je Probe und Platte mehr; sound: Sound des Musikers;
+     * magnet: Anteil am Ruhm bei Auftritten; cult: Erstverkauf; studio: Qualität der Platte; show: Glanzmomente live; hit: Chartpunkte.
+     */
+    public const GEAR_BONUS = [
+        'green' => [
+            'lust' => [1 => [0.10, 0.25], 2 => [0.15, 0.35], 3 => [0.25, 0.45]],
+            'learn' => [1 => [0.05, 0.12], 2 => [0.08, 0.18], 3 => [0.12, 0.24]],
+        ],
+        'blue' => [
+            'sound' => [2 => [0.20, 0.35], 3 => [0.35, 0.50]],
+        ],
+        'gold' => [
+            'magnet' => [0.15, 0.35],
+            'cult' => [0.10, 0.25],
+            'studio' => [0.03, 0.06],
+            'show' => [0.03, 0.06],
+            'hit' => [0.10, 0.25],
+        ],
+    ];
+    /** Preis und Verkaufswert schwanken nach Güte innerhalb der Klasse: schwach gewürfelt × min, stark × max. */
+    public const GEAR_PRICE_SPREAD = [0.8, 1.3];
     /** +5 % je weiterem unterschiedlichen Instrument, höchstens für 4 weitere. */
     public const LINEUP_BONUS = 0.05;
     public const LINEUP_BONUS_MAX_TYPES = 4;

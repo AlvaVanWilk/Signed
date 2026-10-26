@@ -53,49 +53,53 @@ final class Inbox
         }
     }
 
-    /** Interview-Anfragen: je Musiker im Schnitt eine am Tag, höchstens eine offene je Musiker. */
+    /** Interview-Anfragen: je Musiker im Schnitt eine am Tag, zufällig verteilt, höchstens eine offene je Musiker. */
     private function topUpInterviews(int $now): void
     {
         $db = $this->repo->db;
         $c = Balance::INTERVIEW;
         $musicians = $this->repo->musicians();
-        $at = (int) $db->value('SELECT interview_at FROM labels WHERE id = ?', [$this->repo->labelId]);
-        if ($at === 0 || !$musicians) {
-            $db->update('labels', ['interview_at' => $now], ['id' => $this->repo->labelId]);
+        $mean = $musicians ? 86400 / ($c['perDay'] * count($musicians)) : 86400.0;
+        $next = (int) $db->value('SELECT interview_at FROM labels WHERE id = ?', [$this->repo->labelId]);
+        if ($next === 0 || !$musicians) {
+            $db->update('labels', ['interview_at' => $now + Post::gap($mean)], ['id' => $this->repo->labelId]);
             return;
         }
-        $interval = 86400 / ($c['perDay'] * count($musicians));
-        $at = max($at, $now - $c['maxCatchUp']);
-        $count = (int) floor(($now - $at) / $interval);
-        if ($count <= 0) {
-            return;
-        }
+        $next = max($next, $now - $c['maxCatchUp']);
         $open = [];
         foreach ($db->all("SELECT data FROM mail WHERE label_id = ? AND kind = 'interview'", [$this->repo->labelId]) as $row) {
             $open[(int) (json_decode($row['data'], true)['musicianId'] ?? 0)] = true;
         }
-        for ($i = 1; $i <= $count; $i++) {
-            $created = (int) ($at + $i * $interval);
+        for (; $next <= $now; $next += Post::gap($mean)) {
             $free = array_values(array_filter($musicians, static fn ($m) => !isset($open[$m['id']])));
-            if (!$free || $created + $c['ttl'] <= $now) {
+            if (!$free || $next + Balance::POST['ttl'] <= $now) {
                 continue;
             }
             $m = Rng::pick($free);
             $open[$m['id']] = true;
             $level = Levels::forFame((float) $m['fame']);
             $medium = Rng::pick(Catalog::INTERVIEW_MEDIA[min(3, $level)]);
-            $this->store('interview', ['musicianId' => $m['id'], 'level' => $level, 'medium' => $medium['name'], 'share' => $medium['share']], $created, $c['ttl']);
+            $this->store('interview', ['musicianId' => $m['id'], 'level' => $level, 'medium' => $medium['name'], 'share' => $medium['share']], $next, Balance::POST['ttl']);
         }
-        $db->update('labels', ['interview_at' => (int) ($at + $count * $interval)], ['id' => $this->repo->labelId]);
+        $db->update('labels', ['interview_at' => $next], ['id' => $this->repo->labelId]);
     }
 
-    /** Bewerbungen: ein, zwei am Tag; wer sich bewirbt und wie gut, folgt dem Erfolg des Labels. */
+    /** Wie viele Bewerbungen bei diesem Erfolg im Schnitt daliegen (1 am Anfang, bis zu JOBS['max']). */
+    public static function jobCount(float $success): int
+    {
+        $c = Balance::JOBS;
+        return min($c['max'], 1 + (int) floor(log(1 + max(0.0, $success) / $c['per'], 2)));
+    }
+
+    /**
+     * Bewerbungen: zufällig verteilt, im Schnitt so viele, wie jobCount sagt. Jede wird für sich gewürfelt (meist ein Praktikum, selten eine Assistenz
+     * oder Lehrkraft). Ein Praktikum liegt immer da; ganz zu Beginn bewirbt sich dazu ein Scout.
+     */
     private function topUpJobs(int $now, float $success): void
     {
         $db = $this->repo->db;
-        $c = Balance::JOBS;
-        $at = (int) $db->value('SELECT job_at FROM labels WHERE id = ?', [$this->repo->labelId]);
-        $roles = array_filter($c['roles'], static fn ($r) => $success >= $r['minSuccess']);
+        $ttl = Balance::POST['ttl'];
+        $next = (int) $db->value('SELECT job_at FROM labels WHERE id = ?', [$this->repo->labelId]);
         $own = [];
         $genres = [];
         foreach ($this->repo->musicians() as $m) {
@@ -105,41 +109,27 @@ final class Inbox
                 $own[] = $m['instr2'];
             }
         }
-        $labelId = $this->repo->labelId;
-        $openRoles = static fn () => array_map(static fn ($r) => json_decode($r['data'], true)['role'] ?? '', $db->all("SELECT data FROM mail WHERE label_id = ? AND kind = 'job' AND expires_at > ?", [$labelId, $now]));
-        $add = function (string $role, int $created, ?int $tier = null) use ($success, $own, $genres, $c): void {
-            $this->store('job', self::applicant($role, self::quality($success), $tier, $own, $genres), $created, $c['ttl']);
+        $add = function (string $role, int $created, ?int $tier = null) use ($success, $own, $genres, $ttl): void {
+            $this->store('job', self::applicant($role, self::quality($success), $tier, $own, $genres), $created, $ttl);
         };
-        // Solange niemand die Post sortiert, liegt immer ein Praktikum dafür da.
-        if ((int) $db->value("SELECT COUNT(*) FROM staff WHERE label_id = ? AND role IN ('assistant', 'intern')", [$this->repo->labelId]) === 0
-            && !array_intersect($openRoles(), ['assistant', 'intern'])) {
+        $roll = static fn () => (string) Rng::weighted(Balance::JOBS['roles']);
+        $mean = $ttl / self::jobCount($success);
+        if ($next === 0) {
+            // Zu Beginn: ein Scout und so viele, wie sonst im Schnitt daliegen.
+            $add('scout', $now, 1);
+            for ($k = 0; $k < self::jobCount($success); $k++) {
+                $add($roll(), $now - $k * 60);
+            }
+            $next = $now + Post::gap($mean);
+        }
+        for ($next = max($next, $now - $ttl); $next <= $now; $next += Post::gap($mean)) {
+            $add($roll(), $next);
+        }
+        $db->update('labels', ['job_at' => $next], ['id' => $this->repo->labelId]);
+        // Ein Praktikum bewirbt sich immer.
+        $interns = array_filter($db->all("SELECT data FROM mail WHERE label_id = ? AND kind = 'job' AND expires_at > ?", [$this->repo->labelId, $now]), static fn ($r) => (json_decode($r['data'], true)['role'] ?? '') === 'intern');
+        if (!$interns) {
             $add('intern', $now, 1);
-        }
-        if ($at === 0) {
-            // Willkommens-Brief: Ein einfacher Scout bewirbt sich gleich zu Beginn.
-            if ((int) $db->value("SELECT COUNT(*) FROM staff WHERE label_id = ? AND role = 'scout'", [$this->repo->labelId]) === 0) {
-                $add('scout', $now, 1);
-            }
-            $at = $now;
-        }
-        // Laufend neue Bewerbungen, im Schnitt perDay am Tag.
-        $interval = 86400 / $c['perDay'];
-        $at = max($at, $now - $c['maxCatchUp']);
-        $count = (int) floor(($now - $at) / $interval);
-        for ($i = 1; $i <= $count; $i++) {
-            $created = (int) ($at + $i * $interval);
-            if ($roles && $created + $c['ttl'] > $now) {
-                $add((string) Rng::weighted(array_map(static fn ($r) => $r['weight'], $roles)), $created);
-            }
-        }
-        $db->update('labels', ['job_at' => (int) ($at + max(0, $count) * $interval)], ['id' => $this->repo->labelId]);
-        // Und es liegen immer ein paar da (minOpen), möglichst verschiedene.
-        $open = $openRoles();
-        for ($k = count($open); $k < $c['minOpen'] && $roles; $k++) {
-            $fresh = array_diff_key($roles, array_flip($open)) ?: $roles;
-            $role = (string) Rng::weighted(array_map(static fn ($r) => $r['weight'], $fresh));
-            $add($role, $now - $k * 60);
-            $open[] = $role;
         }
     }
 
@@ -156,6 +146,11 @@ final class Inbox
             $tier = (int) Rng::weighted($weights ?: [1 => 1]);
         }
         $out = ['role' => $role, 'tier' => $tier] + Generator::person();
+        if ($role === 'intern') {
+            // Praktikum: nur ein Vorname, sieht jünger aus (kleinerer Kopf).
+            $out['last_name'] = '';
+            $out['look']['young'] = true;
+        }
         if ($role === 'teacher') {
             // Meist für ein Instrument, das im Label gespielt wird; manchmal mit Lieblingsgenre.
             $c = Balance::TEACHER;
@@ -184,11 +179,12 @@ final class Inbox
         };
     }
 
-    public function store(string $kind, array $data, int $at, int $ttl): void
+    /** Ein Brief kommt an; von außen im Umschlag, eigene Post (Scout-Bericht, Test) gleich offen. */
+    public function store(string $kind, array $data, int $at, int $ttl, bool $unpacked = false): void
     {
         $this->repo->db->insert('mail', [
             'label_id' => $this->repo->labelId, 'kind' => $kind, 'data' => json_encode($data, JSON_UNESCAPED_UNICODE),
-            'created_at' => $at, 'expires_at' => $at + $ttl,
+            'created_at' => $at, 'expires_at' => $at + $ttl, 'unpacked_at' => $unpacked ? $at : null,
         ]);
     }
 
@@ -208,9 +204,15 @@ final class Inbox
             $bands ??= array_map(fn ($b) => $this->repo->members($b['id']), $this->repo->bands());
             return (object) array_map(static fn ($members) => round(Managers::fit($d, $members), 2), $bands);
         };
-        return array_map(static function (array $r) use ($fits): array {
+        return array_map(static function (array $r) use ($fits, $now): array {
             $d = json_decode($r['data'], true);
-            $base = ['mailId' => (int) $r['id'], 'kind' => $r['kind'], 'createdAt' => (int) $r['created_at'], 'expiresAt' => (int) $r['expires_at'], 'saved' => (bool) $r['saved']];
+            $base = ['mailId' => (int) $r['id'], 'createdAt' => (int) $r['created_at'], 'expiresAt' => (int) $r['expires_at'], 'saved' => (bool) $r['saved'], 'sorted' => Post::sorted($r, $now)];
+            // Im Umschlag: Man sieht nicht, was drin ist.
+            $closed = Post::envelope($r, $now);
+            if ($closed !== null) {
+                return $base + ['kind' => 'envelope', 'state' => $closed, 'unpacksAt' => $r['unpacked_at'] === null ? null : (int) $r['unpacked_at'], 'byIntern' => $r['worker'] === 'intern'];
+            }
+            $base['kind'] = $r['kind'];
             if ($r['kind'] === 'interview') {
                 return $base + [
                     'musicianId' => (int) $d['musicianId'], 'medium' => $d['medium'], 'level' => (int) $d['level'],
@@ -233,11 +235,14 @@ final class Inbox
         }, $rows);
     }
 
-    private function row(int $id): array
+    private function row(int $id, bool $open = true): array
     {
         $row = $this->repo->db->one('SELECT * FROM mail WHERE id = ? AND label_id = ? AND expires_at > ?', [$id, $this->repo->labelId, Clock::now()]);
         if ($row === null) {
             throw new ApiError('Diesen Brief gibt es nicht mehr.');
+        }
+        if ($open && Post::envelope($row, Clock::now()) !== null) {
+            throw new ApiError('Den Umschlag musst du erst auspacken.');
         }
         return $row;
     }
@@ -312,7 +317,10 @@ final class Inbox
                 $db->exec('DELETE FROM mail WHERE id = ?', [$id]);
                 return 0;
             }
-            $this->repo->spend((int) $tier['price'], sprintf('Eingestellt: %s %s (%s)', $d['first_name'], $d['last_name'], $roleName));
+            if ($d['role'] === 'intern' && (int) $db->value("SELECT COUNT(*) FROM staff WHERE label_id = ? AND role = 'intern'", [$this->repo->labelId]) > 0) {
+                throw new ApiError('Du hast schon ein Praktikum. Ein neues geht erst, wenn das jetzige vorbei ist.');
+            }
+            $this->repo->spend((int) $tier['price'], trim(sprintf('Eingestellt: %s %s', $d['first_name'], $d['last_name'])) . sprintf(' (%s)', $roleName));
             if ($d['role'] === 'manager') {
                 $managerId = $this->repo->insertManager([
                     'first_name' => $d['first_name'], 'last_name' => $d['last_name'], 'look' => $d['look'],
@@ -336,20 +344,20 @@ final class Inbox
                 'busy_until' => $d['role'] === 'intern' ? Clock::now() + Balance::INTERN['seconds'] : 0,
             ]);
             $db->exec('DELETE FROM mail WHERE id = ?', [$id]);
-            $this->repo->log('staff', sprintf('%s %s arbeitet jetzt bei uns (%s).', $d['first_name'], $d['last_name'], $roleName));
+            $this->repo->log('staff', sprintf('%s arbeitet jetzt bei uns (%s).', trim($d['first_name'] . ' ' . $d['last_name']), $roleName));
             return $staffId;
         });
     }
 
     public function save(int $id, bool $saved): void
     {
-        $this->row($id);
+        $this->row($id, false);
         $this->repo->db->update('mail', ['saved' => $saved ? 1 : 0], ['id' => $id]);
     }
 
     public function drop(int $id): void
     {
-        $this->row($id);
+        $this->row($id, false);
         $this->repo->db->exec('DELETE FROM mail WHERE id = ?', [$id]);
     }
 
@@ -361,19 +369,20 @@ final class Inbox
         foreach ($this->repo->musicians() as $m) {
             $level = Levels::forFame((float) $m['fame']);
             $medium = Rng::pick(Catalog::INTERVIEW_MEDIA[min(3, $level)]);
-            $this->store('interview', ['musicianId' => $m['id'], 'level' => $level, 'medium' => $medium['name'], 'share' => $medium['share']], $now, Balance::INTERVIEW['ttl']);
+            $this->store('interview', ['musicianId' => $m['id'], 'level' => $level, 'medium' => $medium['name'], 'share' => $medium['share']], $now, Balance::POST['ttl'], true);
         }
         foreach ([1, 2] as $k) {
-            $this->store('job', self::applicant('assistant', 1.0, 1), $now - $k, Balance::JOBS['ttl']);
+            $this->store('job', self::applicant('assistant', 1.0, 1), $now - $k, Balance::POST['ttl'], true);
         }
+        $this->store('job', self::applicant('intern', 1.0, 1), $now - 3, Balance::POST['ttl'], true);
         foreach (array_keys(Balance::SCOUT_STAFF['tiers']) as $tier) {
-            $this->store('job', self::applicant('scout', 1.0, $tier), $now - 10 - $tier, Balance::JOBS['ttl']);
+            $this->store('job', self::applicant('scout', 1.0, $tier), $now - 10 - $tier, Balance::POST['ttl'], true);
         }
         $own = array_values(array_unique(array_column($this->repo->musicians(), 'instr1')));
         foreach ([1, 2, 3] as $tier) {
-            $this->store('job', self::applicant('manager', 1.0, $tier, [], ['rock']), $now - 40 - $tier, Balance::JOBS['ttl']);
-            $this->store('job', self::applicant('teacher', 1.0, $tier, $own ?: ['guitar']), $now - 20 - $tier, Balance::JOBS['ttl']);
-            $this->store('job', self::applicant('coach', 1.0, $tier), $now - 30 - $tier, Balance::JOBS['ttl']);
+            $this->store('job', self::applicant('manager', 1.0, $tier, [], ['rock']), $now - 40 - $tier, Balance::POST['ttl'], true);
+            $this->store('job', self::applicant('teacher', 1.0, $tier, $own ?: ['guitar']), $now - 20 - $tier, Balance::POST['ttl'], true);
+            $this->store('job', self::applicant('coach', 1.0, $tier), $now - 30 - $tier, Balance::POST['ttl'], true);
         }
     }
 }

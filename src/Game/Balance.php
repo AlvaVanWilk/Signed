@@ -183,22 +183,24 @@ final class Balance
      * Das Medium passt zur Bekanntheitsstufe (Catalog::INTERVIEW_MEDIA, dort auch der Anteil je Medium). Gewinn = Anteil × Weg von dieser Stufe
      * zur nächsten (FAME_LEVELS), ohne Stufen-Bremse; auf der höchsten Stufe zählt `topSpan`. Annehmen schickt den Musiker `seconds[Stufe]` weg.
      */
-    public const INTERVIEW = ['perDay' => 1.0, 'ttl' => 8 * 3600, 'seconds' => [900, 1200, 1800, 2700], 'topSpan' => 600.0, 'maxCatchUp' => 86400];
+    public const INTERVIEW = ['perDay' => 1.0, 'ttl' => 4 * 86400, 'seconds' => [900, 1200, 1800, 2700], 'topSpan' => 600.0, 'maxCatchUp' => 86400];
     /**
-     * Posteingang: Bewerbungen von Leuten fürs Label (Praktikum, Assistenz, Scout, Lehrer, Coach, Manager). Im Schnitt `perDay` am Tag, jede liegt `ttl`;
-     * es liegen aber immer mindestens `minOpen` da (möglichst verschiedene).
+     * Posteingang: Bewerbungen von Leuten fürs Label. Wie viele im Schnitt daliegen, folgt dem Erfolg: `count` = 1 + log2(1 + Erfolg / `per`),
+     * höchstens `max`; sie kommen zufällig verteilt (im Schnitt count / Verfallszeit) und liegen so lange wie alle Post (POST['ttl']).
+     * Jede Bewerbung ist unabhängig gewürfelt (`roles`, Gewichte): Bei wenigen ist es fast immer ein Praktikum, bei vielen sind auch seltene
+     * Stellen (Assistenz, Lehrkraft, Coach) öfter dabei. Ein Praktikum liegt immer da.
      * Wie gut die Bewerber sind, folgt dem Erfolg des Labels, aber gesättigt (oben offen): Güte = Erfolg / (Erfolg + `half`).
      * Eine Stufe bewirbt sich erst ab ihrer Güte `from`; die beste erreichbare kommt am häufigsten (`weights`: beste, zweitbeste, Rest).
-     * `minSuccess`: ab welchem Erfolg sich diese Art überhaupt bewirbt.
      */
     public const JOBS = [
-        'perDay' => 3.0, 'minOpen' => 4, 'ttl' => 2 * 86400, 'maxCatchUp' => 2 * 86400, 'half' => 300.0, 'weights' => [3, 2, 1],
-        'roles' => [
-            'intern' => ['weight' => 2, 'minSuccess' => 0.0], 'assistant' => ['weight' => 1, 'minSuccess' => 0.0], 'scout' => ['weight' => 1, 'minSuccess' => 0.0],
-            'teacher' => ['weight' => 2, 'minSuccess' => 0.0], 'coach' => ['weight' => 1, 'minSuccess' => 5.0],
-            'manager' => ['weight' => 1, 'minSuccess' => 15.0],
-        ],
+        'per' => 15.0, 'max' => 10, 'half' => 300.0, 'weights' => [3, 2, 1],
+        'roles' => ['intern' => 64, 'manager' => 13, 'scout' => 11, 'assistant' => 5, 'teacher' => 4, 'coach' => 3],
     ];
+    /**
+     * Post (Kassetten, Anfragen, Bewerbungen) kommt in Umschlägen: Auspacken dauert `unpack` Sekunden (selbst oder per Praktikum, gleich schnell),
+     * das Praktikum sortiert in die Fächer je Brief in `sort` Sekunden; eine Assistenz macht beides laufend und sofort. Alles liegt `ttl`.
+     */
+    public const POST = ['unpack' => 3, 'sort' => 1, 'ttl' => 4 * 86400, 'refresh' => 60];
     /**
      * Privatlehrer: für ein Instrument, manchmal mit Lieblingsgenre. Gebucht für `seconds` und genau einen Musiker (einmal bezahlt), der in der Zeit
      * `gain` Können dazugewinnt, gleichmäßig verteilt und ohne Stufen-Bremse (mit passendem Genre × `genreFactor`). Unterrichtet nur bis `maxSkill`.
@@ -251,7 +253,7 @@ final class Balance
             2 => ['price' => 1200, 'seconds' => 5 * 3600, 'candidates' => 3, 'skill' => [22, 44], 'from' => 0.25],
             3 => ['price' => 3000, 'seconds' => 4 * 3600, 'candidates' => 3, 'skill' => [32, 54], 'from' => 0.55],
         ],
-        'ttl' => 2 * 86400,
+        'ttl' => 4 * 86400,
     ];
     /**
      * Assistenz: einmalig bezahlt, alle gleich gut. Jede sortiert den Posteingang (Reiter, Notizen auf der Übersicht) und hat dazu eine Aufgabe:

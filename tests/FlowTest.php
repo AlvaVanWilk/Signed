@@ -22,6 +22,13 @@ function registerPlayer(Signed\Db $db, string $name): Player
     return $p;
 }
 
+/** Packt alle Umschläge im Posteingang aus (Kassetten und Briefe), als hätte man es selbst getan. */
+function unpackAll(Signed\Db $db): void
+{
+    $db->exec('UPDATE submissions SET unpacked_at = created_at WHERE unpacked_at IS NULL');
+    $db->exec('UPDATE mail SET unpacked_at = created_at WHERE unpacked_at IS NULL');
+}
+
 /** Gründet aus den drei Test-Musikern eine Band. */
 function foundBand(Player $p, string $name = 'Die Ersten'): array
 {
@@ -1337,7 +1344,15 @@ test('Einsendungen: Willkommens-Stapel, laufender Eingang, Unterschreiben kostet
     $p = registerPlayer($db, 'Post');
     $state = $p->get('state');
     checkEquals(5, count($state['submissions']), 'Willkommens-Stapel: fünf Einsendungen');
-    checkEquals(['closed'], array_values(array_unique(array_column($state['submissions'], 'state'))), 'alle ungehört');
+    checkEquals(['envelope'], array_values(array_unique(array_column($state['submissions'], 'state'))), 'alle im Umschlag');
+    // Auspacken dauert ein paar Sekunden, einer nach dem anderen.
+    $p->post('postUnpack', ['table' => 's', 'id' => $state['submissions'][0]['submissionId']]);
+    checkApiError(fn () => $p->post('postUnpack', ['table' => 's', 'id' => $state['submissions'][1]['submissionId']]), 'schon einen');
+    checkApiError(fn () => $p->post('submissionOpen', ['submissionId' => $state['submissions'][0]['submissionId']]), 'erst auspacken');
+    Clock::advance(Balance::POST['unpack']);
+    unpackAll($db);
+    $state = $p->get('state');
+    checkEquals(['closed'], array_values(array_unique(array_column($state['submissions'], 'state'))), 'ausgepackt: alles Kassetten, ungehört');
     check(!isset($state['submissions'][0]['firstName']), 'ungehört verrät nichts');
     checkApiError(fn () => $p->post('submissionSign', ['submissionId' => $state['submissions'][0]['submissionId']]), 'sichten');
     // Sichten dauert ein paar Sekunden.
@@ -1862,7 +1877,12 @@ test('Posteingang: Interview-Anfragen passen zur Bekanntheit, bringen einen fest
     $p = registerPlayer($db, 'Presse');
     $band = foundBand($p);
     $p->get('state');
+    // Sie kommen zufällig verteilt (im Schnitt eine am Tag je Musiker): zwei Tage warten.
     Clock::advance(86400);
+    $p->get('state');
+    Clock::advance(86400);
+    $p->get('state');
+    unpackAll($db);
     $state = $p->get('state');
     $interviews = array_values(array_filter($state['mail'], static fn ($m) => $m['kind'] === 'interview'));
     check(count($interviews) >= 1, 'nach einem Tag gibt es Anfragen');
@@ -1912,6 +1932,8 @@ test('Posteingang: Bewerber werden mit dem Erfolg besser (gesättigt); Assistenz
     $db = freshDb();
     $p = registerPlayer($db, 'Sortiert');
     Clock::advance(2 * 86400);
+    $p->get('state');
+    unpackAll($db);
     $jobs = array_values(array_filter($p->get('state')['mail'], static fn ($m) => $m['kind'] === 'job'));
     check(in_array('scout', array_column($jobs, 'role'), true), 'Scout gleich zu Beginn');
     check(in_array('intern', array_column($jobs, 'role'), true), 'Praktikum gleich zu Beginn');
@@ -1974,6 +1996,8 @@ test('Posteingang: Bewerber werden mit dem Erfolg besser (gesättigt); Assistenz
 test('Scout: bewirbt sich zu Beginn, mit Suchauftrag unterwegs, Bericht im Posteingang, beliebig viele unterschreiben', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Sucher');
+    $p->get('state');
+    unpackAll($db);
     $state = $p->get('state');
     $welcome = array_values(array_filter($state['mail'], static fn ($m) => $m['kind'] === 'job' && $m['role'] === 'scout'));
     checkEquals(1, count($welcome), 'Willkommens-Brief vom Scout');
@@ -2195,6 +2219,8 @@ test('Cover: Designer machen es klarer und verkaufen mehr, das Bandlogo wird ein
 test('Praktikum: günstig, sortiert nur die Post, lässt sich als Assistenz übernehmen oder geht nach sieben Tagen', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Praktikum');
+    $p->get('state');
+    unpackAll($db);
     $state = $p->get('state');
     $intern = array_values(array_filter($state['mail'], static fn ($m) => $m['kind'] === 'job' && $m['role'] === 'intern'))[0];
     checkEquals(Balance::INTERN['price'], $intern['price']);
@@ -2214,24 +2240,103 @@ test('Praktikum: günstig, sortiert nur die Post, lässt sich als Assistenz übe
     checkEquals(1, count($p->get('state')['assistant']['staff']), 'bleibt');
     // Ein zweites Praktikum ohne Übernahme geht nach sieben Tagen.
     $p2 = registerPlayer($db, 'Kurzzeit');
+    $p2->get('state');
+    unpackAll($db);
     $mail = array_values(array_filter($p2->get('state')['mail'], static fn ($m) => $m['kind'] === 'job' && $m['role'] === 'intern'))[0];
     $p2->post('mailHire', ['mailId' => $mail['mailId']]);
     Clock::advance(Balance::INTERN['seconds'] + 60);
+    $p2->get('state');
+    unpackAll($db);
     $state = $p2->get('state');
     checkEquals(null, $state['assistant'], 'weg');
-    check((bool) array_filter($state['mail'], static fn ($m) => $m['kind'] === 'job' && $m['role'] === 'assistant'), 'danach liegt eine Bewerbung für eine Assistenz da');
+    check((bool) array_filter($state['mail'], static fn ($m) => $m['kind'] === 'job' && $m['role'] === 'intern'), 'danach bewirbt sich wieder ein Praktikum');
 });
 
-test('Bewerbungen: Es liegen immer ein paar da, möglichst verschiedene; ohne Büro immer ein Praktikum', function () {
+test('Bewerbungen: Zahl nach Erfolg, meist Praktika, seltene Stellen erst bei vielen; ein Praktikum immer', function () {
+    checkEquals(1, Inbox::jobCount(0));
+    checkEquals(2, Inbox::jobCount(15));
+    checkEquals(4, Inbox::jobCount(105));
+    checkEquals(Balance::JOBS['max'], Inbox::jobCount(1e9));
+    $roles = [];
+    for ($i = 0; $i < 2000; $i++) {
+        $r = (string) Signed\Rng::weighted(Balance::JOBS['roles']);
+        $roles[$r] = ($roles[$r] ?? 0) + 1;
+    }
+    check($roles['intern'] > 1100 && $roles['intern'] < 1450, 'meist Praktika: ' . $roles['intern']);
+    check(($roles['assistant'] ?? 0) < $roles['manager'] && ($roles['teacher'] ?? 0) < $roles['scout'], 'Assistenz und Lehrkraft selten');
     $db = freshDb();
     $p = registerPlayer($db, 'Viele');
+    $p->get('state');
+    unpackAll($db);
     $jobs = array_values(array_filter($p->get('state')['mail'], static fn ($m) => $m['kind'] === 'job'));
-    check(count($jobs) >= Balance::JOBS['minOpen'], 'gleich zu Beginn mehrere: ' . count($jobs));
-    check(count(array_unique(array_column($jobs, 'role'))) >= 3, 'verschiedene Stellen');
-    check(in_array('intern', array_column($jobs, 'role'), true) && in_array('scout', array_column($jobs, 'role'), true));
-    // Alle weg: Es kommen gleich wieder welche.
+    check(in_array('intern', array_column($jobs, 'role'), true) && in_array('scout', array_column($jobs, 'role'), true), 'Praktikum und Scout gleich zu Beginn');
+    // Alle weg: Ein Praktikum ist gleich wieder da (im Umschlag).
     $db->exec("DELETE FROM mail WHERE kind = 'job'");
+    $p->get('state');
+    unpackAll($db);
     $jobs = array_values(array_filter($p->get('state')['mail'], static fn ($m) => $m['kind'] === 'job'));
-    check(count($jobs) >= Balance::JOBS['minOpen']);
-    check(in_array('intern', array_column($jobs, 'role'), true), 'ohne Büro wieder ein Praktikum');
+    check(in_array('intern', array_column($jobs, 'role'), true), 'ein Praktikum immer');
+});
+
+test('Umschläge: Praktikum packt auf Zuruf aus, hört an, sortiert in die Fächer; nur eins zur Zeit; Assistenz macht es laufend', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Umschlag');
+    $state = $p->get('state');
+    // Neu im Posteingang: zählt hoch, bis man hineinschaut.
+    check($state['inboxNew'] >= 5, 'neu: ' . $state['inboxNew']);
+    $p->post('inboxSeen');
+    checkEquals(0, $p->get('state')['inboxNew']);
+    $envelopes = array_values(array_filter($state['mail'], static fn ($m) => $m['kind'] === 'envelope'));
+    check(count($envelopes) >= 2, 'Bewerbungen im Umschlag');
+    check(!isset($envelopes[0]['role']) && !isset($envelopes[0]['price']), 'verrät nichts');
+    checkApiError(fn () => $p->post('mailHire', ['mailId' => $envelopes[0]['mailId']]), 'erst auspacken');
+    // Das Praktikum selbst auspacken und einstellen.
+    foreach ($envelopes as $e) {
+        $p->post('postUnpack', ['table' => 'm', 'id' => $e['mailId']]);
+        Clock::advance(Balance::POST['unpack']);
+    }
+    $intern = array_values(array_filter($p->get('state')['mail'], static fn ($m) => $m['kind'] === 'job' && $m['role'] === 'intern'))[0];
+    checkEquals('', $intern['lastName'], 'nur ein Vorname');
+    checkEquals(true, $intern['look']['young'], 'sieht jünger aus');
+    $state = $p->post('mailHire', ['mailId' => $intern['mailId']])['state'];
+    $id = $state['assistant']['staff'][0]['id'];
+    // Ein zweites Praktikum geht nicht.
+    $db->exec('UPDATE labels SET job_at = 1');
+    $p->get('state');
+    unpackAll($db);
+    $other = array_values(array_filter($p->get('state')['mail'], static fn ($m) => $m['kind'] === 'job' && $m['role'] === 'intern'));
+    check($other !== [], 'Praktika bewerben sich weiter');
+    checkApiError(fn () => $p->post('mailHire', ['mailId' => $other[0]['mailId']]), 'schon ein Praktikum');
+    // Neue Umschläge: Auf Zuruf packt es alle aus, so schnell wie man selbst.
+    $db->exec('UPDATE submissions SET unpacked_at = NULL, opened_at = NULL, sorted_at = NULL');
+    $todo = $p->get('state')['assistant']['todo'];
+    check($todo['unpack'] >= 5);
+    $state = $p->post('internOrder', ['staffId' => $id, 'job' => 'unpack'])['state'];
+    $job = $state['assistant']['staff'][0]['job'];
+    checkEquals('unpack', $job['kind']);
+    checkEquals(Clock::now() + $todo['unpack'] * Balance::POST['unpack'], $job['until']);
+    checkApiError(fn () => $p->post('internOrder', ['staffId' => $id, 'job' => 'sort']), 'beschäftigt');
+    Clock::advance($todo['unpack'] * Balance::POST['unpack'] + 1);
+    $state = $p->get('state');
+    checkEquals(0, $state['assistant']['todo']['unpack'], 'alles ausgepackt');
+    check(in_array('office', array_column($state['history'], 'kind'), true), 'meldet sich, wenn fertig');
+    // Anhören, dann sortieren.
+    $listen = $state['assistant']['todo']['listen'];
+    $p->post('internOrder', ['staffId' => $id, 'job' => 'listen']);
+    Clock::advance($listen * Balance::SUBMISSIONS['listen'] + 1);
+    $state = $p->get('state');
+    checkEquals([], array_values(array_filter($state['submissions'], static fn ($x) => $x['state'] !== 'open')), 'alle angehört, keine weggeworfen');
+    checkEquals(false, $state['submissions'][0]['sorted'], 'noch im Eingang');
+    $p->post('internOrder', ['staffId' => $id, 'job' => 'sort']);
+    Clock::advance(60);
+    $state = $p->get('state');
+    checkEquals(true, $state['submissions'][0]['sorted'], 'in den Fächern');
+    checkApiError(fn () => $p->post('internOrder', ['staffId' => $id, 'job' => 'sort']), 'nichts zum Sortieren');
+    // Übernehmen: bekommt einen Nachnamen und sieht erwachsen aus; packt ab jetzt laufend aus und sortiert.
+    $state = $p->post('assistAdopt', ['staffId' => $id])['state'];
+    check($state['assistant']['staff'][0]['lastName'] !== '', 'mit Nachnamen');
+    check(!isset($state['assistant']['staff'][0]['look']['young']), 'erwachsen');
+    $db->exec('UPDATE submissions SET unpacked_at = NULL, sorted_at = NULL');
+    $state = $p->get('state');
+    checkEquals([], array_values(array_filter($state['submissions'], static fn ($x) => in_array($x['state'], ['envelope', 'unpacking'], true) || !$x['sorted'])), 'Assistenz packt aus und sortiert');
 });

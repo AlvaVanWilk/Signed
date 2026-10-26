@@ -543,6 +543,19 @@ final class Schema
             [
                 'ALTER TABLE bands ADD COLUMN logo TEXT NULL',
             ],
+            // 43: Post kommt in Umschlägen (erst auspacken), liegt im Eingang, bis jemand sie in die Fächer sortiert; wer gerade daran arbeitet (Praktikum);
+            // was seit dem letzten Blick in den Posteingang neu ist. Was schon da war, gilt als ausgepackt.
+            [
+                'ALTER TABLE submissions ADD COLUMN unpacked_at INTEGER NULL',
+                'ALTER TABLE submissions ADD COLUMN sorted_at INTEGER NULL',
+                'ALTER TABLE submissions ADD COLUMN worker VARCHAR(10) NULL',
+                'ALTER TABLE mail ADD COLUMN unpacked_at INTEGER NULL',
+                'ALTER TABLE mail ADD COLUMN sorted_at INTEGER NULL',
+                'ALTER TABLE mail ADD COLUMN worker VARCHAR(10) NULL',
+                'ALTER TABLE labels ADD COLUMN inbox_seen_at INTEGER NOT NULL DEFAULT 0',
+                'UPDATE submissions SET unpacked_at = created_at',
+                'UPDATE mail SET unpacked_at = created_at',
+            ],
         ];
     }
 }

@@ -135,9 +135,10 @@ function sidebar(route) {
  * das man noch nicht gesehen hat (gemerkt im Browser: höchste gesehene Angebots-Nummer je Label).
  */
 /** Zahl am Posteingang: was nicht gemerkt ist (Demos und Briefe). */
+/** Zahl am Posteingang: was seit dem letzten Blick hineingekommen ist (+1, +2 …). */
 function inboxBadge(s) {
-  const n = (s.submissions ?? []).filter((x) => !x.saved).length + (s.mail ?? []).filter((m) => !m.saved).length;
-  return n ? ` <span class="nav-badge">${n}</span>` : '';
+  const n = s.inboxNew ?? 0;
+  return n ? ` <span class="nav-badge">+${n}</span>` : '';
 }
 
 function marketBadge(visiting) {
@@ -524,12 +525,18 @@ setInterval(() => {
   label.tickLive();
   const due = app.state.running.some((a) => a.endsAt <= serverNow());
   // Eine gesichtete Kassette soll sich sofort öffnen: kurz nach dem Ablauf (mit Reserve für die Uhr) schnell und wiederholt nachfragen.
-  const tapeDone = (app.state.submissions ?? []).some((x) => x.state === 'listening' && x.opensAt + 0.4 <= serverNow());
+  const now0 = serverNow();
+  const tapeDone = (app.state.submissions ?? []).some((x) => x.state === 'listening' && x.opensAt + 0.4 <= now0)
+    // Auch Umschläge (selbst oder vom Praktikum ausgepackt) und ein fertiges Praktikum zeigen sich sofort.
+    || [...(app.state.submissions ?? []), ...(app.state.mail ?? [])].some((x) => x.state === 'unpacking' && x.unpacksAt + 0.4 <= now0)
+    || (app.state.assistant?.staff ?? []).some((x) => x.job && x.job.until + 0.4 <= now0);
   if (tapeDone && Date.now() - lastTapeRefresh > 700) {
     lastTapeRefresh = Date.now();
     refresh();
   }
-  if ((due && Date.now() - lastAutoRefresh > 3000) || (live && Date.now() - lastAutoRefresh > 5000)) {
+  // Post kommt zufällig: ab und zu nachsehen, damit die Zahl am Posteingang hochzählt.
+  const slow = Date.now() - lastAutoRefresh > (cat().rules.postRefresh ?? 60) * 1000;
+  if ((due && Date.now() - lastAutoRefresh > 3000) || (live && Date.now() - lastAutoRefresh > 5000) || slow) {
     lastAutoRefresh = Date.now();
     refresh({ quiet: !due });
   }

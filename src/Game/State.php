@@ -256,6 +256,15 @@ final class State
             'scout' => (new Scout($repo))->status(),
             'submissions' => $submissions->list($now),
             'mail' => (new Inbox($repo))->list($now),
+            // Neu seit dem letzten Blick in den Posteingang (die Zahl am Menüpunkt).
+            'inboxNew' => (static function () use ($db, $repo, $now): int {
+                $seen = (int) $db->value('SELECT inbox_seen_at FROM labels WHERE id = ?', [$repo->labelId]);
+                $n = 0;
+                foreach (Post::TABLES as $t) {
+                    $n += (int) $db->value("SELECT COUNT(*) FROM $t WHERE label_id = ? AND created_at > ? AND created_at <= ? AND expires_at > ?", [$repo->labelId, $seen, $now, $now]);
+                }
+                return $n;
+            })(),
             'assistant' => (new Assistant($repo))->present($now),
             'scouts' => (new Scouting($repo))->present($now),
             'tutors' => (new Tutors($repo))->present($now),

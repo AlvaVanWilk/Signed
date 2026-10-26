@@ -64,7 +64,7 @@ const stat = (label, value, note) => `<div class="ov-stat"><span>${esc(label)}</
 function firstSteps(s) {
   const firstBand = s.bands[0];
   const steps = [
-    { done: s.musicians.length > 0, text: 'Eine Kassette anhören und den ersten Künstler unterschreiben', href: '#/einsendungen' },
+    { done: s.musicians.length > 0, text: 'Umschläge auspacken, eine Kassette anhören und den ersten Künstler unterschreiben', href: '#/einsendungen' },
     { done: !!s.assistant, text: 'Jemanden fürs Büro einstellen: Praktikum oder Assistenz (Bewerbungen im Posteingang)', href: '#/einsendungen' },
     { done: s.gear.some((g) => g.musicianId), text: 'Im Music Store ein Instrument kaufen', href: '#/store' },
     { done: s.bands.some((b) => b.cohesion > 0 || b.gigsPlayed > 0 || b.records > 0), text: 'Zum ersten Mal proben', href: firstBand ? `#/band/${firstBand.id}` : '#/einsendungen' },
@@ -113,6 +113,12 @@ function notes(s) {
     add(2, go('job', `${jobs.length === 1 ? 'Eine Bewerbung' : `${jobs.length} Bewerbungen`}: ${names}${jobs.length > 3 ? ' …' : ''}`));
   }
   const unheard = (s.submissions ?? []).filter((x) => x.state === 'closed' && !x.saved).length;
+  const envelopes = [...(s.submissions ?? []), ...mail].filter((x) => x.state === 'envelope' && !x.saved).length;
+  if (envelopes) add(2, go('inbox', `${envelopes === 1 ? 'Ein Umschlag liegt' : `${envelopes} Umschläge liegen`} noch ungeöffnet im Eingang.`));
+  for (const x of (s.assistant?.staff ?? []).filter((y) => y.intern)) {
+    add(2, x.job ? `<b>${esc(x.firstName)}</b> ${({ unpack: 'packt gerade aus', listen: 'hört gerade Kassetten an', sort: 'sortiert gerade' })[x.job.kind]}, fertig in <span data-until="${x.job.until}"></span>.`
+      : go('inbox', `<b>${esc(x.firstName)}</b> langweilt sich und wartet auf einen Auftrag.`));
+  }
   const good = (s.submissions ?? []).filter((x) => x.state === 'open' && !x.saved && Math.max(...(x.members ?? [x]).map((m) => m.level ?? 0)) >= 1).length;
   if (good) add(1, go('demos', `${good === 1 ? 'Eine gute Kassette wartet' : `${good} gute Kassetten warten`} auf dich.`));
   if (unheard && !s.assistant?.perDay) add(2, go('demos', `${unheard === 1 ? 'Eine Kassette ist' : `${unheard} Kassetten sind`} noch nicht angehört.`));

@@ -75,7 +75,7 @@ final class Scouting
             (new Inbox($this->repo))->store('report', [
                 'staffId' => (int) $row['id'], 'tier' => $tier, 'name' => $data['first_name'], 'look' => $data['look'],
                 'genre' => $trip['genre'], 'instrument' => $trip['instrument'], 'cards' => $cards, 'signed' => [],
-            ], $back, Balance::SCOUT_STAFF['ttl']);
+            ], $back, Balance::SCOUT_STAFF['ttl'], true);
             $this->repo->log('scout', sprintf('%s ist zurück und stellt %d Talente vor.', $data['first_name'], count($cards)));
         }
     }

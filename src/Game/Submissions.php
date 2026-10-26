@@ -84,14 +84,16 @@ final class Submissions
         return ['kind' => 'band', 'name' => $db !== null ? Names::band($db) : 'Die Unbekannten', 'members' => $members];
     }
 
-    private function store(array $card, int $at, ?int $openedAt = null): void
+    /** Eine Kassette kommt an: normalerweise im Umschlag; die Test-Knöpfe legen sie gleich ausgepackt hin. */
+    private function store(array $card, int $at, ?int $openedAt = null, bool $unpacked = false): void
     {
         $this->repo->db->insert('submissions', [
             'label_id' => $this->repo->labelId,
             'card' => json_encode($card, JSON_UNESCAPED_UNICODE),
             'created_at' => $at,
-            'expires_at' => $at + Balance::SUBMISSIONS['ttl'],
+            'expires_at' => $at + Balance::POST['ttl'],
             'opened_at' => $openedAt,
+            'unpacked_at' => $unpacked ? $at : null,
         ]);
     }
 
@@ -120,22 +122,22 @@ final class Submissions
                 $card['abilities'] = Levels::randomTechnique([$card['instr1']], $card['genres']);
                 $this->store($card, $now - $i * 60);
             }
-            $db->update('labels', ['submit_at' => $now], ['id' => $this->repo->labelId]);
+            $db->update('labels', ['submit_at' => $now + Post::gap(86400 / self::perDay(0))], ['id' => $this->repo->labelId]);
             return;
         }
         $db->exec('DELETE FROM submissions WHERE label_id = ? AND expires_at <= ?', [$this->repo->labelId, $now]);
         $erfolg = $this->success();
-        $interval = 86400 / self::perDay($erfolg);
-        $at = max($at, $now - Balance::SUBMISSIONS['maxCatchUp']);
-        $count = min(Balance::SUBMISSIONS['maxPerCall'], (int) floor(($now - $at) / $interval));
+        $mean = 86400 / self::perDay($erfolg);
         $good = self::goodShare($erfolg);
-        for ($i = 1; $i <= $count; $i++) {
+        // submit_at ist der Zeitpunkt der nächsten Kassette; die Abstände sind zufällig (man weiß nie genau, wann etwas kommt).
+        $next = max($at, $now - Balance::SUBMISSIONS['maxCatchUp']);
+        for ($n = 0; $next <= $now && $n < Balance::SUBMISSIONS['maxPerCall']; $n++, $next += Post::gap($mean)) {
             $level = Rng::chance($good) ? (int) Rng::weighted(Balance::SUBMISSIONS['goodLevels']) : 0;
             $fame = $level >= 1 && Rng::chance(Balance::SUBMISSIONS['fameChance']) ? Rng::float(...Balance::SUBMISSIONS['fame']) : 0.0;
             $card = Rng::chance(Balance::SUBMISSIONS['bandChance']) ? self::makeBand($level, $this->repo->db) : self::make($level, $fame);
-            $this->store($card, (int) ($at + $i * $interval));
+            $this->store($card, $next);
         }
-        $db->update('labels', ['submit_at' => (int) ($at + $count * $interval)], ['id' => $this->repo->labelId]);
+        $db->update('labels', ['submit_at' => max($next, $now + 1)], ['id' => $this->repo->labelId]);
     }
 
     /** Zum Ausprobieren: sechs neue, ungehörte Kassetten (Stufen gemischt, wie sie im Alltag kämen). */
@@ -143,9 +145,9 @@ final class Submissions
     {
         $now = Clock::now();
         foreach ([0, 0, 1, 2, 0, 3] as $i => $level) {
-            $this->store(self::make($level, $level >= 1 && $i % 2 === 1 ? 40.0 : 0.0), $now - $i * 20);
+            $this->store(self::make($level, $level >= 1 && $i % 2 === 1 ? 40.0 : 0.0), $now - $i * 20, null, true);
         }
-        $this->store(self::makeBand(1, $this->repo->db), $now - 130);
+        $this->store(self::makeBand(1, $this->repo->db), $now - 130, null, true);
     }
 
     /** Zum Ausprobieren: acht gesichtete Bewerbungen, zwei je Können-Stufe, darunter bekannte. */
@@ -157,10 +159,10 @@ final class Submissions
                 3 => 30.0, 5 => 150.0, 7 => 650.0,
                 default => 0.0,
             };
-            $this->store(self::make($level, $fame), $now - $i * 30, $now);
+            $this->store(self::make($level, $fame), $now - $i * 30, $now, true);
         }
-        $this->store(self::makeBand(1, $this->repo->db), $now - 300, $now);
-        $this->store(self::makeBand(2, $this->repo->db), $now - 330, $now);
+        $this->store(self::makeBand(1, $this->repo->db), $now - 300, $now, true);
+        $this->store(self::makeBand(2, $this->repo->db), $now - 330, $now, true);
     }
 
     /**
@@ -171,12 +173,17 @@ final class Submissions
     {
         $rows = $this->repo->db->all('SELECT * FROM submissions WHERE label_id = ? AND expires_at > ? ORDER BY created_at DESC, id DESC', [$this->repo->labelId, $now]);
         return array_map(static function (array $r) use ($now): array {
-            $base = ['submissionId' => (int) $r['id'], 'expiresAt' => (int) $r['expires_at'], 'saved' => (bool) ($r['saved'] ?? 0)];
+            $base = ['submissionId' => (int) $r['id'], 'createdAt' => (int) $r['created_at'], 'expiresAt' => (int) $r['expires_at'], 'saved' => (bool) ($r['saved'] ?? 0), 'sorted' => Post::sorted($r, $now)];
+            // Im Umschlag: Man weiß noch nicht einmal, dass eine Kassette drin ist.
+            $closed = Post::envelope($r, $now);
+            if ($closed !== null) {
+                return $base + ['state' => $closed, 'unpacksAt' => $r['unpacked_at'] === null ? null : (int) $r['unpacked_at'], 'byIntern' => $r['worker'] === 'intern'];
+            }
             if ($r['opened_at'] === null) {
                 return $base + ['state' => 'closed'];
             }
             if ((int) $r['opened_at'] > $now) {
-                return $base + ['state' => 'listening', 'opensAt' => (int) $r['opened_at']];
+                return $base + ['state' => 'listening', 'opensAt' => (int) $r['opened_at'], 'byIntern' => $r['worker'] === 'intern'];
             }
             $card = json_decode($r['card'], true);
             $present = [self::class, 'presentCard'];
@@ -202,11 +209,14 @@ final class Submissions
     public function open(int $id): void
     {
         $row = $this->row($id);
+        if (Post::envelope($row, Clock::now()) !== null) {
+            throw new ApiError('Den Umschlag musst du erst auspacken.');
+        }
         if ($row['opened_at'] === null) {
-            if ((int) $this->repo->db->value('SELECT COUNT(*) FROM submissions WHERE label_id = ? AND opened_at > ?', [$this->repo->labelId, Clock::now()]) > 0) {
-                throw new ApiError('Du sichtest gerade schon eine andere Einsendung.');
+            if ((int) $this->repo->db->value('SELECT COUNT(*) FROM submissions WHERE label_id = ? AND opened_at > ? AND worker IS NULL', [$this->repo->labelId, Clock::now()]) > 0) {
+                throw new ApiError('Du hörst gerade schon eine andere Kassette an.');
             }
-            $this->repo->db->update('submissions', ['opened_at' => Clock::now() + Balance::SUBMISSIONS['listen']], ['id' => $id]);
+            $this->repo->db->update('submissions', ['opened_at' => Clock::now() + Balance::SUBMISSIONS['listen'], 'worker' => null], ['id' => $id]);
         }
     }
 

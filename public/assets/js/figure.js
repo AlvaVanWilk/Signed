@@ -496,15 +496,18 @@ const POSES = {
  * Passfoto im Stil der Figuren: Kopf und Schultern derselben Figur, ohne Instrument. Blinzelt und schaut umher,
  * wenn es in einem .fig-stage.idle steht. mood: Charaktereigenschaft für den Gesichtsausdruck.
  */
+/** Praktikum: Der Kopf ist etwas kleiner (wirkt jünger); um den Hals herum verkleinert. */
+const young = (look, svg) => (look.young ? `<g transform="translate(60 76) scale(0.84) translate(-60 -76)">${svg}</g>` : svg);
+
 export function portrait(look = {}, mood = null) {
   const skin = look.skin || '#d9a27e';
   const shirt = look.shirt || '#4a6fa5';
   return `
     <svg class="fig fig-portrait" viewBox="14 -6 92 96" aria-hidden="true">
       <g class="fig-body">
-        ${look.hair === 'lang' ? pivot(60, 74, 'fig-head', hairBehind(look.hairColor || '#3b2a20')) : ''}
+        ${look.hair === 'lang' ? young(look, pivot(60, 74, 'fig-head', hairBehind(look.hairColor || '#3b2a20'))) : ''}
         <path d="M43 76 Q60 68 77 76 L81 108 Q60 115 39 108 Z" fill="${shirt}" ${STROKE}/>
-        ${pivot(60, 74, 'fig-head', head(look, skin, false, mood))}
+        ${young(look, pivot(60, 74, 'fig-head', head(look, skin, false, mood)))}
       </g>
     </svg>`;
 }

@@ -281,23 +281,26 @@ Jede neue Art braucht einen eigenen Zweck und Wunsch (Perfektionist → Proberau
 ### Woher neue Musiker kommen
 
 **Posteingang** (gebaut, ersetzt die Seite „Einsendungen“): Drei Arten Post kommen an: **Demos** (Kassetten, wie unten), **Anfragen**
-(Interviews für die eigenen Musiker, `Inbox`) und **Bewerbungen** (Leute fürs Label; gebaut ist die Assistenz, Scout, Lehrer und Manager folgen).
-Alles läuft ab (Demos 4 Tage, Anfragen 8 Stunden, Bewerbungen 2 Tage; die Restzeit steht darauf) und lässt sich mit dem Lesezeichen merken
-(„Gespeichert“; ablaufen tut es trotzdem). Die Zahl am Menüpunkt zählt, was nicht gemerkt ist. **Ohne Assistenz** liegt alles gemischt auf einem Stapel.
-- **Bewerbungen** kommen im Schnitt drei am Tag (`Balance::JOBS`), es liegen aber **immer mindestens vier** da, möglichst verschiedene Stellen. Scout und Praktikum liegen von Anfang an da; solange niemand im Büro arbeitet, immer ein Praktikum. Manager erst ab Erfolg 15. Wie gut die Bewerber sind, folgt dem Erfolg
-  **gesättigt**: Güte = Erfolg / (Erfolg + 300), also oben offen, nie ganz 1. Jede Stufe bewirbt sich erst ab ihrer Güte; die beste erreichbare kommt am häufigsten.
-- **Assistenz** (gebaut, `Assistant`): einmalig bezahlt (400 ₲), alle gleich gut; es gibt keine Stufen mehr, man ersetzt keine durch eine bessere.
-  Jede **sortiert den Posteingang** (Reiter Demos, Anfragen, Bewerbungen, Gespeichert; Notizen auf der Übersicht). Dazu hat jede eine **Aufgabe**,
-  jederzeit umstellbar: **Kassetten anhören** (50 am Tag, die ältesten zuerst, gemerkte nicht; wirft nach den Regeln weg, was nicht passt: ab Können-Stufe,
-  Genres, Einzeln/Band) oder **Presse** (sagt Interview-Anfragen zu, sobald der Musiker frei ist). Mehr Eingang oder beide Aufgaben: mehrere einstellen.
-  Ohne Assistenz liegt alles auf einem Stapel und die Übersicht bleibt schlicht; solange keine da ist, liegt immer eine Bewerbung dafür im Posteingang.
-- **Praktikum** (gebaut): Ganz am Anfang bewirbt sich ein Praktikum (50 ₲, 7 Tage, `Balance::INTERN`). Es **sortiert nur die Post** und schreibt
-  Notizen auf die Übersicht, hört keine Kassetten an und macht keine Presse. Bis zum Ende lässt es sich für 400 ₲ als feste Assistenz übernehmen,
-  sonst geht es. Praktika bewerben sich immer wieder (günstig für die Post, neben einer Assistenz für die schwierigeren Aufgaben).
-- **Scout-Karte** (gebaut): Der eingestellte Scout steht unter der Künstlerleiste: losschicken, Countdown bis zur Rückkehr,
-  danach „Ansehen“ für den Bericht. Eine eigene Team-Seite gibt es nicht.
+(Interviews für die eigenen Musiker, `Inbox`) und **Bewerbungen** (Leute fürs Label). **Alles kommt in Umschlägen** (`Post`): Man sieht nicht,
+was drin ist, und muss erst auspacken (3 Sekunden, einer nach dem anderen). Alles liegt **vier Tage** (`Balance::POST['ttl']`, auch Interviews und
+Bewerbungen), lässt sich merken und ungeöffnet wegwerfen. Post kommt **zufällig verteilt** (man weiß nie genau, wann); am Menüpunkt steht **+N**,
+was seit dem letzten Blick in den Posteingang neu ist. Alles landet im **Eingang**; in die Fächer **Demos, Anfragen, Bewerbungen** kommt es erst,
+wenn jemand sortiert.
+- **Bewerbungen**: Wie viele im Schnitt daliegen, folgt dem Erfolg: 1 + log2(1 + Erfolg / 15), höchstens 10 (`Balance::JOBS`). Jede wird für sich
+  gewürfelt: Praktikum 64, Manager 13, Scout 11, Assistenz 5, Lehrkraft 4, Coach 3. Bei einer Bewerbung ist es also fast immer ein Praktikum, bei
+  vieren meist zwei bis drei Praktika und ein Manager oder Scout, und erst bei vielen ist öfter eine Assistenz oder Lehrkraft dabei. Ein Praktikum
+  liegt immer da; ganz zu Beginn bewirbt sich dazu ein Scout. Wie gut die Bewerber sind, folgt dem Erfolg gesättigt: Güte = Erfolg / (Erfolg + 300).
+- **Praktikum** (gebaut): 50 ₲, 7 Tage, nur ein Vorname, sieht jünger aus (kleinerer Kopf). Immer nur **eins zur gleichen Zeit**. Es arbeitet
+  **nur auf Zuruf** und nur an dem, was gerade da ist: **auspacken**, **Kassetten anhören** (ohne wegzuwerfen) oder **in die Fächer sortieren**.
+  Es ist nicht schneller als man selbst, aber man kann derweil etwas anderes tun; auch offline. Ist es fertig, kommt eine Meldung.
+  Bis zum Ende lässt es sich für 400 ₲ als Assistenz übernehmen (bekommt einen Nachnamen und sieht erwachsen aus), sonst geht es.
+- **Assistenz** (gebaut, `Assistant`): einmalig bezahlt (400 ₲). Jede **packt laufend alle Post aus und sortiert sie** in die Fächer und schreibt
+  Notizen auf die Übersicht. Dazu eine **Aufgabe**, jederzeit umstellbar: **Kassetten anhören** (50 am Tag, wirft nach den Regeln weg: ab
+  Können-Stufe, Genres, Einzeln/Band) oder **Presse** (sagt Interview-Anfragen zu, sobald der Musiker frei ist). Mehrere lassen sich einstellen.
+- **Scout-Karte** (gebaut): Der eingestellte Scout steht unter der Künstlerleiste: losschicken, Countdown, danach „Ansehen“ für den Bericht.
+- Die **Sprechblasen** mit Wünschen auf den Band-Kacheln sind vorerst geparkt.
 - **Interviews** siehe „Interviews und Promo-Anfragen“; Zahlen in `kern.md` (Promo, Tempo).
-- **Scout** (gebaut, `Scouting`): Ein einfacher Scout bewirbt sich gleich zu Beginn (Willkommens-Brief, 400 ₲); bessere kommen mit dem Erfolg
+- **Scout** (gebaut, `Scouting`): Ein einfacher Scout bewirbt sich gleich zu Beginn (400 ₲); bessere kommen mit dem Erfolg
   (`Balance::SCOUT_STAFF`). Losschicken mit Genre und/oder Instrument („Egal“ geht), dann liegt nach 6 / 5 / 4 Stunden ein **Bericht** im
   Posteingang (bei Assistenz unter „Demos“) mit 2 / 3 / 3 Talenten, Können 15–34 / 22–44 / 32–54, alle unbekannt. Im Bericht blättert man mit
   Pfeilen durch die Talente (eins nach dem anderen) und unterschreibt beliebig viele, jedes für seine Prämie. Der Bericht liegt 2 Tage.
@@ -311,7 +314,7 @@ Alles läuft ab (Demos 4 Tage, Anfragen 8 Stunden, Bewerbungen 2 Tage; die Restz
 - **Songwriting-Coach** (gebaut): gebucht für **1 Tag und eine Band** (oder einen Solokünstler; 400 / 1.200 / 3.000 ₲). In der Zeit entstehen
   Songs 1,5- / 1,75- / 2-mal so schnell, und die Songs aus dieser Zeit machen die nächste Platte besser (+4 / +8 / +12 % Qualität, anteilig nach
   gecoachten Songs; `bands.coached_songs`). Eine Band hat höchstens einen Coach zugleich (`Balance::COACH`).
-- **Manager** (gebaut, `Managers`): bewerben sich ab Erfolg 15, einmalig bezahlt und teuer (1.500 / 5.000 / 15.000 ₲, Stärke 1 / 3 / 5).
+- **Manager** (gebaut, `Managers`): bewerben sich von Anfang an (aber seltener als Praktika), einmalig bezahlt und teuer (1.500 / 5.000 / 15.000 ₲, Stärke 1 / 3 / 5).
   Jeder hat ein bis zwei **Schwerpunkt-Genres** (oft eins, das im Label gespielt wird), einen **Stil** (Charakterzug) und ein bis zwei Wirkungen:
   **Verhandler** (Gage), **PR-Profi** (Ruhm bei Auftritten), **Netzwerker** (Interviews bringen +10 % je Stärke), **Vermittler** (was der Band
   nicht gefällt, ärgert sie 15 % je Stärke weniger, höchstens 80 %), **Gespür** (zeigt alle Charakterzüge seiner Musiker).
@@ -429,7 +432,7 @@ als Grundlage. Einzelne Wahlen verändern zum Beispiel Tempo-Gefühl, Akkordfolg
 - Kopf mit Name, Gründungsdatum (Link zum WikiSignia-Artikel) und vier Zahlen: Geld (dazu Tantiemen je Minute), Erfolg, Platten in den Charts
   (bester Platz), Künstler in wie vielen Bands.
 - **Erste Schritte** mit Fortschritt (Kassette anhören, Büro besetzen, Instrument kaufen, proben, Auftritt, Platte, Scout); verschwindet, wenn alles einmal gemacht ist.
-- **Notizen vom Büro**, nur wenn Praktikum oder Assistenz da ist, wichtigste zuerst (rot, gelb, Rest): unzufriedene Bands mit ihrem Wunsch,
+- **Notizen vom Büro**, von der Assistenz (das Praktikum meldet nur, ob es beschäftigt ist oder sich langweilt), wichtigste zuerst (rot, gelb, Rest): unzufriedene Bands mit ihrem Wunsch,
   Songstau, „könnte die nächste Platte aufnehmen“, Interview-Anfragen (ohne Presse-Assistenz), Scout-Berichte, Bewerbungen, gute und ungehörte
   Kassetten, ein Praktikum, das bald endet, der Kurs des Tages. Ohne Büro steht dort nur, dass niemand da ist.
 - **Gerade los**: alles, was läuft, nach Ende sortiert (Proben, Auftritte, Studio, Promo, Interviews, Scout unterwegs, Lehrer und Coaches).

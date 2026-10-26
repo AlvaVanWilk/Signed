@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Signed;
 
+use Signed\Clock;
 use Signed\Game\Activities;
 use Signed\Game\Assistant;
 use Signed\Game\Inbox;
@@ -18,6 +19,7 @@ use Signed\Game\Levels;
 use Signed\Game\Minigames;
 use Signed\Game\Names;
 use Signed\Game\Packs;
+use Signed\Game\Post;
 use Signed\Game\Present;
 use Signed\Game\Repo;
 use Signed\Game\Scout;
@@ -96,6 +98,9 @@ final class Api
         'assistRules' => ['POST', true],
         'assistTask' => ['POST', true],
         'assistAdopt' => ['POST', true],
+        'postUnpack' => ['POST', true],
+        'internOrder' => ['POST', true],
+        'inboxSeen' => ['POST', true],
         'scoutSend' => ['POST', true],
         'scoutReportSign' => ['POST', true],
         'practiceAuto' => ['POST', true],
@@ -504,6 +509,25 @@ final class Api
     {
         (new Assistant($repo))->setTask(self::int($in, 'staffId'), self::str($in, 'task'));
         return ['state' => State::build($repo)];
+    }
+
+    private function postUnpack(array $in, Repo $repo): array
+    {
+        (new Post($repo))->unpack(self::str($in, 'table'), self::int($in, 'id'));
+        return ['state' => State::build($repo)];
+    }
+
+    private function internOrder(array $in, Repo $repo): array
+    {
+        (new Assistant($repo))->internOrder(self::int($in, 'staffId'), self::str($in, 'job'));
+        return ['state' => State::build($repo)];
+    }
+
+    /** Posteingang angesehen: Die Zahl am Menüpunkt fängt wieder bei null an. */
+    private function inboxSeen(array $in, Repo $repo): array
+    {
+        $this->db->update('labels', ['inbox_seen_at' => Clock::now()], ['id' => $repo->labelId]);
+        return [];
     }
 
     private function assistAdopt(array $in, Repo $repo): array

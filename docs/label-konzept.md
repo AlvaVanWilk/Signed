@@ -282,17 +282,31 @@ Jede neue Art braucht einen eigenen Zweck und Wunsch (Perfektionist → Proberau
 
 **Posteingang** (gebaut, ersetzt die Seite „Einsendungen“): Drei Arten Post kommen an: **Demos** (Kassetten, wie unten), **Anfragen**
 (Interviews für die eigenen Musiker, `Inbox`) und **Bewerbungen** (Leute fürs Label). **Alles kommt in Umschlägen** (`Post`): Man sieht nicht,
-was drin ist, und muss erst auspacken (3 Sekunden, einer nach dem anderen). Alles liegt **vier Tage** (`Balance::POST['ttl']`, auch Interviews und
-Bewerbungen), lässt sich merken und ungeöffnet wegwerfen. Post kommt **zufällig verteilt** (man weiß nie genau, wann); am Menüpunkt steht **+N**,
-was seit dem letzten Blick in den Posteingang neu ist. Alles landet im **Eingang**; in die Fächer **Demos, Anfragen, Bewerbungen** kommt es erst,
-wenn jemand sortiert.
-- **Bewerbungen**: Wie viele im Schnitt daliegen, folgt dem Erfolg: 1 + log2(1 + Erfolg / 15), höchstens 10 (`Balance::JOBS`). Jede wird für sich
-  gewürfelt: Praktikum 64, Manager 13, Scout 11, Assistenz 5, Lehrkraft 4, Coach 3. Bei einer Bewerbung ist es also fast immer ein Praktikum, bei
-  vieren meist zwei bis drei Praktika und ein Manager oder Scout, und erst bei vielen ist öfter eine Assistenz oder Lehrkraft dabei. Ein Praktikum
-  liegt immer da; ganz zu Beginn bewirbt sich dazu ein Scout. Wie gut die Bewerber sind, folgt dem Erfolg gesättigt: Güte = Erfolg / (Erfolg + 300).
+was drin ist, und muss erst auspacken (2 Sekunden, einer nach dem anderen; die Leiste ist so lang wie beim Kassettenhören). Alles liegt
+**vier Tage** (`Balance::POST['ttl']`, auch Interviews und Bewerbungen), lässt sich merken und ungeöffnet wegwerfen. Post kommt **zufällig
+verteilt** (man weiß nie genau, wann); am Menüpunkt steht **+N**, was seit dem letzten Blick in den Posteingang neu ist, und im Posteingang trägt
+alles Neue ein **NEU** (bis man das nächste Mal hereinkommt). Alles landet im **Eingang**; in die Fächer **Demos, Anfragen, Bewerbungen** kommt es,
+wenn jemand sortiert. **Von Hand** lässt sich alles festhalten und auf einen Reiter ziehen (auch zurück in den Eingang oder zu „Gespeichert“);
+das überstimmt die Sortierung (`Post::move`, Spalte `box`).
+- **Wie viel kommt** (alles zufällig, im Schnitt so viel wie die Rate, und alles wächst mit dem Erfolg des Labels, dazwischen gleitend):
+
+  | je Tag            | Erfolg 0 | Erfolg 450 | Erfolg 5000 |
+  |-------------------|---------:|-----------:|------------:|
+  | Kassetten (Demos) |        8 |         45 |         250 |
+  | Praktikum         |      0,8 |        1,5 |         2,5 |
+  | Manager           |      0,3 |        0,7 |         1,5 |
+  | Scout             |      0,2 |        0,5 |         1,0 |
+  | Assistenz         |     0,12 |       0,35 |         0,8 |
+  | Lehrkraft         |     0,08 |        0,3 |         0,6 |
+  | Coach             |     0,05 |       0,25 |         0,5 |
+
+  Interview-Anfragen richten sich nach den eigenen Musikern (im Schnitt eine am Tag je Musiker, höchstens eine offen). Ein Praktikum liegt
+  immer da; ganz zu Beginn bewerben sich dazu ein Scout und ein Manager. Wie gut die Bewerber sind, folgt dem Erfolg gesättigt:
+  Güte = Erfolg / (Erfolg + 300) (`Balance::JOBS`, `Balance::SUBMISSIONS['perDay']`).
 - **Praktikum** (gebaut): 50 ₲, 7 Tage, nur ein Vorname, sieht jünger aus (kleinerer Kopf). Immer nur **eins zur gleichen Zeit**. Es arbeitet
-  **nur auf Zuruf** und nur an dem, was gerade da ist: **auspacken**, **Kassetten anhören** (ohne wegzuwerfen) oder **in die Fächer sortieren**.
-  Es ist nicht schneller als man selbst, aber man kann derweil etwas anderes tun; auch offline. Ist es fertig, kommt eine Meldung.
+  **nur auf Zuruf**: „Post bearbeiten“ heißt, alles, was in dem Moment im Eingang liegt, Stück für Stück **auspacken**, Kassetten **anhören**
+  (ohne wegzuwerfen) und **ins passende Fach legen**. Was danach kommt, bleibt liegen. Es ist nicht schneller als man selbst, aber man kann
+  derweil etwas anderes tun; auch offline. Ist es fertig, kommt eine Meldung.
   Bis zum Ende lässt es sich für 400 ₲ als Assistenz übernehmen (bekommt einen Nachnamen und sieht erwachsen aus), sonst geht es.
 - **Assistenz** (gebaut, `Assistant`): einmalig bezahlt (400 ₲). Jede **packt laufend alle Post aus und sortiert sie** in die Fächer und schreibt
   Notizen auf die Übersicht. Dazu eine **Aufgabe**, jederzeit umstellbar: **Kassetten anhören** (50 am Tag, wirft nach den Regeln weg: ab

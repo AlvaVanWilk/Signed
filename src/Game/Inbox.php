@@ -85,15 +85,15 @@ final class Inbox
     }
 
     /** Wie viele Bewerbungen bei diesem Erfolg im Schnitt daliegen (1 am Anfang, bis zu JOBS['max']). */
-    public static function jobCount(float $success): int
+    /** @return array<string, float> Bewerbungen je Beruf und Tag bei diesem Erfolg */
+    public static function jobRates(float $success): array
     {
-        $c = Balance::JOBS;
-        return min($c['max'], 1 + (int) floor(log(1 + max(0.0, $success) / $c['per'], 2)));
+        return array_map(static fn ($points) => Submissions::curve($points, max(0.0, $success)), Balance::JOBS['rates']);
     }
 
     /**
-     * Bewerbungen: zufällig verteilt, im Schnitt so viele, wie jobCount sagt. Jede wird für sich gewürfelt (meist ein Praktikum, selten eine Assistenz
-     * oder Lehrkraft). Ein Praktikum liegt immer da; ganz zu Beginn bewirbt sich dazu ein Scout.
+     * Bewerbungen: Jeder Beruf kommt zufällig mit seiner eigenen Rate (zusammengenommen ist das ein Strom mit der Summe der Raten, aus dem jede
+     * Ankunft ihren Beruf nach den Raten zieht). Ein Praktikum liegt immer da; ganz zu Beginn bewerben sich dazu ein Scout und ein Manager.
      */
     private function topUpJobs(int $now, float $success): void
     {
@@ -112,14 +112,12 @@ final class Inbox
         $add = function (string $role, int $created, ?int $tier = null) use ($success, $own, $genres, $ttl): void {
             $this->store('job', self::applicant($role, self::quality($success), $tier, $own, $genres), $created, $ttl);
         };
-        $roll = static fn () => (string) Rng::weighted(Balance::JOBS['roles']);
-        $mean = $ttl / self::jobCount($success);
+        $rates = self::jobRates($success);
+        $roll = static fn () => (string) Rng::weighted($rates);
+        $mean = 86400 / array_sum($rates);
         if ($next === 0) {
-            // Zu Beginn: ein Scout und so viele, wie sonst im Schnitt daliegen.
             $add('scout', $now, 1);
-            for ($k = 0; $k < self::jobCount($success); $k++) {
-                $add($roll(), $now - $k * 60);
-            }
+            $add('manager', $now - 60, 1);
             $next = $now + Post::gap($mean);
         }
         for ($next = max($next, $now - $ttl); $next <= $now; $next += Post::gap($mean)) {
@@ -206,7 +204,7 @@ final class Inbox
         };
         return array_map(static function (array $r) use ($fits, $now): array {
             $d = json_decode($r['data'], true);
-            $base = ['mailId' => (int) $r['id'], 'createdAt' => (int) $r['created_at'], 'expiresAt' => (int) $r['expires_at'], 'saved' => (bool) $r['saved'], 'sorted' => Post::sorted($r, $now)];
+            $base = ['mailId' => (int) $r['id'], 'createdAt' => (int) $r['created_at'], 'expiresAt' => (int) $r['expires_at'], 'saved' => (bool) $r['saved'], 'sorted' => Post::sorted($r, $now), 'box' => $r['box'] ?? null];
             // Im Umschlag: Man sieht nicht, was drin ist.
             $closed = Post::envelope($r, $now);
             if ($closed !== null) {

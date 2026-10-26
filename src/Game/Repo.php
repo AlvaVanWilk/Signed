@@ -21,7 +21,7 @@ final class Repo
             throw new ApiError('Bitte melde dich an.', 401);
         }
         return [
-            'id' => (int) $row['id'], 'username' => $row['username'], 'name' => $row['name'], 'money' => (int) $row['money'], 'createdAt' => (int) $row['created_at'],
+            'id' => (int) $row['id'], 'username' => $row['username'], 'name' => $row['name'], 'money' => (int) $row['money'], 'createdAt' => (int) $row['created_at'], 'inboxSeenAt' => (int) ($row['inbox_seen_at'] ?? 0),
             'navOrder' => json_decode((string) $row['nav_order'], true) ?: [],
             'subOrder' => json_decode((string) $row['sub_order'], true) ?: [],
         ];

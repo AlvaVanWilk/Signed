@@ -20,7 +20,12 @@ final class Submissions
     /** Einsendungen pro Tag bei diesem Erfolg des Labels. */
     public static function perDay(float $erfolg): float
     {
-        $points = Balance::SUBMISSIONS['perDay'];
+        return self::curve(Balance::SUBMISSIONS['perDay'], $erfolg);
+    }
+
+    /** Gleitend zwischen Punkten [x, y]; vor dem ersten und nach dem letzten bleibt es flach. */
+    public static function curve(array $points, float $erfolg): float
+    {
         foreach ($points as $i => [$x, $y]) {
             if ($erfolg <= $x) {
                 if ($i === 0) {
@@ -173,7 +178,7 @@ final class Submissions
     {
         $rows = $this->repo->db->all('SELECT * FROM submissions WHERE label_id = ? AND expires_at > ? ORDER BY created_at DESC, id DESC', [$this->repo->labelId, $now]);
         return array_map(static function (array $r) use ($now): array {
-            $base = ['submissionId' => (int) $r['id'], 'createdAt' => (int) $r['created_at'], 'expiresAt' => (int) $r['expires_at'], 'saved' => (bool) ($r['saved'] ?? 0), 'sorted' => Post::sorted($r, $now)];
+            $base = ['submissionId' => (int) $r['id'], 'createdAt' => (int) $r['created_at'], 'expiresAt' => (int) $r['expires_at'], 'saved' => (bool) ($r['saved'] ?? 0), 'sorted' => Post::sorted($r, $now), 'box' => $r['box'] ?? null];
             // Im Umschlag: Man weiß noch nicht einmal, dass eine Kassette drin ist.
             $closed = Post::envelope($r, $now);
             if ($closed !== null) {

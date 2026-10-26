@@ -185,22 +185,28 @@ final class Balance
      */
     public const INTERVIEW = ['perDay' => 1.0, 'ttl' => 4 * 86400, 'seconds' => [900, 1200, 1800, 2700], 'topSpan' => 600.0, 'maxCatchUp' => 86400];
     /**
-     * Posteingang: Bewerbungen von Leuten fürs Label. Wie viele im Schnitt daliegen, folgt dem Erfolg: `count` = 1 + log2(1 + Erfolg / `per`),
-     * höchstens `max`; sie kommen zufällig verteilt (im Schnitt count / Verfallszeit) und liegen so lange wie alle Post (POST['ttl']).
-     * Jede Bewerbung ist unabhängig gewürfelt (`roles`, Gewichte): Bei wenigen ist es fast immer ein Praktikum, bei vielen sind auch seltene
-     * Stellen (Assistenz, Lehrkraft, Coach) öfter dabei. Ein Praktikum liegt immer da.
+     * Posteingang: Bewerbungen von Leuten fürs Label. Jeder Beruf hat seine eigene Rate (`rates`, je Tag), die mit dem Erfolg wächst; die
+     * Ankünfte sind zufällig verteilt, und alles liegt so lange wie alle Post (POST['ttl']). Ein Praktikum liegt immer da.
      * Wie gut die Bewerber sind, folgt dem Erfolg des Labels, aber gesättigt (oben offen): Güte = Erfolg / (Erfolg + `half`).
      * Eine Stufe bewirbt sich erst ab ihrer Güte `from`; die beste erreichbare kommt am häufigsten (`weights`: beste, zweitbeste, Rest).
      */
     public const JOBS = [
-        'per' => 15.0, 'max' => 10, 'half' => 300.0, 'weights' => [3, 2, 1],
-        'roles' => ['intern' => 64, 'manager' => 13, 'scout' => 11, 'assistant' => 5, 'teacher' => 4, 'coach' => 3],
+        'half' => 300.0, 'weights' => [3, 2, 1],
+        // Je Beruf: so viele Bewerbungen kommen im Schnitt am Tag, je nach Erfolg des Labels (Punkte [Erfolg, je Tag], dazwischen gleitend).
+        'rates' => [
+            'intern' => [[0, 0.8], [450, 1.5], [5000, 2.5]],
+            'manager' => [[0, 0.3], [450, 0.7], [5000, 1.5]],
+            'scout' => [[0, 0.2], [450, 0.5], [5000, 1.0]],
+            'assistant' => [[0, 0.12], [450, 0.35], [5000, 0.8]],
+            'teacher' => [[0, 0.08], [450, 0.3], [5000, 0.6]],
+            'coach' => [[0, 0.05], [450, 0.25], [5000, 0.5]],
+        ],
     ];
     /**
      * Post (Kassetten, Anfragen, Bewerbungen) kommt in Umschlägen: Auspacken dauert `unpack` Sekunden (selbst oder per Praktikum, gleich schnell),
      * das Praktikum sortiert in die Fächer je Brief in `sort` Sekunden; eine Assistenz macht beides laufend und sofort. Alles liegt `ttl`.
      */
-    public const POST = ['unpack' => 3, 'sort' => 1, 'ttl' => 4 * 86400, 'refresh' => 60];
+    public const POST = ['unpack' => 2, 'sort' => 1, 'ttl' => 4 * 86400, 'refresh' => 60];
     /**
      * Privatlehrer: für ein Instrument, manchmal mit Lieblingsgenre. Gebucht für `seconds` und genau einen Musiker (einmal bezahlt), der in der Zeit
      * `gain` Können dazugewinnt, gleichmäßig verteilt und ohne Stufen-Bremse (mit passendem Genre × `genreFactor`). Unterrichtet nur bis `maxSkill`.

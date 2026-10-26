@@ -10,7 +10,8 @@ use Signed\Rng;
 /**
  * Post im Posteingang (Kassetten in `submissions`, Briefe in `mail`): Alles kommt in Umschlägen und landet im Eingang.
  * Auspacken dauert ein paar Sekunden (Balance::POST), selbst oder per Praktikum (gleich schnell, aber nebenbei). Das Praktikum arbeitet nur
- * auf Zuruf und nur an dem, was gerade da ist: auspacken, Kassetten anhören, in die Fächer sortieren. Eine Assistenz packt laufend aus und sortiert.
+ * auf Zuruf und nur an dem, was gerade im Eingang liegt: auspacken, Kassetten anhören, in die Fächer sortieren. Eine Assistenz packt laufend aus
+ * und sortiert. Von Hand kann man alles in ein anderes Fach ziehen (`box`, überstimmt die Sortierung).
  */
 final class Post
 {
@@ -76,64 +77,77 @@ final class Post
         }
     }
 
-    /** Was das Praktikum gerade tun könnte: wie viele Umschläge, ungehörte Kassetten und unsortierte Briefe da sind. */
-    public function todo(int $now): array
+    /** Liegt im Eingang: nicht gemerkt, und entweder noch nicht (fertig) sortiert oder von Hand zurück in den Eingang gezogen. */
+    private const IN_INBOX = "saved = 0 AND ((box IS NULL AND (sorted_at IS NULL OR sorted_at > ?)) OR box = 'inbox')";
+
+    /** Die Fächer, in die man von Hand ziehen kann ('saved' = merken). */
+    public const BOXES = ['inbox', 'demos', 'interview', 'job', 'saved'];
+
+    /** Wie viel gerade im Eingang liegt (das bearbeitet das Praktikum auf Zuruf). */
+    public function todo(int $now): int
     {
-        $db = $this->repo->db;
-        $l = $this->repo->labelId;
-        $count = static fn (string $sql, array $p) => (int) $db->value($sql, $p);
-        $unpack = 0;
-        $sort = 0;
+        $n = 0;
         foreach (self::TABLES as $t) {
-            $unpack += $count("SELECT COUNT(*) FROM $t WHERE label_id = ? AND expires_at > ? AND unpacked_at IS NULL", [$l, $now]);
-            $sort += $count("SELECT COUNT(*) FROM $t WHERE label_id = ? AND expires_at > ? AND unpacked_at <= ? AND sorted_at IS NULL", [$l, $now, $now]);
+            $n += (int) $this->repo->db->value("SELECT COUNT(*) FROM $t WHERE label_id = ? AND expires_at > ? AND " . self::IN_INBOX, [$this->repo->labelId, $now, $now]);
         }
-        $listen = $count('SELECT COUNT(*) FROM submissions WHERE label_id = ? AND expires_at > ? AND unpacked_at <= ? AND opened_at IS NULL', [$l, $now, $now]);
-        return ['unpack' => $unpack, 'listen' => $listen, 'sort' => $sort];
+        return $n;
     }
 
     /**
-     * Auftrag ans Praktikum: alles, was gerade da ist, nacheinander. Dauert so lange wie selbst gemacht; läuft auch offline.
-     * @return int Anzahl der Stücke
+     * Auftrag ans Praktikum: alles, was gerade im Eingang liegt, Stück für Stück auspacken, Kassetten anhören und ins passende Fach legen.
+     * Dauert so lange wie selbst gemacht; läuft auch offline. Was später kommt, bleibt liegen.
+     * @return array{int, int} Anzahl der Stücke, fertig um
      */
-    public function order(array $intern, string $job, int $now): int
+    public function order(int $now): array
     {
         $db = $this->repo->db;
-        $l = $this->repo->labelId;
         $rows = [];
-        if ($job === 'unpack') {
-            foreach (self::TABLES as $t) {
-                foreach ($db->all("SELECT id, created_at FROM $t WHERE label_id = ? AND expires_at > ? AND unpacked_at IS NULL", [$l, $now]) as $r) {
-                    $rows[] = [$t, (int) $r['id'], (int) $r['created_at']];
-                }
+        foreach (self::TABLES as $t) {
+            foreach ($db->all("SELECT * FROM $t WHERE label_id = ? AND expires_at > ? AND " . self::IN_INBOX, [$this->repo->labelId, $now, $now]) as $r) {
+                $rows[] = [$t, $r];
             }
-            $column = 'unpacked_at';
-            $step = Balance::POST['unpack'];
-        } elseif ($job === 'listen') {
-            foreach ($db->all('SELECT id, created_at FROM submissions WHERE label_id = ? AND expires_at > ? AND unpacked_at <= ? AND opened_at IS NULL', [$l, $now, $now]) as $r) {
-                $rows[] = ['submissions', (int) $r['id'], (int) $r['created_at']];
-            }
-            $column = 'opened_at';
-            $step = Balance::SUBMISSIONS['listen'];
-        } elseif ($job === 'sort') {
-            foreach (self::TABLES as $t) {
-                foreach ($db->all("SELECT id, created_at FROM $t WHERE label_id = ? AND expires_at > ? AND unpacked_at <= ? AND sorted_at IS NULL", [$l, $now, $now]) as $r) {
-                    $rows[] = [$t, (int) $r['id'], (int) $r['created_at']];
-                }
-            }
-            $column = 'sorted_at';
-            $step = Balance::POST['sort'];
-        } else {
-            throw new ApiError('Diesen Auftrag gibt es nicht.');
         }
         if (!$rows) {
-            throw new ApiError(['unpack' => 'Gerade liegt kein Umschlag da.', 'listen' => 'Gerade liegt keine ungehörte Kassette da.', 'sort' => 'Im Eingang liegt nichts zum Sortieren.'][$job]);
+            throw new ApiError('Im Eingang liegt gerade nichts.');
         }
         // Die ältesten zuerst (die laufen als Erste ab).
-        usort($rows, static fn ($a, $b) => $a[2] <=> $b[2]);
-        foreach ($rows as $k => [$t, $id]) {
-            $db->update($t, [$column => $now + ($k + 1) * $step, 'worker' => 'intern'], ['id' => $id]);
+        usort($rows, static fn ($a, $b) => [(int) $a[1]['created_at'], (int) $a[1]['id']] <=> [(int) $b[1]['created_at'], (int) $b[1]['id']]);
+        $at = $now;
+        foreach ($rows as [$t, $r]) {
+            $set = ['box' => null];
+            // Was man gerade selbst auspackt oder anhört, macht man fertig; das Praktikum wartet darauf.
+            if ($r['unpacked_at'] === null) {
+                $at += Balance::POST['unpack'];
+                $set += ['unpacked_at' => $at, 'worker' => 'intern'];
+            } else {
+                $at = max($at, (int) $r['unpacked_at']);
+            }
+            if ($t === 'submissions') {
+                if ($r['opened_at'] === null) {
+                    $at += Balance::SUBMISSIONS['listen'];
+                    $set += ['opened_at' => $at, 'worker' => 'intern'];
+                } else {
+                    $at = max($at, (int) $r['opened_at']);
+                }
+            }
+            $at += Balance::POST['sort'];
+            $set['sorted_at'] = $at;
+            $db->update($t, $set, ['id' => (int) $r['id']]);
         }
-        return count($rows);
+        return [count($rows), $at];
+    }
+
+    /** Von Hand in ein Fach ziehen (auch zurück in den Eingang oder zu den Gemerkten). */
+    public function move(string $key, int $id, string $box): void
+    {
+        $table = $this->table($key);
+        if (!in_array($box, self::BOXES, true)) {
+            throw new ApiError('Dieses Fach gibt es nicht.');
+        }
+        $db = $this->repo->db;
+        if ($db->one("SELECT id FROM $table WHERE id = ? AND label_id = ? AND expires_at > ?", [$id, $this->repo->labelId, Clock::now()]) === null) {
+            throw new ApiError('Das gibt es nicht mehr.');
+        }
+        $db->update($table, $box === 'saved' ? ['saved' => 1] : ['saved' => 0, 'box' => $box], ['id' => $id]);
     }
 }

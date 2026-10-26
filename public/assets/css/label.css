@@ -928,6 +928,10 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .lb-boxes button { border: 0; background: none; color: var(--lb-muted); font: inherit; font-weight: 700; padding: 8px 14px; border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer; }
 .lb-boxes button.on { color: var(--lb-text); border-bottom-color: var(--lb-accent); }
 .lb-boxes small { font-weight: 600; opacity: .7; margin-left: 3px; }
+.lb-boxes button.drop { color: var(--lb-text); background: color-mix(in srgb, var(--lb-accent) 18%, transparent); border-radius: 6px 6px 0 0; border-bottom-color: var(--lb-accent); }
+.lb-slotitem.moved { opacity: 0; transition: opacity .15s; }
+.lb-slotleft { display: flex; gap: 4px; align-items: center; }
+.lb-new { font-size: .62rem; font-weight: 800; letter-spacing: .08em; padding: 1px 6px; border-radius: 4px; background: var(--lb-accent); color: var(--lb-bg, #15131b); pointer-events: none; }
 .lb-slotitem { position: relative; }
 .lb-slotbar { position: absolute; left: 6px; right: 6px; top: 4px; display: flex; justify-content: space-between; align-items: center; pointer-events: none; z-index: 3; }
 .lb-left { pointer-events: auto; padding: 1px 8px; border-radius: 999px; background: rgba(20, 18, 27, .85); border: 1px solid var(--lb-line); color: var(--lb-muted); font-size: .7rem; font-weight: 700; }
@@ -1099,7 +1103,7 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .lb-envitem.playing .lb-env { animation: lb-env-shake .6s ease-in-out infinite; }
 @keyframes lb-env-shake { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-1.5deg); } 75% { transform: rotate(1.5deg); } }
 @media (prefers-reduced-motion: reduce) { .lb-envitem.playing .lb-env { animation: none; } }
-.lb-env .lb-prog { position: absolute; left: 14px; right: 14px; bottom: 6px; }
+.lb-env .lb-prog.tiny { position: absolute; left: 14%; right: 14%; bottom: 7%; width: auto; height: 4px; margin: 0; }
 .lb-env-wait { position: absolute; left: 0; right: 0; bottom: -18px; text-align: center; font-size: .72rem; color: var(--lb-muted); }
 .lb-tape-big .lb-env-wait { bottom: -14px; }
 .lb-intern-orders { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; }

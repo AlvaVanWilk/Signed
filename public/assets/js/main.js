@@ -507,6 +507,8 @@ document.addEventListener('input', (e) => {
 
 window.addEventListener('hashchange', () => {
   if (parseRoute().name === 'charts') app.charts = null;
+  // NEU im Posteingang gilt bis zum nächsten Besuch.
+  if (parseRoute().name !== 'einsendungen') app.ui.postSeenAt = undefined;
   render();
   window.scrollTo(0, 0);
 });

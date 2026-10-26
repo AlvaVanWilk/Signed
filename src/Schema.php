@@ -556,6 +556,11 @@ final class Schema
                 'UPDATE submissions SET unpacked_at = created_at',
                 'UPDATE mail SET unpacked_at = created_at',
             ],
+            // 44: Von Hand in ein Fach gezogen (überstimmt die Sortierung)
+            [
+                'ALTER TABLE submissions ADD COLUMN box VARCHAR(10) NULL',
+                'ALTER TABLE mail ADD COLUMN box VARCHAR(10) NULL',
+            ],
         ];
     }
 }

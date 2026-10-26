@@ -75,10 +75,10 @@ final class Assistant
     }
 
     /** Auftrag ans Praktikum (auspacken, anhören, sortieren): erledigt alles, was gerade da ist, nacheinander. */
-    public function internOrder(int $staffId, string $job): void
+    public function internOrder(int $staffId): void
     {
         $db = $this->repo->db;
-        $db->transaction(function () use ($db, $staffId, $job): void {
+        $db->transaction(function () use ($db, $staffId): void {
             $now = \Signed\Clock::now();
             $row = $db->one("SELECT * FROM staff WHERE id = ? AND label_id = ? AND role = 'intern' AND busy_until > ?", [$staffId, $this->repo->labelId, $now]);
             if ($row === null) {
@@ -88,9 +88,8 @@ final class Assistant
             if (isset($d['job']) && (int) $d['job']['until'] > $now) {
                 throw new ApiError(sprintf('%s ist noch beschäftigt.', $d['first_name']));
             }
-            $count = (new Post($this->repo))->order($d, $job, $now);
-            $step = ['unpack' => Balance::POST['unpack'], 'listen' => Balance::SUBMISSIONS['listen'], 'sort' => Balance::POST['sort']][$job];
-            $d['job'] = ['kind' => $job, 'count' => $count, 'until' => $now + $count * $step];
+            [$count, $until] = (new Post($this->repo))->order($now);
+            $d['job'] = ['kind' => 'post', 'count' => $count, 'until' => $until];
             $db->update('staff', ['data' => json_encode($d, JSON_UNESCAPED_UNICODE)], ['id' => $staffId]);
         });
     }
@@ -103,8 +102,8 @@ final class Assistant
             if (!isset($d['job']) || (int) $d['job']['until'] > $now) {
                 continue;
             }
-            $what = ['unpack' => '%d Umschläge ausgepackt', 'listen' => '%d Kassetten angehört', 'sort' => '%d Briefe in die Fächer sortiert'][$d['job']['kind']] ?? '%d erledigt';
-            $this->repo->log('office', sprintf('%s ist fertig: ' . $what . '.', $d['first_name'], $d['job']['count']));
+            $n = (int) $d['job']['count'];
+            $this->repo->log('office', sprintf('%s ist fertig: %s ausgepackt, angehört und in die Fächer gelegt.', $d['first_name'], $n === 1 ? 'ein Stück Post' : "$n Stück Post"));
             unset($d['job']);
             $this->repo->db->update('staff', ['data' => json_encode($d, JSON_UNESCAPED_UNICODE)], ['id' => (int) $row['id']]);
         }

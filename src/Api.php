@@ -101,6 +101,7 @@ final class Api
         'postUnpack' => ['POST', true],
         'internOrder' => ['POST', true],
         'inboxSeen' => ['POST', true],
+        'postMove' => ['POST', true],
         'scoutSend' => ['POST', true],
         'scoutReportSign' => ['POST', true],
         'practiceAuto' => ['POST', true],
@@ -519,7 +520,14 @@ final class Api
 
     private function internOrder(array $in, Repo $repo): array
     {
-        (new Assistant($repo))->internOrder(self::int($in, 'staffId'), self::str($in, 'job'));
+        (new Assistant($repo))->internOrder(self::int($in, 'staffId'));
+        return ['state' => State::build($repo)];
+    }
+
+    /** Von Hand in ein anderes Fach gezogen. */
+    private function postMove(array $in, Repo $repo): array
+    {
+        (new Post($repo))->move(self::str($in, 'table'), self::int($in, 'id'), self::str($in, 'box'));
         return ['state' => State::build($repo)];
     }
 

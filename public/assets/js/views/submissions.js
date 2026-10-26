@@ -136,6 +136,10 @@ const ENVELOPE = `<svg class="lb-env-svg" viewBox="0 0 120 80" aria-hidden="true
   <rect x="88" y="16" width="18" height="14" rx="1.5" fill="#efe4cc" stroke="#b9483f" stroke-width="1.2" stroke-dasharray="2 1.5"/>
 </svg>`;
 
+/** Neu seit dem letzten Besuch im Posteingang (bleibt bis man wieder hereinkommt). */
+const isNew = (x) => x.createdAt > (app.ui.postSeenAt ?? Infinity);
+const newTag = (x) => (isNew(x) ? '<span class="lb-new">NEU</span>' : '');
+
 /** Ein Umschlag (Kassette oder Brief): antippen = auspacken (ein paar Sekunden); kleines ✕ = ungeöffnet wegwerfen. */
 function envelopeSlot(x, key, id) {
   const unpacking = x.state === 'unpacking';
@@ -145,7 +149,7 @@ function envelopeSlot(x, key, id) {
   const current = unpacking && left <= total;
   const busy = !unpacking && [...(app.state.submissions ?? []), ...(app.state.mail ?? [])].some((y) => y.state === 'unpacking' && !y.byIntern);
   const drop = key === 's' ? 'submissionDrop' : 'mailDrop';
-  return `<div class="lb-slotitem lb-mailitem" style="${scatter(id * 3 + (key === 's' ? 1 : 2))}">
+  return `<div class="lb-slotitem lb-mailitem" data-post="${key}-${id}" style="${scatter(id * 3 + (key === 's' ? 1 : 2))}">
     <div class="lb-tapeitem lb-envitem ${unpacking ? 'playing' : ''}">
       <div class="lb-env" ${unpacking ? '' : `data-act="postUnpack" data-table="${key}" data-id="${id}" ${off(busy ? 'Du packst gerade schon einen Umschlag aus.' : '')}`} title="${unpacking ? 'Wird ausgepackt …' : 'Auspacken'}">${ENVELOPE}
         ${current ? `<span class="lb-prog tiny"><i style="animation-duration:${total}s;animation-delay:-${Math.max(0, total - left).toFixed(2)}s"></i></span>` : ''}
@@ -153,7 +157,7 @@ function envelopeSlot(x, key, id) {
       </div>
       ${unpacking ? '' : `<button class="lb-tape-x" data-act="${drop}" data-id="${id}" title="Ungeöffnet wegwerfen" aria-label="Ungeöffnet wegwerfen">✕</button>`}
     </div>
-    <span class="lb-slotbar">${leftPill(x)}${key === 's' ? saveBtn(x) : mailSave(x)}</span></div>`;
+    <span class="lb-slotbar"><span class="lb-slotleft">${newTag(x)}${leftPill(x)}</span>${key === 's' ? saveBtn(x) : mailSave(x)}</span></div>`;
 }
 
 function slot(s, busy) {
@@ -162,7 +166,7 @@ function slot(s, busy) {
   // Eine eben gesichtete Kassette wird an ihrem Platz zur Karte (kurzes Umdrehen, nur beim ersten Zeigen).
   const fresh = s.state === 'open' && !app.ui.subSeen.has(s.submissionId);
   if (s.state === 'open') app.ui.subSeen.add(s.submissionId);
-  return `<div class="lb-slotitem ${fresh ? 'fresh' : ''}" data-sid="${s.submissionId}" style="${scatter(s.submissionId)}">${inner}<span class="lb-slotbar">${leftPill(s)}${saveBtn(s)}</span></div>`;
+  return `<div class="lb-slotitem ${fresh ? 'fresh' : ''}" data-sid="${s.submissionId}" data-post="s-${s.submissionId}" style="${scatter(s.submissionId)}">${inner}<span class="lb-slotbar"><span class="lb-slotleft">${newTag(s)}${leftPill(s)}</span>${saveBtn(s)}</span></div>`;
 }
 
 /** Eigene Reihenfolge: Neues zuerst, danach die gemerkte Anordnung. */
@@ -238,7 +242,7 @@ function reportLetter(m) {
 }
 
 const mailSave = (m) => `<button class="lb-save ${m.saved ? 'on' : ''}" data-act="mailSave" data-id="${m.mailId}" data-saved="${m.saved ? '' : '1'}" title="${m.saved ? 'Zurück in den Eingang' : 'Merken'}" aria-label="${m.saved ? 'Zurück in den Eingang' : 'Merken'}">${BOOKMARK}</button>`;
-const letterSlot = (m) => (m.kind === 'envelope' ? envelopeSlot(m, 'm', m.mailId) : `<div class="lb-slotitem lb-mailitem" style="${scatter(m.mailId * 7 + 3)}">${m.kind === 'interview' ? interviewLetter(m) : m.kind === 'report' ? reportLetter(m) : jobLetter(m)}<span class="lb-slotbar">${leftPill(m)}${mailSave(m)}</span></div>`);
+const letterSlot = (m) => (m.kind === 'envelope' ? envelopeSlot(m, 'm', m.mailId) : `<div class="lb-slotitem lb-mailitem" data-post="m-${m.mailId}" style="${scatter(m.mailId * 7 + 3)}">${m.kind === 'interview' ? interviewLetter(m) : m.kind === 'report' ? reportLetter(m) : jobLetter(m)}<span class="lb-slotbar"><span class="lb-slotleft">${newTag(m)}${leftPill(m)}</span>${mailSave(m)}</span></div>`);
 
 /** Die Assistenz stellt sich oben vor: wer, wie viel am Tag, was heute erledigt ist, und ihre Regeln. */
 function assistantBar(a) {
@@ -252,7 +256,7 @@ function assistantBar(a) {
   return `<div class="lb-assist lb-assist-team">
     <span class="lb-assist-head"><b>${a.staff.length > 1 ? 'Dein Büro' : a.staff[0].intern ? internWord(a.staff[0]) : 'Deine Assistenz'}</b>
       ${a.sorts ? 'packt alle Post aus und sortiert sie in die Fächer.' : 'hilft dir auf Zuruf.'}
-      <small class="muted">${a.perDay ? `Zusammen ${a.perDay} Kassetten am Tag. Heute ${a.today.opened} angehört, ${a.today.dropped} weggeworfen. ${esc(ruleText)}` : a.sorts ? 'Kassetten hört gerade niemand an.' : 'Sag, was zu tun ist. Ein Praktikum ist nicht schneller als du, aber du kannst derweil etwas anderes machen.'}${a.press ? ' Interview-Anfragen werden zugesagt, sobald der Musiker frei ist.' : ''}</small></span>
+      <small class="muted">${a.perDay ? `Zusammen ${a.perDay} Kassetten am Tag. Heute ${a.today.opened} angehört, ${a.today.dropped} weggeworfen. ${esc(ruleText)}` : a.sorts ? 'Kassetten hört gerade niemand an.' : 'Auf Zuruf packt es alles aus, was gerade im Eingang liegt, hört die Kassetten an und legt alles ins richtige Fach. Es ist nicht schneller als du, aber du kannst derweil etwas anderes machen.'}${a.press ? ' Interview-Anfragen werden zugesagt, sobald der Musiker frei ist.' : ''}</small></span>
     ${a.perDay ? '<button class="btn small" data-act="assistRulesAsk">Regeln</button>' : ''}
     <div class="lb-assist-list">${a.staff.map((x) => `
       <div class="lb-assist-row"><span class="lb-ph sm">${photo({ id: x.id, look: x.look })}</span><b>${esc(x.firstName)}</b>
@@ -266,18 +270,11 @@ function assistantBar(a) {
 
 const internWord = (x) => ({ f: 'Deine Praktikantin', m: 'Dein Praktikant' }[x.look?.gender] ?? 'Dein Praktikum');
 
-/** Aufträge ans Praktikum: Es tut nichts von allein. Während es arbeitet, steht da, was und wie lange noch. */
+/** Auftrag ans Praktikum: Es tut nichts von allein. Auf Zuruf bearbeitet es alles, was gerade im Eingang liegt; währenddessen steht da, wie lange noch. */
 function internOrders(x, a) {
-  if (x.job) {
-    const what = { unpack: 'packt aus', listen: 'hört Kassetten an', sort: 'sortiert in die Fächer' }[x.job.kind];
-    return `<span class="lb-intern-job"><span class="pulse"></span>${esc(what)} (${x.job.count}) · noch <span data-until="${x.job.until}"></span></span>`;
-  }
-  const t = a.todo;
-  const btn = (job, label, n, none) => `<button class="btn small" data-act="internOrder" data-id="${x.id}" data-job="${job}" ${off(n ? '' : none)}>${label}${n ? ` (${n})` : ''}</button>`;
-  return `<span class="lb-intern-orders"><small class="muted">${t.unpack || t.listen || t.sort ? 'langweilt sich.' : 'hat nichts zu tun.'}</small>
-    ${btn('unpack', 'Auspacken', t.unpack, 'Gerade liegt kein Umschlag da.')}
-    ${btn('listen', 'Kassetten anhören', t.listen, 'Gerade liegt keine ungehörte Kassette da.')}
-    ${btn('sort', 'In Fächer sortieren', t.sort, 'Im Eingang liegt nichts zum Sortieren.')}</span>`;
+  if (x.job) return `<span class="lb-intern-job"><span class="pulse"></span>bearbeitet die Post · noch <span data-until="${x.job.until}"></span></span>`;
+  return `<span class="lb-intern-orders"><small class="muted">${a.todo ? 'langweilt sich.' : 'hat nichts zu tun.'}</small>
+    <button class="btn small" data-act="internOrder" data-id="${x.id}" ${off(a.todo ? '' : 'Im Eingang liegt gerade nichts.')}>Post bearbeiten</button></span>`;
 }
 
 /** Gebuchte Lehrer und Coaches: bei wem, was schon gebracht ist, wie lange noch. */
@@ -299,13 +296,14 @@ export function render() {
   app.ui.subSeen ??= new Set(all.filter((x) => x.state === 'open').map((x) => x.submissionId));
   // Alles kommt in den Eingang; erst wer sortiert (Praktikum auf Zuruf, Assistenz laufend), verteilt es auf die Fächer.
   const tabOf = (x) => (x.submissionId ? 'demos' : x.kind === 'report' ? 'demos' : x.kind);
-  const fach = (x) => (x.saved ? 'saved' : !x.sorted ? 'inbox' : tabOf(x));
+  const fach = (x) => (x.saved ? 'saved' : x.box ?? (!x.sorted ? 'inbox' : tabOf(x)));
   const items = [...mail, ...all];
   const count = (k) => items.filter((x) => fach(x) === k).length;
-  const showFaecher = !!a || items.some((x) => x.sorted);
-  const tabs = [['inbox', 'Eingang'], ...(showFaecher ? [['demos', 'Demos'], ['interview', 'Anfragen'], ['job', 'Bewerbungen']] : []), ['saved', 'Gespeichert']];
-  let box = app.ui.subBox ?? (count('inbox') || !showFaecher ? 'inbox' : 'demos');
-  if (!tabs.some(([k]) => k === box)) box = 'inbox';
+  const tabs = [['inbox', 'Eingang'], ['demos', 'Demos'], ['interview', 'Anfragen'], ['job', 'Bewerbungen'], ['saved', 'Gespeichert']];
+  const box = app.ui.subBox ?? (count('inbox') ? 'inbox' : 'demos');
+  app.ui.subBoxShown = box;
+  // NEU gilt für alles, was seit dem letzten Besuch kam (auch, was während des Besuchs kommt).
+  app.ui.postSeenAt ??= s.label.inboxSeenAt ?? 0;
   const f = app.ui.subFilter ?? 'all';
   const showFilter = box === 'demos' || box === 'inbox';
   const inBox = items.filter((x) => fach(x) === box);
@@ -321,16 +319,17 @@ export function render() {
   // Wer hineinschaut, hat das Neue gesehen: Die Zahl am Menüpunkt fängt wieder bei null an.
   if (s.inboxNew > 0) {
     s.inboxNew = 0;
+    s.label.inboxSeenAt = Math.floor(serverNow());
     api('inboxSeen', {}).catch(() => {});
     setTimeout(rerender, 0);
   }
   const slotOf = (x) => (x.submissionId ? slot(x, busy) : letterSlot(x));
   return `
     <div class="section-head"><h1>Posteingang</h1>${isTest() ? '<span class="lb-test"><button class="btn small" data-act="submissionsTest" data-closed="1">Test: neue Kassetten</button><button class="btn small" data-act="submissionsTest">Test: gesichtete Bewerber</button><button class="btn small" data-act="mailTest">Test: Briefe</button></span>' : ''}</div>
-    <p class="muted">Hier kommt alles an, in Umschlägen: Kassetten von Musikern, die zu dir wollen, Interview-Anfragen für deine Leute und Bewerbungen fürs Label. Tipp einen Umschlag an, dann packst du ihn aus. Alles liegt vier Tage, dann ist es weg.</p>
+    <p class="muted">Hier kommt alles an, in Umschlägen: Kassetten von Musikern, die zu dir wollen, Interview-Anfragen für deine Leute und Bewerbungen fürs Label. Tipp einen Umschlag an, dann packst du ihn aus. Halt etwas fest und zieh es auf einen Reiter, dann liegt es in diesem Fach. Alles liegt vier Tage, dann ist es weg.</p>
     ${(s.tutors ?? []).map(tutorBar).join('')}
     ${a ? assistantBar(a) : '<p class="lb-assist-hint muted small">Ohne Hilfe packst du alles selbst aus. Ein Praktikum hilft dir auf Zuruf, eine Assistenz erledigt die Post von allein. Schau, wer sich bewirbt.</p>'}
-    <div class="lb-boxes">${tabs.map(([k, label]) => `<button class="${box === k ? 'on' : ''}" data-act="subBox" data-key="${k}">${label} <small>${count(k)}</small></button>`).join('')}</div>
+    <div class="lb-boxes">${tabs.map(([k, label]) => `<button class="${box === k ? 'on' : ''}" data-act="subBox" data-key="${k}" data-box="${k}">${label} <small>${count(k)}</small></button>`).join('')}</div>
     ${showFilter ? `<div class="lb-filter">${[['all', 'Alle'], ['unheard', 'Ungehört'], ['0', 'Stufe 0'], ['1', 'Stufe 1'], ['2', 'Stufe 2'], ['3', 'Stufe 3']].map(([k, label]) => `<button class="${f === k ? 'on' : ''}" data-act="subFilter" data-key="${k}">${label}</button>`).join('')}</div>` : ''}
     ${rest.length || demos.length ? `<div class="lb-slots" data-slots>${rest.map(slotOf).join('')}${demos.map(slotOf).join('')}</div>` : `<div class="empty">${empty}</div>`}`;
 }
@@ -638,11 +637,17 @@ function dragMove(x, y) {
   const cx = el.offsetLeft + el.offsetWidth / 2;
   const cy = el.offsetTop + el.offsetHeight / 2;
   el.style.transform = `translate(${x - rect.left - grab.x - cx}px, ${y - rect.top - grab.y - cy}px) scale(1.04)`;
-  // Platz unter dem Zeiger suchen und tauschen.
-  const over = [...box.children].find((c) => c !== el && (() => {
+  const hit = (c) => {
     const r = c.getBoundingClientRect();
     return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
-  })());
+  };
+  // Über einem Reiter: Dort hinein legen (beim Loslassen).
+  const tab = [...document.querySelectorAll('.lb-boxes [data-box]')].find((t) => t.dataset.box !== app.ui.subBoxShown && hit(t));
+  for (const t of document.querySelectorAll('.lb-boxes [data-box]')) t.classList.toggle('drop', t === tab);
+  press.tab = tab?.dataset.box ?? null;
+  if (tab) return;
+  // Kassetten: Platz unter dem Zeiger suchen und tauschen (Briefe und Umschläge stehen nach Datum).
+  const over = el.dataset.sid ? [...box.children].find((c) => c !== el && c.dataset.sid && hit(c)) : null;
   if (over) {
     const kids = [...box.children];
     if (kids.indexOf(over) < kids.indexOf(el)) box.insertBefore(el, over);
@@ -657,9 +662,19 @@ function dragEnd(cancelled) {
   clearTimeout(p.timer);
   if (!p.active) return;
   p.el.classList.remove('dragging');
-  p.el.style.transform = '';
+  for (const t of document.querySelectorAll('.lb-boxes .drop')) t.classList.remove('drop');
   swallowUntil = Date.now() + 400;
-  if (cancelled || !p.el.isConnected) return;
+  if (cancelled || !p.el.isConnected) {
+    p.el.style.transform = '';
+    return;
+  }
+  if (p.tab) {
+    const [table, id] = p.el.dataset.post.split('-');
+    p.el.classList.add('moved');
+    mutate('postMove', { table, id: Number(id), box: p.tab });
+    return;
+  }
+  p.el.style.transform = '';
   const order = [...p.box.children].map((c) => Number(c.dataset.sid)).filter((n) => n > 0);
   app.state.label.subOrder = order;
   api('submissionOrder', { order }).catch(() => {});
@@ -667,7 +682,7 @@ function dragEnd(cancelled) {
 
 document.addEventListener('pointerdown', (e) => {
   const el = e.target.closest?.('.lb-slotitem');
-  if (!el || el.classList.contains('lb-mailitem') || e.button > 0 || e.target.closest('button, a, input, select, [data-act]:not(.lb-tape-big):not(.lb-flipper)')) return;
+  if (!el?.dataset.post || e.button > 0 || e.target.closest('button, a, input, select, [data-act]:not(.lb-tape-big):not(.lb-flipper):not(.lb-env)')) return;
   const box = el.parentElement;
   const rect = box.getBoundingClientRect();
   const cx = el.offsetLeft + el.offsetWidth / 2;
@@ -763,9 +778,9 @@ defineActions({
   async postUnpack({ table, id }) {
     await mutate('postUnpack', { table, id: Number(id) });
   },
-  async internOrder({ id, job }) {
+  async internOrder({ id }) {
     const x = app.state.assistant?.staff.find((y) => y.id === Number(id));
-    if (await mutate('internOrder', { staffId: Number(id), job })) toast(`${x?.firstName ?? 'Das Praktikum'} legt los. Du kannst derweil etwas anderes machen.`, 'ok');
+    if (await mutate('internOrder', { staffId: Number(id) })) toast(`${x?.firstName ?? 'Das Praktikum'} legt los. Du kannst derweil etwas anderes machen.`, 'ok');
   },
   async mailTest() {
     await mutate('mailTest');

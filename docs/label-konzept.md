@@ -289,7 +289,8 @@ Alles läuft ab (Demos 4 Tage, Anfragen 8 Stunden, Bewerbungen 2 Tage; die Restz
 - **Privatunterricht** (gebaut, `Tutors`): Lehrkräfte bewerben sich für ein Instrument (meist eins, das im Label gespielt wird), manchmal mit
   Lieblingsgenre. Gebucht wird für **2 Tage und genau einen Musiker** (einmal bezahlt: 300 / 900 / 2.500 ₲), danach geht die Lehrkraft wieder.
   In der Zeit wächst das Können gleichmäßig um +8 / +12 / +16, **ohne Stufen-Bremse** (mit passendem Genre ×1,3); unterrichtet wird nur bis
-  Können 55 / 80 / 100. Ein Musiker hat höchstens eine Lehrkraft zugleich. So kostet jeder Schüler einzeln, und der Gewinn lohnt sich vor allem
+  Können 55 / 80 / 100. Der Unterricht läuft **nebenbei**: Der Musiker bleibt frei für Proben, Auftritte und Aufnahmen. Ein Musiker hat höchstens eine Lehrkraft zugleich.
+  Auf jeder Bewerbung steht, ob jemand **fest** bleibt (Assistenz, Scout, Manager) oder nur **für eine Zeit** kommt (Lehrkraft, Coach). So kostet jeder Schüler einzeln, und der Gewinn lohnt sich vor allem
   für Bessere, bei denen die Proben langsam werden (`Balance::TEACHER`).
 - **Songwriting-Coach** (gebaut): gebucht für **1 Tag und eine Band** (oder einen Solokünstler; 400 / 1.200 / 3.000 ₲). In der Zeit entstehen
   Songs 1,5- / 1,75- / 2-mal so schnell, und die Songs aus dieser Zeit machen die nächste Platte besser (+4 / +8 / +12 % Qualität, anteilig nach

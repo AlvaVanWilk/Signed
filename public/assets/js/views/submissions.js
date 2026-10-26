@@ -174,13 +174,14 @@ function jobLetter(m) {
   const money0 = app.state.label.money;
   const what = m.role === 'assistant' ? `öffnet ${m.perDay} Demos am Tag${m.tier >= 2 ? ', sortiert nach Regeln' : ''}`
     : m.role === 'scout' ? `${m.candidates} Talente in ${mins(m.seconds)} (Können bis ${m.maxSkill})`
-    : m.role === 'teacher' ? `${days(m.seconds)} für einen Musiker: +${m.gain} Können (bis ${m.maxSkill})${m.genre ? `, bei ${genreName(m.genre)} mehr` : ''}`
+    : m.role === 'teacher' ? `${instrumentName(m.instrument)} für einen Musiker: +${m.gain} Können (bis ${m.maxSkill})${m.genre ? `, bei ${genreName(m.genre)} mehr` : ''}`
     : m.role === 'coach' ? `${days(m.seconds)} für eine Band: Songs ${fmtFactor(m.speed)} so schnell, Platte +${Math.round(m.quality * 100)} %`
     : m.role === 'manager' ? `${m.genres.map((g) => genreName(g)).join(', ')} · ${m.skills.map((k) => cat().managerSkills[k]?.name ?? k).join(', ')}` : '';
   const book = ['teacher', 'coach'].includes(m.role);
   return `
     <article class="lb-letter job">
-      <div class="lb-lt-head"><span class="lb-lt-kind">${m.role === 'teacher' ? `Unterricht: ${esc(instrumentName(m.instrument))}` : 'Bewerbung'}</span></div>
+      <div class="lb-lt-head"><span class="lb-lt-kind">${m.role === 'teacher' ? 'Unterricht' : 'Bewerbung'}</span>
+        ${book ? `<span class="lb-lt-term" title="Kommt nur für diese Zeit, danach geht ${esc(m.firstName)} wieder">${days(m.seconds)}</span>` : '<span class="lb-lt-term fix" title="Bleibt für immer beim Label, du bezahlst nur einmal">fest</span>'}</div>
       <div class="lb-lt-body"><span class="lb-ph sm">${photo({ id: m.mailId, look: m.look })}</span>
         <p><b>${esc(m.firstName)} ${esc(m.lastName)}</b><br>${esc(roleName(m))}<small class="muted">${esc(what)}</small></p></div>
       <div class="lb-card-foot">
@@ -414,7 +415,8 @@ function tutorDialog(m) {
     html: `
       <div class="lb-cap">${m.role === 'teacher' ? 'Unterricht buchen' : 'Coach buchen'}</div>
       <h2>${m.role === 'teacher' ? `Wer bekommt ${esc(instrumentName(m.instrument))}-Unterricht?` : `Wem hilft ${esc(m.firstName)}?`}</h2>
-      <p class="muted">${esc(m.firstName)} ist ${days(m.seconds)} nur für ${m.role === 'teacher' ? 'diesen einen Musiker' : 'diese eine Band'} da. Du bezahlst einmal ${money(m.price)}.</p>
+      <p class="muted">${esc(m.firstName)} ist ${days(m.seconds)} nur für ${m.role === 'teacher' ? 'diesen einen Musiker' : 'diese eine Band'} da und geht danach wieder. Du bezahlst einmal ${money(m.price)}.</p>
+      <p class="muted">${m.role === 'teacher' ? 'Der Unterricht läuft nebenbei: Der Musiker kann in der Zeit ganz normal proben, auftreten und aufnehmen. Das Können wächst trotzdem jede Stunde.' : 'Die Band kann in der Zeit ganz normal proben, auftreten und aufnehmen.'}</p>
       ${rows.length ? `<div class="lb-pick">${rows.map((r) => `<button class="lb-pick-row" data-target="${r.id}" ${off(r.why)}>${r.html}</button>`).join('')}</div>`
         : `<p class="empty">${m.role === 'teacher' ? `Bei dir spielt niemand ${esc(instrumentName(m.instrument))}.` : 'Du hast noch keine Band.'}</p>`}
       <div class="dialog-actions"><button class="btn ghost" data-close>Abbrechen</button></div>`,

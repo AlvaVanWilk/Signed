@@ -998,3 +998,7 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .rc-swatches { display: flex; gap: 8px; margin: 8px 0 4px; }
 .rc-swatch { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--lb-line); cursor: pointer; padding: 0; }
 .rc-swatch.on { box-shadow: 0 0 0 3px var(--lb-accent); }
+.lb-lt-head { align-items: center; gap: 6px; }
+.lb-lt-term { font-size: .62rem; font-weight: 800; padding: 1px 6px; border-radius: 999px; background: #d9cfb8; color: #5a4f3c; letter-spacing: .04em; }
+.lb-lt-term.fix { background: #c9dcc0; color: #35522a; }
+.lb-lt-term { white-space: nowrap; }

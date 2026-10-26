@@ -54,41 +54,68 @@ final class Inbox
     }
 
     /** Interview-Anfragen: je Musiker im Schnitt eine am Tag, zufällig verteilt, höchstens eine offene je Musiker. */
+    /** Interview-Anfragen je Tag für diesen Musiker (nach seiner Bekanntheit). */
+    public static function interviewRate(array $m): float
+    {
+        return Submissions::rate(Balance::INTERVIEW['perDay'], (float) $m['fame']);
+    }
+
+    /** Wie viele Anfragen für ihn höchstens zugleich offen sind: 1 + Bekanntheitsstufe. */
+    public static function interviewMax(array $m): int
+    {
+        return 1 + Levels::forFame((float) $m['fame']);
+    }
+
+    /**
+     * Interview-Anfragen: Jeder Musiker hat seine eigene Rate (nach Bekanntheit). Zusammen ist das ein Strom mit der Summe der Raten; jede
+     * Ankunft geht an einen Musiker, gewichtet nach seiner Rate (wer schon genug offene hat, bekommt keine weitere).
+     */
     private function topUpInterviews(int $now): void
     {
         $db = $this->repo->db;
         $c = Balance::INTERVIEW;
         $musicians = $this->repo->musicians();
-        $mean = $musicians ? 86400 / ($c['perDay'] * count($musicians)) : 86400.0;
+        $rates = [];
+        foreach ($musicians as $m) {
+            $rates[$m['id']] = self::interviewRate($m);
+        }
+        $mean = $rates ? 86400 / array_sum($rates) : 86400.0;
         $next = (int) $db->value('SELECT interview_at FROM labels WHERE id = ?', [$this->repo->labelId]);
         if ($next === 0 || !$musicians) {
             $db->update('labels', ['interview_at' => $now + Post::gap($mean)], ['id' => $this->repo->labelId]);
             return;
         }
-        $next = max($next, $now - $c['maxCatchUp']);
+        $next = Post::nextArrival(max($next, $now - $c['maxCatchUp']), $now, $mean);
         $open = [];
-        foreach ($db->all("SELECT data FROM mail WHERE label_id = ? AND kind = 'interview'", [$this->repo->labelId]) as $row) {
-            $open[(int) (json_decode($row['data'], true)['musicianId'] ?? 0)] = true;
+        $media = [];
+        foreach ($db->all("SELECT data FROM mail WHERE label_id = ? AND kind = 'interview' AND expires_at > ?", [$this->repo->labelId, $now]) as $row) {
+            $d = json_decode($row['data'], true);
+            $id = (int) ($d['musicianId'] ?? 0);
+            $open[$id] = ($open[$id] ?? 0) + 1;
+            $media[$id][] = $d['medium'] ?? '';
         }
+        $byId = array_column($musicians, null, 'id');
         for (; $next <= $now; $next += Post::gap($mean)) {
-            $free = array_values(array_filter($musicians, static fn ($m) => !isset($open[$m['id']])));
+            $free = array_filter($rates, static fn ($r, $id) => ($open[$id] ?? 0) < self::interviewMax($byId[$id]), ARRAY_FILTER_USE_BOTH);
             if (!$free || $next + Balance::POST['ttl'] <= $now) {
                 continue;
             }
-            $m = Rng::pick($free);
-            $open[$m['id']] = true;
+            $m = $byId[(int) Rng::weighted($free)];
+            $open[$m['id']] = ($open[$m['id']] ?? 0) + 1;
             $level = Levels::forFame((float) $m['fame']);
-            $medium = Rng::pick(Catalog::INTERVIEW_MEDIA[min(3, $level)]);
+            // Nicht zweimal dasselbe Medium für denselben Musiker.
+            $choices = array_values(array_filter(Catalog::INTERVIEW_MEDIA[min(3, $level)], static fn ($x) => !in_array($x['name'], $media[$m['id']] ?? [], true)));
+            $medium = Rng::pick($choices ?: Catalog::INTERVIEW_MEDIA[min(3, $level)]);
+            $media[$m['id']][] = $medium['name'];
             $this->store('interview', ['musicianId' => $m['id'], 'level' => $level, 'medium' => $medium['name'], 'share' => $medium['share']], $next, Balance::POST['ttl']);
         }
         $db->update('labels', ['interview_at' => $next], ['id' => $this->repo->labelId]);
     }
 
-    /** Wie viele Bewerbungen bei diesem Erfolg im Schnitt daliegen (1 am Anfang, bis zu JOBS['max']). */
     /** @return array<string, float> Bewerbungen je Beruf und Tag bei diesem Erfolg */
     public static function jobRates(float $success): array
     {
-        return array_map(static fn ($points) => Submissions::curve($points, max(0.0, $success)), Balance::JOBS['rates']);
+        return array_map(static fn ($r) => Submissions::rate($r, $success), Balance::JOBS['rates']);
     }
 
     /**
@@ -120,7 +147,7 @@ final class Inbox
             $add('manager', $now - 60, 1);
             $next = $now + Post::gap($mean);
         }
-        for ($next = max($next, $now - $ttl); $next <= $now; $next += Post::gap($mean)) {
+        for ($next = Post::nextArrival(max($next, $now - $ttl), $now, $mean); $next <= $now; $next += Post::gap($mean)) {
             $add($roll(), $next);
         }
         $db->update('labels', ['job_at' => $next], ['id' => $this->repo->labelId]);

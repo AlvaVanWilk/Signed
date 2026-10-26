@@ -561,6 +561,10 @@ final class Schema
                 'ALTER TABLE submissions ADD COLUMN box VARCHAR(10) NULL',
                 'ALTER TABLE mail ADD COLUMN box VARCHAR(10) NULL',
             ],
+            // 45: Seit wann der Manager die Band betreut (nach einiger Zeit kennt er alle Charakterzüge)
+            [
+                'ALTER TABLE bands ADD COLUMN manager_since INTEGER NULL',
+            ],
         ];
     }
 }

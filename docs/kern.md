@@ -254,8 +254,10 @@ Der Beitrag hängt am Charakter (Kreativ ×3, Impulsiv ×1,6, Perfektionistisch 
 Gewinne oder eine gelockerte Bremse) – nicht einfach dem heutigen Tempo unterliegen. Lokal bekannt ist man nach einigen Stunden Auftritten.
 Nur die Gewinne sind klein; wie oft man etwas hintereinander spielt, ist nicht begrenzt.
 **Interviews** (Posteingang) öffnen den Weg zur Bekanntheit: Jede Anfrage bringt einen festen Anteil (8–14 %, je Medium) des Weges von der eigenen
-Bekanntheitsstufe zur nächsten, **ohne Bremse** (`Balance::INTERVIEW`, `Catalog::INTERVIEW_MEDIA`). Je Musiker kommt im Schnitt eine Anfrage am Tag,
-sie liegt 8 Stunden. Wer jede annimmt, schafft so eine Stufe in rund acht bis zwölf Tagen, egal auf welcher Stufe; Auftritte und Platten kommen dazu.
+Bekanntheitsstufe zur nächsten, **ohne Bremse** (`Balance::INTERVIEW`, `Catalog::INTERVIEW_MEDIA`). Wie oft Anfragen kommen, hängt nur an der
+eigenen Bekanntheit: je Tag 0,1 + 0,05 × √Bekanntheit (unbekannt etwa alle zehn Tage eine, Bekanntheit 120 etwa 0,65, 600 etwa 1,3), höchstens
+1 + Stufe zugleich offen; sie liegen vier Tage. Für Unbekannte ist das also kaum ein Weg (erst Auftritte und Platten), ab Stufe 1 schafft man mit
+allen Anfragen eine Stufe in grob zwei bis vier Wochen, weiter oben schneller, weil mehr kommen; Auftritte und Platten kommen dazu.
 **Privatunterricht** öffnet den Weg beim Können: +8 / +12 / +16 in zwei Tagen ohne Bremse, für einen Musiker (bis Können 55 / 80 / 100).
 Bei Können 70 entspricht +16 etwa zwölf Stunden Proben; für Anfänger lohnt er sich kaum, weil die Proben dort schnell sind (`Balance::TEACHER`).
 

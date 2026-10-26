@@ -27,6 +27,15 @@ final class Post
         return max(1, (int) round(-log(1 - Rng::float(0.0, 0.999)) * $mean));
     }
 
+    /**
+     * Nächste Ankunft bei der Rate von jetzt: Liegt sie noch in der Zukunft, wird die Wartezeit neu gewürfelt (zufällige Ankünfte haben
+     * kein Gedächtnis, das ändert nichts am Schnitt). So wirkt eine höhere Rate (mehr Erfolg, bekannter) sofort und nicht erst nach der alten Pause.
+     */
+    public static function nextArrival(int $stored, int $now, float $mean): int
+    {
+        return $stored > $now ? $now + self::gap($mean) : $stored;
+    }
+
     /** Zustand eines Umschlags: noch zu ('envelope'), wird gerade ausgepackt ('unpacking') oder offen (null). */
     public static function envelope(array $row, int $now): ?string
     {

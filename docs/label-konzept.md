@@ -136,10 +136,17 @@ Können-Stufe eine bessere Klasse von Instrumenten frei (Zahlen in docs/kern.md,
 **Verborgene Charakterzüge und Bedürfnisse** (gebaut, `Traits`, `Managers`): Mit dem Label redet niemand persönlich. Wer neu ins Label
 kommt (Einsendung, Pack, Jam, Scout …), zeigt seine Züge nicht; unbekannte stehen als „?“ da, auch schon in der Einsendung. Gewirkt wird
 trotzdem von Anfang an. **Ohne Manager** sieht man nur die Stimmung (die Farbe); „Warum?“ verrät nichts, und Wünsche hört man keine.
-Erst wer **rot** ist, meckert laut: Er sagt konkret, was er will (steht bei den Wünschen und auf der Übersicht, eine rote Anordnung, die er
+Erst wer **rot** ist, meckert laut: Er sagt konkret, was er will (steht bei den Wünschen und auf der Übersicht; eine Anordnung, die er
 ablehnt, nennt ihn), und man erfährt den Zug hinter seinem Wunsch („… sagt laut, was fehlt. Jetzt weißt du: Lea ist gesellig.“).
-**Mit Manager** kennt das Label alle Züge seiner Leute (bleiben bekannt, auch wenn er geht), alle Wünsche, die Gründe der Stimmung („Warum?“)
-und die Vorlieben an den Anordnungen. Wer schon vor dem Umbau da war, ist bekannt.
+**Mit Manager** sieht das Label alle Wünsche, die Gründe der Stimmung („Warum?“) und seine Notizen. Die Züge merkt der Manager, sobald einer
+zum ersten Mal etwas bewirkt, und gibt es weiter („Mira erzählt: Lea hatte richtig Lust auf den Auftritt. Jetzt weißt du: …“):
+- eine Anordnung gemocht oder nicht gemocht (Probe, Auftritt, Aufnahme, Straßenmusik, offene Bühne, Interview),
+- Unruhe ohne Auftritt (extrovertiert, gesellig) oder ohne neue Platte (ehrgeizig), Ruhe beim Songstau (gemütlich),
+- ein neuer Song (kreativ; technisch in einer Band, weil er nicht mitschreibt), der Wunsch nach einem Künstlernamen,
+- unzufrieden (schon bei Gelb; der erste Zug, nach dem sich auch der Wunsch richtet), bei der Probe als Erster die Lust verloren,
+- nach jeder Probe (ab einer Minute) mit 35 % noch ein Zug.
+Nach einem Tag mit dem Manager kennt er alle (`Balance::TRAIT_REVEAL`, `bands.manager_since`). Was bekannt ist, bleibt bekannt, auch wenn er
+geht. Vorlieben an den Anordnungen zeigen sich nur für bekannte Züge. Wer schon vor dem Umbau da war, ist bekannt.
 
 ### Anspruch
 
@@ -286,21 +293,26 @@ verteilt** (man weiß nie genau, wann); am Menüpunkt steht **+N**, was seit dem
 alles Neue ein **NEU** (bis man das nächste Mal hereinkommt). Alles landet im **Eingang**; in die Fächer **Demos, Anfragen, Bewerbungen** kommt es,
 wenn jemand sortiert. **Von Hand** lässt sich alles festhalten und auf einen Reiter ziehen (auch zurück in den Eingang oder zu „Gespeichert“);
 das überstimmt die Sortierung (`Post::move`, Spalte `box`).
-- **Wie viel kommt** (alles zufällig, im Schnitt so viel wie die Rate, und alles wächst mit dem Erfolg des Labels, dazwischen gleitend):
+- **Wie viel kommt**: Alles kommt zufällig, im Schnitt so viel wie die Rate je Tag. Jede Rate ist eine fließende Formel ohne Stufen und
+  ohne Obergrenze: **Start + Zuwachs × √Erfolg** (Erfolg = Ruhm aller Bands zusammen, wie oben auf der Übersicht). Steigt der Erfolg, gilt
+  die neue Rate sofort (die Wartezeit bis zur nächsten Ankunft wird dann neu gewürfelt, `Post::nextArrival`).
 
-  | je Tag            | Erfolg 0 | Erfolg 450 | Erfolg 5000 |
-  |-------------------|---------:|-----------:|------------:|
-  | Kassetten (Demos) |        8 |         45 |         250 |
-  | Praktikum         |      0,8 |        1,5 |         2,5 |
-  | Manager           |      0,3 |        0,7 |         1,5 |
-  | Scout             |      0,2 |        0,5 |         1,0 |
-  | Assistenz         |     0,12 |       0,35 |         0,8 |
-  | Lehrkraft         |     0,08 |        0,3 |         0,6 |
-  | Coach             |     0,05 |       0,25 |         0,5 |
+  | je Tag            | Start | Zuwachs | bei Erfolg 100 | 1.000 | 10.000 |
+  |-------------------|------:|--------:|------:|------:|-------:|
+  | Kassetten (Demos) |     8 |     1,8 |    26 |    65 |    188 |
+  | Praktikum         |   0,8 |   0,033 |   1,1 |   1,8 |    4,1 |
+  | Manager           |   0,3 |   0,019 |   0,5 |   0,9 |    2,2 |
+  | Scout             |   0,2 |   0,014 |   0,3 |   0,6 |    1,6 |
+  | Assistenz         |  0,12 |   0,011 |  0,23 |  0,47 |    1,2 |
+  | Lehrkraft         |  0,08 |    0,01 |  0,18 |  0,40 |    1,1 |
+  | Coach             |  0,05 |   0,009 |  0,14 |  0,33 |    0,95 |
 
-  Interview-Anfragen richten sich nach den eigenen Musikern (im Schnitt eine am Tag je Musiker, höchstens eine offen). Ein Praktikum liegt
-  immer da; ganz zu Beginn bewerben sich dazu ein Scout und ein Manager. Wie gut die Bewerber sind, folgt dem Erfolg gesättigt:
-  Güte = Erfolg / (Erfolg + 300) (`Balance::JOBS`, `Balance::SUBMISSIONS['perDay']`).
+  Zum Vergleich: Eine Band im Club hat etwa 30–150 Ruhm, im Konzertsaal 150–600, in der Halle 600–2.500, in der Arena mehr.
+  **Interview-Anfragen** richten sich nur nach dem einzelnen Musiker: je Tag 0,1 + 0,05 × √Bekanntheit (unbekannt: alle zehn Tage eine;
+  Bekanntheit 120: etwa 0,65; 600: etwa 1,3; 2.000: etwa 2,3). Offen sind für ihn höchstens 1 + Bekanntheitsstufe zugleich, jede von einem
+  anderen Medium seiner Stufe (Unbekannte: Schülerzeitung, Blog; Bekannte: Musikzeitschriften, Sender; Stars: Fernsehshows). Wie viele andere
+  Bands das Label hat, spielt keine Rolle. Ein Praktikum liegt immer da; ganz zu Beginn bewerben sich dazu ein Scout und ein Manager. Wie gut
+  die Bewerber sind, folgt dem Erfolg gesättigt: Güte = Erfolg / (Erfolg + 300) (`Balance::JOBS`, `Balance::SUBMISSIONS['perDay']`, `Balance::INTERVIEW`).
 - **Praktikum** (gebaut): 50 ₲, 7 Tage, nur ein Vorname, sieht jünger aus (kleinerer Kopf). Immer nur **eins zur gleichen Zeit**. Es arbeitet
   **nur auf Zuruf**: „Post bearbeiten“ heißt, alles, was in dem Moment im Eingang liegt, Stück für Stück **auspacken**, Kassetten **anhören**
   (ohne wegzuwerfen) und **ins passende Fach legen**. Was danach kommt, bleibt liegen. Es ist nicht schneller als man selbst, aber man kann
@@ -326,14 +338,14 @@ das überstimmt die Sortierung (`Post::move`, Spalte `box`).
 - **Songwriting-Coach** (gebaut): gebucht für **1 Tag und eine Band** (oder einen Solokünstler; 400 / 1.200 / 3.000 ₲). In der Zeit entstehen
   Songs 1,5- / 1,75- / 2-mal so schnell, und die Songs aus dieser Zeit machen die nächste Platte besser (+4 / +8 / +12 % Qualität, anteilig nach
   gecoachten Songs; `bands.coached_songs`). Eine Band hat höchstens einen Coach zugleich (`Balance::COACH`).
-- **Manager** (gebaut, `Managers`): Ohne ihn erfährt man nichts über seine Leute (siehe oben). Einer bewirbt sich gleich zu Beginn, dann
+- **Manager** (gebaut, `Managers`): Ohne ihn erfährt man fast nichts über seine Leute (siehe oben). Einer bewirbt sich gleich zu Beginn, dann
   kommen sie häufiger als alle außer Praktika. Einmalig bezahlt, die einfachen sind **günstig** (300 / 3.000 / 10.000 ₲, Stärke 1 / 3 / 5).
   Ein Manager betreut **eine Band oder bis zu vier Solokünstler** (`Balance::MANAGER_STAFF['solos']`), dafür mit voller Stärke.
   Er schreibt **Notizen auf die Übersicht**: Wünsche seiner Leute (rot, gelb, sonst), wer besser spielt, als sein Instrument hergibt, wer sich
   nicht versteht (Beziehung ab −3), wer seit über einem Tag nicht auf der Bühne stand, wer bereit fürs Studio ist.
   Jeder hat ein bis zwei **Schwerpunkt-Genres** (oft eins, das im Label gespielt wird), einen **Stil** (Charakterzug) und ein bis zwei Wirkungen
   als Zugabe: **Verhandler** (Gage), **PR-Profi** (Ruhm bei Auftritten), **Netzwerker** (Interviews bringen +10 % je Stärke), **Vermittler** (was
-  der Band nicht gefällt, ärgert sie 15 % je Stärke weniger, höchstens 80 %). „Gespür“ gibt es nicht mehr, weil jeder Manager seine Leute kennt.
+  der Band nicht gefällt, ärgert sie 15 % je Stärke weniger, höchstens 80 %). „Gespür“ gibt es nicht mehr, weil jeder Manager seine Leute kennenlernt.
   **Passung** zur Band = Faktor auf die Stärke: gemeinsame Genres 0 / 1 / 2 → ×0,6 / ×1 / ×1,25, dazu +0,2 × Anteil der Mitglieder mit seinem
   Stil (widersprüchlicher Zug zählt minus), zwischen 0,4 und 1,45. Eingesetzt wird er auf der Bandseite („Manager wählen“); die Bewerbung zeigt
   vorher, zu welchen Bands er passt.

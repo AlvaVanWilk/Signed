@@ -7,8 +7,8 @@ use Signed\Rng;
 
 /**
  * Manager aus dem Posteingang: wie gut einer zu einer Band passt (Schwerpunkt-Genres und Stil), die Wirkungen, die nicht schon
- * bei den Auftritten stecken (Netzwerker bei Interviews, Vermittler bei der Laune), und vor allem: Er kennt seine Leute. Nur mit Manager
- * sieht das Label Wünsche, Gründe der Stimmung und Charakterzüge, und er schreibt Notizen auf die Übersicht.
+ * bei den Auftritten stecken (Netzwerker bei Interviews, Vermittler bei der Laune), und vor allem: Er lernt seine Leute kennen. Nur mit Manager
+ * sieht das Label Wünsche und Gründe der Stimmung; Charakterzüge gibt er weiter, sobald sie sich zeigen, und er schreibt Notizen auf die Übersicht.
  */
 final class Managers
 {
@@ -69,16 +69,18 @@ final class Managers
         return $row === null ? [null, 0.0] : $repo->bandManager(Repo::hydrateBand($row));
     }
 
-    /** Der Manager kennt seine Leute: Ihre Charakterzüge sind alle bekannt (bleiben es auch, wenn er geht). */
-    public static function settle(Repo $repo): void
+    /** Nach einiger Zeit mit dem Manager (Balance::TRAIT_REVEAL['after']) kennt er alle Charakterzüge seiner Leute (bleiben bekannt, auch wenn er geht). */
+    public static function settle(Repo $repo, int $now): void
     {
         foreach ($repo->bands() as $band) {
-            if ($band['manager_id'] === null) {
+            if ($band['manager_id'] === null || $band['manager_since'] > $now - Balance::TRAIT_REVEAL['after']) {
                 continue;
             }
             $manager = $repo->manager($band['manager_id']);
             foreach ($repo->members($band['id']) as $m) {
-                Traits::reveal($repo, $m, $m['personality'], 'manager', $manager['first_name']);
+                if (Traits::hidden($m)) {
+                    Traits::reveal($repo, $m, $m['personality'], 'manager', $manager['first_name']);
+                }
             }
         }
     }

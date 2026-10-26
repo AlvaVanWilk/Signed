@@ -18,7 +18,7 @@ final class State
         (new Inbox($repo))->topUp($now, $submissions->success());
         (new Scouting($repo))->settle($now);
         (new Tutors($repo))->settle($now);
-        Managers::settle($repo);
+        Managers::settle($repo, $now);
         (new Assistant($repo))->work($now);
         Bands::ensureSoloBands($repo);
         $label = $repo->label();

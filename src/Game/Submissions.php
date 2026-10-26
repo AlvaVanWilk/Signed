@@ -20,22 +20,13 @@ final class Submissions
     /** Einsendungen pro Tag bei diesem Erfolg des Labels. */
     public static function perDay(float $erfolg): float
     {
-        return self::curve(Balance::SUBMISSIONS['perDay'], $erfolg);
+        return self::rate(Balance::SUBMISSIONS['perDay'], $erfolg);
     }
 
-    /** Gleitend zwischen Punkten [x, y]; vor dem ersten und nach dem letzten bleibt es flach. */
-    public static function curve(array $points, float $erfolg): float
+    /** Fließende Rate je Tag: start + root × √x (x = Erfolg oder Bekanntheit). */
+    public static function rate(array $r, float $x): float
     {
-        foreach ($points as $i => [$x, $y]) {
-            if ($erfolg <= $x) {
-                if ($i === 0) {
-                    return (float) $y;
-                }
-                [$x0, $y0] = $points[$i - 1];
-                return $y0 + ($y - $y0) * ($erfolg - $x0) / ($x - $x0);
-            }
-        }
-        return (float) end($points)[1];
+        return $r['start'] + $r['root'] * sqrt(max(0.0, $x));
     }
 
     public static function goodShare(float $erfolg): float
@@ -135,7 +126,7 @@ final class Submissions
         $mean = 86400 / self::perDay($erfolg);
         $good = self::goodShare($erfolg);
         // submit_at ist der Zeitpunkt der nächsten Kassette; die Abstände sind zufällig (man weiß nie genau, wann etwas kommt).
-        $next = max($at, $now - Balance::SUBMISSIONS['maxCatchUp']);
+        $next = Post::nextArrival(max($at, $now - Balance::SUBMISSIONS['maxCatchUp']), $now, $mean);
         for ($n = 0; $next <= $now && $n < Balance::SUBMISSIONS['maxPerCall']; $n++, $next += Post::gap($mean)) {
             $level = Rng::chance($good) ? (int) Rng::weighted(Balance::SUBMISSIONS['goodLevels']) : 0;
             $fame = $level >= 1 && Rng::chance(Balance::SUBMISSIONS['fameChance']) ? Rng::float(...Balance::SUBMISSIONS['fame']) : 0.0;

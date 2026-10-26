@@ -262,8 +262,23 @@ final class Catalog
 
     /** Woran man einen bisher unbekannten Charakterzug bemerkt (%s = Vorname). */
     public const TRAIT_REVEAL = [
-        'unhappy' => '%s ist richtig unzufrieden und sagt laut, was fehlt.',
+        'like' => '%s hatte richtig Lust auf %s.',
+        'dislike' => '%s hatte gar keine Lust auf %s.',
+        'restless' => '%s will endlich wieder auf die Bühne.',
+        'stagnant' => '%s will endlich eine neue Platte machen.',
+        'calm' => '%s bleibt ruhig, obwohl so viele Songs liegen.',
+        'stageName' => '%s wünscht sich einen Künstlernamen.',
+        'unhappy' => '%s ist unzufrieden und sagt, was fehlt.',
+        'loud' => '%s ist richtig unzufrieden und sagt laut, was fehlt.',
+        'songs' => '%s steckt voller Ideen für neue Songs.',
+        'noSongs' => '%s schreibt bei den Songs nicht mit, spielt aber sehr genau.',
+        'lust' => '%s hatte bei der Probe schnell keine Lust mehr.',
+        'rehearsal' => 'Bei der Probe hat sich %s von einer neuen Seite gezeigt.',
         'manager' => '%2$s kennt %1$s inzwischen gut.',
+    ];
+    /** Anordnungen im Satz („Lust auf …“). */
+    public const TRAIT_REVEAL_ORDERS = [
+        'rehearsal' => 'die Probe', 'gig' => 'den Auftritt', 'record' => 'die Aufnahme', 'busking' => 'Straßenmusik', 'openstage' => 'die offene Bühne', 'interview' => 'das Interview',
     ];
 
     /** Wie lange ein Charakter bei der Probe Lust hat, als Faktor auf Balance::REHEARSAL['lust'] (bei zwei Eigenschaften der Mittelwert). */

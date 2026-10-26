@@ -4,8 +4,10 @@ declare(strict_types=1);
 namespace Signed\Game;
 
 /**
- * Verborgene Charakterzüge: Mit dem Label redet niemand persönlich. Die Züge kennt man nur über einen Manager (Managers::settle), oder wenn
- * jemand richtig unzufrieden ist (rot) und laut sagt, was ihm fehlt. Gewirkt wird immer, auch solange ein Zug unbekannt ist.
+ * Verborgene Charakterzüge: Mit dem Label redet niemand persönlich. Ein Zug zeigt sich, sobald er zum ersten Mal etwas bewirkt – aber nur, wenn
+ * ein Manager dabei ist, der es merkt und ans Label weitergibt; spätestens nach einiger Zeit mit dem Manager kennt er alle (Managers::settle).
+ * Ohne Manager erfährt man einen Zug nur, wenn jemand richtig unzufrieden ist (rot) und laut sagt, was ihm fehlt.
+ * Gewirkt wird immer, auch solange ein Zug unbekannt ist.
  */
 final class Traits
 {
@@ -32,8 +34,13 @@ final class Traits
         if (($m['id'] ?? 0) <= 0) {
             return;
         }
-        $row = $repo->db->one('SELECT personality, known_traits FROM musicians WHERE id = ?', [$m['id']]);
+        $row = $repo->db->one('SELECT m.personality, m.known_traits, b.manager_id FROM musicians m LEFT JOIN bands b ON b.id = m.band_id WHERE m.id = ?', [$m['id']]);
         if ($row === null || $row['known_traits'] === null) {
+            return;
+        }
+        // Ohne Manager merkt es niemand – außer wer rot ist, sagt es laut.
+        $manager = $row['manager_id'] === null ? null : $repo->manager((int) $row['manager_id']);
+        if ($manager === null && $why !== 'loud') {
             return;
         }
         $known = json_decode((string) $row['known_traits'], true) ?: [];
@@ -45,19 +52,85 @@ final class Traits
         $repo->db->update('musicians', ['known_traits' => json_encode($known)], ['id' => $m['id']]);
         $words = array_map(static fn ($t) => mb_strtolower(Catalog::PERSONALITIES[$t]), $new);
         $reason = sprintf(Catalog::TRAIT_REVEAL[$why], $m['first_name'], $order);
+        if ($manager !== null && $why !== 'manager') {
+            $reason = sprintf('%s erzählt: %s', $manager['first_name'], $reason);
+        }
         $repo->log('trait', sprintf('%s Jetzt weißt du: %s ist %s.', $reason, $m['first_name'], implode(' und ', $words)), $m['band_id'] ?? null, $m['id']);
     }
 
-    /** Wer rot ist, meckert laut: Man erfährt den Zug, der hinter seinem Wunsch steckt. */
-    public static function settleBand(Repo $repo, array $members): void
+    /** Nach einer Anordnung: Wer sie mochte oder nicht mochte, zeigt den Zug, der dafür sorgt. */
+    public static function revealLiking(Repo $repo, array $members, string $type): void
     {
+        if (!isset(Catalog::TRAIT_REVEAL_ORDERS[$type])) {
+            return;
+        }
         foreach ($members as $m) {
-            if (!self::hidden($m) || !$m['personality']) {
+            $score = Mood::liking($m['personality'], $type);
+            if ($score === 0) {
                 continue;
             }
+            $traits = array_filter($m['personality'], static fn ($t) => (Catalog::LIKES[$t][$type] ?? 0) * $score > 0);
+            self::reveal($repo, $m, $traits, $score > 0 ? 'like' : 'dislike', Catalog::TRAIT_REVEAL_ORDERS[$type]);
+        }
+    }
+
+    /**
+     * Beim Fortschreiben der Bands: Unruhe, Gelassenheit beim Songstau, neue Songs, Künstlernamen-Wunsch, Unzufriedenheit.
+     * @param array{stageIdle: float, recordIdle: float} $band
+     */
+    public static function settleBand(Repo $repo, array $band, array $members, float $songsBefore, float $songsAfter, int $now): void
+    {
+        $t = Balance::TRAITS;
+        foreach ($members as $m) {
+            if (!self::hidden($m)) {
+                continue;
+            }
+            if (($band['stageIdle'] ?? 0) >= $t['restless']['hours']) {
+                self::reveal($repo, $m, array_keys($t['restless']['traits']), 'restless');
+            }
+            if (($band['recordIdle'] ?? 0) >= $t['stagnant']['hours']) {
+                self::reveal($repo, $m, array_keys($t['stagnant']['traits']), 'stagnant');
+            }
+            if ($songsAfter >= Balance::MOOD['stau']['from']) {
+                self::reveal($repo, $m, [$t['calm']['trait']], 'calm');
+            }
+            if (floor($songsAfter) > floor($songsBefore)) {
+                self::reveal($repo, $m, ['kreativ'], 'songs');
+                if (count($members) > 1) {
+                    self::reveal($repo, $m, ['technisch'], 'noSongs');
+                }
+            }
+            $want = Balance::STAGE_NAME['want'];
+            if (($m['stage_name'] ?? null) === null) {
+                self::reveal($repo, $m, array_keys(array_filter($want, static fn ($from) => $m['fame'] >= $from)), 'stageName');
+            }
+            // Unzufrieden: Dem Manager sagt man es schon bei Gelb, laut wird es erst bei Rot (dann hört es auch das Label ohne Manager).
             $w = $repo->db->value('SELECT wellbeing FROM musicians WHERE id = ?', [$m['id']]);
-            if ($w !== null && Mood::level((float) $w) === 'red') {
-                self::reveal($repo, $m, [$m['personality'][0]], 'unhappy');
+            $level = $w === null ? 'green' : Mood::level((float) $w);
+            if ($level !== 'green' && $m['personality']) {
+                self::reveal($repo, $m, [$m['personality'][0]], $level === 'red' ? 'loud' : 'unhappy');
+            }
+        }
+    }
+
+    /**
+     * Nach einer Probe: Wer zuerst keine Lust mehr hatte, zeigt den Zug dafür; sonst zeigt sich ab und zu ein Zug einfach so
+     * (fest aus Probe und Musiker gelost, damit es beim erneuten Laden gleich bleibt).
+     */
+    public static function afterRehearsal(Repo $repo, array $members, int $activityId, array $limit, int $seconds): void
+    {
+        if ($seconds < Balance::TRAIT_REVEAL['minRehearsal']) {
+            return;
+        }
+        foreach ($members as $m) {
+            if ($limit['why'] === 'lust' && $m['id'] === (int) $limit['id']) {
+                self::reveal($repo, $m, array_filter($m['personality'], static fn ($t) => (Catalog::LUST[$t] ?? 1.0) < 1.0), 'lust');
+                $m = $repo->musician($m['id']);
+            }
+            $hidden = self::hidden($m);
+            $roll = crc32('trait|' . $activityId . '|' . $m['id']);
+            if ($hidden && ($roll % 1000) / 1000 < Balance::TRAIT_REVEAL['rehearsal']) {
+                self::reveal($repo, $m, [$hidden[intdiv($roll, 1000) % count($hidden)]], 'rehearsal');
             }
         }
     }

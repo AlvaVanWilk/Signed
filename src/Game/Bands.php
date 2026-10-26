@@ -555,7 +555,9 @@ final class Bands
                 throw new ApiError(sprintf('%s betreut schon %d Solokünstler, mehr schafft niemand.', $manager['first_name'], $max));
             }
         }
-        $this->repo->db->update('bands', ['manager_id' => $managerId], ['id' => $band['id']]);
+        if ($managerId !== $band['manager_id']) {
+            $this->repo->db->update('bands', ['manager_id' => $managerId, 'manager_since' => $managerId === null ? null : Clock::now()], ['id' => $band['id']]);
+        }
     }
 
     /** @return array{int, int} wie viele Bands und Solokünstler der Manager außer dieser schon betreut */

@@ -59,7 +59,7 @@ function giveManager(\Signed\Db $db, ?int $bandId = null): int
     $labelId = (int) $db->value('SELECT id FROM labels ORDER BY id DESC LIMIT 1');
     $id = (new Signed\Game\Repo($db, $labelId))->insertManager(['first_name' => 'Mira', 'last_name' => 'Plan', 'rarity' => 'common', 'level' => 1, 'skills' => [], 'look' => []]);
     if ($bandId !== null) {
-        $db->exec('UPDATE bands SET manager_id = ? WHERE id = ?', [$id, $bandId]);
+        $db->exec('UPDATE bands SET manager_id = ?, manager_since = ? WHERE id = ?', [$id, Clock::now(), $bandId]);
     }
     return $id;
 }
@@ -1420,10 +1420,10 @@ test('Einsendungen: Willkommens-Stapel, laufender Eingang, Unterschreiben kostet
 });
 
 test('Einsendungen: Menge und Güte wachsen mit dem Erfolg des Labels', function () {
-    check(Signed\Game\Submissions::perDay(0) === 8.0);
-    check(abs(Signed\Game\Submissions::perDay(50) - 14.0) < 0.01);
-    check(abs(Signed\Game\Submissions::perDay(450) - 45.0) < 0.01);
-    check(Signed\Game\Submissions::perDay(9000) === 250.0);
+    // Fließend: 8 + 1,8 × √Erfolg, ohne Stufen und ohne Obergrenze.
+    checkEquals(8.0, Signed\Game\Submissions::perDay(0));
+    checkEquals(8.0 + 1.8 * 20, Signed\Game\Submissions::perDay(400));
+    check(Signed\Game\Submissions::perDay(20000) > Signed\Game\Submissions::perDay(5000), 'wächst immer weiter');
     check(Signed\Game\Submissions::goodShare(5000) > Signed\Game\Submissions::goodShare(0) * 4);
     $cheap = Signed\Game\Submissions::price(['skill1' => 25.0, 'skill2' => null, 'fame' => 0.0]);
     $star = Signed\Game\Submissions::price(['skill1' => 80.0, 'skill2' => null, 'fame' => 100.0]);
@@ -1882,12 +1882,20 @@ test('Verborgene Charakterzüge und Bedürfnisse: ohne Manager nur die Stimmung,
     $wishes = bandById($state, $band['id'])['mood']['wishes'];
     checkEquals([$ids[0]], array_values(array_unique(array_column($wishes, 'musicianId'))), 'nur der Rote sagt etwas');
     check((bool) $db->value("SELECT COUNT(*) FROM history WHERE kind = 'trait' AND text LIKE '%laut%'"), 'Nachricht fürs Label');
-    // Mit Manager: alle Züge, alle Wünsche, Warum und Notizen.
+    // Mit Manager: Was wirkt, gibt er weiter (Straßenmusik gemocht: extrovertiert), dazu alle Wünsche, Warum und Notizen.
     giveManager($db, $band['id']);
+    $db->exec('UPDATE musicians SET wellbeing = 70 WHERE id = ?', [$ids[0]]);
+    $db->exec("UPDATE musicians SET personality = '[\"teamplayer\", \"rampensau\"]', known_traits = '[]' WHERE id = ?", [$ids[0]]);
+    $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'busking']);
+    Clock::advance(600);
+    $state = $p->get('state');
+    checkEquals(['rampensau'], $find($state, $ids[0])['personality'], 'mit Manager: zeigt sich beim Wirken');
+    check((bool) $db->value("SELECT COUNT(*) FROM history WHERE kind = 'trait' AND text LIKE '%erzählt%'"), 'der Manager erzählt es');
+    Clock::advance(Balance::TRAIT_REVEAL['after']);
     $db->exec('UPDATE musicians SET wellbeing = 45 WHERE id = ?', [$ids[0]]);
     $state = $p->get('state');
     foreach ($ids as $id) {
-        checkEquals(0, $find($state, $id)['hiddenTraits'], 'Manager kennt alle Züge');
+        checkEquals(0, $find($state, $id)['hiddenTraits'], 'nach einem Tag kennt er alle Züge');
     }
     $b = bandById($state, $band['id']);
     checkEquals(true, $b['managed']);
@@ -1944,8 +1952,13 @@ test('Posteingang: Interview-Anfragen passen zur Bekanntheit, bringen einen fest
     $db = freshDb();
     $p = registerPlayer($db, 'Presse');
     $band = foundBand($p);
+    // Nach der eigenen Bekanntheit: Unbekannte selten, Bekannte oft, egal wie viele andere im Label sind.
+    checkEquals(0.1, Inbox::interviewRate(['fame' => 0.0]));
+    check(Inbox::interviewRate(['fame' => 600.0]) > 10 * Inbox::interviewRate(['fame' => 0.0]), 'Bekannte viel öfter');
+    checkEquals([1, 2, 3, 4], array_map(static fn ($f) => Inbox::interviewMax(['fame' => $f]), [0.0, 30.0, 200.0, 900.0]));
+    $db->exec('UPDATE musicians SET fame = 150 WHERE band_id = ?', [$band['id']]);
     $p->get('state');
-    // Sie kommen zufällig verteilt (im Schnitt eine am Tag je Musiker): zwei Tage warten.
+    // Sie kommen zufällig verteilt: zwei Tage warten.
     Clock::advance(86400);
     $p->get('state');
     Clock::advance(86400);
@@ -1955,7 +1968,10 @@ test('Posteingang: Interview-Anfragen passen zur Bekanntheit, bringen einen fest
     $interviews = array_values(array_filter($state['mail'], static fn ($m) => $m['kind'] === 'interview'));
     check(count($interviews) >= 1, 'nach einem Tag gibt es Anfragen');
     $perMusician = array_count_values(array_column($interviews, 'musicianId'));
-    check(max($perMusician) === 1, 'höchstens eine je Musiker');
+    check(max($perMusician) <= 3, 'höchstens 1 + Stufe je Musiker');
+    foreach (array_count_values(array_map(static fn ($m) => $m['musicianId'] . '|' . $m['medium'], $interviews)) as $n) {
+        checkEquals(1, $n, 'nicht zweimal dasselbe Medium');
+    }
     // Bekannter Musiker: Anfrage seiner Stufe, Gewinn = Anteil des Weges zur nächsten Stufe.
     $id = (int) $db->value('SELECT id FROM musicians WHERE band_id = ? ORDER BY id LIMIT 1', [$band['id']]);
     $db->exec('UPDATE musicians SET fame = 150 WHERE id = ?', [$id]);
@@ -2229,7 +2245,10 @@ test('Manager als Bewerbung: Passung nach Genre und Stil, Netzwerker und Vermitt
     $state = $p->post('bandSetManager', ['bandId' => $band['id'], 'managerId' => $managerId])['state'];
     $b = bandById($state, $band['id']);
     checkEquals(5.0, (float) $b['managerLevel']);
-    // Er kennt seine Leute: Die Züge sind jetzt alle bekannt.
+    // Nach einem Tag kennt er seine Leute: Die Züge sind jetzt alle bekannt.
+    check((bool) array_filter($state['musicians'], static fn ($m) => $m['hiddenTraits'] > 0), 'nicht sofort');
+    Clock::advance(Balance::TRAIT_REVEAL['after']);
+    $state = $p->get('state');
     foreach ($state['musicians'] as $m) {
         checkEquals(0, $m['hiddenTraits'], 'Manager zeigt alle Züge');
     }

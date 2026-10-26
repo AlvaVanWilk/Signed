@@ -202,6 +202,7 @@ final class Mood
                 $repo->db->update('musicians', ['wellbeing' => round($value, 3)], ['id' => $m['id']]);
             }
         }
+        Traits::revealLiking($repo, $members, $type);
     }
 
     /**
@@ -527,7 +528,7 @@ final class Mood
                 $update['coached_songs'] = round(min($state['songs'], $band['coached_songs'] + max(0.0, $state['songs'] - $band['songs_written']) * $coachShare), 4);
             }
             $repo->db->update('bands', $update, ['id' => $band['id']]);
-            Traits::settleBand($repo, $members);
+            Traits::settleBand($repo, $band, $members, (float) $band['songs_written'], $state['songs'], $now);
         }
     }
 

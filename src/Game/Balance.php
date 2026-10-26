@@ -165,7 +165,8 @@ final class Balance
      * Verfall nach `ttl`; Anteil der Guten (ab Können-Stufe 1) wächst mit dem Erfolg; Unterschriftsprämie = base + skill × Können² + fame × Bekanntheit.
      */
     public const SUBMISSIONS = [
-        'perDay' => [[0, 8], [50, 14], [450, 45], [5000, 250]],
+        // Kassetten je Tag = start + root × √Erfolg (fließend, ohne Obergrenze)
+        'perDay' => ['start' => 8.0, 'root' => 1.8],
         'bandChance' => 0.15, 'bandBond' => 4.0,
         'listen' => 5, 'ttl' => 4 * 86400, 'maxCatchUp' => 4 * 86400, 'maxPerCall' => 120,
         'good' => ['from' => 0.05, 'to' => 0.25, 'at' => 5000],
@@ -178,11 +179,13 @@ final class Balance
         'splitHurt' => 20.0, 'splitTrait' => ['teamplayer' => 1.6, 'ehrgeizig' => 0.5],
     ];
     /**
-     * Posteingang: Interview-Anfragen. Je Musiker kommen im Schnitt `perDay` am Tag (höchstens eine offen je Musiker), sie liegen `ttl` Sekunden.
+     * Posteingang: Interview-Anfragen. Jeder Musiker für sich, nach seiner eigenen Bekanntheit: je Tag `perDay` = start + root × √Bekanntheit
+     * (Unbekannte selten, Bekannte oft), offen höchstens 1 + Bekanntheitsstufe je Musiker (wer bekannt ist, hat mehrere Anfragen zugleich).
+     * Wie viele Bands das Label sonst hat, spielt keine Rolle. Sie liegen `ttl` Sekunden.
      * Das Medium passt zur Bekanntheitsstufe (Catalog::INTERVIEW_MEDIA, dort auch der Anteil je Medium). Gewinn = Anteil × Weg von dieser Stufe
      * zur nächsten (FAME_LEVELS), ohne Stufen-Bremse; auf der höchsten Stufe zählt `topSpan`. Annehmen schickt den Musiker `seconds[Stufe]` weg.
      */
-    public const INTERVIEW = ['perDay' => 1.0, 'ttl' => 4 * 86400, 'seconds' => [900, 1200, 1800, 2700], 'topSpan' => 600.0, 'maxCatchUp' => 86400];
+    public const INTERVIEW = ['perDay' => ['start' => 0.1, 'root' => 0.05], 'ttl' => 4 * 86400, 'seconds' => [900, 1200, 1800, 2700], 'topSpan' => 600.0, 'maxCatchUp' => 86400];
     /**
      * Posteingang: Bewerbungen von Leuten fürs Label. Jeder Beruf hat seine eigene Rate (`rates`, je Tag), die mit dem Erfolg wächst; die
      * Ankünfte sind zufällig verteilt, und alles liegt so lange wie alle Post (POST['ttl']). Ein Praktikum liegt immer da.
@@ -191,14 +194,14 @@ final class Balance
      */
     public const JOBS = [
         'half' => 300.0, 'weights' => [3, 2, 1],
-        // Je Beruf: so viele Bewerbungen kommen im Schnitt am Tag, je nach Erfolg des Labels (Punkte [Erfolg, je Tag], dazwischen gleitend).
+        // Je Beruf: Bewerbungen je Tag = start + root × √Erfolg (fließend, ohne Obergrenze).
         'rates' => [
-            'intern' => [[0, 0.8], [450, 1.5], [5000, 2.5]],
-            'manager' => [[0, 0.3], [450, 0.7], [5000, 1.5]],
-            'scout' => [[0, 0.2], [450, 0.5], [5000, 1.0]],
-            'assistant' => [[0, 0.12], [450, 0.35], [5000, 0.8]],
-            'teacher' => [[0, 0.08], [450, 0.3], [5000, 0.6]],
-            'coach' => [[0, 0.05], [450, 0.25], [5000, 0.5]],
+            'intern' => ['start' => 0.8, 'root' => 0.033],
+            'manager' => ['start' => 0.3, 'root' => 0.019],
+            'scout' => ['start' => 0.2, 'root' => 0.014],
+            'assistant' => ['start' => 0.12, 'root' => 0.011],
+            'teacher' => ['start' => 0.08, 'root' => 0.01],
+            'coach' => ['start' => 0.05, 'root' => 0.009],
         ],
     ];
     /**
@@ -311,6 +314,11 @@ final class Balance
         'calm' => ['trait' => 'gelassen', 'tau' => 1.8, 'stau' => 0.5],
         'pulled' => ['teamplayer' => 1.5],
     ];
+    /**
+     * Verborgene Charakterzüge (nur mit Manager): Ein Zug zeigt sich, sobald er zum ersten Mal etwas bewirkt. Nach `after` Sekunden mit dem
+     * Manager kennt man alle. Nach jeder Probe von mindestens `minRehearsal` Sekunden zeigt sich mit der Chance `rehearsal` noch ein Zug.
+     */
+    public const TRAIT_REVEAL = ['after' => 86400, 'rehearsal' => 0.35, 'minRehearsal' => 60];
     /**
      * Versteckter Wert eines Musikers (nie angezeigt): Charakterzüge zählen je nach Lage etwa gleich (meist 0), was im Schnitt mehr hilft +1,
      * was im Schnitt eher bremst −1 (die Technik zählt nicht, jeder hat eine). Die Unterschriftsprämie wächst um `price` je Punkt

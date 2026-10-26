@@ -1,7 +1,7 @@
 import { abilityInfo, bandIdentity, emptySlot, fullName, gearCard, gearModel, genreName, genreTag, instrumentIcon, instrumentName, musicianCard, musicianStatus, sortedGenres } from '../cards.js';
 import { app, bandById, cat, defineActions, isBusy, musicianById, mutate, navigate } from '../core.js';
 import { openLive } from '../live.js';
-import { chip } from '../cards.js';
+import { chip, HIDDEN_TRAIT_TIP } from '../cards.js';
 import { closeAllModals, confirmDialog, duration, esc, fmt0, fmt1, money, openModal, timeAgo, toast } from '../ui.js';
 import { buskingHat, cancelButton, chemistryLabel, courseTiles, promoOf, practiceTile, promoTile, suggestName } from './bands.js';
 
@@ -83,7 +83,7 @@ function profile(m) {
           const info = abilityInfo(a);
           return `<div class="ability"><span class="ability-icon">${info.icon}</span><b>${esc(info.name)}</b><span class="muted small">${esc(info.desc)}</span></div>`;
         }).join('')}</div>` : ''}
-        <div class="chips">${sortedGenres(m.genres).map((g) => `<button class="chip-btn" data-act="genreInfo" data-genre="${g}" data-id="${m.id}" title="Was heißt das?">${genreTag(g)}</button>`).join('')}${m.personality.map((p) => `<button class="chip-btn" data-act="traitInfo" data-trait="${p}" data-id="${m.id}" title="Was heißt das?">${chip(cat().personalities[p], 'trait')}</button>`).join('')}</div>
+        <div class="chips">${sortedGenres(m.genres).map((g) => `<button class="chip-btn" data-act="genreInfo" data-genre="${g}" data-id="${m.id}" title="Was heißt das?">${genreTag(g)}</button>`).join('')}${m.personality.map((p) => `<button class="chip-btn" data-act="traitInfo" data-trait="${p}" data-id="${m.id}" title="Was heißt das?">${chip(cat().personalities[p], 'trait')}</button>`).join('')}${Array.from({ length: m.hiddenTraits ?? 0 }, () => `<button class="chip-btn" data-act="tip" data-tip="${HIDDEN_TRAIT_TIP}" title="${HIDDEN_TRAIT_TIP}">${chip('?', 'trait')}</button>`).join('')}</div>
         ${chemistryWith(m)}
       </div>
     </div>`;

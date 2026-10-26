@@ -183,6 +183,8 @@ final class Repo
             'level' => $m['level'],
             'abilities' => json_encode($m['abilities']),
             'personality' => json_encode($m['personality']),
+            // Neu im Label: Die Charakterzüge zeigen sich erst nach und nach (Traits).
+            'known_traits' => json_encode(array_values($m['known_traits'] ?? [])),
             'unusual' => $m['unusual'] ? 1 : 0,
             'look' => json_encode($m['look']),
             'band_id' => null,
@@ -239,7 +241,9 @@ final class Repo
             'ability_choice' => null,
             'favorite' => (bool) $r['favorite'],
             'jam_at' => (int) $r['jam_at'],
-            'personality' => self::legacyTraits(json_decode($r['personality'], true) ?: [], json_decode($r['abilities'], true) ?: []),
+            'personality' => $personality = self::legacyTraits(json_decode($r['personality'], true) ?: [], json_decode($r['abilities'], true) ?: []),
+            // Leer gespeichert (aus der Zeit vor den verborgenen Zügen): alle bekannt
+            'known_traits' => ($r['known_traits'] ?? null) === null ? $personality : (json_decode($r['known_traits'], true) ?: []),
             'unusual' => (bool) $r['unusual'],
             'look' => json_decode($r['look'], true) ?: [],
             'band_id' => $r['band_id'] === null ? null : (int) $r['band_id'],

@@ -212,6 +212,12 @@ final class Balance
         'pulled' => ['teamplayer' => 1.5],
     ];
     /**
+     * Verborgene Charakterzüge: Ein Zug zeigt sich, sobald er zum ersten Mal etwas bewirkt (er wirkt aber auch vorher schon).
+     * Spätestens nach `after` Sekunden im Label kennt man alle. Nach jeder Probe von mindestens `minRehearsal` Sekunden zeigt sich
+     * mit der Chance `rehearsal` noch ein unbekannter Zug (im Schnitt nach etwa drei Proben).
+     */
+    public const TRAIT_REVEAL = ['after' => 86400, 'rehearsal' => 0.35, 'minRehearsal' => 60];
+    /**
      * Versteckter Wert eines Musikers (nie angezeigt): Charakterzüge zählen je nach Lage etwa gleich (meist 0), was im Schnitt mehr hilft +1,
      * was im Schnitt eher bremst −1 (die Technik zählt nicht, jeder hat eine). Die Unterschriftsprämie wächst um `price` je Punkt
      * (höchstens bis `min`/`max` des Grundpreises): Glückstreffer kosten mehr, Pechvögel (etwa egozentrisch und technisch) sind billig.
@@ -522,7 +528,7 @@ final class Balance
     public const CHART_INTERVAL = 3 * 3600;
     /** Nachrichten beim Wiederkommen: nach so langer Pause, diese Arten aus der Chronik. */
     public const NEWS_AWAY = 900;
-    public const NEWS_KINDS = ['chart1', 'chart', 'transfer', 'scout', 'level', 'fame', 'fanjoin'];
+    public const NEWS_KINDS = ['chart1', 'chart', 'transfer', 'scout', 'level', 'fame', 'fanjoin', 'trait'];
     public const CHART_DECAY = 0.03;
     public const CHART_MAX_AGE = 7 * 86400;
     /**

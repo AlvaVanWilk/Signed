@@ -363,6 +363,7 @@ button.lb-pill:disabled { opacity: 0.45; cursor: default; }
 /* Eigenschaften als kleine Marken */
 .lb-trait { border: 1px solid var(--lb-line); background: var(--lb-card2); color: var(--lb-muted); font: inherit; font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; cursor: pointer; line-height: 1.3; }
 .lb-trait:hover { color: var(--lb-text); border-color: var(--lb-accent); }
+.lb-trait.unknown { border-style: dashed; min-width: 2em; }
 .lb-traitrow { display: inline-flex; gap: 5px; flex-wrap: wrap; }
 
 

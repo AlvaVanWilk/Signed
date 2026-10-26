@@ -71,6 +71,16 @@ export const sortedGenres = (genres) => [...genres].sort((a, b) => genreOrder(a)
 export const rarityName = (key) => cat().rarities[key]?.name ?? key;
 export const fullName = (p) => `${p.firstName} ${p.lastName}`;
 
+/** Noch unbekannte Charakterzüge: je einer ein „?“ (zeigen sich mit der Zeit). */
+export const HIDDEN_TRAIT_TIP = 'Noch unbekannt: Diesen Charakterzug lernst du mit der Zeit kennen.';
+export function hiddenTraits(m, cls = 'lb-trait') {
+  return Array.from({ length: m.hiddenTraits ?? 0 }, () => `<button class="${cls} unknown" data-act="tip" data-tip="${HIDDEN_TRAIT_TIP}" title="${HIDDEN_TRAIT_TIP}" aria-label="Unbekannter Charakterzug">?</button>`).join('');
+}
+/** Charakterzüge als Text, unbekannte als „?“. */
+export function traitNames(m, sep = ', ') {
+  return [...m.personality.map((p) => cat().personalities[p]), ...Array(m.hiddenTraits ?? 0).fill('?')].join(sep);
+}
+
 export function chip(text, cls = '') {
   return `<span class="chip ${cls}">${esc(text)}</span>`;
 }
@@ -335,7 +345,7 @@ export function musicianCard(m, { act = 'openMusician', size = '', extra = '', s
       <span class="skill-row fame-row"><span class="skill-name">⭐<span> Bekanntheit</span></span>${fameBar(m.fame)}</span>
       <span class="tcg-traits">${abilities.length
         ? abilities.map((a) => `<b>${esc(a.name)}</b>`).join(' · ')
-        : `<i>${m.personality.map((p) => esc(c.personalities[p])).join(' · ')}</i>`}</span>`,
+        : `<i>${esc(traitNames(m, ' · '))}</i>`}</span>`,
     foot: status,
     overlay: sparkles(SPARKLE_COUNT[m.fameLevel] ?? 0, m.id),
     act,

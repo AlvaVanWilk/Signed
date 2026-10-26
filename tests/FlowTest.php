@@ -1293,7 +1293,7 @@ test('Rote Band: Anordnungen, die ein Unzufriedener nicht mag, sind gesperrt; wa
     $ids = array_column($db->all('SELECT id FROM musicians WHERE band_id = ?', [$band['id']]), 'id');
     // Einer wird zum Chaoten (mag Auftritte, mag keine Proben) und ist rot; die anderen haben keine Vorlieben.
     $db->exec("UPDATE musicians SET personality = '[]' WHERE band_id = ?", [$band['id']]);
-    $db->exec("UPDATE musicians SET personality = ?, wellbeing = 10 WHERE id = ?", [json_encode(['chaot']), $ids[0]]);
+    $db->exec("UPDATE musicians SET personality = ?, known_traits = NULL, wellbeing = 10 WHERE id = ?", [json_encode(['chaot']), $ids[0]]);
     $state = $p->get('state');
     $mood = bandById($state, $band['id'])['mood'];
     check($mood['reactions']['rehearsal']['locked'], 'Proben sind gesperrt');
@@ -1857,4 +1857,35 @@ test('Auftritt buchen: Orte mit Kosten und Gewinn-Schätzung, Gage liegt in der 
     $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'gig', 'venue' => 'kneipe']);
     $afterMood = array_sum(array_map(static fn ($m) => (float) $m['wellbeing'], $db->all('SELECT wellbeing FROM musicians WHERE band_id = ?', [$band['id']])));
     check($afterMood < $before, 'unter der Würde ärgert');
+});
+
+test('Verborgene Charakterzüge: erst „?“, zeigen sich beim ersten Wirken mit Nachricht, spätestens nach einem Tag', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Verborgen');
+    $band = foundBand($p);
+    $ids = array_column($db->all('SELECT id FROM musicians WHERE band_id = ?', [$band['id']]), 'id');
+    // Einer ist extrovertiert (mag Straßenmusik) und kooperativ, noch ist nichts bekannt; die anderen haben keine Züge.
+    $db->exec("UPDATE musicians SET personality = '[]', known_traits = '[]' WHERE band_id = ?", [$band['id']]);
+    $db->exec('UPDATE musicians SET personality = ?, wellbeing = 70 WHERE id = ?', [json_encode(['rampensau', 'teamplayer']), $ids[0]]);
+    $m = array_values(array_filter($p->get('state')['musicians'], fn ($x) => $x['id'] === $ids[0]))[0];
+    checkEquals([], $m['personality'], 'noch unbekannt');
+    checkEquals(2, $m['hiddenTraits']);
+    checkEquals([], bandById($p->get('state'), $band['id'])['mood']['reactions']['gig']['like'], 'keine Vorlieben für Unbekanntes');
+    $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'busking']);
+    Clock::advance(600);
+    $state = $p->get('state');
+    $m = array_values(array_filter($state['musicians'], fn ($x) => $x['id'] === $ids[0]))[0];
+    checkEquals(['rampensau'], $m['personality'], 'Straßenmusik gemocht: extrovertiert zeigt sich');
+    checkEquals(1, $m['hiddenTraits']);
+    check((bool) $db->value("SELECT COUNT(*) FROM history WHERE kind = 'trait' AND text LIKE '%extrovertiert%'"), 'Nachricht fürs Label');
+    // Sicherheitsnetz
+    Clock::advance(Balance::TRAIT_REVEAL['after']);
+    $m = array_values(array_filter($p->get('state')['musicians'], fn ($x) => $x['id'] === $ids[0]))[0];
+    checkEquals(['rampensau', 'teamplayer'], $m['personality'], 'nach einem Tag ist alles bekannt');
+    // Einsendungen zeigen keine Züge
+    foreach ($p->get('state')['submissions'] as $s) {
+        if (($s['state'] ?? '') === 'open' && ($s['kind'] ?? '') === 'solo') {
+            checkEquals([], $s['personality']);
+        }
+    }
 });

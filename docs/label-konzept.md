@@ -133,6 +133,16 @@ Im passenden Genre der Band (bei Hybrid und Crossover alle ihre Genres, solo die
 **Fähigkeiten** (Talent, Charisma, Nervenstark, Absolutes Gehör, Entertainer, Studiofuchs, Ausstrahlung) gibt es nicht mehr; stattdessen schaltet jede
 Können-Stufe eine bessere Klasse von Instrumenten frei (Zahlen in docs/kern.md, Instrumente).
 
+**Verborgene Charakterzüge** (gebaut, `Traits`): Wer neu ins Label kommt (Einsendung, Pack, Jam, Scout …), zeigt seine Züge erst nach und nach;
+unbekannte stehen als „?“ da, auch schon in der Einsendung. Gewirkt wird trotzdem von Anfang an. Ein Zug zeigt sich, sobald er zum ersten Mal
+etwas bewirkt, und das Label bekommt eine kurze Nachricht („… Jetzt weißt du: Lea ist extrovertiert.“):
+- eine Anordnung gemocht oder nicht gemocht (Probe, Auftritt, Aufnahme, Straßenmusik, offene Bühne),
+- Unruhe ohne Auftritt (extrovertiert, gesellig) oder ohne neue Platte (ehrgeizig), Ruhe beim Songstau (gemütlich),
+- ein neuer Song (kreativ; technisch in einer Band, weil er nicht mitschreibt), der Wunsch nach einem Künstlernamen,
+- unzufrieden (der erste Zug, nach dem sich auch der Wunsch richtet), bei der Probe als Erster die Lust verloren.
+Sicherheitsnetz: nach jeder Probe (ab einer Minute) zeigt sich mit 35 % noch ein Zug, spätestens nach einem Tag im Label alle
+(`Balance::TRAIT_REVEAL`). Wer schon vor dem Umbau da war, ist bekannt. Vorlieben an den Anordnungen zeigen sich nur für bekannte Züge.
+
 ### Anspruch
 
 Der **Anspruch** der Band steigt mit dem Ruhm: Wer noch nichts erreicht hat, freut sich über alles, was das Label ermöglicht.

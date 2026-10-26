@@ -1,4 +1,4 @@
-import { genreGlyph, genreName, instrumentIcon, instrumentName, photo, sortedGenres } from '../cards.js';
+import { genreGlyph, genreName, hiddenTraits, traitNames, instrumentIcon, instrumentName, photo, sortedGenres } from '../cards.js';
 import { api } from '../api.js';
 import { actions, app, cat, defineActions, mutate, musicianById, rerender, serverNow } from '../core.js';
 import { confirmDialog, esc, money, off, openModal, toast } from '../ui.js';
@@ -62,7 +62,7 @@ const instrumentRow = (i, compact = false) => `<div class="lb-ins ${levelClass(i
 
 const PEN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4L16.5 4.5a2 2 0 013 3L8 19l-4 1z M14 7l3 3 M3 21h6"/></svg>';
 const fameStars = (s) => (s.fameLevel ? `<span class="lb-sub-fame" title="${esc(cat().fameNames[s.fameLevel])}">${'★'.repeat(s.fameLevel)}</span>` : '<small class="muted" title="Noch keine Bekanntheit">unbekannt</small>');
-const traitChips = (m, act = 'subInfo', sid = 0, index = 0) => m.personality.map((p) => `<button class="lb-trait" data-act="${act}" data-id="${sid}" data-index="${index}" data-tip="${esc(cat().personalities[p])}: ${esc(cat().personalityInfo[p])}" title="${esc(cat().personalities[p])}: ${esc(cat().personalityInfo[p])}">${esc(cat().personalities[p])}</button>`).join('');
+const traitChips = (m, act = 'subInfo', sid = 0, index = 0) => m.personality.map((p) => `<button class="lb-trait" data-act="${act}" data-id="${sid}" data-index="${index}" data-tip="${esc(cat().personalities[p])}: ${esc(cat().personalityInfo[p])}" title="${esc(cat().personalities[p])}: ${esc(cat().personalityInfo[p])}">${esc(cat().personalities[p])}</button>`).join('') + hiddenTraits(m);
 
 /** Unterschreiben (Stift) und Wegwerfen (✕): klein und eindeutig; Unterschreiben fragt nach. */
 function iconFoot(s, price, enough) {
@@ -160,7 +160,7 @@ function openInfo(s, m) {
       <div class="lb-info-head"><span class="lb-ph" style="--split:linear-gradient(120deg, ${split(m.genres)})">${photo(m)}</span>
         <div><h2>${esc(m.firstName)} ${esc(m.lastName)}</h2>${genreTags(m.genres)}</div></div>
       <h3>Eigenschaften</h3>
-      <ul class="lb-trait-list">${m.personality.map((p) => `<li><b>${esc(cat().personalities[p])}</b> ${esc(cat().personalityInfo[p])}</li>`).join('')}</ul>
+      <ul class="lb-trait-list">${m.personality.map((p) => `<li><b>${esc(cat().personalities[p])}</b> ${esc(cat().personalityInfo[p])}</li>`).join('')}${m.hiddenTraits ? `<li><b>?</b> ${m.hiddenTraits > 1 ? 'Diese Charakterzüge zeigen' : 'Dieser Charakterzug zeigt'} sich erst, wenn ${esc(m.firstName)} eine Weile bei dir ist.</li>` : ''}</ul>
       <h3>Wer zu ${esc(m.firstName)} passt</h3>
       <div class="lb-compat" data-compat><small class="muted">Einen Moment …</small></div>
       <div class="dialog-actions"><button class="btn primary" data-close>Schließen</button></div>`,
@@ -204,7 +204,7 @@ function signBand(s) {
       <div class="lb-sign-list">${s.members.map((m) => `
         <label class="lb-sign-row"><input type="checkbox" data-pick="${m.index}" checked>
           <span class="lb-ph sm" style="--split:linear-gradient(120deg, ${split(m.genres)})">${photo(m)}</span>
-          <span><b>${esc(m.firstName)} ${esc(m.lastName)}</b><small class="muted">${esc(instrumentName(m.instruments[0].type))} · ${esc(m.personality.map((p) => cat().personalities[p]).join(', '))}</small></span>
+          <span><b>${esc(m.firstName)} ${esc(m.lastName)}</b><small class="muted">${esc(instrumentName(m.instruments[0].type))} · ${esc(traitNames(m))}</small></span>
           <em>${money(m.price)}</em></label>`).join('')}</div>
       <p class="lb-sign-note" data-note></p>
       <div class="dialog-actions"><button class="btn ghost" data-close>Abbrechen</button><button class="btn primary" data-ok></button></div>`,

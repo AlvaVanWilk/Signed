@@ -482,6 +482,10 @@ final class Schema
             [
                 'ALTER TABLE gear ADD COLUMN bonuses TEXT NULL',
             ],
+            // 35: Verborgene Charakterzüge – welche das Label schon kennt; leer = alle (wer schon da war, ist bekannt)
+            [
+                'ALTER TABLE musicians ADD COLUMN known_traits TEXT NULL',
+            ],
         ];
     }
 }

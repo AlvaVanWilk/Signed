@@ -143,7 +143,7 @@ function signiePage(m) {
         ${row('Status', m.status === 'current' ? 'Beim Label' : esc(LEFT[m.reason] ?? 'Ausgeschieden'))}
         ${row('Instrumente', esc(m.instruments.map((i) => `${instrumentName(i.type)} (${rules.levelNames[Math.min(rules.rules.skillLevels.filter((t) => i.skill >= t).length, 3)]})`).join(', ')))}
         ${row('Genres', esc(list(genres)))}
-        ${row('Charakter', esc(list(m.personality.map((p) => rules.personalities[p]))))}
+        ${row('Charakter', esc(list([...m.personality.map((p) => rules.personalities[p]), ...Array(m.hiddenTraits ?? 0).fill('?')])))}
         ${row('Bekanntheit', `${esc(rules.fameNames[m.fameLevel])} (${fmt1(m.fame)})`)}
         ${row('Beim Label seit', day(m.joinedAt))}
         ${row('Ausgeschieden', m.leftAt ? day(m.leftAt) : '')}

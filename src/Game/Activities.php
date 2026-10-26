@@ -641,6 +641,9 @@ final class Activities
         $row = $repo->db->one('SELECT * FROM activities WHERE id = ?', [$activityId]);
         $r = (json_decode($row['data'], true)['reward']['rehearsal'] ?? []) + ['credited' => [], 'levelUps' => [], 'done' => 0, 'limit' => ['id' => 0, 'why' => 'lust']];
         $name = $r['limit']['id'] ? ($repo->db->value('SELECT first_name FROM musicians WHERE id = ?', [(int) $r['limit']['id']]) ?? '') : '';
+        if ($row['band_id'] !== null) {
+            Traits::afterRehearsal($repo, $repo->members((int) $row['band_id']), $activityId, $r['limit'], (int) $r['done']);
+        }
         return [
             'money' => 0,
             'fame' => 0.0,

@@ -1,5 +1,5 @@
 import { api } from '../api.js';
-import { abilityInfo, genreGlyph, genreName, gearModel, instrumentIcon, instrumentName, ownGear, photo, sortedGenres } from '../cards.js';
+import { abilityInfo, genreGlyph, hiddenTraits, genreName, gearModel, instrumentIcon, instrumentName, ownGear, photo, sortedGenres } from '../cards.js';
 import { actions, app, bandById, cat, defineActions, isBusy, mutate, musicianById, runningFor, serverNow } from '../core.js';
 import { closePopover, confirmDialog, duration, esc, fmt0, fmt1, fmtGain, money, off, openModal, popover, toast } from '../ui.js';
 import { getAudio } from '../audio.js';
@@ -200,7 +200,7 @@ function memberRow(b, m, members, slots) {
       <a class="lb-ph ${mood}" data-act="musicianInfo" data-id="${m.id}" style="--split:linear-gradient(120deg, ${split})" title="${esc(m.firstName)} ansehen">${photo(m)}</a>
       <div class="lb-info">
         <div class="lb-nm"><a data-act="musicianInfo" data-id="${m.id}">${m.stageName ? `${esc(m.stageName)} <small class="muted">${esc(m.firstName)} ${esc(m.lastName)}</small>` : `${esc(m.firstName)} ${esc(m.lastName)}`}</a>${moodTag(mood)}
-          <span class="lb-traitrow">${m.personality.map((p) => `<button class="lb-trait" data-act="tip" data-tip="${esc(cat().personalities[p])}: ${esc(cat().personalityInfo[p])}" title="${esc(cat().personalities[p])}: ${esc(cat().personalityInfo[p])}">${esc(cat().personalities[p])}</button>`).join('')}</span></div>
+          <span class="lb-traitrow">${m.personality.map((p) => `<button class="lb-trait" data-act="tip" data-tip="${esc(cat().personalities[p])}: ${esc(cat().personalityInfo[p])}" title="${esc(cat().personalities[p])}: ${esc(cat().personalityInfo[p])}">${esc(cat().personalities[p])}</button>`).join('')}${hiddenTraits(m)}</span></div>
         <div class="lb-ins lv-${Math.min(level, MAX_LV_STYLE)}">
           ${m.instruments.length > 1
     ? `<button class="ico switch" data-act="slotCycle" data-band="${b.id}" data-musician="${m.id}" title="${esc(instrumentName(played.type))} – tippen, um ein anderes Instrument zu wählen">${instrumentIcon(played.type, own.electric, own.hue)}<i>⇄</i></button>`

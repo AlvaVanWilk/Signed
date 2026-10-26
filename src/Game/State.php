@@ -227,7 +227,7 @@ final class State
         foreach ($gear as $item) {
             $out = Present::gear($item);
             if ($item['musician_id'] === null) {
-                $out['upgrades'] = $advice($item['model'], ['klang' => $item['klang'], 'spielbarkeit' => $item['spielbarkeit'], 'design' => $item['design']]);
+                $out['upgrades'] = $advice($item['model'], ['bonuses' => $item['bonuses'] ?? []]);
             }
             $gearOut[] = $out;
         }
@@ -235,7 +235,7 @@ final class State
         foreach ($packOffer['cards'] ?? [] as $i => $card) {
             if ($card['kind'] === 'gear') {
                 $g = $card['gear'];
-                $packOffer['cards'][$i]['gear']['upgrades'] = $advice($g['model'], ['klang' => $g['klang'], 'spielbarkeit' => $g['spielbarkeit'], 'design' => $g['design']]);
+                $packOffer['cards'][$i]['gear']['upgrades'] = $advice($g['model'], ['bonuses' => $g['bonuses'] ?? []]);
             }
         }
 

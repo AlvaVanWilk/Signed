@@ -37,7 +37,9 @@ final class Present
             'favorite' => $m['favorite'],
             // Hat über das Jam-Café schon eine Band gegründet (kann nicht noch einmal hin).
             'jammed' => ($m['jam_at'] ?? 0) > 0,
-            'personality' => $m['personality'],
+            // Nur die Züge, die sich schon gezeigt haben; die übrigen erscheinen als „?“.
+            'personality' => Traits::known($m),
+            'hiddenTraits' => count(Traits::hidden($m)),
             'unusual' => $m['unusual'],
             'look' => (object) $m['look'],
             'bandId' => $m['band_id'],

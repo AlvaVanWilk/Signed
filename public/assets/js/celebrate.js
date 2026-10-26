@@ -1,7 +1,7 @@
 import { cat, onStateChange } from './core.js';
 import { genreIcon } from './cards.js';
 import { avatar } from './avatar.js';
-import { esc, openModal, timeAgo } from './ui.js';
+import { esc, openModal, timeAgo, toast } from './ui.js';
 
 /**
  * Feiern nach einem neuen Spielstand: Band wird Genre-Band oder Hybrid, Musiker steigt im Können
@@ -18,6 +18,8 @@ onStateChange((before, after) => {
   const fresh = before ? after.history.filter((h) => h.id > (before.history[0]?.id ?? 0)) : after.news ?? [];
   for (const h of fresh) {
     if (h.kind === 'chart1') queue.push(chartHtml(h.text));
+    // Ein Charakterzug hat sich gezeigt (nach einer Pause stehen sie in den News)
+    if (h.kind === 'trait' && before) toast(h.text);
   }
   if (!before) {
     if (!current) next();

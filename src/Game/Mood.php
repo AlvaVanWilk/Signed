@@ -198,6 +198,7 @@ final class Mood
                 $repo->db->update('musicians', ['wellbeing' => round($value, 3)], ['id' => $m['id']]);
             }
         }
+        Traits::revealLiking($repo, $members, $type);
     }
 
     /**
@@ -236,8 +237,9 @@ final class Mood
         $out = [];
         foreach (['rehearsal' => 'rehearsal', 'gig' => 'gig', 'record' => 'record'] as $key => $type) {
             $out[$key] = [
-                'like' => array_values(array_map(static fn ($m) => $m['id'], array_filter($members, static fn ($m) => self::liking($m['personality'], $type) > 0))),
-                'dislike' => array_values(array_map(static fn ($m) => $m['id'], array_filter($members, static fn ($m) => self::liking($m['personality'], $type) < 0))),
+                // Nur nach Zügen, die das Label schon kennt
+                'like' => array_values(array_map(static fn ($m) => $m['id'], array_filter($members, static fn ($m) => self::liking(Traits::known($m), $type) > 0))),
+                'dislike' => array_values(array_map(static fn ($m) => $m['id'], array_filter($members, static fn ($m) => self::liking(Traits::known($m), $type) < 0))),
                 'locked' => self::refuser($members, $type) !== null,
             ];
         }
@@ -480,7 +482,9 @@ final class Mood
                 $patience = min($c['patience'], $patience + $onlineSpan * $c['patienceRecover']);
             }
             $repo->db->update('bands', ['songs_written' => round($state['songs'], 4), 'mood_at' => $now, 'patience' => $patience], ['id' => $band['id']]);
+            Traits::settleBand($repo, $band, $members, (float) $band['songs_written'], $state['songs'], $now);
         }
+        Traits::settleTime($repo, $now);
     }
 
     /** Stunden seit dem letzten Auftritt (Gig, Straße, offene Bühne) und seit der letzten fertigen Platte (ohne: seit Gründung). */

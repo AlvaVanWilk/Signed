@@ -191,13 +191,11 @@ final class Charts
     {
         $albums = self::albums($db, $labelId);
 
-        // Platz 1 gibt einmalig einen Scout-Gutschein – aber nur, wenn es Konkurrenz gibt.
+        // Platz 1 wird einmal vermerkt (Meilenstein, WikiSignia) – aber nur, wenn es Konkurrenz gibt.
         $competitors = count(array_unique(array_column($albums, 'labelId')));
         if ($albums && $albums[0]['rank'] === 1 && !$albums[0]['topped'] && $competitors >= Balance::CHART_TOP_MIN_LABELS) {
             $top = $albums[0];
-            if ($db->exec('UPDATE records SET topped = 1 WHERE id = ? AND topped = 0', [$top['recordId']]) > 0) {
-                Scout::grant(new Repo($db, $top['labelId']), sprintf('„%s“ steht auf Platz 1 der Charts!', $top['title']));
-            }
+            $db->exec('UPDATE records SET topped = 1 WHERE id = ? AND topped = 0', [$top['recordId']]);
         }
         foreach ($albums as &$album) {
             unset($album['topped'], $album['labelId']);

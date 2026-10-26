@@ -531,7 +531,7 @@ test('Manager: höchstens drei Bands, Fan-Karte bringt Ruhm', function () {
     checkEquals(0, count($state['items']));
 });
 
-test('Album-Charts: Platten aller Labels, Platz 1 gibt einen Gutschein, Tantiemen laufen, Promo schiebt an', function () {
+test('Album-Charts: Platten aller Labels, Platz 1 wird vermerkt, Tantiemen laufen, Promo schiebt an', function () {
     $db = freshDb();
     $a = registerPlayer($db, 'Alpha');
     $b = registerPlayer($db, 'Beta');
@@ -539,7 +539,6 @@ test('Album-Charts: Platten aller Labels, Platz 1 gibt einen Gutschein, Tantieme
     $bandB = foundBand($b, 'Beta Band');
     $db->exec('UPDATE labels SET money = 100000');
     $done = makeRecord($db, $a, $bandA['id'], 'Alpha EP', 3, 2, 'roxy');
-    checkEquals(Balance::SCOUT_START_VOUCHERS + 1, $done['state']['scout']['vouchers'], 'Gutschein nur für die erste Platte, nicht fürs Perfekte');
     makeRecord($db, $b, $bandB['id'], 'Beta EP');
 
     $charts = $b->get('charts');
@@ -548,15 +547,15 @@ test('Album-Charts: Platten aller Labels, Platz 1 gibt einen Gutschein, Tantieme
     checkEquals('EP', $charts['albums'][0]['format']);
     check(!$charts['albums'][0]['own'] && $charts['albums'][1]['own']);
     checkEquals(2, count($charts['labels']));
-    checkEquals(Balance::SCOUT_START_VOUCHERS + 1, $a->get('state')['scout']['vouchers'], 'Ohne genug Konkurrenz kein Gutschein für Platz 1');
+    checkEquals(0, (int) $db->value("SELECT COUNT(*) FROM records WHERE topped = 1"), 'Ohne genug Konkurrenz zählt Platz 1 nicht');
 
     $c = registerPlayer($db, 'Gamma');
     $bandC = foundBand($c, 'Gamma Band');
     makeRecord($db, $c, $bandC['id'], 'Gamma EP');
     $c->get('charts');
-    checkEquals(Balance::SCOUT_START_VOUCHERS + 2, $a->get('state')['scout']['vouchers'], 'Platz 1 bringt einen weiteren Gutschein');
+    checkEquals(1, (int) $db->value("SELECT COUNT(*) FROM records WHERE topped = 1 AND title = 'Alpha EP'"), 'Platz 1 vermerkt');
     $b->get('charts');
-    checkEquals(Balance::SCOUT_START_VOUCHERS + 2, $a->get('state')['scout']['vouchers'], 'Nur einmal pro Platte');
+    checkEquals(1, (int) $db->value("SELECT COUNT(*) FROM records WHERE topped = 1"), 'Nur einmal');
 
     $first = array_column($b->get('charts')['albums'], null, 'title');
     checkEquals('new', $first['Beta EP']['trend']);

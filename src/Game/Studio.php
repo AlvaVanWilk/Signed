@@ -295,7 +295,6 @@ final class Studio
             [$songs, Balance::RECORD_CYCLE['plays'] * $songs, $perfect ? 1 : 0, $band['id']]
         );
         $fameGain = round(array_sum($gains), 1);
-        $firstRecord = (int) $db->value("SELECT COUNT(*) FROM records WHERE label_id = ? AND status = 'done'", [$this->repo->labelId]) === 0;
         $now = Clock::now();
         $db->update('records', [
             'status' => 'done',
@@ -313,10 +312,10 @@ final class Studio
         $this->repo->log('record', sprintf('%s veröffentlicht „%s“ (%s, %d Lieder)%s', $band['name'], $record['title'], $format, $songs, $perfect ? ' – eine perfekte Platte!' : '.'), $band['id']);
         // In der WikiSignia steht bei jedem Künstler, an welchen Platten er beteiligt war.
         foreach ($members as $m) {
-            $this->repo->log('record', mb_substr(sprintf('%s nimmt mit %s „%s“ auf (%s).', Bands::fullName($m), $band['name'], $record['title'], $format), 0, 250), $band['id'], $m['id']);
-        }
-        if ($firstRecord) {
-            Scout::grant($this->repo, 'die erste Platte deines Labels.');
+            $line = count($members) === 1
+                ? sprintf('%s nimmt „%s“ auf (%s).', Bands::fullName($m), $record['title'], $format)
+                : sprintf('%s nimmt mit %s „%s“ auf (%s).', Bands::fullName($m), $band['name'], $record['title'], $format);
+            $this->repo->log('record', mb_substr($line, 0, 250), $band['id'], $m['id']);
         }
 
         return [
@@ -324,7 +323,6 @@ final class Studio
             'title' => $record['title'],
             'format' => $format,
             'chartPoints' => $chartPoints,
-            'vouchers' => ($firstRecord ? 1 : 0) + ($perfect ? 1 : 0),
             'songs' => $songs,
             'quality' => round($quality, 3),
             'perfect' => $perfect,

@@ -96,7 +96,7 @@ final class Inbox
         $c = Balance::JOBS;
         $at = (int) $db->value('SELECT job_at FROM labels WHERE id = ?', [$this->repo->labelId]);
         // Solange es keine Assistenz gibt, liegt immer eine einfache Bewerbung dafür da (eine Assistenz hilft früh).
-        // Ganz am Anfang ein Praktikum; danach liegt, solange niemand die Post sortiert, immer eine Bewerbung für eine Assistenz da.
+        // Solange niemand die Post sortiert, liegt immer eine Bewerbung dafür da: zu Beginn ein Praktikum, später eine Assistenz.
         if ((int) $db->value("SELECT COUNT(*) FROM staff WHERE label_id = ? AND role IN ('assistant', 'intern')", [$this->repo->labelId]) === 0
             && !array_filter($db->all("SELECT data FROM mail WHERE label_id = ? AND kind = 'job'", [$this->repo->labelId]), static fn ($r) => in_array(json_decode($r['data'], true)['role'] ?? '', ['assistant', 'intern'], true))) {
             $this->store('job', self::applicant($at === 0 ? 'intern' : 'assistant', 0.0, 1), $now, $c['ttl']);

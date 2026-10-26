@@ -200,7 +200,7 @@ final class Api
                 'created_at' => Clock::now(),
                 'last_seen' => Clock::now(),
             ]);
-            (new Repo($this->db, $id))->log('label', sprintf('Das Label „%s“ ist gegründet. Der Talent-Scout wartet auf deinen Auftrag.', $labelName));
+            (new Repo($this->db, $id))->log('label', sprintf('Das Label „%s“ ist gegründet. Im Posteingang liegen die ersten Kassetten.', $labelName));
             return $id;
         });
 

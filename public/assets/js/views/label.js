@@ -145,7 +145,6 @@ export function bar(selectedId) {
       <h2 class="lb-cap">Deine Bands</h2>
       <nav class="lb-bar">
         ${sorted.map((b) => tile(b, b.id === selectedId)).join('')}
-        <a class="lb-add" href="#/einsendungen" title="Neue Künstler kommen über den Posteingang. Bands bildest du, indem du Kacheln aufeinanderziehst.">+ Neue Künstler</a>
       </nav>
       ${(app.state.scouts ?? []).map(scoutCard).join('')}
       <p class="lb-legend"><span class="lb-mood green"><i></i>gut</span><span class="lb-mood yellow"><i></i>angespannt</span><span class="lb-mood red"><i></i>unzufrieden</span></p>

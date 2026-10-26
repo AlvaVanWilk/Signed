@@ -293,8 +293,8 @@ Alles läuft ab (Demos 4 Tage, Anfragen 8 Stunden, Bewerbungen 2 Tage; die Restz
   Ohne Assistenz liegt alles auf einem Stapel und die Übersicht bleibt schlicht; solange keine da ist, liegt immer eine Bewerbung dafür im Posteingang.
 - **Praktikum** (gebaut): Ganz am Anfang bewirbt sich ein Praktikum (50 ₲, 7 Tage, `Balance::INTERN`). Es **sortiert nur die Post** und schreibt
   Notizen auf die Übersicht, hört keine Kassetten an und macht keine Presse. Bis zum Ende lässt es sich für 400 ₲ als feste Assistenz übernehmen,
-  sonst geht es; danach bewerben sich nur noch Assistenzen.
-- **Scout-Karte** (gebaut): Der eingestellte Scout steht unter der Künstlerleiste (unter „+ Neue Künstler“): losschicken, Countdown bis zur Rückkehr,
+  sonst geht es. Praktika bewerben sich immer wieder (günstig für die Post, neben einer Assistenz für die schwierigeren Aufgaben).
+- **Scout-Karte** (gebaut): Der eingestellte Scout steht unter der Künstlerleiste: losschicken, Countdown bis zur Rückkehr,
   danach „Ansehen“ für den Bericht. Eine eigene Team-Seite gibt es nicht.
 - **Interviews** siehe „Interviews und Promo-Anfragen“; Zahlen in `kern.md` (Promo, Tempo).
 - **Scout** (gebaut, `Scouting`): Ein einfacher Scout bewirbt sich gleich zu Beginn (Willkommens-Brief, 400 ₲); bessere kommen mit dem Erfolg
@@ -424,6 +424,19 @@ Aufnahmen aus den vorhandenen Bausteinen (`Styles`: Akkordfolgen, Grooves, Muste
 als Grundlage. Einzelne Wahlen verändern zum Beispiel Tempo-Gefühl, Akkordfolge, Groove. Das ist eine **spätere Ausbaustufe**.
 
 ## Oberfläche
+
+**Übersicht = das Büro des Labels** (gebaut):
+- Kopf mit Name, Gründungsdatum (Link zum WikiSignia-Artikel) und vier Zahlen: Geld (dazu Tantiemen je Minute), Erfolg, Platten in den Charts
+  (bester Platz), Künstler in wie vielen Bands.
+- **Erste Schritte** mit Fortschritt (Kassette anhören, Büro besetzen, Instrument kaufen, proben, Auftritt, Platte, Scout); verschwindet, wenn alles einmal gemacht ist.
+- **Notizen vom Büro**, nur wenn Praktikum oder Assistenz da ist, wichtigste zuerst (rot, gelb, Rest): unzufriedene Bands mit ihrem Wunsch,
+  Songstau, „könnte die nächste Platte aufnehmen“, Interview-Anfragen (ohne Presse-Assistenz), Scout-Berichte, Bewerbungen, gute und ungehörte
+  Kassetten, ein Praktikum, das bald endet, der Kurs des Tages. Ohne Büro steht dort nur, dass niemand da ist.
+- **Gerade los**: alles, was läuft, nach Ende sortiert (Proben, Auftritte, Studio, Promo, Interviews, Scout unterwegs, Lehrer und Coaches).
+- **Schwarzes Brett** (der heutige Kurs als Zettel, mit „hinschicken“), **Chronik** (die letzten zehn Einträge) und das **Plattenregal**
+  (alle Platten mit Cover und Chartplatz).
+- Scout-Gutscheine gibt es nicht mehr (weder für die erste Platte noch für Platz 1); Platz 1 wird nur vermerkt.
+
 
 - **Hauptmenü** (oben): Übersicht, Katalog, Einkaufen, Lager, Börse, Charts.
 - **Band-Leiste** (links, immer sichtbar): gleich große Knöpfe ohne Köpfe, je Band (und je **Solokünstler**) mit

@@ -16,12 +16,12 @@ final class Repo
 
     public function label(): array
     {
-        $row = $this->db->one('SELECT id, username, name, money, nav_order, sub_order FROM labels WHERE id = ?', [$this->labelId]);
+        $row = $this->db->one('SELECT id, username, name, money, nav_order, sub_order, created_at FROM labels WHERE id = ?', [$this->labelId]);
         if ($row === null) {
             throw new ApiError('Bitte melde dich an.', 401);
         }
         return [
-            'id' => (int) $row['id'], 'username' => $row['username'], 'name' => $row['name'], 'money' => (int) $row['money'],
+            'id' => (int) $row['id'], 'username' => $row['username'], 'name' => $row['name'], 'money' => (int) $row['money'], 'createdAt' => (int) $row['created_at'],
             'navOrder' => json_decode((string) $row['nav_order'], true) ?: [],
             'subOrder' => json_decode((string) $row['sub_order'], true) ?: [],
         ];

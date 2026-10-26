@@ -193,7 +193,7 @@ final class Balance
     public const JOBS = [
         'perDay' => 3.0, 'ttl' => 2 * 86400, 'maxCatchUp' => 2 * 86400, 'half' => 300.0, 'weights' => [3, 2, 1],
         'roles' => [
-            'assistant' => ['weight' => 1, 'minSuccess' => 0.0], 'scout' => ['weight' => 1, 'minSuccess' => 0.0],
+            'intern' => ['weight' => 2, 'minSuccess' => 0.0], 'assistant' => ['weight' => 1, 'minSuccess' => 0.0], 'scout' => ['weight' => 1, 'minSuccess' => 0.0],
             'teacher' => ['weight' => 2, 'minSuccess' => 0.0], 'coach' => ['weight' => 1, 'minSuccess' => 5.0],
             'manager' => ['weight' => 1, 'minSuccess' => 15.0],
         ],
@@ -262,7 +262,7 @@ final class Balance
         'tasks' => ['demos', 'presse'],
     ];
     /**
-     * Praktikum: bewirbt sich gleich zu Beginn, günstig und für `seconds`. Sortiert nur die Post und schreibt Notizen auf die Übersicht
+     * Praktikum: bewirbt sich gleich zu Beginn und danach immer wieder (Balance::JOBS), günstig und für `seconds`. Sortiert nur die Post und schreibt Notizen auf die Übersicht
      * (hört keine Kassetten an, macht keine Presse). Bis zum Ende lässt sie sich als Assistenz übernehmen (Preis der Assistenz), sonst geht sie.
      */
     public const INTERN = ['price' => 50, 'seconds' => 7 * 86400];

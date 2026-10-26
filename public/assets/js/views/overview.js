@@ -1,5 +1,5 @@
-import { bandGenreTags, face } from '../cards.js';
-import { app, bandById, isBusy, liveMoney, musicianById, runningFor, serverNow } from '../core.js';
+import { bandGenreTags, face, photo } from '../cards.js';
+import { app, bandById, cat, isBusy, liveMoney, musicianById, runningFor, serverNow } from '../core.js';
 import { esc, fmt0, fmt1, fmtGain, money, timeAgo } from '../ui.js';
 
 export function render() {
@@ -33,7 +33,7 @@ export function render() {
       </div>
     </section>
 
-    ${courseNotice(s)}
+    ${assistantNotes(s)}
     ${nextStep ? `
       <section class="panel">
         <h2>Erste Schritte</h2>
@@ -96,10 +96,33 @@ export function bandTile(b) {
 }
 
 /** Startseite: Kurs des Tages, und wer aus dem Label hin kann. */
-function courseNotice(s) {
+/** Notizen der Assistenz: was gerade wichtig ist. Ohne Assistenz bleibt die Übersicht schlicht. */
+function assistantNotes(s) {
+  const a = s.assistant;
+  if (!a) return '';
+  const left = (t) => {
+    const sec = t - serverNow();
+    return sec >= 86400 ? `noch ${Math.ceil(sec / 86400)} Tage` : `noch ${Math.max(1, Math.ceil(sec / 3600))} Std.`;
+  };
+  const go = (key, text) => `<button class="link" data-act="inboxGo" data-key="${key}">${text}</button>`;
+  const notes = [];
+  for (const m of (s.mail ?? []).filter((x) => x.kind === 'interview').sort((x, y) => x.expiresAt - y.expiresAt)) {
+    const who = musicianById(m.musicianId);
+    if (who) notes.push(go('interview', `Interview-Anfrage für <b>${esc(who.firstName)}</b> (${esc(m.medium)}, ${left(m.expiresAt)})`));
+  }
+  for (const m of (s.mail ?? []).filter((x) => x.kind === 'job')) {
+    notes.push(go('job', `Bewerbung: <b>${esc(m.firstName)} ${esc(m.lastName)}</b> als ${esc(cat().staffRoles[m.role]?.tiers[m.tier] ?? '')} (${left(m.expiresAt)})`));
+  }
+  const good = (s.submissions ?? []).filter((x) => x.state === 'open' && !x.saved && Math.max(...(x.members ?? [x]).map((m) => m.level ?? 0)) >= 1);
+  notes.push(`Heute ${a.today.opened} Demos angehört, ${a.today.dropped} weggeworfen.${good.length ? ` ${go('demos', `<b>${good.length}</b> ${good.length === 1 ? 'gute wartet' : 'gute warten'} auf dich`)}.` : ''}`);
   const c = s.course;
-  if (!c) return '';
-  const open = c.candidates.filter((x) => !x.visited).map((x) => s.musicians.find((m) => m.id === x.musicianId)).filter(Boolean);
-  return `<div class="notice course-notice"><span>🎓 Heute: <b>${esc(c.prefix)}-${esc(c.name)}</b> mit ${esc(c.teacher)} (+${fmt1(c.gain)} Können) – für Anfänger, Fortgeschrittene und Profis.
-    ${open.length ? `Hin können: ${open.map((m) => `<a href="#/musician/${m.id}/uebung">${esc(m.firstName)}</a>`).join(', ')}.` : 'Heute ist niemand von dir dabei.'}</span></div>`;
+  if (c) {
+    const open = c.candidates.filter((x) => !x.visited).map((x) => s.musicians.find((m) => m.id === x.musicianId)).filter(Boolean);
+    notes.push(`Heute im Kurs: <b>${esc(c.prefix)}-${esc(c.name)}</b> mit ${esc(c.teacher)}. ${open.length ? `Hin können: ${open.map((m) => `<a href="#/musician/${m.id}/uebung">${esc(m.firstName)}</a>`).join(', ')}.` : 'Von dir ist niemand dabei.'}`);
+  }
+  const names = a.staff.map((x) => esc(x.firstName)).join(' und ');
+  return `<section class="panel lb-notes">
+    <h2><span class="lb-notes-faces">${a.staff.slice(0, 3).map((x) => `<span class="lb-ph sm">${photo({ id: x.id, look: x.look })}</span>`).join('')}</span> Notizen von ${names}</h2>
+    <ul>${notes.map((n) => `<li>${n}</li>`).join('')}</ul>
+  </section>`;
 }

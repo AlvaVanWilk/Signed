@@ -221,13 +221,38 @@ final class Catalog
         'gelassen' => ['record' => 1, 'gig' => -1, 'busking' => -1],
         'perfektionist' => ['rehearsal' => 1, 'record' => 1, 'busking' => -1, 'openstage' => -1],
         'chaot' => ['gig' => 1, 'openstage' => 1, 'busking' => 1, 'rehearsal' => -1],
-        'rampensau' => ['gig' => 1, 'openstage' => 1, 'busking' => 1],
-        'diva' => ['gig' => 1, 'record' => 1, 'busking' => -1, 'openstage' => -1],
-        'teamplayer' => ['rehearsal' => 1, 'record' => 1],
+        'rampensau' => ['gig' => 1, 'openstage' => 1, 'busking' => 1, 'interview' => 1],
+        'diva' => ['gig' => 1, 'record' => 1, 'busking' => -1, 'openstage' => -1, 'interview' => 1],
+        'teamplayer' => ['rehearsal' => 1, 'record' => 1, 'interview' => -1],
         'ruhepol' => ['rehearsal' => 1, 'record' => 1],
         'partytier' => ['gig' => 1, 'openstage' => 1, 'busking' => 1, 'rehearsal' => -1],
         'kreativ' => ['record' => 1, 'openstage' => 1, 'rehearsal' => -1],
         'technisch' => ['rehearsal' => 1, 'record' => 1],
+    ];
+
+    /** Wer bei Interview-Anfragen fragt, je Bekanntheitsstufe; share = Anteil des Weges zur nächsten Stufe (Balance::INTERVIEW). */
+    public const INTERVIEW_MEDIA = [
+        0 => [
+            ['name' => 'Schülerzeitung „Pausenhof“', 'share' => 0.08], ['name' => 'Stadtteil-Blog „Um die Ecke“', 'share' => 0.10],
+            ['name' => 'Uni-Radio „Welle 7“', 'share' => 0.12], ['name' => 'Gemeindeblatt', 'share' => 0.08],
+        ],
+        1 => [
+            ['name' => 'Stadtmagazin „Szene“', 'share' => 0.10], ['name' => 'Lokalradio „Radio Mitte“', 'share' => 0.12],
+            ['name' => 'Musik-Podcast „Proberaum“', 'share' => 0.10], ['name' => 'Tageszeitung (Kulturteil)', 'share' => 0.12],
+        ],
+        2 => [
+            ['name' => 'Musikzeitschrift „Klangwelt“', 'share' => 0.10], ['name' => 'Radio „Pop 1“', 'share' => 0.12],
+            ['name' => 'Online-Magazin „Lautstark“', 'share' => 0.10], ['name' => 'Musiksender „Kanal M“', 'share' => 0.14],
+        ],
+        3 => [
+            ['name' => 'Fernsehen: Abendshow', 'share' => 0.12], ['name' => 'Großes Magazin „Stern der Woche“', 'share' => 0.10],
+            ['name' => 'Late-Night-Show', 'share' => 0.14], ['name' => 'Weltweiter Musikpodcast', 'share' => 0.12],
+        ],
+    ];
+
+    /** Leute, die sich beim Label bewerben: Name der Rolle und der Stufen. */
+    public const STAFF_ROLES = [
+        'assistant' => ['name' => 'Assistenz', 'tiers' => [1 => 'Praktikum', 2 => 'Assistenz', 3 => 'Senior-Assistenz', 4 => 'Leitung Posteingang']],
     ];
 
     /** Woran man einen bisher unbekannten Charakterzug bemerkt (%s = Vorname). */
@@ -247,7 +272,7 @@ final class Catalog
     ];
     /** Anordnungen im Satz („Lust auf …“). */
     public const TRAIT_REVEAL_ORDERS = [
-        'rehearsal' => 'die Probe', 'gig' => 'den Auftritt', 'record' => 'die Aufnahme', 'busking' => 'Straßenmusik', 'openstage' => 'die offene Bühne',
+        'rehearsal' => 'die Probe', 'gig' => 'den Auftritt', 'record' => 'die Aufnahme', 'busking' => 'Straßenmusik', 'openstage' => 'die offene Bühne', 'interview' => 'das Interview',
     ];
 
     /** Wie lange ein Charakter bei der Probe Lust hat, als Faktor auf Balance::REHEARSAL['lust'] (bei zwei Eigenschaften der Mittelwert). */

@@ -1,13 +1,13 @@
 import { genreGlyph, genreName, hiddenTraits, traitNames, instrumentIcon, instrumentName, photo, sortedGenres } from '../cards.js';
 import { api } from '../api.js';
-import { actions, app, cat, defineActions, mutate, musicianById, rerender, serverNow } from '../core.js';
+import { actions, app, bandById, cat, defineActions, isBusy, mutate, musicianById, rerender, serverNow } from '../core.js';
 import { confirmDialog, esc, money, off, openModal, toast } from '../ui.js';
 import { levelClass, levelProgress, relColor } from './label.js';
 
 /**
- * Einsendungen: Musiker bewerben sich von selbst beim Label. Man sieht sie, unterschreibt sie gegen eine einmalige Prämie
- * oder wirft sie weg. Kassetten und Visitenkarten teilen sich dieselben Plätze (nichts verschiebt sich beim Sichten) und lassen sich frei sortieren.
- * (Assistenz und Scout kommen später.)
+ * Posteingang: Demos (Musiker bewerben sich von selbst beim Label), Interview-Anfragen und Bewerbungen fürs Label.
+ * Demos unterschreibt man gegen eine einmalige Prämie oder wirft sie weg; Kassetten und Visitenkarten teilen sich dieselben Plätze
+ * (nichts verschiebt sich beim Sichten) und lassen sich frei sortieren. Ohne Assistenz liegt alles auf einem Stapel, mit Assistenz in Reitern.
  */
 
 const isTest = () => document.documentElement.classList.contains('is-test') || ['localhost', '127.0.0.1'].includes(location.hostname);
@@ -19,10 +19,10 @@ function expires(s) {
 }
 
 /** Kurz und sichtbar auf jeder Einsendung: wie lange sie noch da ist (rot ab den letzten 12 Stunden). */
-function leftPill(s) {
+function leftPill(s, soon = 12 * 3600) {
   const left = s.expiresAt - serverNow();
   const text = left >= 86400 ? `noch ${Math.ceil(left / 86400)} ${Math.ceil(left / 86400) === 1 ? 'Tag' : 'Tage'}` : `noch ${Math.max(1, Math.ceil(left / 3600))} Std.`;
-  return `<span class="lb-left ${left < 12 * 3600 ? 'soon' : ''}" title="Danach zieht ${s.kind === 'band' ? 'die Band' : 'die Einsendung'} weiter">${text}</span>`;
+  return `<span class="lb-left ${left < soon ? 'soon' : ''}" title="Danach zieht ${s.kind === 'band' ? 'die Band' : 'die Einsendung'} weiter">${text}</span>`;
 }
 
 const BOOKMARK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg>';
@@ -145,22 +145,138 @@ function ordered(list) {
   return [...list.filter((x) => !saved.includes(x.submissionId)), ...known];
 }
 
+// ---------- Briefe: Interview-Anfragen und Bewerbungen ----------
+
+const mins = (sec) => (sec >= 3600 ? `${Math.round(sec / 360) / 10} Std.` : `${Math.round(sec / 60)} Min.`);
+const roleName = (m) => cat().staffRoles[m.role]?.tiers[m.tier] ?? '';
+const fmtFame = (v) => (v >= 10 ? Math.round(v) : Math.round(v * 10) / 10).toLocaleString('de-DE');
+
+function interviewLetter(m) {
+  const who = musicianById(m.musicianId);
+  if (!who) return '';
+  const away = isBusy(who.busyUntil) || (who.bandId && isBusy(bandById(who.bandId)?.busyUntil));
+  return `
+    <article class="lb-letter interview">
+      <div class="lb-lt-head"><span class="lb-lt-kind">Interview-Anfrage</span></div>
+      <div class="lb-lt-body"><span class="lb-ph sm">${photo(who)}</span>
+        <p><b>${esc(m.medium)}</b> möchte mit <b>${esc(who.firstName)}</b> sprechen.<small class="lb-lt-gain">+${fmtFame(m.fame)} Bekanntheit · dauert ${mins(m.seconds)}</small></p></div>
+      <div class="lb-card-foot"><span class="lb-lt-space"></span>
+        <button class="lb-iconbtn drop" data-act="mailDrop" data-id="${m.mailId}" title="Absagen" aria-label="Absagen">✕</button>
+        <button class="btn small primary" data-act="mailAccept" data-id="${m.mailId}" ${off(away ? `${who.firstName} ist gerade unterwegs.` : '')}>Zusagen</button>
+      </div>
+    </article>`;
+}
+
+function jobLetter(m) {
+  const money0 = app.state.label.money;
+  const what = m.role === 'assistant' ? `öffnet ${m.perDay} Demos am Tag${m.tier >= 2 ? ' und sortiert nach deinen Regeln' : ''}` : '';
+  return `
+    <article class="lb-letter job">
+      <div class="lb-lt-head"><span class="lb-lt-kind">Bewerbung</span></div>
+      <div class="lb-lt-body"><span class="lb-ph sm">${photo({ id: m.mailId, look: m.look })}</span>
+        <p><b>${esc(m.firstName)} ${esc(m.lastName)}</b><br>${esc(roleName(m))}<small class="muted">${esc(what)}</small></p></div>
+      <div class="lb-card-foot">
+        <b class="lb-price" title="Einmal bezahlen, keine laufenden Kosten">${money(m.price)}</b>
+        <button class="lb-iconbtn drop" data-act="mailDrop" data-id="${m.mailId}" title="Absagen" aria-label="Absagen">✕</button>
+        <button class="btn small primary" data-act="mailHire" data-id="${m.mailId}" ${off(money0 < m.price ? `Dafür fehlen noch ${money(m.price - money0)}.` : '')}>Einstellen</button>
+      </div>
+    </article>`;
+}
+
+const mailSave = (m) => `<button class="lb-save ${m.saved ? 'on' : ''}" data-act="mailSave" data-id="${m.mailId}" data-saved="${m.saved ? '' : '1'}" title="${m.saved ? 'Zurück in den Eingang' : 'Merken'}" aria-label="${m.saved ? 'Zurück in den Eingang' : 'Merken'}">${BOOKMARK}</button>`;
+const letterSlot = (m) => `<div class="lb-slotitem lb-mailitem" style="${scatter(m.mailId * 7 + 3)}">${m.kind === 'interview' ? interviewLetter(m) : jobLetter(m)}<span class="lb-slotbar">${leftPill(m, m.kind === 'interview' ? 2 * 3600 : 12 * 3600)}${mailSave(m)}</span></div>`;
+
+/** Die Assistenz stellt sich oben vor: wer, wie viel am Tag, was heute erledigt ist, und ihre Regeln. */
+function assistantBar(a) {
+  const ruleText = (() => {
+    const r = a.rules;
+    const parts = [];
+    if (r.minLevel > 0) parts.push(`ab Stufe ${r.minLevel}`);
+    if (r.genres.length) parts.push(r.genres.map((g) => genreName(g)).join(', '));
+    if (r.kind !== 'any') parts.push(r.kind === 'solo' ? 'nur Einzelne' : 'nur Bands');
+    return parts.length ? `Behält nur: ${parts.join(' · ')}.` : 'Behält alles.';
+  })();
+  const canRules = Object.values(a.allowed).some(Boolean);
+  return `<div class="lb-assist">
+    <span class="lb-assist-faces">${a.staff.map((x) => `<span class="lb-ph sm" title="${esc(x.firstName)} ${esc(x.lastName)} (${esc(cat().staffRoles.assistant.tiers[x.tier])})">${photo({ id: x.id, look: x.look })}</span>`).join('')}</span>
+    <span><b>${a.staff.map((x) => esc(x.firstName)).join(' und ')}</b> ${a.staff.length > 1 ? 'öffnen' : 'öffnet'} ${a.perDay} Demos am Tag und ${a.staff.length > 1 ? 'sortieren' : 'sortiert'} die Post.
+      <small class="muted">Heute ${a.today.opened} geöffnet, ${a.today.dropped} weggeworfen. ${canRules ? esc(ruleText) : 'Regeln zum Aussortieren kann erst eine richtige Assistenz.'}</small></span>
+    <button class="btn small" data-act="assistRulesAsk" ${off(canRules ? '' : 'Regeln kann erst eine Assistenz ab der zweiten Stufe.')}>Regeln</button>
+  </div>`;
+}
+
 export function render() {
-  const all = app.state.submissions ?? [];
+  const s = app.state;
+  const all = s.submissions ?? [];
+  const mail = s.mail ?? [];
+  const a = s.assistant;
   // Beim ersten Besuch gilt alles Gesichtete als schon gesehen (kein Umdrehen auf einen Schlag).
   app.ui.subSeen ??= new Set(all.filter((x) => x.state === 'open').map((x) => x.submissionId));
+  // Ohne Assistenz liegt alles auf einem Stapel, mit Assistenz in Reitern.
+  const tabs = a
+    ? [['demos', 'Demos', all.filter((x) => !x.saved).length], ['interview', 'Anfragen', mail.filter((m) => !m.saved && m.kind === 'interview').length],
+      ['job', 'Bewerbungen', mail.filter((m) => !m.saved && m.kind === 'job').length], ['saved', 'Gespeichert', all.filter((x) => x.saved).length + mail.filter((m) => m.saved).length]]
+    : [['inbox', 'Eingang', all.filter((x) => !x.saved).length + mail.filter((m) => !m.saved).length], ['saved', 'Gespeichert', all.filter((x) => x.saved).length + mail.filter((m) => m.saved).length]];
+  let box = app.ui.subBox ?? tabs[0][0];
+  if (!tabs.some(([k]) => k === box)) box = tabs[0][0];
+  const saved = box === 'saved';
+  const showDemos = !a || box === 'demos' || saved;
+  const letters = mail.filter((m) => m.saved === saved && (saved || !a || m.kind === box));
   const f = app.ui.subFilter ?? 'all';
-  const box = app.ui.subBox ?? 'inbox';
-  const inBox = all.filter((s) => (box === 'saved') === !!s.saved);
-  const list = ordered(inBox).filter((s) => f === 'all' || (f === 'unheard' ? s.state !== 'open' : s.state === 'open' && levelOf(s) === Number(f)));
-  const savedCount = all.filter((s) => s.saved).length;
+  const demos = showDemos ? ordered(all.filter((x) => !!x.saved === saved)).filter((x) => f === 'all' || (f === 'unheard' ? x.state !== 'open' : x.state === 'open' && levelOf(x) === Number(f))) : [];
+  const shownLetters = f === 'all' || !showDemos ? letters : [];
   const busy = all.some((x) => x.state === 'listening');
+  const empty = saved ? 'Noch nichts gemerkt. Mit dem Lesezeichen legst du etwas hierher – ablaufen tut es trotzdem.'
+    : box === 'interview' ? 'Gerade fragt niemand nach einem Interview.' : box === 'job' ? 'Gerade bewirbt sich niemand.'
+    : 'Gerade liegt nichts im Briefkasten. Es trudelt laufend etwas ein.';
   return `
-    <div class="section-head"><h1>Einsendungen</h1>${isTest() ? '<span class="lb-test"><button class="btn small" data-act="submissionsTest" data-closed="1">Test: neue Kassetten</button><button class="btn small" data-act="submissionsTest">Test: gesichtete Bewerber aller Stufen</button></span>' : ''}</div>
-    <p class="muted">Jede Einsendung ist eine Kassette. Tipp sie an und sichte sie, dann siehst du, wer sich da bewirbt – ein Musiker oder eine ganze Band. Unterschreiben kostet einmalig eine Prämie, wegwerfen nichts. Nach 4 Tagen zieht jede Einsendung weiter, auch gemerkte. Du kannst alles frei hin und her schieben.</p>
-    <div class="lb-boxes">${[['inbox', 'Eingang', all.length - savedCount], ['saved', 'Gespeichert', savedCount]].map(([k, label, n]) => `<button class="${box === k ? 'on' : ''}" data-act="subBox" data-key="${k}">${label} <small>${n}</small></button>`).join('')}</div>
-    <div class="lb-filter">${[['all', 'Alle'], ['unheard', 'Ungehört'], ['0', 'Stufe 0'], ['1', 'Stufe 1'], ['2', 'Stufe 2'], ['3', 'Stufe 3']].map(([k, label]) => `<button class="${f === k ? 'on' : ''}" data-act="subFilter" data-key="${k}">${label}</button>`).join('')}</div>
-    ${list.length ? `<div class="lb-slots" data-slots>${list.map((x) => slot(x, busy)).join('')}</div>` : `<div class="empty">${box === 'saved' ? 'Noch nichts gemerkt. Mit dem Lesezeichen an einer Einsendung legst du sie hierher – ablaufen tut sie trotzdem.' : 'Gerade liegt nichts im Briefkasten. Es trudelt laufend etwas ein.'}</div>`}`;
+    <div class="section-head"><h1>Posteingang</h1>${isTest() ? '<span class="lb-test"><button class="btn small" data-act="submissionsTest" data-closed="1">Test: neue Kassetten</button><button class="btn small" data-act="submissionsTest">Test: gesichtete Bewerber</button><button class="btn small" data-act="mailTest">Test: Briefe</button></span>' : ''}</div>
+    <p class="muted">Hier kommt alles an: Kassetten von Musikern, die zu dir wollen, Interview-Anfragen für deine Leute und Bewerbungen fürs Label. Jede Kassette musst du erst anhören. Alles liegt nur eine Weile, dann ist es weg.</p>
+    ${a ? assistantBar(a) : '<p class="lb-assist-hint muted small">Ohne Assistenz liegt alles auf einem Stapel. Wenn dein Label bekannter wird, bewerben sich Leute, die die Post für dich sortieren.</p>'}
+    <div class="lb-boxes">${tabs.map(([k, label, n]) => `<button class="${box === k ? 'on' : ''}" data-act="subBox" data-key="${k}">${label} <small>${n}</small></button>`).join('')}</div>
+    ${showDemos ? `<div class="lb-filter">${[['all', 'Alle'], ['unheard', 'Ungehört'], ['0', 'Stufe 0'], ['1', 'Stufe 1'], ['2', 'Stufe 2'], ['3', 'Stufe 3']].map(([k, label]) => `<button class="${f === k ? 'on' : ''}" data-act="subFilter" data-key="${k}">${label}</button>`).join('')}</div>` : ''}
+    ${shownLetters.length || demos.length ? `<div class="lb-slots" data-slots>${shownLetters.map(letterSlot).join('')}${demos.map((x) => slot(x, busy)).join('')}</div>` : `<div class="empty">${empty}</div>`}`;
+}
+
+// ---------- Regeln der Assistenz ----------
+
+function rulesDialog() {
+  const a = app.state.assistant;
+  const r = { ...a.rules, genres: [...a.rules.genres] };
+  const need = (key) => (a.allowed[key] ? '' : `Kann erst eine ${cat().staffRoles.assistant.tiers[cat().rules.assistantRules[key]]}.`);
+  const modal = openModal({
+    className: 'lb-rules-modal',
+    render: () => `
+      <div class="lb-cap">Assistenz</div>
+      <h2>Was soll sie behalten?</h2>
+      <p class="muted">Was nicht passt, wirft sie gleich nach dem Anhören weg. Gemerkte Kassetten fasst sie nicht an.</p>
+      <h3>Können</h3>
+      <div class="lb-filter">${[0, 1, 2, 3].map((l) => `<button class="${r.minLevel === l ? 'on' : ''}" data-rule="minLevel" data-v="${l}" ${off(need('minLevel'))}>${l === 0 ? 'Alle' : `ab Stufe ${l}`}</button>`).join('')}</div>
+      <h3>Genres</h3>
+      <div class="lb-filter">${Object.keys(cat().genres).map((g) => `<button class="${r.genres.includes(g) ? 'on' : ''}" data-rule="genre" data-v="${g}" ${off(need('genres'))}>${esc(genreName(g))}</button>`).join('')}</div>
+      <small class="muted">Nichts gewählt heißt: alle Genres.</small>
+      <h3>Einzeln oder Band</h3>
+      <div class="lb-filter">${[['any', 'Beides'], ['solo', 'Nur Einzelne'], ['band', 'Nur Bands']].map(([k, label]) => `<button class="${r.kind === k ? 'on' : ''}" data-rule="kind" data-v="${k}" ${off(need('kind'))}>${label}</button>`).join('')}</div>
+      <div class="dialog-actions"><button class="btn ghost" data-close>Abbrechen</button><button class="btn primary" data-ok>Speichern</button></div>`,
+  });
+  modal.body.addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-rule]');
+    if (b && b.getAttribute('aria-disabled') !== 'true') {
+      const v = b.dataset.v;
+      if (b.dataset.rule === 'minLevel') r.minLevel = Number(v);
+      if (b.dataset.rule === 'kind') r.kind = v;
+      if (b.dataset.rule === 'genre') r.genres = r.genres.includes(v) ? r.genres.filter((x) => x !== v) : [...r.genres, v];
+      modal.refresh?.();
+      return;
+    }
+    if (e.target.closest('[data-close]')) modal.close();
+    if (e.target.closest('[data-ok]')) {
+      if (await mutate('assistRules', { rules: r })) {
+        modal.close();
+        toast('Die Regeln gelten ab jetzt.', 'ok');
+      }
+    }
+  });
 }
 
 // ---------- Info-Fenster: Eigenschaften und wer zu wem passt ----------
@@ -302,14 +418,14 @@ function dragEnd(cancelled) {
   p.el.style.transform = '';
   swallowUntil = Date.now() + 400;
   if (cancelled || !p.el.isConnected) return;
-  const order = [...p.box.children].map((c) => Number(c.dataset.sid));
+  const order = [...p.box.children].map((c) => Number(c.dataset.sid)).filter((n) => n > 0);
   app.state.label.subOrder = order;
   api('submissionOrder', { order }).catch(() => {});
 }
 
 document.addEventListener('pointerdown', (e) => {
   const el = e.target.closest?.('.lb-slotitem');
-  if (!el || e.button > 0 || e.target.closest('button, a, input, select, [data-act]:not(.lb-tape-big):not(.lb-flipper)')) return;
+  if (!el || el.classList.contains('lb-mailitem') || e.button > 0 || e.target.closest('button, a, input, select, [data-act]:not(.lb-tape-big):not(.lb-flipper)')) return;
   const box = el.parentElement;
   const rect = box.getBoundingClientRect();
   const cx = el.offsetLeft + el.offsetWidth / 2;
@@ -394,6 +510,33 @@ defineActions({
   },
   async submissionDrop({ id }) {
     await mutate('submissionDrop', { submissionId: Number(id) });
+  },
+  async mailAccept({ id }) {
+    const m = app.state.mail.find((x) => x.mailId === Number(id));
+    const who = musicianById(m?.musicianId);
+    if (await mutate('mailAccept', { mailId: Number(id) })) toast(`${who?.firstName ?? 'Dein Musiker'} ist beim Interview.`, 'ok');
+  },
+  async mailHire({ id }) {
+    const m = app.state.mail.find((x) => x.mailId === Number(id));
+    if (!m || !(await confirmDialog(`${m.firstName} ${m.lastName} für ${money(m.price)} einstellen? Du bezahlst nur einmal.`, { ok: 'Einstellen' }))) return;
+    if (await mutate('mailHire', { mailId: Number(id) })) toast(`${m.firstName} arbeitet jetzt für dich.`, 'ok');
+  },
+  async mailDrop({ id }) {
+    await mutate('mailDrop', { mailId: Number(id) });
+  },
+  async mailSave({ id, saved }) {
+    if (await mutate('mailSave', { mailId: Number(id), saved: !!saved })) toast(saved ? 'Gemerkt – du findest es unter „Gespeichert“.' : 'Zurück im Eingang.', 'ok');
+  },
+  async mailTest() {
+    await mutate('mailTest');
+  },
+  /** Von den Notizen auf der Übersicht in den passenden Reiter. */
+  inboxGo({ key }) {
+    app.ui.subBox = key;
+    location.hash = '#/einsendungen';
+  },
+  assistRulesAsk() {
+    rulesDialog();
   },
   async submissionsTest({ closed }) {
     await mutate('submissionsTest', { closed: !!closed });

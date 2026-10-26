@@ -1,0 +1,287 @@
+<?php
+declare(strict_types=1);
+
+namespace Signed\Game;
+
+use Signed\ApiError;
+use Signed\Clock;
+use Signed\Rng;
+
+/**
+ * Posteingang neben den Demos (Submissions): Interview-Anfragen für die eigenen Musiker und Bewerbungen von Leuten fürs Label.
+ * Beides trudelt über die Zeit ein (auch offline), liegt eine Weile und lässt sich merken. Ohne Assistenz liegt alles auf einem Stapel.
+ */
+final class Inbox
+{
+    public function __construct(private Repo $repo)
+    {
+    }
+
+    /** Güte der Bewerber: wächst mit dem Erfolg des Labels, aber immer langsamer (oben offen, nie ganz 1). */
+    public static function quality(float $success): float
+    {
+        return max(0.0, $success) / (max(0.0, $success) + Balance::JOBS['half']);
+    }
+
+    /** Weg von dieser Bekanntheitsstufe bis zur nächsten (auf der höchsten Stufe ein fester Wert). */
+    public static function span(int $level): float
+    {
+        $t = Balance::FAME_LEVELS;
+        if ($level >= count($t)) {
+            return Balance::INTERVIEW['topSpan'];
+        }
+        return $t[$level] - ($level > 0 ? $t[$level - 1] : 0);
+    }
+
+    public function topUp(int $now, float $success): void
+    {
+        $this->expire($now);
+        $this->topUpInterviews($now);
+        $this->topUpJobs($now, $success);
+    }
+
+    private function expire(int $now): void
+    {
+        $db = $this->repo->db;
+        $db->exec('DELETE FROM mail WHERE label_id = ? AND expires_at <= ?', [$this->repo->labelId, $now]);
+        // Wer nicht mehr im Label ist, bekommt hier keine Anfragen mehr.
+        foreach ($db->all("SELECT id, data FROM mail WHERE label_id = ? AND kind = 'interview'", [$this->repo->labelId]) as $row) {
+            $id = (int) (json_decode($row['data'], true)['musicianId'] ?? 0);
+            if ($db->value('SELECT id FROM musicians WHERE id = ? AND label_id = ?', [$id, $this->repo->labelId]) === null) {
+                $db->exec('DELETE FROM mail WHERE id = ?', [(int) $row['id']]);
+            }
+        }
+    }
+
+    /** Interview-Anfragen: je Musiker im Schnitt eine am Tag, höchstens eine offene je Musiker. */
+    private function topUpInterviews(int $now): void
+    {
+        $db = $this->repo->db;
+        $c = Balance::INTERVIEW;
+        $musicians = $this->repo->musicians();
+        $at = (int) $db->value('SELECT interview_at FROM labels WHERE id = ?', [$this->repo->labelId]);
+        if ($at === 0 || !$musicians) {
+            $db->update('labels', ['interview_at' => $now], ['id' => $this->repo->labelId]);
+            return;
+        }
+        $interval = 86400 / ($c['perDay'] * count($musicians));
+        $at = max($at, $now - $c['maxCatchUp']);
+        $count = (int) floor(($now - $at) / $interval);
+        if ($count <= 0) {
+            return;
+        }
+        $open = [];
+        foreach ($db->all("SELECT data FROM mail WHERE label_id = ? AND kind = 'interview'", [$this->repo->labelId]) as $row) {
+            $open[(int) (json_decode($row['data'], true)['musicianId'] ?? 0)] = true;
+        }
+        for ($i = 1; $i <= $count; $i++) {
+            $created = (int) ($at + $i * $interval);
+            $free = array_values(array_filter($musicians, static fn ($m) => !isset($open[$m['id']])));
+            if (!$free || $created + $c['ttl'] <= $now) {
+                continue;
+            }
+            $m = Rng::pick($free);
+            $open[$m['id']] = true;
+            $level = Levels::forFame((float) $m['fame']);
+            $medium = Rng::pick(Catalog::INTERVIEW_MEDIA[min(3, $level)]);
+            $this->store('interview', ['musicianId' => $m['id'], 'level' => $level, 'medium' => $medium['name'], 'share' => $medium['share']], $created, $c['ttl']);
+        }
+        $db->update('labels', ['interview_at' => (int) ($at + $count * $interval)], ['id' => $this->repo->labelId]);
+    }
+
+    /** Bewerbungen: ein, zwei am Tag; wer sich bewirbt und wie gut, folgt dem Erfolg des Labels. */
+    private function topUpJobs(int $now, float $success): void
+    {
+        $db = $this->repo->db;
+        $c = Balance::JOBS;
+        $at = (int) $db->value('SELECT job_at FROM labels WHERE id = ?', [$this->repo->labelId]);
+        if ($at === 0) {
+            $db->update('labels', ['job_at' => $now], ['id' => $this->repo->labelId]);
+            return;
+        }
+        $interval = 86400 / $c['perDay'];
+        $at = max($at, $now - $c['maxCatchUp']);
+        $count = (int) floor(($now - $at) / $interval);
+        if ($count <= 0) {
+            return;
+        }
+        $roles = array_filter($c['roles'], static fn ($r) => $success >= $r['minSuccess']);
+        for ($i = 1; $i <= $count; $i++) {
+            $created = (int) ($at + $i * $interval);
+            if ($roles && $created + $c['ttl'] > $now) {
+                $role = (string) Rng::weighted(array_map(static fn ($r) => $r['weight'], $roles));
+                $this->store('job', self::applicant($role, self::quality($success)), $created, $c['ttl']);
+            }
+        }
+        $db->update('labels', ['job_at' => (int) ($at + $count * $interval)], ['id' => $this->repo->labelId]);
+    }
+
+    /** Eine Bewerbung: Person, Rolle und Stufe. Die beste Stufe, die sich bei dieser Güte schon bewirbt, kommt am häufigsten. */
+    public static function applicant(string $role, float $quality, ?int $tier = null): array
+    {
+        $tiers = self::tiers($role);
+        if ($tier === null) {
+            $open = array_reverse(array_keys(array_filter($tiers, static fn ($t) => $quality >= $t['from'])));
+            $weights = [];
+            foreach ($open as $k => $t) {
+                $weights[$t] = Balance::JOBS['weights'][min($k, 2)];
+            }
+            $tier = (int) Rng::weighted($weights ?: [1 => 1]);
+        }
+        return ['role' => $role, 'tier' => $tier] + Generator::person();
+    }
+
+    /** @return array<int, array> Stufen einer Rolle mit Preis und Werten */
+    public static function tiers(string $role): array
+    {
+        return match ($role) {
+            'assistant' => Balance::ASSISTANT['tiers'],
+            default => throw new ApiError('Unbekannte Bewerbung.'),
+        };
+    }
+
+    private function store(string $kind, array $data, int $at, int $ttl): void
+    {
+        $this->repo->db->insert('mail', [
+            'label_id' => $this->repo->labelId, 'kind' => $kind, 'data' => json_encode($data, JSON_UNESCAPED_UNICODE),
+            'created_at' => $at, 'expires_at' => $at + $ttl,
+        ]);
+    }
+
+    /** Was man bei einem Interview bekäme (ohne Bremse). */
+    public static function interviewGain(array $data): float
+    {
+        return round((float) $data['share'] * self::span((int) $data['level']), 2);
+    }
+
+    /** @return list<array> Anfragen und Bewerbungen, neueste zuerst */
+    public function list(int $now): array
+    {
+        $rows = $this->repo->db->all('SELECT * FROM mail WHERE label_id = ? AND expires_at > ? ORDER BY created_at DESC, id DESC', [$this->repo->labelId, $now]);
+        return array_map(static function (array $r): array {
+            $d = json_decode($r['data'], true);
+            $base = ['mailId' => (int) $r['id'], 'kind' => $r['kind'], 'createdAt' => (int) $r['created_at'], 'expiresAt' => (int) $r['expires_at'], 'saved' => (bool) $r['saved']];
+            if ($r['kind'] === 'interview') {
+                return $base + [
+                    'musicianId' => (int) $d['musicianId'], 'medium' => $d['medium'], 'level' => (int) $d['level'],
+                    'fame' => self::interviewGain($d), 'seconds' => Balance::INTERVIEW['seconds'][min(3, (int) $d['level'])],
+                ];
+            }
+            $tier = self::tiers($d['role'])[(int) $d['tier']];
+            return $base + [
+                'role' => $d['role'], 'tier' => (int) $d['tier'], 'price' => (int) $tier['price'], 'perDay' => $tier['perDay'] ?? null,
+                'firstName' => $d['first_name'], 'lastName' => $d['last_name'], 'look' => $d['look'],
+            ];
+        }, $rows);
+    }
+
+    private function row(int $id): array
+    {
+        $row = $this->repo->db->one('SELECT * FROM mail WHERE id = ? AND label_id = ? AND expires_at > ?', [$id, $this->repo->labelId, Clock::now()]);
+        if ($row === null) {
+            throw new ApiError('Diesen Brief gibt es nicht mehr.');
+        }
+        return $row;
+    }
+
+    /** Interview annehmen: Der Musiker ist kurz weg und kommt bekannter zurück. */
+    public function accept(int $id): array
+    {
+        $db = $this->repo->db;
+        return $db->transaction(function () use ($db, $id): array {
+            $row = $this->row($id);
+            if ($row['kind'] !== 'interview') {
+                throw new ApiError('Das ist keine Interview-Anfrage.');
+            }
+            $d = json_decode($row['data'], true);
+            $now = Clock::now();
+            $m = $this->repo->musician((int) $d['musicianId']);
+            if ($m['busy_until'] > $now || ($m['band_id'] !== null && $this->repo->band($m['band_id'])['busy_until'] > $now)) {
+                throw new ApiError(sprintf('%s ist gerade unterwegs. Die Anfrage wartet noch.', $m['first_name']));
+            }
+            $endsAt = $now + Balance::INTERVIEW['seconds'][min(3, (int) $d['level'])];
+            if ($db->exec('UPDATE musicians SET busy_until = ? WHERE id = ? AND busy_until <= ?', [$endsAt, $m['id'], $now]) === 0) {
+                throw new ApiError(sprintf('%s ist gerade unterwegs.', $m['first_name']));
+            }
+            $db->exec('DELETE FROM mail WHERE id = ?', [$id]);
+            return (new Activities($this->repo))->insertSolo($m['id'], 'interview', $now, $endsAt, [
+                'title' => sprintf('Interview: %s bei %s', Bands::fullName($m), $d['medium']),
+                'songs' => 0,
+                'reward' => ['fame' => self::interviewGain($d), 'medium' => $d['medium']],
+            ]);
+        });
+    }
+
+    /** Gutschrift nach dem Interview (Activities::settleDue). */
+    public static function settle(Repo $repo, array $row, array $data): array
+    {
+        $musicianId = (int) $row['musician_id'];
+        $gain = $repo->addMusicianFame($musicianId, (float) ($data['reward']['fame'] ?? 0), false);
+        $m = $repo->db->one('SELECT * FROM musicians WHERE id = ?', [$musicianId]);
+        if ($m === null) {
+            return ['fame' => 0, 'total' => 0];
+        }
+        if ($m['band_id'] !== null) {
+            Charts::boost($repo, (int) $m['band_id'], Balance::CHART_PROMO_BOOST['solo']);
+        }
+        Mood::react($repo, [Repo::hydrateMusician($m)], 'interview');
+        $repo->log('interview', sprintf('%s %s war bei: %s.', $m['first_name'], $m['last_name'], $data['reward']['medium'] ?? 'Interview'), $m['band_id'] === null ? null : (int) $m['band_id'], $musicianId);
+        return ['fame' => round($gain, 1), 'total' => round((float) $m['fame'], 1), 'medium' => $data['reward']['medium'] ?? ''];
+    }
+
+    /** Bewerbung annehmen: einmal bezahlen, dann gehört die Person zum Label. */
+    public function hire(int $id): int
+    {
+        $db = $this->repo->db;
+        return $db->transaction(function () use ($db, $id): int {
+            $row = $this->row($id);
+            if ($row['kind'] !== 'job') {
+                throw new ApiError('Das ist keine Bewerbung.');
+            }
+            $d = json_decode($row['data'], true);
+            $tier = self::tiers($d['role'])[(int) $d['tier']];
+            $roleName = Catalog::STAFF_ROLES[$d['role']]['tiers'][(int) $d['tier']];
+            $this->repo->spend((int) $tier['price'], sprintf('Eingestellt: %s %s (%s)', $d['first_name'], $d['last_name'], $roleName));
+            if ($d['role'] === 'assistant') {
+                // Was bisher liegen blieb, erledigen die alten; die neue fängt jetzt an.
+                (new Assistant($this->repo))->work(Clock::now());
+                $db->update('labels', ['assist_at' => Clock::now()], ['id' => $this->repo->labelId]);
+            }
+            $staffId = $db->insert('staff', [
+                'label_id' => $this->repo->labelId, 'role' => $d['role'], 'tier' => (int) $d['tier'],
+                'data' => json_encode(['first_name' => $d['first_name'], 'last_name' => $d['last_name'], 'look' => $d['look']], JSON_UNESCAPED_UNICODE),
+                'hired_at' => Clock::now(),
+            ]);
+            $db->exec('DELETE FROM mail WHERE id = ?', [$id]);
+            $this->repo->log('staff', sprintf('%s %s arbeitet jetzt bei uns (%s).', $d['first_name'], $d['last_name'], $roleName));
+            return $staffId;
+        });
+    }
+
+    public function save(int $id, bool $saved): void
+    {
+        $this->row($id);
+        $this->repo->db->update('mail', ['saved' => $saved ? 1 : 0], ['id' => $id]);
+    }
+
+    public function drop(int $id): void
+    {
+        $this->row($id);
+        $this->repo->db->exec('DELETE FROM mail WHERE id = ?', [$id]);
+    }
+
+    /** Zum Ausprobieren: je Musiker eine Anfrage und eine Bewerbung je Assistenz-Stufe. */
+    public function testFill(): void
+    {
+        $now = Clock::now();
+        $this->repo->db->exec("DELETE FROM mail WHERE label_id = ? AND kind = 'interview'", [$this->repo->labelId]);
+        foreach ($this->repo->musicians() as $m) {
+            $level = Levels::forFame((float) $m['fame']);
+            $medium = Rng::pick(Catalog::INTERVIEW_MEDIA[min(3, $level)]);
+            $this->store('interview', ['musicianId' => $m['id'], 'level' => $level, 'medium' => $medium['name'], 'share' => $medium['share']], $now, Balance::INTERVIEW['ttl']);
+        }
+        foreach (array_keys(Balance::ASSISTANT['tiers']) as $tier) {
+            $this->store('job', self::applicant('assistant', 1.0, $tier), $now - $tier, Balance::JOBS['ttl']);
+        }
+    }
+}

@@ -237,7 +237,7 @@ Aufnahme zeigt die Bandseite das Studio (`studio.js`) mit dem Produzenten hinter
   ein Wunsch nach der größeren Bühne (zum Beispiel Stadion) kostet das Label womöglich mehr, als er einbringt. Dann muss man abwägen:
   Geld gegen Stimmung. Ein Ort **unter** dem Anspruch der Band ärgert sie, auch wenn er sicher Gewinn bringt.
 
-### Interviews und Promo-Anfragen
+### Interviews und Promo-Anfragen (gebaut als Interview-Anfragen im Posteingang)
 
 - Anfragen kommen als **Mitteilung** (Zeitschrift fragt nach Interview mit X). Annehmen schickt den Musiker für kurze Zeit weg.
 - **Reichweite der Anfrage** hängt an der **Bekanntheitsstufe** des Musikers: Stufe 0 bekommt Schülerzeitung und Stadtblog,
@@ -270,9 +270,17 @@ Jede neue Art braucht einen eigenen Zweck und Wunsch (Perfektionist → Proberau
 
 ### Woher neue Musiker kommen
 
-**Einsendungen** (gebaut): Jede liegt 4 Tage (`Balance::SUBMISSIONS['ttl']`); die Restzeit steht auf jeder Kassette und Karte (rot in den letzten 12 Stunden).
-Mit dem Lesezeichen wandert eine Einsendung von „Eingang“ nach „Gespeichert“ (`submissions.saved`) und zurück; ablaufen tut sie trotzdem.
-Die Zahl am Menüpunkt zählt nur den Eingang.
+**Posteingang** (gebaut, ersetzt die Seite „Einsendungen“): Drei Arten Post kommen an: **Demos** (Kassetten, wie unten), **Anfragen**
+(Interviews für die eigenen Musiker, `Inbox`) und **Bewerbungen** (Leute fürs Label; gebaut ist die Assistenz, Scout, Lehrer und Manager folgen).
+Alles läuft ab (Demos 4 Tage, Anfragen 8 Stunden, Bewerbungen 2 Tage; die Restzeit steht darauf) und lässt sich mit dem Lesezeichen merken
+(„Gespeichert“; ablaufen tut es trotzdem). Die Zahl am Menüpunkt zählt, was nicht gemerkt ist. **Ohne Assistenz** liegt alles gemischt auf einem Stapel.
+- **Bewerbungen** kommen im Schnitt zwei am Tag (`Balance::JOBS`), erst ab etwas Erfolg (Assistenz ab 10). Wie gut die Bewerber sind, folgt dem Erfolg
+  **gesättigt**: Güte = Erfolg / (Erfolg + 300), also oben offen, nie ganz 1. Jede Stufe bewirbt sich erst ab ihrer Güte; die beste erreichbare kommt am häufigsten.
+- **Assistenz** (gebaut, `Assistant`): einmalig bezahlt (Praktikum 250 ₲, Assistenz 900, Senior 2.500, Leitung 6.000). Sie sortiert die Post in
+  Reiter (Demos, Anfragen, Bewerbungen, Gespeichert), hört jeden Tag Demos an (20 / 60 / 150 / 400, die ältesten zuerst, gemerkte nicht; mehrere
+  zählen zusammen) und schreibt **Notizen auf die Übersicht** (offene Anfragen mit Restzeit, Bewerbungen, gute Demos, Kurs des Tages). Ohne Assistenz
+  bleibt die Übersicht schlicht. **Regeln** ab der zweiten Stufe: ab Können-Stufe; ab der dritten auch Genres und Einzeln/Band. Was nicht passt, wirft sie weg.
+- **Interviews** siehe „Interviews und Promo-Anfragen“; Zahlen in `kern.md` (Promo, Tempo).
 
 In der Wirklichkeit schicken Künstler Demos an Labels, und Talentsucher hören sich um. Ein Label sucht nicht aus einem Katalog aller Menschen aus. Zwei Wege, die nichts miteinander zu tun haben:
 

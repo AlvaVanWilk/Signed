@@ -329,7 +329,7 @@ final class Activities
         $db = $this->repo->db;
         $db->transaction(function () use ($db, $activityId): void {
             $row = $db->one(
-                "SELECT * FROM activities WHERE id = ? AND label_id = ? AND settled = 0 AND type IN ('promo', 'bandpromo', 'practice', 'course')",
+                "SELECT * FROM activities WHERE id = ? AND label_id = ? AND settled = 0 AND type IN ('promo', 'bandpromo', 'practice', 'course', 'interview')",
                 [$activityId, $this->repo->labelId]
             );
             if ($row === null) {
@@ -383,6 +383,7 @@ final class Activities
                 $data = json_decode($row['data'], true) ?: [];
                 $result = match (true) {
                     $row['type'] === 'promo' => self::applyPromo($repo, $row, $data),
+                    $row['type'] === 'interview' => Inbox::settle($repo, $row, $data),
                     $row['type'] === 'rehearsal' => self::applyRehearsal($repo, $row),
                     $row['type'] === 'record' => Studio::settle($repo, $row, $data),
                     $row['type'] === 'practice', $row['type'] === 'course' => self::applyPractice($repo, $row, $data),

@@ -27,7 +27,7 @@ import { recordResultHtml } from './views/recording.js';
 
 const NAV = [
   ['', 'Übersicht'],
-  ['einsendungen', 'Einsendungen'],
+  ['einsendungen', 'Posteingang'],
   ['store', 'Music Store'],
   ['lager', 'Lager'],
   ['charts', 'Charts'],
@@ -58,7 +58,7 @@ function parseRoute() {
 
 /** Bandseite: ohne Unterseite die ruhige Label-Ansicht, sonst die Übung, das Studio usw. */
 function viewBand(route) {
-  if (!app.state.bands.length) return `<div class="empty">Noch keine Band. <a class="btn primary" href="#/einsendungen">Zu den Einsendungen</a></div>`;
+  if (!app.state.bands.length) return `<div class="empty">Noch keine Band. <a class="btn primary" href="#/einsendungen">Zum Posteingang</a></div>`;
   // Die alte Übungsseite gibt es nicht mehr: Proben starten direkt auf der Bandseite.
   return route.section && route.section !== 'uebung' ? bands.renderBand(route) : label.page(route);
 }
@@ -130,6 +130,12 @@ function sidebar(route) {
  * Zahl am Menüpunkt Börse: wie viele Angebote anderer Labels drin sind. In Signalfarbe, solange eins dabei ist,
  * das man noch nicht gesehen hat (gemerkt im Browser: höchste gesehene Angebots-Nummer je Label).
  */
+/** Zahl am Posteingang: was nicht gemerkt ist (Demos und Briefe). */
+function inboxBadge(s) {
+  const n = (s.submissions ?? []).filter((x) => !x.saved).length + (s.mail ?? []).filter((m) => !m.saved).length;
+  return n ? ` <span class="nav-badge">${n}</span>` : '';
+}
+
 function marketBadge(visiting) {
   const offers = app.state.market?.offers ?? [];
   if (!offers.length) return '';
@@ -156,7 +162,7 @@ function layout(content, route) {
   return `
     <header class="topbar">
       <a class="logo" href="#/">Signed</a>
-      <nav class="nav">${NAV.map(([key, label]) => `<a href="#/${key}" class="${key === active ? 'active' : ''}">${label}${key === 'boerse' ? marketBadge(active === 'boerse') : ''}${key === 'einsendungen' && s.submissions?.some((x) => !x.saved) ? ` <span class="nav-badge">${s.submissions.filter((x) => !x.saved).length}</span>` : ''}${key === 'store' && s.store?.gold ? ' <span class="nav-gold" title="Heute ein legendäres Instrument im Angebot">★</span>' : ''}</a>`).join('')}</nav>
+      <nav class="nav">${NAV.map(([key, label]) => `<a href="#/${key}" class="${key === active ? 'active' : ''}">${label}${key === 'boerse' ? marketBadge(active === 'boerse') : ''}${key === 'einsendungen' ? inboxBadge(s) : ''}${key === 'store' && s.store?.gold ? ' <span class="nav-gold" title="Heute ein legendäres Instrument im Angebot">★</span>' : ''}</a>`).join('')}</nav>
       <div class="label-info">
         <span class="label-name" title="Dein Label">${esc(s.label.name)}</span>
         <button class="money-pill" data-act="openFinance" data-live-money title="Konto und Einnahmen">${money(liveMoney())}</button>
@@ -296,6 +302,14 @@ function resultHtml(r) {
       <div class="reward-grid">${reward(`Können ${esc(cat().instruments[res.instrument]?.name ?? '')}`, `+${fmtGain(res.skill)}`)}${reward('Jetzt', fmt1(res.skillAfter))}</div>
       ${levelUpBanners(res.levelUps)}
       ${r.type === 'practice' ? '<p class="muted small">Selbst mitspielen bringt bis zum Vierfachen.</p>' : ''}`;
+  }
+  if (r.type === 'interview') {
+    const m = musicianById(r.musicianId);
+    return `
+      <div class="eyebrow">Interview${bandOf(m)}</div>
+      <h2>${esc(m ? `${m.firstName} ${m.lastName}` : 'Interview')} ist zurück</h2>
+      <p class="muted">${esc(res.medium ?? '')}</p>
+      <div class="reward-grid">${reward('Bekanntheit', `+${fmtGain(res.fame)}`)}${reward('Bekanntheit jetzt', fmt1(res.total))}</div>`;
   }
   if (r.type === 'promo') {
     const m = musicianById(r.musicianId);

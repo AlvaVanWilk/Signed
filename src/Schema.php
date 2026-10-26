@@ -501,6 +501,34 @@ final class Schema
             [
                 'ALTER TABLE submissions ADD COLUMN saved INTEGER NOT NULL DEFAULT 0',
             ],
+            // 39: Posteingang – Interview-Anfragen und Bewerbungen (Demos bleiben in submissions); eingestellte Leute (Assistenz, später Scout, Lehrer)
+            [
+                'CREATE TABLE mail (
+                    id {PK},
+                    label_id INTEGER NOT NULL,
+                    kind VARCHAR(12) NOT NULL,
+                    data TEXT NOT NULL,
+                    created_at INTEGER NOT NULL,
+                    expires_at INTEGER NOT NULL,
+                    saved INTEGER NOT NULL DEFAULT 0
+                ){OPTS}',
+                'CREATE INDEX mail_label ON mail (label_id)',
+                'CREATE TABLE staff (
+                    id {PK},
+                    label_id INTEGER NOT NULL,
+                    role VARCHAR(12) NOT NULL,
+                    tier INTEGER NOT NULL,
+                    data TEXT NOT NULL,
+                    hired_at INTEGER NOT NULL,
+                    busy_until INTEGER NOT NULL DEFAULT 0
+                ){OPTS}',
+                'CREATE INDEX staff_label ON staff (label_id)',
+                'ALTER TABLE labels ADD COLUMN interview_at INTEGER NOT NULL DEFAULT 0',
+                'ALTER TABLE labels ADD COLUMN job_at INTEGER NOT NULL DEFAULT 0',
+                'ALTER TABLE labels ADD COLUMN assist_at INTEGER NOT NULL DEFAULT 0',
+                'ALTER TABLE labels ADD COLUMN assist_rules TEXT NULL',
+                'ALTER TABLE labels ADD COLUMN assist_stats TEXT NULL',
+            ],
         ];
     }
 }

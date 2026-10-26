@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace Signed;
 
 use Signed\Game\Activities;
+use Signed\Game\Assistant;
+use Signed\Game\Inbox;
 use Signed\Game\Balance;
 use Signed\Game\Bands;
 use Signed\Game\Catalog;
@@ -86,6 +88,12 @@ final class Api
         'submissionSave' => ['POST', true],
         'submissionCompat' => ['POST', true],
         'submissionsTest' => ['POST', true],
+        'mailAccept' => ['POST', true],
+        'mailHire' => ['POST', true],
+        'mailSave' => ['POST', true],
+        'mailDrop' => ['POST', true],
+        'mailTest' => ['POST', true],
+        'assistRules' => ['POST', true],
         'practiceAuto' => ['POST', true],
         'courseAttend' => ['POST', true],
         'soloStart' => ['POST', true],
@@ -441,6 +449,42 @@ final class Api
     {
         $tests = new Submissions($repo);
         empty($in['closed']) ? $tests->testFill() : $tests->testClosed();
+        return ['state' => State::build($repo)];
+    }
+
+    private function mailAccept(array $in, Repo $repo): array
+    {
+        $activity = (new Inbox($repo))->accept(self::int($in, 'mailId'));
+        return ['activity' => $activity, 'state' => State::build($repo)];
+    }
+
+    private function mailHire(array $in, Repo $repo): array
+    {
+        return ['staffId' => (new Inbox($repo))->hire(self::int($in, 'mailId')), 'state' => State::build($repo)];
+    }
+
+    private function mailSave(array $in, Repo $repo): array
+    {
+        (new Inbox($repo))->save(self::int($in, 'mailId'), !empty($in['saved']));
+        return ['state' => State::build($repo)];
+    }
+
+    private function mailDrop(array $in, Repo $repo): array
+    {
+        (new Inbox($repo))->drop(self::int($in, 'mailId'));
+        return ['state' => State::build($repo)];
+    }
+
+    /** Zum Ausprobieren: Interview-Anfragen für alle und Bewerbungen jeder Assistenz-Stufe. */
+    private function mailTest(array $in, Repo $repo): array
+    {
+        (new Inbox($repo))->testFill();
+        return ['state' => State::build($repo)];
+    }
+
+    private function assistRules(array $in, Repo $repo): array
+    {
+        (new Assistant($repo))->setRules(is_array($in['rules'] ?? null) ? $in['rules'] : []);
         return ['state' => State::build($repo)];
     }
 

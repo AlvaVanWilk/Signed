@@ -179,6 +179,35 @@ final class Balance
         'splitHurt' => 20.0, 'splitTrait' => ['teamplayer' => 1.6, 'ehrgeizig' => 0.5],
     ];
     /**
+     * Posteingang: Interview-Anfragen. Je Musiker kommen im Schnitt `perDay` am Tag (höchstens eine offen je Musiker), sie liegen `ttl` Sekunden.
+     * Das Medium passt zur Bekanntheitsstufe (Catalog::INTERVIEW_MEDIA, dort auch der Anteil je Medium). Gewinn = Anteil × Weg von dieser Stufe
+     * zur nächsten (FAME_LEVELS), ohne Stufen-Bremse; auf der höchsten Stufe zählt `topSpan`. Annehmen schickt den Musiker `seconds[Stufe]` weg.
+     */
+    public const INTERVIEW = ['perDay' => 1.0, 'ttl' => 8 * 3600, 'seconds' => [900, 1200, 1800, 2700], 'topSpan' => 600.0, 'maxCatchUp' => 86400];
+    /**
+     * Posteingang: Bewerbungen von Leuten fürs Label (Assistenz; später Scout, Lehrer, Manager). Im Schnitt `perDay` am Tag, jede liegt `ttl`.
+     * Wie gut die Bewerber sind, folgt dem Erfolg des Labels, aber gesättigt (oben offen): Güte = Erfolg / (Erfolg + `half`).
+     * Eine Stufe bewirbt sich erst ab ihrer Güte `from`; die beste erreichbare kommt am häufigsten (`weights`: beste, zweitbeste, Rest).
+     * `minSuccess`: ab welchem Erfolg sich diese Art überhaupt bewirbt.
+     */
+    public const JOBS = [
+        'perDay' => 2.0, 'ttl' => 2 * 86400, 'maxCatchUp' => 2 * 86400, 'half' => 300.0, 'weights' => [3, 2, 1],
+        'roles' => ['assistant' => ['weight' => 1, 'minSuccess' => 10.0]],
+    ];
+    /**
+     * Assistenz: einmalig bezahlt. Öffnet je Tag `perDay` Demos (die ältesten zuerst, gemerkte nicht) und sortiert die Post in Reiter.
+     * Ab Stufe `rules[...]` lassen sich Regeln einstellen; Demos, die nicht passen, wirft sie weg. Mehrere Assistenzen arbeiten zusammen.
+     */
+    public const ASSISTANT = [
+        'tiers' => [
+            1 => ['perDay' => 20, 'price' => 250, 'from' => 0.0],
+            2 => ['perDay' => 60, 'price' => 900, 'from' => 0.2],
+            3 => ['perDay' => 150, 'price' => 2500, 'from' => 0.5],
+            4 => ['perDay' => 400, 'price' => 6000, 'from' => 0.8],
+        ],
+        'rules' => ['minLevel' => 2, 'genres' => 3, 'kind' => 3],
+    ];
+    /**
      * Künstlername: Nicht jeder will einen. Wer ihn sich wünscht, hängt am Charakter (Eigenschaft => ab welchem Ruhm): Diven früh, Rampensäue etwas später,
      * Ehrgeizige erst, wenn sie richtig bekannt sind. Das Label sucht einen von drei aus, das freut (Wohlbefinden +mood, höchstens bis 100).
      */

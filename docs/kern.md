@@ -252,6 +252,9 @@ Der Beitrag hängt am Charakter (Kreativ ×3, Impulsiv ×1,6, Perfektionistisch 
 **Für neue Inhalte:** Tourneen, Manager und Co. sollen genau diese Stufen erreichbar machen (eigene, ungebremste
 Gewinne oder eine gelockerte Bremse) – nicht einfach dem heutigen Tempo unterliegen. Lokal bekannt ist man nach einigen Stunden Auftritten.
 Nur die Gewinne sind klein; wie oft man etwas hintereinander spielt, ist nicht begrenzt.
+**Interviews** (Posteingang) öffnen den Weg zur Bekanntheit: Jede Anfrage bringt einen festen Anteil (8–14 %, je Medium) des Weges von der eigenen
+Bekanntheitsstufe zur nächsten, **ohne Bremse** (`Balance::INTERVIEW`, `Catalog::INTERVIEW_MEDIA`). Je Musiker kommt im Schnitt eine Anfrage am Tag,
+sie liegt 8 Stunden. Wer jede annimmt, schafft so eine Stufe in rund acht bis zwölf Tagen, egal auf welcher Stufe; Auftritte und Platten kommen dazu.
 
 ### Platte
 
@@ -329,6 +332,9 @@ Nur die Gewinne sind klein; wie oft man etwas hintereinander spielt, ist nicht b
 - Promo-Mission (ein Musiker): 10 Minuten, läuft offline. Bekanntheit + 0,12–0,3 × Ausstrahlung-Faktor / (1 + Bekanntheit/40).
 - Band-Promo: 10 Minuten, jedes Mitglied bringt 0,1–0,25 nach derselben Formel; verteilt wie Auftrittsruhm.
 - Beide lassen sich jederzeit abbrechen („Zurückholen“): sofort wieder frei, keine Bekanntheit, kein Chart-Schub.
+- **Interview** (Anfrage im Posteingang, Umbau): Annehmen schickt den Musiker weg (15 / 20 / 30 / 45 Minuten je Bekanntheitsstufe 0–3).
+  Gewinn = Anteil des Mediums × Weg zur nächsten Stufe (Stufe 0: 20, Stufe 1: 100, Stufe 2: 480, Stufe 3: 600), ohne Bremse; dazu der kleine
+  Chart-Schub der Promo-Mission. Rampensau und Diva mögen Interviews, Teamplayer nicht (Wohlbefinden wie bei Anordnungen).
 
 ### Jam-Café
 

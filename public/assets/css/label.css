@@ -935,3 +935,34 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .lb-save { pointer-events: auto; width: 26px; height: 26px; padding: 4px; border-radius: 50%; border: 1px solid var(--lb-line); background: rgba(20, 18, 27, .85); cursor: pointer; }
 .lb-save svg { width: 100%; height: 100%; display: block; fill: none; stroke: var(--lb-muted); stroke-width: 2; stroke-linejoin: round; }
 .lb-save.on svg { fill: var(--lb-accent); stroke: var(--lb-accent); }
+
+/* Posteingang: Briefe (Interview-Anfragen, Bewerbungen) in derselben Größe wie die Karten; Assistenz und ihre Notizen */
+.lb-letter { position: relative; width: 210px; height: 140px; box-sizing: border-box; padding: 9px 11px; border-radius: 6px; display: grid; align-content: space-between; gap: 4px; text-align: left;
+  background: #e9e3d6; color: #2a2733; border: 1px solid #c9bfa9; box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35); overflow: hidden; }
+.lb-letter::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: repeating-linear-gradient(90deg, #b9483f 0 12px, #e9e3d6 12px 18px, #3d5f9e 18px 30px, #e9e3d6 30px 36px); opacity: .8; }
+.lb-letter.job::before { background: #8a7a55; }
+.lb-lt-head { display: flex; justify-content: center; margin-top: 2px; }
+.lb-lt-kind { font-size: .66rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #6b6253; }
+.lb-lt-body { display: flex; gap: 8px; align-items: center; }
+.lb-lt-body p { margin: 0; font-size: .8rem; line-height: 1.25; }
+.lb-lt-body small { display: block; font-size: .7rem; color: #6b6253; margin-top: 2px; }
+.lb-letter .lb-ph.sm { flex: none; width: 44px; height: 44px; }
+.lb-letter .lb-card-foot .lb-price { color: #7a5a1e; }
+
+.lb-letter .lb-iconbtn { background: #f4efe4; border-color: #c9bfa9; color: #6b6253; }
+.lb-letter .btn.small { padding: 3px 10px; font-size: .76rem; }
+.lb-mailitem { cursor: default; }
+.lb-assist { display: flex; align-items: center; gap: 12px; padding: 10px 12px; margin: 6px 0 10px; border: 1px solid var(--lb-line); border-radius: 12px; background: var(--lb-card); }
+.lb-assist > span:nth-child(2) { flex: 1; font-size: .9rem; }
+.lb-assist small { display: block; margin-top: 2px; }
+.lb-assist-faces { display: flex; } .lb-assist-faces .lb-ph.sm { width: 40px; height: 40px; } .lb-assist-faces .lb-ph + .lb-ph { margin-left: -10px; }
+.lb-assist-hint { margin: 4px 0 8px; }
+.lb-notes h2 { display: flex; align-items: center; gap: 10px; }
+.lb-notes-faces { display: flex; } .lb-notes-faces .lb-ph.sm { width: 34px; height: 34px; } .lb-notes-faces .lb-ph + .lb-ph { margin-left: -8px; }
+.lb-notes ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+.lb-notes .link { text-align: left; }
+.lb-rules-modal h3 { margin: 14px 0 6px; font-size: .9rem; }
+.lb-letter .lb-ph.sm { box-shadow: none; }
+.lb-assist-faces .lb-ph.sm, .lb-notes-faces .lb-ph.sm { box-shadow: 0 0 0 2px var(--lb-card, #24212d); }
+.lb-lt-space { flex: 1; }
+.lb-lt-body small.lb-lt-gain { color: #4b6b3a; font-weight: 700; margin-top: 4px; }

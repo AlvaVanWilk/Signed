@@ -130,6 +130,14 @@ final class Generator
         ];
     }
 
+    /** Eine Person fürs Label (Assistenz, Scout …): Name und Aussehen. */
+    public static function person(array $avoid = []): array
+    {
+        $look = self::look();
+        [$first, $last] = self::name($look['gender'], $avoid);
+        return ['first_name' => $first, 'last_name' => $last, 'look' => $look];
+    }
+
     public static function songTitle(): string
     {
         return Rng::pick(Catalog::SONG_WORDS[0]) . Rng::pick(Catalog::SONG_WORDS[1]);

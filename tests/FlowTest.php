@@ -5,6 +5,8 @@ use Signed\Clock;
 use Signed\Game\Balance;
 use Signed\Game\Catalog;
 use Signed\Game\Store;
+use Signed\Game\Assistant;
+use Signed\Game\Inbox;
 
 /** Spielt den Kernkreislauf einmal komplett über die API durch. */
 
@@ -1392,11 +1394,11 @@ test('Einsendungen: Willkommens-Stapel, laufender Eingang, Unterschreiben kostet
     // Testbewerber: alle vier Können-Stufen, darunter Bekanntheit.
     $res = $p->post('submissionsTest');
     $open = array_values(array_filter($res['state']['submissions'], static fn ($s) => $s['state'] === 'open'));
-    $levels = array_unique(array_map(static fn ($s) => $s['level'], $open));
+    $levels = array_unique(array_map(static fn ($s) => $s['level'], array_filter($open, static fn ($s) => $s['kind'] === 'solo')));
     foreach ([0, 1, 2, 3] as $l) {
         check(in_array($l, $levels, true), "Stufe $l kommt vor");
     }
-    check(count(array_filter($open, static fn ($s) => $s['fameLevel'] >= 1)) >= 1, 'bekannte Bewerber');
+    check(count(array_filter($open, static fn ($s) => ($s['fameLevel'] ?? 0) >= 1)) >= 1, 'bekannte Bewerber');
     foreach ($open as $s) {
         foreach ($s['members'] ?? [$s] as $card) {
             check(count($card['abilities'] ?? []) === 1, 'jeder hat genau eine Spieltechnik');
@@ -1864,4 +1866,107 @@ test('Verborgene Charakterzüge: erst „?“, zeigen sich beim ersten Wirken mi
             checkEquals([], $s['personality']);
         }
     }
+});
+
+test('Posteingang: Interview-Anfragen passen zur Bekanntheit, bringen einen festen Anteil ohne Bremse, der Musiker ist kurz weg', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Presse');
+    $band = foundBand($p);
+    $p->get('state');
+    Clock::advance(86400);
+    $state = $p->get('state');
+    $interviews = array_values(array_filter($state['mail'], static fn ($m) => $m['kind'] === 'interview'));
+    check(count($interviews) >= 1, 'nach einem Tag gibt es Anfragen');
+    $perMusician = array_count_values(array_column($interviews, 'musicianId'));
+    check(max($perMusician) === 1, 'höchstens eine je Musiker');
+    // Bekannter Musiker: Anfrage seiner Stufe, Gewinn = Anteil des Weges zur nächsten Stufe.
+    $id = (int) $db->value('SELECT id FROM musicians WHERE band_id = ? ORDER BY id LIMIT 1', [$band['id']]);
+    $db->exec('UPDATE musicians SET fame = 150 WHERE id = ?', [$id]);
+    $state = $p->post('mailTest')['state'];
+    $mine = array_values(array_filter($state['mail'], static fn ($m) => $m['kind'] === 'interview' && $m['musicianId'] === $id))[0];
+    checkEquals(2, $mine['level']);
+    check(in_array($mine['medium'], array_column(Catalog::INTERVIEW_MEDIA[2], 'name'), true), 'Medium der Stufe 2');
+    $share = array_column(Catalog::INTERVIEW_MEDIA[2], 'share', 'name')[$mine['medium']];
+    checkEquals(round($share * 480, 2), $mine['fame'], 'Anteil am Weg von 120 bis 600');
+    $res = $p->post('mailAccept', ['mailId' => $mine['mailId']]);
+    checkEquals('interview', $res['activity']['type']);
+    check(!in_array($mine['mailId'], array_column($res['state']['mail'], 'mailId'), true), 'Brief ist weg');
+    checkApiError(fn () => $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'rehearsal']), 'unterwegs');
+    Clock::advance(Balance::INTERVIEW['seconds'][2] + 5);
+    $p->get('state');
+    $fame = (float) $db->value('SELECT fame FROM musicians WHERE id = ?', [$id]);
+    check(abs($fame - (150 + $mine['fame'])) < 0.01, "ohne Bremse gutgeschrieben: $fame");
+    // Ablehnen und Ablauf.
+    $other = array_values(array_filter($p->get('state')['mail'], static fn ($m) => $m['kind'] === 'interview'))[0];
+    $p->post('mailDrop', ['mailId' => $other['mailId']]);
+    Clock::advance(Balance::INTERVIEW['ttl'] + 5);
+    $left = array_filter($p->get('state')['mail'], static fn ($m) => $m['expiresAt'] <= Clock::now());
+    checkEquals([], array_values($left));
+});
+
+test('Posteingang: Bewerbungen werden mit dem Erfolg besser (gesättigt), Assistenz öffnet Demos und sortiert nach Regeln', function () {
+    check(Inbox::quality(0) === 0.0);
+    check(Inbox::quality(300) === 0.5, 'Hälfte bei half');
+    check(Inbox::quality(100000) < 1.0, 'oben offen, nie ganz 1');
+    // Bei wenig Erfolg nur Praktikum, bei viel auch Leitung.
+    $tiers = static function (float $q): array {
+        $out = [];
+        for ($i = 0; $i < 200; $i++) {
+            $out[Inbox::applicant('assistant', $q)['tier']] = true;
+        }
+        ksort($out);
+        return array_keys($out);
+    };
+    checkEquals([1], $tiers(0.05));
+    checkEquals([1, 2, 3, 4], $tiers(0.9));
+
+    $db = freshDb();
+    $p = registerPlayer($db, 'Sortiert');
+    // Ohne Erfolg keine Assistenz-Bewerbungen.
+    Clock::advance(2 * 86400);
+    check(!array_filter($p->get('state')['mail'], static fn ($m) => $m['kind'] === 'job'), 'kleines Label: noch keine Bewerbungen');
+    checkEquals(null, $p->get('state')['assistant']);
+    $state = $p->post('mailTest')['state'];
+    $jobs = array_values(array_filter($state['mail'], static fn ($m) => $m['kind'] === 'job'));
+    checkEquals([1, 2, 3, 4], array_values(array_unique(array_map(static fn ($m) => $m['tier'], $jobs))));
+    $praktikum = array_values(array_filter($jobs, static fn ($m) => $m['tier'] === 1))[0];
+    $money = $state['label']['money'];
+    $res = $p->post('mailHire', ['mailId' => $praktikum['mailId']]);
+    checkEquals($money - Balance::ASSISTANT['tiers'][1]['price'], $res['state']['label']['money'], 'einmalig bezahlt');
+    checkEquals(20, $res['state']['assistant']['perDay']);
+    checkEquals(false, $res['state']['assistant']['allowed']['minLevel'], 'Praktikum kann keine Regeln');
+    checkApiError(fn () => $p->post('mailHire', ['mailId' => $praktikum['mailId']]), 'nicht mehr');
+    // Ungehörte Kassetten: In drei Stunden öffnet das Praktikum zwei (20 am Tag), die ältesten zuerst.
+    $labelId = (int) $state['label']['id'];
+    $repo = new Signed\Game\Repo($db, $labelId);
+    $db->exec('DELETE FROM submissions');
+    (new Signed\Game\Submissions($repo))->testClosed();
+    (new Signed\Game\Submissions($repo))->testClosed();
+    $db->update('labels', ['submit_at' => Clock::now() + 10 * 86400], ['id' => $labelId]);
+    Clock::advance(3 * 3600 + 60);
+    $subs = $p->get('state')['submissions'];
+    $early = array_column(array_filter($subs, static fn ($s) => $s['state'] === 'open'), 'submissionId');
+    checkEquals(2, count($early), 'in drei Stunden zwei geöffnet');
+    // Senior-Assistenz dazu: Regeln wirken, Unpassendes fliegt raus.
+    $senior = array_values(array_filter($res['state']['mail'], static fn ($m) => $m['kind'] === 'job' && $m['tier'] === 3))[0];
+    $db->update('labels', ['money' => 100000], ['id' => $labelId]);
+    $state = $p->post('mailHire', ['mailId' => $senior['mailId']])['state'];
+    checkEquals(170, $state['assistant']['perDay'], 'zwei Assistenzen arbeiten zusammen');
+    checkEquals(true, $state['assistant']['allowed']['genres']);
+    $p->post('assistRules', ['rules' => ['minLevel' => 2, 'genres' => ['jazz', 'nope'], 'kind' => 'any']]);
+    checkEquals(['jazz'], $p->get('state')['assistant']['rules']['genres'], 'nur bekannte Genres');
+    $p->post('assistRules', ['rules' => ['minLevel' => 2, 'genres' => [], 'kind' => 'any']]);
+    Clock::advance(6 * 3600);
+    $state = $p->get('state');
+    checkEquals([], array_values(array_filter($state['submissions'], static fn ($s) => $s['state'] === 'closed')), 'alle bearbeitet');
+    $later = array_filter($state['submissions'], static fn ($s) => !in_array($s['submissionId'], $early, true));
+    check(count($later) >= 2, 'die guten bleiben (Stufe 2 und 3)');
+    foreach ($later as $s) {
+        $level = max(array_map(static fn ($m) => max(array_map(static fn ($i) => Signed\Game\Levels::forSkill($i['skill']), $m['instruments'])), $s['members'] ?? [$s]));
+        check($level >= 2, 'nur ab Stufe 2 geblieben: ' . json_encode([$s['state'], $s['kind'], array_map(static fn ($m) => $m['instruments'], $s['members'] ?? [$s])]));
+    }
+    check($state['assistant']['today']['dropped'] >= 8, 'aussortiert: ' . $state['assistant']['today']['dropped']);
+    checkEquals(true, Assistant::matches(['kind' => 'band', 'members' => [['skill1' => 70.0, 'genres' => ['rock']], ['skill1' => 10.0, 'genres' => ['pop']]]], ['minLevel' => 2, 'genres' => ['pop'], 'kind' => 'band']));
+    checkEquals(false, Assistant::matches(['skill1' => 70.0, 'genres' => ['rock']], ['minLevel' => 2, 'genres' => ['pop'], 'kind' => 'any']));
+    checkEquals(false, Assistant::matches(['skill1' => 30.0, 'genres' => ['rock']], ['minLevel' => 1, 'genres' => [], 'kind' => 'solo']));
 });

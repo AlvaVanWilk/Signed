@@ -68,7 +68,7 @@ export function blockerNotice(b, members) {
 }
 
 /** Laufende Promo-Mission eines Musikers, falls er gerade auf einer ist. */
-export const promoOf = (m) => app.state.running.find((a) => (['promo', 'practice', 'course'].includes(a.type) && a.musicianId === m.id)
+export const promoOf = (m) => app.state.running.find((a) => (['promo', 'practice', 'course', 'interview'].includes(a.type) && a.musicianId === m.id)
   || (a.type === 'bandpromo' && m.bandId && a.bandId === m.bandId)) ?? null;
 
 /** Knopf zum Abbrechen einer Promo (aus Versehen gestartet); null ergibt nichts. */
@@ -93,8 +93,8 @@ const songsMeta = (songs) => `${songs} ${songs === 1 ? 'Lied' : 'Lieder'} · ${d
 /** Allein unterwegs (Üben, Promo, Kurs), während die Band nicht gemeinsam unterwegs ist: wann zurück? */
 function awayOf(b, m) {
   if (isBusy(b.busyUntil) || !isBusy(m.busyUntil)) return null;
-  const a = app.state.running.find((x) => x.musicianId === m.id && ['promo', 'practice', 'course'].includes(x.type));
-  return { until: a?.endsAt ?? m.busyUntil, label: { promo: 'Promo-Tour', practice: 'Übt allein', course: 'Im Kurs' }[a?.type] ?? 'Unterwegs' };
+  const a = app.state.running.find((x) => x.musicianId === m.id && ['promo', 'practice', 'course', 'interview'].includes(x.type));
+  return { until: a?.endsAt ?? m.busyUntil, label: { promo: 'Promo-Tour', practice: 'Übt allein', course: 'Im Kurs', interview: 'Beim Interview' }[a?.type] ?? 'Unterwegs' };
 }
 
 /** Spielt ein Mitglied eine E-Aufnahme? Danach richtet sich, ob seine Figur eine E-Gitarre hält. */

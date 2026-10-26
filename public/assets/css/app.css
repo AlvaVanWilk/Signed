@@ -418,6 +418,7 @@ button.card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
 .toast { background: var(--panel-2); border: 1px solid var(--line); padding: 10px 16px; border-radius: 12px; box-shadow: var(--shadow); animation: pop 0.2s ease-out; transition: opacity 0.4s; text-align: center; }
 .toast-error { border-color: var(--bad); }
 .toast-ok { border-color: var(--ok); }
+.toast-gold { border-color: #f2c14e; box-shadow: 0 0 18px rgba(242, 193, 78, .35); }
 .toast.out { opacity: 0; }
 
 /* ---------- Live-Auftritt ---------- */
@@ -1279,3 +1280,6 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 @keyframes fig-bored-sway { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(1.5px) rotate(-1deg); } }
 @keyframes fig-impatient { 0%, 68%, 100% { transform: rotate(0); } 78% { transform: rotate(-12deg); } 88% { transform: rotate(0); } }
 @media (prefers-reduced-motion: reduce) { .fig-none .fig-shrug-l, .fig-none .fig-shrug-r, .fig-none .fig-head, .fig-none .fig-body, .fig-none .fig-tap { animation: none; } }
+
+/* Menü: legendäres Instrument im Music Store */
+.nav-gold { color: #f2c14e; text-shadow: 0 0 8px rgba(242, 193, 78, .8); }

@@ -482,11 +482,15 @@ Beim ersten Login nach dem Umbau (Saison 2) bleiben **Labelname und Konto**, all
 ### Music Store (erste Version, gebaut)
 
 - Ersetzt „Einkaufen“ (Zufallspakete bleiben im Code, aber nicht mehr im Menü). Menü: Übersicht, Einsendungen, **Music Store**, Charts, WikiSignia; Lager und Börse sind nicht mehr im Menü (Seiten bestehen weiter unter `#/lager`, `#/boerse`).
-- **Regal:** 5 bis 10 Instrumente, je Art höchstens eins, für alle Labels gleich, **wechselt alle 4 Stunden** (`Balance::STORE['hours']`); es ergibt sich aus der Fensternummer (`Store::shelf($slot)`), nicht aus dem Spiel-Zufall.
-  Seltenheit mit Gewichten 50/32/14/4 (gewöhnlich bis legendär), Preis nach Seltenheit, Eigenschaften und Werten (Grundpreise 60/220/700/2100).
-- **Zurücklegen:** ein Instrument je Label, einen Tag lang (`holdHours` 24), bleibt über den Wechsel des Regals, nur für dieses Label. Gekauft werden kann jedes Instrument pro Label einmal.
-- **Neue Lieferung:** Gegen Geld (150 ₲, jede weitere im selben Fenster das Doppelte, höchstens 20; `Balance::STORE['restock']`) bekommt ein Label sofort ein eigenes Regal,
-  bis zum nächsten Wechsel; danach gilt wieder das Regal für alle. Zurückgelegtes bleibt. Die Doppeltür geht dabei wieder auf.
+- **Grundausstattung** (unten, eine Lochwand): jedes gewöhnliche Modell (15), immer da, beliebig oft, 40 ₲ (`Store::basics`, `storeBuyBasic`).
+  Ein graues Instrument braucht jeder, und man kann es beliebig lange weiterspielen – deshalb gibt es keinen Druck mehr, das Regal neu zu füllen.
+- **Angebot des Tages** (oben, ein Werbebereich wie im echten Laden): für alle Labels gleich, **wechselt jeden Morgen** (`Balance::STORE`: `hours` 24, `offset` 4 Uhr UTC);
+  es ergibt sich aus der Tagesnummer (`Store::shelf($slot)`), nicht aus dem Spiel-Zufall. Je Art höchstens eins:
+  2–3 seltene (grün), mit 35 % dazu ein episches (blau), mit 13 % ein legendäres (gold, etwa einmal die Woche; dann ein seltenes weniger).
+  Preise 320 / 1.500 / 5.200 ₲ × Güte. Jedes Angebot kauft ein Label einmal.
+- **Gold wird beworben:** Werbeschild in Gold, Strahlen hinter dem doppelt breiten Platz, goldener Rahmen, Stern am Menüpunkt „Music Store“ und einmal je Angebot ein Hinweis, wo man gerade ist.
+- **Zurücklegen:** ein Angebot je Label, einen Tag lang (`holdHours` 24), bleibt über den Wechsel, nur für dieses Label.
+- Die frühere „Neue Lieferung“ gegen Geld gibt es nicht mehr.
 - Oberfläche: gezeichnetes Regal mit Preisschildern, Seltenheit als Lichtschein, Hinweispunkt bei Instrumenten, die jemandem im Label fehlen; Übergang: Doppeltür geht beim ersten Betreten auf.
 
 ### Proberaum (gebaut)

@@ -88,13 +88,17 @@ final class Balance
      * `count` = wie viele Instrumente (je Art höchstens eins), `odds` = Seltenheit (gute sind seltener), `price` = Grundpreis je Seltenheit,
      * Eigenschaften und Werte über dem Modell machen teurer. Zurücklegen: ein Instrument je Label für `holdHours`, unabhängig vom Wechsel des Regals.
      */
+    /**
+     * Music Store: unten die Grundausstattung (jedes gewöhnliche Modell, immer da, beliebig oft), oben das Angebot des Tages.
+     * Das Angebot wechselt alle `hours` Stunden (um `offset` Uhr UTC, also früh morgens) und ist für alle Labels gleich:
+     * `green` seltene Instrumente, mit der Chance `blue` dazu ein episches und mit der Chance `gold` ein legendäres (im Schnitt etwa einmal die Woche).
+     * Jedes Angebot kauft ein Label höchstens einmal; eines lässt sich `holdHours` Stunden zurücklegen.
+     */
     public const STORE = [
-        'hours' => 4, 'count' => [5, 10], 'holdHours' => 24,
-        'odds' => ['common' => 50, 'rare' => 32, 'epic' => 14, 'legendary' => 4],
+        'hours' => 24, 'offset' => 4, 'holdHours' => 24,
+        'offer' => ['green' => [2, 3], 'blue' => 0.35, 'gold' => 0.13],
         // Gewöhnliches ist leicht zu haben, Hochwertiges ein Sparziel (Startkapital 2.000 ₲).
         'price' => ['common' => 40, 'rare' => 320, 'epic' => 1500, 'legendary' => 5200],
-        // Neue Lieferung bestellen: ein eigenes, frisches Regal bis zum nächsten Wechsel. Jede weitere im selben Zeitfenster kostet das Doppelte.
-        'restock' => 150, 'restockFactor' => 2.0, 'restockMax' => 20,
     ];
     /**
      * Proberaum in Stufen: Jede Band hat ihren eigenen, auch jeder Solokünstler (zum vollen Preis).

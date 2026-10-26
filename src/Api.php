@@ -50,7 +50,7 @@ final class Api
         'gigOptions' => ['POST', true],
         'storeHold' => ['POST', true],
         'storeRelease' => ['POST', true],
-        'storeRestock' => ['POST', true],
+        'storeBuyBasic' => ['POST', true],
         'wikiIndex' => ['POST', true],
         'wikiLabel' => ['POST', true],
         'wikiSearch' => ['POST', true],
@@ -287,10 +287,10 @@ final class Api
         return ['state' => State::build($repo)];
     }
 
-    private function storeRestock(array $in, Repo $repo): array
+    private function storeBuyBasic(array $in, Repo $repo): array
     {
-        (new Store($repo))->restock();
-        return ['state' => State::build($repo)];
+        $res = (new Store($repo))->buyBasic((string) ($in['model'] ?? ''));
+        return $res + ['state' => State::build($repo)];
     }
 
     private function storeRelease(array $in, Repo $repo): array

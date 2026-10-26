@@ -1,11 +1,12 @@
 import { bonusList, gearIcon, gearTier, instrumentName, rarityName, whoCanPlay } from '../cards.js';
 import { playedInstrument } from '../figure.js';
-import { app, cat, defineActions, mutate, refresh, serverNow } from '../core.js';
+import { app, cat, defineActions, mutate, onStateChange, refresh, serverNow } from '../core.js';
 import { confirmDialog, duration, esc, fmt0, money, off, openModal, percent, toast } from '../ui.js';
 
 /**
- * Music Store: ein Regal mit 5 bis 10 Instrumenten (je Art höchstens eins), für alle Labels gleich, das alle paar Stunden wechselt.
- * Ein Instrument lässt sich einen Tag lang zurücklegen. Beim Betreten gehen die Türen auf (Übergang).
+ * Music Store: oben das Angebot des Tages (für alle Labels gleich, meist seltene Instrumente, ab und zu ein episches, ganz selten ein legendäres,
+ * das groß beworben wird), unten die Grundausstattung – jedes graue Modell, immer da. Ein Angebot lässt sich einen Tag lang zurücklegen.
+ * Beim ersten Betreten gehen die Türen auf (Übergang).
  */
 
 const SIGN = `
@@ -30,19 +31,32 @@ function icon(item) {
 function cell(item) {
   const state = item.bought ? 'sold' : item.held ? 'held' : '';
   const need = needing(item);
+  const star = item.tier === 3 && !item.bought && !item.held;
   return `
-    <button class="ms-cell r-${item.rarity} ${state}" data-act="storeItem" data-slot="${item.slot}" data-idx="${item.idx}" aria-label="${esc(cat().gear[item.model].name)}">
+    <button class="ms-cell r-${item.rarity} ${state} ${star ? 'star' : ''}" data-act="storeItem" data-slot="${item.slot}" data-idx="${item.idx}" aria-label="${esc(cat().gear[item.model].name)}">
+      ${star ? '<span class="ms-rays" aria-hidden="true"></span>' : ''}
       <span class="ms-ico">${icon(item)}</span>
       ${need.length && !item.bought ? '<i class="ms-need" title="Dafür gibt es jemanden ohne Instrument"></i>' : ''}
-      ${item.held ? '<b class="ms-ribbon">zurückgelegt</b>' : item.bought ? '<b class="ms-ribbon sold">gekauft</b>' : ''}
+      ${item.held ? '<b class="ms-ribbon">zurückgelegt</b>' : item.bought ? '<b class="ms-ribbon sold">gekauft</b>' : star ? '<b class="ms-ribbon gold">Legendär</b>' : ''}
       <span class="ms-tag"><small>${esc(cat().gear[item.model].name)}</small>${item.bought ? '–' : money(item.price)}</span>
+    </button>`;
+}
+
+/** Grundausstattung: klein an der Wand, immer da. */
+function basic(item) {
+  const need = needing(item);
+  return `
+    <button class="ms-bcell" data-act="storeBasic" data-model="${item.model}" aria-label="${esc(cat().gear[item.model].name)}">
+      <span class="ms-bico">${icon(item)}</span>
+      ${need.length ? '<i class="ms-need" title="Dafür gibt es jemanden ohne Instrument"></i>' : ''}
+      <span class="ms-btag"><small>${esc(cat().gear[item.model].name)}</small>${money(item.price)}</span>
     </button>`;
 }
 
 function locker() {
   const hold = app.state.store.hold;
   if (!hold) {
-    return `<div class="ms-locker empty" data-store-drop><b>Zurückgelegt</b><span class="ms-drophint">Instrument hierher ziehen</span><span>Es bleibt einen Tag für dich da, auch wenn das Regal wechselt. Eines je Label.</span></div>`;
+    return `<div class="ms-locker empty" data-store-drop><b>Zurückgelegt</b><span class="ms-drophint">Instrument hierher ziehen</span><span>Es bleibt einen Tag für dich da, auch wenn das Angebot wechselt. Eines je Label.</span></div>`;
   }
   const item = hold.item;
   return `
@@ -64,27 +78,36 @@ export function render() {
         <div class="ms-sign">${SIGN}</div>
         <div class="ms-info">
           <div class="money-pill">${money(app.state.label.money)}</div>
-          <small class="muted">${store.restock?.own ? 'Deine Lieferung bleibt' : 'Neues Angebot in'} <b data-store-timer>${duration(Math.max(0, store.endsAt - serverNow()))}</b>${store.restock?.own ? ', dann kommt wieder das Regal für alle' : ''}</small>
-          ${store.restock ? `<button class="btn small ghost ms-restock" data-act="storeRestock" ${off(app.state.label.money < store.restock.price ? `Dafür fehlen noch ${money(store.restock.price - app.state.label.money)}.` : '')}>Neue Lieferung bestellen · ${money(store.restock.price)}</button>` : ''}
+          <small class="muted">Neues Angebot in <b data-store-timer>${duration(Math.max(0, store.endsAt - serverNow()))}</b></small>
         </div>
       </div>
-      <div class="ms-shop">
-        <div class="ms-shelf">${store.items.map(cell).join('')}</div>
-        ${locker()}
+      <div class="ms-shop ${store.gold ? 'gold' : ''}">
+        <div class="ms-promo">${store.gold
+    ? '<b>Heute ganz besonders:</b> ein legendäres Instrument!'
+    : '<b>Angebot des Tages</b><span>Besondere Stücke, nur heute</span>'}</div>
+        <div class="ms-offer">
+          <div class="ms-shelf">${store.items.map(cell).join('')}</div>
+          ${locker()}
+        </div>
       </div>
-      <p class="muted ms-note">Das Regal ist für alle Labels gleich und wechselt alle paar Stunden. Von jeder Art steht höchstens ein Instrument da; gute Stücke sind selten. Mit einer neuen Lieferung bekommst du sofort ein anderes Regal nur für dich, bis zum nächsten Wechsel; jede weitere kostet das Doppelte.</p>
+      <div class="ms-basics">
+        <div class="ms-basics-head"><b>Grundausstattung</b><span>Jedes Instrument, immer da</span></div>
+        <div class="ms-wall">${store.basics.map(basic).join('')}</div>
+      </div>
+      <p class="muted ms-note">Das Angebot ist für alle Labels gleich und wechselt jeden Morgen. Meist sind es seltene Instrumente, ab und zu ein episches – und ganz selten ein legendäres. Die Grundausstattung gibt es immer, so oft du willst.</p>
     </div>`;
 }
 
-
 /** Ein Instrument im Detail, im Stil des Ladens (kein Sammelkarten-Look): Bild auf Filz, Werte, Preisschild, Kaufen und Zurücklegen. */
-function openItem(slot, idx) {
+function openItem(slot, idx, basicModel = null) {
   const store = app.state.store;
-  const item = [...store.items, ...(store.hold ? [store.hold.item] : [])].find((i) => i.slot === slot && i.idx === idx);
+  const item = basicModel
+    ? store.basics.find((b) => b.model === basicModel)
+    : [...store.items, ...(store.hold ? [store.hold.item] : [])].find((i) => i.slot === slot && i.idx === idx);
   if (!item) return;
   const model = cat().gear[item.model];
   const need = needing(item);
-  const isHold = !!store.hold && store.hold.item.slot === slot && store.hold.item.idx === idx;
+  const isHold = !basicModel && !!store.hold && store.hold.item.slot === slot && store.hold.item.idx === idx;
   const canHold = !item.bought && !isHold && item.slot === store.slot;
   const modal = openModal({
     className: 'ms-detail',
@@ -99,7 +122,7 @@ function openItem(slot, idx) {
           <p class="ms-need-line">${need.length ? `Fehlt gerade: <b>${esc(need.map((m) => m.firstName).join(', '))}</b>` : `Im Label fehlt gerade niemandem ein Instrument dieser Art.`}</p>
           <div class="ms-buy">
             <span class="ms-price">${item.bought ? 'gekauft' : money(item.price)}</span>
-            ${isHold ? '<button class="btn ghost small" data-release>Zurückgeben</button>' : `<button class="btn ghost small" data-hold ${off(canHold ? '' : item.bought ? 'Das hast du schon gekauft.' : 'Zurücklegen geht nur mit Instrumenten aus dem Regal, das gerade dasteht.')}>${store.hold ? 'Stattdessen zurücklegen' : 'Zurücklegen'}</button>`}
+            ${basicModel ? '<small class="muted">Immer vorrätig</small>' : isHold ? '<button class="btn ghost small" data-release>Zurückgeben</button>' : `<button class="btn ghost small" data-hold ${off(canHold ? '' : item.bought ? 'Das hast du schon gekauft.' : 'Zurücklegen geht nur mit Instrumenten aus dem Regal, das gerade dasteht.')}>${store.hold ? 'Stattdessen zurücklegen' : 'Zurücklegen'}</button>`}
             <button class="btn primary" data-buy ${off(item.bought ? 'Das hast du schon gekauft.' : app.state.label.money < item.price ? `Dafür fehlen noch ${money(item.price - app.state.label.money)}.` : '')}>${item.bought ? 'Schon gekauft' : 'Kaufen'}</button>
           </div>
         </div>
@@ -110,7 +133,7 @@ function openItem(slot, idx) {
     return res;
   };
   modal.body.querySelector('[data-buy]')?.addEventListener('click', async () => {
-    const res = done(await mutate('storeBuy', { slot, idx }));
+    const res = done(await (basicModel ? mutate('storeBuyBasic', { model: basicModel }) : mutate('storeBuy', { slot, idx })));
     if (res) toast(`${model.name} liegt jetzt im Lager.`, 'ok');
   });
   modal.body.querySelector('[data-hold]')?.addEventListener('click', async () => {
@@ -209,18 +232,11 @@ document.addEventListener('click', (e) => {
 document.addEventListener('dragstart', (e) => { if (e.target.closest?.('.ms-cell')) e.preventDefault(); });
 
 defineActions({
-  /** Neue Lieferung: kostet Geld, das jetzige Regal ist danach weg (Zurückgelegtes bleibt). */
-  async storeRestock() {
-    const price = app.state.store.restock.price;
-    if (!await confirmDialog(`Neue Lieferung für ${money(price)} bestellen? Das jetzige Regal ist dann weg, ein zurückgelegtes Instrument bleibt.`, { ok: 'Bestellen' })) return;
-    if (await mutate('storeRestock')) {
-      doorsPending = true;
-      enter(true);
-      toast('Die neue Lieferung steht im Regal.', 'ok');
-    }
-  },
   storeItem({ slot, idx }) {
     openItem(Number(slot), Number(idx));
+  },
+  storeBasic({ model }) {
+    openItem(0, 0, model);
   },
 });
 
@@ -239,7 +255,6 @@ const DOORS_SEEN = 'signed.storeDoorsSeen';
 const doorsSeen = () => { try { return localStorage.getItem(DOORS_SEEN) === '1'; } catch { return false; } };
 
 /** Beim allerersten Betreten: Doppeltür geht auf und gibt das Regal frei. Danach geht es ohne Tür hinein. */
-/** force: auch nach dem ersten Besuch (neue Lieferung – die Türen gehen auf und zeigen das frische Regal). */
 export function enter(force = false) {
   if (!doorsPending || document.querySelector('.ms-doors')) return;
   doorsPending = false;
@@ -265,3 +280,14 @@ setInterval(() => {
   const hold = document.querySelector('[data-store-hold]');
   if (hold) hold.textContent = duration(Math.max(0, Number(hold.dataset.storeHold) - serverNow()));
 }, 1000);
+
+// Ein legendäres Instrument im Angebot: einmal je Angebot ein Hinweis, wo immer man gerade ist.
+const GOLD_SEEN = 'signed.storeGoldSeen';
+onStateChange((before, after) => {
+  if (!after.store?.gold) return;
+  let seen = 0;
+  try { seen = Number(localStorage.getItem(GOLD_SEEN) ?? 0); } catch { /* ohne Speicher: jedes Mal beim Laden */ }
+  if (seen === after.store.slot) return;
+  try { localStorage.setItem(GOLD_SEEN, String(after.store.slot)); } catch { /* egal */ }
+  toast('Im Music Store gibt es heute ein legendäres Instrument!', 'gold');
+});

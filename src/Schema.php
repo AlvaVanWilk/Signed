@@ -486,6 +486,10 @@ final class Schema
             [
                 'ALTER TABLE musicians ADD COLUMN known_traits TEXT NULL',
             ],
+            // 36: Music Store mit Tagesangebot statt Regal alle vier Stunden – alte Zurücklegungen gelten nicht mehr (labels.store_shelf bleibt unbenutzt)
+            [
+                'DELETE FROM store_holds',
+            ],
         ];
     }
 }

@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 use Signed\Clock;
 use Signed\Game\Balance;
+use Signed\Game\Catalog;
+use Signed\Game\Store;
 
 /** Spielt den Kernkreislauf einmal komplett über die API durch. */
 
@@ -1713,31 +1715,34 @@ test('WikiSignia: Labels als oberste Ebene, fremde Artikel mit Label, ohne Geld-
     check(count($byName['signies']) >= 1, 'Künstler gefunden');
 });
 
-test('Music Store: neue Lieferung gegen Geld, nur für dieses Label, bis zum nächsten Wechsel', function () {
+test('Music Store: Grundausstattung – jedes graue Modell immer da, beliebig oft; Angebot meist grün, selten blau, ganz selten gold', function () {
     $db = freshDb();
-    $p = registerPlayer($db, 'Lieferung');
-    $other = registerPlayer($db, 'Nachbar');
-    $before = $p->get('state');
-    $shelf = $before['store']['items'];
-    checkEquals(Balance::STORE['restock'], $before['store']['restock']['price']);
-    $res = $p->post('storeRestock');
-    checkEquals($before['label']['money'] - Balance::STORE['restock'], $res['state']['label']['money'], 'kostet');
-    check($res['state']['store']['restock']['own'], 'eigene Lieferung');
-    check(array_column($res['state']['store']['items'], 'model') !== array_column($shelf, 'model') || array_column($res['state']['store']['items'], 'price') !== array_column($shelf, 'price'), 'anderes Regal');
-    checkEquals((int) (Balance::STORE['restock'] * Balance::STORE['restockFactor']), $res['state']['store']['restock']['price'], 'die nächste kostet das Doppelte');
-    // Kaufen aus der eigenen Lieferung
-    $item = $res['state']['store']['items'][0];
-    $p->post('storeBuy', ['slot' => $item['slot'], 'idx' => $item['idx']]);
-    // Das andere Label sieht weiter das Regal für alle
-    checkEquals(array_column($shelf, 'model'), array_column($other->get('state')['store']['items'], 'model'));
-    // Nach dem Wechsel gilt wieder das Regal für alle, der Preis ist zurück
-    Clock::advance(Balance::STORE['hours'] * 3600);
-    $after = $p->get('state')['store'];
-    check(!$after['restock']['own'], 'wieder das gemeinsame Regal');
-    checkEquals(Balance::STORE['restock'], $after['restock']['price']);
+    $p = registerPlayer($db, 'Grund');
+    $store = $p->get('state')['store'];
+    $commons = array_keys(array_filter(Catalog::GEAR, fn ($g) => $g['rarity'] === 'common'));
+    checkEquals($commons, array_column($store['basics'], 'model'), 'alle gewöhnlichen Modelle');
+    $money = $p->get('state')['label']['money'];
+    $p->post('storeBuyBasic', ['model' => $commons[0]]);
+    $res = $p->post('storeBuyBasic', ['model' => $commons[0]]);
+    checkEquals($money - 2 * Balance::STORE['price']['common'], $res['state']['label']['money'], 'zweimal dasselbe geht');
+    checkEquals(0, $res['gear']['tier']);
+    checkApiError(fn () => $p->post('storeBuyBasic', ['model' => 'gtr_master']), 'nicht');
+    // Über ein Jahr: Gold etwa einmal die Woche, kein Grau im Angebot, je Art höchstens eins
+    $gold = 0;
+    $blue = 0;
+    for ($day = 0; $day < 365; $day++) {
+        $offer = Store::shelf(20000 + $day);
+        $rar = array_count_values(array_column($offer, 'rarity'));
+        check(!isset($rar['common']), 'kein Grau im Angebot');
+        checkEquals(count($offer), count(array_unique(array_column($offer, 'type'))));
+        $gold += $rar['legendary'] ?? 0;
+        $blue += $rar['epic'] ?? 0;
+    }
+    check($gold >= 25 && $gold <= 75, 'Gold etwa einmal die Woche: ' . $gold);
+    check($blue >= 90 && $blue <= 170, 'Blau in etwa jedem dritten Angebot: ' . $blue);
 });
 
-test('Music Store: Regal für alle gleich, 5 bis 10 Instrumente je Art eines, wechselt nach vier Stunden, Kaufen und Zurücklegen', function () {
+test('Music Store: Angebot für alle gleich, wechselt täglich, Kaufen und Zurücklegen', function () {
     $db = freshDb();
     $a = registerPlayer($db, 'StoreA');
     $b = registerPlayer($db, 'StoreB');
@@ -1746,7 +1751,7 @@ test('Music Store: Regal für alle gleich, 5 bis 10 Instrumente je Art eines, we
     $shelfB = $b->get('state')['store'];
     checkEquals(array_column($shelfA['items'], 'model'), array_column($shelfB['items'], 'model'), 'für alle gleich');
     $count = count($shelfA['items']);
-    check($count >= 5 && $count <= 10, 'fünf bis zehn Instrumente');
+    check($count >= 2 && $count <= 6, 'ein paar Angebote');
     $types = array_column($shelfA['items'], 'type');
     checkEquals(count($types), count(array_unique($types)), 'je Art höchstens eins');
     // Kaufen
@@ -1760,10 +1765,10 @@ test('Music Store: Regal für alle gleich, 5 bis 10 Instrumente je Art eines, we
     // Zurücklegen: eines, bleibt über den Wechsel, nur für dieses Label
     $other = $shelfA['items'][1];
     // Ein neues Zurückgelegtes ersetzt das alte
-    $a->post('storeHold', ['idx' => $shelfA['items'][2]['idx']]);
+    $a->post('storeHold', ['idx' => $shelfA['items'][$count - 1]['idx']]);
     $a->post('storeHold', ['idx' => $other['idx']]);
     checkEquals($other['model'], $a->get('state')['store']['hold']['item']['model'], 'das neue ersetzt das alte');
-    Clock::advance(Balance::STORE['hours'] * 3600 + 60);
+    Clock::advance($shelfA['endsAt'] - Clock::now() + 60);
     $later = $a->get('state')['store'];
     check($later['slot'] > $shelfA['slot'], 'neues Regal');
     check($later['hold'] !== null && $later['hold']['item']['model'] === $other['model'], 'das zurückgelegte bleibt');
@@ -1772,7 +1777,7 @@ test('Music Store: Regal für alle gleich, 5 bis 10 Instrumente je Art eines, we
     checkEquals($other['model'], $res['gear']['model']);
     checkEquals(null, $res['state']['store']['hold'], 'nach dem Kauf nicht mehr zurückgelegt');
     // Alte Regale lassen sich nicht mehr kaufen
-    checkApiError(fn () => $a->post('storeBuy', ['slot' => $shelfA['slot'], 'idx' => $shelfA['items'][3]['idx']]), 'nicht mehr im Regal');
+    checkApiError(fn () => $a->post('storeBuy', ['slot' => $shelfA['slot'], 'idx' => $shelfA['items'][1]['idx']]), 'nicht mehr im Regal');
     // Das Zurücklegen läuft nach einem Tag ab
     $a->post('storeHold', ['idx' => $later['items'][0]['idx']]);
     Clock::advance(Balance::STORE['holdHours'] * 3600 + 60);

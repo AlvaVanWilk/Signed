@@ -533,7 +533,7 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .ms-signsvg { width: 100%; display: block; }
 @keyframes ms-sway { 0%, 100% { transform: rotate(-.6deg); } 50% { transform: rotate(.6deg); } }
 .ms-info { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
-.ms-shop { display: grid; grid-template-columns: 1fr 190px; gap: 14px; align-items: start; padding: 16px; border-radius: 18px; border: 1px solid #2e2538;
+.ms-shop { position: relative; padding: 16px; border-radius: 18px; border: 1px solid #2e2538;
   background: repeating-linear-gradient(90deg, #1d2a33 0 46px, #1a2630 46px 92px), #1d2a33; box-shadow: inset 0 0 60px rgba(0, 0, 0, .55); }
 .ms-shelf { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); padding: 14px 12px 0; border-radius: 10px;
   border: 10px solid #4a3020; border-image: linear-gradient(#6a4529, #3b2515) 1;
@@ -562,9 +562,42 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .ms-locker .ms-cell { height: 172px; width: 150px; }
 .ms-locker .ms-cell .ms-ico { width: 84px; height: 100px; }
 .ms-note { margin-top: 10px; font-size: .84rem; }
+/* Angebot des Tages: Werbeschild oben, darunter das Regal; ein legendäres Instrument bekommt Strahlen, Schild und Rahmen in Gold. */
+.ms-offer { display: grid; grid-template-columns: 1fr 190px; gap: 14px; align-items: start; }
+.ms-promo { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: -2px 0 12px; padding: 6px 14px; width: fit-content; border-radius: 6px; background: #f1e4c4; color: #2c2012;
+  font-family: Georgia, 'Times New Roman', serif; font-size: 1.05rem; box-shadow: 0 3px 6px rgba(0, 0, 0, .5); transform: rotate(-.6deg); }
+.ms-promo span { font-family: inherit; font-size: .85rem; opacity: .7; }
+.ms-shop.gold { border-color: #a8842e; box-shadow: inset 0 0 60px rgba(0, 0, 0, .55), 0 0 0 1px rgba(242, 193, 78, .35), 0 0 34px rgba(242, 193, 78, .22); }
+.ms-shop.gold .ms-promo { background: linear-gradient(100deg, #f7d778, #fff1b8 45%, #e8b84a); color: #3a2606; font-size: 1.25rem; animation: ms-promo 3.2s ease-in-out infinite; }
+@keyframes ms-promo { 0%, 100% { box-shadow: 0 3px 6px rgba(0, 0, 0, .5), 0 0 0 rgba(242, 193, 78, 0); } 50% { box-shadow: 0 3px 6px rgba(0, 0, 0, .5), 0 0 22px rgba(242, 193, 78, .6); } }
+.ms-shelf .ms-cell.star { grid-column: span 2; height: 248px; }
+.ms-cell.star .ms-ico { width: 150px; height: 168px; z-index: 1; }
+.ms-rays { position: absolute; left: 50%; top: 46%; width: 260px; height: 260px; margin: -130px 0 0 -130px; border-radius: 50%; pointer-events: none;
+  background: repeating-conic-gradient(rgba(255, 214, 110, .22) 0 8deg, transparent 8deg 22deg); -webkit-mask: radial-gradient(circle, #000 20%, transparent 68%); mask: radial-gradient(circle, #000 20%, transparent 68%);
+  animation: ms-rays 30s linear infinite; }
+@keyframes ms-rays { to { transform: rotate(360deg); } }
+.ms-ribbon.gold { background: linear-gradient(100deg, #e8b84a, #fff1b8 50%, #e8b84a); color: #3a2606; }
+@media (prefers-reduced-motion: reduce) { .ms-rays, .ms-shop.gold .ms-promo { animation: none; } }
+/* Grundausstattung: eine Lochwand mit allen grauen Modellen, klein und immer da */
+.ms-basics { margin-top: 16px; padding: 12px 14px 14px; border-radius: 14px; border: 1px solid #2e2538;
+  background: radial-gradient(circle, #241f2c 1.4px, transparent 1.6px) 0 0 / 16px 16px, #1b1822; }
+.ms-basics-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+.ms-basics-head b { font-family: Georgia, 'Times New Roman', serif; font-weight: 400; font-size: 1.1rem; }
+.ms-basics-head span { color: var(--lb-muted); font-size: .82rem; }
+.ms-wall { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
+@media (max-width: 900px) { .ms-wall { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); } }
+.ms-bcell { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px 4px; border: 0; border-radius: 10px; background: none; color: inherit; font: inherit; cursor: pointer; }
+.ms-bcell:hover { background: rgba(255, 255, 255, .04); }
+.ms-bcell:focus-visible { outline: 2px solid var(--lb-accent); outline-offset: -2px; }
+.ms-bico { width: 58px; height: 58px; filter: drop-shadow(0 5px 4px rgba(0, 0, 0, .5)); transition: transform .2s; }
+.ms-bico svg { width: 100%; height: 100%; display: block; }
+.ms-bcell:hover .ms-bico { transform: translateY(-3px) rotate(-2deg); }
+.ms-btag { max-width: 100%; padding: 2px 6px 1px; border-radius: 3px; background: #e6dcc2; color: #2c2012; text-align: center; font-weight: 800; font-size: .76rem; line-height: 1.1; }
+.ms-btag small { display: block; font-weight: 600; font-size: .6rem; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ms-bcell .ms-need { top: 6px; left: 10px; }
 .ms-detail-card { display: flex; justify-content: center; }
 .ms-need-line { text-align: center; margin: 10px 0 0; font-size: .9rem; }
-@media (max-width: 760px) { .ms-shop { grid-template-columns: 1fr; } }
+@media (max-width: 760px) { .ms-offer { grid-template-columns: 1fr; } }
 
 /* Doppeltür beim Betreten */
 .ms-doors { position: fixed; inset: 0; z-index: 5000; display: flex; perspective: 1500px; pointer-events: all; overflow: hidden; background: #0b0910; animation: ms-vanish .9s ease-in-out 1.35s forwards; }

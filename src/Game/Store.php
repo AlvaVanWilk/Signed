@@ -7,11 +7,12 @@ use Signed\ApiError;
 use Signed\Clock;
 
 /**
- * Music Store: ein Regal mit 5 bis 10 Instrumenten, je Art höchstens eins. Es ist für alle Labels gleich und wechselt alle paar Stunden.
- * Das Regal ergibt sich ganz aus der Nummer des Zeitfensters (`slot`), nicht aus dem Zufall: Dieselbe Nummer ergibt immer dieselben Instrumente.
- * Zurücklegen hält ein Instrument für ein Label über den Wechsel hinaus (eines je Label, einen Tag lang).
- * Gegen Geld bestellt ein Label eine eigene Lieferung: Dann steht bis zum nächsten Wechsel ein anderes Regal nur für dieses Label da.
- * Dessen Nummer ist RESTOCK + Fenster × 100 + n (n = wievielte Lieferung im Fenster), der Zufall dazu hängt auch am Label.
+ * Music Store in zwei Teilen:
+ * - Grundausstattung: jedes gewöhnliche Modell steht immer da und lässt sich beliebig oft kaufen (ein graues Instrument braucht jeder).
+ * - Angebot: ein paar besondere Instrumente, für alle Labels gleich, das täglich wechselt (Balance::STORE). Meist seltene, ab und zu ein episches,
+ *   ganz selten ein legendäres – das wird groß beworben. Jedes Angebot kauft ein Label höchstens einmal.
+ * Das Angebot ergibt sich ganz aus der Nummer des Tages (`slot`), nicht aus dem Spiel-Zufall: Dieselbe Nummer ergibt immer dieselben Instrumente.
+ * Zurücklegen hält ein Angebot für ein Label über den Wechsel hinaus (eines je Label, einen Tag lang).
  */
 final class Store
 {
@@ -19,54 +20,47 @@ final class Store
     {
     }
 
-    public const RESTOCK = 100_000_000;
-
     public static function slot(?int $now = null): int
     {
-        return intdiv($now ?? Clock::now(), Balance::STORE['hours'] * 3600);
+        $c = Balance::STORE;
+        return intdiv(($now ?? Clock::now()) - $c['offset'] * 3600, $c['hours'] * 3600);
     }
 
-    /** Zu welchem Zeitfenster gehört ein Regal (gewöhnliches oder bestelltes)? */
-    public static function windowOf(int $shelf): int
+    /** Wann das Angebot dieses Tages endet. */
+    public static function endsAt(int $slot): int
     {
-        return $shelf >= self::RESTOCK ? intdiv($shelf - self::RESTOCK, 100) : $shelf;
+        $c = Balance::STORE;
+        return ($slot + 1) * $c['hours'] * 3600 + $c['offset'] * 3600;
     }
 
-    /** Das Regal, das dieses Label gerade sieht: die eigene Lieferung dieses Fensters, sonst das für alle. */
-    public function currentShelf(?int $now = null): int
+    /** Die Grundausstattung: jedes gewöhnliche Modell, fester Preis. */
+    public static function basics(): array
     {
-        $slot = self::slot($now);
-        $own = $this->repo->db->value('SELECT store_shelf FROM labels WHERE id = ?', [$this->repo->labelId]);
-        return $own !== null && self::windowOf((int) $own) === $slot ? (int) $own : $slot;
-    }
-
-    /** Was die nächste Lieferung kostet (verdoppelt sich je Lieferung im selben Fenster). */
-    public function restockPrice(): int
-    {
-        $shelf = $this->currentShelf();
-        $n = $shelf >= self::RESTOCK ? ($shelf - self::RESTOCK) % 100 : 0;
-        return (int) round(Balance::STORE['restock'] * Balance::STORE['restockFactor'] ** $n);
-    }
-
-    /** Neue Lieferung bestellen: sofort ein frisches Regal nur für dieses Label, bis zum nächsten Wechsel. */
-    public function restock(): void
-    {
-        $this->repo->db->transaction(function (): void {
-            $shelf = $this->currentShelf();
-            $n = $shelf >= self::RESTOCK ? ($shelf - self::RESTOCK) % 100 : 0;
-            if ($n >= Balance::STORE['restockMax']) {
-                throw new ApiError('Für heute liefert der Großhandel nichts mehr. Warte auf den nächsten Wechsel.');
+        $out = [];
+        foreach (Catalog::GEAR as $model => $g) {
+            if ($g['rarity'] === 'common') {
+                $out[] = ['model' => $model, 'type' => $g['type'], 'rarity' => 'common', 'tier' => 0, 'bonuses' => [], 'price' => Balance::STORE['price']['common']];
             }
-            $this->repo->spend($this->restockPrice(), 'Music Store: neue Lieferung');
-            $next = self::RESTOCK + self::slot() * 100 + $n + 1;
-            $this->repo->db->update('labels', ['store_shelf' => $next], ['id' => $this->repo->labelId]);
+        }
+        return $out;
+    }
+
+    /** Grundausstattung kaufen: immer vorrätig. */
+    public function buyBasic(string $model): array
+    {
+        $item = array_values(array_filter(self::basics(), static fn ($b) => $b['model'] === $model))[0] ?? throw new ApiError('Dieses Instrument gibt es hier nicht.');
+        return $this->repo->db->transaction(function () use ($item): array {
+            $this->repo->spend($item['price'], sprintf('Music Store: %s', Catalog::GEAR[$item['model']]['name']));
+            $base = Catalog::GEAR[$item['model']];
+            $id = $this->repo->insertGear($item['model'], ['klang' => $base['klang'], 'spielbarkeit' => $base['spielbarkeit'], 'design' => $base['design'], 'perks' => [], 'bonuses' => []]);
+            return ['gear' => Present::gear($this->repo->gear()[$id])];
         });
     }
 
     /** Zahlenstrom aus der Nummer des Fensters (xorshift32): derselbe Start, dieselbe Folge – unabhängig vom Spiel-Zufall. */
-    private static function stream(int $slot, int $labelId = 0): \Closure
+    private static function stream(int $slot): \Closure
     {
-        $s = crc32($slot >= self::RESTOCK ? 'store|' . $slot . '|' . $labelId : 'store|' . $slot) ?: 1;
+        $s = crc32('offer|' . $slot) ?: 1;
         return static function (int $max) use (&$s): int {
             $s ^= ($s << 13) & 0xFFFFFFFF;
             $s ^= $s >> 17;
@@ -76,40 +70,34 @@ final class Store
         };
     }
 
-    /** @return list<array<string, mixed>> das Regal dieses Fensters */
-    public static function shelf(int $slot, int $labelId = 0): array
+    /** @return list<array<string, mixed>> das Angebot dieses Tages: das legendäre (falls es eins gibt) zuerst, dann das epische, dann die seltenen */
+    public static function shelf(int $slot): array
     {
-        $r = self::stream($slot, $labelId);
+        $r = self::stream($slot);
         $c = Balance::STORE;
+        $o = $c['offer'];
         $types = array_keys(Catalog::INSTRUMENTS);
         for ($i = count($types) - 1; $i > 0; $i--) {
             $j = $r($i + 1);
             [$types[$i], $types[$j]] = [$types[$j], $types[$i]];
         }
-        $count = min(count($types), $c['count'][0] + $r($c['count'][1] - $c['count'][0] + 1));
-        $odds = $c['odds'];
-        $total = array_sum($odds);
-        $order = ['legendary', 'epic', 'rare', 'common'];
+        $rarities = [];
+        if ($r(10000) < $o['gold'] * 10000) {
+            $rarities[] = 'legendary';
+        }
+        if ($r(10000) < $o['blue'] * 10000) {
+            $rarities[] = 'epic';
+        }
+        // Das legendäre steht doppelt so breit; dafür ein seltenes weniger, damit alles in eine Reihe passt.
+        $green = max(1, $o['green'][0] + $r($o['green'][1] - $o['green'][0] + 1) - ($rarities && $rarities[0] === 'legendary' ? 1 : 0));
+        $rarities = array_merge($rarities, array_fill(0, $green, 'rare'));
         $items = [];
-        foreach (array_slice($types, 0, $count) as $idx => $type) {
-            $roll = $r(1000) / 1000 * $total;
-            $rarity = 'common';
-            foreach ($odds as $name => $weight) {
-                $roll -= $weight;
-                if ($roll < 0) {
-                    $rarity = $name;
-                    break;
-                }
-            }
-            // Gibt es die Seltenheit für diese Art nicht, nimm die nächst gewöhnlichere.
-            $models = [];
-            for ($k = array_search($rarity, $order, true); $k < count($order) && !$models; $k++) {
-                $rarity = $order[$k];
-                $models = array_keys(array_filter(Catalog::GEAR, static fn ($g) => $g['type'] === $type && $g['rarity'] === $rarity));
-            }
+        foreach (array_slice($rarities, 0, count($types)) as $idx => $rarity) {
+            $type = $types[$idx];
+            $models = array_keys(array_filter(Catalog::GEAR, static fn ($g) => $g['type'] === $type && $g['rarity'] === $rarity));
             $model = $models[$r(count($models))];
             $base = Catalog::GEAR[$model];
-            // Boni wie Gear::roll, aber aus dem festen Zufall des Regals (alle Labels sehen dasselbe)
+            // Boni wie Gear::roll, aber aus dem festen Zufall des Angebots (alle Labels sehen dasselbe)
             $tier = Gear::tier($rarity);
             $bonuses = [];
             foreach (['green' => 1, 'blue' => 2, 'gold' => 3] as $place => $from) {
@@ -130,19 +118,18 @@ final class Store
     {
         $db = $this->repo->db;
         $now = Clock::now();
-        $window = self::slot($now);
-        $slot = $this->currentShelf($now);
+        $slot = self::slot($now);
         $db->exec('DELETE FROM store_holds WHERE label_id = ? AND expires_at <= ?', [$this->repo->labelId, $now]);
         $hold = $db->one('SELECT slot, idx, expires_at FROM store_holds WHERE label_id = ? ORDER BY id DESC', [$this->repo->labelId]);
         $bought = [];
-        foreach ($db->all('SELECT slot, idx FROM store_buys WHERE label_id = ? AND slot >= ?', [$this->repo->labelId, $window - intdiv(Balance::STORE['holdHours'], Balance::STORE['hours']) - 2]) as $b) {
+        foreach ($db->all('SELECT slot, idx FROM store_buys WHERE label_id = ? AND slot >= ?', [$this->repo->labelId, $slot - 3]) as $b) {
             $bought[(int) $b['slot'] . ':' . (int) $b['idx']] = true;
         }
         $mark = static fn (array $item) => $item + ['bought' => isset($bought[$item['slot'] . ':' . $item['idx']]), 'held' => false];
-        $items = array_map($mark, self::shelf($slot, $this->repo->labelId));
+        $items = array_map($mark, self::shelf($slot));
         $held = null;
         if ($hold !== null) {
-            $shelf = (int) $hold['slot'] === $slot ? $items : array_map($mark, self::shelf((int) $hold['slot'], $this->repo->labelId));
+            $shelf = (int) $hold['slot'] === $slot ? $items : array_map($mark, self::shelf((int) $hold['slot']));
             $held = ($shelf[(int) $hold['idx']] ?? null);
             if ($held !== null) {
                 $held['held'] = true;
@@ -153,9 +140,11 @@ final class Store
         }
         return [
             'slot' => $slot,
-            'endsAt' => ($window + 1) * Balance::STORE['hours'] * 3600,
-            'restock' => ['price' => $this->restockPrice(), 'own' => $slot >= self::RESTOCK],
+            'endsAt' => self::endsAt($slot),
             'items' => $items,
+            // Ein legendäres Instrument im Angebot, das dieses Label noch nicht gekauft hat: wird groß beworben.
+            'gold' => (bool) array_filter($items, static fn ($i) => $i['tier'] === 3 && !$i['bought']),
+            'basics' => self::basics(),
             'hold' => $held === null ? null : ['item' => $held, 'expiresAt' => (int) $hold['expires_at']],
         ];
     }
@@ -163,13 +152,13 @@ final class Store
     private function find(int $slot, int $idx): array
     {
         $now = Clock::now();
-        $current = $this->currentShelf($now);
+        $current = self::slot($now);
         $hold = $this->repo->db->one('SELECT slot, idx, expires_at FROM store_holds WHERE label_id = ? AND expires_at > ?', [$this->repo->labelId, $now]);
         $isHold = $hold !== null && (int) $hold['slot'] === $slot && (int) $hold['idx'] === $idx;
         if ($slot !== $current && !$isHold) {
             throw new ApiError('Dieses Instrument ist nicht mehr im Regal.');
         }
-        return self::shelf($slot, $this->repo->labelId)[$idx] ?? throw new ApiError('Dieses Instrument gibt es nicht.');
+        return self::shelf($slot)[$idx] ?? throw new ApiError('Dieses Instrument gibt es nicht.');
     }
 
     /** Kaufen: ein Instrument aus dem Regal (oder das zurückgelegte) ins Lager des Labels. */
@@ -194,7 +183,7 @@ final class Store
     {
         $this->repo->db->transaction(function () use ($idx): void {
             $now = Clock::now();
-            $slot = $this->currentShelf($now);
+            $slot = self::slot($now);
             $item = $this->find($slot, $idx);
             $this->present();
             if ((int) $this->repo->db->value('SELECT COUNT(*) FROM store_buys WHERE label_id = ? AND slot = ? AND idx = ?', [$this->repo->labelId, $slot, $item['idx']]) > 0) {

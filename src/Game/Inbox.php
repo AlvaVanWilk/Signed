@@ -320,7 +320,7 @@ final class Inbox
             }
             $staffId = $db->insert('staff', [
                 'label_id' => $this->repo->labelId, 'role' => $d['role'], 'tier' => (int) $d['tier'],
-                'data' => json_encode(['first_name' => $d['first_name'], 'last_name' => $d['last_name'], 'look' => $d['look']], JSON_UNESCAPED_UNICODE),
+                'data' => json_encode(['first_name' => $d['first_name'], 'last_name' => $d['last_name'], 'look' => $d['look']] + ($d['role'] === 'assistant' ? ['task' => 'demos'] : []), JSON_UNESCAPED_UNICODE),
                 'hired_at' => Clock::now(),
             ]);
             $db->exec('DELETE FROM mail WHERE id = ?', [$id]);
@@ -351,8 +351,8 @@ final class Inbox
             $medium = Rng::pick(Catalog::INTERVIEW_MEDIA[min(3, $level)]);
             $this->store('interview', ['musicianId' => $m['id'], 'level' => $level, 'medium' => $medium['name'], 'share' => $medium['share']], $now, Balance::INTERVIEW['ttl']);
         }
-        foreach (array_keys(Balance::ASSISTANT['tiers']) as $tier) {
-            $this->store('job', self::applicant('assistant', 1.0, $tier), $now - $tier, Balance::JOBS['ttl']);
+        foreach ([1, 2] as $k) {
+            $this->store('job', self::applicant('assistant', 1.0, 1), $now - $k, Balance::JOBS['ttl']);
         }
         foreach (array_keys(Balance::SCOUT_STAFF['tiers']) as $tier) {
             $this->store('job', self::applicant('scout', 1.0, $tier), $now - 10 - $tier, Balance::JOBS['ttl']);

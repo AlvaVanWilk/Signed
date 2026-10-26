@@ -286,10 +286,11 @@ Alles läuft ab (Demos 4 Tage, Anfragen 8 Stunden, Bewerbungen 2 Tage; die Restz
 („Gespeichert“; ablaufen tut es trotzdem). Die Zahl am Menüpunkt zählt, was nicht gemerkt ist. **Ohne Assistenz** liegt alles gemischt auf einem Stapel.
 - **Bewerbungen** kommen im Schnitt drei am Tag (`Balance::JOBS`); Scout und eine einfache Assistenz liegen von Anfang an da (solange es keine Assistenz gibt, immer eine), Manager erst ab Erfolg 15. Wie gut die Bewerber sind, folgt dem Erfolg
   **gesättigt**: Güte = Erfolg / (Erfolg + 300), also oben offen, nie ganz 1. Jede Stufe bewirbt sich erst ab ihrer Güte; die beste erreichbare kommt am häufigsten.
-- **Assistenz** (gebaut, `Assistant`): einmalig bezahlt (Praktikum 250 ₲, Assistenz 900, Senior 2.500, Leitung 6.000). Sie sortiert die Post in
-  Reiter (Demos, Anfragen, Bewerbungen, Gespeichert), hört jeden Tag Demos an (20 / 60 / 150 / 400, die ältesten zuerst, gemerkte nicht; mehrere
-  zählen zusammen) und schreibt **Notizen auf die Übersicht** (offene Anfragen mit Restzeit, Bewerbungen, gute Demos, Kurse des Tages). Ohne Assistenz
-  bleibt die Übersicht schlicht. **Regeln** ab der zweiten Stufe: ab Können-Stufe; ab der dritten auch Genres und Einzeln/Band. Was nicht passt, wirft sie weg.
+- **Assistenz** (gebaut, `Assistant`): einmalig bezahlt (400 ₲), alle gleich gut; es gibt keine Stufen mehr, man ersetzt keine durch eine bessere.
+  Jede **sortiert den Posteingang** (Reiter Demos, Anfragen, Bewerbungen, Gespeichert; Notizen auf der Übersicht). Dazu hat jede eine **Aufgabe**,
+  jederzeit umstellbar: **Kassetten anhören** (50 am Tag, die ältesten zuerst, gemerkte nicht; wirft nach den Regeln weg, was nicht passt: ab Können-Stufe,
+  Genres, Einzeln/Band) oder **Presse** (sagt Interview-Anfragen zu, sobald der Musiker frei ist). Mehr Eingang oder beide Aufgaben: mehrere einstellen.
+  Ohne Assistenz liegt alles auf einem Stapel und die Übersicht bleibt schlicht; solange keine da ist, liegt immer eine Bewerbung dafür im Posteingang.
 - **Interviews** siehe „Interviews und Promo-Anfragen“; Zahlen in `kern.md` (Promo, Tempo).
 - **Scout** (gebaut, `Scouting`): Ein einfacher Scout bewirbt sich gleich zu Beginn (Willkommens-Brief, 400 ₲); bessere kommen mit dem Erfolg
   (`Balance::SCOUT_STAFF`). Losschicken mit Genre und/oder Instrument („Egal“ geht), dann liegt nach 6 / 5 / 4 Stunden ein **Bericht** im

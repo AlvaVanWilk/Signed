@@ -94,6 +94,7 @@ final class Api
         'mailDrop' => ['POST', true],
         'mailTest' => ['POST', true],
         'assistRules' => ['POST', true],
+        'assistTask' => ['POST', true],
         'scoutSend' => ['POST', true],
         'scoutReportSign' => ['POST', true],
         'practiceAuto' => ['POST', true],
@@ -496,6 +497,12 @@ final class Api
     {
         $id = (new Scouting($repo))->sign(self::int($in, 'mailId'), (int) ($in['index'] ?? -1));
         return ['musicianId' => $id, 'state' => State::build($repo)];
+    }
+
+    private function assistTask(array $in, Repo $repo): array
+    {
+        (new Assistant($repo))->setTask(self::int($in, 'staffId'), self::str($in, 'task'));
+        return ['state' => State::build($repo)];
     }
 
     private function assistRules(array $in, Repo $repo): array

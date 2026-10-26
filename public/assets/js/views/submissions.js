@@ -168,7 +168,7 @@ function interviewLetter(m) {
 
 function jobLetter(m) {
   const money0 = app.state.label.money;
-  const what = m.role === 'assistant' ? `öffnet ${m.perDay} Demos am Tag${m.tier >= 2 ? ', sortiert nach Regeln' : ''}`
+  const what = m.role === 'assistant' ? `sortiert die Post, hört ${m.perDay} Kassetten am Tag an oder kümmert sich um die Presse`
     : m.role === 'scout' ? `${m.candidates} Talente in ${mins(m.seconds)} (Können bis ${m.maxSkill})`
     : m.role === 'teacher' ? `${instrumentName(m.instrument)} für einen Musiker: +${m.gain} Können (bis ${m.maxSkill})${m.genre ? `, bei ${genreName(m.genre)} mehr` : ''}`
     : m.role === 'coach' ? `${days(m.seconds)} für eine Band: Songs ${fmtFactor(m.speed)} so schnell, Platte +${Math.round(m.quality * 100)} %`
@@ -209,20 +209,20 @@ const letterSlot = (m) => `<div class="lb-slotitem lb-mailitem" style="${scatter
 
 /** Die Assistenz stellt sich oben vor: wer, wie viel am Tag, was heute erledigt ist, und ihre Regeln. */
 function assistantBar(a) {
-  const ruleText = (() => {
-    const r = a.rules;
-    const parts = [];
-    if (r.minLevel > 0) parts.push(`ab Stufe ${r.minLevel}`);
-    if (r.genres.length) parts.push(r.genres.map((g) => genreName(g)).join(', '));
-    if (r.kind !== 'any') parts.push(r.kind === 'solo' ? 'nur Einzelne' : 'nur Bands');
-    return parts.length ? `Behält nur: ${parts.join(' · ')}.` : 'Behält alles.';
-  })();
-  const canRules = Object.values(a.allowed).some(Boolean);
-  return `<div class="lb-assist">
-    <span class="lb-assist-faces">${a.staff.map((x) => `<span class="lb-ph sm" title="${esc(x.firstName)} ${esc(x.lastName)} (${esc(cat().staffRoles.assistant.tiers[x.tier])})">${photo({ id: x.id, look: x.look })}</span>`).join('')}</span>
-    <span><b>${a.staff.map((x) => esc(x.firstName)).join(' und ')}</b> ${a.staff.length > 1 ? 'öffnen' : 'öffnet'} ${a.perDay} Demos am Tag und ${a.staff.length > 1 ? 'sortieren' : 'sortiert'} die Post.
-      <small class="muted">Heute ${a.today.opened} geöffnet, ${a.today.dropped} weggeworfen. ${canRules ? esc(ruleText) : 'Regeln zum Aussortieren kann erst eine richtige Assistenz.'}</small></span>
-    <button class="btn small" data-act="assistRulesAsk" ${off(canRules ? '' : 'Regeln kann erst eine Assistenz ab der zweiten Stufe.')}>Regeln</button>
+  const r = a.rules;
+  const parts = [];
+  if (r.minLevel > 0) parts.push(`ab Stufe ${r.minLevel}`);
+  if (r.genres.length) parts.push(r.genres.map((g) => genreName(g)).join(', '));
+  if (r.kind !== 'any') parts.push(r.kind === 'solo' ? 'nur Einzelne' : 'nur Bands');
+  const ruleText = parts.length ? `Behält nur: ${parts.join(' · ')}.` : 'Behält alle Kassetten.';
+  const tasks = cat().staffRoles.assistant.tasks;
+  return `<div class="lb-assist lb-assist-team">
+    <span class="lb-assist-head"><b>${a.staff.length === 1 ? 'Deine Assistenz' : `Deine ${a.staff.length} Assistenzen`}</b> ${a.staff.length === 1 ? 'sortiert' : 'sortieren'} die Post.
+      <small class="muted">${a.perDay ? `Zusammen ${a.perDay} Kassetten am Tag. Heute ${a.today.opened} angehört, ${a.today.dropped} weggeworfen. ${esc(ruleText)}` : 'Niemand hört gerade Kassetten an.'}${a.press ? ' Interview-Anfragen werden zugesagt, sobald der Musiker frei ist.' : ''}</small></span>
+    <button class="btn small" data-act="assistRulesAsk">Regeln</button>
+    <div class="lb-assist-list">${a.staff.map((x) => `
+      <div class="lb-assist-row"><span class="lb-ph sm">${photo({ id: x.id, look: x.look })}</span><b>${esc(x.firstName)}</b>
+        <span class="lb-seg">${Object.entries(tasks).map(([k, label]) => `<button class="${x.task === k ? 'on' : ''}" data-act="assistTask" data-id="${x.id}" data-task="${k}">${esc(label)}</button>`).join('')}</span></div>`).join('')}</div>
   </div>`;
 }
 
@@ -433,7 +433,7 @@ function tutorDialog(m) {
 function rulesDialog() {
   const a = app.state.assistant;
   const r = { ...a.rules, genres: [...a.rules.genres] };
-  const need = (key) => (a.allowed[key] ? '' : `Kann erst eine ${cat().staffRoles.assistant.tiers[cat().rules.assistantRules[key]]}.`);
+  const need = () => '';
   const modal = openModal({
     className: 'lb-rules-modal',
     render: () => `
@@ -724,6 +724,11 @@ defineActions({
   },
   reportShow({ id }) {
     reportDialog(Number(id));
+  },
+  async assistTask({ id, task }) {
+    const x = app.state.assistant?.staff.find((y) => y.id === Number(id));
+    if (!x || x.task === task) return;
+    if (await mutate('assistTask', { staffId: Number(id), task })) toast(task === 'presse' ? `${x.firstName} kümmert sich jetzt um die Presse.` : `${x.firstName} hört jetzt Kassetten an.`, 'ok');
   },
   assistRulesAsk() {
     rulesDialog();

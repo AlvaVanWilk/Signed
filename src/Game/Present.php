@@ -208,7 +208,7 @@ final class Present
                 'promoSeconds' => Balance::PROMO_SECONDS,
                 'rehearsalSeconds' => Balance::REHEARSAL['seconds'],
                 'submissionListen' => Balance::SUBMISSIONS['listen'],
-                'assistantRules' => Balance::ASSISTANT['rules'],
+                'assistantPerDay' => Balance::ASSISTANT['tiers'][1]['perDay'],
                 'reactStep' => Balance::MOOD['reactStep'],
                 'moodGreen' => Balance::MOOD['green'],
                 'moodYellow' => Balance::MOOD['yellow'],

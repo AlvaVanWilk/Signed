@@ -1025,3 +1025,12 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .lb-tapeitem { position: relative; }
 .lb-tape-x { position: absolute; right: 8px; bottom: 10px; width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--lb-line); background: rgba(20, 18, 27, .9); color: var(--lb-muted); font-size: .7rem; line-height: 1; padding: 0; cursor: pointer; z-index: 3; }
 .lb-tape-x:hover { color: var(--lb-text); border-color: var(--lb-accent); }
+.lb-assist-team { flex-wrap: wrap; }
+.lb-assist-head { flex: 1; font-size: .9rem; }
+.lb-assist-list { flex-basis: 100%; display: grid; gap: 6px; }
+.lb-assist-row { display: flex; align-items: center; gap: 10px; }
+.lb-assist-row .lb-ph.sm { width: 34px; height: 34px; box-shadow: none; }
+.lb-assist-row b { min-width: 80px; }
+.lb-seg { display: inline-flex; border: 1px solid var(--lb-line); border-radius: 999px; overflow: hidden; }
+.lb-seg button { border: 0; background: none; color: var(--lb-muted); font: inherit; font-size: .8rem; font-weight: 700; padding: 5px 12px; cursor: pointer; }
+.lb-seg button.on { background: var(--lb-accent); color: #1b1822; }

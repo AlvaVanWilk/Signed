@@ -6,8 +6,9 @@ namespace Signed\Game;
 use Signed\ApiError;
 
 /**
- * Assistenz im Posteingang: öffnet jeden Tag eine feste Zahl Demos (die ältesten zuerst, gemerkte und laufende nicht) und sortiert die Post in Reiter.
- * Ab höheren Stufen wirft sie nach Regeln weg, was nicht passt (Können-Stufe, Genres, Solo oder Band). Mehrere Assistenzen arbeiten zusammen.
+ * Assistenz im Posteingang: Jede sortiert die Post in Reiter und schreibt Notizen auf die Übersicht. Dazu hat jede eine Aufgabe
+ * (Balance::ASSISTANT): Kassetten anhören (und nach den Regeln aussortieren) oder Presse (Interview-Anfragen zusagen, sobald der Musiker frei ist).
+ * Mehrere mit derselben Aufgabe arbeiten zusammen.
  */
 final class Assistant
 {
@@ -17,42 +18,47 @@ final class Assistant
     {
     }
 
-    /** @return list<array> eingestellte Assistenzen */
+    /** @return list<array> eingestellte Assistenzen, jede mit ihrer Aufgabe */
     public function staff(): array
     {
-        return $this->repo->db->all("SELECT * FROM staff WHERE label_id = ? AND role = 'assistant' ORDER BY tier DESC, id", [$this->repo->labelId]);
+        return array_map(static function ($s) {
+            $d = json_decode($s['data'], true);
+            return $s + ['task' => in_array($d['task'] ?? '', Balance::ASSISTANT['tasks'], true) ? $d['task'] : 'demos', 'info' => $d];
+        }, $this->repo->db->all("SELECT * FROM staff WHERE label_id = ? AND role = 'assistant' ORDER BY id", [$this->repo->labelId]));
     }
 
+    /** Kassetten am Tag: so viele, wie Assistenzen Kassetten anhören. */
     public static function perDay(array $staff): int
     {
-        return (int) array_sum(array_map(static fn ($s) => Balance::ASSISTANT['tiers'][(int) $s['tier']]['perDay'], $staff));
+        return Balance::ASSISTANT['tiers'][1]['perDay'] * count(array_filter($staff, static fn ($s) => $s['task'] === 'demos'));
     }
 
-    /** Welche Regeln die beste Assistenz kann. */
-    public static function allowed(int $tier): array
+    public function setTask(int $staffId, string $task): void
     {
-        return array_map(static fn ($from) => $tier >= $from, Balance::ASSISTANT['rules']);
-    }
-
-    /** Eingestellte Regeln, beschränkt auf das, was die beste Assistenz kann. */
-    public function rules(?int $tier = null): array
-    {
-        $tier ??= (int) ($this->staff()[0]['tier'] ?? 0);
-        $raw = json_decode((string) $this->repo->db->value('SELECT assist_rules FROM labels WHERE id = ?', [$this->repo->labelId]), true);
-        $rules = (is_array($raw) ? $raw : []) + self::DEFAULT_RULES;
-        $allowed = self::allowed($tier);
-        foreach (self::DEFAULT_RULES as $key => $default) {
-            if (!$allowed[$key]) {
-                $rules[$key] = $default;
-            }
+        if (!in_array($task, Balance::ASSISTANT['tasks'], true)) {
+            throw new ApiError('Diese Aufgabe gibt es nicht.');
         }
-        return array_intersect_key($rules, self::DEFAULT_RULES);
+        $row = $this->repo->db->one("SELECT * FROM staff WHERE id = ? AND label_id = ? AND role = 'assistant'", [$staffId, $this->repo->labelId]);
+        if ($row === null) {
+            throw new ApiError('Diese Assistenz gibt es nicht.');
+        }
+        // Was bis jetzt liegen blieb, wird noch mit der alten Aufteilung erledigt.
+        $this->work(\Signed\Clock::now());
+        $d = json_decode($row['data'], true);
+        $d['task'] = $task;
+        $this->repo->db->update('staff', ['data' => json_encode($d, JSON_UNESCAPED_UNICODE)], ['id' => $staffId]);
+    }
+
+    /** Eingestellte Regeln fürs Aussortieren. */
+    public function rules(): array
+    {
+        $raw = json_decode((string) $this->repo->db->value('SELECT assist_rules FROM labels WHERE id = ?', [$this->repo->labelId]), true);
+        return array_intersect_key((is_array($raw) ? $raw : []) + self::DEFAULT_RULES, self::DEFAULT_RULES);
     }
 
     public function setRules(array $in): void
     {
-        $staff = $this->staff();
-        if (!$staff) {
+        if (!$this->staff()) {
             throw new ApiError('Ohne Assistenz gibt es keine Regeln.');
         }
         $rules = [
@@ -84,24 +90,28 @@ final class Assistant
         return true;
     }
 
-    /** Arbeit seit dem letzten Mal: Demos öffnen und nach Regeln aussortieren. Ungenutzte Zeit verfällt (nichts zum Öffnen = nichts aufgespart). */
+    /** Arbeit seit dem letzten Mal: Kassetten anhören und aussortieren, Interviews zusagen. */
     public function work(int $now): void
     {
         $staff = $this->staff();
         if (!$staff) {
             return;
         }
+        if (array_filter($staff, static fn ($s) => $s['task'] === 'presse')) {
+            $this->press($staff);
+        }
         $db = $this->repo->db;
         $perDay = self::perDay($staff);
         $at = (int) $db->value('SELECT assist_at FROM labels WHERE id = ?', [$this->repo->labelId]) ?: $now;
-        $count = (int) floor(($now - $at) * $perDay / 86400);
+        $count = $perDay > 0 ? (int) floor(($now - $at) * $perDay / 86400) : 0;
         if ($count <= 0) {
-            if ($at === $now) {
+            // Ohne Kassetten-Assistenz wird nichts aufgespart.
+            if ($at === $now || $perDay === 0) {
                 $db->update('labels', ['assist_at' => $now], ['id' => $this->repo->labelId]);
             }
             return;
         }
-        $rules = $this->rules((int) $staff[0]['tier']);
+        $rules = $this->rules();
         $rows = $db->all('SELECT id, card FROM submissions WHERE label_id = ? AND opened_at IS NULL AND saved = 0 AND expires_at > ? ORDER BY created_at, id LIMIT ' . $count, [$this->repo->labelId, $now]);
         $dropped = 0;
         foreach ($rows as $r) {
@@ -119,7 +129,22 @@ final class Assistant
         $db->update('labels', ['assist_at' => $next, 'assist_stats' => json_encode($stats)], ['id' => $this->repo->labelId]);
     }
 
-    /** Was heute (seit Mitternacht UTC) geöffnet und weggeworfen wurde. */
+    /** Presse: offene Interview-Anfragen zusagen, sobald der Musiker frei ist (gemerkte auch). */
+    private function press(array $staff): void
+    {
+        $name = $staff[array_key_first(array_filter($staff, static fn ($s) => $s['task'] === 'presse'))]['info']['first_name'];
+        $inbox = new Inbox($this->repo);
+        foreach ($this->repo->db->all("SELECT id FROM mail WHERE label_id = ? AND kind = 'interview' ORDER BY expires_at", [$this->repo->labelId]) as $row) {
+            try {
+                $activity = $inbox->accept((int) $row['id']);
+                $this->repo->log('staff', sprintf('%s hat zugesagt: %s.', $name, $activity['title']));
+            } catch (ApiError) {
+                // Musiker gerade unterwegs: später noch einmal.
+            }
+        }
+    }
+
+    /** Was heute (seit Mitternacht UTC) angehört und weggeworfen wurde. */
     public function stats(int $now): array
     {
         $day = intdiv($now, 86400);
@@ -133,20 +158,14 @@ final class Assistant
         if (!$staff) {
             return null;
         }
-        $tier = (int) $staff[0]['tier'];
         $stats = $this->stats($now);
         return [
-            'staff' => array_map(static function ($s) {
-                $d = json_decode($s['data'], true);
-                return [
-                    'id' => (int) $s['id'], 'tier' => (int) $s['tier'], 'firstName' => $d['first_name'], 'lastName' => $d['last_name'], 'look' => $d['look'],
-                    'perDay' => Balance::ASSISTANT['tiers'][(int) $s['tier']]['perDay'],
-                ];
-            }, $staff),
-            'tier' => $tier,
+            'staff' => array_map(static fn ($s) => [
+                'id' => (int) $s['id'], 'firstName' => $s['info']['first_name'], 'lastName' => $s['info']['last_name'], 'look' => $s['info']['look'], 'task' => $s['task'],
+            ], $staff),
             'perDay' => self::perDay($staff),
-            'rules' => $this->rules($tier),
-            'allowed' => self::allowed($tier),
+            'press' => (bool) array_filter($staff, static fn ($s) => $s['task'] === 'presse'),
+            'rules' => $this->rules(),
             'today' => ['opened' => $stats['opened'], 'dropped' => $stats['dropped']],
         ];
     }

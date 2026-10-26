@@ -253,17 +253,13 @@ final class Balance
         'ttl' => 2 * 86400,
     ];
     /**
-     * Assistenz: einmalig bezahlt. Öffnet je Tag `perDay` Demos (die ältesten zuerst, gemerkte nicht) und sortiert die Post in Reiter.
-     * Ab Stufe `rules[...]` lassen sich Regeln einstellen; Demos, die nicht passen, wirft sie weg. Mehrere Assistenzen arbeiten zusammen.
+     * Assistenz: einmalig bezahlt, alle gleich gut. Jede sortiert den Posteingang (Reiter, Notizen auf der Übersicht) und hat dazu eine Aufgabe:
+     * `demos` = hört je Tag `perDay` Kassetten an (die ältesten zuerst, gemerkte nicht) und wirft nach den Regeln weg, was nicht passt;
+     * `presse` = sagt Interview-Anfragen zu, sobald der Musiker frei ist. Mehr Eingang oder mehr Aufgaben: mehr Assistenzen einstellen.
      */
     public const ASSISTANT = [
-        'tiers' => [
-            1 => ['perDay' => 20, 'price' => 250, 'from' => 0.0],
-            2 => ['perDay' => 60, 'price' => 900, 'from' => 0.2],
-            3 => ['perDay' => 150, 'price' => 2500, 'from' => 0.5],
-            4 => ['perDay' => 400, 'price' => 6000, 'from' => 0.8],
-        ],
-        'rules' => ['minLevel' => 2, 'genres' => 3, 'kind' => 3],
+        'tiers' => [1 => ['perDay' => 50, 'price' => 400, 'from' => 0.0]],
+        'tasks' => ['demos', 'presse'],
     ];
     /**
      * Künstlername: Nicht jeder will einen. Wer ihn sich wünscht, hängt am Charakter (Eigenschaft => ab welchem Ruhm): Diven früh, Rampensäue etwas später,

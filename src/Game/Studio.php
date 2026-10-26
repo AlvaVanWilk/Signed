@@ -136,7 +136,7 @@ final class Studio
         $out = [];
         foreach (array_keys(Balance::PRODUCERS) as $producer) {
             foreach (array_keys(Balance::STUDIOS) as $studio) {
-                $q = self::quality($members, $gear, $studio, $producer);
+                $q = min(1.0, self::quality($members, $gear, $studio, $producer) + Tutors::recordBonus($band, $songs));
                 $est = self::estimate($band, $members, $gear, $songs, $q);
                 $out[] = [
                     'producer' => $producer,
@@ -192,9 +192,11 @@ final class Studio
             }
             $p = Balance::PRODUCERS[$producer];
             $this->repo->spend(self::cost($songs, $studio, $producer), $producer === 'none' ? 'Studio: ' . Balance::STUDIOS[$studio]['name'] : sprintf('Studio: %s mit %s', Balance::STUDIOS[$studio]['name'], $p['name']));
-            $quality = self::quality($members, $gear, $studio, $producer);
+            $quality = min(1.0, self::quality($members, $gear, $studio, $producer) + Tutors::recordBonus($band, $songs));
             $endsAt = $now + $songs * Balance::RECORD_SECONDS_PER_SONG;
-            if ($db->exec('UPDATE bands SET busy_until = ?, released = 1, songs_written = songs_written - ? WHERE id = ? AND busy_until <= ?', [$endsAt, $songs, $bandId, $now]) === 0) {
+            // Die gecoachten Songs sind damit verbraucht; ohne sie gibt es auch keinen Zuschlag mehr.
+            $coached = max(0.0, $band['coached_songs'] - $songs);
+            if ($db->exec('UPDATE bands SET busy_until = ?, released = 1, songs_written = songs_written - ?, coached_songs = ?, coach_bonus = ? WHERE id = ? AND busy_until <= ?', [$endsAt, $songs, $coached, $coached > 0 ? $band['coach_bonus'] : 0.0, $bandId, $now]) === 0) {
                 throw new ApiError(Bands::who($members) . ' ist gerade beschäftigt.');
             }
             // Anspruch: Ist die Produktion unter der Würde der Band, ärgert sie sich; darüber freut sie sich. Mit der Legende sind alle entspannt.

@@ -2023,3 +2023,85 @@ test('Scout: bewirbt sich zu Beginn, mit Suchauftrag unterwegs, Bericht im Poste
         check($c['skill1'] >= 32 && $c['skill1'] <= 54);
     }
 });
+
+test('Privatlehrer: für ein Instrument und einen Musiker gebucht, Können wächst über die Zeit ohne Bremse, danach geht er wieder', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Lehre');
+    $state = $p->get('state');
+    $db->exec('UPDATE labels SET money = 100000');
+    $guitar = array_values(array_filter($state['musicians'], static fn ($m) => $m['instruments'][0]['type'] === 'guitar'))[0];
+    $drums = array_values(array_filter($state['musicians'], static fn ($m) => $m['instruments'][0]['type'] === 'drums'))[0];
+    $db->exec('UPDATE musicians SET skill1 = 40 WHERE id = ?', [$guitar['id']]);
+    $state = $p->post('mailTest')['state'];
+    $teachers = array_values(array_filter($state['mail'], static fn ($m) => $m['kind'] === 'job' && $m['role'] === 'teacher'));
+    checkEquals(3, count($teachers));
+    // Eine Lehrkraft für Gitarre auf Stufe 2 bauen, damit es sicher passt.
+    $job = $teachers[1];
+    $row = $db->one('SELECT data FROM mail WHERE id = ?', [$job['mailId']]);
+    $data = json_decode($row['data'], true);
+    $data['instrument'] = 'guitar';
+    $data['genre'] = null;
+    $db->update('mail', ['data' => json_encode($data)], ['id' => $job['mailId']]);
+    checkApiError(fn () => $p->post('mailHire', ['mailId' => $job['mailId']]), 'Wähle');
+    checkApiError(fn () => $p->post('mailHire', ['mailId' => $job['mailId'], 'target' => $drums['id']]), 'spielt kein');
+    $money = (int) $db->value('SELECT money FROM labels');
+    $state = $p->post('mailHire', ['mailId' => $job['mailId'], 'target' => $guitar['id']])['state'];
+    checkEquals($money - Balance::TEACHER['tiers'][2]['price'], $state['label']['money']);
+    checkEquals(1, count($state['tutors']));
+    // Ein zweiter Lehrer für denselben Musiker geht nicht (nicht parallel).
+    $other = $db->one('SELECT id, data FROM mail WHERE id = ?', [$teachers[2]['mailId']]);
+    $d2 = json_decode($other['data'], true);
+    $d2['instrument'] = 'guitar';
+    $db->update('mail', ['data' => json_encode($d2)], ['id' => (int) $other['id']]);
+    checkApiError(fn () => $p->post('mailHire', ['mailId' => (int) $other['id'], 'target' => $guitar['id']]), 'schon Unterricht');
+    // Halbe Zeit: halber Gewinn, ungebremst.
+    Clock::advance(Balance::TEACHER['tiers'][2]['seconds'] / 2);
+    $p->get('state');
+    $skill = (float) $db->value('SELECT skill1 FROM musicians WHERE id = ?', [$guitar['id']]);
+    check(abs($skill - (40 + Balance::TEACHER['tiers'][2]['gain'] / 2)) < 0.05, "halber Gewinn: $skill");
+    Clock::advance(Balance::TEACHER['tiers'][2]['seconds']);
+    $state = $p->get('state');
+    $skill = (float) $db->value('SELECT skill1 FROM musicians WHERE id = ?', [$guitar['id']]);
+    check(abs($skill - (40 + Balance::TEACHER['tiers'][2]['gain'])) < 0.05, "ganzer Gewinn: $skill");
+    checkEquals([], $state['tutors'], 'danach wieder weg');
+    // Zu gut für eine einfache Lehrkraft.
+    $db->exec('UPDATE musicians SET skill1 = 70 WHERE id = ?', [$guitar['id']]);
+    $fresh = array_values(array_filter($p->post('mailTest')['state']['mail'], static fn ($m) => $m['kind'] === 'job' && $m['role'] === 'teacher' && $m['tier'] === 1))[0];
+    $simple = $db->one('SELECT id, data FROM mail WHERE id = ?', [$fresh['mailId']]);
+    $d0 = json_decode($simple['data'], true);
+    $d0['instrument'] = 'guitar';
+    $db->update('mail', ['data' => json_encode($d0)], ['id' => (int) $simple['id']]);
+    checkApiError(fn () => $p->post('mailHire', ['mailId' => (int) $simple['id'], 'target' => $guitar['id']]), 'kann schon mehr');
+});
+
+test('Songwriting-Coach: eine Band schreibt in der Zeit schneller, die gecoachten Songs machen die nächste Platte besser', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Coach');
+    $band = foundBand($p);
+    $db->exec('UPDATE labels SET money = 100000');
+    $db->exec('UPDATE musicians SET wellbeing = 90');
+    $p->get('state');
+    // Ohne Coach: eine Stunde Songs.
+    $db->exec('UPDATE bands SET songs_written = 0, mood_at = ? WHERE id = ?', [Clock::now(), $band['id']]);
+    Clock::advance(3600);
+    $p->get('state');
+    $plain = (float) $db->value('SELECT songs_written FROM bands WHERE id = ?', [$band['id']]);
+    check($plain > 0, 'Songs entstehen');
+    $state = $p->post('mailTest')['state'];
+    $coach = array_values(array_filter($state['mail'], static fn ($m) => $m['kind'] === 'job' && $m['role'] === 'coach' && $m['tier'] === 3))[0];
+    $p->post('mailHire', ['mailId' => $coach['mailId'], 'target' => $band['id']]);
+    $db->exec('UPDATE bands SET songs_written = 0, coached_songs = 0, mood_at = ? WHERE id = ?', [Clock::now(), $band['id']]);
+    $db->exec('UPDATE musicians SET wellbeing = 90');
+    Clock::advance(3600);
+    $state = $p->get('state');
+    $coached = (float) $db->value('SELECT songs_written FROM bands WHERE id = ?', [$band['id']]);
+    check($coached > $plain * 1.8, "doppelt so schnell: $plain → $coached");
+    checkEquals(round($coached, 2), round((float) $db->value('SELECT coached_songs FROM bands WHERE id = ?', [$band['id']]), 2), 'alle Songs gecoacht');
+    check(Signed\Game\Tutors::recordBonus(Signed\Game\Repo::hydrateBand($db->one('SELECT * FROM bands WHERE id = ?', [$band['id']])), 1) === Balance::COACH['tiers'][3]['quality']);
+    // Zweiter Coach für dieselbe Band geht nicht.
+    $second = array_values(array_filter($state['mail'], static fn ($m) => $m['kind'] === 'job' && $m['role'] === 'coach'))[0];
+    checkApiError(fn () => $p->post('mailHire', ['mailId' => $second['mailId'], 'target' => $band['id']]), 'schon einen Coach');
+    // Nach dem Ende kein Schub mehr.
+    Clock::advance(Balance::COACH['tiers'][3]['seconds']);
+    checkEquals([], $p->get('state')['tutors']);
+});

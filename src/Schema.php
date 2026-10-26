@@ -529,6 +529,11 @@ final class Schema
                 'ALTER TABLE labels ADD COLUMN assist_rules TEXT NULL',
                 'ALTER TABLE labels ADD COLUMN assist_stats TEXT NULL',
             ],
+            // 40: Songwriting-Coach – Songs aus der gecoachten Zeit und ihr Qualitäts-Zuschlag für die nächste Platte
+            [
+                'ALTER TABLE bands ADD COLUMN coached_songs REAL NOT NULL DEFAULT 0',
+                'ALTER TABLE bands ADD COLUMN coach_bonus REAL NOT NULL DEFAULT 0',
+            ],
         ];
     }
 }

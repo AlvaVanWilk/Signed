@@ -254,6 +254,14 @@ function wishBlock(b, members) {
 }
 
 /** Eine Anordnung: gesperrt, wenn ein roter Musiker sie ablehnt; sonst mit Hinweis, wem sie nicht gefällt. */
+/** Gebuchter Coach oder Lehrer: kurz auf der Bandseite, damit man sieht, dass gerade jemand hilft. */
+function tutorNotice(b, members) {
+  const lines = (app.state.tutors ?? []).filter((t) => (t.role === 'coach' ? t.bandId === b.id : members.some((m) => m.id === t.musicianId))).map((t) => (t.role === 'coach'
+    ? `${esc(t.firstName)} hilft beim Songschreiben: schneller und besser, noch <span data-until="${t.until}"></span>`
+    : `${esc(musicianById(t.musicianId)?.firstName ?? '')} hat Unterricht bei ${esc(t.firstName)}: +${fmt1(t.done)} von ${fmt1(t.gain)} Können, noch <span data-until="${t.until}"></span>`));
+  return lines.length ? `<div class="lb-tutor">${lines.map((l) => `<div>${l}</div>`).join('')}</div>` : '';
+}
+
 function act(b, members, type, section, title, text, icon, warn = false, busy = false) {
   const r = b.mood.reactions?.[type] ?? { like: [], dislike: [], locked: false };
   const names = (ids) => ids.map((id) => musicianById(id)?.firstName).filter(Boolean).join(', ');
@@ -515,6 +523,7 @@ export function page(route) {
       <div class="lb-hd-mood"><span class="lb-cap">Stimmung</span>${moodTag(b.mood.level).replace('class="lb-mood', 'class="lb-mood big')}</div>
     </header>
     ${notice}
+    ${tutorNotice(b, members)}
     ${running?.type === 'rehearsal' ? liveBlock(b, members, running) : running?.type === 'gig' ? gigBlock(b, members, running) : running?.type === 'record' ? studioBlock(b, members, running, { soundOn: music?.actId === running.id }) : ''}
     ${wishBlock(b, members)}
     <h2 class="lb-cap lb-sec">Anordnungen</h2>

@@ -110,18 +110,25 @@ final class Inbox
             return;
         }
         $roles = array_filter($c['roles'], static fn ($r) => $success >= $r['minSuccess']);
+        $own = [];
+        foreach ($this->repo->musicians() as $m) {
+            $own[] = $m['instr1'];
+            if ($m['instr2'] !== null) {
+                $own[] = $m['instr2'];
+            }
+        }
         for ($i = 1; $i <= $count; $i++) {
             $created = (int) ($at + $i * $interval);
             if ($roles && $created + $c['ttl'] > $now) {
                 $role = (string) Rng::weighted(array_map(static fn ($r) => $r['weight'], $roles));
-                $this->store('job', self::applicant($role, self::quality($success)), $created, $c['ttl']);
+                $this->store('job', self::applicant($role, self::quality($success), null, $own), $created, $c['ttl']);
             }
         }
         $db->update('labels', ['job_at' => (int) ($at + $count * $interval)], ['id' => $this->repo->labelId]);
     }
 
     /** Eine Bewerbung: Person, Rolle und Stufe. Die beste Stufe, die sich bei dieser Güte schon bewirbt, kommt am häufigsten. */
-    public static function applicant(string $role, float $quality, ?int $tier = null): array
+    public static function applicant(string $role, float $quality, ?int $tier = null, array $ownInstruments = []): array
     {
         $tiers = self::tiers($role);
         if ($tier === null) {
@@ -132,7 +139,16 @@ final class Inbox
             }
             $tier = (int) Rng::weighted($weights ?: [1 => 1]);
         }
-        return ['role' => $role, 'tier' => $tier] + Generator::person();
+        $out = ['role' => $role, 'tier' => $tier] + Generator::person();
+        if ($role === 'teacher') {
+            // Meist für ein Instrument, das im Label gespielt wird; manchmal mit Lieblingsgenre.
+            $c = Balance::TEACHER;
+            $out['instrument'] = $ownInstruments && Rng::chance($c['ownInstrument'])
+                ? (string) Rng::pick($ownInstruments)
+                : (string) Rng::weighted(array_map(static fn ($i) => $i['weight'], Catalog::INSTRUMENTS));
+            $out['genre'] = Rng::chance($c['genreChance']) ? (string) Rng::pick(Catalog::INSTRUMENTS[$out['instrument']]['genres']) : null;
+        }
+        return $out;
     }
 
     /** @return array<int, array> Stufen einer Rolle mit Preis und Werten */
@@ -141,6 +157,8 @@ final class Inbox
         return match ($role) {
             'assistant' => Balance::ASSISTANT['tiers'],
             'scout' => Balance::SCOUT_STAFF['tiers'],
+            'teacher' => Balance::TEACHER['tiers'],
+            'coach' => Balance::COACH['tiers'],
             default => throw new ApiError('Unbekannte Bewerbung.'),
         };
     }
@@ -178,7 +196,9 @@ final class Inbox
             $tier = self::tiers($d['role'])[(int) $d['tier']];
             return $base + [
                 'role' => $d['role'], 'tier' => (int) $d['tier'], 'price' => (int) $tier['price'], 'perDay' => $tier['perDay'] ?? null,
-                'seconds' => $tier['seconds'] ?? null, 'candidates' => $tier['candidates'] ?? null, 'maxSkill' => isset($tier['skill']) ? $tier['skill'][1] : null,
+                'seconds' => $tier['seconds'] ?? null, 'candidates' => $tier['candidates'] ?? null, 'maxSkill' => $tier['maxSkill'] ?? (isset($tier['skill']) ? $tier['skill'][1] : null),
+                'instrument' => $d['instrument'] ?? null, 'genre' => $d['genre'] ?? null, 'gain' => $tier['gain'] ?? null,
+                'speed' => $tier['speed'] ?? null, 'quality' => $tier['quality'] ?? null,
                 'firstName' => $d['first_name'], 'lastName' => $d['last_name'], 'look' => $d['look'],
             ];
         }, $rows);
@@ -239,10 +259,10 @@ final class Inbox
     }
 
     /** Bewerbung annehmen: einmal bezahlen, dann gehört die Person zum Label. */
-    public function hire(int $id): int
+    public function hire(int $id, ?int $target = null): int
     {
         $db = $this->repo->db;
-        return $db->transaction(function () use ($db, $id): int {
+        return $db->transaction(function () use ($db, $id, $target): int {
             $row = $this->row($id);
             if ($row['kind'] !== 'job') {
                 throw new ApiError('Das ist keine Bewerbung.');
@@ -250,6 +270,16 @@ final class Inbox
             $d = json_decode($row['data'], true);
             $tier = self::tiers($d['role'])[(int) $d['tier']];
             $roleName = Catalog::STAFF_ROLES[$d['role']]['tiers'][(int) $d['tier']];
+            if (in_array($d['role'], ['teacher', 'coach'], true)) {
+                // Gebucht für eine Zeit und genau einen Musiker bzw. eine Band.
+                if ($target === null) {
+                    throw new ApiError($d['role'] === 'teacher' ? 'Wähle, wer Unterricht bekommt.' : 'Wähle eine Band.');
+                }
+                $this->repo->spend((int) $tier['price'], sprintf('Gebucht: %s %s (%s)', $d['first_name'], $d['last_name'], $roleName));
+                (new Tutors($this->repo))->book($d, $target);
+                $db->exec('DELETE FROM mail WHERE id = ?', [$id]);
+                return 0;
+            }
             $this->repo->spend((int) $tier['price'], sprintf('Eingestellt: %s %s (%s)', $d['first_name'], $d['last_name'], $roleName));
             if ($d['role'] === 'assistant') {
                 // Was bisher liegen blieb, erledigen die alten; die neue fängt jetzt an.
@@ -294,6 +324,11 @@ final class Inbox
         }
         foreach (array_keys(Balance::SCOUT_STAFF['tiers']) as $tier) {
             $this->store('job', self::applicant('scout', 1.0, $tier), $now - 10 - $tier, Balance::JOBS['ttl']);
+        }
+        $own = array_values(array_unique(array_column($this->repo->musicians(), 'instr1')));
+        foreach ([1, 2, 3] as $tier) {
+            $this->store('job', self::applicant('teacher', 1.0, $tier, $own ?: ['guitar']), $now - 20 - $tier, Balance::JOBS['ttl']);
+            $this->store('job', self::applicant('coach', 1.0, $tier), $now - 30 - $tier, Balance::JOBS['ttl']);
         }
     }
 }

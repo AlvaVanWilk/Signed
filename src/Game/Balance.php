@@ -191,8 +191,35 @@ final class Balance
      * `minSuccess`: ab welchem Erfolg sich diese Art überhaupt bewirbt.
      */
     public const JOBS = [
-        'perDay' => 2.0, 'ttl' => 2 * 86400, 'maxCatchUp' => 2 * 86400, 'half' => 300.0, 'weights' => [3, 2, 1],
-        'roles' => ['assistant' => ['weight' => 1, 'minSuccess' => 10.0], 'scout' => ['weight' => 1, 'minSuccess' => 0.0]],
+        'perDay' => 3.0, 'ttl' => 2 * 86400, 'maxCatchUp' => 2 * 86400, 'half' => 300.0, 'weights' => [3, 2, 1],
+        'roles' => [
+            'assistant' => ['weight' => 1, 'minSuccess' => 10.0], 'scout' => ['weight' => 1, 'minSuccess' => 0.0],
+            'teacher' => ['weight' => 2, 'minSuccess' => 0.0], 'coach' => ['weight' => 1, 'minSuccess' => 5.0],
+        ],
+    ];
+    /**
+     * Privatlehrer: für ein Instrument, manchmal mit Lieblingsgenre. Gebucht für `seconds` und genau einen Musiker (einmal bezahlt), der in der Zeit
+     * `gain` Können dazugewinnt, gleichmäßig verteilt und ohne Stufen-Bremse (mit passendem Genre × `genreFactor`). Unterrichtet nur bis `maxSkill`.
+     * `ownInstrument`: so oft bewirbt sich jemand für ein Instrument, das im Label gespielt wird.
+     */
+    public const TEACHER = [
+        'tiers' => [
+            1 => ['price' => 300, 'seconds' => 2 * 86400, 'gain' => 8.0, 'maxSkill' => 55, 'from' => 0.0],
+            2 => ['price' => 900, 'seconds' => 2 * 86400, 'gain' => 12.0, 'maxSkill' => 80, 'from' => 0.3],
+            3 => ['price' => 2500, 'seconds' => 2 * 86400, 'gain' => 16.0, 'maxSkill' => 100, 'from' => 0.6],
+        ],
+        'genreChance' => 0.4, 'genreFactor' => 1.3, 'ownInstrument' => 0.7,
+    ];
+    /**
+     * Songwriting-Coach: gebucht für `seconds` und genau eine Band oder einen Solokünstler. In der Zeit entstehen Songs × `speed`, und die Songs
+     * aus dieser Zeit machen die nächste Platte besser (+`quality`, anteilig nach gecoachten Songs).
+     */
+    public const COACH = [
+        'tiers' => [
+            1 => ['price' => 400, 'seconds' => 86400, 'speed' => 1.5, 'quality' => 0.04, 'from' => 0.0],
+            2 => ['price' => 1200, 'seconds' => 86400, 'speed' => 1.75, 'quality' => 0.08, 'from' => 0.3],
+            3 => ['price' => 3000, 'seconds' => 86400, 'speed' => 2.0, 'quality' => 0.12, 'from' => 0.6],
+        ],
     ];
     /**
      * Scout: einmalig bezahlt, dann mit Suchauftrag (Genre und/oder Instrument oder egal) losschicken. Nach `seconds` liegt ein Bericht mit

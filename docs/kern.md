@@ -255,6 +255,8 @@ Nur die Gewinne sind klein; wie oft man etwas hintereinander spielt, ist nicht b
 **Interviews** (Posteingang) öffnen den Weg zur Bekanntheit: Jede Anfrage bringt einen festen Anteil (8–14 %, je Medium) des Weges von der eigenen
 Bekanntheitsstufe zur nächsten, **ohne Bremse** (`Balance::INTERVIEW`, `Catalog::INTERVIEW_MEDIA`). Je Musiker kommt im Schnitt eine Anfrage am Tag,
 sie liegt 8 Stunden. Wer jede annimmt, schafft so eine Stufe in rund acht bis zwölf Tagen, egal auf welcher Stufe; Auftritte und Platten kommen dazu.
+**Privatunterricht** öffnet den Weg beim Können: +8 / +12 / +16 in zwei Tagen ohne Bremse, für einen Musiker (bis Können 55 / 80 / 100).
+Bei Können 70 entspricht +16 etwa zwölf Stunden Proben; für Anfänger lohnt er sich kaum, weil die Proben dort schnell sind (`Balance::TEACHER`).
 
 ### Platte
 

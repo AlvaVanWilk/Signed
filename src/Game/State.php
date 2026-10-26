@@ -17,6 +17,7 @@ final class State
         $submissions->topUp($now);
         (new Inbox($repo))->topUp($now, $submissions->success());
         (new Scouting($repo))->settle($now);
+        (new Tutors($repo))->settle($now);
         (new Assistant($repo))->work($now);
         Bands::ensureSoloBands($repo);
         $label = $repo->label();
@@ -253,6 +254,7 @@ final class State
             'mail' => (new Inbox($repo))->list($now),
             'assistant' => (new Assistant($repo))->present($now),
             'scouts' => (new Scouting($repo))->present($now),
+            'tutors' => (new Tutors($repo))->present($now),
             'course' => (new Courses($repo))->status($musicians),
             'jamOffers' => (new Jam($repo))->open(),
             'market' => (new Transfers($repo))->market(),

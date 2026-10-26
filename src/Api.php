@@ -463,7 +463,8 @@ final class Api
 
     private function mailHire(array $in, Repo $repo): array
     {
-        return ['staffId' => (new Inbox($repo))->hire(self::int($in, 'mailId')), 'state' => State::build($repo)];
+        $target = isset($in['target']) && is_numeric($in['target']) ? (int) $in['target'] : null;
+        return ['staffId' => (new Inbox($repo))->hire(self::int($in, 'mailId'), $target), 'state' => State::build($repo)];
     }
 
     private function mailSave(array $in, Repo $repo): array

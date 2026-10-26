@@ -254,6 +254,8 @@ final class Catalog
     public const STAFF_ROLES = [
         'assistant' => ['name' => 'Assistenz', 'tiers' => [1 => 'Praktikum', 2 => 'Assistenz', 3 => 'Senior-Assistenz', 4 => 'Leitung Posteingang']],
         'scout' => ['name' => 'Scout', 'tiers' => [1 => 'Scout', 2 => 'Erfahrener Scout', 3 => 'Top-Scout']],
+        'teacher' => ['name' => 'Privatunterricht', 'tiers' => [1 => 'Lehrkraft', 2 => 'Profi-Lehrkraft', 3 => 'Meister-Lehrkraft']],
+        'coach' => ['name' => 'Songwriting-Coach', 'tiers' => [1 => 'Songwriting-Coach', 2 => 'Erfahrener Coach', 3 => 'Hit-Coach']],
     ];
 
     /** Woran man einen bisher unbekannten Charakterzug bemerkt (%s = Vorname). */

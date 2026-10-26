@@ -500,7 +500,8 @@ final class Mood
             [$band['stageIdle'], $band['recordIdle']] = self::idleHours($repo, $band, $now);
             $state = ['w' => array_column($members, 'wellbeing', 'id'), 'songs' => $band['songs_written']];
             $onlineSpan = min($online, $span);
-            $factor = self::writeFactor($repo, $band['id'], $now - $span, $now) * self::crewFactor($members);
+            [$coachSpeed, $coachShare, $coachQuality] = Tutors::coaching($repo, $band['id'], $now - $span, $now);
+            $factor = self::writeFactor($repo, $band['id'], $now - $span, $now) * self::crewFactor($members) * $coachSpeed;
             $state = self::run($state, $members, $band, $relations, $span - $onlineSpan, true, $factor);
             $state = self::run($state, $members, $band, $relations, $onlineSpan, false, $factor);
             $after = self::bandMood($state['w']);
@@ -514,7 +515,13 @@ final class Mood
             } else {
                 $patience = min($c['patience'], $patience + $onlineSpan * $c['patienceRecover']);
             }
-            $repo->db->update('bands', ['songs_written' => round($state['songs'], 4), 'mood_at' => $now, 'patience' => $patience], ['id' => $band['id']]);
+            $update = ['songs_written' => round($state['songs'], 4), 'mood_at' => $now, 'patience' => $patience];
+            if ($coachShare > 0) {
+                // Songs aus der gecoachten Zeit zählen für den Zuschlag der nächsten Platte.
+                $update['coach_bonus'] = max($band['coach_bonus'], $coachQuality);
+                $update['coached_songs'] = round(min($state['songs'], $band['coached_songs'] + max(0.0, $state['songs'] - $band['songs_written']) * $coachShare), 4);
+            }
+            $repo->db->update('bands', $update, ['id' => $band['id']]);
             Traits::settleBand($repo, $band, $members, (float) $band['songs_written'], $state['songs'], $now);
         }
         Traits::settleTime($repo, $now);

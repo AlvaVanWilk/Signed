@@ -937,7 +937,7 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .lb-save.on svg { fill: var(--lb-accent); stroke: var(--lb-accent); }
 
 /* Posteingang: Briefe (Interview-Anfragen, Bewerbungen) in derselben Größe wie die Karten; Assistenz und ihre Notizen */
-.lb-letter { position: relative; width: 210px; height: 140px; box-sizing: border-box; padding: 9px 11px; border-radius: 6px; display: grid; align-content: space-between; gap: 4px; text-align: left;
+.lb-letter { position: relative; width: 210px; min-height: 140px; max-height: 176px; box-sizing: border-box; padding: 9px 11px; border-radius: 6px; display: grid; align-content: space-between; gap: 4px; text-align: left;
   background: #e9e3d6; color: #2a2733; border: 1px solid #c9bfa9; box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35); overflow: hidden; }
 .lb-letter::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: repeating-linear-gradient(90deg, #b9483f 0 12px, #e9e3d6 12px 18px, #3d5f9e 18px 30px, #e9e3d6 30px 36px); opacity: .8; }
 .lb-letter.job::before { background: #8a7a55; }
@@ -979,3 +979,9 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .lb-rp-ins > div { display: flex; align-items: center; gap: 10px; }
 .lb-rp-ins .lb-ins { margin: 0; }
 .lb-rp-ins span { color: var(--lb-muted); font-size: .85rem; }
+.lb-pick { display: grid; gap: 6px; max-height: 50vh; overflow: auto; }
+.lb-pick-row { display: flex; align-items: center; gap: 10px; text-align: left; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--lb-line); background: var(--lb-card2); color: var(--lb-text); font: inherit; cursor: pointer; }
+.lb-pick-row:hover:not([aria-disabled=true]) { border-color: var(--lb-accent); }
+.lb-pick-row[aria-disabled=true] { opacity: .5; }
+.lb-pick-row small { display: block; }
+.lb-tutor { margin: 8px 0; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--lb-line); background: var(--lb-card); font-size: .88rem; color: var(--lb-muted); display: grid; gap: 3px; }

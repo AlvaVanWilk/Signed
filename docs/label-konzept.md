@@ -286,6 +286,14 @@ Alles läuft ab (Demos 4 Tage, Anfragen 8 Stunden, Bewerbungen 2 Tage; die Restz
   Posteingang (bei Assistenz unter „Demos“) mit 2 / 3 / 3 Talenten, Können 15–34 / 22–44 / 32–54, alle unbekannt. Im Bericht blättert man mit
   Pfeilen durch die Talente (eins nach dem anderen) und unterschreibt beliebig viele, jedes für seine Prämie. Der Bericht liegt 2 Tage.
   Die alten Scout-Gutscheine (Kartenauswahl) sind nicht mehr im Menü.
+- **Privatunterricht** (gebaut, `Tutors`): Lehrkräfte bewerben sich für ein Instrument (meist eins, das im Label gespielt wird), manchmal mit
+  Lieblingsgenre. Gebucht wird für **2 Tage und genau einen Musiker** (einmal bezahlt: 300 / 900 / 2.500 ₲), danach geht die Lehrkraft wieder.
+  In der Zeit wächst das Können gleichmäßig um +8 / +12 / +16, **ohne Stufen-Bremse** (mit passendem Genre ×1,3); unterrichtet wird nur bis
+  Können 55 / 80 / 100. Ein Musiker hat höchstens eine Lehrkraft zugleich. So kostet jeder Schüler einzeln, und der Gewinn lohnt sich vor allem
+  für Bessere, bei denen die Proben langsam werden (`Balance::TEACHER`).
+- **Songwriting-Coach** (gebaut): gebucht für **1 Tag und eine Band** (oder einen Solokünstler; 400 / 1.200 / 3.000 ₲). In der Zeit entstehen
+  Songs 1,5- / 1,75- / 2-mal so schnell, und die Songs aus dieser Zeit machen die nächste Platte besser (+4 / +8 / +12 % Qualität, anteilig nach
+  gecoachten Songs; `bands.coached_songs`). Eine Band hat höchstens einen Coach zugleich (`Balance::COACH`).
 
 In der Wirklichkeit schicken Künstler Demos an Labels, und Talentsucher hören sich um. Ein Label sucht nicht aus einem Katalog aller Menschen aus. Zwei Wege, die nichts miteinander zu tun haben:
 

@@ -147,6 +147,9 @@ function ordered(list) {
 
 // ---------- Briefe: Interview-Anfragen und Bewerbungen ----------
 
+const days = (sec) => (sec >= 86400 ? `${Math.round(sec / 86400)} ${Math.round(sec / 86400) === 1 ? 'Tag' : 'Tage'}` : mins(sec));
+const fmtFactor = (f) => `${String(Math.round(f * 100) / 100).replace('.', ',')}-mal`;
+const instrumentAt = (type) => cat().instruments[type]?.at ?? '';
 const mins = (sec) => (sec >= 3600 ? `${Math.round(sec / 360) / 10} Std.` : `${Math.round(sec / 60)} Min.`);
 const roleName = (m) => cat().staffRoles[m.role]?.tiers[m.tier] ?? '';
 const fmtFame = (v) => (v >= 10 ? Math.round(v) : Math.round(v * 10) / 10).toLocaleString('de-DE');
@@ -169,17 +172,20 @@ function interviewLetter(m) {
 
 function jobLetter(m) {
   const money0 = app.state.label.money;
-  const what = m.role === 'assistant' ? `öffnet ${m.perDay} Demos am Tag${m.tier >= 2 ? ' und sortiert nach deinen Regeln' : ''}`
-    : m.role === 'scout' ? `findet ${m.candidates} Talente in ${mins(m.seconds)} (Können bis ${m.maxSkill})` : '';
+  const what = m.role === 'assistant' ? `öffnet ${m.perDay} Demos am Tag${m.tier >= 2 ? ', sortiert nach Regeln' : ''}`
+    : m.role === 'scout' ? `${m.candidates} Talente in ${mins(m.seconds)} (Können bis ${m.maxSkill})`
+    : m.role === 'teacher' ? `${days(m.seconds)} für einen Musiker: +${m.gain} Können (bis ${m.maxSkill})${m.genre ? `, bei ${genreName(m.genre)} mehr` : ''}`
+    : m.role === 'coach' ? `${days(m.seconds)} für eine Band: Songs ${fmtFactor(m.speed)} so schnell, Platte +${Math.round(m.quality * 100)} %` : '';
+  const book = ['teacher', 'coach'].includes(m.role);
   return `
     <article class="lb-letter job">
-      <div class="lb-lt-head"><span class="lb-lt-kind">Bewerbung</span></div>
+      <div class="lb-lt-head"><span class="lb-lt-kind">${m.role === 'teacher' ? `Unterricht: ${esc(instrumentName(m.instrument))}` : 'Bewerbung'}</span></div>
       <div class="lb-lt-body"><span class="lb-ph sm">${photo({ id: m.mailId, look: m.look })}</span>
         <p><b>${esc(m.firstName)} ${esc(m.lastName)}</b><br>${esc(roleName(m))}<small class="muted">${esc(what)}</small></p></div>
       <div class="lb-card-foot">
         <b class="lb-price" title="Einmal bezahlen, keine laufenden Kosten">${money(m.price)}</b>
         <button class="lb-iconbtn drop" data-act="mailDrop" data-id="${m.mailId}" title="Absagen" aria-label="Absagen">✕</button>
-        <button class="btn small primary" data-act="mailHire" data-id="${m.mailId}" ${off(money0 < m.price ? `Dafür fehlen noch ${money(m.price - money0)}.` : '')}>Einstellen</button>
+        <button class="btn small primary" data-act="${book ? 'tutorAsk' : 'mailHire'}" data-id="${m.mailId}" ${off(money0 < m.price ? `Dafür fehlen noch ${money(m.price - money0)}.` : '')}>${book ? 'Buchen' : 'Einstellen'}</button>
       </div>
     </article>`;
 }
@@ -222,13 +228,23 @@ function assistantBar(a) {
   </div>`;
 }
 
+/** Gebuchte Lehrer und Coaches: bei wem, was schon gebracht ist, wie lange noch. */
+function tutorBar(t) {
+  const who = t.role === 'teacher' ? musicianById(t.musicianId) : bandById(t.bandId);
+  if (!who) return '';
+  const text = t.role === 'teacher'
+    ? `<b>${esc(t.firstName)}</b> unterrichtet ${esc(who.firstName)} ${esc(instrumentAt(t.instrument))}.<small class="muted">Schon +${fmtFame(t.done)} von ${fmtFame(t.gain)} Können, noch <span data-until="${t.until}"></span></small>`
+    : `<b>${esc(t.firstName)}</b> hilft ${esc(who.name)} beim Songschreiben.<small class="muted">Songs ${fmtFactor(t.speed)} so schnell, die nächste Platte ${Math.round(t.quality * 100)} % besser. Noch <span data-until="${t.until}"></span></small>`;
+  return `<div class="lb-assist"><span class="lb-assist-faces"><span class="lb-ph sm">${photo({ id: t.id, look: t.look })}</span></span><span>${text}</span></div>`;
+}
+
 /** Scouts: losschicken oder sehen, wann sie zurück sind. */
 function scoutBar(x) {
   const task = x.away ? [x.away.genre ? genreName(x.away.genre) : '', x.away.instrument ? instrumentName(x.away.instrument) : ''].filter(Boolean).join(' · ') || 'ohne Vorgabe' : '';
   return `<div class="lb-assist">
     <span class="lb-assist-faces"><span class="lb-ph sm">${photo({ id: x.id, look: x.look })}</span></span>
     <span><b>${esc(x.firstName)}</b> (${esc(cat().staffRoles.scout.tiers[x.tier])}) ${x.away ? `ist unterwegs und sucht: ${esc(task)}.` : `findet ${x.candidates} Talente, unterwegs ${mins(x.seconds)}`}
-      <small class="muted">${x.away ? 'Zurück in <span data-until="' + x.away.until + '"></span>. Der Bericht kommt in den Posteingang.' : `Unbekannte, die schon gut spielen (Können bis ${x.maxSkill}).`}</small></span>
+      <small class="muted">${x.away ? 'Der Bericht kommt in den Posteingang, zurück in <span data-until="' + x.away.until + '"></span>' : `Unbekannte, die schon gut spielen (Können bis ${x.maxSkill}).`}</small></span>
     ${x.away ? '' : `<button class="btn small primary" data-act="scoutAsk" data-id="${x.id}">Losschicken</button>`}
   </div>`;
 }
@@ -262,6 +278,7 @@ export function render() {
     <div class="section-head"><h1>Posteingang</h1>${isTest() ? '<span class="lb-test"><button class="btn small" data-act="submissionsTest" data-closed="1">Test: neue Kassetten</button><button class="btn small" data-act="submissionsTest">Test: gesichtete Bewerber</button><button class="btn small" data-act="mailTest">Test: Briefe</button></span>' : ''}</div>
     <p class="muted">Hier kommt alles an: Kassetten von Musikern, die zu dir wollen, Interview-Anfragen für deine Leute und Bewerbungen fürs Label. Jede Kassette musst du erst anhören. Alles liegt nur eine Weile, dann ist es weg.</p>
     ${(s.scouts ?? []).map(scoutBar).join('')}
+    ${(s.tutors ?? []).map(tutorBar).join('')}
     ${a ? assistantBar(a) : '<p class="lb-assist-hint muted small">Ohne Assistenz liegt alles auf einem Stapel. Wenn dein Label bekannter wird, bewerben sich Leute, die die Post für dich sortieren.</p>'}
     <div class="lb-boxes">${tabs.map(([k, label, n]) => `<button class="${box === k ? 'on' : ''}" data-act="subBox" data-key="${k}">${label} <small>${n}</small></button>`).join('')}</div>
     ${showDemos ? `<div class="lb-filter">${[['all', 'Alle'], ['unheard', 'Ungehört'], ['0', 'Stufe 0'], ['1', 'Stufe 1'], ['2', 'Stufe 2'], ['3', 'Stufe 3']].map(([k, label]) => `<button class="${f === k ? 'on' : ''}" data-act="subFilter" data-key="${k}">${label}</button>`).join('')}</div>` : ''}
@@ -345,6 +362,41 @@ function reportDialog(mailId) {
       return;
     }
     if (e.target.closest('[data-close]')) modal.close();
+  });
+}
+
+// ---------- Lehrer und Coaches buchen ----------
+
+/** Für wen? Lehrer: Musiker, die das Instrument spielen und noch lernen können. Coach: eine Band oder ein Solokünstler. */
+function tutorDialog(m) {
+  const s = app.state;
+  const taken = new Set((s.tutors ?? []).filter((t) => t.role === m.role).map((t) => (m.role === 'teacher' ? t.musicianId : t.bandId)));
+  const rows = m.role === 'teacher'
+    ? s.musicians.filter((x) => x.instruments.some((i) => i.type === m.instrument)).map((x) => {
+      const skill = x.instruments.find((i) => i.type === m.instrument).skill;
+      const why = taken.has(x.id) ? `${x.firstName} hat schon Unterricht.` : skill >= m.maxSkill ? `${x.firstName} kann schon mehr, als ${m.firstName} beibringt.` : '';
+      const extra = m.genre && x.genres.includes(m.genre) ? ` · mag auch ${genreName(m.genre)}: mehr Können` : '';
+      return { id: x.id, html: `<span class="lb-ph sm">${photo(x)}</span><span><b>${esc(x.firstName)} ${esc(x.lastName)}</b><small class="muted">Können ${Math.floor(skill)}${esc(extra)}</small></span>`, why };
+    })
+    : s.bands.map((b) => ({ id: b.id, html: `<span><b>${esc(b.name)}</b><small class="muted">${b.memberIds.length === 1 ? 'Solokünstler' : `${b.memberIds.length} Musiker`} · ${Math.floor(b.mood.songs ?? 0)} Songs</small></span>`, why: taken.has(b.id) ? `${b.name} hat schon einen Coach.` : '' }));
+  const modal = openModal({
+    className: 'lb-rules-modal',
+    html: `
+      <div class="lb-cap">${m.role === 'teacher' ? 'Unterricht buchen' : 'Coach buchen'}</div>
+      <h2>${m.role === 'teacher' ? `Wer bekommt ${esc(instrumentName(m.instrument))}-Unterricht?` : `Wem hilft ${esc(m.firstName)}?`}</h2>
+      <p class="muted">${esc(m.firstName)} ist ${days(m.seconds)} nur für ${m.role === 'teacher' ? 'diesen einen Musiker' : 'diese eine Band'} da. Du bezahlst einmal ${money(m.price)}.</p>
+      ${rows.length ? `<div class="lb-pick">${rows.map((r) => `<button class="lb-pick-row" data-target="${r.id}" ${off(r.why)}>${r.html}</button>`).join('')}</div>`
+        : `<p class="empty">${m.role === 'teacher' ? `Bei dir spielt niemand ${esc(instrumentName(m.instrument))}.` : 'Du hast noch keine Band.'}</p>`}
+      <div class="dialog-actions"><button class="btn ghost" data-close>Abbrechen</button></div>`,
+  });
+  modal.body.addEventListener('click', async (e) => {
+    if (e.target.closest('[data-close]')) modal.close();
+    const row = e.target.closest('[data-target]');
+    if (!row || row.getAttribute('aria-disabled') === 'true') return;
+    if (await mutate('mailHire', { mailId: m.mailId, target: Number(row.dataset.target) })) {
+      modal.close();
+      toast(`${m.firstName} ist gebucht.`, 'ok');
+    }
   });
 }
 
@@ -644,6 +696,9 @@ defineActions({
   inboxGo({ key }) {
     app.ui.subBox = key;
     location.hash = '#/einsendungen';
+  },
+  tutorAsk({ id }) {
+    tutorDialog(app.state.mail.find((x) => x.mailId === Number(id)));
   },
   scoutAsk({ id }) {
     scoutDialog(app.state.scouts.find((x) => x.id === Number(id)));

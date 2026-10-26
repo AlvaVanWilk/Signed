@@ -6,7 +6,6 @@ export function render() {
   const s = app.state;
   const fame = s.bands.reduce((sum, b) => sum + b.fame, 0);
   const firstFavorite = s.musicians.find((m) => m.favorite && !m.bandId);
-  const choices = s.musicians.filter((m) => m.abilityChoice);
   const steps = [
     { done: s.musicians.length > 0, text: 'Talent-Scout: ersten Musiker unter Vertrag nehmen', href: '#/packs' },
     { done: s.musicians.length > 1, text: 'Mitmusiker finden: Jam-Café oder Schwarzes Brett', href: firstFavorite ? `#/musician/${firstFavorite.id}/jam` : '#/packs' },
@@ -35,7 +34,6 @@ export function render() {
     </section>
 
     ${courseNotice(s)}
-    ${choices.map((m) => `<div class="notice choice"><span>⭐ ${esc(m.firstName)} ${esc(m.lastName)} darf eine dritte Fähigkeit wählen.</span><button class="btn primary small" data-act="chooseAbility" data-id="${m.id}">Wählen</button></div>`).join('')}
     ${nextStep ? `
       <section class="panel">
         <h2>Erste Schritte</h2>

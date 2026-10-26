@@ -19,12 +19,8 @@ final class Migrations
             $level = Levels::forSkill(max((float) $row['skill1'], (float) ($row['skill2'] ?? 0)));
             $known = array_merge(json_decode($row['traits'], true) ?: [], json_decode($row['techniques'], true) ?: []);
             $known = array_map(static fn ($a) => $a === 'attraktiv' ? 'ausstrahlung' : $a, $known);
-            $known = array_values(array_filter($known, static fn ($a) => isset(Catalog::ABILITIES[$a])));
-            $abilities = array_slice($known, 0, $level);
-            $instruments = array_filter([$row['instr1'], $row['instr2']]);
-            while (count($abilities) < $level) {
-                $abilities[] = Levels::randomAbility($instruments, $abilities);
-            }
+            // Heute gibt es nur noch Spieltechniken (eine je Musiker); fehlt sie, leitet Repo::legacyTechnique sie beim Lesen ab.
+            $abilities = array_slice(array_values(array_filter($known, static fn ($a) => isset(Catalog::ABILITIES[$a]))), 0, 1);
             $db->update('musicians', ['level' => $level, 'abilities' => json_encode($abilities)], ['id' => (int) $row['id']]);
         }
         foreach ($db->all('SELECT id, model FROM gear') as $row) {

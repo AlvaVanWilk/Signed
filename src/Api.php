@@ -101,7 +101,6 @@ final class Api
         'musicianFavorite' => ['POST', true],
         'musicianRelease' => ['POST', true],
         'navOrder' => ['POST', true],
-        'abilityChoose' => ['POST', true],
         'recordStart' => ['POST', true],
         'minigameStart' => ['POST', true],
         'minigameFinish' => ['POST', true],
@@ -619,12 +618,6 @@ final class Api
             static fn ($key) => is_string($key) && preg_match('/^[bm]\d{1,9}$/', $key) === 1
         )));
         $this->db->update('labels', ['nav_order' => json_encode(array_slice($order, 0, 200))], ['id' => $repo->labelId]);
-        return ['state' => State::build($repo)];
-    }
-
-    private function abilityChoose(array $in, Repo $repo): array
-    {
-        Levels::choose($repo, self::int($in, 'musicianId'), self::str($in, 'ability'));
         return ['state' => State::build($repo)];
     }
 

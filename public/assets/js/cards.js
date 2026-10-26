@@ -434,5 +434,5 @@ export function emptySlot(label, { act = null, data = {}, size = '', icon = '+',
 /** Meldung, wenn Musiker aufsteigen: „Ada ist an der Gitarre jetzt Profi“. */
 export function levelUpBanners(levelUps = []) {
   return levelUps.map((l) => `
-    <div class="banner">⭐ ${esc(l.name)} ist ${esc(cat().instruments[l.instrument]?.at ?? '')} jetzt ${esc(cat().levelWords[l.level])}${l.abilities.length ? ` und lernt ${l.abilities.map((a) => `${cat().abilities[a].icon} ${esc(cat().abilities[a].name)}`).join(', ')}` : ''}${l.choice ? ' und darf eine Fähigkeit wählen' : ''}.</div>`).join('');
+    <div class="banner">⭐ ${esc(l.name)} ist ${esc(cat().instruments[l.instrument]?.at ?? '')} jetzt ${esc(cat().levelWords[l.level])}.</div>`).join('');
 }

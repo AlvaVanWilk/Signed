@@ -7,7 +7,8 @@ use Signed\Rng;
 
 /**
  * Zwei Stufenleitern bestimmen den Wert eines Musikers: Können-Stufe und Bekanntheits-Stufe, jeweils 0–3.
- * Jede Können-Stufe bringt eine Fähigkeit: Stufe 1 und 2 zufällig, bei Stufe 3 wählt man aus drei.
+ * Jede Können-Stufe schaltet eine bessere Klasse von Instrumenten frei (0 gewöhnlich, 1 selten, 2 episch, 3 legendär).
+ * Die Spieltechnik hat ein Musiker von Anfang an; Fähigkeiten gibt es nicht mehr.
  */
 final class Levels
 {
@@ -32,60 +33,48 @@ final class Levels
         return in_array($ability, $m['abilities'], true);
     }
 
-    /** Versteckter Wert eines Musikers aus Charakterzügen und Fähigkeiten (Balance::VALUE); nur für den Preis, nie angezeigt. */
+    /** Versteckter Wert eines Musikers aus seinen Charakterzügen (Balance::VALUE); nur für den Preis, nie angezeigt. */
     public static function value(array $m): int
     {
-        $v = Balance::VALUE;
         $sum = 0;
         foreach ($m['personality'] ?? [] as $trait) {
-            $sum += $v['traits'][$trait] ?? 0;
-        }
-        foreach ($m['abilities'] ?? [] as $ability) {
-            $sum += !empty(Catalog::ABILITIES[$ability]['technique']) ? $v['technique'] : ($v['abilities'][$ability] ?? 0);
+            $sum += Balance::VALUE['traits'][$trait] ?? 0;
         }
         return $sum;
     }
 
-    /** Spezialtechniken des Musikers. */
+    /** Spieltechnik des Musikers (eine Liste mit höchstens einem Eintrag). */
     public static function techniques(array $m): array
     {
-        return array_values(array_filter($m['abilities'], static fn ($a) => !empty(Catalog::ABILITIES[$a]['technique'])));
+        return array_values(array_filter($m['abilities'] ?? [], static fn ($a) => isset(Catalog::ABILITIES[$a])));
     }
 
     /**
-     * Fähigkeiten, die ein Musiker mit diesen Instrumenten noch lernen kann. Spieltechniken nur, wenn er eins ihrer Genres mag
-     * ($genres; null = ohne diese Bedingung): Wer nur Pop mag, entdeckt nicht plötzlich, dass er growlen kann.
+     * Techniken, die zu diesen Instrumenten und Genres passen. Mag jemand nur Genres, die für sein Instrument untypisch sind,
+     * kommen alle Techniken des Instruments infrage.
+     * @return list<string>
      */
-    public static function eligible(array $instruments, array $owned, ?array $genres = null): array
+    public static function fittingTechniques(array $instruments, array $genres): array
     {
-        $techniques = [];
+        $all = [];
         foreach ($instruments as $instrument) {
-            $techniques = array_merge($techniques, Catalog::INSTRUMENTS[$instrument]['techniques'] ?? []);
+            $all = array_merge($all, Catalog::INSTRUMENTS[$instrument]['techniques'] ?? []);
         }
-        $options = [];
-        foreach (Catalog::ABILITIES as $key => $ability) {
-            $fits = empty($ability['technique']) || (in_array($key, $techniques, true) && ($genres === null || array_intersect($ability['genres'], $genres)));
-            if (!in_array($key, $owned, true) && $fits) {
-                $options[] = $key;
-            }
-        }
-        return $options;
+        $all = array_values(array_unique($all));
+        $fit = array_values(array_filter($all, static fn ($t) => array_intersect(Catalog::ABILITIES[$t]['genres'], $genres)));
+        return $fit ?: $all;
     }
 
-    public static function randomAbility(array $instruments, array $owned, ?array $genres = null): string
+    /** Eine Technik für einen neuen Musiker (gelost). */
+    public static function randomTechnique(array $instruments, array $genres): array
     {
-        return (string) Rng::pick(self::eligible($instruments, $owned, $genres));
-    }
-
-    /** @return list<string> */
-    public static function options(array $instruments, array $owned, int $count = 3, ?array $genres = null): array
-    {
-        return Rng::sample(self::eligible($instruments, $owned, $genres), $count);
+        $options = self::fittingTechniques($instruments, $genres);
+        return $options ? [(string) Rng::pick($options)] : [];
     }
 
     /**
-     * Nach einem Können-Zuwachs: steigt der Musiker auf? Liefert null oder
-     * ['level' => neue Stufe, 'abilities' => neu gewonnene, 'choice' => Auswahl für Stufe 3 oder null].
+     * Nach einem Können-Zuwachs: steigt der Musiker auf? Liefert null oder ['level' => neue Stufe, …].
+     * Mit jeder Stufe darf er eine bessere Klasse von Instrumenten spielen (Gear::playable).
      */
     public static function check(Repo $repo, int $musicianId): ?array
     {
@@ -94,39 +83,10 @@ final class Levels
         if ($level <= $m['level']) {
             return null;
         }
-        $instruments = array_filter([$m['instr1'], $m['instr2']]);
-        $abilities = $m['abilities'];
-        $gained = [];
-        $choice = null;
-        for ($l = $m['level'] + 1; $l <= $level; $l++) {
-            if ($l < 3) {
-                $gained[] = $abilities[] = self::randomAbility($instruments, $abilities, $m['genres']);
-            } else {
-                $choice = self::options($instruments, $abilities, 3, $m['genres']);
-            }
-        }
-        $repo->db->update('musicians', [
-            'level' => $level,
-            'abilities' => json_encode($abilities),
-            'ability_choice' => $choice === null ? null : json_encode($choice),
-        ], ['id' => $musicianId]);
+        $repo->db->update('musicians', ['level' => $level], ['id' => $musicianId]);
         $best = $m['instr2'] !== null && (float) $m['skill2'] > (float) $m['skill1'] ? $m['instr2'] : $m['instr1'];
         $repo->log('level', sprintf('%s ist %s jetzt %s.', Bands::fullName($m), Catalog::INSTRUMENTS[$best]['at'], Catalog::LEVEL_WORDS[$level]), $m['band_id'], $musicianId);
-        return ['musicianId' => $musicianId, 'name' => $m['first_name'], 'level' => $level, 'instrument' => $best, 'abilities' => $gained, 'choice' => $choice];
-    }
-
-    /** Stufe 3: Der Musiker wird Experte und lernt die gewählte Fähigkeit. */
-    public static function choose(Repo $repo, int $musicianId, string $ability): void
-    {
-        $m = $repo->musician($musicianId);
-        if (!in_array($ability, $m['ability_choice'] ?? [], true)) {
-            throw new \Signed\ApiError('Diese Fähigkeit steht nicht zur Wahl.');
-        }
-        $repo->db->update('musicians', [
-            'abilities' => json_encode(array_merge($m['abilities'], [$ability])),
-            'ability_choice' => null,
-        ], ['id' => $musicianId]);
-        $repo->log('level', sprintf('%s lernt „%s“.', Bands::fullName($m), Catalog::ABILITIES[$ability]['name'] ?? $ability), $m['band_id'], $musicianId);
+        return ['musicianId' => $musicianId, 'name' => $m['first_name'], 'level' => $level, 'instrument' => $best, 'abilities' => [], 'choice' => null];
     }
 
     private static function step(float $value, array $thresholds): int

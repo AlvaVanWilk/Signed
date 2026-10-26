@@ -264,28 +264,19 @@ test('Bandprobe und Band-Promo', function () {
     check(bandById($p->get('state'), $band['id'])['fame'] > 0, 'Promo macht die Band bekannter');
 });
 
-test('Aufstieg: Bei Können 35 gibt es eine Fähigkeit, bei Stufe 3 wählt man aus drei', function () {
+test('Aufstieg: Stufe steigt mit dem Können, die Spieltechnik bleibt (keine Fähigkeiten mehr)', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Level');
     $m = $p->get('state')['musicians'][0];
-    $db->exec('UPDATE musicians SET skill1 = 59.995, level = 1, abilities = ? WHERE id = ?', ['["talent"]', $m['id']]);
+    $db->exec('UPDATE musicians SET skill1 = 59.995, level = 1, abilities = ? WHERE id = ?', ['["talent", "tapping"]', $m['id']]);
     $game = $p->post('minigameStart', ['kind' => 'practice', 'musicianId' => $m['id']])['game'];
     Clock::advance(Balance::SONG_SECONDS + 1);
     $result = $p->post('minigameFinish', ['sessionId' => $game['sessionId'], 'perfect' => $game['count'], 'good' => 0, 'miss' => 0])['result'];
     checkEquals(2, $result['levelUps'][0]['level']);
+    checkEquals(null, $result['levelUps'][0]['choice']);
     $after = array_values(array_filter($p->get('state')['musicians'], static fn ($x) => $x['id'] === $m['id']))[0];
-    checkEquals(2, count($after['abilities']));
-
-    $db->exec('UPDATE musicians SET skill1 = 84.9999 WHERE id = ?', [$m['id']]);
-    $game = $p->post('minigameStart', ['kind' => 'practice', 'musicianId' => $m['id']])['game'];
-    Clock::advance(Balance::SONG_SECONDS + 1);
-    $result = $p->post('minigameFinish', ['sessionId' => $game['sessionId'], 'perfect' => $game['count'], 'good' => 0, 'miss' => 0])['result'];
-    checkEquals(3, count($result['levelUps'][0]['choice']));
-    checkApiError(fn () => $p->post('abilityChoose', ['musicianId' => $m['id'], 'ability' => 'gibtsnicht']), 'nicht zur Wahl');
-    $state = $p->post('abilityChoose', ['musicianId' => $m['id'], 'ability' => $result['levelUps'][0]['choice'][1]])['state'];
-    $after = array_values(array_filter($state['musicians'], static fn ($x) => $x['id'] === $m['id']))[0];
-    checkEquals(3, count($after['abilities']));
-    checkEquals(null, $after['abilityChoice']);
+    checkEquals(['tapping'], $after['abilities'], 'nur die Technik, alte Fähigkeiten fallen weg');
+    checkApiError(fn () => $p->post('abilityChoose', ['musicianId' => $m['id'], 'ability' => 'tapping']), '');
 });
 
 test('Packs: Backstage ohne gewöhnliche Karten, Werkstatt nach Wunsch, Tipp im Music Store passt', function () {
@@ -1416,8 +1407,11 @@ test('Einsendungen: Willkommens-Stapel, laufender Eingang, Unterschreiben kostet
         check(in_array($l, $levels, true), "Stufe $l kommt vor");
     }
     check(count(array_filter($open, static fn ($s) => $s['fameLevel'] >= 1)) >= 1, 'bekannte Bewerber');
-    $three = array_values(array_filter($open, static fn ($s) => $s['level'] === 3))[0];
-    check(!empty($three['abilityChoice']), 'Stufe 3 darf eine Fähigkeit wählen');
+    foreach ($open as $s) {
+        foreach ($s['members'] ?? [$s] as $card) {
+            check(count($card['abilities'] ?? []) === 1, 'jeder hat genau eine Spieltechnik');
+        }
+    }
 });
 
 test('Einsendungen: Menge und Güte wachsen mit dem Erfolg des Labels', function () {

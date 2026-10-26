@@ -111,11 +111,13 @@ final class State
                 }
                 $try = $list;
                 $try[$i]['band_slot'] = $m['band_slot'] === 2 ? 1 : 2;
+                $tryIdentity = BandCalc::identity($try, $band['genre'], $band['genre2']);
+                $tryGenres = array_values(array_filter([$tryIdentity['primary'] ?? null, $tryIdentity['second'] ?? null, $tryIdentity['third'] ?? null]));
                 $slotPreview[$m['id']] = BandCalc::lineupProblems(array_values($try)) ? null : BandCalc::sound(
                     $try,
                     $band['cohesion'],
                     $gearMap,
-                    BandCalc::identity($try, $band['genre'], $band['genre2'])['bonus']
+                    $tryIdentity['bonus'] * BandCalc::techniqueBonus($try, $tryGenres)
                 );
             }
 

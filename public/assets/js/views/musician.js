@@ -66,7 +66,6 @@ function profile(m) {
     <div class="profile">
       <div class="profile-card">${musicianCard(m, { act: null })}</div>
       <div class="profile-side">
-        ${m.abilityChoice ? `<div class="notice choice"><span>⭐ ${esc(m.firstName)} ist jetzt ${esc(cat().levelWords[3])} und darf eine dritte Fähigkeit wählen.</span><button class="btn primary small" data-act="chooseAbility" data-id="${m.id}">Wählen</button></div>` : ''}
         <div class="stat-grid">
           <div class="tile"><span>Können</span><b>${esc(cat().levelNames[m.level])}</b><small>Jetzt <em>${fmt1(Math.max(...m.instruments.map((i) => i.skill)))}</em>${nextSkill ? ` · ${esc(cat().levelNames[m.level + 1])} ab ${nextSkill}` : ' · höchste Stufe'}</small></div>
           <div class="tile"><span>Bekanntheit</span><b>${esc(cat().fameNames[m.fameLevel])}</b><small>Jetzt <em>${fmt1(m.fame)}</em>${nextFame ? ` · ${esc(cat().fameNames[m.fameLevel + 1])} ab ${nextFame}` : ' · höchste Stufe'}</small></div>
@@ -257,25 +256,6 @@ function chronicle(m) {
     </section>`;
 }
 
-/** Stufe 3: aus drei Fähigkeiten eine wählen. */
-export function openAbilityChoice(id) {
-  const m = musicianById(id);
-  if (!m?.abilityChoice) return;
-  const modal = openModal({
-    html: `
-      <div class="eyebrow">${esc(fullName(m))} · ${esc(cat().levelNames[3])}</div>
-      <h2>Welche Fähigkeit?</h2>
-      <div class="ability-list">${m.abilityChoice.map((a) => {
-        const info = abilityInfo(a);
-        return `<button class="ability pick" data-ability="${a}"><span class="ability-icon">${info.icon}</span><b>${esc(info.name)}</b><span class="muted small">${esc(info.desc)}</span></button>`;
-      }).join('')}</div>`,
-  });
-  modal.body.addEventListener('click', async (e) => {
-    const button = e.target.closest('[data-ability]');
-    if (button && await mutate('abilityChoose', { musicianId: m.id, ability: button.dataset.ability })) modal.close();
-  });
-}
-
 defineActions({
   traitInfo({ id, trait }) {
     traitInfo(musicianById(id), trait);
@@ -303,9 +283,6 @@ defineActions({
   async toggleFavorite({ id }) {
     const m = musicianById(id);
     await mutate('musicianFavorite', { musicianId: m.id, favorite: !m.favorite });
-  },
-  chooseAbility({ id }) {
-    openAbilityChoice(id);
   },
   jamChoose({ offer, index }) {
     openJamBand(offer, index);

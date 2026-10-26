@@ -123,12 +123,15 @@ die gespeicherten Schlüssel bleiben die alten. Zahlen: `Balance::TRAITS`, Ausda
 
 Kreativ und Technisch schließen sich aus. Frühere Fähigkeiten „Songwriter“ und „Interpret“ werden beim Lesen zu Kreativ und Technisch (`Repo::legacyTraits`).
 
-**Versteckter Wert** (`Balance::VALUE`, nie angezeigt): Züge meist 0, Ehrgeizig, Kooperativ, Ausgeglichen, Kreativ +1, Egozentrisch und Technisch −1;
-Fähigkeiten nach Nutzen (Talent, Charisma +2, sonst +1), Spieltechniken +1. Die Unterschriftsprämie wächst um 12 % je Punkt (60 % bis 160 %):
-Glückstreffer kosten mehr, Pechvögel sind billig. Verteilung bei Stufe 0: Wert −2 bis +2, meist 0 oder +1.
+**Versteckter Wert** (`Balance::VALUE`, nie angezeigt): Züge meist 0, Ehrgeizig, Kooperativ, Ausgeglichen, Kreativ +1, Egozentrisch und Technisch −1.
+Die Unterschriftsprämie wächst um 12 % je Punkt (60 % bis 160 %): Glückstreffer kosten mehr, Pechvögel sind billig.
 
-**Spieltechniken** gehören zu zwei Genres (`Catalog::ABILITIES[…]['genres']`). Man lernt nur eine, deren Genre man mag; im passenden Genre der Band
-(bei Hybrid und Crossover alle ihre Genres, solo die eigenen) bringt jede +4 % Sound (`Balance::TECHNIQUE_SOUND`, höchstens zwei je Musiker), live etwas mehr Glanz.
+**Spieltechnik** (gebaut): Jeder Musiker hat genau eine, von Anfang an – man hört sie in der Einsendung (später eigene Spuren je Technik).
+84 Techniken (`Catalog::ABILITIES`), jede gehört zu einem Instrument und zwei Genres; je Instrument und Genre gibt es mindestens drei.
+Gelost wird aus denen, die zu Instrument und gemochten Genres passen (mag er nur untypische Genres: aus allen des Instruments).
+Im passenden Genre der Band (bei Hybrid und Crossover alle ihre Genres, solo die eigenen) bringt sie +4 % Sound (`Balance::TECHNIQUE_SOUND`), live etwas mehr Glanz.
+**Fähigkeiten** (Talent, Charisma, Nervenstark, Absolutes Gehör, Entertainer, Studiofuchs, Ausstrahlung) gibt es nicht mehr; stattdessen schaltet jede
+Können-Stufe eine bessere Klasse von Instrumenten frei (siehe Instrumente).
 
 ### Anspruch
 

@@ -214,13 +214,11 @@ final class Balance
     ];
     /**
      * Versteckter Wert eines Musikers (nie angezeigt): Charakterzüge zählen je nach Lage etwa gleich (meist 0), was im Schnitt mehr hilft +1,
-     * was im Schnitt eher bremst −1; Fähigkeiten zählen nach Nutzen, Spieltechniken je 1. Die Unterschriftsprämie wächst um `price` je Punkt
+     * was im Schnitt eher bremst −1 (die Technik zählt nicht, jeder hat eine). Die Unterschriftsprämie wächst um `price` je Punkt
      * (höchstens bis `min`/`max` des Grundpreises): Glückstreffer kosten mehr, Pechvögel (etwa egozentrisch und technisch) sind billig.
      */
     public const VALUE = [
         'traits' => ['ehrgeizig' => 1, 'teamplayer' => 1, 'ruhepol' => 1, 'kreativ' => 1, 'diva' => -1, 'technisch' => -1],
-        'abilities' => ['talent' => 2, 'charisma' => 2, 'ausstrahlung' => 1, 'nervenstark' => 1, 'gehoer' => 1, 'buehnentier' => 1, 'studiofuchs' => 1],
-        'technique' => 1,
         'price' => 0.12, 'min' => 0.6, 'max' => 1.6,
     ];
     public const MAX_MEMBERS = 7;
@@ -290,7 +288,7 @@ final class Balance
     public const BAND_FAME_SHARE = 0.25;
     /** Einzelanteil am Ruhmgewinn: Grundwert + Boni. */
     public const FAME_SHARE = [
-        'base' => 0.8, 'ausstrahlung' => 0.15, 'charisma' => 0.3, 'unusual' => 0.3, 'design' => 0.2,
+        'base' => 0.8, 'unusual' => 0.3, 'design' => 0.2,
     ];
     /** Bei diesem Sound gibt ein Auftritt genau den Grund-Ruhm des Ortes. */
     public const SOUND_FAME_REF = 30;
@@ -445,7 +443,6 @@ final class Balance
     public const PRACTICE_BEGINNER_BOOST = 3.0;
     /** Fenster des Rhythmusspiels in ms bei Können 0; mit Können wachsen sie (Chart::windows). */
     public const RHYTHM_WINDOWS = ['perfect' => 60, 'good' => 135];
-    public const TALENT_FACTOR = 1.5;
     /** So lange (Sekunden) bleibt ein gestartetes Minispiel gültig. */
     public const MINIGAME_TTL = 180;
 
@@ -454,7 +451,6 @@ final class Balance
     /** Promo-Mission: Bekanntheit [min, max], geteilt durch (1 + Bekanntheit / Abfall). */
     public const PROMO_FAME = [0.12, 0.3];
     public const PROMO_FAME_FALLOFF = 40;
-    public const ATTRACTIVE_FACTOR = 1.5;
 
     // ---------- Platte ----------
     /** Studiozeit: Grundpreis plus pro Lied. */

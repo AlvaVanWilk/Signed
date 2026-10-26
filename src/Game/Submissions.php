@@ -58,13 +58,8 @@ final class Submissions
         $card['skill2'] = $card['instr2'] === null ? null : round($best * Rng::float(...Balance::MULTI_SECOND_FACTOR), 1);
         $card['fame'] = round($fame, 1);
         $card['level'] = Levels::forSkill($best);
-        $instruments = array_filter([$card['instr1'], $card['instr2']]);
-        $abilities = [];
-        for ($l = 1; $l <= min(2, $card['level']); $l++) {
-            $abilities[] = Levels::randomAbility($instruments, $abilities, $card['genres']);
-        }
-        $card['abilities'] = $abilities;
-        $card['ability_choice'] = $card['level'] >= 3 ? Levels::options($instruments, $abilities, 3, $card['genres']) : null;
+        $card['abilities'] = Levels::randomTechnique(array_filter([$card['instr1'], $card['instr2']]), $card['genres']);
+        $card['ability_choice'] = null;
         return $card;
     }
 
@@ -122,7 +117,7 @@ final class Submissions
                 $card['skill2'] = null;
                 $card['instr2'] = null;
                 $card['level'] = Levels::forSkill($card['skill1']);
-                $card['abilities'] = $card['level'] ? [Levels::randomAbility([$card['instr1']], [], $card['genres'])] : [];
+                $card['abilities'] = Levels::randomTechnique([$card['instr1']], $card['genres']);
                 $this->store($card, $now - $i * 60);
             }
             $db->update('labels', ['submit_at' => $now], ['id' => $this->repo->labelId]);

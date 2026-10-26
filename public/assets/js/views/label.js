@@ -545,7 +545,7 @@ function reactionLines(b, type) {
   return lines.join('');
 }
 
-/** Kleines Fenster zum Musiker: was die Bandseite nicht zeigt (Bekanntheit, Wert, Fähigkeiten, Auskommen mit den anderen). */
+/** Kleines Fenster zum Musiker: was die Bandseite nicht zeigt (Bekanntheit, Wert, Spieltechnik, Auskommen mit den anderen). */
 function musicianWindow(m) {
   const rules = cat().rules;
   const band = m.bandId ? bandById(m.bandId) : null;
@@ -566,21 +566,16 @@ function musicianWindow(m) {
     html: `
       <div class="lb-mw-head"><span class="lb-ph ${m.wellbeing?.level ?? 'green'}">${photo(m)}</span>
         <div><h2>${esc(m.stageName ?? `${m.firstName} ${m.lastName}`)}</h2>${m.stageName ? `<small class="muted">${esc(m.firstName)} ${esc(m.lastName)} · </small>` : ''}<small class="muted">${band && band.memberIds.length > 1 ? esc(band.name) : 'Solokünstler'}</small></div></div>
-      ${m.abilityChoice ? `<p class="lb-mw-note">${esc(m.firstName)} ist jetzt ${esc(cat().levelWords[3])} und darf eine dritte Fähigkeit wählen. <button class="btn small primary" data-choose>Wählen</button></p>` : ''}
       <div class="lb-sum">
         <div><small>Bekanntheit</small><b>${esc(cat().fameNames[m.fameLevel])}</b><small class="muted">${fmt1(m.fame)}${nextFame ? ` · nächste Stufe ab ${nextFame}` : ''}</small></div>
         <div><small>Marktwert</small><b>${money(m.value)}</b></div>
       </div>
       <h3 class="lb-cap">Können</h3><ul class="lb-mw-list">${ins}</ul>
-      ${abilities ? `<h3 class="lb-cap">Fähigkeiten</h3><ul class="lb-mw-list plain">${abilities}</ul>` : ''}
+      ${abilities ? `<h3 class="lb-cap">Spieltechnik</h3><ul class="lb-mw-list plain">${abilities}</ul>` : ''}
       ${notes.length ? `<h3 class="lb-cap">Mit den anderen</h3><ul class="lb-mw-list plain">${notes.map((n) => `<li class="${n.good ? 'good' : 'bad'}">${n.good ? '+' : '–'} ${esc(n.text)}</li>`).join('')}</ul>` : ''}
       <div class="dialog-actions"><a class="btn ghost" href="#/wiki/signie/${m.id}" data-close>Artikel in der WikiSignia</a><button class="btn primary" data-close>Schließen</button></div>`,
   });
   modal.body.querySelectorAll('[data-close]').forEach((el) => el.addEventListener('click', () => modal.close()));
-  modal.body.querySelector('[data-choose]')?.addEventListener('click', () => {
-    modal.close();
-    actions.chooseAbility({ id: String(m.id) });
-  });
 }
 
 /** Wie voll der Ort voraussichtlich wird, in Worten. */

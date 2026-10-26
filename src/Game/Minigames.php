@@ -42,7 +42,7 @@ final class Minigames
                 // Gesang wird im Hip-Hop gerappt (Rhythmus-Spiel), sonst gesungen (Tonhöhen-Spiel).
                 $genre = isset(Styles::GENRES[$stem['genre']]) ? $stem['genre'] : 'pop';
                 $rap = $instrument === 'vocals' && in_array($genre, Catalog::RAP_GENRES, true);
-                $chart = Etude::game($instrument, $genre, BandCalc::skill($m, $slot), random_int(1, 999999), Levels::has($m, 'gehoer'), $rap);
+                $chart = Etude::game($instrument, $genre, BandCalc::skill($m, $slot), random_int(1, 999999), false, $rap);
                 $bpm = $chart['bpm'];
 
                 $db->update('musicians', ['busy_until' => $expires], ['id' => $m['id']]);
@@ -72,7 +72,7 @@ final class Minigames
                 $plan = (new Studio($this->repo))->planFor($record, $members);
                 $step = $plan[$record['songs_done']] ?? ['type' => 'master'];
                 $byId = array_column($members, null, 'id');
-                $studiofuchs = array_filter($members, static fn ($m) => Levels::has($m, 'studiofuchs')) ? 0.04 : 0;
+                $studiofuchs = 0;
                 $stems = Music::bandStems($members, $gearMap, $bandGenres);
                 if ($step['type'] === 'take' && isset($byId[$step['musician']])) {
                     // Einspielen: ein Musiker nimmt seine Spur auf – dasselbe Spiel wie bei der Solo-Probe.
@@ -205,7 +205,7 @@ final class Minigames
     {
         $instrument = $slot === 2 && $m['instr2'] !== null ? $m['instr2'] : $m['instr1'];
         $skill = BandCalc::skill($m, $slot);
-        $perfectPitch = Levels::has($m, 'gehoer');
+        $perfectPitch = false;
         $resolved = Music::resolve($stem);
         $source = $resolved === null ? null : Music::notes($resolved);
         $music = $resolved === null ? null : ['own' => sprintf('assets/music/%s/%s.mp3', $resolved['folder'], $resolved['file'])];

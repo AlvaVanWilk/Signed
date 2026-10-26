@@ -151,7 +151,7 @@ function signiePage(m) {
       <h1>${esc(name(m))}</h1>
       <p class="wk-lead"><b>${esc(name(m))}</b> ist Signie und spielt ${esc(list(instruments))}${genres.length ? `, am liebsten ${esc(list(genres))}` : ''}. ${stay}</p>
       ${bands ? `<h2>Bands</h2><ul class="wk-list">${bands}</ul>` : ''}
-      ${abilities ? `<h2>Fähigkeiten</h2><ul class="wk-list">${abilities}</ul>` : ''}
+      ${abilities ? `<h2>Spieltechnik</h2><ul class="wk-list">${abilities}</ul>` : ''}
       ${m.events.length ? `<h2>Laufbahn</h2>${timeline(m.events)}` : ''}
     </div>`;
 }

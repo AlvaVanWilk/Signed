@@ -70,13 +70,13 @@ test('Zusammenspiel erhöht den Sound', function () {
     check(BandCalc::sound($band, 100, []) > BandCalc::sound($band, 0, []));
 });
 
-test('Bekanntheit wird zu gleichen Teilen verteilt, Charisma zählt', function () {
-    $quiet = [musician(), musician()];
-    $loud = [musician(['abilities' => ['charisma']]), musician()];
-    $gainsQuiet = BandCalc::splitFame($quiet, 10, []);
-    $gainsLoud = BandCalc::splitFame($loud, 10, []);
+test('Bekanntheit wird zu gleichen Teilen verteilt, Extrovertierte holen auf der Bühne mehr heraus', function () {
+    $quiet = [musician(['personality' => []]), musician(['personality' => []])];
+    $loud = [musician(['personality' => ['rampensau']]), musician(['personality' => []])];
+    $gainsQuiet = BandCalc::splitFame($quiet, 10, [], true);
+    $gainsLoud = BandCalc::splitFame($loud, 10, [], true);
     checkEquals(1, count(array_unique($gainsLoud)), 'Alle bekommen gleich viel');
-    check(array_sum($gainsLoud) > array_sum($gainsQuiet), 'Charisma bringt mehr Bekanntheit');
+    check(array_sum($gainsLoud) > array_sum($gainsQuiet), 'mehr Bekanntheit');
 });
 
 test('Bandruhm ist die Summe der Bekanntheit', function () {
@@ -151,7 +151,8 @@ test('Generator: höchstens zwei Instrumente, Spezialisten sind besser', functio
         check(isset(Catalog::INSTRUMENTS[$m['instr1']]));
         check($m['genres'] !== [] && count($m['genres']) === count(array_unique($m['genres'])));
         check($m['level'] <= 1, 'Aus Packs höchstens Können-Stufe 1');
-        checkEquals($m['level'], count(array_diff($m['abilities'], ['songwriter', 'nowriter'])) + ($m['level'] && array_diff($m['abilities'], ['songwriter', 'nowriter']) === [] ? 1 : 0), 'So viele Fähigkeiten wie Stufen (Songwriter auch zusätzlich)');
+        checkEquals(1, count($m['abilities']), 'genau eine Spieltechnik');
+        check(in_array($m['abilities'][0], array_merge(...array_map(static fn ($i) => Catalog::INSTRUMENTS[$i]['techniques'], array_filter([$m['instr1'], $m['instr2']]))), true), 'passt zum Instrument');
         checkEquals(0.0, $m['fame'], 'Neue Musiker haben keinen Ruhm');
         if ($m['instr2'] !== null) {
             $multi++;
@@ -186,16 +187,19 @@ test('Generator: Instrumentenmodelle gibt es für jede Art und Seltenheit', func
     }
 });
 
-test('Stufen: Können- und Bekanntheitsleiter, Fähigkeiten passen zum Instrument', function () {
+test('Stufen: Können- und Bekanntheitsleiter, Techniken passen zum Instrument, je Instrument und Genre mindestens drei', function () {
     checkEquals(0, Signed\Game\Levels::forSkill(34.9));
     checkEquals(1, Signed\Game\Levels::forSkill(35));
     checkEquals(3, Signed\Game\Levels::forSkill(99));
     checkEquals(0, Signed\Game\Levels::forFame(0));
     checkEquals(3, Signed\Game\Levels::forFame(5000));
-    for ($i = 0; $i < 50; $i++) {
-        foreach (Signed\Game\Levels::options(['drums'], []) as $ability) {
-            $info = Catalog::ABILITIES[$ability];
-            check(empty($info['technique']) || in_array($ability, Catalog::INSTRUMENTS['drums']['techniques'], true), "$ability passt nicht zum Schlagzeug");
+    foreach (Signed\Game\Levels::fittingTechniques(['drums'], ['metal']) as $t) {
+        check(in_array($t, Catalog::INSTRUMENTS['drums']['techniques'], true) && in_array('metal', Catalog::ABILITIES[$t]['genres'], true), "$t passt nicht");
+    }
+    foreach (Catalog::INSTRUMENTS as $type => $instrument) {
+        foreach ($instrument['genres'] as $g) {
+            $n = count(array_filter($instrument['techniques'], static fn ($t) => in_array($g, Catalog::ABILITIES[$t]['genres'], true)));
+            check($n >= 3, "$type/$g: nur $n Techniken");
         }
     }
     $scout = Generator::musician('epic', ['minSkill' => 35]);
@@ -705,9 +709,9 @@ test('Spieltechniken: nur lernbar, wenn man eins ihrer Genres mag, und Sound nur
             checkEquals(2, count($a['genres']), "$key hat zwei Genres");
         }
     }
-    $pop = Signed\Game\Levels::eligible(['vocals'], [], ['pop']);
+    $pop = Signed\Game\Levels::fittingTechniques(['vocals'], ['pop']);
     check(!in_array('growl', $pop, true) && in_array('falsett', $pop, true), 'Pop-Sänger: Falsett ja, Growl nein');
-    check(in_array('growl', Signed\Game\Levels::eligible(['vocals'], [], ['metal']), true), 'Metal-Sänger: Growl ja');
+    check(in_array('growl', Signed\Game\Levels::fittingTechniques(['vocals'], ['metal']), true), 'Metal-Sänger: Growl ja');
     $growler = ['personality' => [], 'genres' => ['metal'], 'abilities' => ['growl']];
     check(BandCalc::techniqueBonus([$growler], ['metal']) > 1.0, 'Growl in einer Metal-Band bringt Sound');
     checkEquals(1.0, BandCalc::techniqueBonus([$growler], ['pop']), 'in einer Pop-Band nicht');

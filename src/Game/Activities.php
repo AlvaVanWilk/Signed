@@ -555,11 +555,10 @@ final class Activities
         ];
     }
 
-    /** Promo bringt Bekanntheit; je bekannter jemand schon ist, desto weniger. Ausstrahlung verstärkt sie. */
+    /** Promo bringt Bekanntheit; je bekannter jemand schon ist, desto weniger. */
     private static function promoFame(array $m, array $range): float
     {
-        $factor = Levels::has($m, 'ausstrahlung') ? Balance::ATTRACTIVE_FACTOR : 1.0;
-        return Rng::float(...$range) * $factor / (1 + $m['fame'] / Balance::PROMO_FAME_FALLOFF);
+        return Rng::float(...$range) / (1 + $m['fame'] / Balance::PROMO_FAME_FALLOFF);
     }
 
     private static function rehearsalTimeline(array $members, int $songs, int $seconds): array

@@ -67,9 +67,10 @@ final class Generator
             $skill1 *= $scale;
             $skill2 = $skill2 === null ? null : $skill2 * $scale;
         }
-        // Aus Packs höchstens Können-Stufe 1, und dann genau eine Fähigkeit.
+        // Aus Packs höchstens Können-Stufe 1.
         $level = min(1, Levels::forSkill(max($skill1, (float) $skill2)));
-        $abilities = $level ? [Levels::randomAbility(array_filter([$instr1, $instr2]), [], $genres)] : [];
+        // Eine Spieltechnik von Anfang an (man hört sie in der Einsendung)
+        $abilities = Levels::randomTechnique(array_filter([$instr1, $instr2]), $genres);
 
         return [
             'first_name' => $first,

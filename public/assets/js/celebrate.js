@@ -49,7 +49,7 @@ function skillHtml(m) {
   return `
     <div class="celebrate-face lvl-${m.level}">${avatar(m.look)}</div>
     <div class="celebrate-text">${esc(m.firstName)} ist ${esc(cat().instruments[best.type].at)} jetzt ${esc(cat().levelWords[m.level])}!</div>
-    <div class="celebrate-sub">${m.level < 3 ? 'Neue Fähigkeit gelernt' : 'Darf eine dritte Fähigkeit wählen'}</div>`;
+    <div class="celebrate-sub">Kann jetzt ${['', 'seltene', 'epische', 'legendäre'][m.level] ?? ''} Instrumente spielen</div>`;
 }
 
 function fameHtml(m) {

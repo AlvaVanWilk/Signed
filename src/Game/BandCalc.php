@@ -206,7 +206,7 @@ final class BandCalc
     /** $paced = false: ohne die Bremse der Stufen (Balance::LEVEL_PACE); dann bremst nur die Lernkurve. */
     public static function trainingGain(array $m, float $base, ?int $slot = null, ?array $model = null, bool $paced = true): float
     {
-        $talent = Levels::has($m, 'talent') ? Balance::TALENT_FACTOR : 1.0;
+        $talent = 1.0;
         if (self::hasPerk($model, 'teacher')) {
             $talent *= Balance::PERK_TEACHER;
         }
@@ -330,12 +330,6 @@ final class BandCalc
     {
         $p = Balance::FAME_SHARE;
         $factor = $p['base'] + ($stage ? Mood::traitMax($m, Balance::TRAITS['stageFame'], 0.0) : 0.0);
-        if (Levels::has($m, 'ausstrahlung')) {
-            $factor += $p['ausstrahlung'];
-        }
-        if (Levels::has($m, 'charisma')) {
-            $factor += $p['charisma'];
-        }
         if ($m['unusual']) {
             $factor += $p['unusual'];
         }

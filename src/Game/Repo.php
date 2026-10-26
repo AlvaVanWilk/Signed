@@ -193,6 +193,20 @@ final class Repo
         ]);
     }
 
+    /**
+     * Genau eine Spieltechnik: Die allgemeinen Fähigkeiten von früher (Talent, Charisma …) fallen weg. Hatte jemand keine passende Technik,
+     * bekommt er eine fest aus seiner ID abgeleitete (immer dieselbe, ohne zu speichern).
+     */
+    private static function legacyTechnique(array $r): array
+    {
+        $own = array_values(array_filter(json_decode($r['abilities'] ?? '[]', true) ?: [], static fn ($a) => isset(Catalog::ABILITIES[$a])));
+        if ($own) {
+            return [$own[0]];
+        }
+        $options = Levels::fittingTechniques(array_filter([$r['instr1'] ?? null, $r['instr2'] ?? null]), json_decode($r['genres'] ?? '[]', true) ?: []);
+        return $options ? [$options[crc32('tech|' . $r['id']) % count($options)]] : [];
+    }
+
     /** Früher waren Songwriter und Interpret Fähigkeiten; jetzt sind es die Charakterzüge kreativ und technisch. */
     private static function legacyTraits(array $personality, array $abilities): array
     {
@@ -221,8 +235,8 @@ final class Repo
             'fame' => (float) $r['fame'],
             'genres' => json_decode($r['genres'], true) ?: [],
             'level' => (int) $r['level'],
-            'abilities' => array_values(array_diff(json_decode($r['abilities'], true) ?: [], ['songwriter', 'nowriter'])),
-            'ability_choice' => $r['ability_choice'] ? json_decode($r['ability_choice'], true) : null,
+            'abilities' => self::legacyTechnique($r),
+            'ability_choice' => null,
             'favorite' => (bool) $r['favorite'],
             'jam_at' => (int) $r['jam_at'],
             'personality' => self::legacyTraits(json_decode($r['personality'], true) ?: [], json_decode($r['abilities'], true) ?: []),

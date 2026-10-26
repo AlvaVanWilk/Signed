@@ -105,7 +105,7 @@ final class Present
             'timeline' => $data['timeline'] ?? [],
             // Ort des Auftritts (Kneipe … Arena): bestimmt, wie die Bühne aussieht.
             'venue' => $data['reward']['venue'] ?? null,
-        ] + (isset($data['recordId']) ? ['record' => ['studio' => (int) $data['studio'], 'producer' => (string) $data['producer']]] : []) + (isset($data['reward']['rehearsal']) ? ['rehearsal' => [
+        ] + (isset($data['recordId']) ? ['record' => ['studio' => (int) $data['studio'], 'producer' => (string) $data['producer'], 'quality' => (float) ($data['quality'] ?? 0)]] : []) + (isset($data['reward']['rehearsal']) ? ['rehearsal' => [
             'done' => (int) $data['reward']['rehearsal']['done'],
             'credited' => (object) $data['reward']['rehearsal']['credited'],
             'limit' => $data['reward']['rehearsal']['limit'],

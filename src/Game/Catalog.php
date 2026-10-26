@@ -557,7 +557,7 @@ final class Catalog
     ];
 
     public const JAM_CAFES = ['Café Klangfarbe', 'Jazzkeller Blaue Note', 'Session im Hinterhof', 'Bar Zum Plattenspieler', 'Kulturcafé Kreuzton'];
-    public const REHEARSAL_LINES = ['%s feilt am Übergang.', '%s zählt neu ein.', 'Die Band spielt die Bridge noch einmal.',
+    public const REHEARSAL_LINES = ['%s feilt am Übergang.', '%s zählt neu ein.', '%s spielt die Bridge noch einmal.',
         '%s schlägt ein neues Intro vor.', 'Alle grinsen – das saß!', '%s probiert ein anderes Solo.'];
 
     public const STREETS = ['Fußgängerzone', 'U-Bahn-Station', 'Marktplatz', 'Flohmarkt', 'Hafenpromenade', 'Bahnhofsvorplatz'];

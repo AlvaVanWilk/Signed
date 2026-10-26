@@ -22,7 +22,7 @@ final class Studio
     public static function blocker(array $band, int $memberCount, ?array $openRecord): ?string
     {
         if ($openRecord !== null) {
-            return 'Die Band nimmt gerade auf.';
+            return $memberCount === 1 ? 'Nimmt gerade auf.' : 'Die Band nimmt gerade auf.';
         }
         if ($memberCount < Balance::MIN_MEMBERS) {
             return sprintf('Die Band braucht mindestens %d Musiker.', Balance::MIN_MEMBERS);
@@ -183,7 +183,7 @@ final class Studio
                 throw new ApiError($refuser['first_name'] . ' hat darauf gerade keine Lust. Eine Anordnung, die der Band gefällt, hebt zuerst die Stimmung.');
             }
             if ((int) floor((float) $band['songs_written']) < $songs) {
-                throw new ApiError(sprintf('Dafür hat die Band noch nicht genug Songs geschrieben (%d von %d).', (int) floor((float) $band['songs_written']), $songs));
+                throw new ApiError(sprintf('Dafür hat %s noch nicht genug Songs geschrieben (%d von %d).', Bands::who($members, true), (int) floor((float) $band['songs_written']), $songs));
             }
             $gear = $this->repo->gearByMusician();
             $refusal = self::refusal($studio, $producer, BandCalc::bandSound($band, $members, $gear));
@@ -195,7 +195,7 @@ final class Studio
             $quality = self::quality($members, $gear, $studio, $producer);
             $endsAt = $now + $songs * Balance::RECORD_SECONDS_PER_SONG;
             if ($db->exec('UPDATE bands SET busy_until = ?, released = 1, songs_written = songs_written - ? WHERE id = ? AND busy_until <= ?', [$endsAt, $songs, $bandId, $now]) === 0) {
-                throw new ApiError('Die Band ist gerade beschäftigt.');
+                throw new ApiError(Bands::who($members) . ' ist gerade beschäftigt.');
             }
             // Anspruch: Ist die Produktion unter der Würde der Band, ärgert sie sich; darüber freut sie sich. Mit der Legende sind alle entspannt.
             $gap = self::claimGap($band, $members, $studio, $producer);
@@ -229,7 +229,7 @@ final class Studio
                 'type' => 'record',
                 'started_at' => $now,
                 'ends_at' => $endsAt,
-                'data' => json_encode(['title' => sprintf('Studio: „%s“', $title), 'recordId' => $recordId, 'studio' => $studio, 'producer' => $producer, 'songs' => $songs], JSON_UNESCAPED_UNICODE),
+                'data' => json_encode(['title' => sprintf('„%s“', $title), 'recordId' => $recordId, 'studio' => $studio, 'producer' => $producer, 'songs' => $songs, 'quality' => round($quality, 3)], JSON_UNESCAPED_UNICODE),
             ]);
             return Present::activity($db->one('SELECT * FROM activities WHERE id = ?', [$id]));
         });

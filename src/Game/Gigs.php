@@ -105,7 +105,7 @@ final class Gigs
                 'fit' => $ratio >= 1.0 ? 'green' : ($ratio >= 0.75 ? 'yellow' : 'red'),
                 'known' => $fame + Balance::GIG_BOOKING['fameSoft'] >= $venue['minFame'] + Balance::GIG_BOOKING['fameSoft'] ? 'yes' : (($fame + Balance::GIG_BOOKING['fameSoft']) / ($venue['minFame'] + Balance::GIG_BOOKING['fameSoft']) >= 0.5 ? 'some' : 'no'),
                 'claim' => $i < $claim ? 'below' : ($i > $claim ? 'above' : 'fit'),
-                'blocked' => $available < $songs ? sprintf('Dafür braucht die Band %d Songs (hat %d).', $songs, $available) : null,
+                'blocked' => $available < $songs ? sprintf('Dafür braucht %s %d Songs (hat %d).', Bands::who($members, true), $songs, $available) : null,
             ];
         }
         return ['sound' => $sound, 'songs' => $available, 'options' => $out];

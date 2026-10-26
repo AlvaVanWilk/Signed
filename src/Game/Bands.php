@@ -661,6 +661,15 @@ final class Bands
         }
     }
 
+    /** Wer „die Band“ ist: bei einem Solokünstler sein (Künstler-)Name, sonst „Die Band“ ($lower: „die Band“ mitten im Satz). */
+    public static function who(array $members, bool $lower = false): string
+    {
+        if (count($members) === 1) {
+            return $members[0]['stage_name'] ?? $members[0]['first_name'];
+        }
+        return $lower ? 'die Band' : 'Die Band';
+    }
+
     public static function fullName(array $m): string
     {
         return $m['first_name'] . ' ' . $m['last_name'];
@@ -679,7 +688,7 @@ final class Bands
             throw new ApiError('Diese Band gibt es nicht mehr.', 404);
         }
         if ($band['busy_until'] > Clock::now()) {
-            throw new ApiError('Die Band ist gerade beschäftigt. Warte, bis sie fertig ist.');
+            throw new ApiError(count($this->repo->members($bandId)) === 1 ? 'Gerade beschäftigt. Warte, bis alles fertig ist.' : 'Die Band ist gerade beschäftigt. Warte, bis sie fertig ist.');
         }
         return $band;
     }

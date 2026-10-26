@@ -147,6 +147,8 @@ final class State
                     'songRate' => round(Mood::songRate(Mood::bandMood(array_column($list, 'wellbeing'))) * Mood::crewFactor($list)
                         * Mood::activityFactor($db->value('SELECT type FROM activities WHERE band_id = ? AND settled = 0 AND started_at <= ? AND ends_at > ? ORDER BY id DESC LIMIT 1', [$band['id'], $now, $now])), 3),
                     'reactions' => Mood::reactions($list),
+                    // Warum jemand gut oder schlecht drauf ist: Ziel des Wohlbefindens und die Gründe dafür (je Musiker).
+                    'why' => self::moodWhy($repo, $band, $list, $bandRelations[$band['id']] ?? [], $now),
                     'wishes' => Mood::wishes($list, $gearMap, (int) floor($band['songs_written'])),
                 ],
                 'cohesion' => round($band['cohesion'], 1),
@@ -280,5 +282,20 @@ final class State
                 'createdAt' => (int) $h['created_at'],
             ], $history),
         ];
+    }
+
+    /** @return array<int, array{target: float, items: list<array{0: string, 1: float}>}> */
+    private static function moodWhy(Repo $repo, array $band, array $members, array $relations, int $now): array
+    {
+        [$band['stageIdle'], $band['recordIdle']] = Mood::idleHours($repo, $band, $now);
+        $others = array_column($members, 'wellbeing', 'id');
+        $out = [];
+        foreach ($members as $m) {
+            $why = [];
+            $target = Mood::target($m, $band, $members, $others, $relations, (float) $band['songs_written'], $why);
+            usort($why, static fn ($a, $b) => $a[1] <=> $b[1]);
+            $out[$m['id']] = ['target' => round($target), 'items' => $why];
+        }
+        return $out;
     }
 }

@@ -116,8 +116,16 @@
 .lb-gt { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; border: 1px solid var(--g); background: color-mix(in srgb, var(--g) 24%, transparent); }
 .lb-gt .genre-icon { width: 18px; height: 18px; stroke: color-mix(in srgb, var(--g) 45%, #fff); stroke-width: 1.9; fill: none; }
 .lb-rels { display: flex; gap: 8px; justify-content: flex-end; }
-.lb-rel { padding: 0; border: 0; background: none; cursor: pointer; display: block; width: 32px; height: 32px; border-radius: 50%; box-shadow: 0 0 0 3px var(--rc); overflow: hidden; margin: 3px; }
+.lb-rel { padding: 0; border: 0; background: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; margin: 3px; }
+.lb-relpic { display: block; width: 32px; height: 32px; border-radius: 50%; overflow: hidden; }
 .lb-rel .photo-pic { width: 100%; height: 100%; border-radius: 0; }
+.lb-relbar { position: relative; display: block; width: 34px; height: 5px; border-radius: 3px; background: #2b2735; }
+.lb-relbar::after { content: ''; position: absolute; left: 50%; top: -1px; width: 1px; height: 7px; background: #5a5468; }
+.lb-relbar i { position: absolute; top: 0; height: 100%; border-radius: 3px; background: var(--rc); }
+.lb-moodbtn { padding: 0; border: 0; background: none; cursor: pointer; font: inherit; color: inherit; }
+.lb-why { list-style: none; padding: 0; margin: 10px 0; display: grid; gap: 4px; }
+.lb-why li { display: flex; justify-content: space-between; gap: 12px; padding: 5px 10px; border-radius: 8px; background: var(--lb-card2); }
+.lb-why li.up b { color: #3fbf6e; } .lb-why li.down b { color: #e0475a; }
 .lb-x { opacity: 0.5; } .lb-x:hover { opacity: 1; }
 .lb-addm { border: 1px dashed var(--lb-line); color: var(--lb-muted); background: none; border-radius: 14px; padding: 14px; font: inherit; font-weight: 600; cursor: pointer; }
 .lb-addm:hover { color: var(--lb-text); border-color: var(--lb-accent); }
@@ -407,7 +415,7 @@ button.lb-pill:disabled { opacity: 0.45; cursor: default; }
 .lb-trait-list { margin: 0 0 10px; padding-left: 1.1em; display: grid; gap: 6px; }
 .lb-compat h4 { margin: 10px 0 6px; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--lb-muted, #8d879c); }
 .lb-cp { display: grid; grid-template-columns: 36px 1fr auto auto; gap: 10px; align-items: center; padding: 4px 0; }
-.lb-cp .lb-rel { width: 32px; height: 32px; margin: 2px; } .lb-cp em { font-style: normal; font-weight: 700; font-size: 0.82rem; }
+.lb-cp .lb-rel { margin: 2px; } .lb-cp em { font-style: normal; font-weight: 700; font-size: 0.82rem; }
 
 /* Gold wie Goldpaste: feines Korn und winzige Glitzerpunkte, die an wechselnden Stellen aufblitzen */
 .lv-3 .sk i, .lv-3 .lb-prog i { position: relative; overflow: hidden; }
@@ -899,3 +907,18 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .st-onair { animation: st-onair 2.4s ease-in-out infinite; }
 @keyframes st-onair { 50% { opacity: .45; } }
 @media (prefers-reduced-motion: reduce) { .st-onair { animation: none; } }
+/* Produzent wippt zur Musik; ist die Aufnahme richtig gut, geht er mehr mit. Ruben wiegt sich langsam und schließt dann die Augen. */
+.st-live .pr-head { animation: pr-nod calc(var(--beat, .5s) * 2) ease-in-out infinite; }
+.st-live .pr-body { animation: pr-bob calc(var(--beat, .5s) * 2) ease-in-out infinite; }
+.st-hype .pr-head { animation-name: pr-nod-big; }
+.st-hype .pr-body { animation-name: pr-bob-big; }
+.st-live .pr-legend .pr-head { animation: pr-sway calc(var(--beat, .5s) * 8) ease-in-out infinite; }
+.st-live .pr-legend .pr-body { animation: none; }
+.pr-glasses { transition: transform 1.2s ease; }
+.st-hype .pr-legend .pr-glasses { transform: translateY(-10px); }
+@keyframes pr-nod { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(4deg) translateY(1px); } 50% { transform: rotate(0); } 75% { transform: rotate(4deg) translateY(1px); } }
+@keyframes pr-nod-big { 0%, 100% { transform: rotate(-2deg); } 25% { transform: rotate(9deg) translateY(2px); } 50% { transform: rotate(-2deg); } 75% { transform: rotate(9deg) translateY(2px); } }
+@keyframes pr-bob { 0%, 50%, 100% { transform: translateY(0); } 25%, 75% { transform: translateY(1.5px); } }
+@keyframes pr-bob-big { 0%, 50%, 100% { transform: translateY(0); } 25%, 75% { transform: translateY(4px); } }
+@keyframes pr-sway { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+@media (prefers-reduced-motion: reduce) { .st-live .pr-head, .st-live .pr-body { animation: none; } }

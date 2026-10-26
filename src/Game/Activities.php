@@ -25,7 +25,7 @@ final class Activities
     public static function blocker(array $band, array $members, int $now): ?string
     {
         if ($band['busy_until'] > $now) {
-            return 'Die Band ist gerade beschäftigt.';
+            return Bands::who($members) . ' ist gerade beschäftigt.';
         }
         if (count($members) < Balance::MIN_MEMBERS) {
             return sprintf('Die Band braucht mindestens %d Musiker.', Balance::MIN_MEMBERS);
@@ -156,7 +156,7 @@ final class Activities
             $endsAt = $now + ($rehearsal !== null ? $duration : $songs * Balance::SONG_SECONDS);
             $claimed = $db->exec('UPDATE bands SET busy_until = ?, released = 1 WHERE id = ? AND busy_until <= ?', [$endsAt, $bandId, $now]);
             if ($claimed === 0) {
-                throw new ApiError('Die Band ist gerade beschäftigt.');
+                throw new ApiError(Bands::who($members) . ' ist gerade beschäftigt.');
             }
             return $this->insert($bandId, null, $type, $now, $endsAt, [
                 'title' => $title,
@@ -302,7 +302,7 @@ final class Activities
             $cfg = Balance::BAND_PROMO;
             $endsAt = $now + $cfg['seconds'];
             if ($db->exec('UPDATE bands SET busy_until = ? WHERE id = ? AND busy_until <= ?', [$endsAt, $bandId, $now]) === 0) {
-                throw new ApiError('Die Band ist gerade beschäftigt.');
+                throw new ApiError(Bands::who($members) . ' ist gerade beschäftigt.');
             }
             $fame = 0.0;
             foreach ($members as $m) {

@@ -284,7 +284,7 @@ final class Mood
             }
         }
         if ($songs >= Balance::MOOD['stau']['from'] && $members) {
-            $out[] = ['musicianId' => $members[0]['id'], 'text' => 'Wir wollen aufnehmen!', 'action' => 'record', 'level' => 'yellow'];
+            $out[] = ['musicianId' => $members[0]['id'], 'text' => count($members) === 1 ? 'Ich will aufnehmen!' : 'Wir wollen aufnehmen!', 'action' => 'record', 'level' => 'yellow'];
         }
         return $out;
     }
@@ -380,18 +380,31 @@ final class Mood
      * @param array<int, float> $others Wohlbefinden der anderen Mitglieder (ID => Wert)
      * @param array<string, float> $relations Beziehungen der Band ("a-b" => Wert)
      */
-    public static function target(array $m, array $band, array $members, array $others, array $relations, float $songs): float
+    /**
+     * @param array|null $why wenn übergeben: sammelt die Gründe als [Text, Wert] (für die Anzeige „Warum?“; ohne Namen versteckter Züge)
+     */
+    public static function target(array $m, array $band, array $members, array $others, array $relations, float $songs, ?array &$why = null): float
     {
         $c = Balance::MOOD;
         $value = $c['start'];
+        $add = static function (string $text, float $delta) use (&$value, &$why): void {
+            $value += $delta;
+            if ($why !== null && abs($delta) >= 0.05) {
+                $why[] = [$text, round($delta, 1)];
+            }
+        };
+        $why = $why === null ? null : [];
         $mates = array_values(array_filter($members, static fn ($x) => $x['id'] !== $m['id']));
         if (!$mates) {
             // Solokünstler: keine Beziehungen, kein Genre der Band; es zählen Einsamkeit, Charakter (Band-Wunsch oder Rampenlicht) und Songstau.
-            $value += $c['soloBase'];
+            $add('Allein ist es manchmal einsam', $c['soloBase']);
+            $solo = 0.0;
             foreach ($m['personality'] as $trait) {
-                $value += $c['solo'][$trait] ?? 0.0;
+                $solo += $c['solo'][$trait] ?? 0.0;
             }
-            $value -= self::stau($m, $songs) + self::idle($m, $band);
+            $add($solo < 0 ? 'Wäre lieber in einer Band' : 'Steht gern allein im Rampenlicht', $solo);
+            $add('Zu viele Songs warten auf eine Aufnahme', -self::stau($m, $songs));
+            self::idleWhy($m, $band, $add);
             return max(0.0, min(100.0, $value));
         }
         // Beziehungen
@@ -400,7 +413,8 @@ final class Mood
             [$a, $b] = self::key($m['id'], $x['id']);
             $mine[$x['id']] = $relations["$a-$b"] ?? 0.0;
         }
-        $value += $c['relationWeight'] * array_sum($mine) / count($mine);
+        $rel = $c['relationWeight'] * array_sum($mine) / count($mine);
+        $add($rel >= 0 ? 'Versteht sich gut mit den anderen' : 'Versteht sich nicht gut mit den anderen', $rel);
         // Können-Unterschied zum Durchschnitt der anderen
         $skill = BandCalc::skill($m);
         $avg = array_sum(array_map(static fn ($x) => BandCalc::skill($x), $mates)) / count($mates);
@@ -408,30 +422,49 @@ final class Mood
         $g = $c['gap'];
         if ($gap < 0) {
             $weak = -$gap;
-            $value += $weak >= $g['good'][0] && $weak <= $g['good'][1] ? $g['good'][2] : -min($g['max'], max(0.0, $weak - $g['weakFrom']) * $g['weakPer']);
+            if ($weak >= $g['good'][0] && $weak <= $g['good'][1]) {
+                $add('Lernt von den Besseren in der Band', $g['good'][2]);
+            } else {
+                $add('Kommt nicht mit – die anderen spielen viel besser', -min($g['max'], max(0.0, $weak - $g['weakFrom']) * $g['weakPer']));
+            }
         } else {
-            $value -= min($g['max'], max(0.0, $gap - $g['strongFrom']) * $g['strongPer']);
+            $add('Langweilt sich – die anderen spielen viel schwächer', -min($g['max'], max(0.0, $gap - $g['strongFrom']) * $g['strongPer']));
         }
         // Genre der Band
         if ($band['genre'] === '') {
-            $value += $c['genre']['mixed'];
+            $add('Die Band hat kein gemeinsames Genre', $c['genre']['mixed']);
+        } elseif (in_array($band['genre'], $m['genres'], true)) {
+            $add('Mag das Genre der Band', $c['genre']['fits']);
         } else {
-            $value += in_array($band['genre'], $m['genres'], true) ? $c['genre']['fits'] : $c['genre']['misfit'];
+            $add('Mag das Genre der Band nicht', $c['genre']['misfit']);
         }
         // Songstau, und wer lange nicht auf der Bühne war oder lange keine Platte hatte (je nach Charakter)
-        $value -= self::stau($m, $songs) + self::idle($m, $band);
+        $add('Zu viele Songs warten auf eine Aufnahme', -self::stau($m, $songs));
+        self::idleWhy($m, $band, $add);
         // Miesepeter: wer rot ist, zieht andere mit runter – Reibung mehr, aber auch Freunde leiden mit
         $pull = 0.0;
         foreach ($mates as $x) {
             $w = $others[$x['id']] ?? $c['start'];
             if ($w < $c['yellow']) {
-                $rel = $mine[$x['id']];
-                $factor = 1 + ($rel < 0 ? -$rel / Balance::RELATION['max'] : $c['pull']['friend'] * $rel / Balance::RELATION['max']);
+                $r = $mine[$x['id']];
+                $factor = 1 + ($r < 0 ? -$r / Balance::RELATION['max'] : $c['pull']['friend'] * $r / Balance::RELATION['max']);
                 $pull += ($c['yellow'] - $w) * $c['pull']['per'] * $factor * self::traitMax($m, Balance::TRAITS['pulled'], 1.0);
             }
         }
-        $value -= min($c['pull']['max'], $pull);
+        $add('Die schlechte Laune der anderen färbt ab', -min($c['pull']['max'], $pull));
         return max(0.0, min(100.0, $value));
+    }
+
+    /** Unruhe ohne Auftritt oder neue Platte, als einzelne Gründe (gleiche Rechnung wie idle()). */
+    private static function idleWhy(array $m, array $band, callable $add): void
+    {
+        $t = Balance::TRAITS;
+        if (($band['stageIdle'] ?? 0) >= $t['restless']['hours']) {
+            $add('Will endlich wieder auf die Bühne', -self::traitMax($m, $t['restless']['traits'], 0.0));
+        }
+        if (($band['recordIdle'] ?? 0) >= $t['stagnant']['hours']) {
+            $add('Will endlich eine neue Platte machen', -self::traitMax($m, $t['stagnant']['traits'], 0.0));
+        }
     }
 
     /**

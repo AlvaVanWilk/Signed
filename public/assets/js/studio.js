@@ -17,7 +17,7 @@ function producer(key, x, y, h) {
   const draw = PRODUCERS[key];
   if (!draw) return '';
   const w = h * 0.8;
-  return `<svg x="${x}" y="${y}" width="${w}" height="${h}" viewBox="0 0 120 150" overflow="visible">${draw()}</svg>`;
+  return `<svg class="pr-${key}" x="${x}" y="${y}" width="${w}" height="${h}" viewBox="0 0 120 150" overflow="visible"><g class="pr-body">${draw()}</g></svg>`;
 }
 
 /** Mischpult: Pult mit Reglern und Pegeln. size 0–3 (je Studio größer und schöner). */
@@ -119,8 +119,11 @@ const LEVELS = {
     <g transform="translate(250 ${FLOOR - 70})"><rect x="0" y="40" width="34" height="30" rx="4" fill="#7a4a2a" stroke="${INK}" stroke-width="2"/>${[[-16, 8], [0, 0], [16, 6], [-8, 22], [10, 20]].map(([dx, dy]) => `<ellipse cx="${17 + dx}" cy="${30 + dy - 20}" rx="10" ry="18" fill="#3a7a4a" stroke="${INK}" stroke-width="1.4" transform="rotate(${dx * 2} ${17 + dx} ${30 + dy})"/>`).join('')}</g>`,
 };
 
-/** Das Studio als SVG für die Bandseite (Ebene hinter der Band). level 0–3, key = Produzent oder 'none'. */
-export function studioSvg(level = 0, key = 'none') {
+/**
+ * Das Studio als SVG für die Bandseite (Ebene hinter der Band). level 0–3, key = Produzent oder 'none'.
+ * live: Der Produzent wippt im Takt (--beat); hype: Die Aufnahme wird richtig gut – er geht mehr mit, Ruben schiebt die Brille hoch und schließt die Augen.
+ */
+export function studioSvg(level = 0, key = 'none', { live = false, hype = false } = {}) {
   const art = LEVELS[Math.max(0, Math.min(3, level))](key);
-  return `<svg class="lb-roomart st-art" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${art}</svg>`;
+  return `<svg class="lb-roomart st-art ${live ? 'st-live' : ''} ${hype ? 'st-hype' : ''}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${art}</svg>`;
 }

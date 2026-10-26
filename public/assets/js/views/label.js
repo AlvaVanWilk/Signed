@@ -160,7 +160,9 @@ function relationsOf(b, m, members) {
   return members.filter((x) => x.id !== m.id).map((x) => {
     const key = m.id < x.id ? `${m.id}-${x.id}` : `${x.id}-${m.id}`;
     const v = Math.round(rel[key] ?? 0);
-    return `<button class="lb-rel" style="--rc:${relColor(rel[key] ?? 0)}" data-act="relInfo" data-a="${m.id}" data-b="${x.id}" data-band="${b.id}" title="${esc(m.firstName)} und ${esc(x.firstName)}: ${relWord(v)}">${photo(x)}</button>`;
+    // Unter dem Bild eine kleine Leiste: von der Mitte nach rechts grün (gut) oder nach links rot (schlecht).
+    const w = Math.min(50, Math.abs(rel[key] ?? 0) * 5);
+    return `<button class="lb-rel" style="--rc:${relColor(rel[key] ?? 0)}" data-act="relInfo" data-a="${m.id}" data-b="${x.id}" data-band="${b.id}" title="${esc(m.firstName)} und ${esc(x.firstName)}: ${relWord(v)}"><span class="lb-relpic">${photo(x)}</span><span class="lb-relbar"><i style="${v >= 0 ? `left:50%;width:${w}%` : `right:50%;width:${w}%`}"></i></span></button>`;
   }).join('');
 }
 
@@ -200,7 +202,7 @@ function memberRow(b, m, members, slots) {
     <div class="lb-mr" data-member-row="${m.id}">
       <a class="lb-ph ${mood}" data-act="musicianInfo" data-id="${m.id}" style="--split:linear-gradient(120deg, ${split})" title="${esc(m.firstName)} ansehen">${photo(m)}</a>
       <div class="lb-info">
-        <div class="lb-nm"><a data-act="musicianInfo" data-id="${m.id}">${m.stageName ? `${esc(m.stageName)} <small class="muted">${esc(m.firstName)} ${esc(m.lastName)}</small>` : `${esc(m.firstName)} ${esc(m.lastName)}`}</a>${moodTag(mood)}
+        <div class="lb-nm"><a data-act="musicianInfo" data-id="${m.id}">${m.stageName ? `${esc(m.stageName)} <small class="muted">${esc(m.firstName)} ${esc(m.lastName)}</small>` : `${esc(m.firstName)} ${esc(m.lastName)}`}</a><button class="lb-moodbtn" data-act="moodWhy" data-band="${b.id}" data-id="${m.id}" title="Warum?">${moodTag(mood)}</button>
           <span class="lb-traitrow">${m.personality.map((p) => `<button class="lb-trait" data-act="tip" data-tip="${esc(cat().personalities[p])}: ${esc(cat().personalityInfo[p])}" title="${esc(cat().personalities[p])}: ${esc(cat().personalityInfo[p])}">${esc(cat().personalities[p])}</button>`).join('')}${hiddenTraits(m)}</span></div>
         <div class="lb-ins lv-${Math.min(level, MAX_LV_STYLE)}">
           ${m.instruments.length > 1
@@ -395,7 +397,7 @@ const pct = (x) => `${Math.round((x - 1) * 100)} %`;
 function roomBlock(b, members) {
   const room = b.room;
   if (!room) return '';
-  const effect = room.level ? `Proben bringen ${pct(room.skill)} mehr Können, die Band hält ${pct(room.lust)} länger durch${room.mood ? ', alle fühlen sich wohler' : ''}.` : 'Dunkel, feucht, kaputt. Hier probt niemand gern lange.';
+  const effect = room.level ? `Proben bringen ${pct(room.skill)} mehr Können, ${esc(whoOf(b, true))} hält ${pct(room.lust)} länger durch${room.mood ? (members.length === 1 ? ' und fühlt sich wohler' : ', alle fühlen sich wohler') : ''}.` : 'Dunkel, feucht, kaputt. Hier probt niemand gern lange.';
   return `
     <section class="lb-roomcard">
       <div class="lb-room idle">${roomSvg(room.level, b.id, b.name)}${stage(members, {
@@ -440,6 +442,12 @@ function startMusic(act) {
 
 /** Live-Anzeige der laufenden Probe aus dem letzten Spielstand und der Zeit seither. */
 export function tickLive() {
+  // Im Studio läuft nur der Ton (ohne Zahlen); er hört auf, wenn die Aufnahme vorbei ist.
+  const sound = document.querySelector('[data-sound-act]');
+  if (sound) {
+    if (music && (music.actId !== Number(sound.dataset.soundAct) || !app.state?.running.some((a) => a.id === music.actId))) stopMusic();
+    return;
+  }
   const root = document.querySelector('[data-live-act]');
   const act = root && app.state?.running.find((a) => a.id === Number(root.dataset.liveAct));
   if (!act) {
@@ -507,7 +515,7 @@ export function page(route) {
       <div class="lb-hd-mood"><span class="lb-cap">Stimmung</span>${moodTag(b.mood.level).replace('class="lb-mood', 'class="lb-mood big')}</div>
     </header>
     ${notice}
-    ${running?.type === 'rehearsal' ? liveBlock(b, members, running) : running?.type === 'gig' ? gigBlock(b, members, running) : running?.type === 'record' ? studioBlock(b, members, running) : ''}
+    ${running?.type === 'rehearsal' ? liveBlock(b, members, running) : running?.type === 'gig' ? gigBlock(b, members, running) : running?.type === 'record' ? studioBlock(b, members, running, { soundOn: music?.actId === running.id }) : ''}
     ${wishBlock(b, members)}
     <h2 class="lb-cap lb-sec">Anordnungen</h2>
     <div class="lb-acts">
@@ -590,9 +598,16 @@ function musicianWindow(m) {
   modal.body.querySelectorAll('[data-close]').forEach((el) => el.addEventListener('click', () => modal.close()));
 }
 
+/** Wer „die Band“ ist: bei Solokünstlern der (Künstler-)Name. */
+export function whoOf(b, lower = false) {
+  const members = b.memberIds.map(musicianById).filter(Boolean);
+  if (members.length === 1) return members[0].stageName ?? members[0].firstName;
+  return lower ? 'die Band' : 'Die Band';
+}
+
 /** Wie voll der Ort voraussichtlich wird, in Worten. */
 const fillWord = (f) => (f >= 0.9 ? 'voll' : f >= 0.6 ? 'gut besucht' : f >= 0.3 ? 'halb leer' : 'fast leer');
-const KNOWN = { some: '<li class="warn">Erst wenige kennen die Band: nicht alle Plätze werden verkauft.</li>', no: '<li class="bad">Kaum jemand kennt die Band: der Ort bleibt fast leer.</li>' };
+const KNOWN = (b) => ({ some: `<li class="warn">Erst wenige kennen ${esc(whoOf(b, true))}: nicht alle Plätze werden verkauft.</li>`, no: `<li class="bad">Kaum jemand kennt ${esc(whoOf(b, true))}: der Ort bleibt fast leer.</li>` });
 const FIT = { green: ['ok', 'Sound passt'], yellow: ['knapp', 'Sound knapp: der Saal wird nicht ganz voll'], red: ['bad', 'Sound zu schwach: der Saal bleibt halb leer'] };
 
 /** Auftritt buchen: alle passenden Orte mit Kosten, Gewinn-Schätzung, Ruhm, ob der Sound reicht und wie die Band den Ort findet. */
@@ -613,8 +628,8 @@ async function openGigs(b) {
   const range = ([a, c]) => (a === c ? signedMoney(a) : `${signedMoney(a)} bis ${signedMoney(c)}`);
   const row = (o) => {
     const [cls, fitText] = FIT[o.fit];
-    const claim = o.claim === 'below' ? `<li class="bad">Unter ihrem Anspruch: die Band ärgert sich.</li>`
-      : o.claim === 'above' ? `<li class="good">Eine größere Bühne: die Band freut sich.</li>` : '';
+    const claim = o.claim === 'below' ? `<li class="bad">Unter ${members.length === 1 ? 'dem' : 'ihrem'} Anspruch: ${esc(whoOf(b, true))} ärgert sich.</li>`
+      : o.claim === 'above' ? `<li class="good">Eine größere Bühne: ${esc(whoOf(b, true))} freut sich.</li>` : '';
     const tooPoor = app.state.label.money < o.cost;
     return `
       <div class="gg-row ${o.blocked ? 'blocked' : ''} ${o === best ? 'best' : ''}">
@@ -622,7 +637,7 @@ async function openGigs(b) {
         <div class="gg-main">
           <div class="gg-head"><b>${esc(o.place)}</b><small>${esc(o.name)} · ${o.songs} Songs · etwa ${o.minutes} Min.</small></div>
           <div class="gg-crowd">${crowdMeter(o.fill ?? 0)}<span>Publikum: <b>${fillWord(o.fill ?? 0)}</b></span></div>
-          <ul class="gg-notes"><li class="${cls === 'ok' ? 'good' : cls === 'bad' ? 'bad' : 'warn'}">${fitText}</li>${KNOWN[o.known] ?? ''}${claim}${o.blocked ? `<li class="bad">${esc(o.blocked)}</li>` : ''}</ul>
+          <ul class="gg-notes"><li class="${cls === 'ok' ? 'good' : cls === 'bad' ? 'bad' : 'warn'}">${fitText}</li>${KNOWN(b)[o.known] ?? ''}${claim}${o.blocked ? `<li class="bad">${esc(o.blocked)}</li>` : ''}</ul>
         </div>
         <div class="gg-side">
           <div class="gg-money">
@@ -700,7 +715,7 @@ defineActions({
     const b = bandById(id);
     const next = b.room?.next;
     if (!next) return;
-    const ok = await confirmDialog(`${b.room.solo ? 'Übungsecke' : 'Proberaum'} ausbauen zu „${next.name}“ für ${fmt0(next.cost)} ₲? Danach bringen Proben ${pct(next.skill)} mehr Können, die Band hält ${pct(next.lust)} länger durch${next.mood ? ' und fühlt sich beim Proben wohler' : ''}.`, { ok: 'Ausbauen' });
+    const ok = await confirmDialog(`${b.room.solo ? 'Übungsecke' : 'Proberaum'} ausbauen zu „${next.name}“ für ${fmt0(next.cost)} ₲? Danach bringen Proben ${pct(next.skill)} mehr Können, ${esc(whoOf(b, true))} hält ${pct(next.lust)} länger durch${next.mood ? ' und fühlt sich beim Proben wohler' : ''}.`, { ok: 'Ausbauen' });
     if (ok) await mutate('roomUpgrade', { bandId: b.id });
   },
   musicianInfo({ id }) {
@@ -710,7 +725,7 @@ defineActions({
   liveSound({ id }, el) {
     if (music?.actId === Number(id)) {
       stopMusic();
-      el.textContent = 'Ton an';
+      el.textContent = el.closest('[data-sound-act]') ? 'Zuhören' : 'Ton an';
       return;
     }
     const act = app.state.running.find((a) => a.id === Number(id));
@@ -762,6 +777,26 @@ defineActions({
     });
   },
   /** Beziehung antippen: wer mit wem, in Worten. */
+  /** Warum jemand gut oder schlecht drauf ist: die Gründe aus der Rechnung, wohin sich die Stimmung bewegt. */
+  moodWhy({ band, id }) {
+    const b = bandById(Number(band));
+    const m = musicianById(Number(id));
+    const w = b?.mood.why?.[id];
+    if (!m || !w) return;
+    const now = Math.round(m.wellbeing?.value ?? 60);
+    const dir = w.target > now + 2 ? 'Sie wird gerade besser' : w.target < now - 2 ? 'Sie wird gerade schlechter' : 'Sie bleibt ungefähr so';
+    const row = (text, v) => `<li class="${v > 0 ? 'up' : v < 0 ? 'down' : ''}"><span>${esc(text)}</span><b>${v > 0 ? '+' : ''}${fmt0(Math.round(v))}</b></li>`;
+    const modal = openModal({
+      html: `
+        <div class="lb-cap">Stimmung</div>
+        <h2>${esc(m.stageName ?? m.firstName)} ist ${moodWord(m.wellbeing?.level ?? 'green')}</h2>
+        <p class="muted">Jetzt: <b>${fmt0(now)}</b> von 100. ${dir} – auf etwa <b>${fmt0(w.target)}</b>, wenn sich nichts ändert.</p>
+        <ul class="lb-why">${row('Grundlaune', 60)}${w.items.map(([text, v]) => row(text, v)).join('')}</ul>
+        <p class="muted small">Anordnungen, die ${esc(m.firstName)} mag, heben die Stimmung sofort ein Stück.</p>
+        <div class="dialog-actions"><button class="btn primary" data-close>Okay</button></div>`,
+    });
+    modal.body.querySelector('[data-close]').addEventListener('click', () => modal.close());
+  },
   relInfo({ a, b, band }, el) {
     const x = musicianById(a);
     const y = musicianById(b);

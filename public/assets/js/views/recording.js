@@ -19,7 +19,13 @@ const PRODUCER_LINE = {
   diamond: 'Macht Hits mit Glanz – auch im legendären Studio.',
   legend: 'Holt aus jeder Band das Echte heraus. Überall. Nimmt aber nicht jede.',
 };
-const CLAIM = (gap) => (gap < 0 ? ['no', 'Das ist unter ihrer Würde – die Band ärgert sich.'] : gap > 0 ? ['ok', 'Die Band freut sich über so ein Studio.'] : ['', 'Passt zur Band.']);
+/** Wer „die Band“ ist: bei Solokünstlern der Name. */
+const who = (b, lower = false) => {
+  const members = b.memberIds.map((id) => app.state.musicians.find((m) => m.id === id)).filter(Boolean);
+  return members.length === 1 ? (members[0].stageName ?? members[0].firstName) : lower ? 'die Band' : 'Die Band';
+};
+const solo = (b) => b.memberIds.length === 1;
+const CLAIM = (gap, b) => (gap < 0 ? ['no', `Das ist unter ${solo(b) ? 'der' : 'ihrer'} Würde – ${who(b, true)} ärgert sich.`] : gap > 0 ? ['ok', `${who(b)} freut sich über so ein Studio.`] : ['', solo(b) ? 'Passt gut.' : 'Passt zur Band.']);
 
 /** Was im Dialog gewählt ist (bleibt beim Neuzeichnen erhalten). */
 let pick = null;
@@ -38,28 +44,28 @@ function dialogHtml(b, data) {
     return `
       <div class="lb-cap">Aufnehmen</div><h2>${esc(b.name)}</h2>
       <p>${esc(data.blocker)}</p>
-      ${c && !c.done ? `<ul class="rc-cycle">${step(`Lieder der letzten Platte live gespielt (${c.plays}× das Album)`, c.songs)}${step('Band-Promo', c.promos)}</ul>` : ''}
+      ${c && !c.done ? `<ul class="rc-cycle">${step(`Lieder der letzten Platte live gespielt (${c.plays}× das Album)`, c.songs)}${step(solo(b) ? 'Promo' : 'Band-Promo', c.promos)}</ul>` : ''}
       <div class="dialog-actions"><button class="btn primary" data-close>Okay</button></div>`;
   }
   if (data.songsWritten < cat().rules.recordMinSongs) {
     return `
       <div class="lb-cap">Aufnehmen</div><h2>${esc(b.name)}</h2>
-      <p>Für eine Platte braucht die Band mindestens ${cat().rules.recordMinSongs} fertige Songs. Geschrieben sind erst ${data.songsWritten}.</p>
-      <p class="muted">Songs entstehen von selbst, solange die Band gut gelaunt ist.</p>
+      <p>Für eine Platte braucht ${esc(who(b, true))} mindestens ${cat().rules.recordMinSongs} fertige Songs. Geschrieben sind erst ${data.songsWritten}.</p>
+      <p class="muted">Songs entstehen von selbst, solange ${esc(who(b, true))} gut gelaunt ist.</p>
       <div class="dialog-actions"><button class="btn primary" data-close>Okay</button></div>`;
   }
   const cur = optionFor(data, pick.producer, pick.studio);
   const can = !cur.refusal && app.state.label.money >= cur.cost && pick.cover !== null && pick.title.trim() !== '';
   const why = cur.refusal ?? (app.state.label.money < cur.cost ? `Dafür fehlen noch ${money(cur.cost - app.state.label.money)}.` : pick.title.trim() === '' ? 'Die Platte braucht einen Titel.' : '');
-  const [claimCls, claimText] = CLAIM(cur.claim);
+  const [claimCls, claimText] = CLAIM(cur.claim, b);
   const total = (x) => cur.money + x;
   const low = total(cur.royalties[0]) - cur.cost;
   const high = total(cur.royalties[1]) - cur.cost;
   return `
-    <div class="lb-cap">Aufnehmen</div><h2>${esc(b.name)} geht ins Studio</h2>
+    <div class="lb-cap">Aufnehmen</div><h2>${esc(b.name)} ${solo(b) ? 'geht' : 'geht'} ins Studio</h2>
     <div class="rc-row"><span class="rc-label">Lieder</span>
       <span class="rc-stepper"><button class="btn small ghost" data-r="songs" data-v="-1" ${off(pick.songs <= cat().rules.recordMinSongs ? 'Weniger geht nicht.' : '')}>−</button>
-      <b>${pick.songs}</b><button class="btn small ghost" data-r="songs" data-v="1" ${off(pick.songs >= songsMax ? (songsMax < cat().rules.recordMaxSongs ? 'Mehr Songs hat die Band noch nicht geschrieben.' : 'Mehr passt nicht auf eine Platte.') : '')}>+</button></span>
+      <b>${pick.songs}</b><button class="btn small ghost" data-r="songs" data-v="1" ${off(pick.songs >= songsMax ? (songsMax < cat().rules.recordMaxSongs ? `Mehr Songs hat ${who(b, true)} noch nicht geschrieben.` : 'Mehr passt nicht auf eine Platte.') : '')}>+</button></span>
       <small class="muted">${pick.songs >= 7 ? 'Album (LP)' : 'EP'} · ${data.songsWritten} Songs fertig · dauert ${duration(data.seconds)}</small></div>
 
     <h3 class="rc-h">Produzent</h3>
@@ -168,7 +174,7 @@ async function recordAsk(bandId) {
         const res = await mutate('recordStart', { bandId, title: pick.title, songs: pick.songs, studio: pick.studio, producer: pick.producer, cover: pick.covers[pick.cover] });
         if (res) {
           modal.close();
-          toast(`${b.name} ist im Studio.`, 'ok');
+          toast(`${solo(b) ? who(b) : b.name} ist im Studio.`, 'ok');
         }
         return;
       }
@@ -179,19 +185,24 @@ async function recordAsk(bandId) {
   });
 }
 
-/** Bandseite während der Aufnahme: das Studio mit Produzent hinter der Scheibe, die Band davor. */
-export function studioBlock(b, members, act) {
-  const rec = act.record ?? { studio: 0, producer: 'none' };
+/** Bandseite während der Aufnahme: das Studio mit Produzent hinter der Scheibe, die Band davor. Mit Ton zum Zuhören. */
+export function studioBlock(b, members, act, { soundOn = false } = {}) {
+  const rec = act.record ?? { studio: 0, producer: 'none', quality: 0 };
   const studio = cat().rules.studios[rec.studio]?.name ?? 'Studio';
   const producer = rec.producer !== 'none' ? cat().rules.producers[rec.producer]?.name : null;
+  const bpm = cat().genres[b.genres?.[0] ?? members[0]?.genres?.[0]]?.bpm ?? 110;
+  // Klingt es richtig gut, gehen die Produzenten mehr mit (Ruben schließt die Augen).
+  const hype = rec.quality >= 0.8;
   return `
-    <section class="lb-live">
+    <section class="lb-live" data-sound-act="${act.id}">
       <div class="lb-live-head">
         <div><h2 class="lb-cap">${members.length === 1 ? 'Nimmt auf' : 'Die Band nimmt auf'}</h2>
           <small class="muted">${esc(act.title)} · ${esc(studio)}${producer ? ` mit ${esc(producer)}` : ''} · fertig in <span class="countdown" data-until="${act.endsAt}">${duration(Math.max(0, act.endsAt - serverNow()))}</span></small></div>
+        <span class="lb-live-btns"><button class="btn small ghost" data-act="liveSound" data-id="${act.id}">${soundOn ? 'Ton aus' : 'Zuhören'}</button></span>
       </div>
-      <div class="lb-room st-room">${studioSvg(rec.studio, rec.producer)}${stage(members, {
+      <div class="lb-room st-room" style="--beat:${(60 / bpm).toFixed(3)}s">${studioSvg(rec.studio, rec.producer, { live: true, hype })}${stage(members, {
     className: 'in-room',
+    bpm,
     act: 'musicianInfo',
     instrumentOf: (m) => playedInstrument(m),
   })}</div>

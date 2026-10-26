@@ -9,7 +9,8 @@ const SHADE = 'fill="#140f1e" opacity="0.16"';
 const LIGHT = 'fill="#fff" opacity="0.18"';
 const STROKE = `stroke="${INK}" stroke-width="2" stroke-linejoin="round"`;
 const line = (d, w = 1.2, c = INK) => `<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round"/>`;
-const headAt = (inner) => `<g transform="translate(60 44) scale(1.5) translate(-50 -42)">${inner}</g>`;
+/** Kopf im Kartenbild-Maß, 1,5-fach auf die Figur gesetzt; Drehpunkt am Hals (60/74), damit er zur Musik nicken kann (.pr-head). */
+const headAt = (inner) => `<g transform="translate(60 74)"><g class="pr-head"><g transform="translate(-60 -74)"><g transform="translate(60 44) scale(1.5) translate(-50 -42)">${inner}</g></g></g></g>`;
 
 const face = (skin, { eyes = 'dots', mouth = 'smile', cheeks = true } = {}) => `
   <g stroke="${INK}" stroke-width="1.2"><ellipse cx="31.5" cy="45" rx="3.5" ry="4.5" fill="${skin}"/><ellipse cx="68.5" cy="45" rx="3.5" ry="4.5" fill="${skin}"/>
@@ -170,9 +171,12 @@ function legend() {
       <!-- oben licht, an den Seiten lang -->
       <path d="M31.4 44 C30.6 36 32 31 35 28.6 C34 33 33.6 38 34 44 Z M68.6 44 C69.4 36 68 31 65 28.6 C66 33 66.4 38 66 44 Z" fill="${hair}" stroke="${INK}" stroke-width="0.9"/>
       <path d="M42 27 Q46 25.4 50 27 M50 26.4 Q55 25 58.6 27.4" stroke="${hairShade}" stroke-width="0.9" fill="none"/>
+      <!-- Augen geschlossen (genießt die Musik) – sichtbar, wenn er die rote Sonnenbrille hochschiebt -->
+      <rect x="37" y="40" width="26" height="10" fill="${skin}"/>
+      ${line('M40.4 45.4 Q43 47.4 45.6 45.4', 1.2)}${line('M54.4 45.4 Q57 47.4 59.6 45.4', 1.2)}
       <!-- runde rote Sonnenbrille -->
-      <g stroke="${INK}" stroke-width="0.9"><circle cx="43" cy="45" r="5" fill="#d0342c"/><circle cx="57" cy="45" r="5" fill="#d0342c"/></g>
-      <path d="M48 45 L52 45" stroke="${INK}" stroke-width="1"/><path d="M40.6 42.6 Q42 41.6 43.6 42 M54.6 42.6 Q56 41.6 57.6 42" stroke="#fff" stroke-width="0.8" fill="none" opacity="0.7"/>
+      <g class="pr-glasses"><g stroke="${INK}" stroke-width="0.9"><circle cx="43" cy="45" r="5" fill="#d0342c"/><circle cx="57" cy="45" r="5" fill="#d0342c"/></g>
+      <path d="M48 45 L52 45" stroke="${INK}" stroke-width="1"/><path d="M40.6 42.6 Q42 41.6 43.6 42 M54.6 42.6 Q56 41.6 57.6 42" stroke="#fff" stroke-width="0.8" fill="none" opacity="0.7"/></g>
       ${line('M39.6 38.6 Q43 37.6 46 38.8', 1.4, hairShade)}${line('M54 38.8 Q57 37.6 60.4 38.6', 1.4, hairShade)}
       <!-- sehr langer, voller Bart bis auf die Brust -->
       <path d="M31 47 C30 60 34 70 40 76 C44 82 47 88 50 92 C53 88 56 82 60 76 C66 70 70 60 69 47 C66 56 60 56 56 54 Q50 52 44 54 C40 56 34 56 31 47 Z" fill="${hair}" stroke="${INK}" stroke-width="1.1"/>
@@ -186,5 +190,5 @@ export const PRODUCERS = { mo, roxy, diamond, legend };
 export function producerFigure(key) {
   const draw = PRODUCERS[key];
   if (!draw) return '';
-  return `<svg class="fig fig-producer pr-${key}" viewBox="0 0 120 150" aria-hidden="true"><ellipse cx="60" cy="141" rx="32" ry="5" fill="rgba(0,0,0,0.25)"/>${draw()}</svg>`;
+  return `<svg class="fig fig-producer pr-${key}" viewBox="0 0 120 150" aria-hidden="true"><ellipse cx="60" cy="141" rx="32" ry="5" fill="rgba(0,0,0,0.25)"/><g class="pr-body">${draw()}</g></svg>`;
 }

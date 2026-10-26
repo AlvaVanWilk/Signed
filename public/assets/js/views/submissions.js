@@ -172,7 +172,7 @@ function openInfo(s, m) {
     const row = (c) => {
       const mm = musicianById(c.id);
       const band = c.bandId ? app.state.bands.find((b) => b.id === c.bandId) : null;
-      return `<div class="lb-cp"><span class="lb-rel" style="--rc:${relColor(c.target)}">${mm ? photo(mm) : ''}</span>
+      return `<div class="lb-cp"><span class="lb-rel" style="--rc:${relColor(c.target)}"><span class="lb-relpic" style="box-shadow:0 0 0 3px var(--rc)">${mm ? photo(mm) : ''}</span></span>
         <b>${esc(c.name)}</b><small class="muted">${band ? esc(band.name) : 'ohne Band'}</small><em>${COMPAT_WORD(c.target)}</em></div>`;
     };
     const good = compat.filter((c) => c.target >= 5).slice(0, 5);

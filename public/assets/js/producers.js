@@ -84,15 +84,18 @@ function roxy() {
     ${arm('M76 80 Q86 88 86 100', [86, 100], skin, jacket)}
     <path d="M52.5 74.2 Q60 82 67.5 74.2 Z" fill="${skin}" stroke="${INK}" stroke-width="1.4"/>
     ${headAt(`
-      <!-- Vokuhila: rechts lang bis auf die Schulter -->
-      <path d="M58 30 C70 30 74 40 72 52 C71 60 74 66 70 72 Q64 70 66 60 C67 52 66 44 62 40 Z" fill="${hair}" stroke="${INK}" stroke-width="1"/>
+      <!-- lange Seite rechts, hinter dem Gesicht bis auf die Schulter -->
+      <path d="M62 21 C77 21 83 36 80.6 51 L81.6 66 L77.6 61.6 L77 72 L72.6 65.4 L70.4 74 Q65.6 69 66 59 Z" fill="${hair}" stroke="${INK}" stroke-width="1" stroke-linejoin="round"/>
+      <path d="M74 46 C75 54 75.4 61 74.6 67 M70 50 C70.6 57 70.4 63 69.6 68" fill="none" stroke="${roots}" stroke-width="0.8" opacity="0.5"/>
       ${face(skin)}
-      <!-- rasierte Seite links -->
-      <path d="M31.2 44 C30.6 35 34 29 41 27 L41 36 C37 37 33 40 31.2 44 Z" fill="${roots}" opacity="0.45"/>
-      <!-- Pony schräg über die Stirn -->
-      <path d="M39 30 C46 21 64 21 70 31 C72 36 71 42 69 46 C66 40 60 37 52 36 C48 35.6 44 37 40.5 40 C40 36 39.4 33 39 30 Z" fill="${hair}" stroke="${INK}" stroke-width="1"/>
-      <path d="M42 30.5 C48 25 60 25 66 30" fill="none" stroke="${roots}" stroke-width="1.6" opacity="0.6"/>
-      <path d="M52 36 Q60 37 67 43" fill="none" stroke="#fff" stroke-width="0.8" opacity="0.4"/>
+      <!-- links kurz rasiert -->
+      <path d="M31.2 44.6 C30.6 34 34.6 27.2 41.6 25.4 L39.6 36 C35.8 37.6 33 40.6 31.2 44.6 Z" fill="${roots}" stroke="${INK}" stroke-width="0.9" stroke-linejoin="round"/>
+      <path d="M33.4 38 L36.6 36.6 M34.6 34 L37.8 32.8" stroke="#6a5a8a" stroke-width="0.7" stroke-linecap="round"/>
+      <!-- oben Volumen, nach rechts geschwungen, über das rechte Ohr bis zur Wange -->
+      <path d="M39 36 C37.6 21 48 14.4 60 15.4 C72.6 16.4 80 28 77.4 42 L76.4 50.4 L73.4 47 L74 57.6 L70.6 53.4 L70 62 C68.2 55 67 49 66.6 44 L64.2 40.4 L61.2 43.4 L58.4 38.2 L54.6 41.4 L51.4 36.8 L47.4 38.8 L45.4 35.2 C42.6 35.2 40.8 35.4 39 36 Z" fill="${hair}" stroke="${INK}" stroke-width="1" stroke-linejoin="round"/>
+      <path d="M42.6 27 C49 20.6 63 20.4 71 28.6 M47 31.4 C54 27.4 64 28.4 70.6 35.4" fill="none" stroke="${roots}" stroke-width="1" opacity="0.45"/>
+      <path d="M50 23 C57 21 65 23 70 27" fill="none" stroke="#fff" stroke-width="0.9" opacity="0.45"/>
+      <path d="M71 40 C72 46 72.4 50 72 54" fill="none" stroke="${roots}" stroke-width="0.8" opacity="0.5"/>
       ${line('M40 39.6 Q43 38.2 46 39.4', 1.3)}${line('M54 39.4 Q57 38.2 60 39.6', 1.3)}
       <!-- Kreolen -->
       <circle cx="31" cy="52" r="3.6" fill="none" stroke="#f2c14e" stroke-width="1"/><circle cx="69" cy="52" r="3.6" fill="none" stroke="#f2c14e" stroke-width="1"/>

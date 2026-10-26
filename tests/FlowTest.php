@@ -1011,12 +1011,12 @@ test('Tageskurs: für alle dieselbe Kursart, Schwierigkeit nach Stufe, gleicher 
     $db->exec('UPDATE musicians SET instr1 = ?, instr2 = NULL, skill2 = NULL, skill1 = 20 WHERE id = ?', [$course['instrument'], $m['id']]);
     $db->exec('UPDATE labels SET money = 10000');
     $state = $p->get('state');
-    checkEquals($course['instrument'], $state['course']['instrument']);
-    checkEquals($course['name'], $state['course']['name']);
-    $candidate = array_values(array_filter($state['course']['candidates'], static fn ($c) => $c['musicianId'] === $m['id']))[0];
+    checkEquals($course['instrument'], $state['courses'][0]['instrument']);
+    checkEquals($course['name'], $state['courses'][0]['name']);
+    $candidate = array_values(array_filter($state['courses'][0]['candidates'], static fn ($c) => $c['musicianId'] === $m['id']))[0];
     checkEquals(0, $candidate['level'], 'Anfänger');
     $price = Signed\Game\Courses::price($course, 0);
-    $p->post('courseAttend', ['musicianId' => $m['id']]);
+    $p->post('courseAttend', ['musicianId' => $m['id'], 'course' => 0]);
     checkEquals(10000 - $price, $p->get('state')['label']['money']);
     checkApiError(fn () => $p->post('minigameStart', ['kind' => 'practice', 'musicianId' => $m['id']]), 'beschäftigt');
     Clock::advance($course['seconds']);
@@ -1029,7 +1029,7 @@ test('Tageskurs: für alle dieselbe Kursart, Schwierigkeit nach Stufe, gleicher 
     if ($other !== null) {
         $db->exec('UPDATE musicians SET instr1 = ?, instr2 = NULL, skill2 = NULL, skill1 = 70 WHERE id = ?', [$course['instrument'], $other['id']]);
         $db->exec('UPDATE labels SET money = 10000');
-        $activity = $p->post('courseAttend', ['musicianId' => $other['id']])['activity'];
+        $activity = $p->post('courseAttend', ['musicianId' => $other['id'], 'course' => 0])['activity'];
         checkEquals(10000 - Signed\Game\Courses::price($course, 2), $p->get('state')['label']['money'], 'Profi zahlt mehr');
         $p->post('promoCancel', ['activityId' => $activity['id']]);
         checkEquals(10000, $p->get('state')['label']['money']);
@@ -1046,6 +1046,13 @@ test('Tageskurs: nie zweimal hintereinander dasselbe Instrument', function () {
         $kinds[$today['name']] = ($kinds[$today['name']] ?? 0) + 1;
     }
     check(($kinds['Kurs'] ?? 0) > ($kinds['Meisterklasse'] ?? 0) && ($kinds['Meisterklasse'] ?? 0) > 5, 'Kursarten gewichtet: ' . json_encode($kinds));
+    // Mehrere Kurse am Tag, alle mit verschiedenen Instrumenten, für alle gleich.
+    for ($d = 0; $d < 30; $d++) {
+        $all = Signed\Game\Courses::all(1767225600 + $d * 86400);
+        checkEquals(Balance::COURSE['perDay'], count($all));
+        checkEquals(count($all), count(array_unique(array_column($all, 'instrument'))), 'verschiedene Instrumente');
+        checkEquals(Signed\Game\Courses::today(1767225600 + $d * 86400)['instrument'], $all[0]['instrument']);
+    }
 });
 
 test('Instrumentwechsel: Vorschau stimmt, Zurückwechseln geht jederzeit', function () {

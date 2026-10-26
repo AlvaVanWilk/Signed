@@ -258,7 +258,7 @@ final class State
             'assistant' => (new Assistant($repo))->present($now),
             'scouts' => (new Scouting($repo))->present($now),
             'tutors' => (new Tutors($repo))->present($now),
-            'course' => (new Courses($repo))->status($musicians),
+            'courses' => (new Courses($repo))->status($musicians),
             'jamOffers' => (new Jam($repo))->open(),
             'market' => (new Transfers($repo))->market(),
             'packOffer' => $packOffer,

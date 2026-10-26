@@ -300,27 +300,27 @@ function practice(b, members) {
  * passt. Ohne passenden Musiker erscheint nichts.
  */
 export function courseTiles(members) {
-  const c = app.state.course;
-  if (!c) return '';
   const ids = new Set(members.map((m) => m.id));
-  const candidates = c.candidates.filter((x) => ids.has(x.musicianId));
-  return c.levels.map((level, k) => {
-    const list = candidates.filter((x) => x.level === k);
-    if (!list.length) return '';
-    return `
+  return (app.state.courses ?? []).map((c) => {
+    const candidates = c.candidates.filter((x) => ids.has(x.musicianId));
+    return c.levels.map((level, k) => {
+      const list = candidates.filter((x) => x.level === k);
+      if (!list.length) return '';
+      return `
       <div class="action-tile course-tile">
         <div class="action-icon">${instrumentIcon(c.instrument)}</div>
         <div class="action-main">
-          <b>🎓 ${esc(c.prefix)}-${esc(c.name)} für ${esc(level.name)} bei ${esc(c.teacher)}</b>
-          <span class="muted small">Nur heute · <em>+${fmt0(c.gain)} Können</em> (${fmt0(c.gain)} Kästchen) · ${money(level.price)} je Musiker · ${duration(c.seconds)}</span>
+          <b>${esc(c.prefix)}-${esc(c.name)} für ${esc(level.name)} bei ${esc(c.teacher)}</b>
+          <span class="muted small">Nur heute · <em>+${fmt0(c.gain)} Können</em> · ${money(level.price)} je Musiker · ${duration(c.seconds)}</span>
           <span class="tile-buttons">${list.map((x) => {
             const m = musicianById(x.musicianId);
             return x.visited
-              ? `<button class="btn small" disabled>${esc(m.firstName)} war schon da ✓</button>`
-              : `<button class="btn small primary" data-act="courseAttend" data-id="${m.id}" ${isBusy(m.busyUntil) || (m.bandId && isBusy(bandById(m.bandId)?.busyUntil)) ? 'disabled' : ''}>${esc(m.firstName)} hinschicken</button>`;
+              ? `<button class="btn small" disabled>${esc(m.firstName)} war heute schon im Kurs</button>`
+              : `<button class="btn small primary" data-act="courseAttend" data-id="${m.id}" data-course="${c.index}" ${isBusy(m.busyUntil) || (m.bandId && isBusy(bandById(m.bandId)?.busyUntil)) ? 'disabled' : ''}>${esc(m.firstName)} hinschicken</button>`;
           }).join('')}</span>
         </div>
       </div>`;
+    }).join('');
   }).join('');
 }
 
@@ -857,11 +857,11 @@ defineActions({
   practice({ id, slot }) {
     startPractice(id, slot);
   },
-  async courseAttend({ id }) {
-    const c = app.state.course;
-    const x = c.candidates.find((y) => y.musicianId === Number(id));
+  async courseAttend({ id, course }) {
+    const c = app.state.courses.find((y) => y.index === Number(course ?? 0));
+    const x = c?.candidates.find((y) => y.musicianId === Number(id));
     if (!x || !(await confirmSpend(c.levels[x.level].price))) return;
-    if (await mutate('courseAttend', { musicianId: Number(id) })) toast(`${musicianById(id).firstName} ist im Kurs.`, 'ok');
+    if (await mutate('courseAttend', { musicianId: Number(id), course: c.index })) toast(`${musicianById(id).firstName} ist im Kurs.`, 'ok');
   },
   async practiceAuto({ id, slot }) {
     if (await mutate('practiceAuto', { musicianId: Number(id), slot: Number(slot) })) toast(`${musicianById(id).firstName} übt jetzt allein.`, 'ok');

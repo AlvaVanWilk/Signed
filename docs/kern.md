@@ -243,7 +243,8 @@ Ziel: Ein Anfänger (Können 15) ist schnell fortgeschritten – mit gezieltem �
 heutigen Mitteln kaum weiter: Ab Stufe 1 wirken alle Können- und Bekanntheitsgewinne nur noch zu 25 %, ab Stufe 2
 nur noch zu 3 %. Profi bzw. Szenegröße dauert so rund 40 Stunden Spielzeit, Virtuose bzw. Star weit über 1.000 –
 praktisch unerreichbar, bis Tourneen und Manager dazukommen.
-**Tageskurse** öffnen diesen Weg als erste: ohne Bremse, aber selten und teuer (eine Stufe allein durch Kurse in rund zwei Monaten).
+**Tageskurse** öffnen diesen Weg als erste: ohne Bremse, aber teuer und je Musiker nur einmal am Tag. Es gibt drei am Tag mit verschiedenen
+Instrumenten (`Balance::COURSE['perDay']`), so ist das eigene Instrument öfter dabei (bei zehn Instrumenten an rund drei von zehn Tagen).
 **Songs** (Umbau): Das Tempo hängt an den Mitgliedern, (Summe der Beiträge)^1,5 mit 0,25 je Mitglied mal Charakter-Faktor (`Balance::SONGWRITING`, `Balance::TRAITS['write']`).
 Eine Vierer-Band schreibt wie bisher, Solokünstler achtmal langsamer. Bands sind so der schnellere Weg nach oben; Solo lohnt sich nur kreativ, mit Pop/Elektro oder egozentrisch.
 Der Beitrag hängt am Charakter (Kreativ ×3, Impulsiv ×1,6, Perfektionistisch ×0,6, Technisch 0; siehe label-konzept.md, Charakterzüge). Technische lernen beim Proben ×1,25 – ein Weg nach oben fürs Können, ohne die Stufen-Bremse zu ändern.

@@ -562,7 +562,7 @@ export function page(route) {
   const free = cat().rules.maxMembers - members.length;
   const base = `#/band/${b.id}`;
   const courses = courseTiles(members);
-  const course = courses ? `<details class="lb-more"><summary>Kurs des Tages</summary><div class="lb-course">${courses}</div></details>` : '';
+  const course = courses ? `<details class="lb-more"><summary>Kurse des Tages</summary><div class="lb-course">${courses}</div></details>` : '';
   return `
     <header class="lb-hd ${genresOf(b).length ? '' : 'mixed'}" ${genresOf(b).length ? `style="--g:var(--lb-c-${sortedGenres(genresOf(b))[0]})"` : ''}>
       <div>

@@ -530,7 +530,7 @@ final class Api
 
     private function courseAttend(array $in, Repo $repo): array
     {
-        $activity = (new Courses($repo))->attend(self::int($in, 'musicianId'));
+        $activity = (new Courses($repo))->attend(self::int($in, 'musicianId'), isset($in['course']) && is_numeric($in['course']) ? (int) $in['course'] : null);
         return ['activity' => $activity, 'state' => State::build($repo)];
     }
 

@@ -9,10 +9,10 @@ use Signed\ApiError;
 use Signed\Clock;
 
 /**
- * Tageskurse: Jeden Tag ein Instrument und eine Kursart (Kurs, Workshop, Meisterklasse – kürzer/schwächer bis
- * länger/stärker), für alle Spieler gleich, mit Gastdozent. Angeboten in drei Schwierigkeiten (Anfänger,
+ * Tageskurse: Jeden Tag mehrere Kurse (Balance::COURSE['perDay']), je ein Instrument und eine Kursart (Kurs, Workshop, Meisterklasse –
+ * kürzer/schwächer bis länger/stärker), für alle Spieler gleich, mit Gastdozent. Angeboten in drei Schwierigkeiten (Anfänger,
  * Fortgeschrittene, Profis); jeder Musiker nur in seiner. Gleicher Zuwachs für alle, Preis je Schwierigkeit
- * (Balance::COURSE). Jeder Musiker darf an seinem Tag einmal hin – auch ohne Band.
+ * (Balance::COURSE). Jeder Musiker darf an einem Tag in einen Kurs – auch ohne Band.
  */
 final class Courses
 {
@@ -72,6 +72,37 @@ final class Courses
         ];
     }
 
+    /**
+     * Alle Kurse des Tages (Balance::COURSE['perDay']): der erste wie today(), die anderen mit anderen Instrumenten, Kursarten und Dozenten.
+     * Für alle gleich, aus dem Datum berechnet.
+     * @return list<array>
+     */
+    public static function all(?int $now = null): array
+    {
+        $first = self::today($now) + ['index' => 0];
+        $index = intdiv((new DateTimeImmutable($first['day'] . ' 12:00', new DateTimeZone('Europe/Berlin')))->getTimestamp(), 86400);
+        $out = [$first];
+        $types = array_values(array_diff(array_keys(Catalog::INSTRUMENTS), [$first['instrument']]));
+        $kinds = Balance::COURSE['kinds'];
+        for ($k = 1; $k < Balance::COURSE['perDay'] && $types; $k++) {
+            $type = $types[abs(crc32("signed-kurs-$index-$k")) % count($types)];
+            $types = array_values(array_diff($types, [$type]));
+            $roll = abs(crc32("signed-kursart-$index-$k")) % array_sum(array_column($kinds, 1));
+            $kind = 0;
+            while ($roll >= $kinds[$kind][1]) {
+                $roll -= $kinds[$kind][1];
+                $kind++;
+            }
+            $out[] = [
+                'instrument' => $type,
+                'prefix' => self::PREFIX[$type] ?? Catalog::INSTRUMENTS[$type]['name'],
+                'teacher' => self::TEACHERS[($index + 3 * $k) % count(self::TEACHERS)],
+                'kind' => $kind, 'name' => $kinds[$kind][0], 'seconds' => $kinds[$kind][2], 'gain' => $kinds[$kind][3], 'index' => $k,
+            ] + array_intersect_key($first, ['day' => 1, 'endsAt' => 1]);
+        }
+        return $out;
+    }
+
     /** Schwierigkeit für diesen Musiker (nach seiner Stufe auf dem Instrument): 0 Anfänger, 1 Fortgeschrittene, 2 Profis. */
     public static function levelFor(array $m, int $slot): int
     {
@@ -84,39 +115,44 @@ final class Courses
         return Balance::COURSE['kinds'][$course['kind']][4] * Balance::COURSE['priceFactor'][$level];
     }
 
-    /** Für den Spielstand: der Tag, die drei Kurse und wer aus dem Label hin kann (oder schon war). */
+    /** Für den Spielstand: die Kurse des Tages, je mit drei Schwierigkeiten und wer aus dem Label hin kann (oder heute schon in einem Kurs war). */
     public function status(array $musicians): array
     {
-        $course = self::today();
+        $courses = self::all();
         $visited = array_map('intval', array_column($this->repo->db->all(
             'SELECT musician_id FROM course_visits WHERE label_id = ? AND day = ?',
-            [$this->repo->labelId, $course['day']]
+            [$this->repo->labelId, $courses[0]['day']]
         ), 'musician_id'));
-        $candidates = [];
-        foreach ($musicians as $m) {
-            foreach ([1 => $m['instr1'], 2 => $m['instr2']] as $slot => $type) {
-                if ($type === $course['instrument']) {
-                    $candidates[] = ['musicianId' => $m['id'], 'level' => self::levelFor($m, $slot), 'visited' => in_array($m['id'], $visited, true)];
+        return array_map(function (array $course) use ($musicians, $visited): array {
+            $candidates = [];
+            foreach ($musicians as $m) {
+                foreach ([1 => $m['instr1'], 2 => $m['instr2']] as $slot => $type) {
+                    if ($type === $course['instrument']) {
+                        $candidates[] = ['musicianId' => $m['id'], 'level' => self::levelFor($m, $slot), 'visited' => in_array($m['id'], $visited, true)];
+                    }
                 }
             }
-        }
-        return $course + [
-            'levels' => array_map(static fn ($name, $i) => ['name' => $name, 'price' => self::price($course, $i)], Balance::COURSE['levels'], array_keys(Balance::COURSE['levels'])),
-            'candidates' => $candidates,
-        ];
+            return $course + [
+                'levels' => array_map(static fn ($name, $i) => ['name' => $name, 'price' => self::price($course, $i)], Balance::COURSE['levels'], array_keys(Balance::COURSE['levels'])),
+                'candidates' => $candidates,
+            ];
+        }, $courses);
     }
 
     /** Musiker zum passenden Kurs schicken: kostet, dauert eine Weile (auch offline), einmal pro Musiker und Tag. */
-    public function attend(int $musicianId): array
+    public function attend(int $musicianId, ?int $index = null): array
     {
         $db = $this->repo->db;
-        return $db->transaction(function () use ($db, $musicianId): array {
+        return $db->transaction(function () use ($db, $musicianId, $index): array {
             $now = Clock::now();
-            $course = self::today($now);
             $m = $this->repo->musician($musicianId);
+            $all = self::all($now);
+            // Ohne Angabe: der erste Kurs, der zum Musiker passt.
+            $course = $index !== null ? ($all[$index] ?? $all[0])
+                : (array_values(array_filter($all, static fn ($c) => in_array($c['instrument'], [$m['instr1'], $m['instr2']], true)))[0] ?? $all[0]);
             $slot = $m['instr1'] === $course['instrument'] ? 1 : ($m['instr2'] === $course['instrument'] ? 2 : 0);
             if ($slot === 0) {
-                throw new ApiError(sprintf('Heute gibt es nur Kurse für %s.', Catalog::INSTRUMENTS[$course['instrument']]['name']));
+                throw new ApiError(sprintf('%s spielt kein %s.', $m['first_name'], Catalog::INSTRUMENTS[$course['instrument']]['name']));
             }
             if ($db->value('SELECT id FROM course_visits WHERE musician_id = ? AND day = ?', [$m['id'], $course['day']]) !== null) {
                 throw new ApiError(sprintf('%s war heute schon im Kurs.', $m['first_name']));

@@ -254,7 +254,7 @@ nicht pro Spieler gewürfelt), wie bei den Tageskursen. Man sieht vorher Preis u
 | Reiter | Was | Wirkung | Wann |
 |---|---|---|---|
 | **Instrumente** | gezielt für einen Musiker, in verschiedener Güte | Klang, Sound, Wohlbefinden (Wünsche), nötig zum Proben | von Anfang an |
-| **Kurse** | einzelne Musiker fördern; mehrere Kurse, aus denen man wählt (Instrument, Dauer, Preis), täglich gleich für alle | Können (ohne Bremse), Wohlbefinden je Charakter (Ehrgeizige mögen Kurse) | von Anfang an |
+| **Kurse** | einzelne Musiker fördern; mehrere Kurse, aus denen man wählt (Instrument, Dauer, Preis), täglich gleich für alle (gebaut: drei am Tag mit verschiedenen Instrumenten, `Balance::COURSE['perDay']`; jeder Musiker einmal am Tag) | Können (ohne Bremse), Wohlbefinden je Charakter (Ehrgeizige mögen Kurse) | von Anfang an |
 | **Proberaum** | Ausstattung **einer Band**, in Stufen | Proben bringen mehr Können und stärken die Beziehung | früh, teure Stufen später |
 | **Auszeit** | Wochenende, Urlaub, Ausflug für **eine Band** | hebt die Stimmung (Gelassene und Ruhepole freuen sich besonders), Band ist dabei für eine Zeit nicht verfügbar | mittel; Preis steigt mit der Bandgröße |
 | **Bühnentechnik** | Licht, Ton, Show, Stufen | größere Orte füllen sich leichter (Erwartung sinkt), Diva und Rampensau freuen sich | mit größeren Bühnen |
@@ -278,7 +278,7 @@ Alles läuft ab (Demos 4 Tage, Anfragen 8 Stunden, Bewerbungen 2 Tage; die Restz
   **gesättigt**: Güte = Erfolg / (Erfolg + 300), also oben offen, nie ganz 1. Jede Stufe bewirbt sich erst ab ihrer Güte; die beste erreichbare kommt am häufigsten.
 - **Assistenz** (gebaut, `Assistant`): einmalig bezahlt (Praktikum 250 ₲, Assistenz 900, Senior 2.500, Leitung 6.000). Sie sortiert die Post in
   Reiter (Demos, Anfragen, Bewerbungen, Gespeichert), hört jeden Tag Demos an (20 / 60 / 150 / 400, die ältesten zuerst, gemerkte nicht; mehrere
-  zählen zusammen) und schreibt **Notizen auf die Übersicht** (offene Anfragen mit Restzeit, Bewerbungen, gute Demos, Kurs des Tages). Ohne Assistenz
+  zählen zusammen) und schreibt **Notizen auf die Übersicht** (offene Anfragen mit Restzeit, Bewerbungen, gute Demos, Kurse des Tages). Ohne Assistenz
   bleibt die Übersicht schlicht. **Regeln** ab der zweiten Stufe: ab Können-Stufe; ab der dritten auch Genres und Einzeln/Band. Was nicht passt, wirft sie weg.
 - **Interviews** siehe „Interviews und Promo-Anfragen“; Zahlen in `kern.md` (Promo, Tempo).
 - **Scout** (gebaut, `Scouting`): Ein einfacher Scout bewirbt sich gleich zu Beginn (Willkommens-Brief, 400 ₲); bessere kommen mit dem Erfolg

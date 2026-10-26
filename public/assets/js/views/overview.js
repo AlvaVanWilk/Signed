@@ -94,7 +94,6 @@ export function bandTile(b) {
     </a>`;
 }
 
-/** Startseite: Kurs des Tages, und wer aus dem Label hin kann. */
 /** Notizen der Assistenz: was gerade wichtig ist. Ohne Assistenz bleibt die Übersicht schlicht. */
 function assistantNotes(s) {
   const a = s.assistant;
@@ -124,10 +123,9 @@ function assistantNotes(s) {
   }
   const good = (s.submissions ?? []).filter((x) => x.state === 'open' && !x.saved && Math.max(...(x.members ?? [x]).map((m) => m.level ?? 0)) >= 1);
   notes.push(`Heute ${a.today.opened} Demos angehört, ${a.today.dropped} weggeworfen.${good.length ? ` ${go('demos', `<b>${good.length}</b> ${good.length === 1 ? 'gute wartet' : 'gute warten'} auf dich`)}.` : ''}`);
-  const c = s.course;
-  if (c) {
+  for (const c of s.courses ?? []) {
     const open = c.candidates.filter((x) => !x.visited).map((x) => s.musicians.find((m) => m.id === x.musicianId)).filter(Boolean);
-    notes.push(`Heute im Kurs: <b>${esc(c.prefix)}-${esc(c.name)}</b> mit ${esc(c.teacher)}. ${open.length ? `Hin können: ${open.map((m) => `<a href="#/musician/${m.id}/uebung">${esc(m.firstName)}</a>`).join(', ')}.` : 'Von dir ist niemand dabei.'}`);
+    if (open.length) notes.push(`Heute im Kurs: <b>${esc(c.prefix)}-${esc(c.name)}</b> mit ${esc(c.teacher)}. Hin können: ${open.map((m) => `<a href="#/band/${m.bandId}">${esc(m.firstName)}</a>`).join(', ')}.`);
   }
   const names = a.staff.map((x) => esc(x.firstName)).join(' und ');
   return `<section class="panel lb-notes">

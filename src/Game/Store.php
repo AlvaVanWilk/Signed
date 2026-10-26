@@ -12,7 +12,6 @@ use Signed\Clock;
  * - Angebot: ein paar besondere Instrumente, für alle Labels gleich, das täglich wechselt (Balance::STORE). Meist seltene, ab und zu ein episches,
  *   ganz selten ein legendäres – das wird groß beworben. Jedes Angebot kauft ein Label höchstens einmal.
  * Das Angebot ergibt sich ganz aus der Nummer des Tages (`slot`), nicht aus dem Spiel-Zufall: Dieselbe Nummer ergibt immer dieselben Instrumente.
- * Zurücklegen hält ein Angebot für ein Label über den Wechsel hinaus (eines je Label, einen Tag lang).
  */
 final class Store
 {
@@ -113,55 +112,31 @@ final class Store
         return $items;
     }
 
-    /** Das Regal für dieses Label: mit Markierung, was schon gekauft oder zurückgelegt ist, dazu das zurückgelegte Instrument. */
+    /** Das Angebot für dieses Label: nur, was es noch nicht gekauft hat (gekaufte Fächer verschwinden), dazu die Grundausstattung. */
     public function present(): array
     {
-        $db = $this->repo->db;
-        $now = Clock::now();
-        $slot = self::slot($now);
-        $db->exec('DELETE FROM store_holds WHERE label_id = ? AND expires_at <= ?', [$this->repo->labelId, $now]);
-        $hold = $db->one('SELECT slot, idx, expires_at FROM store_holds WHERE label_id = ? ORDER BY id DESC', [$this->repo->labelId]);
-        $bought = [];
-        foreach ($db->all('SELECT slot, idx FROM store_buys WHERE label_id = ? AND slot >= ?', [$this->repo->labelId, $slot - 3]) as $b) {
-            $bought[(int) $b['slot'] . ':' . (int) $b['idx']] = true;
-        }
-        $mark = static fn (array $item) => $item + ['bought' => isset($bought[$item['slot'] . ':' . $item['idx']]), 'held' => false];
-        $items = array_map($mark, self::shelf($slot));
-        $held = null;
-        if ($hold !== null) {
-            $shelf = (int) $hold['slot'] === $slot ? $items : array_map($mark, self::shelf((int) $hold['slot']));
-            $held = ($shelf[(int) $hold['idx']] ?? null);
-            if ($held !== null) {
-                $held['held'] = true;
-                if ((int) $hold['slot'] === $slot) {
-                    $items[(int) $hold['idx']]['held'] = true;
-                }
-            }
-        }
+        $slot = self::slot(Clock::now());
+        $bought = array_map('intval', array_column($this->repo->db->all('SELECT idx FROM store_buys WHERE label_id = ? AND slot = ?', [$this->repo->labelId, $slot]), 'idx'));
+        $items = array_values(array_filter(self::shelf($slot), static fn ($i) => !in_array($i['idx'], $bought, true)));
         return [
             'slot' => $slot,
             'endsAt' => self::endsAt($slot),
             'items' => $items,
             // Ein legendäres Instrument im Angebot, das dieses Label noch nicht gekauft hat: wird groß beworben.
-            'gold' => (bool) array_filter($items, static fn ($i) => $i['tier'] === 3 && !$i['bought']),
+            'gold' => (bool) array_filter($items, static fn ($i) => $i['tier'] === 3),
             'basics' => self::basics(),
-            'hold' => $held === null ? null : ['item' => $held, 'expiresAt' => (int) $hold['expires_at']],
         ];
     }
 
     private function find(int $slot, int $idx): array
     {
-        $now = Clock::now();
-        $current = self::slot($now);
-        $hold = $this->repo->db->one('SELECT slot, idx, expires_at FROM store_holds WHERE label_id = ? AND expires_at > ?', [$this->repo->labelId, $now]);
-        $isHold = $hold !== null && (int) $hold['slot'] === $slot && (int) $hold['idx'] === $idx;
-        if ($slot !== $current && !$isHold) {
-            throw new ApiError('Dieses Instrument ist nicht mehr im Regal.');
+        if ($slot !== self::slot(Clock::now())) {
+            throw new ApiError('Dieses Instrument ist nicht mehr im Angebot.');
         }
         return self::shelf($slot)[$idx] ?? throw new ApiError('Dieses Instrument gibt es nicht.');
     }
 
-    /** Kaufen: ein Instrument aus dem Regal (oder das zurückgelegte) ins Lager des Labels. */
+    /** Kaufen: ein Angebot ins Lager des Labels (je Label einmal). */
     public function buy(int $slot, int $idx): array
     {
         return $this->repo->db->transaction(function () use ($slot, $idx): array {
@@ -172,30 +147,8 @@ final class Store
             }
             $this->repo->spend($item['price'], sprintf('Music Store: %s', Catalog::GEAR[$item['model']]['name']));
             $this->repo->db->insert('store_buys', ['label_id' => $this->repo->labelId, 'slot' => $slot, 'idx' => $idx, 'created_at' => Clock::now()]);
-            $this->repo->db->exec('DELETE FROM store_holds WHERE label_id = ? AND slot = ? AND idx = ?', [$this->repo->labelId, $slot, $idx]);
             $id = $this->repo->insertGear($item['model'], ['klang' => $item['klang'], 'spielbarkeit' => $item['spielbarkeit'], 'design' => $item['design'], 'perks' => [], 'bonuses' => $item['bonuses']]);
             return ['gear' => Present::gear($this->repo->gear()[$id])];
         });
-    }
-
-    /** Zurücklegen lassen: nur eines je Label (ein neues ersetzt das alte); es bleibt, auch wenn das Regal wechselt. */
-    public function hold(int $idx): void
-    {
-        $this->repo->db->transaction(function () use ($idx): void {
-            $now = Clock::now();
-            $slot = self::slot($now);
-            $item = $this->find($slot, $idx);
-            $this->present();
-            if ((int) $this->repo->db->value('SELECT COUNT(*) FROM store_buys WHERE label_id = ? AND slot = ? AND idx = ?', [$this->repo->labelId, $slot, $item['idx']]) > 0) {
-                throw new ApiError('Das hast du schon gekauft.');
-            }
-            $this->repo->db->exec('DELETE FROM store_holds WHERE label_id = ?', [$this->repo->labelId]);
-            $this->repo->db->insert('store_holds', ['label_id' => $this->repo->labelId, 'slot' => $slot, 'idx' => $idx, 'created_at' => $now, 'expires_at' => $now + Balance::STORE['holdHours'] * 3600]);
-        });
-    }
-
-    public function release(): void
-    {
-        $this->repo->db->exec('DELETE FROM store_holds WHERE label_id = ?', [$this->repo->labelId]);
     }
 }

@@ -1742,7 +1742,7 @@ test('Music Store: Grundausstattung – jedes graue Modell immer da, beliebig of
     check($blue >= 90 && $blue <= 170, 'Blau in etwa jedem dritten Angebot: ' . $blue);
 });
 
-test('Music Store: Angebot für alle gleich, wechselt täglich, Kaufen und Zurücklegen', function () {
+test('Music Store: Angebot für alle gleich, wechselt täglich, Gekauftes verschwindet', function () {
     $db = freshDb();
     $a = registerPlayer($db, 'StoreA');
     $b = registerPlayer($db, 'StoreB');
@@ -1754,34 +1754,20 @@ test('Music Store: Angebot für alle gleich, wechselt täglich, Kaufen und Zurü
     check($count >= 2 && $count <= 6, 'ein paar Angebote');
     $types = array_column($shelfA['items'], 'type');
     checkEquals(count($types), count(array_unique($types)), 'je Art höchstens eins');
-    // Kaufen
+    // Kaufen: das Fach verschwindet, nochmal geht nicht
     $item = $shelfA['items'][0];
     $money = $a->get('state')['label']['money'];
     $res = $a->post('storeBuy', ['slot' => $item['slot'], 'idx' => $item['idx']]);
     checkEquals($money - $item['price'], $res['state']['label']['money']);
     checkEquals($item['model'], $res['gear']['model']);
-    check($res['state']['store']['items'][0]['bought'] === true, 'als gekauft markiert');
+    checkEquals($count - 1, count($res['state']['store']['items']), 'gekauftes Fach ist weg');
+    checkEquals($count, count($b->get('state')['store']['items']), 'beim anderen Label noch da');
     checkApiError(fn () => $a->post('storeBuy', ['slot' => $item['slot'], 'idx' => $item['idx']]), 'schon gekauft');
-    // Zurücklegen: eines, bleibt über den Wechsel, nur für dieses Label
-    $other = $shelfA['items'][1];
-    // Ein neues Zurückgelegtes ersetzt das alte
-    $a->post('storeHold', ['idx' => $shelfA['items'][$count - 1]['idx']]);
-    $a->post('storeHold', ['idx' => $other['idx']]);
-    checkEquals($other['model'], $a->get('state')['store']['hold']['item']['model'], 'das neue ersetzt das alte');
+    // Nach dem Wechsel ist das alte Angebot weg
     Clock::advance($shelfA['endsAt'] - Clock::now() + 60);
     $later = $a->get('state')['store'];
-    check($later['slot'] > $shelfA['slot'], 'neues Regal');
-    check($later['hold'] !== null && $later['hold']['item']['model'] === $other['model'], 'das zurückgelegte bleibt');
-    checkEquals(null, $b->get('state')['store']['hold'], 'nur für das eigene Label');
-    $res = $a->post('storeBuy', ['slot' => $later['hold']['item']['slot'], 'idx' => $later['hold']['item']['idx']]);
-    checkEquals($other['model'], $res['gear']['model']);
-    checkEquals(null, $res['state']['store']['hold'], 'nach dem Kauf nicht mehr zurückgelegt');
-    // Alte Regale lassen sich nicht mehr kaufen
-    checkApiError(fn () => $a->post('storeBuy', ['slot' => $shelfA['slot'], 'idx' => $shelfA['items'][1]['idx']]), 'nicht mehr im Regal');
-    // Das Zurücklegen läuft nach einem Tag ab
-    $a->post('storeHold', ['idx' => $later['items'][0]['idx']]);
-    Clock::advance(Balance::STORE['holdHours'] * 3600 + 60);
-    checkEquals(null, $a->get('state')['store']['hold'], 'abgelaufen');
+    check($later['slot'] > $shelfA['slot'], 'neues Angebot');
+    checkApiError(fn () => $a->post('storeBuy', ['slot' => $shelfA['slot'], 'idx' => $shelfA['items'][1]['idx']]), 'nicht mehr im Angebot');
 });
 
 test('Proberaum: eigener Raum je Band und je Solokünstler, Ausbau wirkt aufs Proben', function () {

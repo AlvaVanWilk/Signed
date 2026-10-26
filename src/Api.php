@@ -48,8 +48,6 @@ final class Api
         'storeBuy' => ['POST', true],
         'roomUpgrade' => ['POST', true],
         'gigOptions' => ['POST', true],
-        'storeHold' => ['POST', true],
-        'storeRelease' => ['POST', true],
         'storeBuyBasic' => ['POST', true],
         'wikiIndex' => ['POST', true],
         'wikiLabel' => ['POST', true],
@@ -281,22 +279,10 @@ final class Api
         return $res + ['state' => State::build($repo)];
     }
 
-    private function storeHold(array $in, Repo $repo): array
-    {
-        (new Store($repo))->hold(self::int($in, 'idx'));
-        return ['state' => State::build($repo)];
-    }
-
     private function storeBuyBasic(array $in, Repo $repo): array
     {
         $res = (new Store($repo))->buyBasic((string) ($in['model'] ?? ''));
         return $res + ['state' => State::build($repo)];
-    }
-
-    private function storeRelease(array $in, Repo $repo): array
-    {
-        (new Store($repo))->release();
-        return ['state' => State::build($repo)];
     }
 
     private function wikiIndex(array $in, Repo $repo): array

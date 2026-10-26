@@ -489,7 +489,7 @@ Beim ersten Login nach dem Umbau (Saison 2) bleiben **Labelname und Konto**, all
   2–3 seltene (grün), mit 35 % dazu ein episches (blau), mit 13 % ein legendäres (gold, etwa einmal die Woche; dann ein seltenes weniger).
   Preise 320 / 1.500 / 5.200 ₲ × Güte. Jedes Angebot kauft ein Label einmal.
 - **Gold wird beworben:** Werbeschild in Gold, Strahlen hinter dem doppelt breiten Platz, goldener Rahmen, Stern am Menüpunkt „Music Store“ und einmal je Angebot ein Hinweis, wo man gerade ist.
-- **Zurücklegen:** ein Angebot je Label, einen Tag lang (`holdHours` 24), bleibt über den Wechsel, nur für dieses Label.
+- Gekaufte Angebote verschwinden aus dem Regal (es zeigt nur so viele Fächer, wie gefüllt sind). Zurücklegen gibt es nicht mehr.
 - Die frühere „Neue Lieferung“ gegen Geld gibt es nicht mehr.
 - Oberfläche: gezeichnetes Regal mit Preisschildern, Seltenheit als Lichtschein, Hinweispunkt bei Instrumenten, die jemandem im Label fehlen; Übergang: Doppeltür geht beim ersten Betreten auf.
 

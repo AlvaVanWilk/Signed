@@ -214,7 +214,12 @@ Gewinne sind je 15 Minuten angegeben (Bezugszeit). Ziel für Startwerte (Spielze
 Stufe 1 in etwa einer Stunde, Stufe 2 in etwa 15 Stunden, Stufe 3 in etwa 80 Stunden. Je Musiker verschieden (Talent; Chaot/Ehrgeizig wirken
 auf Stimmung statt auf Können). Ein bisschen mehr Können gewinnt, wer unter Besseren spielt.
 
-### Aufnehmen: Studio und Produzent
+### Aufnehmen: Studio und Produzent (gebaut)
+
+Zahlen in docs/kern.md (Platte). Vier Studios, vier feste Produzenten (immer dieselben Personen, gezeichnet in `producers.js`):
+Mo Beats (Nachwuchs), Roxy Reverb (etabliert), Diamond Dee (Hitproduzent, viel Gold) und Ruben Stille (die Legende: barfuß, langer Bart,
+rote Sonnenbrille). Ohne Produzent nur die Garage; jeder Produzent bringt die Band ein Studio weiter. Keine Minispiele; während der
+Aufnahme zeigt die Bandseite das Studio (`studio.js`) mit dem Produzenten hinter der Scheibe. Cover: drei Entwürfe, nur Optik.
 
 - **Studio:** Garage / Standard / Profi / legendär (steigende Preise, Qualität und Ansprüche).
 - **Produzent:** keiner / Nachwuchs / etabliert / Star (steigende Preise und Qualität).

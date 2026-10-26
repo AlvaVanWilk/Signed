@@ -89,8 +89,8 @@ final class Api
         'courseAttend' => ['POST', true],
         'soloStart' => ['POST', true],
         'jamPick' => ['POST', true],
-        'coverStart' => ['POST', true],
-        'coverPick' => ['POST', true],
+        'coverRedraw' => ['POST', true],
+        'recordOptions' => ['POST', true],
         'transferList' => ['POST', true],
         'transferWithdraw' => ['POST', true],
         'transferBid' => ['POST', true],
@@ -496,17 +496,6 @@ final class Api
         return ['activity' => $activity, 'state' => State::build($repo)];
     }
 
-    private function coverStart(array $in, Repo $repo): array
-    {
-        return ['cover' => (new Cover($repo))->start(self::int($in, 'bandId'))];
-    }
-
-    private function coverPick(array $in, Repo $repo): array
-    {
-        $res = (new Cover($repo))->pick(self::int($in, 'bandId'), self::int($in, 'reel'), self::int($in, 'index'));
-        return $res + ['state' => State::build($repo)];
-    }
-
     /** Probeseite: eine Etüde ansehen und spielen, ohne Anmeldung und ohne etwas zu speichern. */
     private function etudePreview(array $in): array
     {
@@ -609,8 +598,26 @@ final class Api
 
     private function recordStart(array $in, Repo $repo): array
     {
-        (new Studio($repo))->start(self::int($in, 'bandId'), self::str($in, 'title'), self::int($in, 'songs'));
-        return ['state' => State::build($repo)];
+        $activity = (new Studio($repo))->start(
+            self::int($in, 'bandId'),
+            self::str($in, 'title'),
+            self::int($in, 'songs'),
+            self::int($in, 'studio'),
+            (string) ($in['producer'] ?? 'none'),
+            is_array($in['cover'] ?? null) ? $in['cover'] : []
+        );
+        return ['activity' => $activity, 'state' => State::build($repo)];
+    }
+
+    /** Für den Aufnahme-Dialog: alle Studios und Produzenten mit Kosten und Schätzung, dazu drei Cover-Entwürfe. */
+    private function recordOptions(array $in, Repo $repo): array
+    {
+        return (new Studio($repo))->options(self::int($in, 'bandId'), self::int($in, 'songs')) + (empty($in['noCovers']) ? ['covers' => Cover::drafts()] : []);
+    }
+
+    private function coverRedraw(array $in, Repo $repo): array
+    {
+        return ['covers' => (new Cover($repo))->redraw(), 'state' => State::build($repo)];
     }
 
     private function minigameStart(array $in, Repo $repo): array

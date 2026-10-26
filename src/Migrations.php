@@ -5,6 +5,7 @@ namespace Signed;
 
 use Signed\Game\Catalog;
 use Signed\Game\Levels;
+use Signed\Game\Balance;
 
 /** Datenumbauten, die sich nicht in reinem SQL ausdrücken lassen. */
 final class Migrations
@@ -119,5 +120,16 @@ final class Migrations
             $perks = \Signed\Rng::sample(array_keys(Catalog::GEAR_PERKS), \Signed\Game\Balance::GEAR_PERKS[$rarity]);
             $db->update('gear', ['perks' => json_encode($perks)], ['id' => (int) $row['id']]);
         }
+    }
+
+    /** Offene Produktionen aus der Zeit der Minispiele: Studiozeit erstatten und die Platte verwerfen (die Band nimmt neu auf). */
+    public static function dropOpenRecords(Db $db): void
+    {
+        foreach ($db->all("SELECT id, label_id, band_id, songs_total FROM records WHERE status = 'open'") as $r) {
+            $refund = Balance::RECORD_COST + Balance::RECORD_COST_PER_SONG * (int) $r['songs_total'];
+            $db->exec('UPDATE labels SET money = money + ? WHERE id = ?', [$refund, (int) $r['label_id']]);
+            $db->exec('DELETE FROM records WHERE id = ?', [(int) $r['id']]);
+        }
+        $db->exec("DELETE FROM minigames WHERE kind = 'record' AND status = 'open'");
     }
 }

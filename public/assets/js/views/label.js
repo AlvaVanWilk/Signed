@@ -9,6 +9,7 @@ import { blocker, blockerNotice, courseTiles, gainRange, statTile } from './band
 import { roomSvg } from '../room.js';
 import { crowdMeter, venueArt } from '../venues.js';
 import { crowdSvg, stageSvg } from '../stage.js';
+import { studioBlock } from './recording.js';
 
 /** Label-Ebene: Band-Leiste links und die ruhige Bandseite. Stimmung als Punkt und Wort (grün, gelb, rot). */
 
@@ -227,7 +228,7 @@ function history(b) {
     : '<p class="muted small">Noch nichts passiert.</p>';
 }
 
-const WISH_BUTTON = { gig: ['Auftritt buchen', 'auftritte'], rehearsal: ['Proben', 'uebung'], record: ['Aufnehmen', 'studio'] };
+const WISH_BUTTON = { gig: ['Auftritt buchen', 'auftritte'], rehearsal: ['Proben', 'uebung'], record: ['Aufnehmen', null] };
 
 /** Wünsche der Band: wer unzufrieden ist, sagt, was ihm gefällt; ein Tipp führt zur passenden Anordnung. */
 function wishBlock(b, members) {
@@ -242,8 +243,8 @@ function wishBlock(b, members) {
         // Proben startet gleich, die übrigen führen zur passenden Seite.
         const go = w.action === 'stageName'
           ? `<button class="lb-pill" data-act="stageNameAsk" data-id="${m.id}">Namen aussuchen</button>`
-          : w.action === 'rehearsal' || w.action === 'gig'
-          ? `<button class="lb-pill" data-act="${w.action === 'gig' ? 'gigAsk' : 'rehearseAsk'}" data-id="${b.id}" ${off(blocker(b, members)?.text)}>${label}</button>`
+          : w.action === 'rehearsal' || w.action === 'gig' || w.action === 'record'
+          ? `<button class="lb-pill" data-act="${{ gig: 'gigAsk', rehearsal: 'rehearseAsk', record: 'recordAsk' }[w.action]}" data-id="${b.id}" ${off(blocker(b, members)?.text)}>${label}</button>`
           : `<a class="lb-pill" href="${target}">${label}</a>`;
         return `<div class="lb-wish"><a class="lb-ph sm ${w.level}" data-act="musicianInfo" data-id="${m.id}">${photo(m)}</a><span class="say">${esc(w.text)}</span>${go}</div>`;
       }).join('')}
@@ -263,9 +264,20 @@ function act(b, members, type, section, title, text, icon, warn = false, busy = 
   // Ohne Unterseite: Die Anordnung startet gleich (Proben).
   if (!section) {
     const why = busy ? (blocker(b, members)?.text ?? (members.length === 1 ? 'Gerade beschäftigt.' : 'Die Band ist gerade beschäftigt.')) : '';
-    return `<button class="lb-act ${busy ? 'idle' : ''}" data-act="${type === 'gig' ? 'gigAsk' : 'rehearseAsk'}" data-id="${b.id}" ${off(why)}>${icon}<b>${title}</b>${busy ? `<small>${members.length === 1 ? 'Gerade beschäftigt.' : 'Die Band ist gerade beschäftigt.'}</small>` : hint}</button>`;
+    return `<button class="lb-act ${busy ? 'idle' : ''} ${warn ? 'warn' : ''}" data-act="${{ gig: 'gigAsk', rehearsal: 'rehearseAsk', record: 'recordAsk' }[type]}" data-id="${b.id}" ${off(why)}>${icon}<b>${title}</b>${busy ? `<small>${members.length === 1 ? 'Gerade beschäftigt.' : 'Die Band ist gerade beschäftigt.'}</small>` : hint}</button>`;
   }
   return `<a class="lb-act ${warn ? 'warn' : ''}" href="#/band/${b.id}/${section}">${icon}<b>${title}</b>${hint}</a>`;
+}
+
+/** Kurzer Hinweis am Knopf „Aufnehmen“: Songs im Vorrat, oder was zur Freigabe des nächsten Albums noch fehlt. */
+function recordHint(b) {
+  const c = b.record.cycle;
+  if (c && !c.done) {
+    const left = [c.songs.have < c.songs.need ? `${c.songs.have}/${c.songs.need} live` : '', c.promos.have < c.promos.need ? `${c.promos.have}/${c.promos.need} Promo` : ''].filter(Boolean).join(' · ');
+    return `Freigabe fürs neue Album: ${left}`;
+  }
+  const songs = b.mood.songs;
+  return `${songs} ${songs === 1 ? 'Song wartet' : 'Songs warten'}`;
 }
 
 /**
@@ -481,7 +493,7 @@ export function page(route) {
   const members = b.memberIds.map(musicianById).filter(Boolean);
   const solo = members.length === 1;
   const running = runningFor(b.id);
-  const notice = running?.type === 'rehearsal' || running?.type === 'gig' ? '' : blockerNotice(b, members);
+  const notice = ['rehearsal', 'gig', 'record'].includes(running?.type) ? '' : blockerNotice(b, members);
   const free = cat().rules.maxMembers - members.length;
   const base = `#/band/${b.id}`;
   const courses = courseTiles(members);
@@ -495,12 +507,12 @@ export function page(route) {
       <div class="lb-hd-mood"><span class="lb-cap">Stimmung</span>${moodTag(b.mood.level).replace('class="lb-mood', 'class="lb-mood big')}</div>
     </header>
     ${notice}
-    ${running?.type === 'rehearsal' ? liveBlock(b, members, running) : running?.type === 'gig' ? gigBlock(b, members, running) : ''}
+    ${running?.type === 'rehearsal' ? liveBlock(b, members, running) : running?.type === 'gig' ? gigBlock(b, members, running) : running?.type === 'record' ? studioBlock(b, members, running) : ''}
     ${wishBlock(b, members)}
     <h2 class="lb-cap lb-sec">Anordnungen</h2>
     <div class="lb-acts">
       ${act(b, members, 'rehearsal', null, 'Proben', `bis zu ${mins(b.options.rehearsal.seconds)} · Können ${gainRange(members.map((m) => m.gains?.rehearsal ?? 0))} je ${mins(cat().rules.rehearsalSeconds)}`, ICON.rehearse, false, !!blocker(b, members))}
-      ${act(b, members, 'record', 'studio', 'Aufnehmen', `${b.mood.songs} ${b.mood.songs === 1 ? 'Song wartet' : 'Songs warten'}`, ICON.record, b.mood.songs >= 12)}
+      ${act(b, members, 'record', null, 'Aufnehmen', recordHint(b), ICON.record, b.mood.songs >= 12, !!blocker(b, members))}
       ${act(b, members, 'gig', null, 'Auftritt buchen', 'Orte, Kosten und Gewinn sehen', ICON.gig, false, !!blocker(b, members))}
     </div>
     ${course}

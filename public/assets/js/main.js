@@ -23,6 +23,7 @@ import * as store from './views/store.js';
 import * as submissions from './views/submissions.js';
 import './views/together.js';
 import * as wiki from './views/wiki.js';
+import { recordResultHtml } from './views/recording.js';
 
 const NAV = [
   ['', 'Übersicht'],
@@ -273,6 +274,7 @@ const REHEARSAL_END = {
 
 function resultHtml(r) {
   const res = r.result;
+  if (r.type === 'record') return recordResultHtml(r, { reward, levelUpBanners });
   if (r.type === 'rehearsal') {
     const band = bandById(r.bandId);
     const members = band ? band.memberIds.map(musicianById).filter(Boolean) : [];

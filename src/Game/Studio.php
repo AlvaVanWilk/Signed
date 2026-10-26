@@ -5,11 +5,12 @@ namespace Signed\Game;
 
 use Signed\ApiError;
 use Signed\Clock;
-use Signed\Rng;
 
 /**
- * Platte produzieren: Pauschalpreis, so viele Minispiele wie Lieder, Belohnung erst bei Fertigstellung.
- * Die Minispiele kommen gemischt (siehe plan()): Einspielen einzelner Instrumente, Mischpult, zum Schluss der Master-Mix.
+ * Platte aufnehmen: Das Label wählt Songzahl, Studio, Produzent und Cover; dann ist die Band eine Weile im Studio
+ * (eine Aktivität „record“ wie die Probe) und die Platte erscheint von selbst. Keine Minispiele.
+ * Studios und Produzenten in Balance::STUDIOS / Balance::PRODUCERS. Ein neues Album gibt das Label erst frei,
+ * wenn das letzte oft genug live gespielt und beworben ist (cycle).
  */
 final class Studio
 {
@@ -21,14 +22,14 @@ final class Studio
     public static function blocker(array $band, int $memberCount, ?array $openRecord): ?string
     {
         if ($openRecord !== null) {
-            return 'Es läuft schon eine Produktion.';
+            return 'Die Band nimmt gerade auf.';
         }
         if ($memberCount < Balance::MIN_MEMBERS) {
             return sprintf('Die Band braucht mindestens %d Musiker.', Balance::MIN_MEMBERS);
         }
         $cycle = self::cycle($band);
         if ($cycle !== null && !$cycle['done']) {
-            return 'Erst die letzte Platte live spielen und bewerben.';
+            return 'Das Label gibt ein neues Album erst frei, wenn das letzte live gespielt und beworben ist.';
         }
         return null;
     }
@@ -49,111 +50,216 @@ final class Studio
         ];
     }
 
-    public static function cost(int $songs): int
+    /** Was eine Aufnahme kostet: Studio je Lied plus Honorar des Produzenten. */
+    public static function cost(int $songs, int $studio = 0, string $producer = 'none'): int
     {
-        return Balance::RECORD_COST + Balance::RECORD_COST_PER_SONG * $songs;
+        return Balance::STUDIOS[$studio]['perSong'] * $songs + Balance::PRODUCERS[$producer]['fee'];
+    }
+
+    /** Warum dieser Produzent in diesem Studio nicht geht (oder nicht mit dieser Band), sonst null. */
+    public static function refusal(int $studio, string $producer, float $sound): ?string
+    {
+        if (!isset(Balance::STUDIOS[$studio])) {
+            return 'Dieses Studio gibt es nicht.';
+        }
+        $p = Balance::PRODUCERS[$producer] ?? null;
+        if ($p === null) {
+            return 'Diesen Produzenten gibt es nicht.';
+        }
+        if ($studio > $p['unlocks']) {
+            $need = array_key_first(array_filter(Balance::PRODUCERS, static fn ($x) => $x['unlocks'] >= $studio && empty($x['minSound'])));
+            return sprintf('Ins %s kommt man nur mit einem Produzenten wie %s.', Balance::STUDIOS[$studio]['name'], Balance::PRODUCERS[$need]['name']);
+        }
+        if (isset($p['minSound']) && $sound < $p['minSound']) {
+            return sprintf('%s nimmt nur Bands, die schon richtig gut klingen (Sound ab %d).', $p['name'], $p['minSound']);
+        }
+        return null;
+    }
+
+    /** Qualität der Platte (0–1): Grundwert, Studio, Produzent, Perfektionisten und goldene Studio-Instrumente. */
+    public static function quality(array $members, array $gear, int $studio, string $producer): float
+    {
+        $q = Balance::RECORD_QUALITY_BASE + Balance::STUDIOS[$studio]['quality'] + Balance::PRODUCERS[$producer]['quality'];
+        foreach ($members as $m) {
+            $q += Mood::traitMax($m, Balance::TRAITS['recordQuality'], 0.0) + Gear::value(BandCalc::gearOf($m, $gear), 'studio');
+        }
+        return min(1.0, $q);
+    }
+
+    /** Anspruch der Band (Ruhm-Stufe 0–3) gegen das Produktionsniveau (Mittel aus Studio und Produzent): < 0 ärgert, > 0 freut. */
+    public static function claimGap(array $band, array $members, int $studio, string $producer): int
+    {
+        $claim = Levels::forFame(BandCalc::bandFame($band, $members));
+        $level = (int) round(($studio + Balance::PRODUCERS[$producer]['level']) / 2);
+        return $level - $claim;
     }
 
     /**
-     * Reihenfolge der Minispiele einer Platte. Im Topf: pro Instrument der Band einmal Einspielen („take“) und einige
-     * Mischpult-Runden mit 2–3 zufälligen Mitgliedern („mix“). Daraus wird gemischt gezogen, nie zweimal dasselbe
-     * direkt hintereinander; ist der Topf leer, wird er neu gefüllt. Zum Schluss immer der Master-Mix, dann der Cover-Automat.
-     * @return list<array{type: string, musician?: int, musicians?: list<int>}>
+     * Was die Platte voraussichtlich bringt: Erstverkauf plus Tantiemen, solange sie chartet (als Spanne), und die Chartpunkte.
+     * @return array{money: int, royalties: array{0: int, 1: int}, chartPoints: float}
      */
-    public static function plan(array $members, int $songs): array
+    public static function estimate(array $band, array $members, array $gear, int $songs, float $quality): array
     {
-        $byInstrument = [];
-        foreach ($members as $m) {
-            $byInstrument[BandCalc::instrument($m)][] = $m['id'];
-        }
-        $pool = [];
-        foreach ($byInstrument as $ids) {
-            $pool[] = ['type' => 'take', 'musician' => Rng::pick($ids)];
-        }
-        $ids = array_column($members, 'id');
-        $mixes = [];
-        $wanted = count($ids) <= 2 ? 1 : max(2, (int) ceil(count($pool) / 2));
-        for ($try = 0; count($mixes) < $wanted && $try < 30; $try++) {
-            $pick = Rng::sample($ids, min(count($ids), Rng::int(2, 3)));
-            sort($pick);
-            $mixes[implode(',', $pick)] = ['type' => 'mix', 'musicians' => $pick];
-        }
-        $pool = array_merge($pool, array_values($mixes));
+        $sound = BandCalc::bandSound($band, $members, $gear);
+        [$money, $points] = self::returns($band, $members, $gear, $songs, $quality, $sound);
+        $hours = (1 - (1 - Balance::CHART_DECAY) ** (Balance::CHART_MAX_AGE / 3600)) / Balance::CHART_DECAY;
+        $royalties = $points * Balance::ROYALTY_MONEY * $hours;
+        return ['money' => $money, 'royalties' => [(int) round($royalties * Balance::RECORD_ESTIMATE['low']), (int) round($royalties)], 'chartPoints' => $points];
+    }
 
-        $plan = [];
-        $bag = [];
-        while (count($plan) < $songs - 2) {
-            if (!$bag) {
-                $bag = Rng::sample($pool, count($pool));
-                // Nie dasselbe Minispiel direkt hintereinander, auch nicht über die Neufüllung hinweg.
-                if ($plan && count($bag) > 1 && $bag[0] == end($plan)) {
-                    [$bag[0], $bag[1]] = [$bag[1], $bag[0]];
-                }
+    /** Erstverkauf und Chartpunkte einer Platte dieser Qualität. */
+    private static function returns(array $band, array $members, array $gear, int $songs, float $quality, float $sound): array
+    {
+        $perfect = $quality >= Balance::RECORD_PERFECT_FROM;
+        $lp = 1 + Balance::RECORD_LP_BONUS * max(0, $songs - Balance::RECORD_MIN_SONGS);
+        $perfectFactor = $perfect ? Balance::RECORD_PERFECT_BONUS : 1.0;
+        $sales = 1 + min(Balance::RECORD_FAME_SALES_MAX, BandCalc::bandFame($band, $members) / Balance::RECORD_FAME_SALES);
+        // Egozentrische stehen gern im Mittelpunkt, Kultobjekte verkaufen sich: Die Platte verkauft sich besser
+        $sales *= 1 + array_sum(array_map(static fn ($m) => Mood::traitMax($m, Balance::TRAITS['recordSales'], 0.0) + Gear::value(BandCalc::gearOf($m, $gear), 'cult'), $members));
+        $money = (int) round($songs * Balance::RECORD_MONEY_PER_SONG * (0.3 + $quality ** 2) * $lp * $perfectFactor * $sales);
+        $hit = array_sum(array_map(static fn ($m) => Gear::value(BandCalc::gearOf($m, $gear), 'hit'), $members));
+        $points = round(Charts::points($songs, $quality, $sound, $perfect) * (1 + $hit), 1);
+        return [$money, $points];
+    }
+
+    /**
+     * Alle Möglichkeiten für den Aufnahme-Dialog: je Produzent und Studio Kosten, Qualität, erwarteter Ertrag, ob es geht und wie die Band es findet.
+     */
+    public function options(int $bandId, int $songs): array
+    {
+        $band = $this->repo->band($bandId);
+        $members = $this->repo->members($bandId);
+        $gear = $this->repo->gearByMusician();
+        $sound = BandCalc::bandSound($band, $members, $gear);
+        $have = (int) floor((float) $band['songs_written']);
+        $songs = max(Balance::RECORD_MIN_SONGS, min(Balance::RECORD_MAX_SONGS, $songs));
+        $out = [];
+        foreach (array_keys(Balance::PRODUCERS) as $producer) {
+            foreach (array_keys(Balance::STUDIOS) as $studio) {
+                $q = self::quality($members, $gear, $studio, $producer);
+                $est = self::estimate($band, $members, $gear, $songs, $q);
+                $out[] = [
+                    'producer' => $producer,
+                    'studio' => $studio,
+                    'cost' => self::cost($songs, $studio, $producer),
+                    'quality' => round($q, 3),
+                    'perfect' => $q >= Balance::RECORD_PERFECT_FROM,
+                    'money' => $est['money'],
+                    'royalties' => $est['royalties'],
+                    'claim' => self::claimGap($band, $members, $studio, $producer),
+                    'refusal' => self::refusal($studio, $producer, $sound),
+                ];
             }
-            $plan[] = array_shift($bag);
         }
-        $plan[] = ['type' => 'master'];
-        $plan[] = ['type' => 'cover'];
-        return $plan;
+        return [
+            'songs' => $songs,
+            'songsWritten' => $have,
+            'seconds' => $songs * Balance::RECORD_SECONDS_PER_SONG,
+            'sound' => round($sound, 1),
+            'blocker' => self::blocker($band, count($members), $this->repo->openRecord($bandId)),
+            'options' => $out,
+        ];
     }
 
-    /** Ist als Nächstes das Cover dran? (Ältere Produktionen ohne Cover im Plan: nach dem letzten Lied.) */
-    public static function coverNext(array $record): bool
-    {
-        return ($record['plan'][$record['songs_done']]['type'] ?? null) === 'cover' || $record['songs_done'] >= $record['songs_total'];
-    }
-
-    /** Der Plan einer offenen Platte; ältere Produktionen ohne Plan bekommen jetzt einen. */
-    public function planFor(array $record, array $members): array
-    {
-        $plan = $record['plan'];
-        if (!is_array($plan) || count($plan) < $record['songs_total']) {
-            $plan = self::plan($members, $record['songs_total']);
-            $this->repo->db->update('records', ['plan' => json_encode($plan)], ['id' => $record['id']]);
-        }
-        return $plan;
-    }
-
-    public function start(int $bandId, string $title, int $songs): void
+    /** Aufnahme starten: Geld, Songs aus dem Vorrat, Band ins Studio. Die Platte erscheint, wenn die Zeit um ist. */
+    public function start(int $bandId, string $title, int $songs, int $studio, string $producer, array $cover): array
     {
         $title = Bands::cleanName($title, 'Der Plattentitel', 60);
         if ($songs < Balance::RECORD_MIN_SONGS || $songs > Balance::RECORD_MAX_SONGS) {
             throw new ApiError(sprintf('Eine Platte hat %d bis %d Lieder.', Balance::RECORD_MIN_SONGS, Balance::RECORD_MAX_SONGS));
         }
-        $this->repo->db->transaction(function () use ($bandId, $title, $songs): void {
+        $spec = Cover::validate($cover);
+        $db = $this->repo->db;
+        return $db->transaction(function () use ($db, $bandId, $title, $songs, $studio, $producer, $spec): array {
+            $now = Clock::now();
             $band = $this->repo->band($bandId);
             $members = $this->repo->members($bandId);
-            $blocker = self::blocker($band, count($members), $this->repo->openRecord($bandId));
+            $blocker = self::blocker($band, count($members), $this->repo->openRecord($bandId)) ?? Activities::blocker($band, $members, $now);
             if ($blocker !== null) {
                 throw new ApiError($blocker);
             }
-            $this->repo->spend(self::cost($songs), 'Studiozeit');
-            $this->repo->db->insert('records', [
+            $refuser = Mood::refuser($members, 'record');
+            if ($refuser !== null) {
+                throw new ApiError($refuser['first_name'] . ' hat darauf gerade keine Lust. Eine Anordnung, die der Band gefällt, hebt zuerst die Stimmung.');
+            }
+            if ((int) floor((float) $band['songs_written']) < $songs) {
+                throw new ApiError(sprintf('Dafür hat die Band noch nicht genug Songs geschrieben (%d von %d).', (int) floor((float) $band['songs_written']), $songs));
+            }
+            $gear = $this->repo->gearByMusician();
+            $refusal = self::refusal($studio, $producer, BandCalc::bandSound($band, $members, $gear));
+            if ($refusal !== null) {
+                throw new ApiError($refusal);
+            }
+            $p = Balance::PRODUCERS[$producer];
+            $this->repo->spend(self::cost($songs, $studio, $producer), $producer === 'none' ? 'Studio: ' . Balance::STUDIOS[$studio]['name'] : sprintf('Studio: %s mit %s', Balance::STUDIOS[$studio]['name'], $p['name']));
+            $quality = self::quality($members, $gear, $studio, $producer);
+            $endsAt = $now + $songs * Balance::RECORD_SECONDS_PER_SONG;
+            if ($db->exec('UPDATE bands SET busy_until = ?, released = 1, songs_written = songs_written - ? WHERE id = ? AND busy_until <= ?', [$endsAt, $songs, $bandId, $now]) === 0) {
+                throw new ApiError('Die Band ist gerade beschäftigt.');
+            }
+            // Anspruch: Ist die Produktion unter der Würde der Band, ärgert sie sich; darüber freut sie sich. Mit der Legende sind alle entspannt.
+            $gap = self::claimGap($band, $members, $studio, $producer);
+            $c = Balance::RECORD_CLAIM;
+            foreach ($members as $m) {
+                $delta = $gap < 0 ? $gap * $c['down'] * Mood::traitMax($m, $c['picky'], 1.0) : $gap * $c['up'];
+                $delta += $p['mood'] ?? 0.0;
+                if ($delta != 0.0) {
+                    $db->update('musicians', ['wellbeing' => round(max(0.0, min(100.0, $m['wellbeing'] + $delta)), 3)], ['id' => $m['id']]);
+                }
+            }
+            $recordId = $db->insert('records', [
                 'label_id' => $this->repo->labelId,
                 'band_id' => $bandId,
                 'title' => $title,
                 'songs_total' => $songs,
                 'songs_done' => 0,
                 'song_results' => '[]',
-                'plan' => json_encode(self::plan($members, $songs)),
                 'status' => 'open',
-                'created_at' => Clock::now(),
+                'cover' => json_encode(['spec' => $spec]),
+                'studio' => Balance::STUDIOS[$studio]['key'],
+                'producer' => $producer,
+                'quality' => round($quality, 4),
+                'created_at' => $now,
             ]);
-            $this->repo->log('record', sprintf('%s geht ins Studio: „%s“ mit %d Liedern.', $band['name'], $title, $songs), $bandId);
+            $this->repo->log('record', sprintf('%s geht ins %s%s: „%s“ mit %d Liedern.', $band['name'], Balance::STUDIOS[$studio]['name'], $producer === 'none' ? '' : ' mit ' . $p['name'], $title, $songs), $bandId);
+            $id = $db->insert('activities', [
+                'label_id' => $this->repo->labelId,
+                'band_id' => $bandId,
+                'musician_id' => null,
+                'type' => 'record',
+                'started_at' => $now,
+                'ends_at' => $endsAt,
+                'data' => json_encode(['title' => sprintf('Studio: „%s“', $title), 'recordId' => $recordId, 'studio' => $studio, 'producer' => $producer, 'songs' => $songs], JSON_UNESCAPED_UNICODE),
+            ]);
+            return Present::activity($db->one('SELECT * FROM activities WHERE id = ?', [$id]));
         });
     }
 
-    /** Ein Lied ist eingespielt. Gibt jedem Mitglied etwas Können und der Band Zusammenspiel. */
-    public function songDone(array $record, array $band, array $members, array $gear, int $perfect, int $good, int $miss): array
+    /** Die Studiozeit ist um (Activities::settleDue): Platte fertig. */
+    public static function settle(Repo $repo, array $row, array $data): array
+    {
+        $record = $repo->db->one("SELECT * FROM records WHERE id = ? AND status = 'open'", [(int) ($data['recordId'] ?? 0)]);
+        if ($record === null) {
+            return [];
+        }
+        $bandId = (int) $row['band_id'];
+        return (new self($repo))->complete(Repo::hydrateRecord($record), $repo->band($bandId), $repo->members($bandId), $repo->gearByMusician());
+    }
+
+    /** Platte fertig: Können, Erstverkauf, Ruhm, Charts. */
+    public function complete(array $record, array $band, array $members, array $gear): array
     {
         $db = $this->repo->db;
-        $accuracy = Chart::accuracy($perfect, $good, $miss);
-        $results = $record['song_results'];
-        $results[] = ['accuracy' => round($accuracy, 3), 'perfect' => $perfect, 'good' => $good, 'miss' => $miss];
+        $songs = $record['songs_total'];
+        $quality = (float) ($record['quality'] ?? Balance::RECORD_QUALITY_BASE);
+        $perfect = $quality >= Balance::RECORD_PERFECT_FROM;
+        $producer = Balance::PRODUCERS[$record['producer'] ?? 'none'] ?? Balance::PRODUCERS['none'];
+        $sound = BandCalc::bandSound($band, $members, $gear);
 
+        // Im Studio lernt jeder etwas dazu (je Lied, nach Qualität).
         $levelUps = [];
         foreach ($members as $m) {
-            $gain = BandCalc::trainingGain($m, Balance::RECORD_SONG_SKILL * $accuracy, null, BandCalc::gearOf($m, $gear));
+            $gain = BandCalc::trainingGain($m, Balance::RECORD_SONG_SKILL * $songs * $quality, null, BandCalc::gearOf($m, $gear));
             $column = $m['band_slot'] === 2 && $m['instr2'] !== null ? 'skill2' : 'skill1';
             $db->update('musicians', [$column => min((float) Balance::MAX_STAT, BandCalc::skill($m) + $gain)], ['id' => $m['id']]);
             $levelUp = Levels::check($this->repo, $m['id']);
@@ -161,53 +267,15 @@ final class Studio
                 $levelUps[] = $levelUp;
             }
         }
-
-        $db->update('bands', ['released' => 1], ['id' => $band['id']]);
         Mood::bond($this->repo, $members, 'record');
-        Mood::react($this->repo, $members, 'record');
-        $db->update('records', ['songs_done' => count($results), 'song_results' => json_encode($results)], ['id' => $record['id']]);
+        Mood::react($this->repo, $this->repo->members($band['id']), 'record');
 
-        $out = [
-            'accuracy' => round($accuracy, 3),
-            'songsDone' => count($results),
-            'songsTotal' => $record['songs_total'],
-            'levelUps' => $levelUps,
-            'completed' => null,
-            // Als letzte Aufnahme kommt der Cover-Automat (Cover::start); danach ist die Platte fertig.
-            'coverNext' => self::coverNext(['songs_done' => count($results)] + $record),
-        ];
-        return $out;
-    }
-
-    /** Platte fertig (nach dem Cover): Erstverkauf, Ruhm, Charts. */
-    public function complete(array $record, array $band, array $members, array $gear): array
-    {
-        $db = $this->repo->db;
-        $results = $record['song_results'];
-        // Das Cover ist eine der Aufnahmen, aber kein Lied mit Trefferquote: Qualität aus den Musik-Spielen.
-        $songs = $record['songs_total'];
-        $quality = array_sum(array_column($results, 'accuracy')) / max(1, $songs);
-        // Perfektionisten holen noch etwas mehr heraus
-        foreach ($members as $m) {
-            $quality += Mood::traitMax($m, Balance::TRAITS['recordQuality'], 0.0) + Gear::value(BandCalc::gearOf($m, $gear), 'studio');
-        }
-        $quality = min(1.0, $quality);
-        $misses = (int) array_sum(array_column($results, 'miss'));
-        $perfect = $misses === 0;
-
+        [$money, $chartPoints] = self::returns($band, $members, $gear, $songs, $quality, $sound);
         $lp = 1 + Balance::RECORD_LP_BONUS * max(0, $songs - Balance::RECORD_MIN_SONGS);
-        $perfectFactor = $perfect ? Balance::RECORD_PERFECT_BONUS : 1.0;
-        $sales = 1 + min(Balance::RECORD_FAME_SALES_MAX, BandCalc::bandFame($band, $members) / Balance::RECORD_FAME_SALES);
-        $sound = BandCalc::bandSound($band, $members, $gear);
-
-        $coverQuality = (float) ($record['cover']['spec']['quality'] ?? 0);
-        $coverBonus = 1 + Balance::COVER['salesMax'] * $coverQuality;
-        // Egozentrische stehen gern im Mittelpunkt: Die Platte verkauft sich besser
-        $sales *= 1 + array_sum(array_map(static fn ($m) => Mood::traitMax($m, Balance::TRAITS['recordSales'], 0.0) + Gear::value(BandCalc::gearOf($m, $gear), 'cult'), $members));
-        $money = (int) round($songs * Balance::RECORD_MONEY_PER_SONG * (0.3 + $quality ** 2) * $lp * $perfectFactor * $sales * $coverBonus);
-        $fame = $songs * Balance::RECORD_FAME_PER_SONG * BandCalc::soundFactor($sound) * (0.3 + $quality ** 1.5) * $lp * $perfectFactor;
+        $fame = $songs * Balance::RECORD_FAME_PER_SONG * BandCalc::soundFactor($sound) * (0.3 + $quality ** 1.5) * $lp * ($perfect ? Balance::RECORD_PERFECT_BONUS : 1.0);
         $gains = BandCalc::splitFame($members, $fame, $gear);
-        $this->repo->addBandFame($band['id'], $gains);
+        // Mit der Legende ist der Ruhm nicht durch die Stufen-Bremse gebremst: ein Weg nach oben.
+        $this->repo->addBandFame($band['id'], $gains, empty($producer['unpaced']));
         $this->repo->earn($money, sprintf('Erstverkauf „%s“', $record['title']));
 
         $db->exec(
@@ -216,8 +284,6 @@ final class Studio
         );
         $fameGain = round(array_sum($gains), 1);
         $firstRecord = (int) $db->value("SELECT COUNT(*) FROM records WHERE label_id = ? AND status = 'done'", [$this->repo->labelId]) === 0;
-        $hit = array_sum(array_map(static fn ($m) => Gear::value(BandCalc::gearOf($m, $gear), 'hit'), $members));
-        $chartPoints = round(Charts::points($songs, $quality, $sound, $perfect) * (1 + $hit), 1);
         $now = Clock::now();
         $db->update('records', [
             'status' => 'done',
@@ -232,36 +298,30 @@ final class Studio
         Charts::markDirty($db);
 
         $format = $songs >= Balance::CHART_LP_SONGS ? 'LP' : 'EP';
-        $this->repo->log('record', sprintf(
-            '%s veröffentlicht „%s“ (%s, %d Lieder)%s',
-            $band['name'],
-            $record['title'],
-            $format,
-            $songs,
-            $perfect ? ' – eine perfekte Platte!' : '.'
-        ), $band['id']);
+        $this->repo->log('record', sprintf('%s veröffentlicht „%s“ (%s, %d Lieder)%s', $band['name'], $record['title'], $format, $songs, $perfect ? ' – eine perfekte Platte!' : '.'), $band['id']);
         // In der WikiSignia steht bei jedem Künstler, an welchen Platten er beteiligt war.
         foreach ($members as $m) {
             $this->repo->log('record', mb_substr(sprintf('%s nimmt mit %s „%s“ auf (%s).', Bands::fullName($m), $band['name'], $record['title'], $format), 0, 250), $band['id'], $m['id']);
         }
-
         if ($firstRecord) {
             Scout::grant($this->repo, 'die erste Platte deines Labels.');
         }
 
         return [
+            'record' => true,
             'title' => $record['title'],
             'format' => $format,
             'chartPoints' => $chartPoints,
             'vouchers' => ($firstRecord ? 1 : 0) + ($perfect ? 1 : 0),
             'songs' => $songs,
             'quality' => round($quality, 3),
-            'misses' => $misses,
             'perfect' => $perfect,
             'money' => $money,
             'fame' => $fameGain,
             'cover' => $record['cover']['spec'] ?? null,
-            'coverBonus' => round($coverBonus - 1, 3),
+            'producer' => $record['producer'] ?? 'none',
+            'studio' => $record['studio'] ?? 'garage',
+            'levelUps' => $levelUps,
         ];
     }
 }

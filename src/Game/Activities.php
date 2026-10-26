@@ -384,6 +384,7 @@ final class Activities
                 $result = match (true) {
                     $row['type'] === 'promo' => self::applyPromo($repo, $row, $data),
                     $row['type'] === 'rehearsal' => self::applyRehearsal($repo, $row),
+                    $row['type'] === 'record' => Studio::settle($repo, $row, $data),
                     $row['type'] === 'practice', $row['type'] === 'course' => self::applyPractice($repo, $row, $data),
                     $row['band_id'] === null => self::applySolo($repo, $row, $data),
                     default => self::applyBand($repo, $row, $data),

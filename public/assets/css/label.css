@@ -856,3 +856,46 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .gt.t-3 .gt-art { box-shadow: 0 0 14px rgba(242, 193, 78, .35); }
 .gt .gb-list li, .ms-sheet .gb-list li { display: block; }
 .gt .gb-list li i, .ms-sheet .gb-list li i { display: inline-block; margin-right: 5px; }
+
+/* ---------- Aufnehmen: Dialog und Studio ---------- */
+.modal.rc-modal { width: min(860px, 96vw); max-width: 860px; }
+.rc-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 6px 0 4px; }
+.rc-label { font-weight: 700; }
+.rc-stepper { display: inline-flex; align-items: center; gap: 8px; }
+.rc-stepper b { min-width: 1.6em; text-align: center; font-size: 1.15rem; }
+.rc-h { margin: 16px 0 8px; font-size: .95rem; }
+.rc-h small { font-weight: 400; margin-left: 6px; }
+.rc-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.rc-card { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 6px; border-radius: 12px; border: 2px solid var(--lb-line); background: var(--lb-card2); color: inherit; font: inherit; cursor: pointer; text-align: center; }
+.rc-card b { font-size: .88rem; }
+.rc-card small { color: var(--lb-muted); font-size: .76rem; }
+.rc-card.on { border-color: var(--lb-accent); box-shadow: 0 0 0 1px var(--lb-accent); }
+.rc-card[aria-disabled="true"] { opacity: .45; }
+.rc-pic { width: 64px; height: 80px; display: flex; align-items: flex-end; justify-content: center; }
+.rc-pic svg { width: 64px; height: 80px; }
+.rc-none { font-size: 2rem; color: var(--lb-muted); margin-bottom: 20px; }
+.rc-thumb { width: 100%; height: 62px; border-radius: 8px; overflow: hidden; display: block; }
+.rc-thumb svg { width: 100%; height: 100%; display: block; }
+.rc-say { margin: 6px 0 0; font-size: .85rem; }
+.rc-sum { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; margin-top: 16px; }
+.rc-sum > div { padding: 8px 10px; border-radius: 10px; background: var(--lb-card2); border: 1px solid var(--lb-line); display: flex; flex-direction: column; gap: 2px; }
+.rc-sum span { font-size: .75rem; color: var(--lb-muted); text-transform: uppercase; letter-spacing: .05em; }
+.rc-sum small { font-size: .72rem; color: var(--lb-muted); }
+.rc-sum .pos { color: #3fbf6e; } .rc-sum .neg { color: #e0475a; }
+.rc-bar { display: block; height: 6px; border-radius: 3px; background: #2b2735; overflow: hidden; margin-top: 3px; }
+.rc-bar i { display: block; height: 100%; background: var(--lb-accent); border-radius: 3px; }
+.rc-claim { margin: 8px 0 0; font-size: .88rem; }
+.rc-claim.no { color: #e0475a; } .rc-claim.ok { color: #3fbf6e; }
+.rc-covers { display: grid; grid-template-columns: repeat(3, minmax(0, 150px)); gap: 10px; margin-bottom: 8px; }
+.rc-cover { padding: 4px; border-radius: 10px; border: 2px solid transparent; background: none; cursor: pointer; }
+.rc-cover.on { border-color: var(--lb-accent); }
+.rc-cover .cover-frame { width: 100%; }
+.rc-cycle { list-style: none; padding: 0; display: grid; gap: 6px; }
+.rc-cycle li.ok { color: #3fbf6e; }
+.rc-release { display: flex; gap: 14px; align-items: center; margin: 6px 0 10px; }
+.rc-release .cover-frame { width: 130px; flex: none; }
+/* Im Studio steht die Band links, rechts sieht man durch die Scheibe den Produzenten. */
+.st-room .fig-stage.in-room { padding-right: 34%; }
+.st-onair { animation: st-onair 2.4s ease-in-out infinite; }
+@keyframes st-onair { 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) { .st-onair { animation: none; } }

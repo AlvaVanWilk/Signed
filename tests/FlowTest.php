@@ -29,29 +29,19 @@ function foundBand(Player $p, string $name = 'Die Ersten'): array
     return array_values(array_filter($res['state']['bands'], static fn ($b) => $b['id'] === $res['bandId']))[0];
 }
 
-function playSong(Player $p, array $start, float $hitRate = 1.0): array
+/**
+ * Eine Platte aufnehmen und fertig werden lassen: Songs in den Vorrat legen, Studio und Produzent wählen, das erste Cover nehmen,
+ * die Studiozeit abwarten. Liefert den Spielstand danach und das Ergebnis der Platte.
+ */
+function makeRecord(Signed\Db $db, Player $p, int $bandId, string $title, int $songs = 3, int $studio = 0, string $producer = 'none'): array
 {
-    $game = $p->post('minigameStart', $start)['game'];
-    Clock::advance(Balance::SONG_SECONDS + 2);
-    $count = $game['count'];
-    $perfect = (int) floor($count * $hitRate);
-    $res = $p->post('minigameFinish', ['sessionId' => $game['sessionId'], 'perfect' => $perfect, 'good' => 0, 'miss' => $count - $perfect]);
-    // Letztes Lied: Den Cover-Automaten gleich mit durchspielen (jeweils das erste Feld), damit die Platte fertig wird.
-    if (!empty($res['result']['coverNext'])) {
-        $res['result']['completed'] = makeCover($p, (int) $start['bandId'])['completed'];
-        $res['state'] = $p->get('state');
-    }
-    return $res;
-}
-
-function makeCover(Player $p, int $bandId, array $picks = [0, 0, 0, 0]): array
-{
-    $p->post('coverStart', ['bandId' => $bandId]);
-    $res = [];
-    foreach ($picks as $reel => $index) {
-        $res = $p->post('coverPick', ['bandId' => $bandId, 'reel' => $reel, 'index' => $index]);
-    }
-    return $res;
+    $db->exec('UPDATE bands SET songs_written = songs_written + ? WHERE id = ?', [$songs, $bandId]);
+    $opts = $p->post('recordOptions', ['bandId' => $bandId, 'songs' => $songs]);
+    $p->post('recordStart', ['bandId' => $bandId, 'title' => $title, 'songs' => $songs, 'studio' => $studio, 'producer' => $producer, 'cover' => $opts['covers'][0]]);
+    Clock::advance($songs * Balance::RECORD_SECONDS_PER_SONG + 2);
+    $state = $p->get('state');
+    $done = array_values(array_filter($state['results'], static fn ($r) => $r['type'] === 'record'));
+    return ['state' => $state, 'completed' => $done ? end($done)['result'] : null];
 }
 
 function bandById(array $state, int $id): array
@@ -438,21 +428,24 @@ test('Platte produzieren, dann Gigs spielen, dann die nächste Platte', function
     $band = foundBand($p);
     $money = $p->get('state')['label']['money'];
 
-    checkApiError(fn () => $p->post('recordStart', ['bandId' => $band['id'], 'title' => 'Debüt', 'songs' => 2]), 'Lieder');
-    $state = $p->post('recordStart', ['bandId' => $band['id'], 'title' => 'Debüt', 'songs' => 3])['state'];
-    checkEquals($money - Signed\Game\Studio::cost(3), $state['label']['money']);
+    $db->exec('UPDATE labels SET money = 100000');
+    $money = 100000;
+    $opts = $p->post('recordOptions', ['bandId' => $band['id'], 'songs' => 3]);
+    checkEquals(3, count($opts['covers']), 'drei Cover-Entwürfe');
+    $start = ['bandId' => $band['id'], 'title' => 'Debüt', 'songs' => 3, 'studio' => 3, 'producer' => 'diamond', 'cover' => $opts['covers'][0]];
+    checkApiError(fn () => $p->post('recordStart', ['songs' => 2] + $start), 'Lieder');
+    checkApiError(fn () => $p->post('recordStart', $start), 'Songs');
+    $db->exec('UPDATE bands SET songs_written = 4 WHERE id = ?', [$band['id']]);
+    checkApiError(fn () => $p->post('recordStart', ['producer' => 'roxy'] + $start), 'Produzenten');
+    $state = $p->post('recordStart', $start)['state'];
+    checkEquals($money - Signed\Game\Studio::cost(3, 3, 'diamond'), $state['label']['money']);
     checkEquals('Debüt', bandById($state, $band['id'])['record']['open']['title']);
-    checkApiError(fn () => $p->post('recordStart', ['bandId' => $band['id'], 'title' => 'Noch eine', 'songs' => 3]), 'Produktion');
-
-    $first = playSong($p, ['kind' => 'record', 'bandId' => $band['id']]);
-    checkEquals(1, $first['result']['songsDone']);
-    checkEquals(null, $first['result']['completed']);
-    checkEquals('master', bandById($first['state'], $band['id'])['record']['open']['next']['type'], 'Vor dem Cover der Master-Mix');
-    // Die zweite Aufnahme ist der Master-Mix, die dritte der Cover-Automat (spielt playSong mit).
-    $last = playSong($p, ['kind' => 'record', 'bandId' => $band['id']]);
-    $completed = $last['result']['completed'];
-    check($completed !== null, 'Platte nach drei Aufnahmen fertig');
-    check($completed['perfect'], 'Keine Fehler = perfekte Platte');
+    checkEquals(1, (int) floor((float) $db->value('SELECT songs_written FROM bands WHERE id = ?', [$band['id']])), 'Die Songs kommen aus dem Vorrat');
+    checkApiError(fn () => $p->post('recordStart', ['title' => 'Noch eine'] + $start), 'nimmt gerade auf');
+    Clock::advance(3 * Balance::RECORD_SECONDS_PER_SONG + 2);
+    $last = ['state' => $p->get('state')];
+    $completed = array_values(array_filter($last['state']['results'], static fn ($r) => $r['type'] === 'record'))[0]['result'];
+    check($completed['perfect'], 'Bestes Studio mit Diamond Dee: perfekt');
     check($completed['money'] > 0 && $completed['fame'] > 0);
 
     $band = bandById($last['state'], $band['id']);
@@ -560,15 +553,10 @@ test('Album-Charts: Platten aller Labels, Platz 1 gibt einen Gutschein, Tantieme
     $b = registerPlayer($db, 'Beta');
     $bandA = foundBand($a, 'Alpha Band');
     $bandB = foundBand($b, 'Beta Band');
-    $a->post('recordStart', ['bandId' => $bandA['id'], 'title' => 'Alpha EP', 'songs' => 3]);
-    for ($i = 0; $i < 2; $i++) {
-        $done = playSong($a, ['kind' => 'record', 'bandId' => $bandA['id']]);
-    }
+    $db->exec('UPDATE labels SET money = 100000');
+    $done = makeRecord($db, $a, $bandA['id'], 'Alpha EP', 3, 2, 'roxy');
     checkEquals(Balance::SCOUT_START_VOUCHERS + 1, $done['state']['scout']['vouchers'], 'Gutschein nur für die erste Platte, nicht fürs Perfekte');
-    $b->post('recordStart', ['bandId' => $bandB['id'], 'title' => 'Beta EP', 'songs' => 3]);
-    for ($i = 0; $i < 2; $i++) {
-        playSong($b, ['kind' => 'record', 'bandId' => $bandB['id']], 0.5);
-    }
+    makeRecord($db, $b, $bandB['id'], 'Beta EP');
 
     $charts = $b->get('charts');
     checkEquals(2, count($charts['albums']));
@@ -580,10 +568,7 @@ test('Album-Charts: Platten aller Labels, Platz 1 gibt einen Gutschein, Tantieme
 
     $c = registerPlayer($db, 'Gamma');
     $bandC = foundBand($c, 'Gamma Band');
-    $c->post('recordStart', ['bandId' => $bandC['id'], 'title' => 'Gamma EP', 'songs' => 3]);
-    for ($i = 0; $i < 2; $i++) {
-        playSong($c, ['kind' => 'record', 'bandId' => $bandC['id']], 0.5);
-    }
+    makeRecord($db, $c, $bandC['id'], 'Gamma EP');
     $c->get('charts');
     checkEquals(Balance::SCOUT_START_VOUCHERS + 2, $a->get('state')['scout']['vouchers'], 'Platz 1 bringt einen weiteren Gutschein');
     $b->get('charts');
@@ -815,10 +800,8 @@ test('Charts: Plätze bleiben eine Chartwoche stehen, Nachrichten bei Einstieg u
     $bandA = foundBand($a, 'Erste Band');
     $bandB = foundBand($b, 'Zweite Band');
     foreach ([[$a, $bandA, 'Vorn'], [$b, $bandB, 'Hinten']] as [$p, $band, $title]) {
-        $p->post('recordStart', ['bandId' => $band['id'], 'title' => $title, 'songs' => 3]);
-        for ($i = 0; $i < 2; $i++) {
-            playSong($p, ['kind' => 'record', 'bandId' => $band['id']], $title === 'Vorn' ? 1.0 : 0.6);
-        }
+        $db->exec('UPDATE labels SET money = 100000');
+        makeRecord($db, $p, $band['id'], $title, 3, $title === 'Vorn' ? 2 : 0, $title === 'Vorn' ? 'roxy' : 'none');
     }
     $charts = $a->get('charts')['albums'];
     checkEquals(['Vorn', 'Hinten'], array_column($charts, 'title'));
@@ -1116,40 +1099,41 @@ test('Jam-Café: Wer darüber eine Band gegründet hat, kann nicht noch einmal h
     }
 });
 
-test('Cover-Automat: die letzte Aufnahme, jedes Band zählt sofort, wertvolle Felder verkaufen besser', function () {
+test('Aufnehmen: drei Cover-Entwürfe, neue kosten ein Honorar, Studio und Produzent bestimmen Qualität, Anspruch und Laune', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Cover');
     $band = foundBand($p);
     $db->exec('UPDATE labels SET money = 100000');
-    $p->post('recordStart', ['bandId' => $band['id'], 'title' => 'Bunt', 'songs' => 3]);
-    $start = ['kind' => 'record', 'bandId' => $band['id']];
-    for ($i = 0; $i < 2; $i++) {
-        $game = $p->post('minigameStart', $start)['game'];
-        Clock::advance(Balance::SONG_SECONDS + 2);
-        $res = $p->post('minigameFinish', ['sessionId' => $game['sessionId'], 'perfect' => $game['count'], 'good' => 0, 'miss' => 0]);
+    $opts = $p->post('recordOptions', ['bandId' => $band['id'], 'songs' => 4]);
+    checkEquals(3, count(array_unique(array_column($opts['covers'], 'motif'))), 'drei verschiedene Motive');
+    $redraw = $p->post('coverRedraw');
+    checkEquals(100000 - Balance::COVER_REDRAW, $redraw['state']['label']['money']);
+    checkEquals(3, count($redraw['covers']));
+    // Ohne Produzent nur die Garage; jeder Produzent macht es besser, auch in der Garage.
+    $by = [];
+    foreach ($opts['options'] as $o) {
+        $by[$o['producer'] . $o['studio']] = $o;
     }
-    check($res['result']['coverNext'] && $res['result']['completed'] === null, 'Die dritte Aufnahme ist das Cover');
-    checkEquals('cover', bandById($p->get('state'), $band['id'])['record']['open']['next']['type']);
-    checkApiError(fn () => $p->post('minigameStart', $start), 'Cover');
-
-    $cover = $p->post('coverStart', ['bandId' => $band['id']])['cover'];
-    checkEquals(4, count($cover['reels']));
-    checkEquals(Balance::COVER['cells'], count($cover['reels'][0]['items']));
-    // Gold auf allen Bändern wählen.
-    $gold = array_map(static fn ($r) => array_search(3, array_column($r['items'], 'rarity'), true), $cover['reels']);
-    $p->post('coverPick', ['bandId' => $band['id'], 'reel' => 0, 'index' => $gold[0]]);
-    checkApiError(fn () => $p->post('coverPick', ['bandId' => $band['id'], 'reel' => 0, 'index' => 1]), 'schon angehalten');
-    $again = $p->post('coverStart', ['bandId' => $band['id']])['cover'];
-    checkEquals($cover['reels'], $again['reels'], 'Neu laden mischt nicht neu');
-    checkEquals([$gold[0]], $again['picks']);
-    $p->post('coverPick', ['bandId' => $band['id'], 'reel' => 1, 'index' => $gold[1]]);
-    $p->post('coverPick', ['bandId' => $band['id'], 'reel' => 2, 'index' => $gold[2]]);
-    $done = $p->post('coverPick', ['bandId' => $band['id'], 'reel' => 3, 'index' => $gold[3]]);
-    $c = $done['completed'];
-    checkEquals(1.0, $c['cover']['quality']);
-    checkEquals(Balance::COVER['salesMax'], $c['coverBonus']);
-    checkEquals(null, bandById($done['state'], $band['id'])['record']['open']);
-    checkEquals($c['cover'], bandById($done['state'], $band['id'])['discography'][0]['cover']);
+    check($by['none0']['refusal'] === null && $by['none1']['refusal'] !== null, 'ohne Produzent nur Garage');
+    check($by['mo1']['refusal'] === null && $by['mo2']['refusal'] !== null, 'Mo bringt ins Tonstudio');
+    check($by['diamond3']['refusal'] === null);
+    check($by['legend0']['refusal'] !== null, 'Die Legende nimmt nur Bands, die schon gut klingen');
+    check($by['diamond0']['quality'] > $by['none0']['quality'], 'Produzent hilft auch in der Garage');
+    check($by['diamond3']['royalties'][1] > $by['none0']['royalties'][1], 'Besser produziert chartet höher');
+    check($by['diamond3']['cost'] > $by['none0']['cost']);
+    // Eine berühmte Band ärgert sich über die Garage
+    $db->exec('UPDATE musicians SET fame = 400, wellbeing = 70 WHERE band_id = ?', [$band['id']]);
+    $opts = $p->post('recordOptions', ['bandId' => $band['id'], 'songs' => 3]);
+    $garage = array_values(array_filter($opts['options'], fn ($o) => $o['producer'] === 'none' && $o['studio'] === 0))[0];
+    check($garage['claim'] < 0, 'unter der Würde');
+    $res = makeRecord($db, $p, $band['id'], 'Billig');
+    $w = (float) $db->value('SELECT AVG(wellbeing) FROM musicians WHERE band_id = ?', [$band['id']]);
+    check($w < 70, 'Garage ärgert eine berühmte Band: ' . $w);
+    $c = $res['completed'];
+    check($c !== null && $c['studio'] === 'garage' && $c['producer'] === 'none');
+    checkEquals($c['cover'], bandById($res['state'], $band['id'])['discography'][0]['cover']);
+    checkEquals(null, bandById($res['state'], $band['id'])['record']['open']);
+    checkApiError(fn () => $p->post('recordStart', ['bandId' => $band['id'], 'title' => 'X', 'songs' => 3, 'studio' => 0, 'producer' => 'none', 'cover' => ['motif' => 'quatsch']]), 'Cover');
 });
 
 test('Hall of Fame: Bands aller Labels nach Ruhm', function () {

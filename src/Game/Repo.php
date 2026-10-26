@@ -86,7 +86,8 @@ final class Repo
      * @param array<int, float> $gains Musiker-ID => Gewinn
      * @return float der ganze Gewinn
      */
-    public function addBandFame(int $bandId, array $gains): float
+    /** @param bool $paced false: ohne Stufen-Bremse (z. B. Platte mit der Legende) */
+    public function addBandFame(int $bandId, array $gains, bool $paced = true): float
     {
         $total = array_sum($gains);
         if ($total <= 0) {
@@ -95,20 +96,20 @@ final class Repo
         $own = $total * Balance::BAND_FAME_SHARE;
         $this->db->exec('UPDATE bands SET fame_own = fame_own + ? WHERE id = ? AND label_id = ?', [$own, $bandId, $this->labelId]);
         foreach ($gains as $musicianId => $gain) {
-            $own += $this->addMusicianFame((int) $musicianId, $gain * (1 - Balance::BAND_FAME_SHARE));
+            $own += $this->addMusicianFame((int) $musicianId, $gain * (1 - Balance::BAND_FAME_SHARE), $paced);
         }
         return $own;
     }
 
     /** Bekanntheit für einen Musiker – über Stufe 1 hinaus nur noch zum Teil (Balance::LEVEL_PACE). Liefert den echten Gewinn. */
-    public function addMusicianFame(int $musicianId, float $gain): float
+    public function addMusicianFame(int $musicianId, float $gain, bool $paced = true): float
     {
         $fame = $this->db->value('SELECT fame FROM musicians WHERE id = ? AND label_id = ?', [$musicianId, $this->labelId]);
         if ($fame === null || $gain <= 0) {
             return 0.0;
         }
         $before = Levels::forFame((float) $fame);
-        $gain *= Levels::pace($before);
+        $gain *= $paced ? Levels::pace($before) : 1.0;
         $this->db->exec('UPDATE musicians SET fame = fame + ? WHERE id = ? AND label_id = ?', [$gain, $musicianId, $this->labelId]);
         $after = Levels::forFame((float) $fame + $gain);
         if ($after > $before) {
@@ -448,6 +449,9 @@ final class Repo
             'plan' => json_decode((string) ($r['plan'] ?? ''), true) ?: null,
             'cover' => json_decode((string) ($r['cover'] ?? ''), true) ?: null,
             'status' => $r['status'],
+            'studio' => $r['studio'] ?? null,
+            'producer' => $r['producer'] ?? null,
+            'quality' => isset($r['quality']) ? (float) $r['quality'] : null,
         ];
     }
 }

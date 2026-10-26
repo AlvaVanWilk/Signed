@@ -490,6 +490,13 @@ final class Schema
             [
                 'DELETE FROM store_holds',
             ],
+            // 37: Aufnehmen ohne Minispiele – Studio, Produzent und Qualität je Platte; alte, offene Produktionen werden erstattet
+            [
+                'ALTER TABLE records ADD COLUMN studio VARCHAR(12) NULL',
+                'ALTER TABLE records ADD COLUMN producer VARCHAR(12) NULL',
+                'ALTER TABLE records ADD COLUMN quality REAL NULL',
+                [Migrations::class, 'dropOpenRecords'],
+            ],
         ];
     }
 }

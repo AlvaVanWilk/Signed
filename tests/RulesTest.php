@@ -362,30 +362,19 @@ test('Musik: Die Stimme zählt nur beim Gesang – andere Instrumente finden ihr
     checkEquals('gesang-weiblich', Signed\Game\Music::resolve($stem('vocals', false))['file']);
 });
 
-test('Platte: gemischte Minispiele, so viele wie Lieder, nie zweimal dasselbe hintereinander, zum Schluss Master-Mix und Cover', function () {
-    $band = [
-        musician(['id' => 1, 'instr1' => 'guitar']),
-        musician(['id' => 2, 'instr1' => 'drums']),
-        musician(['id' => 3, 'instr1' => 'vocals']),
-        musician(['id' => 4, 'instr1' => 'guitar']),
-    ];
-    foreach ([[$band, 12], [$band, 3], [array_slice($band, 0, 2), 12], [[$band[0], $band[3]], 7]] as [$members, $songs]) {
-        for ($run = 0; $run < 20; $run++) {
-            $plan = Signed\Game\Studio::plan($members, $songs);
-            checkEquals($songs, count($plan));
-            checkEquals([['type' => 'master'], ['type' => 'cover']], array_slice($plan, -2));
-            for ($i = 1; $i < count($plan); $i++) {
-                check($plan[$i] != $plan[$i - 1], 'Zweimal dasselbe Minispiel hintereinander');
-            }
-            foreach (array_slice($plan, 0, -2) as $step) {
-                check($step['type'] === 'take' || ($step['type'] === 'mix' && count($step['musicians']) >= 2 && count($step['musicians']) <= 3));
-            }
-        }
-    }
-    // Lang genug, dass alles aus dem Topf drankommt: jedes Instrument wird eingespielt (Gitarre nur einmal im Topf).
-    $plan = Signed\Game\Studio::plan($band, 12);
-    $takes = array_unique(array_column(array_filter($plan, static fn ($s) => $s['type'] === 'take'), 'musician'));
-    checkEquals(3, count($takes));
+test('Studio: Produzenten schalten Studios frei, die Legende geht überall hin, aber nur mit gutem Sound', function () {
+    checkEquals(null, Signed\Game\Studio::refusal(0, 'none', 10));
+    check(Signed\Game\Studio::refusal(1, 'none', 10) !== null);
+    checkEquals(null, Signed\Game\Studio::refusal(1, 'mo', 10));
+    check(Signed\Game\Studio::refusal(2, 'mo', 10) !== null);
+    checkEquals(null, Signed\Game\Studio::refusal(2, 'roxy', 10));
+    checkEquals(null, Signed\Game\Studio::refusal(3, 'diamond', 10));
+    check(Signed\Game\Studio::refusal(0, 'legend', 10) !== null);
+    checkEquals(null, Signed\Game\Studio::refusal(0, 'legend', 99));
+    $members = [musician(['id' => 1, 'personality' => []])];
+    $q = fn ($s, $p) => Signed\Game\Studio::quality($members, [], $s, $p);
+    check($q(0, 'none') < $q(0, 'mo') && $q(0, 'mo') < $q(1, 'mo') && $q(3, 'diamond') <= 1.0);
+    checkEquals(Balance::RECORD_QUALITY_BASE, $q(0, 'none'));
 });
 
 test('Anzeige rundet ab: Wer knapp unter einer Stufe ist, sieht nicht schon die Schwelle', function () {

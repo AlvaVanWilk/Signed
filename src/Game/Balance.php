@@ -473,7 +473,40 @@ final class Balance
     public const PROMO_FAME_FALLOFF = 40;
 
     // ---------- Platte ----------
-    /** Studiozeit: Grundpreis plus pro Lied. */
+    /**
+     * Aufnehmen (ohne Minispiele): Die Band ist songs × RECORD_SECONDS_PER_SONG im Studio. Das Label wählt Studio und Produzent.
+     * Qualität = RECORD_QUALITY_BASE + Studio + Produzent (+ Charakter und goldene Instrumente), höchstens 1; ab RECORD_PERFECT_FROM gilt sie als perfekt.
+     * Studio: `quality`, Preis je Lied. Produzent: `quality`, Honorar je Platte, `unlocks` = bestes Studio, in das er die Band bringt
+     * (ohne Produzent nur die Garage). Jeder Produzent hilft auch in einem schlechteren Studio.
+     * Die Legende geht in jedes Studio, nimmt aber nur Bands ab `minSound`; ihr Ruhm aus der Platte ist nicht durch LEVEL_PACE gebremst
+     * (`unpaced`) – ein Weg zu Stufe 2 und 3. `mood`: Wohlbefinden für alle, wenn sie mit ihr aufnehmen.
+     */
+    public const RECORD_SECONDS_PER_SONG = 300;
+    public const RECORD_QUALITY_BASE = 0.35;
+    public const RECORD_PERFECT_FROM = 0.95;
+    public const STUDIOS = [
+        ['key' => 'garage', 'name' => 'Garage', 'quality' => 0.0, 'perSong' => 20],
+        ['key' => 'standard', 'name' => 'Tonstudio', 'quality' => 0.12, 'perSong' => 60],
+        ['key' => 'profi', 'name' => 'Profi-Studio', 'quality' => 0.24, 'perSong' => 150],
+        ['key' => 'legende', 'name' => 'Legendäres Studio', 'quality' => 0.36, 'perSong' => 350],
+    ];
+    public const PRODUCERS = [
+        'none' => ['name' => 'Ohne Produzent', 'quality' => 0.0, 'fee' => 0, 'unlocks' => 0, 'level' => 0],
+        'mo' => ['name' => 'Mo Beats', 'quality' => 0.08, 'fee' => 150, 'unlocks' => 1, 'level' => 1],
+        'roxy' => ['name' => 'Roxy Reverb', 'quality' => 0.16, 'fee' => 500, 'unlocks' => 2, 'level' => 2],
+        'diamond' => ['name' => 'Diamond Dee', 'quality' => 0.24, 'fee' => 1500, 'unlocks' => 3, 'level' => 3],
+        'legend' => ['name' => 'Ruben Stille', 'quality' => 0.3, 'fee' => 2500, 'unlocks' => 3, 'level' => 3, 'minSound' => 45, 'unpaced' => true, 'mood' => 6.0],
+    ];
+    /**
+     * Anspruch: Ruhm-Stufe der Band gegen Produktionsniveau (Mittel aus Studio und Produzent, gerundet). Je Stufe darunter
+     * `down` weniger Wohlbefinden (Egozentrische und Perfektionistische × `picky`), je Stufe darüber `up` mehr.
+     */
+    public const RECORD_CLAIM = ['down' => 6.0, 'up' => 3.0, 'picky' => ['diva' => 1.5, 'perfektionist' => 1.5]];
+    /** Tantiemen-Schätzung: so viele „volle Stunden“ zahlt eine Platte, die durchgehend chartet (Summe des Verlaufs über CHART_MAX_AGE); untere Schätzung `low`. */
+    public const RECORD_ESTIMATE = ['low' => 0.4];
+    /** Drei neue Cover-Entwürfe kosten ein kleines Honorar fürs Grafikbüro. */
+    public const COVER_REDRAW = 25;
+    /** Früher: Studiozeit als Grundpreis plus pro Lied (nur noch für die Erstattung alter, offener Produktionen). */
     public const RECORD_COST = 150;
     public const RECORD_COST_PER_SONG = 80;
     public const RECORD_MIN_SONGS = 3;

@@ -49,72 +49,6 @@ final class Minigames
                 $row = ['musician_id' => $m['id'], 'band_id' => null, 'record_id' => null, 'slot' => $slot];
                 $title = 'Solo-Probe';
                 $subtitle = sprintf('%s – %s', Bands::fullName($m), Catalog::INSTRUMENTS[$instrument]['name']);
-            } elseif ($kind === 'record') {
-                $band = $this->repo->band((int) ($in['bandId'] ?? 0));
-                $record = $this->repo->openRecord($band['id']);
-                if ($record === null) {
-                    throw new ApiError('Diese Band hat keine Platte in Produktion.');
-                }
-                if (Studio::coverNext($record)) {
-                    throw new ApiError('Als Nächstes kommt das Cover.');
-                }
-                $members = $this->repo->members($band['id']);
-                $blocker = Activities::blocker($band, $members, $now);
-                if ($blocker !== null) {
-                    throw new ApiError($blocker);
-                }
-                $sound = BandCalc::bandSound($band, $members, $this->repo->gearByMusician());
-                $identity = BandCalc::identity($members, $band['genre'], $band['genre2']);
-                $genre = $identity['music'];
-                $bandGenres = array_values(array_filter([$identity['primary'], $identity['second']]));
-                $bpm = Catalog::GENRES[$genre]['bpm'];
-                $gearMap = $this->repo->gearByMusician();
-                $plan = (new Studio($this->repo))->planFor($record, $members);
-                $step = $plan[$record['songs_done']] ?? ['type' => 'master'];
-                $byId = array_column($members, null, 'id');
-                $studiofuchs = 0;
-                $stems = Music::bandStems($members, $gearMap, $bandGenres);
-                if ($step['type'] === 'take' && isset($byId[$step['musician']])) {
-                    // Einspielen: ein Musiker nimmt seine Spur auf – dasselbe Spiel wie bei der Solo-Probe.
-                    $m = $byId[$step['musician']];
-                    $chart = $this->soloChart($m, $m['band_slot'], $stems[$m['id']], $bpm);
-                    $what = sprintf('%s – %s', Catalog::INSTRUMENTS[$chart['instrument']]['name'], $m['first_name']);
-                } elseif ($step['type'] === 'master') {
-                    // Master-Mix: die richtige EQ-Einstellung für die ganze Platte finden.
-                    $chart = [
-                        'mode' => 'master',
-                        'stems' => array_values($stems),
-                        'targets' => Chart::masterTargets(),
-                        'zone' => Chart::mixerZone($sound) + $studiofuchs,
-                        'segments' => Chart::MASTER_SEGMENTS,
-                        'count' => count(Chart::MASTER_BANDS) * Chart::MASTER_SEGMENTS,
-                    ];
-                    $what = 'Master-Mix';
-                } else {
-                    // Am Mischpult: Die Spuren schwanken je nach Können, der Sound bestimmt, wie viel verziehen wird.
-                    $players = array_values(array_filter(array_map(static fn ($id) => $byId[$id] ?? null, $step['musicians'] ?? [])));
-                    if (count($players) < 2) {
-                        $players = $members;
-                    }
-                    $tracks = Chart::mixerTracks(array_map(static fn ($m) => [
-                        'name' => $m['first_name'], 'instrument' => BandCalc::instrument($m), 'skill' => BandCalc::skill($m),
-                        'stem' => $stems[$m['id']],
-                    ], $players));
-                    $chart = [
-                        'mode' => 'mixer',
-                        'tracks' => array_map(static fn ($t) => ['name' => $t['name'], 'instruments' => $t['instruments'], 'stems' => $t['stems']], $tracks),
-                        'drifts' => Chart::mixerDrifts(array_column($tracks, 'skill'), Balance::SONG_SECONDS),
-                        'zone' => Chart::mixerZone($sound) + $studiofuchs,
-                        'segments' => Chart::MIXER_SEGMENTS,
-                        'count' => count($tracks) * Chart::MIXER_SEGMENTS,
-                    ];
-                    $what = 'Mischpult: ' . implode(', ', array_column($players, 'first_name'));
-                }
-
-                $db->update('bands', ['busy_until' => $expires], ['id' => $band['id']]);
-                $row = ['musician_id' => null, 'band_id' => $band['id'], 'record_id' => $record['id'], 'slot' => null];
-                $title = sprintf('Studio: „%s“', $record['title']);
-                $subtitle = sprintf('Aufnahme %d/%d · %s', $record['songs_done'] + 1, $record['songs_total'], $what);
             } else {
                 throw new ApiError('Unbekanntes Minispiel.');
             }
@@ -163,20 +97,7 @@ final class Minigames
             if ($session['kind'] === 'practice') {
                 return $base + $this->practiceResult($session, $perfect, $good, $miss);
             }
-            $record = $db->one("SELECT * FROM records WHERE id = ? AND status = 'open'", [(int) $session['record_id']]);
-            if ($record === null) {
-                throw new ApiError('Diese Produktion gibt es nicht mehr.');
-            }
-            $band = $this->repo->band((int) $session['band_id']);
-            return $base + (new Studio($this->repo))->songDone(
-                Repo::hydrateRecord($record),
-                $band,
-                $this->repo->members($band['id']),
-                $this->repo->gearByMusician(),
-                $perfect,
-                $good,
-                $miss
-            );
+            throw new ApiError('Unbekanntes Minispiel.');
         });
         if (!empty($outcome['expired'])) {
             throw new ApiError('Das Minispiel ist abgelaufen. Starte es noch einmal.');

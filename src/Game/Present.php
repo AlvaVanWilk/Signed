@@ -84,9 +84,9 @@ final class Present
             'title' => $r['title'],
             'songsTotal' => $r['songs_total'],
             'songsDone' => $r['songs_done'],
-            'songResults' => $r['song_results'],
-            'next' => $r['plan'][$r['songs_done']] ?? null,
-            'coverNext' => Studio::coverNext($r),
+            'studio' => $r['studio'] ?? null,
+            'producer' => $r['producer'] ?? null,
+            'cover' => $r['cover']['spec'] ?? null,
         ];
     }
 
@@ -105,7 +105,7 @@ final class Present
             'timeline' => $data['timeline'] ?? [],
             // Ort des Auftritts (Kneipe … Arena): bestimmt, wie die Bühne aussieht.
             'venue' => $data['reward']['venue'] ?? null,
-        ] + (isset($data['reward']['rehearsal']) ? ['rehearsal' => [
+        ] + (isset($data['recordId']) ? ['record' => ['studio' => (int) $data['studio'], 'producer' => (string) $data['producer']]] : []) + (isset($data['reward']['rehearsal']) ? ['rehearsal' => [
             'done' => (int) $data['reward']['rehearsal']['done'],
             'credited' => (object) $data['reward']['rehearsal']['credited'],
             'limit' => $data['reward']['rehearsal']['limit'],
@@ -169,8 +169,10 @@ final class Present
                 'maxMembers' => Balance::MAX_MEMBERS,
                 'maxPerInstrument' => Balance::MAX_PER_INSTRUMENT,
                 'managerMaxBands' => Balance::MANAGER_MAX_BANDS,
-                'recordCost' => Balance::RECORD_COST,
-                'recordCostPerSong' => Balance::RECORD_COST_PER_SONG,
+                'studios' => Balance::STUDIOS,
+                'producers' => array_map(static fn ($p) => ['name' => $p['name'], 'fee' => $p['fee'], 'unlocks' => $p['unlocks'], 'minSound' => $p['minSound'] ?? 0], Balance::PRODUCERS),
+                'recordSecondsPerSong' => Balance::RECORD_SECONDS_PER_SONG,
+                'coverRedraw' => Balance::COVER_REDRAW,
                 'noGearFactor' => Balance::NO_GEAR_FACTOR,
                 'negotiatorBonus' => Balance::NEGOTIATOR_BONUS,
                 'gigFreshMin' => Balance::GIG_FRESH['min'],

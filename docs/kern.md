@@ -26,7 +26,7 @@ Der Kernkreislauf: **Musiker und Instrumente finden → Bands zusammenstellen �
 | Instrumente | 44 Modelle (11 Arten × 4 Seltenheiten); jedes Exemplar weicht pro Wert um bis zu ±12 vom Modell ab; frei tauschbar |
 | Manager | Stufe 1–5, 1–2 Fähigkeiten, bis zu 3 Bands mit geteilter Leistung |
 | Bands | Bis zu 8 Bands (freigeschaltet über Label-Ruhm), Genre ergibt sich aus der Besetzung, Sound, Zusammenspiel, Chemie, Ruhm |
-| Aktivitäten | Band: Bandprobe, Band-Promo, Straßenmusik, Open Stage, Gig (erst mit Platte), Platte (gemischte Minispiele, eins pro Lied). Einzeln: Solo-Probe (Rhythmus oder Tonhöhe), Promo-Mission. Ohne Band: Jam-Café (Mitmusiker für die erste Band), Straßenmusik |
+| Aktivitäten | Band: Bandprobe, Band-Promo, Straßenmusik, Open Stage, Gig (erst mit Platte), Platte (Studio und Produzent wählen, läuft über Zeit). Einzeln: Solo-Probe (Rhythmus oder Tonhöhe), Promo-Mission. Ohne Band: Jam-Café (Mitmusiker für die erste Band), Straßenmusik |
 | Live | Live-Ticker mit Publikumsleiste für alle Auftritte |
 | Charts | Gemeinsame Album-Charts aller Spieler mit täglichen Tantiemen, dazu eine Label-Gesamtliste |
 | Einführung und Hilfe | Kurze Tour beim ersten Mal (5 Schritte, ein Satz je Schritt, auch für Kinder), danach die Hilfeseite (?) für alle, die tiefer einsteigen wollen |
@@ -255,28 +255,41 @@ Nur die Gewinne sind klein; wie oft man etwas hintereinander spielt, ist nicht b
 
 ### Platte
 
-- 3 (EP) bis 12 Lieder (LP), Studiozeit 150 ₲ + 80 ₲ pro Lied. So viele Minispiele (Aufnahmen) wie Lieder, in Etappen spielbar.
-  Angezeigt als „Aufnahme y/x“ – eine Aufnahme ist nicht ein bestimmtes Lied.
-- Reihenfolge wird beim Start festgelegt (`Studio::plan`). Im Topf: pro Instrument der Band einmal **Einspielen**
-  (das Spiel der Solo-Probe für einen Musiker mit diesem Instrument) und **Mischpult**-Runden mit 2–3 zufälligen
-  Mitgliedern (eine bei 2 Musikern, sonst mindestens 2, etwa halb so viele wie Instrumente). Gezogen wird gemischt;
-  ist der Topf leer, wird er neu gefüllt. Nie zweimal dasselbe direkt hintereinander. Die vorletzte Aufnahme ist immer der
-  **Master-Mix**, die letzte der **Cover-Automat** (bei 3 Liedern also: eine Aufnahme, Master-Mix, Cover).
-- Jede Aufnahme: Können 0,12 × Trefferquote für alle Mitglieder (Lernkurve), Zusammenspiel – egal, welches Minispiel.
-- **Cover-Automat** (`Cover`, `Balance::COVER`): die letzte Aufnahme; danach ist die Platte fertig. Er bringt kein Können und
-  kein Zusammenspiel, die Qualität der Platte kommt nur aus den Musik-Aufnahmen.
-  Vier Bänder (Motiv, Farben, Stil, Anordnung) öffnen sich nacheinander, nur eins läuft (6 / 7,5 / 9 / 10,5 Felder pro Sekunde).
-  Tippen hält an – das Feld im Rahmen gilt, kein Nachrutschen. Je Band 14 Felder: 8 gewöhnlich, 3 grün, 2 blau, 1 gold
-  (0/1/2/4 Punkte). Güte = Punkte / 16; sie bringt beim Erstverkauf bis +10 % Geld, Chartpunkte bleiben bei Musik und Sound.
-  Lauter gewöhnliche Felder geben ein blasses, verwaschenes Cover, Gold eine Folie. Jedes angehaltene Band speichert der Server
-  sofort – Neuladen bringt keinen zweiten Versuch. Das Bild entsteht im Browser aus den gespeicherten Zutaten (`cover.js`).
+- 3 (EP) bis 12 Lieder (LP) **aus dem Song-Vorrat** der Band (geschriebene Songs werden verbraucht). Keine Minispiele:
+  Die Band ist 5 Minuten je Lied im Studio (`Balance::RECORD_SECONDS_PER_SONG`, eine Aktivität „record“), dann erscheint die Platte.
+- Das Label wählt **Studio** und **Produzent** (`Balance::STUDIOS`, `Balance::PRODUCERS`):
+
+  | Studio | Qualität | Preis je Lied |
+  |---|---|---|
+  | Garage | +0 | 20 ₲ |
+  | Tonstudio | +0,12 | 60 ₲ |
+  | Profi-Studio | +0,24 | 150 ₲ |
+  | Legendäres Studio | +0,36 | 350 ₲ |
+
+  | Produzent | Qualität | Honorar | bringt die Band bis ins |
+  |---|---|---|---|
+  | ohne | +0 | – | Garage |
+  | Mo Beats | +0,08 | 150 ₲ | Tonstudio |
+  | Roxy Reverb | +0,16 | 500 ₲ | Profi-Studio |
+  | Diamond Dee | +0,24 | 1.500 ₲ | Legendäre Studio |
+  | Ruben Stille (Legende) | +0,30 | 2.500 ₲ | jedes Studio |
+
+  Qualität = 0,35 + Studio + Produzent + 0,04 je Perfektionist + goldene Studio-Instrumente, höchstens 1; ab 0,95 **perfekt** (× 1,5).
+  Jeder Produzent hilft auch in einem schlechteren Studio. Ruben Stille nimmt nur Bands ab Sound 45, alle sind mit ihm
+  entspannt (+6 Wohlbefinden), und der Ruhm aus seiner Platte ist **nicht durch LEVEL_PACE gebremst** – ein Weg zu Stufe 2 und 3.
+- **Anspruch:** Ruhm-Stufe der Band gegen Produktionsniveau (Mittel aus Studio-Stufe und Produzenten-Stufe, gerundet).
+  Je Stufe darunter −6 Wohlbefinden (Egozentrische und Perfektionistische × 1,5), je Stufe darüber +3.
+- Der Dialog zeigt für jede Wahl Kosten, Qualität und den erwarteten Ertrag: Erstverkauf plus Tantiemen, solange sie chartet
+  (Summe des Chart-Verlaufs über 7 Tage; untere Schätzung 40 %). Teure Produzenten lohnen sich erst für starke, bekannte Bands.
+- **Cover:** Das Grafikbüro legt drei Entwürfe vor (Motiv, Farben, Stil, Anordnung), neue kosten 25 ₲. Das Cover wirkt nicht aufs Spiel.
+- Fertig: Können 0,12 × Lieder × Qualität für alle Mitglieder, Zusammenspiel und Beziehungen wie nach einer Anordnung.
 - Fertig: Erstverkauf = Lieder × 60 ₲ × (0,3 + Qualität²) × LP-Bonus × Perfekt-Bonus × Verkäufe,
   Ruhm = Lieder × 0,6 × Soundfaktor × (0,3 + Qualität^1,5) × LP-Bonus × Perfekt-Bonus.
-  - LP-Bonus: +4 % pro Lied über 3. Perfekt (kein einziger Fehler): × 1,5. Verkäufe: 1 + Bandruhm/400, höchstens × 5.
+  - LP-Bonus: +4 % pro Lied über 3. Perfekt (Qualität ab 0,95): × 1,5. Verkäufe: 1 + Bandruhm/400, höchstens × 5.
 - **Album-Zyklus** (`Balance::RECORD_CYCLE`, `Studio::cycle`): Vor der nächsten Platte spielt die Band die letzte
   **3-mal komplett live** (3 × Lieder der Platte, gezählt werden Lieder auf Gigs) und macht **3 Band-Promos** (je 10 Minuten,
   laufen auch offline; abgebrochene zählen nicht). Die Promos kosten jede Platte gleich viel Zeit, damit kurze EPs nicht viel
-  schneller sind. Die Studio-Kachel zeigt beides als Checkliste, Gig- und Promo-Kachel den Stand.
+  schneller sind. Das Label gibt das nächste Album erst danach frei; der Knopf „Aufnehmen“ zeigt, was noch fehlt.
   (Früher: 5 Gigs; davor 2 Lieder live pro Plattenlied – kurze EPs fluteten die Charts.)
 
 ### Album-Charts

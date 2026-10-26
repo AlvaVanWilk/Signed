@@ -2,7 +2,7 @@ import { api } from '../api.js';
 import { bandGenreTags, bandIdentity, emptySlot, genreRuleText, face, fullName, gearCard, gearModel, genreIcon, genreTag, instrumentEmoji, instrumentIcon, instrumentName, ownGear, managerCard, musicianCard, sortedGenres } from '../cards.js';
 import { app, bandById, cat, defineActions, isBusy, managerById, musicianById, mutate, navigate, rerender, runningFor } from '../core.js';
 import { openLive } from '../live.js';
-import { coverHtml, startPractice, startRecordSong } from '../play.js';
+import { coverHtml, startPractice } from '../play.js';
 import { assignGear, soundChange } from '../gear.js';
 import { trendBadge } from './charts.js';
 import { playedInstrument, stage } from '../figure.js';
@@ -376,8 +376,8 @@ function chartPush(b) {
   return record ? ` · Schub in den Charts für „${esc(record.title)}“` : ' · Schub in den Charts, sobald die Band eine Platte hat';
 }
 
-/** Studiozeit: Grundpreis plus pro Lied. */
-export const recordCost = (songs) => cat().rules.recordCost + cat().rules.recordCostPerSong * songs;
+/** Die günstigste Platte: drei Lieder in der Garage, ohne Produzenten. */
+export const recordCost = (songs) => cat().rules.studios[0].perSong * songs;
 
 /** Reicht das Geld nicht für die kleinste Platte, bringt Straßenmusik Geld in den Hut (Notgroschen). */
 export const buskingHat = () => (app.state.label.money < recordCost(cat().rules.recordMinSongs)
@@ -477,71 +477,12 @@ function gigs(b, members) {
 
 // ---------- Studio ----------
 
-/** Was als Nächstes im Studio dran ist: ein Instrument einspielen, am Mischpult oder der Master-Mix. */
-function nextStep(step, members) {
-  const name = (id) => members.find((m) => m.id === id)?.firstName;
-  if (step?.type === 'master') return 'Master-Mix';
-  if (step?.type === 'cover') return 'Cover-Automat';
-  if (step?.type === 'take' && name(step.musician)) {
-    const m = members.find((x) => x.id === step.musician);
-    const slot = m.bandSlot === 2 && m.instruments[1] ? 1 : 0;
-    return `${cat().instruments[m.instruments[slot].type].name} – ${m.firstName}`;
-  }
-  const names = (step?.musicians ?? []).map(name).filter(Boolean);
-  return names.length >= 2 ? `Mischpult: ${names.join(', ')}` : 'Mischpult';
-}
-
+/** Studio-Seite: die Diskografie und der Weg ins Studio (Aufnehmen läuft über den Dialog). */
 function studio(b, members) {
-  const rules = cat().rules;
-  const open = b.record.open;
-  const blocked = !!blocker(b, members);
-  let record;
-  if (open) {
-    record = actionTile({
-      icon: '💿', title: `„${open.title}“`, meta: `Aufnahme ${Math.min(open.songsDone + 1, open.songsTotal)}/${open.songsTotal}: ${esc(nextStep(open.coverNext ? { type: 'cover' } : open.next, members))}`,
-      body: `<span class="song-dots">${Array.from({ length: open.songsTotal }, (_, i) => {
-        const r = open.songResults[i];
-        return `<span class="song-dot ${r ? (r.miss === 0 ? 'perfect' : r.accuracy >= 0.75 ? 'good' : 'weak') : ''}"></span>`;
-      }).join('')}</span>`,
-      button: `<button class="btn primary" data-act="recordSong" data-id="${b.id}" ${blocked ? 'disabled' : ''}>Aufnehmen</button>`,
-    });
-  } else if (b.record.cycle && !b.record.cycle.done) {
-    // Album-Zyklus: erst die letzte Platte live spielen und bewerben.
-    const c = b.record.cycle;
-    const step = (label, { have, need }) => `<span class="cycle-step ${have >= need ? 'ok' : ''}">
-      <span>${have >= need ? '✓' : '○'} ${label}</span><b>${fmt0(have)}/${fmt0(need)}</b>${bar(have, need, 'thin')}</span>`;
-    record = actionTile({
-      icon: '💿', title: 'Neue Platte', meta: 'Erst die letzte Platte unter die Leute bringen:',
-      body: `<span class="cycle">${step(`Album ${c.plays}× live gespielt (Lieder auf Gigs)`, c.songs)}${step('Band-Promo', c.promos)}</span>`,
-    });
-  } else if (b.record.blocker) {
-    record = actionTile({ icon: '💿', title: 'Neue Platte', meta: esc(b.record.blocker) });
-  } else {
-    const form = app.ui.form;
-    const titleKey = `recordTitle${b.id}`;
-    const songsKey = `recordSongs${b.id}`;
-    const songs = Number(form[songsKey] || rules.recordMinSongs);
-    record = `
-      <form class="action-tile record-form" data-form="recordStart" data-id="${b.id}">
-        <div class="action-icon">💿</div>
-        <div class="action-main">
-          <b>Neue Platte</b>
-          <span class="input-dice"><input name="title" maxlength="60" required data-ui="${titleKey}" value="${esc(form[titleKey] || '')}" placeholder="Titel"><button type="button" class="btn small" data-act="diceRecord" data-key="${titleKey}" title="Zufälliger Titel">🎲</button></span>
-          <label class="small">Lieder: <b data-output="${songsKey}">${songs}</b>
-            <input type="range" name="songs" min="${rules.recordMinSongs}" max="${rules.recordMaxSongs}" value="${songs}" data-ui="${songsKey}">
-          </label>
-        </div>
-        <button class="btn primary" ${app.state.label.money < recordCost(rules.recordMinSongs) ? 'disabled' : ''}><span data-output="${songsKey}" data-record-cost>${money(recordCost(songs))}</span></button>
-      </form>`;
-  }
   return `
     ${head('Studio', b)}
     ${blockerNotice(b, members)}
-    <div class="action-grid">
-      ${record}
-      ${actionTile({ icon: '🎛️', title: 'Remaster', meta: 'Ältere Platten neu herausbringen', locked: true })}
-      ${actionTile({ icon: '🎧', title: 'Produzent', meta: 'Mit einem Produzenten aufnehmen', locked: true })}
-    </div>
+    <p><button class="btn primary" data-act="recordAsk" data-id="${b.id}">Aufnehmen …</button></p>
     ${b.discography.length ? `
       <h2>Diskografie</h2>
       <div class="tile-grid">${b.discography.map((r) => `
@@ -551,7 +492,7 @@ function studio(b, members) {
           <span class="muted small">${r.format} · ${r.songs} Lieder · ${percent(r.quality)}${r.perfect ? ' · perfekt' : ''}</span>
           ${r.charting ? `<span class="chip special">Charts · Platz ${r.rank}</span> ${trendBadge(r)}` : r.best ? `<span class="muted small">Bester Platz: ${r.best}</span>` : ''}
         </div>`).join('')}
-      </div>` : ''}`;
+      </div>` : '<p class="muted">Noch keine Platte.</p>'}`;
 }
 
 // ---------- Chronik & Auszeichnungen ----------
@@ -912,17 +853,6 @@ defineActions({
   },
   async bandPromo({ id }) {
     if (await mutate('bandPromo', { bandId: Number(id) })) toast('Die Band ist auf Promo-Tour.', 'ok');
-  },
-  async recordStart(values, form) {
-    const bandId = Number(form.dataset.id);
-    const res = await mutate('recordStart', { bandId, title: values.title, songs: Number(values.songs) });
-    if (res) {
-      delete app.ui.form[`recordTitle${bandId}`];
-      rerender();
-    }
-  },
-  recordSong({ id }) {
-    startRecordSong(id);
   },
   practice({ id, slot }) {
     startPractice(id, slot);

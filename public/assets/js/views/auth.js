@@ -1,5 +1,5 @@
 import { api } from '../api.js';
-import { actions, app, cat, defineActions, refresh } from '../core.js';
+import { app, defineActions, refresh } from '../core.js';
 import { esc, money, openModal, toast } from '../ui.js';
 import { claimTour, openTour } from './help.js';
 
@@ -42,12 +42,12 @@ function openWelcome() {
     html: `
       <div class="eyebrow">Willkommen bei Signed</div>
       <h2>${esc(app.label.name)} ist gegründet!</h2>
-      <p>Startkapital: <b>${money(app.state.label.money)}</b> und ein <b>Scout-Gutschein</b>. Der Talent-Scout stellt dir ${cat().rules.scoutCards} Musiker vor – einer unterschreibt.</p>
-      <div class="dialog-actions"><button class="btn primary" data-start>Talent-Scout losschicken</button></div>`,
+      <p>Startkapital: <b>${money(app.state.label.money)}</b>. Im Posteingang liegen schon die ersten Kassetten von Musikern, die zu dir wollen, und die Bewerbung eines Scouts, der für dich Talente sucht.</p>
+      <div class="dialog-actions"><button class="btn primary" data-start>Zum Posteingang</button></div>`,
   });
   modal.body.querySelector('[data-start]').addEventListener('click', () => {
     modal.close();
-    actions.scoutOpen({ voucher: '1' });
+    location.hash = '#/einsendungen';
   });
 }
 

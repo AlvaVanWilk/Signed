@@ -96,9 +96,10 @@ final class Inbox
         $c = Balance::JOBS;
         $at = (int) $db->value('SELECT job_at FROM labels WHERE id = ?', [$this->repo->labelId]);
         // Solange es keine Assistenz gibt, liegt immer eine einfache Bewerbung dafür da (eine Assistenz hilft früh).
-        if ((int) $db->value("SELECT COUNT(*) FROM staff WHERE label_id = ? AND role = 'assistant'", [$this->repo->labelId]) === 0
-            && !array_filter($db->all("SELECT data FROM mail WHERE label_id = ? AND kind = 'job'", [$this->repo->labelId]), static fn ($r) => (json_decode($r['data'], true)['role'] ?? '') === 'assistant')) {
-            $this->store('job', self::applicant('assistant', 0.0, 1), $now, $c['ttl']);
+        // Ganz am Anfang ein Praktikum; danach liegt, solange niemand die Post sortiert, immer eine Bewerbung für eine Assistenz da.
+        if ((int) $db->value("SELECT COUNT(*) FROM staff WHERE label_id = ? AND role IN ('assistant', 'intern')", [$this->repo->labelId]) === 0
+            && !array_filter($db->all("SELECT data FROM mail WHERE label_id = ? AND kind = 'job'", [$this->repo->labelId]), static fn ($r) => in_array(json_decode($r['data'], true)['role'] ?? '', ['assistant', 'intern'], true))) {
+            $this->store('job', self::applicant($at === 0 ? 'intern' : 'assistant', 0.0, 1), $now, $c['ttl']);
         }
         if ($at === 0) {
             // Willkommens-Brief: Ein einfacher Scout bewirbt sich gleich zu Beginn (die Assistenz steht oben).
@@ -166,6 +167,7 @@ final class Inbox
     {
         return match ($role) {
             'assistant' => Balance::ASSISTANT['tiers'],
+            'intern' => [1 => Balance::INTERN + ['from' => 0.0]],
             'scout' => Balance::SCOUT_STAFF['tiers'],
             'teacher' => Balance::TEACHER['tiers'],
             'coach' => Balance::COACH['tiers'],
@@ -313,7 +315,7 @@ final class Inbox
                 $this->repo->log('staff', sprintf('%s %s ist jetzt Manager bei uns.', $d['first_name'], $d['last_name']));
                 return $managerId;
             }
-            if ($d['role'] === 'assistant') {
+            if (in_array($d['role'], ['assistant', 'intern'], true)) {
                 // Was bisher liegen blieb, erledigen die alten; die neue fängt jetzt an.
                 (new Assistant($this->repo))->work(Clock::now());
                 $db->update('labels', ['assist_at' => Clock::now()], ['id' => $this->repo->labelId]);
@@ -322,6 +324,8 @@ final class Inbox
                 'label_id' => $this->repo->labelId, 'role' => $d['role'], 'tier' => (int) $d['tier'],
                 'data' => json_encode(['first_name' => $d['first_name'], 'last_name' => $d['last_name'], 'look' => $d['look']] + ($d['role'] === 'assistant' ? ['task' => 'demos'] : []), JSON_UNESCAPED_UNICODE),
                 'hired_at' => Clock::now(),
+                // Das Praktikum endet nach einer festen Zeit.
+                'busy_until' => $d['role'] === 'intern' ? Clock::now() + Balance::INTERN['seconds'] : 0,
             ]);
             $db->exec('DELETE FROM mail WHERE id = ?', [$id]);
             $this->repo->log('staff', sprintf('%s %s arbeitet jetzt bei uns (%s).', $d['first_name'], $d['last_name'], $roleName));

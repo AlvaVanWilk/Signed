@@ -122,7 +122,9 @@ function assistantNotes(s) {
     if (who) notes.push(t.role === 'teacher' ? `Heute Unterricht: <b>${esc(who.firstName)}</b> lernt bei ${esc(t.firstName)} (noch <span data-until="${t.until}"></span>)` : `<b>${esc(who.name)}</b> schreibt mit ${esc(t.firstName)} Songs (noch <span data-until="${t.until}"></span>)`);
   }
   const good = (s.submissions ?? []).filter((x) => x.state === 'open' && !x.saved && Math.max(...(x.members ?? [x]).map((m) => m.level ?? 0)) >= 1);
-  notes.push(`Heute ${a.today.opened} Demos angehört, ${a.today.dropped} weggeworfen.${good.length ? ` ${go('demos', `<b>${good.length}</b> ${good.length === 1 ? 'gute wartet' : 'gute warten'} auf dich`)}.` : ''}`);
+  const goodText = good.length ? go('demos', `<b>${good.length}</b> ${good.length === 1 ? 'gute Kassette wartet' : 'gute Kassetten warten'} auf dich`) : '';
+  if (a.perDay) notes.push(`Heute ${a.today.opened} Kassetten angehört, ${a.today.dropped} weggeworfen.${goodText ? ` ${goodText}.` : ''}`);
+  else if (goodText) notes.push(`${goodText}.`);
   for (const c of s.courses ?? []) {
     const open = c.candidates.filter((x) => !x.visited).map((x) => s.musicians.find((m) => m.id === x.musicianId)).filter(Boolean);
     if (open.length) notes.push(`Heute im Kurs: <b>${esc(c.prefix)}-${esc(c.name)}</b> mit ${esc(c.teacher)}. Hin können: ${open.map((m) => `<a href="#/band/${m.bandId}">${esc(m.firstName)}</a>`).join(', ')}.`);

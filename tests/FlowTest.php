@@ -1913,7 +1913,7 @@ test('Posteingang: Bewerber werden mit dem Erfolg besser (gesättigt); Assistenz
     Clock::advance(2 * 86400);
     $jobs = array_values(array_filter($p->get('state')['mail'], static fn ($m) => $m['kind'] === 'job'));
     check(in_array('scout', array_column($jobs, 'role'), true), 'Scout gleich zu Beginn');
-    check(in_array('assistant', array_column($jobs, 'role'), true), 'Assistenz gleich zu Beginn');
+    check(in_array('intern', array_column($jobs, 'role'), true), 'Praktikum gleich zu Beginn');
     check(!array_filter($jobs, static fn ($m) => $m['role'] === 'manager'), 'Manager erst mit etwas Erfolg');
     checkEquals(null, $p->get('state')['assistant']);
     $state = $p->post('mailTest')['state'];
@@ -2188,4 +2188,34 @@ test('Cover: Designer machen es klarer und verkaufen mehr, das Bandlogo wird ein
     checkEquals([0, 0, 0, 0], $cover['spec']['rarity'], 'Kunststudentin: blass');
     checkEquals('block', $cover['spec']['logo']['font'], 'Logo bleibt');
     checkEquals(Balance::COVER_LOGO_SALES, (float) $cover['sales']);
+});
+
+test('Praktikum: günstig, sortiert nur die Post, lässt sich als Assistenz übernehmen oder geht nach sieben Tagen', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Praktikum');
+    $state = $p->get('state');
+    $intern = array_values(array_filter($state['mail'], static fn ($m) => $m['kind'] === 'job' && $m['role'] === 'intern'))[0];
+    checkEquals(Balance::INTERN['price'], $intern['price']);
+    $money = $state['label']['money'];
+    $state = $p->post('mailHire', ['mailId' => $intern['mailId']])['state'];
+    checkEquals($money - Balance::INTERN['price'], $state['label']['money']);
+    checkEquals(0, $state['assistant']['perDay'], 'hört keine Kassetten an');
+    checkEquals('post', $state['assistant']['staff'][0]['task']);
+    checkEquals(true, $state['assistant']['staff'][0]['intern']);
+    $id = $state['assistant']['staff'][0]['id'];
+    checkApiError(fn () => $p->post('assistTask', ['staffId' => $id, 'task' => 'presse']), 'gibt es nicht');
+    // Übernehmen: jetzt eine feste Assistenz, die Kassetten anhört.
+    $state = $p->post('assistAdopt', ['staffId' => $id])['state'];
+    checkEquals(false, $state['assistant']['staff'][0]['intern']);
+    checkEquals(50, $state['assistant']['perDay']);
+    Clock::advance(30 * 86400);
+    checkEquals(1, count($p->get('state')['assistant']['staff']), 'bleibt');
+    // Ein zweites Praktikum ohne Übernahme geht nach sieben Tagen.
+    $p2 = registerPlayer($db, 'Kurzzeit');
+    $mail = array_values(array_filter($p2->get('state')['mail'], static fn ($m) => $m['kind'] === 'job' && $m['role'] === 'intern'))[0];
+    $p2->post('mailHire', ['mailId' => $mail['mailId']]);
+    Clock::advance(Balance::INTERN['seconds'] + 60);
+    $state = $p2->get('state');
+    checkEquals(null, $state['assistant'], 'weg');
+    check((bool) array_filter($state['mail'], static fn ($m) => $m['kind'] === 'job' && $m['role'] === 'assistant'), 'danach liegt eine Bewerbung für eine Assistenz da');
 });

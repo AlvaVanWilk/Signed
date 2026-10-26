@@ -23,8 +23,10 @@ final class Assistant
     {
         return array_map(static function ($s) {
             $d = json_decode($s['data'], true);
-            return $s + ['task' => in_array($d['task'] ?? '', Balance::ASSISTANT['tasks'], true) ? $d['task'] : 'demos', 'info' => $d];
-        }, $this->repo->db->all("SELECT * FROM staff WHERE label_id = ? AND role = 'assistant' ORDER BY id", [$this->repo->labelId]));
+            // Praktikum: nur Post sortieren.
+            $task = $s['role'] === 'intern' ? 'post' : (in_array($d['task'] ?? '', Balance::ASSISTANT['tasks'], true) ? $d['task'] : 'demos');
+            return $s + ['task' => $task, 'info' => $d];
+        }, $this->repo->db->all("SELECT * FROM staff WHERE label_id = ? AND role IN ('assistant', 'intern') ORDER BY id", [$this->repo->labelId]));
     }
 
     /** Kassetten am Tag: so viele, wie Assistenzen Kassetten anhören. */
@@ -47,6 +49,34 @@ final class Assistant
         $d = json_decode($row['data'], true);
         $d['task'] = $task;
         $this->repo->db->update('staff', ['data' => json_encode($d, JSON_UNESCAPED_UNICODE)], ['id' => $staffId]);
+    }
+
+    /** Praktikum übernehmen: Aus der Praktikantin wird eine feste Assistenz (Preis der Assistenz). */
+    public function adopt(int $staffId): void
+    {
+        $db = $this->repo->db;
+        $db->transaction(function () use ($db, $staffId): void {
+            $row = $db->one("SELECT * FROM staff WHERE id = ? AND label_id = ? AND role = 'intern' AND busy_until > ?", [$staffId, $this->repo->labelId, \Signed\Clock::now()]);
+            if ($row === null) {
+                throw new ApiError('Dieses Praktikum gibt es nicht mehr.');
+            }
+            $d = json_decode($row['data'], true);
+            $this->repo->spend(Balance::ASSISTANT['tiers'][1]['price'], sprintf('Übernommen: %s %s als Assistenz', $d['first_name'], $d['last_name']));
+            $this->work(\Signed\Clock::now());
+            $d['task'] = 'demos';
+            $db->update('staff', ['role' => 'assistant', 'busy_until' => 0, 'data' => json_encode($d, JSON_UNESCAPED_UNICODE)], ['id' => $staffId]);
+            $this->repo->log('staff', sprintf('%s %s bleibt bei uns, jetzt als Assistenz.', $d['first_name'], $d['last_name']));
+        });
+    }
+
+    /** Abgelaufene Praktika: Sie verabschiedet sich. */
+    private function endInternships(int $now): void
+    {
+        foreach ($this->repo->db->all("SELECT * FROM staff WHERE label_id = ? AND role = 'intern' AND busy_until <= ?", [$this->repo->labelId, $now]) as $row) {
+            $d = json_decode($row['data'], true);
+            $this->repo->db->exec('DELETE FROM staff WHERE id = ?', [(int) $row['id']]);
+            $this->repo->log('staff', sprintf('Das Praktikum von %s %s ist zu Ende.', $d['first_name'], $d['last_name']));
+        }
     }
 
     /** Eingestellte Regeln fürs Aussortieren. */
@@ -93,6 +123,7 @@ final class Assistant
     /** Arbeit seit dem letzten Mal: Kassetten anhören und aussortieren, Interviews zusagen. */
     public function work(int $now): void
     {
+        $this->endInternships($now);
         $staff = $this->staff();
         if (!$staff) {
             return;
@@ -162,7 +193,9 @@ final class Assistant
         return [
             'staff' => array_map(static fn ($s) => [
                 'id' => (int) $s['id'], 'firstName' => $s['info']['first_name'], 'lastName' => $s['info']['last_name'], 'look' => $s['info']['look'], 'task' => $s['task'],
+                'intern' => $s['role'] === 'intern', 'until' => $s['role'] === 'intern' ? (int) $s['busy_until'] : null,
             ], $staff),
+            'adoptPrice' => Balance::ASSISTANT['tiers'][1]['price'],
             'perDay' => self::perDay($staff),
             'press' => (bool) array_filter($staff, static fn ($s) => $s['task'] === 'presse'),
             'rules' => $this->rules(),

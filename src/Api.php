@@ -95,6 +95,7 @@ final class Api
         'mailTest' => ['POST', true],
         'assistRules' => ['POST', true],
         'assistTask' => ['POST', true],
+        'assistAdopt' => ['POST', true],
         'scoutSend' => ['POST', true],
         'scoutReportSign' => ['POST', true],
         'practiceAuto' => ['POST', true],
@@ -502,6 +503,12 @@ final class Api
     private function assistTask(array $in, Repo $repo): array
     {
         (new Assistant($repo))->setTask(self::int($in, 'staffId'), self::str($in, 'task'));
+        return ['state' => State::build($repo)];
+    }
+
+    private function assistAdopt(array $in, Repo $repo): array
+    {
+        (new Assistant($repo))->adopt(self::int($in, 'staffId'));
         return ['state' => State::build($repo)];
     }
 

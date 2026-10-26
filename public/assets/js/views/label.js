@@ -123,6 +123,18 @@ function tile(b, selected) {
     </a>`;
 }
 
+/** Scout unter der Künstlerleiste: losschicken, sehen, wann er zurück ist, oder den Bericht ansehen. */
+function scoutCard(x) {
+  const report = (app.state.mail ?? []).find((m) => m.kind === 'report' && m.scoutName === x.firstName && m.cards.some((c) => !c.signed));
+  const task = x.away ? [x.away.genre ? genreName(x.away.genre) : '', x.away.instrument ? instrumentName(x.away.instrument) : ''].filter(Boolean).join(' · ') || 'ohne Vorgabe' : '';
+  return `<div class="lb-scout">
+    <span class="lb-ph sm">${photo({ id: x.id, look: x.look })}</span>
+    <span class="lb-scout-txt"><small class="lb-cap">Scout</small><b>${esc(x.firstName)}</b>
+      <small class="muted">${x.away ? `sucht ${esc(task)} · zurück in <span data-until="${x.away.until}"></span>` : report ? 'ist zurück und hat Talente gefunden' : `findet ${x.candidates} Talente`}</small></span>
+    ${x.away ? '' : report ? `<button class="btn small primary" data-act="reportShow" data-id="${report.mailId}">Ansehen</button>` : `<button class="btn small" data-act="scoutAsk" data-id="${x.id}">Losschicken</button>`}
+  </div>`;
+}
+
 export function bar(selectedId) {
   const bands = app.state.bands;
   const order = app.state.label.navOrder ?? [];
@@ -133,8 +145,9 @@ export function bar(selectedId) {
       <h2 class="lb-cap">Deine Bands</h2>
       <nav class="lb-bar">
         ${sorted.map((b) => tile(b, b.id === selectedId)).join('')}
-        <a class="lb-add" href="#/einsendungen" title="Neue Künstler kommen über die Einsendungen. Bands bildest du, indem du Kacheln aufeinanderziehst.">+ Neue Künstler</a>
+        <a class="lb-add" href="#/einsendungen" title="Neue Künstler kommen über den Posteingang. Bands bildest du, indem du Kacheln aufeinanderziehst.">+ Neue Künstler</a>
       </nav>
+      ${(app.state.scouts ?? []).map(scoutCard).join('')}
       <p class="lb-legend"><span class="lb-mood green"><i></i>gut</span><span class="lb-mood yellow"><i></i>angespannt</span><span class="lb-mood red"><i></i>unzufrieden</span></p>
     </aside>`;
 }

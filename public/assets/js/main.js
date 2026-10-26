@@ -6,6 +6,7 @@ import './celebrate.js';
 import './settings.js';
 import './genre-info.js';
 import './navdrag.js';
+import './sidefit.js';
 import './glitter.js';
 import * as auth from './views/auth.js';
 import * as board from './views/board.js';

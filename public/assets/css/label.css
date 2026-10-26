@@ -24,9 +24,9 @@
 
 /* Band-Leiste */
 /* Die Künstlerleiste liegt direkt auf der Seite (kein Kasten drumherum). */
-.lb-side { padding: 16px 4px 16px 0; position: sticky; top: 14px; }
+.lb-side { padding: 16px 4px 16px 0; position: sticky; top: var(--side-top, 14px); }
 /* Die Leiste scrollt für sich (eigene Fläche, bleibt am Ende stehen statt die Seite mitzunehmen); rechts Platz für die Wunsch-Blasen. */
-@media (min-width: 901px) { .lb-side { max-height: calc(100vh - 28px); overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-width: none; } .lb-side::-webkit-scrollbar { display: none; } }
+@media (min-width: 901px) { .lb-side { max-height: calc(100dvh - var(--side-top, 14px) - 8px); overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-width: none; } .lb-side::-webkit-scrollbar { display: none; } }
 .lb-bar { display: flex; flex-direction: column; gap: 18px; padding: 10px 26px 0 0; }
 .lb-bt { position: relative; display: grid; grid-template-columns: 1fr auto; gap: 7px 10px; min-height: 118px; align-content: center; overflow: visible; padding: 12px 22px 12px 26px; border-radius: 12px; border: 1px solid var(--lb-line); background: var(--lb-card); color: var(--lb-text); text-decoration: none; }
 .lb-bt:hover { text-decoration: none; border-color: #4a4458; }
@@ -1034,3 +1034,7 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .lb-seg { display: inline-flex; border: 1px solid var(--lb-line); border-radius: 999px; overflow: hidden; }
 .lb-seg button { border: 0; background: none; color: var(--lb-muted); font: inherit; font-size: .8rem; font-weight: 700; padding: 5px 12px; cursor: pointer; }
 .lb-seg button.on { background: var(--lb-accent); color: #1b1822; }
+.lb-scout { margin: 14px 26px 0 0; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--lb-line); background: var(--lb-card); display: grid; grid-template-columns: auto 1fr; gap: 8px 10px; align-items: center; }
+.lb-scout .lb-ph.sm { width: 36px; height: 36px; box-shadow: none; }
+.lb-scout-txt { display: grid; line-height: 1.2; } .lb-scout-txt .lb-cap { margin: 0; font-size: .62rem; }
+.lb-scout .btn { grid-column: 1 / -1; justify-self: start; }

@@ -253,6 +253,7 @@ final class Catalog
     /** Leute, die sich beim Label bewerben: Name der Rolle und der Stufen. */
     public const STAFF_ROLES = [
         'assistant' => ['name' => 'Assistenz', 'tiers' => [1 => 'Assistenz'], 'tasks' => ['demos' => 'Kassetten anhören', 'presse' => 'Presse (Interviews zusagen)']],
+        'intern' => ['name' => 'Praktikum', 'tiers' => [1 => 'Praktikum']],
         'scout' => ['name' => 'Scout', 'tiers' => [1 => 'Scout', 2 => 'Erfahrener Scout', 3 => 'Top-Scout']],
         'manager' => ['name' => 'Manager', 'tiers' => [1 => 'Manager', 2 => 'Erfahrener Manager', 3 => 'Star-Manager']],
         'teacher' => ['name' => 'Privatunterricht', 'tiers' => [1 => 'Lehrkraft', 2 => 'Profi-Lehrkraft', 3 => 'Meister-Lehrkraft']],

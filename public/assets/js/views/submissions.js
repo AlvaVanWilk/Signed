@@ -168,16 +168,18 @@ function interviewLetter(m) {
 
 function jobLetter(m) {
   const money0 = app.state.label.money;
-  const what = m.role === 'assistant' ? `sortiert die Post, hört ${m.perDay} Kassetten am Tag an oder kümmert sich um die Presse`
+  const what = m.role === 'intern' ? 'sortiert die Post und schreibt dir Notizen auf die Übersicht'
+    : m.role === 'assistant' ? `sortiert die Post, hört ${m.perDay} Kassetten am Tag an oder kümmert sich um die Presse`
     : m.role === 'scout' ? `${m.candidates} Talente in ${mins(m.seconds)} (Können bis ${m.maxSkill})`
     : m.role === 'teacher' ? `${instrumentName(m.instrument)} für einen Musiker: +${m.gain} Können (bis ${m.maxSkill})${m.genre ? `, bei ${genreName(m.genre)} mehr` : ''}`
     : m.role === 'coach' ? `${days(m.seconds)} für eine Band: Songs ${fmtFactor(m.speed)} so schnell, Platte +${Math.round(m.quality * 100)} %`
     : m.role === 'manager' ? `${m.genres.map((g) => genreName(g)).join(', ')} · ${m.skills.map((k) => cat().managerSkills[k]?.name ?? k).join(', ')}` : '';
   const book = ['teacher', 'coach'].includes(m.role);
+  const temporary = book || m.role === 'intern';
   return `
     <article class="lb-letter job">
       <div class="lb-lt-head"><span class="lb-lt-kind">${m.role === 'teacher' ? 'Unterricht' : 'Bewerbung'}</span>
-        ${book ? `<span class="lb-lt-term" title="Kommt nur für diese Zeit, danach geht ${esc(m.firstName)} wieder">${days(m.seconds)}</span>` : '<span class="lb-lt-term fix" title="Bleibt für immer beim Label, du bezahlst nur einmal">fest</span>'}</div>
+        ${temporary ? `<span class="lb-lt-term" title="Kommt nur für diese Zeit, danach geht ${esc(m.firstName)} wieder">${days(m.seconds)}</span>` : '<span class="lb-lt-term fix" title="Bleibt für immer beim Label, du bezahlst nur einmal">fest</span>'}</div>
       <div class="lb-lt-body"><span class="lb-ph sm">${photo({ id: m.mailId, look: m.look })}</span>
         <p><b>${esc(m.firstName)} ${esc(m.lastName)}</b><br>${esc(roleName(m))}<small class="muted">${esc(what)}</small></p></div>
       <div class="lb-card-foot">
@@ -217,12 +219,15 @@ function assistantBar(a) {
   const ruleText = parts.length ? `Behält nur: ${parts.join(' · ')}.` : 'Behält alle Kassetten.';
   const tasks = cat().staffRoles.assistant.tasks;
   return `<div class="lb-assist lb-assist-team">
-    <span class="lb-assist-head"><b>${a.staff.length === 1 ? 'Deine Assistenz' : `Deine ${a.staff.length} Assistenzen`}</b> ${a.staff.length === 1 ? 'sortiert' : 'sortieren'} die Post.
+    <span class="lb-assist-head"><b>${a.staff.length > 1 ? 'Dein Büro' : a.staff[0].intern ? ({ f: 'Deine Praktikantin', m: 'Dein Praktikant' }[a.staff[0].look?.gender] ?? 'Dein Praktikum') : 'Deine Assistenz'}</b> sortiert die Post.
       <small class="muted">${a.perDay ? `Zusammen ${a.perDay} Kassetten am Tag. Heute ${a.today.opened} angehört, ${a.today.dropped} weggeworfen. ${esc(ruleText)}` : 'Niemand hört gerade Kassetten an.'}${a.press ? ' Interview-Anfragen werden zugesagt, sobald der Musiker frei ist.' : ''}</small></span>
-    <button class="btn small" data-act="assistRulesAsk">Regeln</button>
+    ${a.perDay ? '<button class="btn small" data-act="assistRulesAsk">Regeln</button>' : ''}
     <div class="lb-assist-list">${a.staff.map((x) => `
       <div class="lb-assist-row"><span class="lb-ph sm">${photo({ id: x.id, look: x.look })}</span><b>${esc(x.firstName)}</b>
-        <span class="lb-seg">${Object.entries(tasks).map(([k, label]) => `<button class="${x.task === k ? 'on' : ''}" data-act="assistTask" data-id="${x.id}" data-task="${k}">${esc(label)}</button>`).join('')}</span></div>`).join('')}</div>
+        ${x.intern
+    ? `<span class="muted small">Praktikum: sortiert nur die Post, noch <span data-until="${x.until}"></span></span>
+          <button class="btn small primary" data-act="assistAdopt" data-id="${x.id}" ${off(app.state.label.money < a.adoptPrice ? `Dafür fehlen noch ${money(a.adoptPrice - app.state.label.money)}.` : '')}>Als Assistenz übernehmen · ${money(a.adoptPrice)}</button>`
+    : `<span class="lb-seg">${Object.entries(tasks).map(([k, label]) => `<button class="${x.task === k ? 'on' : ''}" data-act="assistTask" data-id="${x.id}" data-task="${k}">${esc(label)}</button>`).join('')}</span>`}</div>`).join('')}</div>
   </div>`;
 }
 
@@ -234,17 +239,6 @@ function tutorBar(t) {
     ? `<b>${esc(t.firstName)}</b> unterrichtet ${esc(who.firstName)} ${esc(instrumentAt(t.instrument))}.<small class="muted">Schon +${fmtFame(t.done)} von ${fmtFame(t.gain)} Können, noch <span data-until="${t.until}"></span></small>`
     : `<b>${esc(t.firstName)}</b> hilft ${esc(who.name)} beim Songschreiben.<small class="muted">Songs ${fmtFactor(t.speed)} so schnell, die nächste Platte ${Math.round(t.quality * 100)} % besser. Noch <span data-until="${t.until}"></span></small>`;
   return `<div class="lb-assist"><span class="lb-assist-faces"><span class="lb-ph sm">${photo({ id: t.id, look: t.look })}</span></span><span>${text}</span></div>`;
-}
-
-/** Scouts: losschicken oder sehen, wann sie zurück sind. */
-function scoutBar(x) {
-  const task = x.away ? [x.away.genre ? genreName(x.away.genre) : '', x.away.instrument ? instrumentName(x.away.instrument) : ''].filter(Boolean).join(' · ') || 'ohne Vorgabe' : '';
-  return `<div class="lb-assist">
-    <span class="lb-assist-faces"><span class="lb-ph sm">${photo({ id: x.id, look: x.look })}</span></span>
-    <span><b>${esc(x.firstName)}</b> (${esc(cat().staffRoles.scout.tiers[x.tier])}) ${x.away ? `ist unterwegs und sucht: ${esc(task)}.` : `findet ${x.candidates} Talente, unterwegs ${mins(x.seconds)}`}
-      <small class="muted">${x.away ? 'Der Bericht kommt in den Posteingang, zurück in <span data-until="' + x.away.until + '"></span>' : `Unbekannte, die schon gut spielen (Können bis ${x.maxSkill}).`}</small></span>
-    ${x.away ? '' : `<button class="btn small primary" data-act="scoutAsk" data-id="${x.id}">Losschicken</button>`}
-  </div>`;
 }
 
 export function render() {
@@ -275,7 +269,6 @@ export function render() {
   return `
     <div class="section-head"><h1>Posteingang</h1>${isTest() ? '<span class="lb-test"><button class="btn small" data-act="submissionsTest" data-closed="1">Test: neue Kassetten</button><button class="btn small" data-act="submissionsTest">Test: gesichtete Bewerber</button><button class="btn small" data-act="mailTest">Test: Briefe</button></span>' : ''}</div>
     <p class="muted">Hier kommt alles an: Kassetten von Musikern, die zu dir wollen, Interview-Anfragen für deine Leute und Bewerbungen fürs Label. Tipp eine Kassette an, dann hörst du sie an. Alles liegt nur eine Weile, dann ist es weg.</p>
-    ${(s.scouts ?? []).map(scoutBar).join('')}
     ${(s.tutors ?? []).map(tutorBar).join('')}
     ${a ? assistantBar(a) : '<p class="lb-assist-hint muted small">Ohne Assistenz liegt alles auf einem Stapel. Eine Assistenz sortiert die Post für dich und hört Kassetten an. Schau bei den Bewerbungen.</p>'}
     <div class="lb-boxes">${tabs.map(([k, label, n]) => `<button class="${box === k ? 'on' : ''}" data-act="subBox" data-key="${k}">${label} <small>${n}</small></button>`).join('')}</div>
@@ -729,6 +722,11 @@ defineActions({
     const x = app.state.assistant?.staff.find((y) => y.id === Number(id));
     if (!x || x.task === task) return;
     if (await mutate('assistTask', { staffId: Number(id), task })) toast(task === 'presse' ? `${x.firstName} kümmert sich jetzt um die Presse.` : `${x.firstName} hört jetzt Kassetten an.`, 'ok');
+  },
+  async assistAdopt({ id }) {
+    const x = app.state.assistant?.staff.find((y) => y.id === Number(id));
+    if (!x || !(await confirmDialog(`${x.firstName} für ${money(app.state.assistant.adoptPrice)} als Assistenz übernehmen? Dann bleibt ${x.firstName} und kann auch Kassetten anhören oder sich um die Presse kümmern.`, { ok: 'Übernehmen' }))) return;
+    if (await mutate('assistAdopt', { staffId: Number(id) })) toast(`${x.firstName} bleibt jetzt als Assistenz.`, 'ok');
   },
   assistRulesAsk() {
     rulesDialog();

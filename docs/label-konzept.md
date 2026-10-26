@@ -291,6 +291,11 @@ Alles läuft ab (Demos 4 Tage, Anfragen 8 Stunden, Bewerbungen 2 Tage; die Restz
   jederzeit umstellbar: **Kassetten anhören** (50 am Tag, die ältesten zuerst, gemerkte nicht; wirft nach den Regeln weg, was nicht passt: ab Können-Stufe,
   Genres, Einzeln/Band) oder **Presse** (sagt Interview-Anfragen zu, sobald der Musiker frei ist). Mehr Eingang oder beide Aufgaben: mehrere einstellen.
   Ohne Assistenz liegt alles auf einem Stapel und die Übersicht bleibt schlicht; solange keine da ist, liegt immer eine Bewerbung dafür im Posteingang.
+- **Praktikum** (gebaut): Ganz am Anfang bewirbt sich ein Praktikum (50 ₲, 7 Tage, `Balance::INTERN`). Es **sortiert nur die Post** und schreibt
+  Notizen auf die Übersicht, hört keine Kassetten an und macht keine Presse. Bis zum Ende lässt es sich für 400 ₲ als feste Assistenz übernehmen,
+  sonst geht es; danach bewerben sich nur noch Assistenzen.
+- **Scout-Karte** (gebaut): Der eingestellte Scout steht unter der Künstlerleiste (unter „+ Neue Künstler“): losschicken, Countdown bis zur Rückkehr,
+  danach „Ansehen“ für den Bericht. Eine eigene Team-Seite gibt es nicht.
 - **Interviews** siehe „Interviews und Promo-Anfragen“; Zahlen in `kern.md` (Promo, Tempo).
 - **Scout** (gebaut, `Scouting`): Ein einfacher Scout bewirbt sich gleich zu Beginn (Willkommens-Brief, 400 ₲); bessere kommen mit dem Erfolg
   (`Balance::SCOUT_STAFF`). Losschicken mit Genre und/oder Instrument („Egal“ geht), dann liegt nach 6 / 5 / 4 Stunden ein **Bericht** im

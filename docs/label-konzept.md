@@ -281,6 +281,11 @@ Alles läuft ab (Demos 4 Tage, Anfragen 8 Stunden, Bewerbungen 2 Tage; die Restz
   zählen zusammen) und schreibt **Notizen auf die Übersicht** (offene Anfragen mit Restzeit, Bewerbungen, gute Demos, Kurs des Tages). Ohne Assistenz
   bleibt die Übersicht schlicht. **Regeln** ab der zweiten Stufe: ab Können-Stufe; ab der dritten auch Genres und Einzeln/Band. Was nicht passt, wirft sie weg.
 - **Interviews** siehe „Interviews und Promo-Anfragen“; Zahlen in `kern.md` (Promo, Tempo).
+- **Scout** (gebaut, `Scouting`): Ein einfacher Scout bewirbt sich gleich zu Beginn (Willkommens-Brief, 400 ₲); bessere kommen mit dem Erfolg
+  (`Balance::SCOUT_STAFF`). Losschicken mit Genre und/oder Instrument („Egal“ geht), dann liegt nach 6 / 5 / 4 Stunden ein **Bericht** im
+  Posteingang (bei Assistenz unter „Demos“) mit 2 / 3 / 3 Talenten, Können 15–34 / 22–44 / 32–54, alle unbekannt. Im Bericht blättert man mit
+  Pfeilen durch die Talente (eins nach dem anderen) und unterschreibt beliebig viele, jedes für seine Prämie. Der Bericht liegt 2 Tage.
+  Die alten Scout-Gutscheine (Kartenauswahl) sind nicht mehr im Menü.
 
 In der Wirklichkeit schicken Künstler Demos an Labels, und Talentsucher hören sich um. Ein Label sucht nicht aus einem Katalog aller Menschen aus. Zwei Wege, die nichts miteinander zu tun haben:
 

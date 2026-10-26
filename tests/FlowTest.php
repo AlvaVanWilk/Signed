@@ -1924,10 +1924,11 @@ test('Posteingang: Bewerbungen werden mit dem Erfolg besser (gesättigt), Assist
     $p = registerPlayer($db, 'Sortiert');
     // Ohne Erfolg keine Assistenz-Bewerbungen.
     Clock::advance(2 * 86400);
-    check(!array_filter($p->get('state')['mail'], static fn ($m) => $m['kind'] === 'job'), 'kleines Label: noch keine Bewerbungen');
+    $jobs = array_values(array_filter($p->get('state')['mail'], static fn ($m) => $m['kind'] === 'job'));
+    checkEquals(['scout'], array_values(array_unique(array_column($jobs, 'role'))), 'kleines Label: nur Scouts, keine Assistenz');
     checkEquals(null, $p->get('state')['assistant']);
     $state = $p->post('mailTest')['state'];
-    $jobs = array_values(array_filter($state['mail'], static fn ($m) => $m['kind'] === 'job'));
+    $jobs = array_values(array_filter($state['mail'], static fn ($m) => $m['kind'] === 'job' && $m['role'] === 'assistant'));
     checkEquals([1, 2, 3, 4], array_values(array_unique(array_map(static fn ($m) => $m['tier'], $jobs))));
     $praktikum = array_values(array_filter($jobs, static fn ($m) => $m['tier'] === 1))[0];
     $money = $state['label']['money'];
@@ -1948,7 +1949,7 @@ test('Posteingang: Bewerbungen werden mit dem Erfolg besser (gesättigt), Assist
     $early = array_column(array_filter($subs, static fn ($s) => $s['state'] === 'open'), 'submissionId');
     checkEquals(2, count($early), 'in drei Stunden zwei geöffnet');
     // Senior-Assistenz dazu: Regeln wirken, Unpassendes fliegt raus.
-    $senior = array_values(array_filter($res['state']['mail'], static fn ($m) => $m['kind'] === 'job' && $m['tier'] === 3))[0];
+    $senior = array_values(array_filter($res['state']['mail'], static fn ($m) => $m['kind'] === 'job' && $m['role'] === 'assistant' && $m['tier'] === 3))[0];
     $db->update('labels', ['money' => 100000], ['id' => $labelId]);
     $state = $p->post('mailHire', ['mailId' => $senior['mailId']])['state'];
     checkEquals(170, $state['assistant']['perDay'], 'zwei Assistenzen arbeiten zusammen');
@@ -1969,4 +1970,56 @@ test('Posteingang: Bewerbungen werden mit dem Erfolg besser (gesättigt), Assist
     checkEquals(true, Assistant::matches(['kind' => 'band', 'members' => [['skill1' => 70.0, 'genres' => ['rock']], ['skill1' => 10.0, 'genres' => ['pop']]]], ['minLevel' => 2, 'genres' => ['pop'], 'kind' => 'band']));
     checkEquals(false, Assistant::matches(['skill1' => 70.0, 'genres' => ['rock']], ['minLevel' => 2, 'genres' => ['pop'], 'kind' => 'any']));
     checkEquals(false, Assistant::matches(['skill1' => 30.0, 'genres' => ['rock']], ['minLevel' => 1, 'genres' => [], 'kind' => 'solo']));
+});
+
+test('Scout: bewirbt sich zu Beginn, mit Suchauftrag unterwegs, Bericht im Posteingang, beliebig viele unterschreiben', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Sucher');
+    $state = $p->get('state');
+    $welcome = array_values(array_filter($state['mail'], static fn ($m) => $m['kind'] === 'job' && $m['role'] === 'scout'));
+    checkEquals(1, count($welcome), 'Willkommens-Brief vom Scout');
+    checkEquals(1, $welcome[0]['tier']);
+    checkEquals(Balance::SCOUT_STAFF['tiers'][1]['price'], $welcome[0]['price']);
+    $state = $p->post('mailHire', ['mailId' => $welcome[0]['mailId']])['state'];
+    checkEquals(1, count($state['scouts']));
+    $scout = $state['scouts'][0];
+    checkEquals(null, $scout['away']);
+    checkApiError(fn () => $p->post('scoutSend', ['staffId' => $scout['id'], 'genre' => 'polka']), 'Genre');
+    $state = $p->post('scoutSend', ['staffId' => $scout['id'], 'genre' => 'jazz', 'instrument' => 'bass'])['state'];
+    check($state['scouts'][0]['away'] !== null, 'unterwegs');
+    checkApiError(fn () => $p->post('scoutSend', ['staffId' => $scout['id']]), 'unterwegs');
+    Clock::advance(Balance::SCOUT_STAFF['tiers'][1]['seconds'] - 60);
+    check(!array_filter($p->get('state')['mail'], static fn ($m) => $m['kind'] === 'report'), 'noch kein Bericht');
+    Clock::advance(120);
+    $state = $p->get('state');
+    $reports = array_values(array_filter($state['mail'], static fn ($m) => $m['kind'] === 'report'));
+    checkEquals(1, count($reports));
+    checkEquals(null, $state['scouts'][0]['away'], 'wieder da');
+    $cards = $reports[0]['cards'];
+    checkEquals(2, count($cards));
+    foreach ($cards as $c) {
+        checkEquals('bass', $c['instruments'][0]['type']);
+        check(in_array('jazz', $c['genres'], true), 'Genre nach Auftrag');
+        check($c['instruments'][0]['skill'] >= 15 && $c['instruments'][0]['skill'] <= 34, 'Können bis Stufe 1 (einfacher Scout bis 34)');
+        checkEquals(0.0, (float) $c['fame'], 'unbekannt');
+    }
+    // Beide unterschreiben, jeder kostet seine Prämie.
+    $money = $state['label']['money'];
+    $res = $p->post('scoutReportSign', ['mailId' => $reports[0]['mailId'], 'index' => 0]);
+    $res = $p->post('scoutReportSign', ['mailId' => $reports[0]['mailId'], 'index' => 1]);
+    checkEquals($money - $cards[0]['price'] - $cards[1]['price'], $res['state']['label']['money']);
+    checkApiError(fn () => $p->post('scoutReportSign', ['mailId' => $reports[0]['mailId'], 'index' => 1]), 'nicht mehr');
+    $report = array_values(array_filter($res['state']['mail'], static fn ($m) => $m['kind'] === 'report'))[0];
+    checkEquals([true, true], array_column($report['cards'], 'signed'));
+    checkEquals('scout', $db->value('SELECT origin FROM musicians WHERE id = ?', [$res['musicianId']]));
+    // Ohne Auftrag (egal): irgendwas.
+    $p->post('scoutSend', ['staffId' => $scout['id'], 'genre' => '', 'instrument' => '']);
+    Clock::advance(Balance::SCOUT_STAFF['tiers'][1]['seconds'] + 5);
+    checkEquals(2, count(array_filter($p->get('state')['mail'], static fn ($m) => $m['kind'] === 'report')));
+    // Bessere Scouts finden mehr und besser.
+    $best = Signed\Game\Scouting::find(3, null, null);
+    checkEquals(3, count($best));
+    foreach ($best as $c) {
+        check($c['skill1'] >= 32 && $c['skill1'] <= 54);
+    }
 });

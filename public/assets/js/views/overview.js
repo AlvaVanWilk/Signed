@@ -113,6 +113,12 @@ function assistantNotes(s) {
   for (const m of (s.mail ?? []).filter((x) => x.kind === 'job')) {
     notes.push(go('job', `Bewerbung: <b>${esc(m.firstName)} ${esc(m.lastName)}</b> als ${esc(cat().staffRoles[m.role]?.tiers[m.tier] ?? '')} (${left(m.expiresAt)})`));
   }
+  for (const m of (s.mail ?? []).filter((x) => x.kind === 'report' && x.cards.some((c) => !c.signed))) {
+    notes.push(go('demos', `<b>${esc(m.scoutName)}</b> ist zurück und stellt dir ${m.cards.length} Talente vor (${left(m.expiresAt)})`));
+  }
+  for (const x of (s.scouts ?? []).filter((y) => y.away)) {
+    notes.push(`<b>${esc(x.firstName)}</b> ist als Scout unterwegs, zurück in <span data-until="${x.away.until}"></span>.`);
+  }
   const good = (s.submissions ?? []).filter((x) => x.state === 'open' && !x.saved && Math.max(...(x.members ?? [x]).map((m) => m.level ?? 0)) >= 1);
   notes.push(`Heute ${a.today.opened} Demos angehört, ${a.today.dropped} weggeworfen.${good.length ? ` ${go('demos', `<b>${good.length}</b> ${good.length === 1 ? 'gute wartet' : 'gute warten'} auf dich`)}.` : ''}`);
   const c = s.course;

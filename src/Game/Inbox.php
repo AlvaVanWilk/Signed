@@ -96,6 +96,10 @@ final class Inbox
         $c = Balance::JOBS;
         $at = (int) $db->value('SELECT job_at FROM labels WHERE id = ?', [$this->repo->labelId]);
         if ($at === 0) {
+            // Willkommens-Brief: Ein einfacher Scout bewirbt sich gleich zu Beginn.
+            if ((int) $db->value("SELECT COUNT(*) FROM staff WHERE label_id = ? AND role = 'scout'", [$this->repo->labelId]) === 0) {
+                $this->store('job', self::applicant('scout', 0.0, 1), $now, $c['ttl']);
+            }
             $db->update('labels', ['job_at' => $now], ['id' => $this->repo->labelId]);
             return;
         }
@@ -136,11 +140,12 @@ final class Inbox
     {
         return match ($role) {
             'assistant' => Balance::ASSISTANT['tiers'],
+            'scout' => Balance::SCOUT_STAFF['tiers'],
             default => throw new ApiError('Unbekannte Bewerbung.'),
         };
     }
 
-    private function store(string $kind, array $data, int $at, int $ttl): void
+    public function store(string $kind, array $data, int $at, int $ttl): void
     {
         $this->repo->db->insert('mail', [
             'label_id' => $this->repo->labelId, 'kind' => $kind, 'data' => json_encode($data, JSON_UNESCAPED_UNICODE),
@@ -167,9 +172,13 @@ final class Inbox
                     'fame' => self::interviewGain($d), 'seconds' => Balance::INTERVIEW['seconds'][min(3, (int) $d['level'])],
                 ];
             }
+            if ($r['kind'] === 'report') {
+                return $base + Scouting::presentReport($d, (int) $r['id']);
+            }
             $tier = self::tiers($d['role'])[(int) $d['tier']];
             return $base + [
                 'role' => $d['role'], 'tier' => (int) $d['tier'], 'price' => (int) $tier['price'], 'perDay' => $tier['perDay'] ?? null,
+                'seconds' => $tier['seconds'] ?? null, 'candidates' => $tier['candidates'] ?? null, 'maxSkill' => isset($tier['skill']) ? $tier['skill'][1] : null,
                 'firstName' => $d['first_name'], 'lastName' => $d['last_name'], 'look' => $d['look'],
             ];
         }, $rows);
@@ -270,7 +279,7 @@ final class Inbox
         $this->repo->db->exec('DELETE FROM mail WHERE id = ?', [$id]);
     }
 
-    /** Zum Ausprobieren: je Musiker eine Anfrage und eine Bewerbung je Assistenz-Stufe. */
+    /** Zum Ausprobieren: je Musiker eine Anfrage und eine Bewerbung je Stufe (Assistenz und Scout). */
     public function testFill(): void
     {
         $now = Clock::now();
@@ -282,6 +291,9 @@ final class Inbox
         }
         foreach (array_keys(Balance::ASSISTANT['tiers']) as $tier) {
             $this->store('job', self::applicant('assistant', 1.0, $tier), $now - $tier, Balance::JOBS['ttl']);
+        }
+        foreach (array_keys(Balance::SCOUT_STAFF['tiers']) as $tier) {
+            $this->store('job', self::applicant('scout', 1.0, $tier), $now - 10 - $tier, Balance::JOBS['ttl']);
         }
     }
 }

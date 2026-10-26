@@ -966,3 +966,16 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .lb-assist-faces .lb-ph.sm, .lb-notes-faces .lb-ph.sm { box-shadow: 0 0 0 2px var(--lb-card, #24212d); }
 .lb-lt-space { flex: 1; }
 .lb-lt-body small.lb-lt-gain { color: #4b6b3a; font-weight: 700; margin-top: 4px; }
+.lb-letter.report::before { background: #4b6b3a; }
+.lb-lt-note { font-size: .7rem; color: #6b6253; }
+.lb-rp { display: flex; align-items: center; gap: 10px; }
+.lb-rp-card { flex: 1; display: grid; gap: 10px; min-height: 250px; align-content: start; }
+.lb-rp-card .lb-info-head .lb-ph { width: 96px; height: 96px; }
+.lb-rp-arrow { flex: none; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--lb-line); background: var(--lb-card2); color: var(--lb-text); font-size: 1.4rem; line-height: 1; cursor: pointer; }
+.lb-rp-arrow[aria-disabled=true] { opacity: .35; }
+.lb-rp-count { text-align: center; margin: 4px 0 0; }
+.lb-rp-done { color: var(--lb-ok); font-weight: 700; margin: 0; }
+.lb-rp-ins { display: grid; gap: 6px; }
+.lb-rp-ins > div { display: flex; align-items: center; gap: 10px; }
+.lb-rp-ins .lb-ins { margin: 0; }
+.lb-rp-ins span { color: var(--lb-muted); font-size: .85rem; }

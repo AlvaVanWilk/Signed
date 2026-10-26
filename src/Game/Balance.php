@@ -192,7 +192,20 @@ final class Balance
      */
     public const JOBS = [
         'perDay' => 2.0, 'ttl' => 2 * 86400, 'maxCatchUp' => 2 * 86400, 'half' => 300.0, 'weights' => [3, 2, 1],
-        'roles' => ['assistant' => ['weight' => 1, 'minSuccess' => 10.0]],
+        'roles' => ['assistant' => ['weight' => 1, 'minSuccess' => 10.0], 'scout' => ['weight' => 1, 'minSuccess' => 0.0]],
+    ];
+    /**
+     * Scout: einmalig bezahlt, dann mit Suchauftrag (Genre und/oder Instrument oder egal) losschicken. Nach `seconds` liegt ein Bericht mit
+     * `candidates` Talenten im Posteingang (er liegt `ttl`). Sie sind unbekannt (Bekanntheit 0) und haben Können `skill` [von, bis]; bessere Scouts
+     * finden schneller, mehr und treffsicherer. Ein einfacher Scout bewirbt sich gleich zu Beginn (Willkommens-Brief).
+     */
+    public const SCOUT_STAFF = [
+        'tiers' => [
+            1 => ['price' => 400, 'seconds' => 6 * 3600, 'candidates' => 2, 'skill' => [15, 34], 'from' => 0.0],
+            2 => ['price' => 1200, 'seconds' => 5 * 3600, 'candidates' => 3, 'skill' => [22, 44], 'from' => 0.25],
+            3 => ['price' => 3000, 'seconds' => 4 * 3600, 'candidates' => 3, 'skill' => [32, 54], 'from' => 0.55],
+        ],
+        'ttl' => 2 * 86400,
     ];
     /**
      * Assistenz: einmalig bezahlt. Öffnet je Tag `perDay` Demos (die ältesten zuerst, gemerkte nicht) und sortiert die Post in Reiter.

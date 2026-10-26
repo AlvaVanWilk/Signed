@@ -179,10 +179,7 @@ final class Submissions
                 return $base + ['state' => 'listening', 'opensAt' => (int) $r['opened_at']];
             }
             $card = json_decode($r['card'], true);
-            $present = static function (array $c, int $id) {
-                $m = $c + ['id' => $id, 'favorite' => false, 'jam_at' => 0, 'band_id' => null, 'band_slot' => 1, 'busy_until' => 0];
-                return Present::musician($m) + ['price' => self::price($c)];
-            };
+            $present = [self::class, 'presentCard'];
             if (($card['kind'] ?? '') === 'band') {
                 $members = [];
                 foreach ($card['members'] as $i => $c) {
@@ -192,6 +189,13 @@ final class Submissions
             }
             return $present($card, -(int) $r['id']) + $base + ['state' => 'open', 'kind' => 'solo'];
         }, $rows);
+    }
+
+    /** Ein Bewerber (Einsendung oder Scout-Bericht) wie ein Musiker, mit Prämie; Charakterzüge noch verborgen. */
+    public static function presentCard(array $c, int $id): array
+    {
+        $m = $c + ['id' => $id, 'favorite' => false, 'jam_at' => 0, 'band_id' => null, 'band_slot' => 1, 'busy_until' => 0];
+        return Present::musician($m) + ['price' => self::price($c)];
     }
 
     /** Sichten starten: Nach ein paar Sekunden Arbeit sieht man, was drauf ist. */

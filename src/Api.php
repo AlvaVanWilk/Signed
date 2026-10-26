@@ -21,6 +21,7 @@ use Signed\Game\Packs;
 use Signed\Game\Present;
 use Signed\Game\Repo;
 use Signed\Game\Scout;
+use Signed\Game\Scouting;
 use Signed\Game\Submissions;
 use Signed\Game\State;
 use Signed\Game\Store;
@@ -94,6 +95,8 @@ final class Api
         'mailDrop' => ['POST', true],
         'mailTest' => ['POST', true],
         'assistRules' => ['POST', true],
+        'scoutSend' => ['POST', true],
+        'scoutReportSign' => ['POST', true],
         'practiceAuto' => ['POST', true],
         'courseAttend' => ['POST', true],
         'soloStart' => ['POST', true],
@@ -480,6 +483,19 @@ final class Api
     {
         (new Inbox($repo))->testFill();
         return ['state' => State::build($repo)];
+    }
+
+    private function scoutSend(array $in, Repo $repo): array
+    {
+        $pick = static fn ($v) => is_string($v) && $v !== '' ? $v : null;
+        (new Scouting($repo))->send(self::int($in, 'staffId'), $pick($in['genre'] ?? null), $pick($in['instrument'] ?? null));
+        return ['state' => State::build($repo)];
+    }
+
+    private function scoutReportSign(array $in, Repo $repo): array
+    {
+        $id = (new Scouting($repo))->sign(self::int($in, 'mailId'), (int) ($in['index'] ?? -1));
+        return ['musicianId' => $id, 'state' => State::build($repo)];
     }
 
     private function assistRules(array $in, Repo $repo): array

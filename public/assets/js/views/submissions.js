@@ -169,7 +169,8 @@ function interviewLetter(m) {
 
 function jobLetter(m) {
   const money0 = app.state.label.money;
-  const what = m.role === 'assistant' ? `öffnet ${m.perDay} Demos am Tag${m.tier >= 2 ? ' und sortiert nach deinen Regeln' : ''}` : '';
+  const what = m.role === 'assistant' ? `öffnet ${m.perDay} Demos am Tag${m.tier >= 2 ? ' und sortiert nach deinen Regeln' : ''}`
+    : m.role === 'scout' ? `findet ${m.candidates} Talente in ${mins(m.seconds)} (Können bis ${m.maxSkill})` : '';
   return `
     <article class="lb-letter job">
       <div class="lb-lt-head"><span class="lb-lt-kind">Bewerbung</span></div>
@@ -183,8 +184,24 @@ function jobLetter(m) {
     </article>`;
 }
 
+/** Bericht des Scouts: wer gefunden wurde, sieht man erst beim Ansehen (eins nach dem anderen). */
+function reportLetter(m) {
+  const open = m.cards.filter((c) => !c.signed).length;
+  const task = [m.genre ? genreName(m.genre) : '', m.instrument ? instrumentName(m.instrument) : ''].filter(Boolean).join(' · ') || 'ohne Vorgabe';
+  return `
+    <article class="lb-letter report">
+      <div class="lb-lt-head"><span class="lb-lt-kind">Bericht vom Scout</span></div>
+      <div class="lb-lt-body"><span class="lb-ph sm">${photo({ id: m.mailId, look: m.look })}</span>
+        <p><b>${esc(m.scoutName)}</b> stellt dir ${m.cards.length} Talente vor.<small>Auftrag: ${esc(task)}</small></p></div>
+      <div class="lb-card-foot"><span class="lb-lt-space">${open < m.cards.length ? `<small class="lb-lt-note">${m.cards.length - open} unterschrieben</small>` : ''}</span>
+        <button class="lb-iconbtn drop" data-act="mailDrop" data-id="${m.mailId}" title="Wegwerfen" aria-label="Wegwerfen">✕</button>
+        <button class="btn small primary" data-act="reportShow" data-id="${m.mailId}">Ansehen</button>
+      </div>
+    </article>`;
+}
+
 const mailSave = (m) => `<button class="lb-save ${m.saved ? 'on' : ''}" data-act="mailSave" data-id="${m.mailId}" data-saved="${m.saved ? '' : '1'}" title="${m.saved ? 'Zurück in den Eingang' : 'Merken'}" aria-label="${m.saved ? 'Zurück in den Eingang' : 'Merken'}">${BOOKMARK}</button>`;
-const letterSlot = (m) => `<div class="lb-slotitem lb-mailitem" style="${scatter(m.mailId * 7 + 3)}">${m.kind === 'interview' ? interviewLetter(m) : jobLetter(m)}<span class="lb-slotbar">${leftPill(m, m.kind === 'interview' ? 2 * 3600 : 12 * 3600)}${mailSave(m)}</span></div>`;
+const letterSlot = (m) => `<div class="lb-slotitem lb-mailitem" style="${scatter(m.mailId * 7 + 3)}">${m.kind === 'interview' ? interviewLetter(m) : m.kind === 'report' ? reportLetter(m) : jobLetter(m)}<span class="lb-slotbar">${leftPill(m, m.kind === 'interview' ? 2 * 3600 : 12 * 3600)}${mailSave(m)}</span></div>`;
 
 /** Die Assistenz stellt sich oben vor: wer, wie viel am Tag, was heute erledigt ist, und ihre Regeln. */
 function assistantBar(a) {
@@ -205,6 +222,17 @@ function assistantBar(a) {
   </div>`;
 }
 
+/** Scouts: losschicken oder sehen, wann sie zurück sind. */
+function scoutBar(x) {
+  const task = x.away ? [x.away.genre ? genreName(x.away.genre) : '', x.away.instrument ? instrumentName(x.away.instrument) : ''].filter(Boolean).join(' · ') || 'ohne Vorgabe' : '';
+  return `<div class="lb-assist">
+    <span class="lb-assist-faces"><span class="lb-ph sm">${photo({ id: x.id, look: x.look })}</span></span>
+    <span><b>${esc(x.firstName)}</b> (${esc(cat().staffRoles.scout.tiers[x.tier])}) ${x.away ? `ist unterwegs und sucht: ${esc(task)}.` : `findet ${x.candidates} Talente, unterwegs ${mins(x.seconds)}`}
+      <small class="muted">${x.away ? 'Zurück in <span data-until="' + x.away.until + '"></span>. Der Bericht kommt in den Posteingang.' : `Unbekannte, die schon gut spielen (Können bis ${x.maxSkill}).`}</small></span>
+    ${x.away ? '' : `<button class="btn small primary" data-act="scoutAsk" data-id="${x.id}">Losschicken</button>`}
+  </div>`;
+}
+
 export function render() {
   const s = app.state;
   const all = s.submissions ?? [];
@@ -214,14 +242,15 @@ export function render() {
   app.ui.subSeen ??= new Set(all.filter((x) => x.state === 'open').map((x) => x.submissionId));
   // Ohne Assistenz liegt alles auf einem Stapel, mit Assistenz in Reitern.
   const tabs = a
-    ? [['demos', 'Demos', all.filter((x) => !x.saved).length], ['interview', 'Anfragen', mail.filter((m) => !m.saved && m.kind === 'interview').length],
+    ? [['demos', 'Demos', all.filter((x) => !x.saved).length + mail.filter((m) => !m.saved && m.kind === 'report').length], ['interview', 'Anfragen', mail.filter((m) => !m.saved && m.kind === 'interview').length],
       ['job', 'Bewerbungen', mail.filter((m) => !m.saved && m.kind === 'job').length], ['saved', 'Gespeichert', all.filter((x) => x.saved).length + mail.filter((m) => m.saved).length]]
     : [['inbox', 'Eingang', all.filter((x) => !x.saved).length + mail.filter((m) => !m.saved).length], ['saved', 'Gespeichert', all.filter((x) => x.saved).length + mail.filter((m) => m.saved).length]];
   let box = app.ui.subBox ?? tabs[0][0];
   if (!tabs.some(([k]) => k === box)) box = tabs[0][0];
   const saved = box === 'saved';
   const showDemos = !a || box === 'demos' || saved;
-  const letters = mail.filter((m) => m.saved === saved && (saved || !a || m.kind === box));
+  const tabOf = (m) => (m.kind === 'report' ? 'demos' : m.kind);
+  const letters = mail.filter((m) => m.saved === saved && (saved || !a || tabOf(m) === box));
   const f = app.ui.subFilter ?? 'all';
   const demos = showDemos ? ordered(all.filter((x) => !!x.saved === saved)).filter((x) => f === 'all' || (f === 'unheard' ? x.state !== 'open' : x.state === 'open' && levelOf(x) === Number(f))) : [];
   const shownLetters = f === 'all' || !showDemos ? letters : [];
@@ -232,10 +261,91 @@ export function render() {
   return `
     <div class="section-head"><h1>Posteingang</h1>${isTest() ? '<span class="lb-test"><button class="btn small" data-act="submissionsTest" data-closed="1">Test: neue Kassetten</button><button class="btn small" data-act="submissionsTest">Test: gesichtete Bewerber</button><button class="btn small" data-act="mailTest">Test: Briefe</button></span>' : ''}</div>
     <p class="muted">Hier kommt alles an: Kassetten von Musikern, die zu dir wollen, Interview-Anfragen für deine Leute und Bewerbungen fürs Label. Jede Kassette musst du erst anhören. Alles liegt nur eine Weile, dann ist es weg.</p>
+    ${(s.scouts ?? []).map(scoutBar).join('')}
     ${a ? assistantBar(a) : '<p class="lb-assist-hint muted small">Ohne Assistenz liegt alles auf einem Stapel. Wenn dein Label bekannter wird, bewerben sich Leute, die die Post für dich sortieren.</p>'}
     <div class="lb-boxes">${tabs.map(([k, label, n]) => `<button class="${box === k ? 'on' : ''}" data-act="subBox" data-key="${k}">${label} <small>${n}</small></button>`).join('')}</div>
     ${showDemos ? `<div class="lb-filter">${[['all', 'Alle'], ['unheard', 'Ungehört'], ['0', 'Stufe 0'], ['1', 'Stufe 1'], ['2', 'Stufe 2'], ['3', 'Stufe 3']].map(([k, label]) => `<button class="${f === k ? 'on' : ''}" data-act="subFilter" data-key="${k}">${label}</button>`).join('')}</div>` : ''}
     ${shownLetters.length || demos.length ? `<div class="lb-slots" data-slots>${shownLetters.map(letterSlot).join('')}${demos.map((x) => slot(x, busy)).join('')}</div>` : `<div class="empty">${empty}</div>`}`;
+}
+
+// ---------- Scout losschicken und Bericht ansehen ----------
+
+function scoutDialog(x) {
+  const pick = { genre: '', instrument: '' };
+  const modal = openModal({
+    className: 'lb-rules-modal',
+    render: () => `
+      <div class="lb-cap">Scout</div>
+      <h2>${esc(x.firstName)} losschicken</h2>
+      <p class="muted">${esc(x.firstName)} ist ${mins(x.seconds)} unterwegs (auch wenn du nicht spielst) und stellt dir dann ${x.candidates} Talente vor. Du kannst so viele davon unterschreiben, wie du willst.</p>
+      <h3>Genre</h3>
+      <div class="lb-filter"><button class="${pick.genre === '' ? 'on' : ''}" data-pick="genre" data-v="">Egal</button>${Object.keys(cat().genres).map((g) => `<button class="${pick.genre === g ? 'on' : ''}" data-pick="genre" data-v="${g}">${esc(genreName(g))}</button>`).join('')}</div>
+      <h3>Instrument</h3>
+      <div class="lb-filter"><button class="${pick.instrument === '' ? 'on' : ''}" data-pick="instrument" data-v="">Egal</button>${Object.keys(cat().instruments).map((i) => `<button class="${pick.instrument === i ? 'on' : ''}" data-pick="instrument" data-v="${i}">${esc(instrumentName(i))}</button>`).join('')}</div>
+      <div class="dialog-actions"><button class="btn ghost" data-close>Abbrechen</button><button class="btn primary" data-ok>Losschicken</button></div>`,
+  });
+  modal.body.addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-pick]');
+    if (b) {
+      pick[b.dataset.pick] = b.dataset.v;
+      modal.refresh();
+      return;
+    }
+    if (e.target.closest('[data-close]')) modal.close();
+    if (e.target.closest('[data-ok]')) {
+      if (await mutate('scoutSend', { staffId: x.id, ...pick })) {
+        modal.close();
+        toast(`${x.firstName} ist unterwegs.`, 'ok');
+      }
+    }
+  });
+}
+
+/** Ein Talent aus dem Bericht, als ganze Person: Bild, Genres, Instrumente, Charakter, Prämie. Durchblättern mit dem Pfeil. */
+function reportDialog(mailId) {
+  let i = 0;
+  const modal = openModal({
+    className: 'lb-report-modal',
+    render: () => {
+      const m = app.state.mail.find((x) => x.mailId === mailId);
+      if (!m) return '<p class="muted">Der Bericht ist nicht mehr da.</p><div class="dialog-actions"><button class="btn primary" data-close>Schließen</button></div>';
+      i = Math.min(i, m.cards.length - 1);
+      const c = m.cards[i];
+      const money0 = app.state.label.money;
+      return `
+        <div class="lb-cap">Bericht von ${esc(m.scoutName)}</div>
+        <div class="lb-rp">
+          <button class="lb-rp-arrow" data-step="-1" ${off(i === 0 ? 'Das ist das erste Talent.' : '')} aria-label="Zurück">‹</button>
+          <div class="lb-rp-card">
+            <div class="lb-info-head"><span class="lb-ph" style="--split:linear-gradient(120deg, ${split(c.genres)})">${photo(c)}</span>
+              <div><h2>${esc(c.firstName)} ${esc(c.lastName)}</h2>${genreTags(c.genres)}</div></div>
+            <div class="lb-rp-ins">${c.instruments.map((x) => `<div>${instrumentRow(x)}<span>${esc(instrumentName(x.type))} · Können ${Math.floor(x.skill)}</span></div>`).join('')}</div>
+            <div class="lb-traits">${traitChips(c, 'tip')}</div>
+            ${c.signed ? '<p class="lb-rp-done">Hat schon bei dir unterschrieben.</p>' : `<div class="dialog-actions">
+              <button class="btn primary" data-sign="${c.index}" ${off(money0 < c.price ? `Dafür fehlen noch ${money(c.price - money0)}.` : '')}>Unterschreiben · ${money(c.price)}</button></div>`}
+          </div>
+          <button class="lb-rp-arrow" data-step="1" ${off(i >= m.cards.length - 1 ? 'Das ist das letzte Talent.' : '')} aria-label="Weiter">›</button>
+        </div>
+        <p class="lb-rp-count muted">${i + 1} von ${m.cards.length}</p>
+        <div class="dialog-actions"><button class="btn ghost" data-close>Schließen</button></div>`;
+    },
+  });
+  modal.body.addEventListener('click', async (e) => {
+    const step = e.target.closest('[data-step]');
+    if (step && step.getAttribute('aria-disabled') !== 'true') {
+      i += Number(step.dataset.step);
+      modal.refresh();
+      return;
+    }
+    const sign = e.target.closest('[data-sign]');
+    if (sign && sign.getAttribute('aria-disabled') !== 'true') {
+      const m = app.state.mail.find((x) => x.mailId === mailId);
+      const c = m.cards[Number(sign.dataset.sign)];
+      if (await mutate('scoutReportSign', { mailId, index: c.index })) toast(`${c.firstName} hat unterschrieben.`, 'ok');
+      return;
+    }
+    if (e.target.closest('[data-close]')) modal.close();
+  });
 }
 
 // ---------- Regeln der Assistenz ----------
@@ -534,6 +644,12 @@ defineActions({
   inboxGo({ key }) {
     app.ui.subBox = key;
     location.hash = '#/einsendungen';
+  },
+  scoutAsk({ id }) {
+    scoutDialog(app.state.scouts.find((x) => x.id === Number(id)));
+  },
+  reportShow({ id }) {
+    reportDialog(Number(id));
   },
   assistRulesAsk() {
     rulesDialog();

@@ -103,6 +103,20 @@ final class Courses
         return $out;
     }
 
+    /** Vorschau fürs Schwarze Brett: die Kurse der nächsten Tage (ohne heute). */
+    public static function week(?int $now = null, int $days = 6): array
+    {
+        $now ??= Clock::now();
+        $out = [];
+        for ($d = 1; $d <= $days; $d++) {
+            $all = self::all($now + $d * 86400);
+            $out[] = ['day' => $all[0]['day'], 'courses' => array_map(static fn ($c) => array_intersect_key($c, array_flip(['instrument', 'prefix', 'name', 'teacher', 'gain', 'seconds', 'kind'])) + [
+                'prices' => array_map(static fn ($i) => self::price($c, $i), array_keys(Balance::COURSE['levels'])),
+            ], $all)];
+        }
+        return $out;
+    }
+
     /** Schwierigkeit für diesen Musiker (nach seiner Stufe auf dem Instrument): 0 Anfänger, 1 Fortgeschrittene, 2 Profis. */
     public static function levelFor(array $m, int $slot): int
     {

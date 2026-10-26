@@ -3,13 +3,12 @@ import { app, bandById, cat, defineActions, isBusy, musicianById, mutate, naviga
 import { openLive } from '../live.js';
 import { chip, HIDDEN_TRAIT_TIP } from '../cards.js';
 import { closeAllModals, confirmDialog, duration, esc, fmt0, fmt1, money, openModal, timeAgo, toast } from '../ui.js';
-import { buskingHat, cancelButton, chemistryLabel, courseTiles, promoOf, practiceTile, promoTile, suggestName } from './bands.js';
+import { buskingHat, cancelButton, chemistryLabel, courseTiles, promoOf, practiceTile, suggestName } from './bands.js';
 
 /** Untermenü eines Musikers. solo = nur ohne Band. */
 export const MUSICIAN_SECTIONS = [
   ['', '👤', 'Profil'],
   ['uebung', '🎯', 'Übung'],
-  ['promo', '📣', 'Promo'],
   ['jam', '☕', 'Jam-Café', 'solo'],
   ['strasse', '🪙', 'Straßenmusik', 'solo'],
   ['chronik', '📜', 'Chronik'],
@@ -23,7 +22,7 @@ export function renderMusician(route) {
   const m = musicianById(route.id);
   if (!m) return '<div class="empty">Diesen Musiker gibt es nicht mehr.</div>';
   const section = sectionsFor(m).some(([key]) => key === route.section) ? route.section : '';
-  return { '': profile, uebung: practice, promo, jam, strasse: street, chronik: chronicle }[section](m);
+  return { '': profile, uebung: practice, jam, strasse: street, chronik: chronicle }[section](m);
 }
 
 function head(title, m) {
@@ -125,10 +124,6 @@ function gearSlot(m, type) {
 
 function practice(m) {
   return `${head('Übung', m)}${statusNotice(m)}${courseTiles([m])}<div class="action-grid">${practiceTile(m, busyOf(m))}</div>`;
-}
-
-function promo(m) {
-  return `${head('Promo', m)}${statusNotice(m)}<div class="action-grid">${promoTile(m, busyOf(m))}</div>`;
 }
 
 function jam(m) {

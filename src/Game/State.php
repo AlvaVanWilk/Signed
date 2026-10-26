@@ -260,6 +260,7 @@ final class State
             'scouts' => (new Scouting($repo))->present($now),
             'tutors' => (new Tutors($repo))->present($now),
             'courses' => (new Courses($repo))->status($musicians),
+            'board' => ['week' => Courses::week($now)],
             'jamOffers' => (new Jam($repo))->open(),
             'market' => (new Transfers($repo))->market(),
             'packOffer' => $packOffer,

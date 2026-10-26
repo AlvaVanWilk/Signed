@@ -237,6 +237,16 @@ Aufnahme zeigt die Bandseite das Studio (`studio.js`) mit dem Produzenten hinter
   ein Wunsch nach der größeren Bühne (zum Beispiel Stadion) kostet das Label womöglich mehr, als er einbringt. Dann muss man abwägen:
   Geld gegen Stimmung. Ein Ort **unter** dem Anspruch der Band ärgert sie, auch wenn er sicher Gewinn bringt.
 
+### Schwarzes Brett (gebaut)
+
+Eigener Menüpunkt für alles, was **für alle Spieler gleich** ist: heute die Kurse des Tages (mit „hinschicken“), dazu die Kurse der nächsten
+sechs Tage. Später kommen hier **Veranstaltungen** hin (Festivals, Battle of the Bands), zu denen man sich anmeldet; sie landen nicht im Posteingang.
+
+### Promo-Tour (gebaut)
+
+Die einzelne Promo-Mission ist weg (dafür gibt es Interview-Anfragen). Die **Promo-Tour** der ganzen Band (oder des Solokünstlers) ist eine
+Anordnung auf der Bandseite, jederzeit ohne Anfrage: 10 Minuten, etwas Ruhm, schiebt die Platte in den Charts an und zählt für die nächste Platte.
+
 ### Interviews und Promo-Anfragen (gebaut als Interview-Anfragen im Posteingang)
 
 - Anfragen kommen als **Mitteilung** (Zeitschrift fragt nach Interview mit X). Annehmen schickt den Musiker für kurze Zeit weg.

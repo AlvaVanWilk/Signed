@@ -80,7 +80,7 @@
 .lb-hd h1 { margin: 0; font-size: 1.55rem; }
 .lb-hd small { color: var(--lb-muted); font-weight: 600; }
 .lb-hd-mood { margin-left: auto; display: grid; gap: 6px; justify-items: end; } .lb-hd-mood .lb-cap { margin: 0; }
-.lb-acts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.lb-acts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .lb-act { display: grid; grid-template-columns: 32px 1fr; gap: 2px 12px; align-items: center; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--lb-line); background: var(--lb-card); color: var(--lb-text); text-decoration: none; }
 .lb-act:hover { text-decoration: none; border-color: var(--lb-accent); }
 .lb-act svg { grid-row: span 2; width: 30px; height: 30px; stroke: var(--lb-accent); fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
@@ -1002,3 +1002,23 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .lb-lt-term { font-size: .62rem; font-weight: 800; padding: 1px 6px; border-radius: 999px; background: #d9cfb8; color: #5a4f3c; letter-spacing: .04em; }
 .lb-lt-term.fix { background: #c9dcc0; color: #35522a; }
 .lb-lt-term { white-space: nowrap; }
+
+/* Schwarzes Brett: Kork, angeheftete Zettel; ruhig, keine knalligen Farben */
+.bb-board { padding: 16px 18px 20px; border-radius: 14px; background: #6b5238 radial-gradient(circle at 20% 30%, rgba(255, 255, 255, .05), transparent 60%); border: 6px solid #4a3826; box-shadow: inset 0 0 30px rgba(0, 0, 0, .35); }
+.bb-cap { margin: 4px 0 10px; font-size: .78rem; letter-spacing: .1em; text-transform: uppercase; color: #f1e6d2; opacity: .85; }
+.bb-notes { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; margin-bottom: 18px; }
+.bb-note { position: relative; padding: 14px 14px 12px; background: #efe8d8; color: #2a2733; border-radius: 3px; box-shadow: 0 6px 12px rgba(0, 0, 0, .35); transform: rotate(var(--r)); display: grid; gap: 6px; align-content: start; }
+.bb-pin { position: absolute; top: -6px; left: 50%; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: #b9483f; box-shadow: 0 2px 2px rgba(0, 0, 0, .4); }
+.bb-head { display: flex; gap: 10px; align-items: center; }
+.bb-head small, .bb-mini small { display: block; color: #6b6253; font-size: .76rem; }
+.bb-ico { width: 34px; height: 34px; border-radius: 8px; background: #2b2836; display: grid; place-items: center; flex: none; }
+.bb-ico svg { width: 24px; height: 24px; } .bb-ico.sm { width: 26px; height: 26px; } .bb-ico.sm svg { width: 18px; height: 18px; }
+.bb-gain { margin: 0; font-weight: 700; color: #4b6b3a; font-size: .84rem; }
+.bb-prices { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: .76rem; color: #5a4f3c; }
+.bb-who { display: flex; flex-wrap: wrap; gap: 6px; }
+.bb-done, .bb-none { font-size: .78rem; color: #6b6253; margin: 0; }
+.bb-week { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; margin-bottom: 18px; }
+.bb-day { background: rgba(239, 232, 216, .92); color: #2a2733; border-radius: 3px; padding: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, .3); display: grid; gap: 6px; align-content: start; }
+.bb-day h3 { margin: 0 0 2px; font-size: .86rem; }
+.bb-mini { display: flex; gap: 8px; align-items: center; font-size: .8rem; }
+.bb-empty { margin: 0; color: #f1e6d2; opacity: .8; font-size: .88rem; }

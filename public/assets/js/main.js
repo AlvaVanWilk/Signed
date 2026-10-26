@@ -8,6 +8,7 @@ import './genre-info.js';
 import './navdrag.js';
 import './glitter.js';
 import * as auth from './views/auth.js';
+import * as board from './views/board.js';
 import * as bands from './views/bands.js';
 import * as label from './views/label.js';
 import * as charts from './views/charts.js';
@@ -28,6 +29,7 @@ import { recordResultHtml } from './views/recording.js';
 const NAV = [
   ['', 'Übersicht'],
   ['einsendungen', 'Posteingang'],
+  ['brett', 'Schwarzes Brett'],
   ['store', 'Music Store'],
   ['lager', 'Lager'],
   ['charts', 'Charts'],
@@ -37,6 +39,7 @@ const NAV = [
 const VIEWS = {
   '': () => overview.render(),
   einsendungen: () => submissions.render(),
+  brett: () => board.render(),
   packs: () => packs.render(),
   store: () => store.render(),
   lager: () => storage.render(),

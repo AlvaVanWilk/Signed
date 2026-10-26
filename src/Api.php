@@ -76,7 +76,6 @@ final class Api
         'itemUse' => ['POST', true],
         'activityStart' => ['POST', true],
         'activityAck' => ['POST', true],
-        'promoStart' => ['POST', true],
         'bandPromo' => ['POST', true],
         'promoCancel' => ['POST', true],
         'rehearsalStop' => ['POST', true],
@@ -537,12 +536,6 @@ final class Api
     private function practiceAuto(array $in, Repo $repo): array
     {
         $activity = (new Activities($repo))->autoPractice(self::int($in, 'musicianId'), self::int($in, 'slot'));
-        return ['activity' => $activity, 'state' => State::build($repo)];
-    }
-
-    private function promoStart(array $in, Repo $repo): array
-    {
-        $activity = (new Activities($repo))->promo(self::int($in, 'musicianId'));
         return ['activity' => $activity, 'state' => State::build($repo)];
     }
 

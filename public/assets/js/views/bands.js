@@ -355,17 +355,7 @@ function promo(b, members) {
         icon: '📣', title: 'Band-Promo', meta: `${duration(cat().rules.bandPromoSeconds)} · Ruhm${chartPush(b)}${cycleChip(b, 'promos', 'Für die nächste Platte')}`,
         button: `<button class="btn primary" data-act="bandPromo" data-id="${b.id}" ${blocked ? 'disabled' : ''}>Losschicken</button>`,
       })}
-      ${members.map((m) => promoTile(m, isBusy(m.busyUntil) || isBusy(b.busyUntil))).join('')}
     </div>`;
-}
-
-export function promoTile(m, busy) {
-  return actionTile({
-    icon: face(m, 'md'),
-    title: fullName(m),
-    meta: `Promo-Mission · ${duration(cat().rules.promoSeconds)} · Bekanntheit ${fmt1(m.fame)}${m.bandId ? chartPush(bandById(m.bandId)) : ''}`,
-    button: `<button class="btn" data-act="promo" data-id="${m.id}" ${busy ? 'disabled' : ''}>Los</button>`,
-  });
 }
 
 // ---------- Auftritte ----------
@@ -852,7 +842,9 @@ defineActions({
     if (res && type !== 'rehearsal') openLive(res.activity.id);
   },
   async bandPromo({ id }) {
-    if (await mutate('bandPromo', { bandId: Number(id) })) toast('Die Band ist auf Promo-Tour.', 'ok');
+    const b = bandById(id);
+    const one = b?.memberIds.length === 1 ? musicianById(b.memberIds[0]) : null;
+    if (await mutate('bandPromo', { bandId: Number(id) })) toast(one ? `${one.stageName ?? one.firstName} ist auf Promo-Tour.` : 'Die Band ist auf Promo-Tour.', 'ok');
   },
   practice({ id, slot }) {
     startPractice(id, slot);
@@ -869,9 +861,6 @@ defineActions({
   async promoCancel({ id }) {
     const ok = await confirmDialog('Jetzt zurückholen? Dann gibt es dafür nichts.', { ok: 'Zurückholen', danger: true });
     if (ok && await mutate('promoCancel', { activityId: Number(id) })) toast('Alle sind wieder da.', 'ok');
-  },
-  async promo({ id }) {
-    if (await mutate('promoStart', { musicianId: Number(id) })) toast(`${musicianById(id).firstName} ist auf Promo-Tour.`, 'ok');
   },
   watch({ id }) {
     // Die Probe sieht man auf der Bandseite, mit ihren Werten; Auftritte laufen im Live-Fenster.

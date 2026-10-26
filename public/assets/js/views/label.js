@@ -145,6 +145,7 @@ const ICON = {
   rehearse: '<svg viewBox="0 0 32 32"><path d="M10 28 L14 5 H18 L22 28 Z"/><path d="M16 22 L23 9"/><circle cx="23" cy="9" r="1.6"/></svg>',
   record: '<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="12"/><circle cx="16" cy="16" r="4.5"/><path d="M16 4 V9"/></svg>',
   gig: '<svg viewBox="0 0 32 32"><rect x="12" y="4" width="8" height="15" rx="4"/><path d="M8 15 a8 8 0 0 0 16 0 M16 23 V28 M11 28 H21"/></svg>',
+  promo: '<svg viewBox="0 0 32 32"><path d="M5 13 V19 H10 L22 26 V6 L10 13 Z"/><path d="M26 11 a6 6 0 0 1 0 10"/></svg>',
 };
 
 const relWord = (v) => (v >= 7 ? 'verstehen sich sehr gut' : v >= 3 ? 'verstehen sich gut' : v > -3 ? 'kennen sich kaum' : v > -7 ? 'sind angespannt' : 'sind zerstritten');
@@ -254,6 +255,13 @@ function wishBlock(b, members) {
 }
 
 /** Eine Anordnung: gesperrt, wenn ein roter Musiker sie ablehnt; sonst mit Hinweis, wem sie nicht gefällt. */
+/** Promo-Tour: Dauer, und was der nächsten Platte noch fehlt. */
+function promoHint(b) {
+  const c = b.record?.cycle;
+  const left = c && !c.done && c.promos.have < c.promos.need ? ` · ${c.promos.have}/${c.promos.need} für die nächste Platte` : '';
+  return `${mins(cat().rules.bandPromoSeconds)} · bekannter, schiebt die Platte an${left}`;
+}
+
 /** Wie gut ein Manager zu einer Band passt, in Worten. */
 export const fitWord = (f) => (f >= 1.2 ? 'passt sehr gut' : f >= 0.95 ? 'passt gut' : f >= 0.7 ? 'passt so lala' : 'passt schlecht');
 const skillNames = (m) => m.skills.map((k) => cat().managerSkills[k]?.name ?? k).join(', ');
@@ -323,7 +331,7 @@ function act(b, members, type, section, title, text, icon, warn = false, busy = 
   // Ohne Unterseite: Die Anordnung startet gleich (Proben).
   if (!section) {
     const why = busy ? (blocker(b, members)?.text ?? (members.length === 1 ? 'Gerade beschäftigt.' : 'Die Band ist gerade beschäftigt.')) : '';
-    return `<button class="lb-act ${busy ? 'idle' : ''} ${warn ? 'warn' : ''}" data-act="${{ gig: 'gigAsk', rehearsal: 'rehearseAsk', record: 'recordAsk' }[type]}" data-id="${b.id}" ${off(why)}>${icon}<b>${title}</b>${busy ? `<small>${members.length === 1 ? 'Gerade beschäftigt.' : 'Die Band ist gerade beschäftigt.'}</small>` : hint}</button>`;
+    return `<button class="lb-act ${busy ? 'idle' : ''} ${warn ? 'warn' : ''}" data-act="${{ gig: 'gigAsk', rehearsal: 'rehearseAsk', record: 'recordAsk', bandpromo: 'bandPromo' }[type]}" data-id="${b.id}" ${off(why)}>${icon}<b>${title}</b>${busy ? `<small>${members.length === 1 ? 'Gerade beschäftigt.' : 'Die Band ist gerade beschäftigt.'}</small>` : hint}</button>`;
   }
   return `<a class="lb-act ${warn ? 'warn' : ''}" href="#/band/${b.id}/${section}">${icon}<b>${title}</b>${hint}</a>`;
 }
@@ -580,6 +588,7 @@ export function page(route) {
       ${act(b, members, 'rehearsal', null, 'Proben', `bis zu ${mins(b.options.rehearsal.seconds)} · Können ${gainRange(members.map((m) => m.gains?.rehearsal ?? 0))} je ${mins(cat().rules.rehearsalSeconds)}`, ICON.rehearse, false, !!blocker(b, members))}
       ${act(b, members, 'record', null, 'Aufnehmen', recordHint(b), ICON.record, b.mood.songs >= 12, !!blocker(b, members))}
       ${act(b, members, 'gig', null, 'Auftritt buchen', 'Orte, Kosten und Gewinn sehen', ICON.gig, false, !!blocker(b, members))}
+      ${act(b, members, 'bandpromo', null, 'Promo-Tour', promoHint(b), ICON.promo, false, !!blocker(b, members))}
     </div>
     ${course}
     ${managerBlock(b)}
@@ -605,7 +614,6 @@ export function page(route) {
     <details class="lb-more"><summary>Chronik</summary>${history(b)}</details>
     <div class="lb-foot">
       <a class="btn ghost small" href="${base}/auszeichnungen">Auszeichnungen</a>
-      <a class="btn ghost small" href="${base}/promo">Promo</a>
       <a class="btn ghost small" href="#/wiki/band/${b.id}">WikiSignia</a>
       ${solo
     ? `<button class="btn danger ghost small" data-act="musicianRelease" data-id="${members[0].id}">Künstler entlassen</button>`

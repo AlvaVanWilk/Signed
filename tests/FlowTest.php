@@ -253,7 +253,7 @@ test('Bandprobe und Band-Promo', function () {
         check((float) $m['skill1'] > (float) $before[$m['id']], 'Probe bringt Können');
     }
     $p->post('bandPromo', ['bandId' => $band['id']]);
-    checkApiError(fn () => $p->post('promoStart', ['musicianId' => $band['memberIds'][0]]), 'beschäftigt');
+    checkApiError(fn () => $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'rehearsal']), 'beschäftigt');
     Clock::advance(Balance::BAND_PROMO['seconds']);
     check(bandById($p->get('state'), $band['id'])['fame'] > 0, 'Promo macht die Band bekannter');
 });
@@ -392,7 +392,7 @@ test('Solo-Probe verbessert das Können, Schummeln wird abgelehnt', function () 
     checkApiError(fn () => $p->post('minigameFinish', ['sessionId' => $game['sessionId'], 'perfect' => $count, 'good' => 0, 'miss' => 0]), 'noch nicht vorbei');
     Clock::advance(Balance::SONG_SECONDS);
     checkApiError(fn () => $p->post('minigameFinish', ['sessionId' => $game['sessionId'], 'perfect' => $count + 5, 'good' => 0, 'miss' => 0]), 'Ungültig');
-    checkApiError(fn () => $p->post('promoStart', ['musicianId' => $m['id']]), 'beschäftigt');
+    checkApiError(fn () => $p->post('practiceAuto', ['musicianId' => $m['id'], 'slot' => 1]), 'beschäftigt');
 
     $result = $p->post('minigameFinish', ['sessionId' => $game['sessionId'], 'perfect' => $count, 'good' => 0, 'miss' => 0])['result'];
     check($result['gain'] > 0.2, 'Perfekte Probe bringt spürbar Können');
@@ -403,25 +403,7 @@ test('Solo-Probe verbessert das Können, Schummeln wird abgelehnt', function () 
     // Abbrechen gibt den Musiker frei.
     $game = $p->post('minigameStart', ['kind' => 'practice', 'musicianId' => $m['id']])['game'];
     $p->post('minigameAbort', ['sessionId' => $game['sessionId']]);
-    $p->post('promoStart', ['musicianId' => $m['id']]);
-});
-
-test('Promo-Mission steigert die Bekanntheit nach Ablauf, bei Bekannten weniger', function () {
-    $db = freshDb();
-    $p = registerPlayer($db, 'Promo');
-    $m = $p->get('state')['musicians'][0];
-    $p->post('promoStart', ['musicianId' => $m['id']]);
-    checkApiError(fn () => $p->post('minigameStart', ['kind' => 'practice', 'musicianId' => $m['id']]), 'beschäftigt');
-    Clock::advance(Balance::PROMO_SECONDS);
-    $state = $p->get('state');
-    $after = array_values(array_filter($state['musicians'], static fn ($x) => $x['id'] === $m['id']))[0];
-    check($after['fame'] > $m['fame']);
-    check(abs(($after['fame'] - $m['fame']) - $state['results'][0]['result']['fame']) <= 0.1, 'Anzeige passt zum Zuwachs');
-
-    $db->exec('UPDATE musicians SET fame = 400 WHERE id = ?', [$m['id']]);
-    $p->post('promoStart', ['musicianId' => $m['id']]);
-    Clock::advance(Balance::PROMO_SECONDS);
-    check($p->get('state')['results'][1]['result']['fame'] < Balance::PROMO_FAME[1] / 5, 'Wer schon bekannt ist, gewinnt wenig');
+    $p->post('practiceAuto', ['musicianId' => $m['id'], 'slot' => 1]);
 });
 
 test('Platte produzieren, dann Gigs spielen, dann die nächste Platte', function () {
@@ -852,9 +834,8 @@ test('Promo lässt sich abbrechen: sofort wieder frei, ohne Belohnung', function
     $db = freshDb();
     $p = registerPlayer($db, 'Promo');
     $band = foundBand($p);
-    $m = $band['memberIds'][0];
-    $activity = $p->post('promoStart', ['musicianId' => $m])['activity'];
-    checkApiError(fn () => $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'busking']), 'unterwegs');
+    $activity = $p->post('bandPromo', ['bandId' => $band['id']])['activity'];
+    checkApiError(fn () => $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'busking']), 'beschäftigt');
     $state = $p->post('promoCancel', ['activityId' => $activity['id']])['state'];
     checkEquals(0, count($state['running']));
     checkEquals(0, count($state['results']));

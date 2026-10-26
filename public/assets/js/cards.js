@@ -8,7 +8,7 @@ export const instrumentName = (type) => cat().instruments[type]?.name ?? type;
 /** Emoji für Stellen, die nur Text können (Auswahllisten, Canvas). */
 export const instrumentEmoji = (type) => cat().instruments[type]?.icon ?? '🎵';
 /** Gezeichnetes Symbol; electric zeigt die E-Gitarre, tier die Güteklasse 0–3 (null = bisheriges Aussehen). */
-export const instrumentIcon = (type, electric = false, hue = null, tier = null) => instrumentSvg(type, electric, hue, tier) ?? instrumentEmoji(type);
+export const instrumentIcon = (type, electric = false, hue = null, tier = null, art = {}) => instrumentSvg(type, electric, hue, tier, art) ?? instrumentEmoji(type);
 
 /** Güteklasse eines Instruments: 0 grau (gewöhnlich), 1 grün (selten), 2 blau (episch), 3 gold (legendär). */
 export const TIER = { common: 0, rare: 1, epic: 2, legendary: 3 };
@@ -21,10 +21,12 @@ export function gearHue(g) {
   return (seed * 47 + 200) % 360;
 }
 
-/** Symbol eines bestimmten Instruments (mit Klasse und Farbe). */
+/** Symbol eines bestimmten Instruments: Klasse, Lackfarbe (blau), Holz oder Metall (grün, fest je Instrument), goldene Fähigkeit (gold). */
 export const gearIcon = (g) => {
   const model = cat().gear[g.model];
-  return instrumentIcon(model.type, !!model.electric, gearHue(g), gearTier(g));
+  const seed = g.id ?? ((g.slot ?? 0) * 31 + (g.idx ?? 0) * 7);
+  const gold = (g.bonuses ?? []).find((b) => b.slot === 'gold')?.kind ?? null;
+  return instrumentIcon(model.type, !!model.electric, gearHue(g), gearTier(g), { variant: (seed * 5 + 3) % 35, gold });
 };
 
 const BONUS_SLOT = { green: 'Übung', blue: 'Klang', gold: 'Besonders' };

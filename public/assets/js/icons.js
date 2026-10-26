@@ -3,6 +3,8 @@
  * sehen verschieden aus. Für Stellen, die nur Text können (Auswahllisten, Canvas), bleibt das Emoji aus dem Katalog.
  * Gezeichnet auf 64 × 64; Gitarren, Bass und Geige stehen aufrecht und werden schräg gestellt.
  */
+import { tierArt } from './gearart.js';
+
 const LINE = 'stroke-linejoin="round" stroke-linecap="round"';
 
 /** Aufrechtes Instrument schräg stellen und verkleinern, damit es ins Quadrat passt. */
@@ -86,145 +88,10 @@ const bassGuitar = (hue = 218) => tilt(`
   <path d="M41.4 37 C43 39.4 42.8 42 41.4 44" fill="none" stroke="#fff" stroke-width="1" opacity="0.4"/>`, 40, 0.74);
 
 
-// ---------- Instrumente in vier Güteklassen (0 grau, 1 grün, 2 blau, 3 gold) ----------
-// Jede Klasse sieht sichtbar besser aus: 0 schlicht, 1 hochwertig (Maserung, Einfassung, Chrom), 2 schön lackiert in Farbe
-// mit Perlmutt und Gold, 3 ein Einzelstück (Gravuren, Blattgold, Leuchten). Klasse 0 hat bewusst kein Klimbim.
-
-const AG_BODY = 'M32 21 C25.4 21 23 25 24 29.4 C24.6 31.8 25.6 33.2 24.4 35.2 C20.2 38 18.6 42 19.6 47 C21.4 55 26.8 59 32 59 C37.2 59 42.6 55 44.4 47 C45.4 42 43.8 38 39.6 35.2 C38.4 33.2 39.4 31.8 40 29.4 C41 25 38.6 21 32 21 Z';
-const AG_INNER = 'M32 22.4 C26.6 22.4 24.8 25.6 25.6 29.2 C26.2 31.6 27 33.4 25.8 35.6 C22 38.4 20.8 42 21.6 46.6 C23.2 53.8 27.8 57.4 32 57.4 C36.2 57.4 40.8 53.8 42.4 46.6 C43.2 42 42 38.4 38.2 35.6 C37 33.4 37.8 31.6 38.4 29.2 C39.2 25.6 37.4 22.4 32 22.4 Z';
-const EG_BODY = 'M25 30.2 C22.6 25.4 17.2 26 18.2 31.4 C18.8 34.6 20 36 18 39.4 C14.6 45 16 53.6 23.2 56.4 C28.6 58.4 35.6 58.4 40.6 56.4 C47.6 53.6 48.6 45.2 45.6 40.2 C43.8 37.4 44.4 34.8 46 31.8 C48.2 27.4 44.4 24.6 41.6 27.8 C39.4 30.4 36.6 31.6 32 31.6 C28.8 31.6 26.6 31.2 25 30.2 Z';
-
-/** Kleiner Funkelstern (vierzackig) für die goldene Klasse. */
-const sparkle = (x, y, r, o = 1) => `<path d="M${x} ${y - r} Q${x + r * 0.18} ${y - r * 0.18} ${x + r} ${y} Q${x + r * 0.18} ${y + r * 0.18} ${x} ${y + r} Q${x - r * 0.18} ${y + r * 0.18} ${x - r} ${y} Q${x - r * 0.18} ${y - r * 0.18} ${x} ${y - r} Z" fill="#fff6c8" opacity="${o}"/>`;
-
-/** Mechaniken am Kopf: Plastik (0), Chrom (1), Gold (2, 3; bei 3 mit Perlmutt-Knöpfen). */
-function tuners(tier, xs, ys, r = 1) {
-  const fill = tier === 0 ? '#2a2830' : tier === 1 ? '#d9dbe2' : '#e8c35a';
-  const line = tier === 0 ? '#111' : tier === 1 ? '#6b6f7a' : '#8a6418';
-  return xs.map((x, i) => `<circle cx="${x}" cy="${ys[i]}" r="${r}" fill="${fill}" stroke="${line}" stroke-width="0.3"/>${tier === 3 ? `<circle cx="${x}" cy="${ys[i]}" r="${r * 0.5}" fill="#f4eefc"/>` : ''}`).join('');
-}
-
-/** Griffbrett-Einlagen: Punkte (0, 1), Perlmutt-Blöcke (2), goldene Ranke (3). */
-function inlays(tier, x, top, bottom) {
-  if (tier <= 1) return '';
-  if (tier === 2) return [0.22, 0.42, 0.62, 0.8].map((f) => `<rect x="${x - 1.5}" y="${(top + (bottom - top) * f).toFixed(1)}" width="3" height="1.2" fill="#eaf2f6" opacity="0.9"/>`).join('');
-  return `<path d="M${x} ${top + 1} C${x - 1.6} ${top + 5} ${x + 1.6} ${top + 9} ${x} ${top + 13} C${x - 1.6} ${top + 16} ${x + 1.6} ${(bottom + top) / 2 + 4} ${x} ${bottom - 1}" fill="none" stroke="#f2cf6a" stroke-width="0.55"/>`
-    + [[x - 1, top + 5], [x + 1, top + 9.5], [x - 1, top + 15]].map(([lx, ly]) => `<ellipse cx="${lx}" cy="${ly}" rx="0.8" ry="0.4" fill="#f2cf6a" transform="rotate(-30 ${lx} ${ly})"/>`).join('');
-}
-
-function acousticTier(tier, hue) {
-  const h = hue ?? 30;
-  const top = [
-    '<linearGradient id="t-top" x1="0" x2="1"><stop offset="0" stop-color="#c08a52"/><stop offset="1" stop-color="#b07a44"/></linearGradient>',
-    '<radialGradient id="t-top" cx="45%" cy="62%" r="62%"><stop offset="0" stop-color="#f8d79c"/><stop offset="0.65" stop-color="#e2a456"/><stop offset="1" stop-color="#a8611f"/></radialGradient>',
-    `<radialGradient id="t-top" cx="46%" cy="60%" r="64%"><stop offset="0" stop-color="hsl(${h + 20} 85% 74%)"/><stop offset="0.5" stop-color="hsl(${h} 75% 52%)"/><stop offset="0.85" stop-color="hsl(${h - 10} 70% 28%)"/><stop offset="1" stop-color="hsl(${h - 14} 70% 14%)"/></radialGradient>`,
-    '<radialGradient id="t-top" cx="45%" cy="55%" r="70%"><stop offset="0" stop-color="#2a2550"/><stop offset="0.7" stop-color="#14122c"/><stop offset="1" stop-color="#07060f"/></radialGradient>',
-  ][tier];
-  const neck = tier === 0 ? '#5a3c26' : 'url(#t-neck)';
-  const grain = tier === 1 ? `<clipPath id="t-clip"><path d="${AG_BODY}"/></clipPath><g clip-path="url(#t-clip)" stroke="#8a5420" stroke-width="0.25" opacity="0.3">${[22, 24.4, 26.6, 28.6, 30.4, 32.2, 34, 35.8, 37.6, 39.6, 41.8].map((x) => `<path d="M${x} 20 Q${x + 0.6} 40 ${x - 0.2} 60" fill="none"/>`).join('')}</g>` : '';
-  const binding = tier === 0 ? '' : tier === 1
-    ? `<path d="${AG_INNER}" fill="none" stroke="#f4e6c6" stroke-width="0.6" opacity="0.9"/>`
-    : tier === 2
-      ? `<path d="${AG_INNER}" fill="none" stroke="#f6efe0" stroke-width="0.7"/><path d="${AG_INNER}" fill="none" stroke="#1a1410" stroke-width="0.25" transform="translate(32 40) scale(0.975) translate(-32 -40)"/>`
-      : `<path d="${AG_INNER}" fill="none" stroke="url(#t-pearl)" stroke-width="1.1"/>`;
-  const rosette = tier === 0 ? '' : tier === 1
-    ? '<circle cx="32" cy="36.2" r="5.6" fill="none" stroke="#5a3a20" stroke-width="0.5"/><circle cx="32" cy="36.2" r="6.4" fill="none" stroke="#5a3a20" stroke-width="0.25"/>'
-    : tier === 2
-      ? '<circle cx="32" cy="36.2" r="6" fill="none" stroke="url(#t-pearl)" stroke-width="1.3"/>'
-      : '<circle cx="32" cy="36.2" r="6.2" fill="none" stroke="#e8c35a" stroke-width="1.4"/><circle cx="32" cy="36.2" r="6.2" fill="none" stroke="#fff3b8" stroke-width="0.35" stroke-dasharray="0.6 1.2"/>';
-  const guard = tier === 1 ? '<path d="M36.4 33.6 C40 34.4 41.2 37.8 39.4 40.4 C37.6 42.6 35.2 41.4 35 39 Z" fill="#5a2c14" opacity="0.85"/>'
-    : tier === 2 ? '<path d="M36.4 33.6 C40 34.4 41.2 37.8 39.4 40.4 C37.6 42.6 35.2 41.4 35 39 Z" fill="#14100c" opacity="0.9"/>' : '';
-  // Gold: Ranken aus Blattgold über den Korpus, Funkeln und ein leises Leuchten
-  const vine = (flip) => {
-    const t = flip ? 'translate(64 0) scale(-1 1)' : '';
-    return `<g transform="${t}"><path d="M22.4 50 C23 46 25.6 44.4 27 46 C28.2 47.4 26.6 49 25.6 48 M22.6 47 C21.6 45 22 42.6 23.6 41.6 M24 53 C25.6 54.6 28 55 29.6 54.2" fill="none" stroke="#e8c35a" stroke-width="0.55" stroke-linecap="round"/>`
-      + [[23.4, 41.4, -40], [27.4, 45.8, 30], [29.8, 54, 10], [22.6, 49.6, -70]].map(([x, y, r]) => `<ellipse cx="${x}" cy="${y}" rx="1.25" ry="0.55" fill="#f2cf6a" transform="rotate(${r} ${x} ${y})"/>`).join('')
-      + '<circle cx="25.4" cy="47.8" r="0.7" fill="#fff3b8"/></g>';
-  };
-  const gold = tier === 3 ? `${vine(false)}${vine(true)}${sparkle(41.6, 27, 1.6)}${sparkle(22.4, 52.6, 1.1, 0.85)}${sparkle(37.4, 56.6, 0.9, 0.8)}` : '';
-  const glow = tier === 3 ? `<path d="${AG_BODY}" fill="none" stroke="#f2cf6a" stroke-width="2.6" opacity="0.35" filter="url(#t-glow)"/>` : '';
-  const head = tier === 3 ? '#14122c' : tier === 2 ? `hsl(${h - 10} 60% 20%)` : '#4a2c18';
-  const sheen = tier === 0 ? '' : '<path d="M25.6 44 C26.6 50 29.4 53.4 32 54" fill="none" stroke="#fff" stroke-width="1" opacity="0.25"/>';
-  return tilt(`
-  <defs>
-    ${top}
-    <linearGradient id="t-neck" x1="0" x2="1"><stop offset="0" stop-color="#3a2416"/><stop offset="0.5" stop-color="#5a3a22"/><stop offset="1" stop-color="#3a2416"/></linearGradient>
-    <linearGradient id="t-pearl" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#f6d6f0"/><stop offset="0.3" stop-color="#bfe8f0"/><stop offset="0.6" stop-color="#f4f0c8"/><stop offset="1" stop-color="#d8c6f6"/></linearGradient>
-    <filter id="t-glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="1.4"/></filter>
-  </defs>
-  ${glow}
-  <path d="M29.4 1 H34.6 L35.6 9.4 H28.4 Z" fill="${head}" ${tier === 3 ? 'stroke="#e8c35a" stroke-width="0.4"' : ''}/>
-  ${tier >= 2 ? `<path d="M30.6 3.4 H33.4" stroke="${tier === 3 ? '#f2cf6a' : 'url(#t-pearl)'}" stroke-width="0.8" stroke-linecap="round"/>` : ''}
-  ${tuners(tier, [27.6, 27.4, 27.2, 36.4, 36.6, 36.8], [3, 5.4, 7.8, 3, 5.4, 7.8])}
-  <rect x="29.9" y="9.2" width="4.2" height="21" fill="${neck}"/>
-  ${tier === 0 ? '' : fretboard(32, 9.6, 30, 4.2, 6)}
-  ${tier === 0 ? Array.from({ length: 5 }, (_, i) => `<path d="M30 ${12 + i * 3.6} H34" stroke="#b8b0a2" stroke-width="0.35"/>`).join('') : ''}
-  ${inlays(tier, 32, 9.6, 30)}
-  <path d="${AG_BODY}" fill="url(#t-top)" stroke="${tier === 3 ? '#e8c35a' : '#6b3a12'}" stroke-width="${tier === 3 ? 0.8 : 0.9}"/>
-  ${grain}${binding}${guard}${gold}
-  <circle cx="32" cy="36.2" r="4.6" fill="#2a1e14" stroke="${tier === 0 ? '#2a1e14' : '#7a4a1c'}" stroke-width="0.8"/>
-  <circle cx="32" cy="36.2" r="3.4" fill="#120c08"/>
-  ${rosette}
-  <rect x="27.4" y="47" width="9.2" height="2.6" rx="1.2" fill="${tier === 3 ? '#e8c35a' : '#3a2416'}"/>
-  <path d="M28.6 47.8 H35.4" stroke="#efe6d2" stroke-width="0.6"/>
-  ${Array.from({ length: 6 }, (_, i) => `<path d="M${(30.3 + i * 0.68).toFixed(2)} 30 V48" stroke="#eef0f4" stroke-width="0.28"/>`).join('')}
-  ${sheen}`, 40, 0.8);
-}
-
-function electricTier(tier, hue) {
-  const h = hue ?? 18;
-  const body = [
-    `<linearGradient id="t-eb" x1="0" x2="1"><stop offset="0" stop-color="hsl(${h} 45% 44%)"/><stop offset="1" stop-color="hsl(${h} 45% 40%)"/></linearGradient>`,
-    `<radialGradient id="t-eb" cx="46%" cy="62%" r="60%"><stop offset="0" stop-color="hsl(${h + 30} 95% 66%)"/><stop offset="0.45" stop-color="hsl(${h} 86% 54%)"/><stop offset="0.8" stop-color="hsl(${h - 6} 76% 40%)"/><stop offset="1" stop-color="hsl(${h - 10} 72% 16%)"/></radialGradient>`,
-    `<radialGradient id="t-eb" cx="48%" cy="58%" r="62%"><stop offset="0" stop-color="hsl(${h + 10} 90% 72%)"/><stop offset="0.55" stop-color="hsl(${h} 85% 46%)"/><stop offset="0.9" stop-color="hsl(${h} 80% 20%)"/><stop offset="1" stop-color="hsl(${h} 80% 10%)"/></radialGradient>`,
-    '<radialGradient id="t-eb" cx="50%" cy="55%" r="70%"><stop offset="0" stop-color="#2b1a5a"/><stop offset="0.7" stop-color="#120a2c"/><stop offset="1" stop-color="#05030f"/></radialGradient>',
-  ][tier];
-  const metal = tier === 0 ? '#3a3a40' : tier === 1 ? '#c9ccd4' : '#e8c35a';
-  const metalLine = tier === 0 ? '#111' : tier === 1 ? '#6b6f7a' : '#8a6418';
-  // Blau: geflammtes Ahorn unter dem Lack (wellige helle und dunkle Bänder); Gold: Galaxie mit Nebeln und Sternen
-  // Geflammtes Ahorn: unregelmäßige, weich gebogene Bänder (verschieden hoch, breit und hell), nicht wie Streifen
-  const flame = tier === 2 ? `<g clip-path="url(#t-eclip)">${[[29, 2.2, 0.9, 0.22], [32.6, 3.2, 1.6, 0.16], [35, 1.6, 0.7, 0.2], [38.4, 3.6, 2, 0.14], [41.4, 2, 1, 0.2], [44.6, 3, 1.4, 0.15], [47, 1.8, 0.8, 0.2], [50.4, 2.8, 1.8, 0.14], [53.6, 2.2, 1.1, 0.18]].map(([y, amp, w, o], i) => `<path d="M14 ${y} C19 ${y - amp} 24 ${y + amp * 0.6} 29 ${y - amp * 0.2} S39 ${y + amp} 44 ${y - amp * 0.4} S49 ${y + amp * 0.3} 51 ${y}" fill="none" stroke="${i % 2 ? '#000' : '#fff'}" stroke-width="${w}" stroke-linecap="round" opacity="${o}"/>`).join('')}</g>` : '';
-  const galaxy = tier === 3 ? `<g clip-path="url(#t-eclip)">
-      <ellipse cx="27" cy="44" rx="9" ry="6" fill="#ff4fa3" opacity="0.35" filter="url(#t-glow)"/>
-      <ellipse cx="38" cy="50" rx="8" ry="5" fill="#4fd8ff" opacity="0.32" filter="url(#t-glow)"/>
-      <ellipse cx="34" cy="36" rx="6" ry="3.6" fill="#b56bff" opacity="0.4" filter="url(#t-glow)"/>
-      ${[[22, 40, 0.35], [26, 52, 0.3], [30, 34, 0.25], [41, 38, 0.3], [43, 47, 0.35], [36, 55, 0.3], [24, 47, 0.25], [39, 31, 0.25], [33, 45, 0.2], [28, 39, 0.2]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#fff"/>`).join('')}
-    </g>${sparkle(44.6, 34, 1.5)}${sparkle(20.6, 50.4, 1.1, 0.85)}` : '';
-  const guard = tier <= 1 ? `<path d="M24.4 33.6 C26.8 34.6 29.6 34.8 33 34.8 L35.8 34.6 L37 44 L36.4 50.4 C32.6 53.4 25.6 53 22.6 49.4 C20.6 46.8 21.4 42 23 39 C24 37.2 24.6 35.4 24.4 33.6 Z" fill="${tier === 0 ? '#ecebe6' : 'url(#t-guard)'}" stroke="#a9a59a" stroke-width="0.5"/>` : '';
-  const binding = tier >= 1 ? `<path d="${EG_BODY}" fill="none" stroke="${tier === 3 ? '#e8c35a' : '#f6efe0'}" stroke-width="${tier === 3 ? 0.9 : 0.6}" transform="translate(32 44) scale(0.955) translate(-32 -44)"/>` : '';
-  const pickups = (tier === 0 ? [41.6] : [37.4, 46.2]).map((y, i) => `<rect x="28.4" y="${y}" width="7.2" height="${tier >= 2 ? 2.4 : 1.9}" rx="0.9" fill="${tier >= 2 ? metal : tier === 0 ? '#1a1a1e' : '#fbfaf6'}" stroke="${tier >= 2 ? metalLine : '#8e8a80'}" stroke-width="0.4"/>`).join('');
-  const glow = tier === 3 ? `<path d="${EG_BODY}" fill="none" stroke="#b56bff" stroke-width="2.8" opacity="0.45" filter="url(#t-glow)"/>` : '';
-  const sheen = tier === 0 ? '' : '<path d="M42.6 33.6 C44 36 43.6 38.6 42.2 40.6" fill="none" stroke="#fff" stroke-width="1" opacity="0.35"/>';
-  return tilt(`
-  <defs>
-    ${body}
-    <linearGradient id="t-maple" x1="0" x2="1"><stop offset="0" stop-color="#e8c896"/><stop offset="0.5" stop-color="#f6dfb4"/><stop offset="1" stop-color="#d9b37c"/></linearGradient>
-    <linearGradient id="t-guard" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e2e0da"/></linearGradient>
-    <clipPath id="t-eclip"><path d="${EG_BODY}"/></clipPath>
-    <filter id="t-glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="1.4"/></filter>
-  </defs>
-  <g transform="translate(0 -5)">
-  <path d="M29.6 0.6 C31.4 0.2 33.6 0.6 34.6 1.8 L35.4 10.6 L30.6 10.6 C29.4 7.6 28.6 4 29.6 0.6 Z" fill="${tier === 3 ? '#120a2c' : tier === 0 ? '#d4b486' : 'url(#t-maple)'}" stroke="${tier === 3 ? '#e8c35a' : '#9a7444'}" stroke-width="0.5"/>
-  ${tuners(tier, [1.8, 3.4, 5, 6.6, 8.2, 9.8].map((y) => +(29 + (y - 1.8) * 0.06).toFixed(2)), [1.8, 3.4, 5, 6.6, 8.2, 9.8], 0.75)}
-  <rect x="30.1" y="10.4" width="3.8" height="27" fill="${tier === 0 ? '#d4b486' : tier === 3 ? '#1a1236' : 'url(#t-maple)'}" stroke="#9a7444" stroke-width="0.4"/>
-  ${tier === 0 ? Array.from({ length: 6 }, (_, i) => `<path d="M30.4 ${14 + i * 3.8} H33.6" stroke="#8a7a62" stroke-width="0.35"/>`).join('') : fretboard(32, 10.6, 36, 3.8, 6, '#2a2233')}
-  ${inlays(tier, 32, 10.6, 36)}
-  </g>
-  <g transform="translate(32 44) scale(0.8 0.9) translate(-32 -44)">
-  ${glow}
-  <path d="${EG_BODY}" fill="url(#t-eb)" stroke="${tier === 3 ? '#e8c35a' : '#3a0e06'}" stroke-width="0.9"/>
-  ${flame}${galaxy}${binding}${guard}${pickups}
-  <rect x="28.2" y="49.6" width="7.6" height="2.4" rx="0.6" fill="${metal}" stroke="${metalLine}" stroke-width="0.4"/>
-  <g fill="${tier >= 2 ? metal : '#fbfaf6'}" stroke="${tier >= 2 ? metalLine : '#8e8a80'}" stroke-width="0.4"><circle cx="38.8" cy="47.6" r="1.3"/><circle cx="38" cy="51" r="1.3"/>${tier >= 1 ? '<circle cx="36.4" cy="54" r="1.3"/>' : ''}</g>
-  ${Array.from({ length: 6 }, (_, i) => `<path d="M${(30.4 + i * 0.64).toFixed(2)} 32 V50" stroke="#eef0f4" stroke-width="0.28"/>`).join('')}
-  ${sheen}
-  </g>`, 40, 0.8);
-}
-
 /** Jedes Symbol als Funktion des Farbtons (null = Grundfarbe); nur Korpus bzw. Kessel werden eingefärbt. */
 const ICONS = {
-  guitar: (hue, tier) => (tier === null ? acousticGuitar(hue) : acousticTier(tier, hue)),
-  eguitar: (hue, tier) => (tier === null ? electricGuitar(hue ?? 18) : electricTier(tier, hue)),
+  guitar: (hue) => acousticGuitar(hue),
+  eguitar: (hue) => electricGuitar(hue ?? 18),
   bass: (hue) => bassGuitar(hue ?? 218),
   drums: (hue) => `
     <defs>
@@ -361,16 +228,20 @@ ICONS.synth = ICONS.keys;
 
 let serial = 0;
 
+/** Welche gezeichnete Form ein Instrument in seiner Güteklasse hat (E-Gitarre, E-Drums, Synthesizer oder Klavier). */
+const artKey = (type, electric) => ({ guitar: electric ? 'eguitar' : 'guitar', drums: electric ? 'edrums' : 'drums', keys: electric ? 'synth' : 'piano' }[type] ?? type);
+
 /**
  * Symbol eines Instruments als kleines SVG; electric unterscheidet Gitarre und E-Gitarre, hue färbt den Korpus (Farbvariante),
- * tier ist die Güteklasse 0–3 (null = bisheriges Aussehen).
+ * tier ist die Güteklasse 0–3 (null = einfaches Symbol ohne bestimmtes Instrument); art.variant wählt Holz/Metall (grün),
+ * art.gold die goldene Fähigkeit, nach der ein goldenes Instrument aussieht (gearart.js).
  * Jede Kopie bekommt eigene Kennungen für ihre Farbverläufe – sonst verweisen alle auf die erste,
  * und liegt die versteckt (z. B. in einem geschlossenen Fenster), bleiben die anderen farblos.
  */
-export function instrumentSvg(type, electric = false, hue = null, tier = null) {
-  const key = type === 'guitar' && electric ? 'eguitar' : type;
-  if (!ICONS[key]) return null;
-  const body = ICONS[key](hue, tier);
+export function instrumentSvg(type, electric = false, hue = null, tier = null, art = {}) {
+  const key = tier === null ? (type === 'guitar' && electric ? 'eguitar' : type) : artKey(type, electric);
+  const body = tier === null ? ICONS[key]?.(hue) : tierArt(key, tier, hue, art.variant ?? 0, art.gold ?? null);
+  if (!body) return null;
   const n = ++serial;
   const unique = body.replace(/id="([\w-]+)"/g, `id="$1-${n}"`).replace(/url\(#([\w-]+)\)/g, `url(#$1-${n})`);
   return `<svg class="ico ico-${key}" viewBox="0 0 64 64" aria-hidden="true">${unique}</svg>`;

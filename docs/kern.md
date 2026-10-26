@@ -357,7 +357,12 @@ Jam-Café für den Gastgeber vorbei. Lehnt man alle ab, verfällt die Auswahl un
   Studio-Legende (Plattenqualität +0,03–0,06), Showstück (live +3–6 % Glanzchance), Hitmaschine (Chartpunkte +10–25 %).
 - Preis und Verkaufswert × 0,8 bis × 1,3 nach Güte innerhalb der Klasse. Verkauf: 25 / 80 / 260 / 750 ₲ je Seltenheit.
 - Ältere Instrumente bekommen ihre Boni aus Klang, Spielbarkeit, Design und Extras abgeleitet (`Gear::legacy`).
-- Aussehen je Klasse (bisher für Gitarre und E-Gitarre gezeichnet, `icons.js`): grau schlicht, grün hochwertig, blau in vielen Lackfarben, gold ein Einzelstück.
+- Aussehen je Klasse (`gearart.js`, alle Instrumente; Gitarre, E-Gitarre, Bass, Schlagzeug, E-Drums, Synthesizer, Klavier, Mikro,
+  Saxophon, Trompete, Geige, Flöte, Turntables): grau schlicht und flach; grün natürliche Hölzer (Ahorn, Kirsche, Nussbaum, Mahagoni,
+  Esche, Olive, Honig) bzw. Metalle (Messing, Rotmessing, Silber, Altmessing, Bronze), fest je Instrument gelost, mit Chrom;
+  blau farbig lackiert mit Gold. Gold sieht nach seiner Fähigkeit aus: Publikumsmagnet nachtblau mit goldenen Ranken und warmem
+  Leuchten, Showstück Galaxie mit Strass und Funkeln, Studio-Legende elfenbein mit feinen Goldlinien und Plakette, Kultobjekt
+  geschnitztes dunkles Holz mit Perlen und Feder (Glücksbringer), Hitmaschine poliertes Gold mit Rillen wie eine goldene Schallplatte.
 - Die Instrumentenarten kommen so oft wie die Musiker, die sie spielen (gleiche Gewichte).
 
 ### Läden

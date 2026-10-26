@@ -88,7 +88,7 @@ function labelPage(l) {
     <div class="wk-article">
       <aside class="wk-box"><h3>${esc(l.name)}</h3><table>
         ${row('Gegründet', day(l.foundedAt))}
-        ${row('Erfolg', fmt1(l.success))}
+        ${row('Label-Ruhm', fmt1(l.success))}
         ${row('Platten', l.recordCount || '')}
         ${row('Nummer-1-Hits', l.numberOnes || '')}
         ${row('Perfekte Platten', l.perfectCount || '')}

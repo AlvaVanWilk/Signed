@@ -777,6 +777,7 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .gg-money span { display: flex; flex-direction: column; }
 .gg-money small { font-size: .68rem; color: var(--lb-muted); text-transform: uppercase; letter-spacing: .05em; }
 .gg-money b { font-size: .95rem; white-space: nowrap; }
+.gg-money .gg-sub { font-style: normal; font-size: .7rem; color: var(--lb-muted); }
 .gg-money .good b { color: #7fd0a6; } .gg-money .bad b { color: #e0a45a; } .gg-money .warn b { color: #e8c75a; }
 .gg-notes { list-style: none; margin: 0; padding: 0; font-size: .8rem; display: flex; flex-wrap: wrap; gap: 2px 14px; }
 .gg-notes .good { color: #7fd0a6; } .gg-notes .bad { color: #e0a45a; } .gg-notes .warn { color: #e8c75a; }

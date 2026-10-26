@@ -52,7 +52,7 @@ function head(s) {
       <div><div class="eyebrow">Dein Label</div><h1>${esc(s.label.name)}</h1>${founded ? `<small class="muted">gegründet am ${founded} · <a href="#/wiki/label/${s.label.id}">in der WikiSignia</a></small>` : ''}</div>
       <div class="ov-stats">
         ${stat('Geld', `<span data-live-money>${money(liveMoney())}</span>`, s.finance.moneyPerHour ? `+${fmtGain(s.finance.moneyPerHour / 60)} ₲ pro Minute aus Platten` : 'Platten bringen laufend Geld')}
-        ${stat('Erfolg', fmt1(fame), s.finance.famePerHour ? `+${fmtGain(s.finance.famePerHour)} pro Std. aus den Charts` : 'Ruhm aller Bands zusammen')}
+        ${stat('Label-Ruhm', fmt1(s.label.fame ?? fame), s.finance.famePerHour ? `+${fmtGain(s.finance.famePerHour)} pro Std. aus den Charts` : 'große Bands zählen mehr')}
         ${stat('In den Charts', charting.length ? fmt0(charting.length) : '–', best ? `bester Platz: ${best}` : 'noch keine Platte drin')}
         ${stat('Künstler', fmt0(s.musicians.length), s.bands.length ? `in ${s.bands.length} ${s.bands.length === 1 ? 'Band' : 'Bands'}` : 'noch niemand unter Vertrag')}
       </div>
@@ -145,6 +145,8 @@ function managerNotes(s) {
     groups.get(m.id).notes.push(...b.managerNotes.map((n) => ({ ...n, b })));
   }
   const loud = s.bands.filter((b) => !b.managed && b.mood.wishes.length);
+  // Großer Streit ist laut, den bekommt man auch ohne Manager mit.
+  const fights = s.bands.filter((b) => !b.managed).flatMap((b) => Object.keys(b.mood.relations ?? {}).map((pair) => ({ b, ids: pair.split('-').map(Number) })));
   const without = s.bands.filter((b) => !b.managed);
   const line = (n) => `<li class="l${n.level}">${bandLink(n.b, esc(n.text))}</li>`;
   const block = ({ m, notes }) => `
@@ -161,6 +163,7 @@ function managerNotes(s) {
         const name = m ? (m.stageName ?? m.firstName) : who(b);
         return `<li class="l0">${bandLink(b, `<b>${esc(name)}</b>${b.memberIds.length > 1 ? ` (${esc(b.name)})` : ''}`)} ist richtig unzufrieden: „${esc(b.mood.wishes[0].text)}“</li>`;
       }).join('')}</ul>` : ''}
+      ${fights.length ? `<ul class="ov-notes">${fights.map(({ b, ids }) => `<li class="l0">${bandLink(b, `<b>${ids.map((id) => esc(musicianById(id)?.firstName ?? '')).join(' und ')}</b> haben richtig Streit.`)}</li>`).join('')}</ul>` : ''}
       ${without.length ? `<p class="muted small">${without.map((b) => esc(who(b))).join(', ')} ${without.length === 1 ? 'hat' : 'haben'} keinen Manager. Ohne Manager siehst du nur, wie gut jemand drauf ist, und erfährst erst etwas, wenn es richtig schlecht läuft.
         ${hasJob ? go(job.box ?? (job.sorted ? 'job' : 'inbox'), 'Ein Manager hat sich beworben.') : ''}</p>` : ''}
     </section>`;

@@ -47,7 +47,7 @@ Drei Grundsätze, die für alles gelten:
 
 | Wert | Was es ist |
 |---|---|
-| **Erfolg** | Summe des Ruhms aller Bands; steht in der Rangliste; bestimmt, wie viele Einsendungen kommen |
+| **Label-Ruhm** | aus dem Ruhm aller Bands, große zählen stärker: Wurzel aus der Summe der Quadrate (`BandCalc::labelFame`). Eine Band allein zählt mit ihrem Ruhm; 500 und 490 ergeben 700, fünfzig Bands mit je 10 nur 71, neue Unbekannte ziehen nichts herunter. Bestimmt, wie viel Post kommt; steht auf der Übersicht und in der WikiSignia |
 
 ## Beziehung
 
@@ -62,6 +62,8 @@ Drei Grundsätze, die für alles gelten:
 - **Anzeige:** Auf der Bandseite hat jedes Profil unter sich einen **Kreis pro Mitmusiker** (bei 7 Mitgliedern 6 Kreise). Die Farbe läuft **stufenlos**:
   Mitte **grau**, nach plus immer kräftigeres **Grün**, nach minus immer kräftigeres **Rot**. Eine enge Freundschaft ist ein strahlend grüner Kreis,
   „noch fremd“ ein grauer. Tippen auf einen Kreis zeigt, welche zwei Musiker es sind, und warum.
+- **Nur mit Manager** (gebaut): Ohne Manager sieht man die Beziehungen und den Zusammenhalt nicht. Nur großer Streit (−7 oder schlechter,
+  `Balance::MANAGER_STAFF['notes']['fight']`) ist laut: Er steht dann als Kreis auf der Bandseite und auf der Übersicht („… haben richtig Streit.“).
 
 ## Wohlbefinden und Bedürfnisse
 
@@ -294,10 +296,10 @@ alles Neue ein **NEU** (bis man das nächste Mal hereinkommt). Alles landet im *
 wenn jemand sortiert. **Von Hand** lässt sich alles festhalten und auf einen Reiter ziehen (auch zurück in den Eingang oder zu „Gespeichert“);
 das überstimmt die Sortierung (`Post::move`, Spalte `box`).
 - **Wie viel kommt**: Alles kommt zufällig, im Schnitt so viel wie die Rate je Tag. Jede Rate ist eine fließende Formel ohne Stufen und
-  ohne Obergrenze: **Start + Zuwachs × √Erfolg** (Erfolg = Ruhm aller Bands zusammen, wie oben auf der Übersicht). Steigt der Erfolg, gilt
+  ohne Obergrenze: **Start + Zuwachs × √Label-Ruhm** (siehe oben, wie er sich berechnet; steht auf der Übersicht). Steigt er, gilt
   die neue Rate sofort (die Wartezeit bis zur nächsten Ankunft wird dann neu gewürfelt, `Post::nextArrival`).
 
-  | je Tag            | Start | Zuwachs | bei Erfolg 100 | 1.000 | 10.000 |
+  | je Tag            | Start | Zuwachs | bei Label-Ruhm 100 | 1.000 | 10.000 |
   |-------------------|------:|--------:|------:|------:|-------:|
   | Kassetten (Demos) |     8 |     1,8 |    26 |    65 |    188 |
   | Praktikum         |   0,8 |   0,033 |   1,1 |   1,8 |    4,1 |
@@ -312,7 +314,7 @@ das überstimmt die Sortierung (`Post::move`, Spalte `box`).
   Bekanntheit 120: etwa 0,65; 600: etwa 1,3; 2.000: etwa 2,3). Offen sind für ihn höchstens 1 + Bekanntheitsstufe zugleich, jede von einem
   anderen Medium seiner Stufe (Unbekannte: Schülerzeitung, Blog; Bekannte: Musikzeitschriften, Sender; Stars: Fernsehshows). Wie viele andere
   Bands das Label hat, spielt keine Rolle. Ein Praktikum liegt immer da; ganz zu Beginn bewerben sich dazu ein Scout und ein Manager. Wie gut
-  die Bewerber sind, folgt dem Erfolg gesättigt: Güte = Erfolg / (Erfolg + 300) (`Balance::JOBS`, `Balance::SUBMISSIONS['perDay']`, `Balance::INTERVIEW`).
+  die Bewerber sind, folgt dem Label-Ruhm gesättigt: Güte = Ruhm / (Ruhm + 300) (`Balance::JOBS`, `Balance::SUBMISSIONS['perDay']`, `Balance::INTERVIEW`).
 - **Praktikum** (gebaut): 50 ₲, 7 Tage, nur ein Vorname, sieht jünger aus (kleinerer Kopf). Immer nur **eins zur gleichen Zeit**. Es arbeitet
   **nur auf Zuruf**: „Post bearbeiten“ heißt, alles, was in dem Moment im Eingang liegt, Stück für Stück **auspacken**, Kassetten **anhören**
   (ohne wegzuwerfen) und **ins passende Fach legen**. Was danach kommt, bleibt liegen. Es ist nicht schneller als man selbst, aber man kann
@@ -358,8 +360,8 @@ In der Wirklichkeit schicken Künstler Demos an Labels, und Talentsucher hören 
   manchmal **Gutes**. Das Öffnen hat etwas von einem Pack, soll aber **Arbeit** sein.
 - **Laufend statt einmal am Tag:** Die Einsendungen **trudeln über den Tag verteilt ein** (Zufallszeiten, nicht alle auf einmal); bei einem kleinen Label etwa alle drei Stunden eine, bei einem großen alle paar Minuten.
   Wer wartet, bekommt mehr zu tun, und offline sammeln sich Einsendungen bis zum Verfallsdatum.
-- **Keine Mengenbegrenzung** im Briefkasten; nur ein Verfallsdatum (etwa 4 Tage), das **auf jeder Einsendung steht** („läuft ab in …“). Wegwerfen kann man jede Einsendung jederzeit. Am Anfang kommen **wenige** (grob 8 pro Tag), mit wachsendem **Erfolg des Labels** immer mehr
-  (grob 14 bei 50, 45 bei 450, 250 bei 5.000 Erfolg) und ein größerer Anteil Guter (von etwa 5 % auf höchstens 25 %). Die schlechten hören **nie auf**, sich zu bewerben:
+- **Keine Mengenbegrenzung** im Briefkasten; nur ein Verfallsdatum (etwa 4 Tage), das **auf jeder Einsendung steht** („läuft ab in …“). Wegwerfen kann man jede Einsendung jederzeit. Am Anfang kommen **wenige** (grob 8 pro Tag), mit wachsendem **Label-Ruhm** immer mehr
+  (8 + 1,8 × √Label-Ruhm: 26 bei 100, 65 bei 1.000, 188 bei 10.000) und ein größerer Anteil Guter (von etwa 5 % auf höchstens 25 %). Die schlechten hören **nie auf**, sich zu bewerben:
   Große Labels haben viel Arbeit, können sich aber am ehesten eine Assistenz leisten.
 - **Genres folgen dem Erfolg:** Hat eine Band des Labels Erfolg, bewerben sich vermehrt Musiker mit **gleichen oder ähnlichen Genres**, fremde Genres seltener (außer ein Musiker hat mehrere Genres,
   dann kann auch ein fremdes dabei sein).
@@ -423,7 +425,7 @@ gestrichelt = keiner (auch bei Solokünstlern). Auf der Bandseite zeigt „Genre
 
 ### Keine Bandplätze
 
-Bands lassen sich **ohne Obergrenze** führen, und der **Erfolg des Labels** ist einfach die Summe des Ruhms aller Bands. Es bremst von selbst: Jede Band **kostet Geld** (Prämien, Instrumente, Manager) und
+Bands lassen sich **ohne Obergrenze** führen. Der **Label-Ruhm** zählt große Bands stärker (siehe oben), viele kleine verzerren ihn also nicht. Es bremst von selbst: Jede Band **kostet Geld** (Prämien, Instrumente, Manager) und
 **Aufmerksamkeit** (Wünsche, Stimmung; rote Bands laufen **online** ihrer Geduld nach, auch wenn viele gleichzeitig rot sind). Ein Manager betreut nur wenige Bands. Irgendwann ist eine Grenze erreicht, an der man nicht
 mehr alle glücklich halten kann; wer es weiter schafft, soll auch erfolgreicher sein. **Beobachten:** ob viele kleine Bands die Rangliste verzerren. Bisher ist das nicht erkennbar; gäbe es ein Problem, wäre das ein späterer Eingriff.
 
@@ -457,7 +459,7 @@ als Grundlage. Einzelne Wahlen verändern zum Beispiel Tempo-Gefühl, Akkordfolg
 ## Oberfläche
 
 **Übersicht = das Büro des Labels** (gebaut):
-- Kopf mit Name, Gründungsdatum (Link zum WikiSignia-Artikel) und vier Zahlen: Geld (dazu Tantiemen je Minute), Erfolg, Platten in den Charts
+- Kopf mit Name, Gründungsdatum (Link zum WikiSignia-Artikel) und vier Zahlen: Geld (dazu Tantiemen je Minute), Label-Ruhm, Platten in den Charts
   (bester Platz), Künstler in wie vielen Bands.
 - **Erste Schritte** mit Fortschritt (Kassette anhören, Büro besetzen, Instrument kaufen, proben, Auftritt, Platte, Scout); verschwindet, wenn alles einmal gemacht ist.
 - **Notizen der Manager**: je Manager, was seine Leute brauchen (siehe Manager). Ohne Manager stehen dort nur die, die richtig unzufrieden
@@ -579,7 +581,7 @@ Beim ersten Login nach dem Umbau (Saison 2) bleiben **Labelname und Konto**, all
 ### WikiSignia über alle Labels
 
 - Oberste Ebene ist das **Label**: Verzeichnis `#/wiki` (eigenes Label mit Bands und Signies, dazu die anderen), Labelseite `#/wiki/label/<id>`, Artikel zeigen ihr Label. Auch Künstler und Bands fremder Labels sind lesbar; von fremden Labels sieht man nur Einträge ohne Geld (lineup, band, record, level).
-- **Labelartikel:** Gründung, Erfolg (Summe des Ruhms), Zahl der Platten, Nummer-1-Hits, perfekte Platten und Auftritte, die größten Erfolge
+- **Labelartikel:** Gründung, Label-Ruhm, Zahl der Platten, Nummer-1-Hits, perfekte Platten und Auftritte, die größten Erfolge
   (beste Chartplätze), die bekanntesten Bands und Meilensteine (erste Band, erste Platte, erste Nummer 1, erste perfekte Platte).
 - Protokolliert werden für jeden Künstler: Unterschrift, Bandwechsel, Stufenaufstiege (Können und Bekanntheit), gelernte Fähigkeiten, Platten, Ende.
 - Suche über alle Labels (`wikiSearch`). Zugang über den Knopf „WikiSignia“ im Label-Menü oben rechts.
@@ -614,7 +616,10 @@ Beim ersten Login nach dem Umbau (Saison 2) bleiben **Labelname und Konto**, all
 - Knopf „Auftritt buchen“ auf der Bandseite (und beim Wunsch „Ab auf die Bühne!“) öffnet die Orte: vom kleinsten bis zwei Stufen über dem Anspruch der Band (Anspruch = Ort nach Bandruhm).
 - Je Ort: **feste Kosten** (Kneipe 20, Club 90, Saal 350, Halle 1.100, Arena 3.200 ₲; Solokünstler ×1,5, Pop ×1,2 für Studiomusiker), Länge in Songs (3/4/5/7/9),
   **Gage-Spanne und Gewinn** (aus sechs durchgespielten Abenden), erwarteter Ruhm, Ampel „Sound passt / knapp / zu schwach“ und wie die Band den Ort findet.
-- **Gage** = Grundgage × Füllgrad × Stimmung im Saal (0,7 + 0,3 × Leistung). Füllgrad = Sound gegen Erwartung × Bekanntheit gegen Ortsgröße ((Ruhm + 10) / (Mindestruhm + 10)), mindestens 5 %: Unbekannte füllen keinen Saal. Kosten werden beim Buchen fällig.
+- **Gage** = Grundgage × Füllgrad × Stimmung im Saal (0,7 + 0,3 × Leistung). Füllgrad = Sound gegen Erwartung × Bekanntheit gegen Ortsgröße ((Ruhm + 10) / (Mindestruhm + 10)), mindestens 5 %: Unbekannte füllen keinen Saal.
+- **Bezahlt wird hinterher** (gebaut): Die Rechnung kommt nach dem Auftritt und wird von der Gage bezahlt („Rechnung: …“ im Kontoauszug).
+  Vorher zahlt man nur den Teil, den selbst der schlechteste Abend (Leistung 0, also 70 % der Grundgage × Füllgrad) nicht einspielt; meist ist
+  das nichts. So kann eine Band auch spielen, wenn das Label pleite ist, und das Label rutscht nie ins Minus (`Gigs::deposit`).
 - Gespielt werden **aufgenommene und geschriebene Songs** (eine Platte ist keine Voraussetzung mehr); geschriebene bleiben für die Platte erhalten.
 - **Anspruch:** Ort darunter → Wohlbefinden −6 (Ehrgeizige, Diven, Rampensäue stärker), darüber → +4. Zahlen in `Balance::GIG_BOOKING`.
 - **Aussehen:** Im Buchungsfenster sieht man jeden Ort von außen (Fachwerk-Kneipe, Club mit Neonschild, Konzertsaal mit Säulen, Halle, Arena) und eine Reihe Köpfe, wie voll es wird.

@@ -104,7 +104,7 @@ final class Wiki
         usort($milestones, static fn ($a, $b) => $a['at'] <=> $b['at']);
         return [
             'id' => $id, 'name' => $l['name'], 'own' => $id === $repo->labelId, 'foundedAt' => (int) $l['created_at'],
-            'success' => round(array_sum(array_column($bands, 'fame')), 1),
+            'success' => BandCalc::labelFame(array_column($bands, 'fame')),
             'recordCount' => count($records),
             'numberOnes' => count(array_filter($records, static fn ($r) => (bool) $r['topped'])),
             'perfectCount' => count(array_filter($records, static fn ($r) => (bool) $r['perfect'])),

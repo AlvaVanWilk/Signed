@@ -119,11 +119,10 @@ final class Repo
         return $gain;
     }
 
-    /** Label-Ruhm: Ruhm aller eigenen Bands (Bandnamen und Mitglieder). */
+    /** Label-Ruhm: aus dem Ruhm aller eigenen Bands, große zählen stärker (BandCalc::labelFame). */
     public function labelFame(): float
     {
-        return (float) $this->db->value('SELECT COALESCE(SUM(fame_own), 0) FROM bands WHERE label_id = ?', [$this->labelId])
-            + (float) $this->db->value('SELECT COALESCE(SUM(fame), 0) FROM musicians WHERE label_id = ? AND band_id IS NOT NULL', [$this->labelId]);
+        return BandCalc::labelFame(array_map(fn ($b) => BandCalc::bandFame($b, $this->members($b['id'])), $this->bands()));
     }
 
     // ---------- Musiker ----------

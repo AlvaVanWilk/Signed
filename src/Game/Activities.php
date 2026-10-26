@@ -92,12 +92,13 @@ final class Activities
                     if ($opt['blocked'] !== null) {
                         throw new ApiError($opt['blocked']);
                     }
-                    $this->repo->spend($opt['cost'], sprintf('Auftritt: %s', $opt['place']));
+                    // Die Rechnung kommt nach dem Auftritt und wird mit der Gage verrechnet; vorher nur, was die Gage sicher nicht deckt.
+                    $this->repo->spend($opt['deposit'], sprintf('Auftritt: %s (Anzahlung)', $opt['place']));
                     $songs = $opt['songs'];
                     $venueRow = array_values(array_filter(Balance::VENUES, static fn ($v) => $v['key'] === $venue))[0];
                     $negotiator = BandCalc::managerBonus($manager, $level, 'verhandler', Balance::NEGOTIATOR_BONUS);
                     $draw = BandCalc::freshness($band['gigs_since_record']);
-                    $booking = ['venue' => $venueRow, 'base' => (int) round(BandCalc::gagePerSong($venueRow + ['progress' => 0.5], $negotiator, count($members)) * $songs * $draw), 'claim' => $opt['claim'], 'cost' => $opt['cost']];
+                    $booking = ['venue' => $venueRow, 'base' => (int) round(BandCalc::gagePerSong($venueRow + ['progress' => 0.5], $negotiator, count($members)) * $songs * $draw), 'claim' => $opt['claim'], 'cost' => $opt['cost'], 'deposit' => $opt['deposit']];
                     $fameBase = $venueRow['fame'] * $draw;
                     $expect = $venueRow['expect'];
                     $venueKey = $venue;
@@ -164,6 +165,8 @@ final class Activities
                 'timeline' => $sim['timeline'],
                 'reward' => [
                     'money' => $gage,
+                    // Rest der Rechnung, nach dem Auftritt von der Gage bezahlt (deckt die Gage immer).
+                    'bill' => isset($booking) ? $booking['cost'] - $booking['deposit'] : 0,
                     'fameGains' => BandCalc::splitFame($members, $fameTotal, $gear, $rehearsal === null),
                     'skill' => $skill,
                     'rehearsal' => $rehearsal,
@@ -409,6 +412,8 @@ final class Activities
         $reward = $data['reward'];
         $bandId = (int) $row['band_id'];
         $repo->earn((int) ($reward['money'] ?? 0), sprintf('Gage: %s', $data['title']));
+        $bill = min((int) ($reward['bill'] ?? 0), (int) ($reward['money'] ?? 0));
+        $repo->spend($bill, sprintf('Rechnung: %s', $data['title']));
         $fameGain = $repo->addBandFame($bandId, $reward['fameGains'] ?? []);
         if ($row['type'] === 'bandpromo') {
             // Album-Zyklus: Band-Promo zählt (abgebrochene kommen hier nicht an).
@@ -419,7 +424,8 @@ final class Activities
         Mood::bond($repo, $repo->members($bandId), $row['type']);
         Mood::react($repo, $repo->members($bandId), $row['type']);
         $result = [
-            'money' => (int) ($reward['money'] ?? 0),
+            'money' => (int) ($reward['money'] ?? 0) - $bill,
+            'bill' => $bill,
             'fame' => round($fameGain, 2),
             'meter' => $reward['meter'] ?? null,
             'drops' => [],

@@ -151,8 +151,9 @@ final class State
                 'mood' => Mood::bandMood(array_column($list, 'wellbeing')) + [
                     'songs' => (int) floor($band['songs_written']),
                     'patience' => round($band['patience']),
-                    'relations' => $bandRelations[$band['id']] ?? [],
-                    'togetherness' => Mood::togetherness($bandRelations[$band['id']] ?? []),
+                    // Beziehungen nur mit Manager; ohne ihn bekommt man nur großen Streit mit.
+                    'relations' => (object) ($managed ? $bandRelations[$band['id']] ?? [] : array_filter($bandRelations[$band['id']] ?? [], static fn ($v) => $v <= Balance::MANAGER_STAFF['notes']['fight'])),
+                    'togetherness' => $managed ? Mood::togetherness($bandRelations[$band['id']] ?? []) : null,
                     // Songs je Stunde, gerade jetzt (nach Mitgliedern und ihrem Charakter; 0 bei Rot, Auftritt, Promo; langsamer beim Proben, schneller bei bester Laune)
                     'songRate' => round(Mood::songRate(Mood::bandMood(array_column($list, 'wellbeing'))) * Mood::crewFactor($list)
                         * Mood::activityFactor($db->value('SELECT type FROM activities WHERE band_id = ? AND settled = 0 AND started_at <= ? AND ends_at > ? ORDER BY id DESC LIMIT 1', [$band['id'], $now, $now])), 3),
@@ -257,7 +258,7 @@ final class State
 
         return [
             'now' => $now,
-            'label' => $label + ['bandSlots' => Bands::slots($repo->labelFame())],
+            'label' => $label + ['bandSlots' => Bands::slots(0.0), 'fame' => BandCalc::labelFame(array_column($bandsOut, 'fame'))],
             'scout' => (new Scout($repo))->status(),
             'submissions' => $submissions->list($now),
             'mail' => (new Inbox($repo))->list($now),

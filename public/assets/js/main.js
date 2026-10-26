@@ -346,7 +346,7 @@ function resultHtml(r) {
     <h2>${esc(r.title)}</h2>
     ${res.meter ? `<p class="muted">${moodText(res.meter)}</p>` : ''}
     <div class="reward-grid">
-      ${res.money ? reward(r.type === 'busking' ? 'Im Hut' : 'Gage', `+${money(0)}`, { to: res.money, kind: 'money' }) : ''}
+      ${res.money ? reward(r.type === 'busking' ? 'Im Hut' : res.bill ? 'Gage nach Rechnung' : 'Gage', `+${money(0)}`, { to: res.money, kind: 'money' }) : ''}
       ${res.fame ? reward('Ruhm', `+${fmtGain(0)}`, { to: res.fame, kind: 'fame' }) : ''}
       ${res.skill?.length ? reward('Können je Musiker', skillSpan(res.skill)) : ''}
       ${res.meter ? reward('Publikum', percent(res.meter / 100)) : ''}

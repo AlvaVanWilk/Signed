@@ -41,6 +41,12 @@ final class Gigs
         return (int) round($c['cost'][$key] * $factor);
     }
 
+    /** Was vorher zu zahlen ist: nur der Teil der Kosten, den selbst der schlechteste Abend (Leistung 0) nicht einspielt. */
+    public static function deposit(int $cost, int $base, float $fill): int
+    {
+        return max(0, $cost - self::gage($base, $fill, 0.0));
+    }
+
     /** Wie voll der Ort wird: Sound gegen Erwartung und Bekanntheit gegen die Größe des Ortes (eine unbekannte Band füllt keinen Saal). */
     public static function fill(float $sound, array $venue, float $fame): float
     {
@@ -88,6 +94,7 @@ final class Gigs
             }
             sort($gages);
             $cost = self::cost($key, $members, $band);
+            $deposit = self::deposit($cost, $base, self::fill($sound, $venue, $fame));
             $ratio = $sound / max(1.0, (float) $venue['expect']);
             $fill = self::fill($sound, $venue, $fame);
             $out[] = [
@@ -97,6 +104,8 @@ final class Gigs
                 'songs' => $songs,
                 'minutes' => (int) round($songs * Balance::SONG_SECONDS / 60),
                 'cost' => $cost,
+                // Bezahlt wird nach dem Auftritt aus der Gage; vorher nur, was die Gage im schlechtesten Fall nicht deckt.
+                'deposit' => $deposit,
                 'gage' => [$gages[0], $gages[count($gages) - 1]],
                 'profit' => [$gages[0] - $cost, $gages[count($gages) - 1] - $cost],
                 'fame' => round(array_sum($fames) / count($fames), 1),

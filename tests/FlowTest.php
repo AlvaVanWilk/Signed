@@ -502,7 +502,15 @@ test('Umbesetzung: Bekanntheit geht mit, der Zusammenhalt folgt den Beziehungen'
     $db->insert('relations', ['label_id' => (int) $db->value('SELECT id FROM labels'), 'a_id' => min($x, $y), 'b_id' => max($x, $y), 'value' => 10.0, 'at' => Clock::now()]);
     $state = $p->get('state');
     checkEquals(100.0, bandById($state, $band['id'])['cohesion']);
+    checkEquals(null, bandById($state, $band['id'])['mood']['togetherness'], 'ohne Manager unsichtbar');
+    checkEquals([], (array) bandById($state, $band['id'])['mood']['relations'], 'Freundschaft sieht man ohne Manager nicht');
+    giveManager($db, $band['id']);
+    $state = $p->get('state');
     checkEquals(10.0, bandById($state, $band['id'])['mood']['togetherness']['value']);
+    // Großer Streit ist laut, auch ohne Manager.
+    $db->exec('UPDATE bands SET manager_id = NULL');
+    $db->exec('UPDATE relations SET value = -9');
+    checkEquals(1, count((array) bandById($p->get('state'), $band['id'])['mood']['relations']), 'Streit sieht man');
 
     $state = $p->post('bandAddMember', ['bandId' => $band['id'], 'musicianId' => $leaving, 'slot' => 1])['state'];
     checkEquals(30.0, bandById($state, $band['id'])['fame']);
@@ -531,7 +539,7 @@ test('Instrumente zuweisen: nur passende Art, eins pro Art, bessere Klassen erst
     checkEquals($micB, $assigned[0]['id']);
 });
 
-test('Manager: höchstens drei Bands, Fan-Karte bringt Ruhm', function () {
+test('Manager: Stufe wirkt bei Gigs, Fan-Karte bringt Ruhm', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Boss');
     $band = foundBand($p);
@@ -1837,13 +1845,20 @@ test('Auftritt buchen: Orte mit Kosten und Gewinn-Schätzung, Gage liegt in der 
     // Eine unbekannte Band verdient am meisten im kleinsten Ort, nicht im großen Saal
     $best = array_reduce($opts['options'], static fn ($m, $o) => $m === null || $o['profit'][1] > $m['profit'][1] ? $o : $m);
     checkEquals('kneipe', $best['key'], 'Unbekannte: Kneipe lohnt am meisten');
-    $money = $p->get('state')['label']['money'];
+    // Bezahlt wird nach dem Auftritt aus der Gage, vorher nur, was sie sicher nicht deckt: auch pleite kann man spielen.
+    checkEquals(0, $kneipe['deposit'], 'Kneipe: keine Anzahlung');
+    $db->exec('UPDATE labels SET money = 0');
+    $money = 0;
     $res = $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'gig', 'venue' => 'kneipe']);
-    checkEquals($money - $kneipe['cost'], $res['state']['label']['money'], 'Kosten sofort');
+    checkEquals(0, $res['state']['label']['money'], 'nichts vorher');
     Clock::advance($kneipe['songs'] * Balance::SONG_SECONDS + 5);
     $after = $p->get('state');
     $gage = $after['label']['money'] - ($money - $kneipe['cost']);
+    check($after['label']['money'] >= 0, 'nie im Minus');
+    check((bool) $db->value("SELECT COUNT(*) FROM ledger WHERE text LIKE 'Rechnung:%'"), 'Rechnung im Kontoauszug');
     check($gage > 0, 'Gage kommt an');
+    checkEquals(30, Signed\Game\Gigs::deposit(100, 100, 1.0), 'schlechtester Abend bringt 70 %');
+    checkEquals(65, Signed\Game\Gigs::deposit(100, 100, 0.5), 'nur was der schlechteste Abend nicht deckt');
     check($gage >= $kneipe['gage'][0] * 0.6 && $gage <= $kneipe['gage'][1] * 1.4, 'Gage etwa in der Schätzung');
     // Ort unter dem Anspruch: Stimmung sinkt
     $db->exec('UPDATE bands SET fame_own = 200 WHERE id = ?', [$band['id']]);

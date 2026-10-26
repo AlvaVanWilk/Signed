@@ -225,7 +225,7 @@ final class Balance
     /**
      * Manager aus dem Posteingang: einmalig bezahlt, die einfachen günstig. Ein Manager betreut **eine Band oder bis zu `solos` Solokünstler**.
      * Nur wer einen Manager hat, zeigt dem Label seine Bedürfnisse (Wünsche, „Warum?“) und Charakterzüge; ohne sieht man nur die Stimmung,
-     * und erst wer rot ist, sagt laut, was er will. Der Manager schreibt Notizen auf die Übersicht (`notes`: so lange ohne Bühne in Stunden,
+     * und erst wer rot ist, sagt laut, was er will. Beziehungen genauso: ohne Manager nur großer Streit (`notes.fight`). Der Manager schreibt Notizen auf die Übersicht (`notes`: so lange ohne Bühne in Stunden,
      * ab welcher Beziehung zwei sich nicht verstehen). Stufe `level`, dazu ein bis zwei Schwerpunkt-Genres und ein Stil (Charakterzug). Passung zur Band: `fit` nach gemeinsamen Genres
      * (0, 1, 2), `style` mal Anteil der Mitglieder mit demselben Zug (mit widersprüchlichem Zug minus), begrenzt auf `fitRange`.
      * Wirkungen je Stufe: Verhandler (NEGOTIATOR_BONUS, Gage), PR-Profi (PR_BONUS, Ruhm bei Auftritten), Netzwerker (`network`, Interviews bringen mehr),
@@ -238,7 +238,8 @@ final class Balance
             3 => ['price' => 10000, 'level' => 5, 'skills' => 2, 'from' => 0.7],
         ],
         'solos' => 4,
-        'notes' => ['stageIdle' => 24, 'conflict' => -3],
+        // fight: so schlecht, dass es auch ohne Manager laut wird (sonst sieht man Beziehungen nur mit Manager)
+        'notes' => ['stageIdle' => 24, 'conflict' => -3, 'fight' => -7],
         'skills' => ['verhandler', 'prprofi', 'netzwerker', 'vermittler'],
         'fit' => [0 => 0.6, 1 => 1.0, 2 => 1.25], 'style' => 0.2, 'fitRange' => [0.4, 1.45],
         'network' => 0.1, 'mediator' => 0.15, 'mediatorMax' => 0.8,
@@ -318,6 +319,12 @@ final class Balance
      * Verborgene Charakterzüge (nur mit Manager): Ein Zug zeigt sich, sobald er zum ersten Mal etwas bewirkt. Nach `after` Sekunden mit dem
      * Manager kennt man alle. Nach jeder Probe von mindestens `minRehearsal` Sekunden zeigt sich mit der Chance `rehearsal` noch ein Zug.
      */
+    /**
+     * Label-Ruhm (steuert die Post): Jede Band zählt mit ihrem Ruhm hoch `power`, am Ende die `power`-te Wurzel. Mit 2: Wurzel aus der Summe
+     * der Quadrate. Eine Band allein zählt genau mit ihrem Ruhm; jeder Ruhmpunkt einer großen Band wiegt mehr als einer einer kleinen, viele
+     * kleine Bands bringen wenig, und neue Unbekannte ziehen nichts herunter.
+     */
+    public const LABEL_FAME = ['power' => 2.0];
     public const TRAIT_REVEAL = ['after' => 86400, 'rehearsal' => 0.35, 'minRehearsal' => 60];
     /**
      * Versteckter Wert eines Musikers (nie angezeigt): Charakterzüge zählen je nach Lage etwa gleich (meist 0), was im Schnitt mehr hilft +1,

@@ -93,14 +93,10 @@ final class Submissions
         ]);
     }
 
-    /** Erfolg des Labels: Summe des Ruhms aller Bands. */
+    /** Label-Ruhm (große Bands zählen stärker, siehe BandCalc::labelFame). */
     public function success(): float
     {
-        $total = 0.0;
-        foreach ($this->repo->bands() as $band) {
-            $total += BandCalc::bandFame($band, $this->repo->members($band['id']));
-        }
-        return $total;
+        return $this->repo->labelFame();
     }
 
     /** Neue Einsendungen für die vergangene Zeit; zu Beginn der Willkommens-Stapel (drei brauchbare, zwei Mist). */

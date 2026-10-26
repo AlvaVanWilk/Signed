@@ -367,6 +367,13 @@ final class BandCalc
         return $current + ['progress' => $progress, 'next' => $next['name'] ?? null, 'nextFame' => $next['minFame'] ?? null];
     }
 
+    /** Label-Ruhm aus dem Ruhm der Bands (Balance::LABEL_FAME). */
+    public static function labelFame(array $fames): float
+    {
+        $p = Balance::LABEL_FAME['power'];
+        return round(array_sum(array_map(static fn ($f) => max(0.0, (float) $f) ** $p, $fames)) ** (1 / $p), 1);
+    }
+
     /** Stufe des Managers (er betreut nur so viele, wie er schafft: eine Band oder einige Solokünstler, siehe Balance::MANAGER_STAFF). */
     public static function managerLevel(?array $manager): float
     {

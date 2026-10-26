@@ -168,12 +168,14 @@ export function relColor(v) {
 
 function relationsOf(b, m, members) {
   const rel = b.mood.relations ?? {};
-  return members.filter((x) => x.id !== m.id).map((x) => {
-    const key = m.id < x.id ? `${m.id}-${x.id}` : `${x.id}-${m.id}`;
-    const v = Math.round(rel[key] ?? 0);
+  const key = (x) => (m.id < x.id ? `${m.id}-${x.id}` : `${x.id}-${m.id}`);
+  // Ohne Manager kennt man nur großen Streit; die übrigen Beziehungen bleiben verborgen.
+  return members.filter((x) => x.id !== m.id && (b.managed || key(x) in rel)).map((x) => {
+    const k = key(x);
+    const v = Math.round(rel[k] ?? 0);
     // Unter dem Bild eine kleine Leiste: von der Mitte nach rechts grün (gut) oder nach links rot (schlecht).
-    const w = Math.min(50, Math.abs(rel[key] ?? 0) * 5);
-    return `<button class="lb-rel" style="--rc:${relColor(rel[key] ?? 0)}" data-act="relInfo" data-a="${m.id}" data-b="${x.id}" data-band="${b.id}" title="${esc(m.firstName)} und ${esc(x.firstName)}: ${relWord(v)}"><span class="lb-relpic">${photo(x)}</span><span class="lb-relbar"><i style="${v >= 0 ? `left:50%;width:${w}%` : `right:50%;width:${w}%`}"></i></span></button>`;
+    const w = Math.min(50, Math.abs(rel[k] ?? 0) * 5);
+    return `<button class="lb-rel" style="--rc:${relColor(rel[k] ?? 0)}" data-act="relInfo" data-a="${m.id}" data-b="${x.id}" data-band="${b.id}" title="${esc(m.firstName)} und ${esc(x.firstName)}: ${relWord(v)}"><span class="lb-relpic">${photo(x)}</span><span class="lb-relbar"><i style="${v >= 0 ? `left:50%;width:${w}%` : `right:50%;width:${w}%`}"></i></span></button>`;
   }).join('');
 }
 
@@ -711,7 +713,8 @@ async function openGigs(b) {
     const [cls, fitText] = FIT[o.fit];
     const claim = o.claim === 'below' ? `<li class="bad">Unter ${members.length === 1 ? 'dem' : 'ihrem'} Anspruch: ${esc(whoOf(b, true))} ärgert sich.</li>`
       : o.claim === 'above' ? `<li class="good">Eine größere Bühne: ${esc(whoOf(b, true))} freut sich.</li>` : '';
-    const tooPoor = app.state.label.money < o.cost;
+    // Bezahlt wird nach dem Auftritt aus der Gage; vorher nur die Anzahlung (meist nichts).
+    const tooPoor = app.state.label.money < o.deposit;
     return `
       <div class="gg-row ${o.blocked ? 'blocked' : ''} ${o === best ? 'best' : ''}">
         <div class="gg-art">${venueArt(o.key)}${o === best ? '<em class="gg-best">bester Gewinn</em>' : ''}</div>
@@ -722,12 +725,12 @@ async function openGigs(b) {
         </div>
         <div class="gg-side">
           <div class="gg-money">
-            <span><small>Kosten</small><b>${money(o.cost)}</b></span>
+            <span title="${o.deposit ? `${money(o.deposit)} vorher, den Rest nach dem Auftritt aus der Gage` : 'Wird nach dem Auftritt von der Gage bezahlt'}"><small>Kosten</small><b>${money(o.cost)}</b><i class="gg-sub">${o.deposit ? `davon ${money(o.deposit)} vorher` : 'zahlst du danach'}</i></span>
             <span><small>Gage</small><b>${o.gage[0] === o.gage[1] ? money(o.gage[0]) : `${money(o.gage[0])} – ${money(o.gage[1])}`}</b></span>
             <span class="${o.profit[0] >= 0 ? 'good' : o.profit[1] < 0 ? 'bad' : 'warn'}"><small>Gewinn</small><b>${range(o.profit)}</b></span>
             <span><small>Ruhm</small><b>+${fmt1(o.fame)}</b></span>
           </div>
-          <button class="btn ${o === best ? 'primary' : ''} small" data-book="${o.key}" ${off(o.blocked || (tooPoor ? `Dafür fehlen noch ${money(o.cost - app.state.label.money)}.` : ''))}>${tooPoor ? 'Zu teuer' : 'Buchen'}</button>
+          <button class="btn ${o === best ? 'primary' : ''} small" data-book="${o.key}" ${off(o.blocked || (tooPoor ? `Für die Anzahlung fehlen noch ${money(o.deposit - app.state.label.money)}.` : ''))}>${tooPoor ? 'Zu teuer' : 'Buchen'}</button>
         </div>
       </div>`;
   };
@@ -738,7 +741,7 @@ async function openGigs(b) {
       <div class="lb-cap">Anordnung</div>
       <h2>Auftritt buchen für ${esc(b.name)}</h2>
       <p class="muted small">Sound der Band ${fmt1(data.sound)} · ${data.songs} ${data.songs === 1 ? 'Song' : 'Songs'} spielbar (aufgenommen und geschrieben).
-        Die Kosten sind fest, der Gewinn hängt vom Abend ab.${r.like.length ? ` ${esc(names(r.like))} ${r.like.length > 1 ? 'freuen' : 'freut'} sich auf die Bühne.` : ''}${r.dislike.length ? ` ${esc(names(r.dislike))} ${r.dislike.length > 1 ? 'mögen' : 'mag'} keine Auftritte.` : ''}</p>
+        Die Kosten sind fest und werden nach dem Auftritt von der Gage bezahlt, der Gewinn hängt vom Abend ab.${r.like.length ? ` ${esc(names(r.like))} ${r.like.length > 1 ? 'freuen' : 'freut'} sich auf die Bühne.` : ''}${r.dislike.length ? ` ${esc(names(r.dislike))} ${r.dislike.length > 1 ? 'mögen' : 'mag'} keine Auftritte.` : ''}</p>
       <div class="gg-list">${data.options.map(row).join('')}</div>`,
   });
   modal.body.addEventListener('click', async (e) => {

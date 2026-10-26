@@ -140,6 +140,14 @@ test('Auftrittsorte nach Ruhm', function () {
     checkEquals(0.5, BandCalc::venue(15)['progress']);
 });
 
+test('Label-Ruhm: eine Band zählt mit ihrem Ruhm, große Bands wiegen mehr, viele kleine wenig', function () {
+    checkEquals(500.0, BandCalc::labelFame([500]));
+    checkEquals(0.0, BandCalc::labelFame([]));
+    check(abs(BandCalc::labelFame([500, 490]) - 700.1) < 0.2, 'zwei gleich große zählen beide fast gleich');
+    check(BandCalc::labelFame(array_fill(0, 50, 10)) < 75, 'fünfzig kleine bringen wenig');
+    check(BandCalc::labelFame([3000, 20, 20, 20, 20]) - 3000 < 1, 'Neue drücken nichts herunter');
+});
+
 test('Manager: Stufe und längere Gigs', function () {
     $manager = ['level' => 4, 'skills' => ['verhandler']];
     checkEquals(4.0, BandCalc::managerLevel($manager));

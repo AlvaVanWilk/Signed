@@ -62,7 +62,7 @@ function mo() {
       <circle cx="40" cy="50" r="0.6" fill="#5a3420"/><circle cx="42.5" cy="51.4" r="0.6" fill="#5a3420"/><circle cx="60" cy="50" r="0.6" fill="#5a3420"/>`)}`;
 }
 
-/** 2 – Etabliert: Roxy – cooler Rock-Look: asymmetrischer lila Vokuhila mit rasierter Seite, Lederjacke mit Nieten, große Kreolen, Plateaustiefel, Platte unterm Arm. */
+/** 2 – Etabliert: Roxy – cooler Rock-Look: asymmetrischer lila Vokuhila mit rasierter Seite, Lederjacke mit Nieten, ein langer Ohrhänger, Plateaustiefel, Platte unterm Arm. */
 function roxy() {
   const skin = '#c68a63';
   const jacket = '#1c1a20';
@@ -97,8 +97,11 @@ function roxy() {
       <path d="M48 32.4 C56 30 64 32.6 69.4 39" fill="none" stroke="#fff" stroke-width="0.8" opacity="0.45"/>
       <path d="M69.6 44 C70.6 50 70.8 55 70.4 60" fill="none" stroke="${roots}" stroke-width="0.8" opacity="0.5"/>
       ${line('M40 39.6 Q43 38.2 46 39.4', 1.3)}${line('M54 39.4 Q57 38.2 60 39.6', 1.3)}
-      <!-- Kreolen -->
-      <circle cx="31" cy="52" r="3.6" fill="none" stroke="#f2c14e" stroke-width="1"/><circle cx="69" cy="52" r="3.6" fill="none" stroke="#f2c14e" stroke-width="1"/>
+      <!-- ein langer Hänger am freien Ohr: Stecker, Kettchen, goldener Tropfen mit dunklem Stein -->
+      <circle cx="31" cy="49.4" r="0.9" fill="#f2c14e" stroke="#7a5410" stroke-width="0.3"/>
+      <path d="M31 50.2 L31 54.6" stroke="#f2c14e" stroke-width="0.5"/>
+      <path d="M31 54.4 C32.8 56.4 32.8 59.6 31 61.4 C29.2 59.6 29.2 56.4 31 54.4 Z" fill="#f2c14e" stroke="#7a5410" stroke-width="0.35"/>
+      <circle cx="31" cy="58.4" r="0.9" fill="#7a2338"/>
       <path d="M46 52.6 Q50 55 54 52.6" fill="none" stroke="#7a2338" stroke-width="1.6" stroke-linecap="round"/>`)}`;
 }
 

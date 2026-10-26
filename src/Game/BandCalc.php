@@ -367,13 +367,10 @@ final class BandCalc
         return $current + ['progress' => $progress, 'next' => $next['name'] ?? null, 'nextFame' => $next['minFame'] ?? null];
     }
 
-    /** Managt einer mehrere Bands, teilt sich seine Leistung auf. */
-    public static function managerLevel(?array $manager, int $bandsManaged): float
+    /** Stufe des Managers (er betreut nur so viele, wie er schafft: eine Band oder einige Solokünstler, siehe Balance::MANAGER_STAFF). */
+    public static function managerLevel(?array $manager): float
     {
-        if ($manager === null) {
-            return 0.0;
-        }
-        return round($manager['level'] / max(1, $bandsManaged), 2);
+        return $manager === null ? 0.0 : (float) $manager['level'];
     }
 
     public static function managerBonus(?array $manager, float $level, string $skill, float $perLevel): float

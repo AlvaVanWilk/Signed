@@ -332,11 +332,6 @@ final class Repo
         return self::hydrateManager($row);
     }
 
-    public function managerBandCount(int $managerId): int
-    {
-        return (int) $this->db->value('SELECT COUNT(*) FROM bands WHERE manager_id = ? AND label_id = ?', [$managerId, $this->labelId]);
-    }
-
     public function insertManager(array $m): int
     {
         return $this->db->insert('managers', [
@@ -361,7 +356,8 @@ final class Repo
             'last_name' => $r['last_name'],
             'rarity' => $r['rarity'],
             'level' => (int) $r['level'],
-            'skills' => json_decode($r['skills'], true) ?: [],
+            // Gespür gibt es nicht mehr (jeder Manager kennt seine Leute).
+            'skills' => array_values(array_diff(json_decode($r['skills'], true) ?: [], ['gespuer'])),
             'look' => json_decode($r['look'], true) ?: [],
             'genres' => json_decode((string) ($r['genres'] ?? ''), true) ?: [],
             'style' => $r['style'] ?? null,
@@ -433,7 +429,7 @@ final class Repo
             return [null, 0.0];
         }
         $manager = $this->manager($band['manager_id']);
-        return [$manager, round(BandCalc::managerLevel($manager, $this->managerBandCount($manager['id'])) * Managers::fit($manager, $this->members($band['id'])), 2)];
+        return [$manager, round(BandCalc::managerLevel($manager) * Managers::fit($manager, $this->members($band['id'])), 2)];
     }
 
     // ---------- Platten ----------

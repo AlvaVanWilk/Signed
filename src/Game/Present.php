@@ -174,7 +174,7 @@ final class Present
                 'minMembers' => Balance::MIN_MEMBERS,
                 'maxMembers' => Balance::MAX_MEMBERS,
                 'maxPerInstrument' => Balance::MAX_PER_INSTRUMENT,
-                'managerMaxBands' => Balance::MANAGER_MAX_BANDS,
+                'managerSolos' => Balance::MANAGER_STAFF['solos'],
                 'studios' => Balance::STUDIOS,
                 'producers' => array_map(static fn ($p) => ['name' => $p['name'], 'fee' => $p['fee'], 'unlocks' => $p['unlocks'], 'minSound' => $p['minSound'] ?? 0], Balance::PRODUCERS),
                 'recordSecondsPerSong' => Balance::RECORD_SECONDS_PER_SONG,

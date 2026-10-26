@@ -262,23 +262,8 @@ final class Catalog
 
     /** Woran man einen bisher unbekannten Charakterzug bemerkt (%s = Vorname). */
     public const TRAIT_REVEAL = [
-        'like' => '%s hatte richtig Lust auf %s.',
-        'dislike' => '%s hatte gar keine Lust auf %s.',
-        'restless' => '%s will endlich wieder auf die Bühne.',
-        'stagnant' => '%s will endlich eine neue Platte machen.',
-        'calm' => '%s bleibt ruhig, obwohl so viele Songs liegen.',
-        'stageName' => '%s wünscht sich einen Künstlernamen.',
-        'unhappy' => '%s ist unzufrieden und sagt, was fehlt.',
-        'songs' => '%s steckt voller Ideen für neue Songs.',
-        'noSongs' => '%s schreibt bei den Songs nicht mit, spielt aber sehr genau.',
-        'lust' => '%s hatte bei der Probe schnell keine Lust mehr.',
-        'rehearsal' => 'Bei der Probe hast du %s besser kennengelernt.',
-        'time' => '%s ist jetzt schon eine Weile bei euch.',
+        'unhappy' => '%s ist richtig unzufrieden und sagt laut, was fehlt.',
         'manager' => '%2$s kennt %1$s inzwischen gut.',
-    ];
-    /** Anordnungen im Satz („Lust auf …“). */
-    public const TRAIT_REVEAL_ORDERS = [
-        'rehearsal' => 'die Probe', 'gig' => 'den Auftritt', 'record' => 'die Aufnahme', 'busking' => 'Straßenmusik', 'openstage' => 'die offene Bühne', 'interview' => 'das Interview',
     ];
 
     /** Wie lange ein Charakter bei der Probe Lust hat, als Faktor auf Balance::REHEARSAL['lust'] (bei zwei Eigenschaften der Mittelwert). */
@@ -387,7 +372,6 @@ final class Catalog
         'tourplaner' => ['name' => 'Tourplaner', 'desc' => 'Mehr und passendere Locations bei Tourneen.', 'active' => false],
         'netzwerker' => ['name' => 'Netzwerker', 'desc' => 'Interviews seiner Musiker bringen mehr Bekanntheit.', 'active' => true],
         'vermittler' => ['name' => 'Vermittler', 'desc' => 'Wenn seiner Band etwas nicht gefällt, ärgert sie sich weniger.', 'active' => true],
-        'gespuer' => ['name' => 'Gespür', 'desc' => 'Kennt seine Musiker genau: zeigt dir alle ihre Charakterzüge.', 'active' => true],
     ];
 
     /**

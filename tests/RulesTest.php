@@ -140,10 +140,10 @@ test('Auftrittsorte nach Ruhm', function () {
     checkEquals(0.5, BandCalc::venue(15)['progress']);
 });
 
-test('Manager: geteilte Leistung und längere Gigs', function () {
+test('Manager: Stufe und längere Gigs', function () {
     $manager = ['level' => 4, 'skills' => ['verhandler']];
-    checkEquals(4.0, BandCalc::managerLevel($manager, 1));
-    checkEquals(2.0, BandCalc::managerLevel($manager, 2));
+    checkEquals(4.0, BandCalc::managerLevel($manager));
+    checkEquals(0.0, BandCalc::managerLevel(null));
     checkEquals(Balance::GIG_SONG_CAP, BandCalc::gigSongCap(0));
     check(BandCalc::gigSongCap(5) >= 10, 'Ein Top-Manager schafft 10 Lieder');
     checkEquals(3, BandCalc::maxGigSongs(3, 5), 'Nie mehr Lieder als produziert');

@@ -106,7 +106,9 @@ final class State
             $chemistry = BandCalc::chemistry($list);
             $manager = $band['manager_id'] !== null ? ($managers[$band['manager_id']] ?? null) : null;
             $fit = $manager === null ? null : Managers::fit($manager, $list);
-            $level = round(BandCalc::managerLevel($manager, count($managerBands[$band['manager_id']] ?? [])) * ($fit ?? 1.0), 2);
+            $level = round(BandCalc::managerLevel($manager) * ($fit ?? 1.0), 2);
+            $managed = $manager !== null;
+            $wishes = Mood::wishes($list, $gearMap, (int) floor($band['songs_written']));
             $venue = BandCalc::venue($fame);
             $open = $openRecords[$band['id']] ?? null;
             $draw = BandCalc::freshness($band['gigs_since_record']);
@@ -156,9 +158,12 @@ final class State
                         * Mood::activityFactor($db->value('SELECT type FROM activities WHERE band_id = ? AND settled = 0 AND started_at <= ? AND ends_at > ? ORDER BY id DESC LIMIT 1', [$band['id'], $now, $now])), 3),
                     'reactions' => Mood::reactions($list),
                     // Warum jemand gut oder schlecht drauf ist: Ziel des Wohlbefindens und die Gründe dafür (je Musiker).
-                    'why' => self::moodWhy($repo, $band, $list, $bandRelations[$band['id']] ?? [], $now),
-                    'wishes' => Mood::wishes($list, $gearMap, (int) floor($band['songs_written'])),
+                    // Nur mit Manager: Gründe und alle Wünsche. Ohne sagt nur, wer rot ist, was er will.
+                    'why' => $managed ? self::moodWhy($repo, $band, $list, $bandRelations[$band['id']] ?? [], $now) : (object) [],
+                    'wishes' => $managed ? $wishes : array_values(array_filter($wishes, static fn ($w) => $w['level'] === 'red')),
                 ],
+                'managed' => $managed,
+                'managerNotes' => $managed ? Managers::notes($band, $list, $gearMap, $bandRelations[$band['id']] ?? [], $wishes, Mood::idleHours($repo, $band, $now)[0]) : [],
                 'cohesion' => round($band['cohesion'], 1),
                 'maxCohesion' => BandCalc::maxCohesion($identity),
                 'chemistryNotes' => BandCalc::chemistryNotes($list),

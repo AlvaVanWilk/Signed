@@ -1,6 +1,6 @@
 import { api } from '../api.js';
 import { bandGenreTags, bandIdentity, emptySlot, genreRuleText, face, fullName, gearCard, gearModel, genreIcon, genreTag, instrumentEmoji, instrumentIcon, instrumentName, ownGear, managerCard, musicianCard, sortedGenres } from '../cards.js';
-import { app, bandById, cat, defineActions, isBusy, managerById, musicianById, mutate, navigate, rerender, runningFor } from '../core.js';
+import { app, bandById, cat, defineActions, isBusy, managerBusy, managerById, musicianById, mutate, navigate, rerender, runningFor } from '../core.js';
 import { openLive } from '../live.js';
 import { coverHtml, startPractice } from '../play.js';
 import { assignGear, soundChange } from '../gear.js';
@@ -557,7 +557,6 @@ function openGearPicker(musicianId, type) {
 
 function openManagerPicker(bandId) {
   const b = bandById(bandId);
-  const max = cat().rules.managerMaxBands;
   if (!app.state.managers.length) {
     toast('Noch kein Manager unter Vertrag.', 'info');
     return;
@@ -568,7 +567,7 @@ function openManagerPicker(bandId) {
       <h2>Manager für ${esc(b.name)}</h2>
       <div class="tcg-grid">${app.state.managers.map((m) => {
         const mine = m.id === b.managerId;
-        const full = !mine && m.bandIds.length >= max;
+        const full = !mine && !!managerBusy(m, b);
         return managerCard(m, {
           extra: mine
             ? '<button class="btn small" data-manager="">Abziehen</button>'

@@ -114,6 +114,18 @@ export const cat = () => app.catalog;
 export const musicianById = (id) => app.state.musicians.find((m) => m.id === Number(id));
 export const bandById = (id) => app.state.bands.find((b) => b.id === Number(id));
 export const managerById = (id) => app.state.managers.find((m) => m.id === Number(id));
+
+/** Kann dieser Manager die Band übernehmen? Eine Band braucht ihn für sich allein, Solokünstler teilen sich einen (bis zu vier). Sonst der Grund. */
+export function managerBusy(m, b) {
+  const max = cat().rules.managerSolos;
+  const others = m.bandIds.filter((id) => id !== b.id).map(bandById).filter(Boolean);
+  const bands = others.filter((x) => x.memberIds.length > 1).length;
+  const solos = others.length - bands;
+  if (bands) return `${m.firstName} kümmert sich schon um eine Band.`;
+  if (solos && b.memberIds.length > 1) return `${m.firstName} betreut schon Solokünstler. Eine Band braucht einen Manager für sich allein.`;
+  if (solos >= max) return `${m.firstName} betreut schon ${max} Solokünstler, mehr schafft niemand.`;
+  return '';
+}
 export const gearById = (id) => app.state.gear.find((g) => g.id === Number(id));
 export const runningFor = (bandId) => app.state.running.find((a) => a.bandId === Number(bandId));
 

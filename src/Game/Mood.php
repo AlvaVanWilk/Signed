@@ -202,7 +202,6 @@ final class Mood
                 $repo->db->update('musicians', ['wellbeing' => round($value, 3)], ['id' => $m['id']]);
             }
         }
-        Traits::revealLiking($repo, $members, $type);
     }
 
     /**
@@ -244,7 +243,9 @@ final class Mood
                 // Nur nach Zügen, die das Label schon kennt
                 'like' => array_values(array_map(static fn ($m) => $m['id'], array_filter($members, static fn ($m) => self::liking(Traits::known($m), $type) > 0))),
                 'dislike' => array_values(array_map(static fn ($m) => $m['id'], array_filter($members, static fn ($m) => self::liking(Traits::known($m), $type) < 0))),
+                // Wer rot ist und nicht will, sagt es laut (auch ohne Manager).
                 'locked' => self::refuser($members, $type) !== null,
+                'refuser' => self::refuser($members, $type)['id'] ?? null,
             ];
         }
         return $out;
@@ -288,7 +289,7 @@ final class Mood
             }
         }
         if ($songs >= Balance::MOOD['stau']['from'] && $members) {
-            $out[] = ['musicianId' => $members[0]['id'], 'text' => count($members) === 1 ? 'Ich will aufnehmen!' : 'Wir wollen aufnehmen!', 'action' => 'record', 'level' => 'yellow'];
+            $out[] = ['musicianId' => $members[0]['id'], 'text' => count($members) === 1 ? 'Ich will aufnehmen!' : 'Wir wollen aufnehmen!', 'action' => 'record', 'level' => 'yellow', 'band' => true];
         }
         return $out;
     }
@@ -526,9 +527,8 @@ final class Mood
                 $update['coached_songs'] = round(min($state['songs'], $band['coached_songs'] + max(0.0, $state['songs'] - $band['songs_written']) * $coachShare), 4);
             }
             $repo->db->update('bands', $update, ['id' => $band['id']]);
-            Traits::settleBand($repo, $band, $members, (float) $band['songs_written'], $state['songs'], $now);
+            Traits::settleBand($repo, $members);
         }
-        Traits::settleTime($repo, $now);
     }
 
     /** Stunden seit dem letzten Auftritt (Gig, Straße, offene Bühne) und seit der letzten fertigen Platte (ohne: seit Gründung). */

@@ -545,15 +545,28 @@ final class Bands
         $band = $this->repo->band($bandId);
         if ($managerId !== null) {
             $manager = $this->repo->manager($managerId);
-            $others = (int) $this->repo->db->value(
-                'SELECT COUNT(*) FROM bands WHERE manager_id = ? AND id <> ? AND label_id = ?',
-                [$managerId, $bandId, $this->repo->labelId]
-            );
-            if ($others >= Balance::MANAGER_MAX_BANDS) {
-                throw new ApiError(sprintf('%s managt schon %d Bands.', $manager['first_name'], Balance::MANAGER_MAX_BANDS));
+            [$bands, $solos] = $this->managerLoad($managerId, $bandId);
+            $max = Balance::MANAGER_STAFF['solos'];
+            // Eine Band oder bis zu vier Solokünstler.
+            if ($bands > 0 || ($solos > 0 && count($this->repo->members($bandId)) > 1)) {
+                throw new ApiError(sprintf('%s kümmert sich schon um %s. Eine Band braucht einen Manager für sich allein.', $manager['first_name'], $bands > 0 ? 'eine Band' : 'Solokünstler'));
+            }
+            if ($solos >= $max) {
+                throw new ApiError(sprintf('%s betreut schon %d Solokünstler, mehr schafft niemand.', $manager['first_name'], $max));
             }
         }
         $this->repo->db->update('bands', ['manager_id' => $managerId], ['id' => $band['id']]);
+    }
+
+    /** @return array{int, int} wie viele Bands und Solokünstler der Manager außer dieser schon betreut */
+    public function managerLoad(int $managerId, int $exceptBandId = 0): array
+    {
+        $bands = 0;
+        $solos = 0;
+        foreach ($this->repo->db->all('SELECT id FROM bands WHERE manager_id = ? AND id <> ? AND label_id = ?', [$managerId, $exceptBandId, $this->repo->labelId]) as $row) {
+            count($this->repo->members((int) $row['id'])) > 1 ? $bands++ : $solos++;
+        }
+        return [$bands, $solos];
     }
 
     /** $reason: 'disbanded' (löst sich auf) oder 'left' (ein Solokünstler verlässt das Label). Eine Band mit Laufbahn bleibt als ehemalige Band erhalten. */

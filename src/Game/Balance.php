@@ -43,7 +43,6 @@ final class Balance
     // ---------- Manager ----------
     public const MANAGER_LEVEL = ['common' => [1, 1], 'rare' => [2, 2], 'epic' => [3, 4], 'legendary' => [5, 5]];
     public const MANAGER_SECOND_SKILL = 0.3;
-    public const MANAGER_MAX_BANDS = 3;
 
     // ---------- Packs ----------
     /**
@@ -221,19 +220,23 @@ final class Balance
         'genreChance' => 0.4, 'genreFactor' => 1.3, 'ownInstrument' => 0.7,
     ];
     /**
-     * Manager aus dem Posteingang: einmalig bezahlt und teuer. Stufe wie bisher (`level`, geteilt durch die Zahl der Bands, höchstens
-     * MANAGER_MAX_BANDS), dazu ein bis zwei Schwerpunkt-Genres und ein Stil (Charakterzug). Passung zur Band: `fit` nach gemeinsamen Genres
+     * Manager aus dem Posteingang: einmalig bezahlt, die einfachen günstig. Ein Manager betreut **eine Band oder bis zu `solos` Solokünstler**.
+     * Nur wer einen Manager hat, zeigt dem Label seine Bedürfnisse (Wünsche, „Warum?“) und Charakterzüge; ohne sieht man nur die Stimmung,
+     * und erst wer rot ist, sagt laut, was er will. Der Manager schreibt Notizen auf die Übersicht (`notes`: so lange ohne Bühne in Stunden,
+     * ab welcher Beziehung zwei sich nicht verstehen). Stufe `level`, dazu ein bis zwei Schwerpunkt-Genres und ein Stil (Charakterzug). Passung zur Band: `fit` nach gemeinsamen Genres
      * (0, 1, 2), `style` mal Anteil der Mitglieder mit demselben Zug (mit widersprüchlichem Zug minus), begrenzt auf `fitRange`.
      * Wirkungen je Stufe: Verhandler (NEGOTIATOR_BONUS, Gage), PR-Profi (PR_BONUS, Ruhm bei Auftritten), Netzwerker (`network`, Interviews bringen mehr),
-     * Vermittler (`mediator`, schlechte Laune nach Anordnungen fällt schwächer aus, höchstens `mediatorMax`), Gespür (zeigt alle Charakterzüge der Band).
+     * Vermittler (`mediator`, schlechte Laune nach Anordnungen fällt schwächer aus, höchstens `mediatorMax`).
      */
     public const MANAGER_STAFF = [
         'tiers' => [
-            1 => ['price' => 1500, 'level' => 1, 'skills' => 1, 'from' => 0.0],
-            2 => ['price' => 5000, 'level' => 3, 'skills' => 2, 'from' => 0.35],
-            3 => ['price' => 15000, 'level' => 5, 'skills' => 2, 'from' => 0.7],
+            1 => ['price' => 300, 'level' => 1, 'skills' => 1, 'from' => 0.0],
+            2 => ['price' => 3000, 'level' => 3, 'skills' => 2, 'from' => 0.35],
+            3 => ['price' => 10000, 'level' => 5, 'skills' => 2, 'from' => 0.7],
         ],
-        'skills' => ['verhandler', 'prprofi', 'netzwerker', 'vermittler', 'gespuer'],
+        'solos' => 4,
+        'notes' => ['stageIdle' => 24, 'conflict' => -3],
+        'skills' => ['verhandler', 'prprofi', 'netzwerker', 'vermittler'],
         'fit' => [0 => 0.6, 1 => 1.0, 2 => 1.25], 'style' => 0.2, 'fitRange' => [0.4, 1.45],
         'network' => 0.1, 'mediator' => 0.15, 'mediatorMax' => 0.8,
     ];
@@ -308,12 +311,6 @@ final class Balance
         'calm' => ['trait' => 'gelassen', 'tau' => 1.8, 'stau' => 0.5],
         'pulled' => ['teamplayer' => 1.5],
     ];
-    /**
-     * Verborgene Charakterzüge: Ein Zug zeigt sich, sobald er zum ersten Mal etwas bewirkt (er wirkt aber auch vorher schon).
-     * Spätestens nach `after` Sekunden im Label kennt man alle. Nach jeder Probe von mindestens `minRehearsal` Sekunden zeigt sich
-     * mit der Chance `rehearsal` noch ein unbekannter Zug (im Schnitt nach etwa drei Proben).
-     */
-    public const TRAIT_REVEAL = ['after' => 86400, 'rehearsal' => 0.35, 'minRehearsal' => 60];
     /**
      * Versteckter Wert eines Musikers (nie angezeigt): Charakterzüge zählen je nach Lage etwa gleich (meist 0), was im Schnitt mehr hilft +1,
      * was im Schnitt eher bremst −1 (die Technik zählt nicht, jeder hat eine). Die Unterschriftsprämie wächst um `price` je Punkt

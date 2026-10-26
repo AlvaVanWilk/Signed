@@ -1,12 +1,13 @@
 import { instrumentIcon, photo } from '../cards.js';
-import { app, bandById, cat, isBusy, liveMoney, musicianById, serverNow } from '../core.js';
+import { app, bandById, cat, isBusy, liveMoney, managerById, musicianById, serverNow } from '../core.js';
 import { coverHtml } from '../play.js';
 import { esc, fmt0, fmt1, fmtGain, money, timeAgo } from '../ui.js';
 
 /**
  * Übersicht = das Büro des Labels. Oben die Zahlen, darunter (am Anfang) die ersten Schritte, dann was gerade läuft und was das Büro notiert hat,
  * das Plattenregal mit allen Platten und ihrem Chartplatz, der Zettel vom Schwarzen Brett und die Chronik.
- * Die Notizen schreibt nur, wer im Büro arbeitet (Praktikum oder Assistenz); ohne sie bleibt dieser Teil leer.
+ * Die Notizen zur Post schreibt nur, wer im Büro arbeitet (Praktikum oder Assistenz). Über die Bands schreiben ihre Manager; ohne Manager
+ * erfährt man nur, wer richtig unzufrieden ist.
  */
 
 const left = (t) => {
@@ -27,6 +28,7 @@ export function render() {
     ${firstSteps(s)}
     <div class="ov-grid">
       <div class="ov-col">
+        ${managerNotes(s)}
         ${office(s)}
         ${now(s)}
       </div>
@@ -66,6 +68,7 @@ function firstSteps(s) {
   const steps = [
     { done: s.musicians.length > 0, text: 'Umschläge auspacken, eine Kassette anhören und den ersten Künstler unterschreiben', href: '#/einsendungen' },
     { done: !!s.assistant, text: 'Jemanden fürs Büro einstellen: Praktikum oder Assistenz (Bewerbungen im Posteingang)', href: '#/einsendungen' },
+    { done: s.bands.some((b) => b.managed), text: 'Einen Manager einstellen: Er sagt dir, was deine Künstler brauchen', href: '#/einsendungen' },
     { done: s.gear.some((g) => g.musicianId), text: 'Im Music Store ein Instrument kaufen', href: '#/store' },
     { done: s.bands.some((b) => b.cohesion > 0 || b.gigsPlayed > 0 || b.records > 0), text: 'Zum ersten Mal proben', href: firstBand ? `#/band/${firstBand.id}` : '#/einsendungen' },
     { done: s.bands.some((b) => b.gigsPlayed > 0), text: 'Den ersten Auftritt buchen', href: firstBand ? `#/band/${firstBand.id}` : '' },
@@ -89,14 +92,6 @@ function firstSteps(s) {
 function notes(s) {
   const out = [];
   const add = (level, html) => out.push({ level, html });
-  for (const b of s.bands) {
-    if (b.mood.level === 'red' || b.mood.level === 'yellow') {
-      const wish = b.mood.wishes?.find((w) => w.level === b.mood.level) ?? b.mood.wishes?.[0];
-      add(b.mood.level === 'red' ? 0 : 1, `${bandLink(b, `<b>${esc(who(b))}</b>`)} ${b.mood.level === 'red' ? 'ist unzufrieden' : 'ist angespannt'}${wish ? `: „${esc(wish.text)}“` : '.'}`);
-    }
-    if (b.mood.songs >= 12) add(1, `${bandLink(b, `<b>${esc(who(b))}</b>`)}: ${fmt0(b.mood.songs)} Songs warten aufs Studio.`);
-    else if (b.record?.cycle?.done && b.mood.songs >= cat().rules.recordMinSongs && b.records > 0) add(2, `${bandLink(b, `<b>${esc(who(b))}</b>`)} könnte die nächste Platte aufnehmen.`);
-  }
   const mail = s.mail ?? [];
   if (!s.assistant?.press) {
     for (const m of mail.filter((x) => x.kind === 'interview').sort((x, y) => x.expiresAt - y.expiresAt)) {
@@ -135,6 +130,40 @@ function notes(s) {
     if (fits.length) add(2, `<a href="#/brett">Heute im Kurs: ${esc(c.prefix)}-${esc(c.name)}</a>, passt zu ${fits.map((m) => esc(m.firstName)).join(', ')}.`);
   }
   return out.sort((a, b) => a.level - b.level);
+}
+
+// ---------- Manager: was sie über ihre Leute wissen ----------
+
+/** Jeder Manager notiert, was seine Band (oder seine Solokünstler) braucht. Ohne Manager hört man nur, wer richtig unzufrieden ist. */
+function managerNotes(s) {
+  if (!s.bands.length) return '';
+  const groups = new Map();
+  for (const b of s.bands.filter((x) => x.managed)) {
+    const m = managerById(b.managerId);
+    if (!m) continue;
+    if (!groups.has(m.id)) groups.set(m.id, { m, notes: [] });
+    groups.get(m.id).notes.push(...b.managerNotes.map((n) => ({ ...n, b })));
+  }
+  const loud = s.bands.filter((b) => !b.managed && b.mood.wishes.length);
+  const without = s.bands.filter((b) => !b.managed);
+  const line = (n) => `<li class="l${n.level}">${bandLink(n.b, esc(n.text))}</li>`;
+  const block = ({ m, notes }) => `
+    <div class="ov-mgr"><h3><span class="lb-ph sm">${photo({ id: m.id, look: m.look })}</span>${esc(m.firstName)} <small class="muted">für ${m.bandIds.map((id) => esc(who(bandById(id) ?? { memberIds: [], name: '' }))).join(', ')}</small></h3>
+      ${notes.length ? `<ul class="ov-notes">${notes.sort((a, b) => a.level - b.level).slice(0, 6).map(line).join('')}</ul>` : '<p class="muted small">Alles gut, gerade fehlt nichts.</p>'}</div>`;
+  const job = (s.mail ?? []).find((x) => x.kind === 'job' && x.role === 'manager');
+  const hasJob = !!job;
+  return `
+    <section class="ov-panel ov-office">
+      <h2>Notizen der Manager</h2>
+      ${[...groups.values()].map(block).join('')}
+      ${loud.length ? `<ul class="ov-notes">${loud.map((b) => {
+        const m = musicianById(b.mood.wishes[0].musicianId);
+        const name = m ? (m.stageName ?? m.firstName) : who(b);
+        return `<li class="l0">${bandLink(b, `<b>${esc(name)}</b>${b.memberIds.length > 1 ? ` (${esc(b.name)})` : ''}`)} ist richtig unzufrieden: „${esc(b.mood.wishes[0].text)}“</li>`;
+      }).join('')}</ul>` : ''}
+      ${without.length ? `<p class="muted small">${without.map((b) => esc(who(b))).join(', ')} ${without.length === 1 ? 'hat' : 'haben'} keinen Manager. Ohne Manager siehst du nur, wie gut jemand drauf ist, und erfährst erst etwas, wenn es richtig schlecht läuft.
+        ${hasJob ? go(job.box ?? (job.sorted ? 'job' : 'inbox'), 'Ein Manager hat sich beworben.') : ''}</p>` : ''}
+    </section>`;
 }
 
 function office(s) {

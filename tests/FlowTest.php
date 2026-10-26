@@ -53,6 +53,17 @@ function makeRecord(Signed\Db $db, Player $p, int $bandId, string $title, int $s
     return ['state' => $state, 'completed' => $done ? end($done)['result'] : null];
 }
 
+/** Ein einfacher Manager fürs Label (ohne Bewerbung), auf Wunsch gleich bei einer Band. */
+function giveManager(\Signed\Db $db, ?int $bandId = null): int
+{
+    $labelId = (int) $db->value('SELECT id FROM labels ORDER BY id DESC LIMIT 1');
+    $id = (new Signed\Game\Repo($db, $labelId))->insertManager(['first_name' => 'Mira', 'last_name' => 'Plan', 'rarity' => 'common', 'level' => 1, 'skills' => [], 'look' => []]);
+    if ($bandId !== null) {
+        $db->exec('UPDATE bands SET manager_id = ? WHERE id = ?', [$id, $bandId]);
+    }
+    return $id;
+}
+
 function bandById(array $state, int $id): array
 {
     foreach ($state['bands'] as $band) {
@@ -1607,7 +1618,8 @@ test('Künstlername: Wunsch ab genug Bekanntheit (Diven früher), einer von drei
     check(!$wants($p->get('state')), 'unbekannt: kein Wunsch');
     $db->exec("UPDATE musicians SET fame = 500, personality = ? WHERE id = ?", ['["gelassen"]', $id]);
     check(!$wants($p->get('state')), 'gelassen: kein Wunsch');
-    // Eine Diva wünscht sich früh einen
+    // Eine Diva wünscht sich früh einen (das erfährt man über den Manager)
+    giveManager($db, $solo['id']);
     $db->exec("UPDATE musicians SET fame = ?, personality = ?, wellbeing = 50 WHERE id = ?", [Balance::STAGE_NAME['want']['diva'] + 1, '["diva"]', $id]);
     check($wants($p->get('state')), 'Diva: Wunsch nach Künstlernamen');
     $options = $p->post('stageNameOptions', ['musicianId' => $id])['options'];
@@ -1841,35 +1853,91 @@ test('Auftritt buchen: Orte mit Kosten und Gewinn-Schätzung, Gage liegt in der 
     check($afterMood < $before, 'unter der Würde ärgert');
 });
 
-test('Verborgene Charakterzüge: erst „?“, zeigen sich beim ersten Wirken mit Nachricht, spätestens nach einem Tag', function () {
+test('Verborgene Charakterzüge und Bedürfnisse: ohne Manager nur die Stimmung, wer rot ist, sagt laut, was er will; der Manager kennt alles', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Verborgen');
     $band = foundBand($p);
     $ids = array_column($db->all('SELECT id FROM musicians WHERE band_id = ?', [$band['id']]), 'id');
-    // Einer ist extrovertiert (mag Straßenmusik) und kooperativ, noch ist nichts bekannt; die anderen haben keine Züge.
-    $db->exec("UPDATE musicians SET personality = '[]', known_traits = '[]' WHERE band_id = ?", [$band['id']]);
-    $db->exec('UPDATE musicians SET personality = ?, wellbeing = 70 WHERE id = ?', [json_encode(['rampensau', 'teamplayer']), $ids[0]]);
-    $m = array_values(array_filter($p->get('state')['musicians'], fn ($x) => $x['id'] === $ids[0]))[0];
-    checkEquals([], $m['personality'], 'noch unbekannt');
-    checkEquals(2, $m['hiddenTraits']);
-    checkEquals([], bandById($p->get('state'), $band['id'])['mood']['reactions']['gig']['like'], 'keine Vorlieben für Unbekanntes');
-    $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'busking']);
-    Clock::advance(600);
+    $db->exec("UPDATE musicians SET personality = '[\"gelassen\"]', known_traits = '[]', wellbeing = 70 WHERE band_id = ?", [$band['id']]);
+    $db->exec('UPDATE musicians SET personality = ?, wellbeing = 45 WHERE id = ?', [json_encode(['rampensau', 'teamplayer']), $ids[0]]);
+    $find = static fn ($state, $id) => array_values(array_filter($state['musicians'], static fn ($x) => $x['id'] === $id))[0];
     $state = $p->get('state');
-    $m = array_values(array_filter($state['musicians'], fn ($x) => $x['id'] === $ids[0]))[0];
-    checkEquals(['rampensau'], $m['personality'], 'Straßenmusik gemocht: extrovertiert zeigt sich');
-    checkEquals(1, $m['hiddenTraits']);
-    check((bool) $db->value("SELECT COUNT(*) FROM history WHERE kind = 'trait' AND text LIKE '%extrovertiert%'"), 'Nachricht fürs Label');
-    // Sicherheitsnetz
-    Clock::advance(Balance::TRAIT_REVEAL['after']);
-    $m = array_values(array_filter($p->get('state')['musicians'], fn ($x) => $x['id'] === $ids[0]))[0];
-    checkEquals(['rampensau', 'teamplayer'], $m['personality'], 'nach einem Tag ist alles bekannt');
+    checkEquals([], $find($state, $ids[0])['personality'], 'noch unbekannt');
+    checkEquals(2, $find($state, $ids[0])['hiddenTraits']);
+    $b = bandById($state, $band['id']);
+    checkEquals(false, $b['managed']);
+    checkEquals([], $b['mood']['wishes'], 'gelb, aber ohne Manager kein Wunsch');
+    checkEquals([], (array) $b['mood']['why'], 'ohne Manager kein Warum');
+    checkEquals([], $b['managerNotes']);
+    // Wirken allein verrät nichts mehr (Straßenmusik, Zeit vergeht).
+    $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'busking']);
+    Clock::advance(2 * 86400);
+    $db->exec('UPDATE musicians SET wellbeing = 45 WHERE id = ?', [$ids[0]]);
+    checkEquals([], $find($p->get('state'), $ids[0])['personality'], 'auch nach zwei Tagen unbekannt');
+    // Rot: sagt laut, was er will, und man erfährt den Zug dahinter.
+    $db->exec('UPDATE musicians SET wellbeing = 10 WHERE id = ?', [$ids[0]]);
+    Clock::advance(60);
+    $state = $p->get('state');
+    checkEquals(['rampensau'], $find($state, $ids[0])['personality'], 'rot: der Zug hinter dem Wunsch');
+    $wishes = bandById($state, $band['id'])['mood']['wishes'];
+    checkEquals([$ids[0]], array_values(array_unique(array_column($wishes, 'musicianId'))), 'nur der Rote sagt etwas');
+    check((bool) $db->value("SELECT COUNT(*) FROM history WHERE kind = 'trait' AND text LIKE '%laut%'"), 'Nachricht fürs Label');
+    // Mit Manager: alle Züge, alle Wünsche, Warum und Notizen.
+    giveManager($db, $band['id']);
+    $db->exec('UPDATE musicians SET wellbeing = 45 WHERE id = ?', [$ids[0]]);
+    $state = $p->get('state');
+    foreach ($ids as $id) {
+        checkEquals(0, $find($state, $id)['hiddenTraits'], 'Manager kennt alle Züge');
+    }
+    $b = bandById($state, $band['id']);
+    checkEquals(true, $b['managed']);
+    check(isset(((array) $b['mood']['why'])[$ids[0]]), 'Warum mit Manager');
+    check(in_array($ids[0], array_column($b['mood']['wishes'], 'musicianId'), true), 'gelber Wunsch mit Manager');
+    check((bool) array_filter($b['managerNotes'], static fn ($n) => str_contains($n['text'], '„')), 'Notiz mit Wunsch');
     // Einsendungen zeigen keine Züge
-    foreach ($p->get('state')['submissions'] as $s) {
+    foreach ($state['submissions'] as $s) {
         if (($s['state'] ?? '') === 'open' && ($s['kind'] ?? '') === 'solo') {
             checkEquals([], $s['personality']);
         }
     }
+});
+
+test('Manager-Notizen: besseres Instrument, Streit, lange ohne Bühne, bereit fürs Studio; eine Band oder bis zu vier Solokünstler', function () {
+    $band = ['name' => 'Testband', 'songs_written' => 4.0, 'records' => 0];
+    $members = [
+        ['id' => 1, 'first_name' => 'Ana', 'stage_name' => null, 'band_slot' => 1, 'instr1' => 'guitar', 'instr2' => null, 'skill1' => 70.0, 'skill2' => null],
+        ['id' => 2, 'first_name' => 'Ben', 'stage_name' => null, 'band_slot' => 1, 'instr1' => 'bass', 'instr2' => null, 'skill1' => 20.0, 'skill2' => null],
+    ];
+    $gear = [1 => ['guitar' => ['key' => 'gtr_school', 'name' => 'Einsteiger-E-Gitarre']]];
+    $notes = array_column(Signed\Game\Managers::notes($band, $members, $gear, ['1-2' => -5.0], [], 30.0), 'text');
+    check((bool) array_filter($notes, static fn ($t) => str_contains($t, 'Ana spielt inzwischen besser')), 'besseres Instrument');
+    check((bool) array_filter($notes, static fn ($t) => str_contains($t, 'Ana und Ben verstehen sich')), 'Streit');
+    check((bool) array_filter($notes, static fn ($t) => str_contains($t, 'nicht mehr auf der Bühne')), 'lange ohne Bühne');
+    check((bool) array_filter($notes, static fn ($t) => str_contains($t, 'bereit fürs Studio')), 'Studio');
+    checkEquals([], array_column(Signed\Game\Managers::notes(['songs_written' => 1.0] + $band, $members, [], ['1-2' => 2.0], [], 1.0), 'text'), 'nichts zu sagen');
+
+    $db = freshDb();
+    $p = registerPlayer($db, 'Kapazitaet');
+    $first = foundBand($p);
+    $manager = giveManager($db);
+    $p->post('bandSetManager', ['bandId' => $first['id'], 'managerId' => $manager]);
+    // Solokünstler dazu: Ein Manager mit Band hat keine Zeit mehr.
+    $solos = [];
+    for ($i = 0; $i < 5; $i++) {
+        $res = $p->post('submissionsTest');
+        $s = array_values(array_filter($res['state']['submissions'], static fn ($s) => $s['state'] === 'open' && $s['kind'] === 'solo'))[0];
+        $db->exec('UPDATE labels SET money = 100000');
+        $p->post('submissionSign', ['submissionId' => $s['submissionId']]);
+        $solos = array_values(array_filter($p->get('state')['bands'], static fn ($b) => count($b['memberIds']) === 1));
+    }
+    check(count($solos) >= 5, 'fünf Solokünstler');
+    checkApiError(fn () => $p->post('bandSetManager', ['bandId' => $solos[0]['id'], 'managerId' => $manager]), 'eine Band');
+    $p->post('bandSetManager', ['bandId' => $first['id'], 'managerId' => null]);
+    for ($i = 0; $i < 4; $i++) {
+        $p->post('bandSetManager', ['bandId' => $solos[$i]['id'], 'managerId' => $manager]);
+    }
+    checkApiError(fn () => $p->post('bandSetManager', ['bandId' => $solos[4]['id'], 'managerId' => $manager]), 'Solokünstler');
+    checkApiError(fn () => $p->post('bandSetManager', ['bandId' => $first['id'], 'managerId' => $manager]), 'für sich allein');
 });
 
 test('Posteingang: Interview-Anfragen passen zur Bekanntheit, bringen einen festen Anteil ohne Bremse, der Musiker ist kurz weg', function () {
@@ -2130,7 +2198,7 @@ test('Songwriting-Coach: eine Band schreibt in der Zeit schneller, die gecoachte
     checkEquals([], $p->get('state')['tutors']);
 });
 
-test('Manager als Bewerbung: Passung nach Genre und Stil, Netzwerker, Vermittler und Gespür wirken', function () {
+test('Manager als Bewerbung: Passung nach Genre und Stil, Netzwerker und Vermittler wirken, er kennt seine Leute', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Chefin');
     $band = foundBand($p);
@@ -2139,11 +2207,11 @@ test('Manager als Bewerbung: Passung nach Genre und Stil, Netzwerker, Vermittler
     $jobs = array_values(array_filter($state['mail'], static fn ($m) => $m['kind'] === 'job' && $m['role'] === 'manager'));
     checkEquals([1, 2, 3], array_values(array_unique(array_column($jobs, 'tier'))));
     $top = array_values(array_filter($jobs, static fn ($m) => $m['tier'] === 3))[0];
-    // Festlegen: Rock, Netzwerker und Gespür, Stil, den keiner hat.
+    // Festlegen: Rock, Netzwerker, Stil, den keiner hat.
     $row = $db->one('SELECT data FROM mail WHERE id = ?', [$top['mailId']]);
     $d = json_decode($row['data'], true);
     $d['genres'] = ['rock'];
-    $d['skills'] = ['netzwerker', 'gespuer'];
+    $d['skills'] = ['netzwerker'];
     $d['style'] = 'ruhepol';
     $db->update('mail', ['data' => json_encode($d)], ['id' => $top['mailId']]);
     $db->exec("UPDATE musicians SET personality = '[\"ehrgeizig\"]', known_traits = '[]'");
@@ -2161,9 +2229,9 @@ test('Manager als Bewerbung: Passung nach Genre und Stil, Netzwerker, Vermittler
     $state = $p->post('bandSetManager', ['bandId' => $band['id'], 'managerId' => $managerId])['state'];
     $b = bandById($state, $band['id']);
     checkEquals(5.0, (float) $b['managerLevel']);
-    // Gespür: Die Züge sind jetzt alle bekannt.
+    // Er kennt seine Leute: Die Züge sind jetzt alle bekannt.
     foreach ($state['musicians'] as $m) {
-        checkEquals(0, $m['hiddenTraits'], 'Gespür zeigt alle Züge');
+        checkEquals(0, $m['hiddenTraits'], 'Manager zeigt alle Züge');
     }
     // Netzwerker: Interviews bringen mehr.
     $state = $p->post('mailTest')['state'];

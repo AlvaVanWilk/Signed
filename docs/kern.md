@@ -24,7 +24,7 @@ Der Kernkreislauf: **Musiker und Instrumente finden → Bands zusammenstellen �
 | Konto | Klick aufs Geld: Tantiemen pro Tag, Platten in den Charts, Kontoauszug |
 | Musiker | Einmalig, zufällig erzeugt: 1–2 Instrumente, Können, Bekanntheit, Genre-Symbole, Fähigkeiten (an die Können-Stufe gebunden), Charakterzüge, „Ungewöhnlich“, Profilbild. Favoriten ohne Band stehen in der zweiten Menüzeile |
 | Instrumente | 44 Modelle (11 Arten × 4 Seltenheiten); jedes Exemplar weicht pro Wert um bis zu ±12 vom Modell ab; frei tauschbar |
-| Manager | Stufe 1–5, 1–2 Fähigkeiten, bis zu 3 Bands mit geteilter Leistung |
+| Manager | Stufe 1–5, 1–2 Fähigkeiten, eine Band oder bis zu 4 Solokünstler; nur mit Manager sieht man Wünsche, Gründe der Stimmung und Charakterzüge |
 | Bands | Bis zu 8 Bands (freigeschaltet über Label-Ruhm), Genre ergibt sich aus der Besetzung, Sound, Zusammenspiel, Chemie, Ruhm |
 | Aktivitäten | Band: Bandprobe, Band-Promo, Straßenmusik, Open Stage, Gig (erst mit Platte), Platte (Studio und Produzent wählen, läuft über Zeit). Einzeln: Solo-Probe (Rhythmus oder Tonhöhe), Promo-Mission. Ohne Band: Jam-Café (Mitmusiker für die erste Band), Straßenmusik |
 | Live | Live-Ticker mit Publikumsleiste für alle Auftritte |

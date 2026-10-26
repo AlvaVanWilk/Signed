@@ -133,15 +133,13 @@ Im passenden Genre der Band (bei Hybrid und Crossover alle ihre Genres, solo die
 **Fähigkeiten** (Talent, Charisma, Nervenstark, Absolutes Gehör, Entertainer, Studiofuchs, Ausstrahlung) gibt es nicht mehr; stattdessen schaltet jede
 Können-Stufe eine bessere Klasse von Instrumenten frei (Zahlen in docs/kern.md, Instrumente).
 
-**Verborgene Charakterzüge** (gebaut, `Traits`): Wer neu ins Label kommt (Einsendung, Pack, Jam, Scout …), zeigt seine Züge erst nach und nach;
-unbekannte stehen als „?“ da, auch schon in der Einsendung. Gewirkt wird trotzdem von Anfang an. Ein Zug zeigt sich, sobald er zum ersten Mal
-etwas bewirkt, und das Label bekommt eine kurze Nachricht („… Jetzt weißt du: Lea ist extrovertiert.“):
-- eine Anordnung gemocht oder nicht gemocht (Probe, Auftritt, Aufnahme, Straßenmusik, offene Bühne),
-- Unruhe ohne Auftritt (extrovertiert, gesellig) oder ohne neue Platte (ehrgeizig), Ruhe beim Songstau (gemütlich),
-- ein neuer Song (kreativ; technisch in einer Band, weil er nicht mitschreibt), der Wunsch nach einem Künstlernamen,
-- unzufrieden (der erste Zug, nach dem sich auch der Wunsch richtet), bei der Probe als Erster die Lust verloren.
-Sicherheitsnetz: nach jeder Probe (ab einer Minute) zeigt sich mit 35 % noch ein Zug, spätestens nach einem Tag im Label alle
-(`Balance::TRAIT_REVEAL`). Wer schon vor dem Umbau da war, ist bekannt. Vorlieben an den Anordnungen zeigen sich nur für bekannte Züge.
+**Verborgene Charakterzüge und Bedürfnisse** (gebaut, `Traits`, `Managers`): Mit dem Label redet niemand persönlich. Wer neu ins Label
+kommt (Einsendung, Pack, Jam, Scout …), zeigt seine Züge nicht; unbekannte stehen als „?“ da, auch schon in der Einsendung. Gewirkt wird
+trotzdem von Anfang an. **Ohne Manager** sieht man nur die Stimmung (die Farbe); „Warum?“ verrät nichts, und Wünsche hört man keine.
+Erst wer **rot** ist, meckert laut: Er sagt konkret, was er will (steht bei den Wünschen und auf der Übersicht, eine rote Anordnung, die er
+ablehnt, nennt ihn), und man erfährt den Zug hinter seinem Wunsch („… sagt laut, was fehlt. Jetzt weißt du: Lea ist gesellig.“).
+**Mit Manager** kennt das Label alle Züge seiner Leute (bleiben bekannt, auch wenn er geht), alle Wünsche, die Gründe der Stimmung („Warum?“)
+und die Vorlieben an den Anordnungen. Wer schon vor dem Umbau da war, ist bekannt.
 
 ### Anspruch
 
@@ -328,13 +326,17 @@ das überstimmt die Sortierung (`Post::move`, Spalte `box`).
 - **Songwriting-Coach** (gebaut): gebucht für **1 Tag und eine Band** (oder einen Solokünstler; 400 / 1.200 / 3.000 ₲). In der Zeit entstehen
   Songs 1,5- / 1,75- / 2-mal so schnell, und die Songs aus dieser Zeit machen die nächste Platte besser (+4 / +8 / +12 % Qualität, anteilig nach
   gecoachten Songs; `bands.coached_songs`). Eine Band hat höchstens einen Coach zugleich (`Balance::COACH`).
-- **Manager** (gebaut, `Managers`): bewerben sich von Anfang an (aber seltener als Praktika), einmalig bezahlt und teuer (1.500 / 5.000 / 15.000 ₲, Stärke 1 / 3 / 5).
-  Jeder hat ein bis zwei **Schwerpunkt-Genres** (oft eins, das im Label gespielt wird), einen **Stil** (Charakterzug) und ein bis zwei Wirkungen:
-  **Verhandler** (Gage), **PR-Profi** (Ruhm bei Auftritten), **Netzwerker** (Interviews bringen +10 % je Stärke), **Vermittler** (was der Band
-  nicht gefällt, ärgert sie 15 % je Stärke weniger, höchstens 80 %), **Gespür** (zeigt alle Charakterzüge seiner Musiker).
+- **Manager** (gebaut, `Managers`): Ohne ihn erfährt man nichts über seine Leute (siehe oben). Einer bewirbt sich gleich zu Beginn, dann
+  kommen sie häufiger als alle außer Praktika. Einmalig bezahlt, die einfachen sind **günstig** (300 / 3.000 / 10.000 ₲, Stärke 1 / 3 / 5).
+  Ein Manager betreut **eine Band oder bis zu vier Solokünstler** (`Balance::MANAGER_STAFF['solos']`), dafür mit voller Stärke.
+  Er schreibt **Notizen auf die Übersicht**: Wünsche seiner Leute (rot, gelb, sonst), wer besser spielt, als sein Instrument hergibt, wer sich
+  nicht versteht (Beziehung ab −3), wer seit über einem Tag nicht auf der Bühne stand, wer bereit fürs Studio ist.
+  Jeder hat ein bis zwei **Schwerpunkt-Genres** (oft eins, das im Label gespielt wird), einen **Stil** (Charakterzug) und ein bis zwei Wirkungen
+  als Zugabe: **Verhandler** (Gage), **PR-Profi** (Ruhm bei Auftritten), **Netzwerker** (Interviews bringen +10 % je Stärke), **Vermittler** (was
+  der Band nicht gefällt, ärgert sie 15 % je Stärke weniger, höchstens 80 %). „Gespür“ gibt es nicht mehr, weil jeder Manager seine Leute kennt.
   **Passung** zur Band = Faktor auf die Stärke: gemeinsame Genres 0 / 1 / 2 → ×0,6 / ×1 / ×1,25, dazu +0,2 × Anteil der Mitglieder mit seinem
-  Stil (widersprüchlicher Zug zählt minus), zwischen 0,4 und 1,45. Wie bisher bis zu drei Bands, die Stärke wird geteilt. Eingesetzt wird er
-  auf der Bandseite („Manager wählen“); die Bewerbung zeigt vorher, zu welchen Bands er passt (`Balance::MANAGER_STAFF`).
+  Stil (widersprüchlicher Zug zählt minus), zwischen 0,4 und 1,45. Eingesetzt wird er auf der Bandseite („Manager wählen“); die Bewerbung zeigt
+  vorher, zu welchen Bands er passt.
 
 In der Wirklichkeit schicken Künstler Demos an Labels, und Talentsucher hören sich um. Ein Label sucht nicht aus einem Katalog aller Menschen aus. Zwei Wege, die nichts miteinander zu tun haben:
 
@@ -415,14 +417,14 @@ mehr alle glücklich halten kann; wer es weiter schafft, soll auch erfolgreicher
 
 ### Manager
 
-- Gehören zum Label und werden **einmalig bezahlt** (keine laufenden Kosten). Ein Manager betreut **mehrere Bands** und **teilt seine Leistung** je nach Zahl
-  der Bands (wie heute: bis zu 3). Eine sehr gute, anspruchsvolle Band bekommt sinnvollerweise einen eigenen, mehrere kleine teilen sich einen.
+- Gehören zum Label und werden **einmalig bezahlt** (keine laufenden Kosten). Ein Manager betreut **eine Band oder bis zu vier Solokünstler**.
+  Nur über ihn erfährt man Bedürfnisse und Charakterzüge (gebaut, siehe „Verborgene Charakterzüge und Bedürfnisse“).
 - **Stellenbörse** statt Kartenladen: **täglich wechselnd** werden **ein bis drei** Manager angeboten, mit sichtbaren Werten, Schwerpunkt-Genres und Stil, und
   oft **sehr teuer**. Den passenden zu finden ist Teil der Aufgabe.
 - Wie im echten Label der Betreuer („A&R“): Jeder hat **ein bis zwei Schwerpunkt-Genres** und einen **Stil** (Charakterzug). Die **Passung** zu jeder Band
   ergibt sich aus Genre-Schnittmenge und Charakter. Gute Passung verstärkt, schlechte schwächt.
-- **Wirkung:** Gespür (Wünsche früher und klarer erkennen), Vermittler (dämpft die Stimmungsfolgen schwieriger Anordnungen), dazu Verhandler (bessere Gage) und
-  Netzwerker (bessere Anfragen).
+- **Wirkung:** vor allem Wissen (Wünsche, Gründe, Charakterzüge, Notizen), dazu als Zugabe Vermittler (dämpft die Stimmungsfolgen schwieriger
+  Anordnungen), Verhandler (bessere Gage), PR-Profi und Netzwerker (bessere Anfragen).
 
 ### Cover
 
@@ -446,9 +448,11 @@ als Grundlage. Einzelne Wahlen verändern zum Beispiel Tempo-Gefühl, Akkordfolg
 - Kopf mit Name, Gründungsdatum (Link zum WikiSignia-Artikel) und vier Zahlen: Geld (dazu Tantiemen je Minute), Erfolg, Platten in den Charts
   (bester Platz), Künstler in wie vielen Bands.
 - **Erste Schritte** mit Fortschritt (Kassette anhören, Büro besetzen, Instrument kaufen, proben, Auftritt, Platte, Scout); verschwindet, wenn alles einmal gemacht ist.
-- **Notizen vom Büro**, von der Assistenz (das Praktikum meldet nur, ob es beschäftigt ist oder sich langweilt), wichtigste zuerst (rot, gelb, Rest): unzufriedene Bands mit ihrem Wunsch,
-  Songstau, „könnte die nächste Platte aufnehmen“, Interview-Anfragen (ohne Presse-Assistenz), Scout-Berichte, Bewerbungen, gute und ungehörte
-  Kassetten, ein Praktikum, das bald endet, der Kurs des Tages. Ohne Büro steht dort nur, dass niemand da ist.
+- **Notizen der Manager**: je Manager, was seine Leute brauchen (siehe Manager). Ohne Manager stehen dort nur die, die richtig unzufrieden
+  sind, mit ihrem Wunsch, und wer noch keinen Manager hat.
+- **Notizen vom Büro**, von der Assistenz (das Praktikum meldet nur, ob es beschäftigt ist oder sich langweilt), wichtigste zuerst (rot, gelb, Rest):
+  Interview-Anfragen (ohne Presse-Assistenz), Scout-Berichte, Bewerbungen, gute und ungehörte Kassetten, ein Praktikum, das bald endet, der
+  Kurs des Tages. Ohne Büro steht dort nur, dass niemand da ist.
 - **Gerade los**: alles, was läuft, nach Ende sortiert (Proben, Auftritte, Studio, Promo, Interviews, Scout unterwegs, Lehrer und Coaches).
 - **Schwarzes Brett** (der heutige Kurs als Zettel, mit „hinschicken“), **Chronik** (die letzten zehn Einträge) und das **Plattenregal**
   (alle Platten mit Cover und Chartplatz).

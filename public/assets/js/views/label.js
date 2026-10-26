@@ -1,6 +1,6 @@
 import { api } from '../api.js';
 import { abilityInfo, genreGlyph, hiddenTraits, genreName, gearModel, instrumentIcon, instrumentName, ownGear, photo, sortedGenres } from '../cards.js';
-import { actions, app, bandById, cat, defineActions, isBusy, managerById, mutate, musicianById, runningFor, serverNow } from '../core.js';
+import { actions, app, bandById, cat, defineActions, isBusy, managerBusy, managerById, mutate, musicianById, runningFor, serverNow } from '../core.js';
 import { closePopover, confirmDialog, duration, esc, fmt0, fmt1, fmtGain, money, off, openModal, popover, toast } from '../ui.js';
 import { getAudio } from '../audio.js';
 import { playedInstrument, stage } from '../figure.js';
@@ -276,35 +276,39 @@ function promoHint(b) {
 export const fitWord = (f) => (f >= 1.2 ? 'passt sehr gut' : f >= 0.95 ? 'passt gut' : f >= 0.7 ? 'passt so lala' : 'passt schlecht');
 const skillNames = (m) => m.skills.map((k) => cat().managerSkills[k]?.name ?? k).join(', ');
 
-/** Manager der Band: wer, wie gut er passt, was er bewirkt. Ohne Manager im Label steht hier nichts. */
+/** Manager der Band: wer, wie gut er passt, was er bewirkt. Ohne Manager sieht man nur die Stimmung. */
 function managerBlock(b) {
   const all = app.state.managers ?? [];
-  if (!all.length) return '';
   const m = b.managerId ? managerById(b.managerId) : null;
+  const solo = b.memberIds.length === 1;
+  const none = all.length
+    ? `<span class="muted">Noch kein Manager. Ohne Manager siehst du nur, wie gut ${solo ? 'es' : 'die Band'} drauf ist, aber nicht, was ${solo ? 'fehlt' : 'ihr fehlt'}.</span>`
+    : `<span class="muted">Noch kein Manager im Label. Ohne Manager siehst du nur die Stimmung. Manager bewerben sich im Posteingang.</span>`;
   return `<h2 class="lb-cap lb-sec">Manager</h2>
     <div class="lb-mgr">${m
-      ? `<span class="lb-ph sm">${photo({ id: m.id, look: m.look })}</span><span><b>${esc(m.firstName)} ${esc(m.lastName)}</b> ${fitWord(b.managerFit ?? 1)}<small class="muted">${esc(skillNames(m))} · Stärke ${fmt1(b.managerLevel)}${m.bandIds.length > 1 ? ` (geteilt mit ${m.bandIds.length - 1} ${m.bandIds.length === 2 ? 'Band' : 'Bands'})` : ''}</small></span>`
-      : '<span class="muted">Noch kein Manager für diese Band.</span>'}
-      <button class="btn small" data-act="managerPick" data-id="${b.id}">${m ? 'Ändern' : 'Manager wählen'}</button></div>`;
+      ? `<span class="lb-ph sm">${photo({ id: m.id, look: m.look })}</span><span><b>${esc(m.firstName)} ${esc(m.lastName)}</b> ${fitWord(b.managerFit ?? 1)}<small class="muted">Kennt ${solo ? 'alle Wünsche und Charakterzüge' : 'die Wünsche und Charakterzüge aller'} und schreibt dir Notizen auf die Übersicht.${m.skills.length ? ` Dazu: ${esc(skillNames(m))} · Stärke ${fmt1(b.managerLevel)}` : ''}</small></span>`
+      : none}
+      ${all.length ? `<button class="btn small" data-act="managerPick" data-id="${b.id}">${m ? 'Ändern' : 'Manager wählen'}</button>` : ''}</div>`;
 }
+
 
 function managerPicker(bandId) {
   const b = bandById(bandId);
-  const max = cat().rules.managerMaxBands;
   const modal = openModal({
     className: 'lb-rules-modal',
     render: () => `
       <div class="lb-cap">Manager</div>
       <h2>Wer kümmert sich um ${esc(b.name)}?</h2>
-      <p class="muted">Ein Manager kann bis zu ${max} Bands betreuen, teilt seine Kraft dann aber auf. Am meisten bringt er, wenn Genre und Stil zur Band passen.</p>
+      <p class="muted">Ein Manager kümmert sich um eine Band oder um bis zu ${cat().rules.managerSolos} Solokünstler. Er kennt die Wünsche und Charakterzüge seiner Leute und sagt dir, was sie brauchen. Am meisten bringt er, wenn Genre und Stil passen.</p>
       <div class="lb-pick">${app.state.managers.map((m) => {
         const mine = m.id === b.managerId;
-        const full = !mine && m.bandIds.length >= max;
+        const busy = mine ? '' : managerBusy(m, b);
+        const load = m.bandIds.map(bandById).filter(Boolean);
         const fit = m.fits?.[b.id] ?? 1;
-        return `<button class="lb-pick-row ${mine ? 'on' : ''}" data-manager="${mine ? '' : m.id}" ${off(full ? `${m.firstName} betreut schon ${max} Bands.` : '')}>
+        return `<button class="lb-pick-row ${mine ? 'on' : ''}" data-manager="${mine ? '' : m.id}" ${off(busy)}>
           <span class="lb-ph sm">${photo({ id: m.id, look: m.look })}</span>
           <span><b>${esc(m.firstName)} ${esc(m.lastName)}</b> ${mine ? '· betreut diese Band' : `· ${fitWord(fit)}`}
-            <small class="muted">${m.genres.length ? `${m.genres.map((g) => esc(genreName(g))).join(', ')} · ` : ''}${m.style ? `Stil: ${esc(cat().personalities[m.style])} · ` : ''}${esc(skillNames(m))} · ${m.bandIds.length}/${max} Bands</small></span>
+            <small class="muted">${[m.genres.map((g) => esc(genreName(g))).join(', '), m.style ? `Stil: ${esc(cat().personalities[m.style])}` : '', esc(skillNames(m)), load.length ? `betreut ${load.map((x) => esc(x.name)).join(', ')}` : 'frei'].filter(Boolean).join(' · ')}</small></span>
           ${mine ? '<em>Abziehen</em>' : ''}</button>`;
       }).join('')}</div>
       <div class="dialog-actions"><button class="btn ghost" data-close>Schließen</button></div>`,
@@ -334,7 +338,7 @@ function act(b, members, type, section, title, text, icon, warn = false, busy = 
   const names = (ids) => ids.map((id) => musicianById(id)?.firstName).filter(Boolean).join(', ');
   const plural = (ids, one, many) => (ids.length > 1 ? many : one);
   if (r.locked) {
-    const red = r.dislike.filter((id) => musicianById(id)?.wellbeing?.level === 'red');
+    const red = r.refuser ? [r.refuser] : r.dislike.filter((id) => musicianById(id)?.wellbeing?.level === 'red');
     return `<div class="lb-act lock" data-act="tip" data-tip="${esc(names(red))}: keine Lust · erst Stimmung heben">${icon}<b>${title}</b><small>${esc(names(red))} ${plural(red, 'hat', 'haben')} keine Lust darauf.</small></div>`;
   }
   const hint = r.dislike.length ? `<small class="no">${esc(names(r.dislike))} ${plural(r.dislike, 'mag', 'mögen')} das nicht.</small>` : `<small>${text}</small>`;
@@ -862,7 +866,20 @@ defineActions({
     const b = bandById(Number(band));
     const m = musicianById(Number(id));
     const w = b?.mood.why?.[id];
-    if (!m || !w) return;
+    if (!m || !b) return;
+    if (!w) {
+      // Ohne Manager: nur die Farbe. Wer rot ist, sagt laut, was fehlt (steht dann bei den Wünschen).
+      const red = m.wellbeing?.level === 'red';
+      const modal = openModal({
+        html: `
+          <div class="lb-cap">Stimmung</div>
+          <h2>${esc(m.stageName ?? m.firstName)} ist ${moodWord(m.wellbeing?.level ?? 'green')}</h2>
+          <p class="muted">${red ? `${esc(m.firstName)} ist richtig unzufrieden und sagt laut, was fehlt. Mehr erfährst du nur über einen Manager.` : `Warum, erzählt ${esc(m.firstName)} nur einem Manager. Ohne Manager erfährst du es erst, wenn ${esc(m.firstName)} richtig unzufrieden ist.`}</p>
+          <div class="dialog-actions"><button class="btn primary" data-close>Okay</button></div>`,
+      });
+      modal.body.querySelector('[data-close]').addEventListener('click', () => modal.close());
+      return;
+    }
     const now = Math.round(m.wellbeing?.value ?? 60);
     const dir = w.target > now + 2 ? 'Sie wird gerade besser' : w.target < now - 2 ? 'Sie wird gerade schlechter' : 'Sie bleibt ungefähr so';
     const row = (text, v) => `<li class="${v > 0 ? 'up' : v < 0 ? 'down' : ''}"><span>${esc(text)}</span><b>${v > 0 ? '+' : ''}${fmt0(Math.round(v))}</b></li>`;

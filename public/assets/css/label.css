@@ -1063,6 +1063,9 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .ov-steps li.next { color: var(--lb-text); font-weight: 700; }
 .ov-steps li.next a { color: var(--lb-accent); }
 .ov-faces { display: flex; } .ov-faces .lb-ph.sm { width: 32px; height: 32px; box-shadow: 0 0 0 2px var(--lb-card); } .ov-faces .lb-ph + .lb-ph { margin-left: -8px; }
+.ov-mgr { margin-bottom: 12px; }
+.ov-mgr h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; font-size: .95rem; text-transform: none; letter-spacing: 0; color: var(--lb-text); } .ov-mgr h3 .lb-ph.sm { width: 28px; height: 28px; }
+.ov-office > .ov-notes + p, .ov-office > .ov-mgr + p { margin-top: 10px; }
 .ov-notes { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .ov-notes li { padding: 7px 10px 7px 12px; border-radius: 8px; background: var(--lb-card2); border-left: 3px solid var(--lb-line); font-size: .9rem; }
 .ov-notes li.l0 { border-left-color: var(--lb-bad); } .ov-notes li.l1 { border-left-color: var(--lb-warn); } .ov-notes li.l3 { color: var(--lb-muted); }

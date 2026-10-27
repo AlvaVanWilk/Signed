@@ -1190,7 +1190,7 @@ body { background: radial-gradient(1100px 520px at 50% -12%, rgba(212, 176, 110,
 .ps-held { position: absolute; left: 37%; bottom: 30%; width: 28%; z-index: 3; animation: ps-held 1.6s ease-in-out infinite; }
 .ps-held svg { width: 100%; display: block; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .4)); }
 @keyframes ps-held { 0%, 100% { transform: translateY(0) rotate(-6deg); } 50% { transform: translateY(-4px) rotate(4deg); } }
-.ps-name { position: absolute; left: clamp(20px, 2.6vw, 34px); bottom: 6%; padding: 2px 10px; border-radius: 4px; background: linear-gradient(180deg, #e8c77e, #b98d45); color: #3a2a14; font-size: .78rem; box-shadow: 0 2px 4px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .5); white-space: nowrap; }
+.ps-name { position: absolute; left: clamp(20px, 2.6vw, 34px); bottom: 6%; border: 0; font: inherit; font-weight: 700; cursor: pointer; padding: 2px 10px; border-radius: 4px; background: linear-gradient(180deg, #e8c77e, #b98d45); color: #3a2a14; font-size: .78rem; box-shadow: 0 2px 4px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .5); white-space: nowrap; }
 .ps-name small { font-weight: 600; font-size: .7rem; opacity: .85; margin-left: 4px; }
 .ps-bubble { position: absolute; left: clamp(118px, 12vw, 150px); top: 6%; width: max-content; max-width: 250px; padding: 10px 12px; border-radius: 14px; background: #f6f0e2; color: #2b2533; box-shadow: 0 6px 16px rgba(0, 0, 0, .35); font-size: .84rem; line-height: 1.35; }
 .ps-scene.many .ps-bubble { max-width: 190px; }
@@ -1206,5 +1206,13 @@ body { background: radial-gradient(1100px 520px at 50% -12%, rgba(212, 176, 110,
 .ps-note::before { content: ''; position: absolute; top: -6px; left: 50%; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: #c6585f; box-shadow: 0 2px 2px rgba(0, 0, 0, .4); }
 .ps-note .ps-pill { display: block; margin-top: 8px; }
 .ps-note.ps-empty { right: auto; bottom: auto; left: 30%; top: 16%; width: 300px; transform: rotate(-1.5deg); }
+/* Antippen zum Reden: unsichtbare Fläche über der Figur, kleine Andeutung über dem Kopf */
+.ps-hit { position: absolute; left: 0; bottom: 24%; width: clamp(140px, 15vw, 190px); height: 62%; border: 0; background: none; cursor: pointer; border-radius: 40% 40% 10% 10%; }
+.ps-hit:hover, .ps-hit:focus-visible { background: radial-gradient(ellipse at 50% 40%, rgba(255, 240, 200, 0.12), transparent 70%); outline: none; }
+.ps-mini { position: absolute; left: clamp(96px, 10vw, 124px); top: 10%; display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border: 0; border-radius: 12px; background: #f6f0e2; color: #2b2533; font: inherit; font-size: .76rem; font-weight: 700; cursor: pointer; box-shadow: 0 4px 10px rgba(0, 0, 0, .3); }
+.ps-mini::before { content: ''; position: absolute; left: 6px; bottom: -6px; border: 6px solid transparent; border-top-color: #f6f0e2; border-bottom: 0; }
+.ps-mini:hover { background: #fff7e4; }
+.ps-dots { width: 22px; height: 6px; background: radial-gradient(circle, #6a6070 2.4px, transparent 2.6px) 0 50% / 8px 6px repeat-x; animation: ps-dots 1.4s ease-in-out infinite; }
+@keyframes ps-dots { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }
 @media (max-width: 1100px) { .ps-note { width: 180px; font-size: .74rem; padding: 8px 10px 10px; } .ps-scene.many .ps-bubble { max-width: 170px; } }
-@media (prefers-reduced-motion: reduce) { .ps-col.busy .ps-fig .fig-body, .ps-held { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .ps-col.busy .ps-fig .fig-body, .ps-held, .ps-dots { animation: none; } }

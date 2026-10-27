@@ -3,7 +3,7 @@ import { api } from '../api.js';
 import { actions, app, bandById, cat, defineActions, isBusy, mutate, musicianById, rerender, serverNow } from '../core.js';
 import { confirmDialog, esc, money, off, openModal, toast } from '../ui.js';
 import { fitWord, levelClass, levelProgress, relColor } from './label.js';
-import { INTERN_JOBS, officeScene } from '../office.js';
+import { INTERN_JOBS, closeTalk, officeScene } from '../office.js';
 
 /**
  * Posteingang: Demos (Musiker bewerben sich von selbst beim Label), Interview-Anfragen und Bewerbungen fürs Label.
@@ -748,10 +748,12 @@ defineActions({
   },
   async internOrder({ id, job }) {
     const x = app.state.assistant?.staff.find((y) => y.id === Number(id));
+    closeTalk();
     if (await mutate('internOrder', { staffId: Number(id), job })) toast(`${x?.firstName ?? 'Das Praktikum'} ${INTERN_JOBS[job][1]}. Du kannst derweil etwas anderes machen.`, 'ok');
   },
   async internCancel({ id }) {
     const x = app.state.assistant?.staff.find((y) => y.id === Number(id));
+    closeTalk();
     if (await mutate('internCancel', { staffId: Number(id) })) toast(`${x?.firstName ?? 'Das Praktikum'} hört auf. Was noch nicht fertig ist, liegt wieder da.`, 'ok');
   },
   async mailTest() {

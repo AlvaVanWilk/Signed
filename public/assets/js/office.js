@@ -1,5 +1,5 @@
 import { figure } from './figure.js';
-import { app } from './core.js';
+import { app, defineActions, rerender } from './core.js';
 import { esc, money, off } from './ui.js';
 
 /**
@@ -10,6 +10,24 @@ import { esc, money, off } from './ui.js';
 
 /** Was das Praktikum tun kann, und wie es das sagt. */
 export const INTERN_JOBS = { unpack: ['Briefe öffnen', 'öffnet Briefe', 'Ich öffne gerade die Briefe.'], listen: ['Demos anhören', 'hört Demos an', 'Ich höre gerade die Demos an.'], sort: ['Post sortieren', 'sortiert die Post', 'Ich sortiere gerade die Post in die Fächer.'] };
+
+/**
+ * Sprechblasen erscheinen erst, wenn man jemanden antippt (eine zur Zeit, bleibt beim Neuzeichnen offen). Sonst schwebt über dem Kopf nur
+ * eine kleine Andeutung: „…“, wenn jemand auf einen Zuruf wartet, oder wie lange die Arbeit noch dauert.
+ */
+defineActions({
+  psTalk({ id }) {
+    app.ui.psOpen = app.ui.psOpen === Number(id) ? null : Number(id);
+    rerender();
+  },
+});
+document.addEventListener('click', (e) => {
+  if (app.ui?.psOpen == null || e.target.closest?.('.ps-bubble, [data-act=psTalk]')) return;
+  app.ui.psOpen = null;
+  rerender();
+});
+/** Nach einem Zuruf oder Abbrechen schließt sich die Blase wieder. */
+export const closeTalk = () => { if (app.ui) app.ui.psOpen = null; };
 
 const INK = '#1d1a2a';
 const W = 960;
@@ -107,10 +125,16 @@ export function officeScene(a, posts = 0) {
       <div class="ps-fig fig-stage idle"><div class="fig-member" style="--d:${(-((x.id * 7919) % 4300) / 1000).toFixed(2)}s">${figure(x.look, 'none', { bored: !!x.intern && !x.job })}</div>
         ${x.job ? `<span class="ps-held">${HELD[x.job.kind] ?? ''}</span>` : ''}</div>
     </div>`).join('');
+  const open = staff.some((x) => x.id === app.ui.psOpen) ? app.ui.psOpen : null;
+  const hint = (x) => (x.job
+    ? `<span class="ps-dots"></span><span data-until="${x.job.until}"></span>`
+    : x.intern && (a.todo.unpack || a.todo.listen || a.todo.sort) ? '<span class="ps-dots"></span>' : '');
   const front = staff.map((x) => `
     <div class="ps-col">
-      <div class="ps-bubble">${x.intern ? internBubble(x, a) : assistantBubble(x, a)}</div>
-      <b class="ps-name">${name(x)}<small>· ${x.intern ? 'Praktikum' : 'Assistenz'}</small></b>
+      ${x.id === open ? `<div class="ps-bubble">${x.intern ? internBubble(x, a) : assistantBubble(x, a)}</div>`
+    : hint(x) ? `<button class="ps-mini" data-act="psTalk" data-id="${x.id}" title="Mit ${name(x)} reden">${hint(x)}</button>` : ''}
+      <button class="ps-hit" data-act="psTalk" data-id="${x.id}" title="Mit ${name(x)} reden" aria-label="Mit ${name(x)} reden"></button>
+      <button class="ps-name" data-act="psTalk" data-id="${x.id}">${name(x)}<small>· ${x.intern ? 'Praktikum' : 'Assistenz'}</small></button>
     </div>`).join('');
   const intern = staff.find((x) => x.intern);
   const note = intern

@@ -341,6 +341,30 @@ const VL_BODY = 'M32 17.4 C26.2 17.4 23.2 19.6 23.2 23.8 C23.2 26.6 25.4 27.8 24
 const SX_BODY = 'M25 8.6 L30.4 8.6 L32.6 42 C33 47.6 36.2 50.4 39.8 49.4 C42.2 48.6 42.8 46 42.2 42.4 L41.4 37.4 L51.4 28.6 L54.6 41.6 L49.8 43 C51 52.6 46.8 59.8 39.2 60.4 C30.8 61 25.8 55 26 46.8 Z';
 const strings = (n, x0, dx, top, bottom, w) => Array.from({ length: n }, (_, i) => `<path d="M${f(x0 + i * dx)} ${top} V${bottom}" stroke="#eef0f4" stroke-width="${w}"/>`).join('');
 
+/** Geige aufrecht (Schnecke oben), ohne Bogen: im Laden schräg gestellt, an der Figur von der Seite. */
+function violinUpright(L) {
+  const body = [`path d="${VL_BODY}"`];
+  const bb = [20.6, 17.4, 22.8, 36.2];
+  const fill = L.tier === 2 ? L.fill('paint') : L.fill('wood');
+  const line = L.tier === 3 ? L.line() : L.line('wood');
+  const scroll = L.tier === 3 ? L.dark : L.tier === 0 ? '#6a4020' : L.tier === 2 ? `hsl(${L.hue - 10} 60% 22%)` : L.line('wood');
+  return `
+      <path d="M32 1.4 C35.4 1.4 35.8 5.6 33.4 6 C33 6.2 33 7 33.2 8.2 H30.8 V4.4 C30.8 2.6 31.4 1.4 32 1.4 Z" fill="${scroll}" stroke="${L.tier === 3 ? line : 'none'}" stroke-width="0.3"/>
+      <circle cx="32.6" cy="3.4" r="1.2" fill="none" stroke="#3a1606" stroke-width="0.5"/>
+      ${pegs(L, [[29.6, 6], [34.4, 6]], 0.8)}
+      ${L.glow(body)}
+      ${draw(body, `fill="${fill}" stroke="${line}" stroke-width="0.8"`)}
+      ${L.decor(body, bb, L.tier === 2 ? 'paint' : 'wood', { k: 0.95, center: [0.5, 0.62] })}
+      <rect x="30.4" y="7.6" width="3.2" height="30" rx="1.2" fill="${L.theme === 'studio' ? '#1c1a20' : L.theme === 'hit' ? '#2a1a0c' : '#14100c'}"/>
+      ${L.theme === 'magnet' || L.theme === 'show' ? '<path d="M32 10 V35" stroke="#f2cf6a" stroke-width="0.35" opacity="0.8"/>' : ''}
+      <path d="M27.4 33.2 C26 35.4 28 37.4 26.6 39.8 M36.6 33.2 C38 35.4 36 37.4 37.4 39.8" fill="none" stroke="#2a1208" stroke-width="1"/>
+      <rect x="28.4" y="41.4" width="7.2" height="1.4" rx="0.5" fill="#e6c48a"/>
+      <path d="M29.6 44.4 H34.4 L33.4 51.4 H30.6 Z" fill="${L.tier === 3 && L.theme !== 'hit' ? L.hw.fill : '#14100c'}"/>
+      ${strings(4, 31.1, 0.6, 7, 45, 0.25)}
+      ${L.tier === 0 ? '' : '<ellipse cx="27.6" cy="24" rx="2.4" ry="3.4" fill="#fff" opacity="0.2"/>'}
+      ${L.extras(bb, { anchor: [33.6, 5.6], badge: [32, 49.6], spark: [[0.98, 0.1], [0.04, 0.86], [0.7, 1.02]] })}`;
+}
+
 const ART = {
   guitar(L) {
     const body = [`path d="${AG_BODY}"`];
@@ -604,30 +628,11 @@ const ART = {
   },
 
   violin(L) {
-    const body = [`path d="${VL_BODY}"`];
-    const bb = [20.6, 17.4, 22.8, 36.2];
-    const fill = L.tier === 2 ? L.fill('paint') : L.fill('wood');
-    const line = L.tier === 3 ? L.line() : L.line('wood');
-    const scroll = L.tier === 3 ? L.dark : L.tier === 0 ? '#6a4020' : L.tier === 2 ? `hsl(${L.hue - 10} 60% 22%)` : L.line('wood');
-    return `${tilt(`
-      <path d="M32 1.4 C35.4 1.4 35.8 5.6 33.4 6 C33 6.2 33 7 33.2 8.2 H30.8 V4.4 C30.8 2.6 31.4 1.4 32 1.4 Z" fill="${scroll}" stroke="${L.tier === 3 ? line : 'none'}" stroke-width="0.3"/>
-      <circle cx="32.6" cy="3.4" r="1.2" fill="none" stroke="#3a1606" stroke-width="0.5"/>
-      ${pegs(L, [[29.6, 6], [34.4, 6]], 0.8)}
-      ${L.glow(body)}
-      ${draw(body, `fill="${fill}" stroke="${line}" stroke-width="0.8"`)}
-      ${L.decor(body, bb, L.tier === 2 ? 'paint' : 'wood', { k: 0.95, center: [0.5, 0.62] })}
-      <rect x="30.4" y="7.6" width="3.2" height="30" rx="1.2" fill="${L.theme === 'studio' ? '#1c1a20' : L.theme === 'hit' ? '#2a1a0c' : '#14100c'}"/>
-      ${L.theme === 'magnet' || L.theme === 'show' ? '<path d="M32 10 V35" stroke="#f2cf6a" stroke-width="0.35" opacity="0.8"/>' : ''}
-      <path d="M27.4 33.2 C26 35.4 28 37.4 26.6 39.8 M36.6 33.2 C38 35.4 36 37.4 37.4 39.8" fill="none" stroke="#2a1208" stroke-width="1"/>
-      <rect x="28.4" y="41.4" width="7.2" height="1.4" rx="0.5" fill="#e6c48a"/>
-      <path d="M29.6 44.4 H34.4 L33.4 51.4 H30.6 Z" fill="${L.tier === 3 && L.theme !== 'hit' ? L.hw.fill : '#14100c'}"/>
-      ${strings(4, 31.1, 0.6, 7, 45, 0.25)}
-      ${L.tier === 0 ? '' : '<ellipse cx="27.6" cy="24" rx="2.4" ry="3.4" fill="#fff" opacity="0.2"/>'}
-      ${L.extras(bb, { anchor: [33.6, 5.6], badge: [32, 49.6], spark: [[0.98, 0.1], [0.04, 0.86], [0.7, 1.02]] })}`, -34, 0.95)}
-      ${L.held ? '' : `<path d="M8 54 L56 8" stroke="${L.tier === 3 ? (L.theme === 'studio' ? '#e8e0cc' : L.dark) : '#5a2a0c'}" stroke-width="1.6" stroke-linecap="round"/>
+    return `${tilt(violinUpright(L), -34, 0.95)}
+      <path d="M8 54 L56 8" stroke="${L.tier === 3 ? (L.theme === 'studio' ? '#e8e0cc' : L.dark) : '#5a2a0c'}" stroke-width="1.6" stroke-linecap="round"/>
       <path d="M9.8 55.8 L57.6 10" stroke="#f4efe6" stroke-width="0.9" stroke-linecap="round"/>
       <path d="M6.4 52.4 L10.6 56.6" stroke="${L.tier === 3 && L.theme !== 'hit' ? L.hw.fill : '#1a1a1e'}" stroke-width="2.6" stroke-linecap="round"/>
-      <circle cx="56.6" cy="8.6" r="1" fill="#1a1a1e"/>`}`;
+      <circle cx="56.6" cy="8.6" r="1" fill="#1a1a1e"/>`;
   },
 
   flute(L) {
@@ -681,12 +686,82 @@ const ART = {
 };
 
 /**
+ * Ansichten für die Figuren, die ein Instrument spielen: Was im Laden von oben zu sehen ist, sieht man auf der Bühne von vorn bzw. von der Seite.
+ * Gleiche Materialien, Farben und Schmuck wie im Laden (makeLook).
+ */
+const SIDE = {
+  // Keyboard von vorn und etwas von oben: Oberseite mit Tasten und Reglern, davor die lackierte Vorderkante.
+  synth(L) {
+    const front = ['rect x="2" y="31" width="60" height="7" rx="1.6"'];
+    const bb = [2, 31, 60, 7];
+    const top = L.tier === 1 ? '#2a2b36' : L.fill('paint');
+    const knob = L.tier === 0 ? '#9a9aa8' : L.tier === 1 ? '#e8e2d4' : L.tier === 2 ? `hsl(${L.hue} 80% 62%)` : L.hw.fill;
+    const screen = L.tier === 3 && L.theme === 'show' ? '#ff4fa3' : L.tier === 2 ? `hsl(${L.hue} 90% 62%)` : '#3ddc97';
+    const white = L.theme === 'studio' ? '#fffaf0' : '#f6f4ee';
+    const black = L.theme === 'hit' ? '#c99a30' : '#1a1a1e';
+    const lines = Array.from({ length: 13 }, (_, i) => {
+      const t = (i + 1) / 14;
+      return `M${f(8.4 + t * 47.2)} 26.6 L${f(6.4 + t * 51.2)} 30.6`;
+    }).join(' ');
+    const blacks = [0, 1, 3, 4, 5, 7, 8, 10, 11].map((i) => {
+      const t = (i + 1) / 14;
+      const x = 8.4 + t * 47.2;
+      return `<path d="M${f(x - 0.9)} 26.6 H${f(x + 0.9)} L${f(x + 0.7)} 28.6 H${f(x - 1.1)} Z" fill="${black}"/>`;
+    }).join('');
+    return `
+      ${L.glow(front)}
+      <path d="M5 24 H59 L62 31 H2 Z" fill="${top}" stroke="${L.line('paint')}" stroke-width="0.5" stroke-linejoin="round"/>
+      <path d="M5 24 H59 L62 31 H2 Z" fill="#fff" opacity="0.1"/>
+      ${L.tier === 1 ? `<path d="M2 31 L5 24 H8.6 L6.4 31 Z M62 31 L59 24 H55.4 L57.6 31 Z" fill="${L.fill('wood')}"/>` : ''}
+      <path d="M8.4 26.6 H55.6 L57.6 30.6 H6.4 Z" fill="${white}" stroke="#8e8a80" stroke-width="0.25"/>
+      <path d="${lines}" stroke="#b8b4aa" stroke-width="0.25"/>
+      ${blacks}
+      <g fill="${knob}" stroke="#1c1d28" stroke-width="0.25"><ellipse cx="11" cy="25.3" rx="1.3" ry="0.55"/><ellipse cx="15" cy="25.3" rx="1.3" ry="0.55"/><ellipse cx="19" cy="25.3" rx="1.3" ry="0.55"/></g>
+      <path d="M40 24.7 H52 L52.3 25.9 H39.8 Z" fill="#0f2a1e"/><path d="M41 25.3 H${L.tier === 0 ? 45 : 49}" stroke="${screen}" stroke-width="0.6" stroke-linecap="round"/>
+      ${draw(front, `fill="${L.tier === 1 ? L.fill('wood') : L.fill('paint')}" stroke="${L.line(L.tier === 1 ? 'wood' : 'paint')}" stroke-width="0.6"`)}
+      ${L.tier >= 2 ? L.decor(front, bb, 'paint', { binding: false, center: [0.5, 0.5], label: false }) : ''}
+      ${L.sheen('M4 31.8 H60', 0.6, 0.35)}
+      ${L.extras([2, 24, 60, 14], { anchor: [60, 37], badge: [32, 34.6], spark: [[0.98, 0], [0.02, 1], [0.6, 1.1]] })}`;
+  },
+
+  // E-Drums von vorn: Gestell, flache Pads (man sieht ihre Kante), Becken-Pads, Kick-Turm mit Pad und das Modul.
+  edrums(L) {
+    const rim = L.tier === 3 && L.theme !== 'studio' ? L.dark : L.fill('paint');
+    const line = L.line('paint');
+    const pad = (cx, cy, rx, ry) => `<path d="M${f(cx - rx)} ${cy} v1.8 a${rx} ${ry} 0 0 0 ${f(rx * 2)} 0 V${cy}" fill="${rim}" stroke="${line}" stroke-width="0.5"/>
+      <ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${rim}" stroke="${line}" stroke-width="0.5"/>
+      <ellipse cx="${cx}" cy="${cy}" rx="${f(rx - 1.2)}" ry="${f(ry - 0.7)}" fill="#1c1c22"/><ellipse cx="${cx}" cy="${cy}" rx="${f(rx - 1.2)}" ry="${f(ry - 0.7)}" fill="url(#mesh)" opacity="0.6"/>`;
+    const kick = ['rect x="25" y="40" width="14" height="18" rx="2"'];
+    const bb = [25, 40, 14, 18];
+    const led = L.tier === 0 ? '#3ddc97' : L.tier === 1 ? '#ffd25a' : L.tier === 2 ? `hsl(${L.hue} 90% 62%)` : { magnet: '#f2cf6a', show: '#ff4fa3', studio: '#3ddc97', cult: '#3fb7a8', hit: '#ff5a4a' }[L.theme];
+    return `
+      <defs><pattern id="mesh" width="1.4" height="1.4" patternUnits="userSpaceOnUse"><path d="M0 0 H1.4 M0 0 V1.4" stroke="#3a3a44" stroke-width="0.3"/></pattern></defs>
+      <g stroke="${L.tier === 0 ? '#55585f' : '#9a9ea8'}" stroke-width="1.4" ${LINE} fill="none"><path d="M8 33 V60 M56 33 V60 M6 33 H58 M4 60 H12 M52 60 H60 M10 33 L12 17 M54 33 L52 15"/></g>
+      <ellipse cx="12" cy="16" rx="8" ry="1.6" fill="#1c1c22" stroke="#4a4a54" stroke-width="0.5"/>
+      <ellipse cx="52" cy="14" rx="9" ry="1.8" fill="#1c1c22" stroke="#4a4a54" stroke-width="0.5" transform="rotate(-6 52 14)"/>
+      ${pad(22, 30, 7, 2.6)}${pad(42, 30, 7, 2.6)}${pad(12, 40, 6, 2.2)}
+      <path d="M8 42 H12" stroke="#9a9ea8" stroke-width="1"/>
+      <rect x="45" y="36" width="11" height="7" rx="1.2" fill="${rim}" stroke="${line}" stroke-width="0.5"/>
+      <rect x="46.2" y="37.2" width="8.6" height="2.6" rx="0.6" fill="#0f1a22"/><path d="M47.2 38.5 H51.4" stroke="${led}" stroke-width="0.8" stroke-linecap="round"/>
+      ${L.glow(kick)}
+      ${draw(kick, `fill="${L.fill('paint')}" stroke="${line}" stroke-width="0.7"`)}
+      ${L.decor(kick, bb, 'paint', { k: 0.86, center: [0.5, 0.5] })}
+      <circle cx="32" cy="49" r="4.6" fill="#1c1c22" stroke="${L.tier === 0 ? '#3a3a40' : L.hw.fill}" stroke-width="0.6"/><circle cx="32" cy="49" r="4.6" fill="url(#mesh)" opacity="0.6"/>
+      ${L.tier === 0 ? '' : '<path d="M26.6 41.6 H32" stroke="#fff" stroke-width="0.7" opacity="0.3" stroke-linecap="round"/>'}
+      ${L.extras([6, 12, 52, 48], { anchor: [56, 43], badge: [32, 56], spark: [[0.98, 0.1], [0.04, 0.95], [0.72, 1]] })}`;
+  },
+
+  // Geige aufrecht ohne Bogen; die Figur stellt sie schmal (von der Seite) unters Kinn.
+  violin: (L) => violinUpright(L),
+};
+
+/**
  * Zeichnung eines Instruments in seiner Güteklasse. key: guitar, eguitar, bass, drums, edrums, synth, piano, vocals, sax, trumpet, violin, flute, turntables.
- * held: für die Figuren, die es spielen (ohne Schlagzeugstöcke und Geigenbogen, die halten sie selbst).
+ * held: für die Figuren, die es spielen (Ansicht von vorn bzw. von der Seite, ohne Schlagzeugstöcke und Geigenbogen, die halten sie selbst).
  * @returns {?string} SVG-Inhalt (64 × 64) oder null, wenn es die Form nicht gibt
  */
 export function tierArt(key, tier, hue = null, variant = 0, gold = null, held = false) {
-  const art = ART[key];
+  const art = (held && SIDE[key]) || ART[key];
   if (!art) return null;
   const L = makeLook(tier, hue, variant, gold);
   L.held = held;

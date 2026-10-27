@@ -1261,16 +1261,10 @@ body { background: radial-gradient(1100px 520px at 50% -12%, rgba(255, 181, 71, 
 .ov-progress i { background: var(--brand); }
 
 /* ---------- Lichtschein in den Logofarben ----------
- * Leise, nicht knallig: Unter den oberen Kanten fällt Licht in die Kachel, Kacheln haben einen schwachen türkisen Schein nach außen,
- * die Leiste der Anordnungen leuchtet in die Kachel hinein. Die Farben bleiben die des Logos (Türkis nach Gelb). */
-.ov-panel::after, .ov-stat::after { height: 56px; opacity: 1;
-  -webkit-mask: linear-gradient(180deg, #000 0 3px, rgba(0, 0, 0, 0.16) 3px, transparent 56px); mask: linear-gradient(180deg, #000 0 3px, rgba(0, 0, 0, 0.16) 3px, transparent 56px); }
-.ov-panel, .ov-stat, .lb-wishes, .lb-mgr, .lb-act, .lb-hd { box-shadow: 0 0 0 1px rgba(46, 196, 182, 0.05), 0 12px 34px -20px rgba(46, 196, 182, 0.45); }
+ * Leise, nicht knallig: Kacheln werfen einen warmen Schein nach unten außen (Gelb des Logos mit etwas Türkis),
+ * beim Darüberfahren etwas mehr. In die Kacheln hinein leuchtet nichts. */
+.ov-panel, .ov-stat, .lb-wishes, .lb-mgr, .lb-act, .lb-hd { box-shadow: 0 14px 34px -20px rgba(255, 181, 71, 0.5), 0 10px 28px -22px rgba(46, 196, 182, 0.35); }
 .ov-panel.ov-board { box-shadow: none; }
-.lb-act::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, rgba(46, 196, 182, 0.13), rgba(255, 181, 71, 0.04) 22%, transparent 45%); }
-.lb-act::before { box-shadow: 0 0 10px rgba(46, 196, 182, 0.7); }
-.lb-act:not(.lock):hover { box-shadow: 0 0 0 1px rgba(46, 196, 182, 0.25), 0 10px 30px -14px rgba(46, 196, 182, 0.6); }
-/* Wünsche und Manager: Licht von oben links wie unter einer Lampe */
-.lb-wishes, .lb-mgr { background: radial-gradient(420px 90px at 0 0, rgba(46, 196, 182, 0.09), transparent 70%), radial-gradient(320px 80px at 100% 0, rgba(255, 181, 71, 0.05), transparent 70%), var(--lb-card); }
-.lb-cap::before { box-shadow: 0 0 8px rgba(46, 196, 182, 0.55); }
-.btn.primary { box-shadow: 0 0 18px -6px rgba(46, 196, 182, 0.75); }
+.lb-act:not(.lock):hover { box-shadow: 0 14px 32px -16px rgba(255, 181, 71, 0.65), 0 10px 26px -18px rgba(46, 196, 182, 0.4); }
+.lb-cap::before { box-shadow: 0 0 8px rgba(255, 181, 71, 0.45); }
+.btn.primary { box-shadow: 0 8px 18px -8px rgba(255, 181, 71, 0.6); }

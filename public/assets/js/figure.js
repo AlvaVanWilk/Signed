@@ -321,15 +321,15 @@ const arm = (d, hand, skin, shirt, cls = '') => {
 let heldSerial = 0;
 /**
  * Das Instrument aus dem Laden (gearart.js, 64 × 64) in den Händen der Figur, in seiner Güteklasse und Farbe (fin = finish, ohne eigenes: grau).
- * a: Punkt in der Zeichnung, der auf at landet; r: Drehung; s: Größe; flip: gespiegelt (Hals nach links); sy: eigene Höhe (flach gelegt).
+ * a: Punkt in der Zeichnung, der auf at landet; r: Drehung; s: Größe; flip: gespiegelt (Hals nach links); sx/sy: eigene Breite/Höhe (schmal von der Seite, flach gelegt).
  * Jede Kopie bekommt eigene Kennungen für ihre Farbverläufe.
  */
-function held(key, fin, { a, at, r = 0, s = 1, flip = false, sy = null }) {
+function held(key, fin, { a, at, r = 0, s = 1, flip = false, sx = null, sy = null }) {
   const art = tierArt(key, fin?.tier ?? 0, fin?.hue ?? null, fin?.variant ?? 0, fin?.gold ?? null, true);
   if (!art) return '';
   const n = ++heldSerial;
   const unique = art.replace(/id="([\w-]+)"/g, `id="$1-h${n}"`).replace(/url\(#([\w-]+)\)/g, `url(#$1-h${n})`);
-  return `<g transform="translate(${at[0]} ${at[1]}) rotate(${r}) scale(${flip ? -s : s} ${sy ?? s}) translate(${-a[0]} ${-a[1]})">${unique}</g>`;
+  return `<g transform="translate(${at[0]} ${at[1]}) rotate(${r}) scale(${(flip ? -1 : 1) * (sx ?? s)} ${sy ?? s}) translate(${-a[0]} ${-a[1]})">${unique}</g>`;
 }
 
 /** Gitarre: Korpus vor dem Bauch, Hals schräg nach links oben; die linke Hand greift am Hals, die rechte schlägt an. */
@@ -350,7 +350,7 @@ const bassPose = (skin, shirt, electric, p, fin) => `
 const SAX = (p, fin) => `${held('sax', fin, { a: [12.6, 11.3], at: [61, 62], r: 13.6, s: 0.85 })}${twinkle(p, [[92, 84], [58, 100, 2.2]])}`;
 const TRUMPET = (p, fin) => `${held('trumpet', fin, { a: [9.2, 30.5], at: [62, 62], r: -7.7, s: 0.81 })}${twinkle(p, [[101, 50], [68, 52, 2]])}`;
 const FLUTE = (p, fin) => `${held('flute', fin, { a: [12, 39], at: [62, 61], r: -37, s: 0.8, flip: true })}${twinkle(p, [[22, 64], [50, 59, 2]])}`;
-const VIOLIN = (p, fin) => `${held('violin', fin, { a: [19.2, 8.5], at: [26, 55], r: -27.5, s: 0.9 })}${twinkle(p, [[38, 58], [66, 78, 2]])}`;
+const VIOLIN = (p, fin) => `${held('violin', fin, { a: [32, 2], at: [26, 55], r: -61, s: 0.75, sx: 0.4 })}${twinkle(p, [[38, 58], [66, 78, 2]])}`;
 /** Mikrofon: in der Hand am Mund (singen) oder hängend in der Hand (Pause). */
 const MIC_UP = (fin) => held('vocals', fin, { a: [24.5, 21.3], at: [69.5, 59], r: 10.6, s: 0.44 });
 const MIC_DOWN = (fin) => held('vocals', fin, { a: [24.5, 21.3], at: [79.6, 114], r: -155, s: 0.4 });
@@ -381,16 +381,16 @@ const POSES = {
   drums: {
     back: () => '',
     front: (skin, shirt, electric, p, fin) => `
-      ${electric ? held('edrums', fin, { a: [32, 40], at: [60, 121], s: 1.1 }) : held('drums', fin, { a: [31, 42], at: [60, 124], s: 1.1 })}
+      ${electric ? held('edrums', fin, { a: [32, 40], at: [60, 117], s: 1.1 }) : held('drums', fin, { a: [31, 42], at: [60, 124], s: 1.1 })}
       ${twinkle(p, [[30, 104], [92, 126, 2.2]])}
-      ${pivot(45, 80, 'fig-hit-l', `${arm('M45 80 Q38 94 47 102', [47, 102], skin, shirt)}<path d="M47 102 L60 97" stroke="#c8a165" stroke-width="3" stroke-linecap="round"/>`)}
+      ${pivot(45, 80, 'fig-hit-l', `${arm('M45 80 Q38 94 47 102', [47, 102], skin, shirt)}<path d="M47 102 L${electric ? '54 106' : '60 97'}" stroke="#c8a165" stroke-width="3" stroke-linecap="round"/>`)}
       ${pivot(75, 80, 'fig-hit-r', `${arm('M75 80 Q84 90 82 98', [82, 98], skin, shirt)}<path d="M82 98 L92 91" stroke="#c8a165" stroke-width="3" stroke-linecap="round"/>`)}`,
   },
   keys: {
     back: () => '',
     front: (skin, shirt, electric, p, fin) => `
       <path d="M40 112 L36 140 M80 112 L84 140" fill="none" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>
-      ${held('synth', fin, { a: [32, 40], at: [60, 104], s: 0.85 })}
+      ${held('synth', fin, { a: [32, 31], at: [60, 106], s: 1.2 })}
       ${twinkle(p, [[30, 86], [92, 114, 2.2]])}
       <g class="fig-key-l">${arm('M45 80 Q38 92 44 101', [44, 101], skin, shirt)}</g>
       <g class="fig-key-r">${arm('M75 80 Q82 92 76 101', [76, 101], skin, shirt)}</g>`,

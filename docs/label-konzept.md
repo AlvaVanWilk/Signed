@@ -616,7 +616,8 @@ Beim ersten Login nach dem Umbau (Saison 2) bleiben **Labelname und Konto**, all
 - Gekauftes hinterlässt ein leeres Fach („Verkauft“), die Vitrine bleibt leer stehen. Zurücklegen gibt es nicht mehr.
 - **Man sieht das Instrument an der Figur** (`figure.js`, `held`): Die Figur hält dieselbe Zeichnung wie im Laden (`gearart.js`, ohne
   Schlagzeugstöcke und Geigenbogen, die hält sie selbst), in Güteklasse und Farbe des eigenen Instruments; ohne eigenes in Grau.
-  Gold funkelt dazu leise. Keyboards sind an der Figur immer ein Synthesizer, Plattenspieler liegen flach auf dem Tisch.
+  Gold funkelt dazu leise. Was der Laden von oben zeigt, hat für die Figur eine eigene Ansicht von vorn bzw. von der Seite (`gearart.js`, `SIDE`):
+  Keyboard (immer als Synthesizer), E-Drums und Geige (schmal unterm Kinn). Plattenspieler liegen flach auf dem Tisch.
   Auch die kleinen Instrument-Symbole auf den Musikerkarten zeigen das eigene Instrument.
 - Die frühere „Neue Lieferung“ gegen Geld gibt es nicht mehr.
 - Oberfläche: gezeichnetes Regal mit Preisschildern, Seltenheit als Lichtschein, Hinweispunkt bei Instrumenten, die jemandem im Label fehlen; Übergang: Doppeltür geht beim ersten Betreten auf.

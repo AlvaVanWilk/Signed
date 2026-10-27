@@ -288,6 +288,50 @@ function wishBubble(b, members, w) {
     <b>„${esc(w.text)}“</b><small>${esc(m?.stageName ?? m?.firstName ?? '')} wünscht sich das.</small>${wishGo(b, members, w)}</div>`;
 }
 
+/** Ein Koffer (für die Auszeit). */
+const CASE = '<svg viewBox="0 0 30 26" aria-hidden="true"><path d="M10 6 V3 H20 V6" fill="none" stroke="#1d1a2a" stroke-width="2.4"/><rect x="2" y="6" width="26" height="18" rx="3" fill="#c0623a" stroke="#1d1a2a" stroke-width="2"/><path d="M2 12 H28" stroke="#1d1a2a" stroke-width="1.4" opacity=".5"/><rect x="8" y="6" width="3" height="18" fill="#e8c35a"/><rect x="19" y="6" width="3" height="18" fill="#e8c35a"/></svg>';
+
+/**
+ * Die Band geht aus dem Raum (nur auf der Bandseite, ohne „weniger Bewegung“): zum Auftritt mit den Instrumenten nach rechts raus;
+ * zur Auszeit erst nach links zu den Koffern, Koffer nehmen, dann nach rechts raus. Erst danach wird die Anordnung abgeschickt.
+ */
+function leaveScene(type) {
+  const room = document.querySelector('.lb-scene .lb-room');
+  const figs = room ? [...room.querySelectorAll('.fig-stage .fig-member')] : [];
+  if (!figs.length || matchMedia('(prefers-reduced-motion: reduce)').matches) return Promise.resolve();
+  room.classList.add('leaving');
+  const width = room.clientWidth;
+  const out = (el) => width + el.offsetWidth - el.offsetLeft;
+  let last = 0;
+  if (type === 'retreat') {
+    room.insertAdjacentHTML('beforeend', `<div class="lb-cases">${figs.map(() => `<span>${CASE}</span>`).join('')}</div>`);
+    const pile = room.querySelector('.lb-cases');
+    figs.sort((x, y) => x.offsetLeft - y.offsetLeft).forEach((el, i) => {
+      const toCases = width * 0.07 - el.offsetLeft;
+      const delay = i * 280;
+      const walkIn = Math.max(500, Math.abs(toCases) * 1.9);
+      const total = walkIn + 300 + 1400;
+      el.classList.add('walking');
+      el.animate([{ translate: '0 0' }, { translate: `${toCases}px 0`, offset: walkIn / total }, { translate: `${toCases}px 0`, offset: (walkIn + 300) / total }, { translate: `${out(el)}px 0` }],
+        { duration: total, delay, easing: 'linear', fill: 'forwards' });
+      setTimeout(() => {
+        el.insertAdjacentHTML('beforeend', `<span class="lb-case-hand">${CASE}</span>`);
+        pile.firstElementChild?.remove();
+      }, delay + walkIn + 120);
+      last = Math.max(last, delay + total);
+    });
+  } else {
+    figs.sort((x, y) => y.offsetLeft - x.offsetLeft).forEach((el, i) => {
+      const delay = i * 200;
+      const duration = 700 + out(el) * 1.6;
+      el.classList.add('walking');
+      el.animate([{ translate: '0 0' }, { translate: `${out(el)}px 0` }], { duration, delay, easing: 'ease-in', fill: 'forwards' });
+      last = Math.max(last, delay + duration);
+    });
+  }
+  return new Promise((done) => setTimeout(done, last + 150));
+}
+
 /**
  * Oben auf der Bandseite: der Proberaum mit dem Namen als Schild an der Wand, bei Genre-Bonus im Stil des Genres eingerichtet,
  * die Band davor, der Manager hinten rechts (antippen: Manager ändern), über einem Kopf der dringendste Wunsch.
@@ -297,16 +341,26 @@ function bandScene(b, members) {
   const genre = sortedGenres(genresOf(b))[0] ?? null;
   const mgr = b.managerId ? managerById(b.managerId) : null;
   const wish = (b.mood.wishes ?? [])[0];
+  // Unterwegs (Auszeit, Promo-Tour): Der Raum ist leer, ein Zettel sagt, wann sie zurück sind. Danach kommen sie von rechts wieder herein.
+  const running = runningFor(b.id);
+  const away = running && ['retreat', 'bandpromo'].includes(running.type) ? running : null;
+  app.ui.awayFrom ??= {};
+  if (away || running?.type === 'gig') app.ui.awayFrom[b.id] = running.type;
+  // Wieder herein erst, wenn das Ergebnis-Fenster zu ist (sonst liefen sie unsichtbar dahinter).
+  const waiting = (app.state.results ?? []).some((r) => r.bandId === b.id);
+  const back = !running && !waiting && app.ui.awayFrom[b.id] && !matchMedia('(prefers-reduced-motion: reduce)').matches ? app.ui.awayFrom[b.id] : null;
+  if (!running && !waiting) delete app.ui.awayFrom[b.id];
+  const note = away ? `<div class="lb-away-note"><b>${away.type === 'retreat' ? `${esc(away.title.split(':')[0])}!` : 'Auf Promo-Tour!'}</b><small>${solo ? esc(whoOf(b)) : 'Die Band'} ist zurück in <span data-until="${away.endsAt}"></span></small></div>` : '';
   const tag = `${solo ? 'Solo' : esc(b.title ?? 'Band')} · ${genresOf(b).length ? sortedGenres(genresOf(b)).map((g) => esc(genreName(g))).join(' · ') : 'gemischt'}`;
   return `
     <section class="lb-scene">
-      <div class="lb-room idle ${mgr ? 'with-mgr' : ''}">${roomSvg(b.room?.level ?? 0, b.id, b.name, genre)}${stage(members, {
+      <div class="lb-room idle ${mgr ? 'with-mgr' : ''} ${back ? `arriving from-${back}` : ''}">${roomSvg(b.room?.level ?? 0, b.id, b.name, genre)}${away ? note : stage(members, {
     className: 'idle in-room',
     act: 'musicianInfo',
     instrumentOf: (m) => (hasGear(m) ? playedInstrument(m) : 'none'),
     finishOf: (m) => ownGear(m, playedInstrument(m)).finish,
     nameOf: (m) => esc(m.stageName ?? m.firstName),
-    below: (m) => (wish && wish.musicianId === m.id ? wishBubble(b, members, wish) : ''),
+    below: (m) => (back === 'retreat' ? `<span class="lb-case-hand">${CASE}</span>` : '') + (wish && wish.musicianId === m.id && !back ? wishBubble(b, members, wish) : ''),
   })}
         ${mgr ? `<button class="lb-mgrfig fig-stage idle" data-act="managerPick" data-id="${b.id}" title="${esc(mgr.firstName)} ${esc(mgr.lastName)}, Manager · antippen zum Ändern" aria-label="Manager ${esc(mgr.firstName)}"><span class="fig-member">${figure(mgr.look, 'none', { bored: false })}<i class="lb-clip"></i></span></button>` : ''}
         <span class="lb-scene-tag">${tag}${solo ? '' : `<button class="icon-btn" data-act="bandRename" data-id="${b.id}" title="Umbenennen" aria-label="Umbenennen">✎</button>`}</span>
@@ -784,13 +838,13 @@ async function openGigs(b) {
   });
   modal.body.addEventListener('click', async (e) => {
     const btn = e.target.closest('[data-book]');
-    if (!btn) return;
+    if (!btn || btn.getAttribute('aria-disabled') === 'true') return;
     btn.disabled = true;
+    modal.close();
+    await leaveScene('gig');
     const res = await mutate('activityStart', { bandId: b.id, type: 'gig', venue: btn.dataset.book });
-    if (res) {
-      modal.close();
-      toast(`${b.name} ist auf dem Weg zum Auftritt.`, 'ok');
-    } else btn.disabled = false;
+    if (res) toast(`${b.name} ist auf dem Weg zum Auftritt.`, 'ok');
+    else rerender();
   });
 }
 
@@ -893,7 +947,9 @@ defineActions({
       const row = e.target.closest('[data-option]');
       if (!row || row.getAttribute('aria-disabled') === 'true') return;
       modal.close();
+      await leaveScene('retreat');
       if (await mutate('bandRetreat', { bandId: b.id, option: row.dataset.option })) toast(`${who} ist weg: ${r.options[row.dataset.option].name}.`, 'ok');
+      else rerender();
     });
   },
   /** Wunschblase über dem Kopf auf- oder zuklappen (id leer: zu). */
@@ -934,7 +990,9 @@ defineActions({
     modal.body.querySelector('[data-cancel]').addEventListener('click', () => modal.close());
     modal.body.querySelector('[data-go]').addEventListener('click', async () => {
       modal.close();
+      await leaveScene('bandpromo');
       await actions.bandPromo({ id: String(b.id) });
+      if (!runningFor(b.id)) rerender();
     });
   },
   /** Probe: erst fragen, mit Dauer und Wirkung, dann starten. */

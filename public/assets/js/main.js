@@ -405,6 +405,8 @@ function showResults() {
       app.state.results = app.state.results.filter((x) => x.id !== r.id);
       api('activityAck', { activityId: r.id }).catch(() => {});
       setTimeout(showResults, 250);
+      // Kommt eine Band zurück (Auftritt, Auszeit, Promo), läuft sie jetzt sichtbar in den Raum.
+      if (Object.keys(app.ui.awayFrom ?? {}).length) rerender();
     },
   });
   resultModal.body.querySelector('[data-close]').addEventListener('click', () => resultModal?.close());

@@ -185,8 +185,8 @@ export const piercingSvg = (kind, c) => ({
   helix: metalArc('M69.9 40.5 A1.15 1.15 0 1 1 70.3 42.5', c, 0.5, '0 6 2 10') + metalBead(71, 44.4, 0.5, c),
 }[kind]);
 
-/** Beide Ohrringe am Ohrläppchen (links 31, rechts 69, Höhe 50). */
-function earrings({ shape, color }) {
+/** Ohrringe am Ohrläppchen (von vorn links 31 und rechts 69, Höhe 50; von der Seite nur das eine Ohr). */
+function earrings({ shape, color }, xs = [31, 69]) {
   const one = (x) => ({
     stud: `<circle cx="${x}" cy="50.6" r="1.3" fill="${color}"/>`,
     pearl: `<circle cx="${x}" cy="51" r="1.7" fill="#f4efe6"/><circle cx="${x - 0.5}" cy="50.4" r="0.5" fill="#fff" stroke="none"/>`,
@@ -196,7 +196,8 @@ function earrings({ shape, color }) {
     double: `<circle cx="${x}" cy="50.6" r="1.1" fill="${color}"/><circle cx="${x + (x < 50 ? 0.6 : -0.6)}" cy="47.6" r="0.9" fill="${color}"/>`,
   }[shape]);
   // Dunkle Kontur nur um gefüllte Formen; der Creolen-Ring ist selbst eine Linie.
-  return shape === 'hoop' ? `<g>${one(31)}${one(69)}</g>` : `<g stroke="${INK}" stroke-width="0.6">${one(31)}${one(69)}</g>`;
+  const all = xs.map(one).join('');
+  return shape === 'hoop' ? `<g>${all}</g>` : `<g stroke="${INK}" stroke-width="0.6">${all}</g>`;
 }
 
 /** Bäckchen passend zur Haut: auf heller Haut rosa, auf dunkler ein dezentes warmes Rotbraun. */
@@ -541,3 +542,171 @@ export function stage(members, { bpm = 120, names = true, className = '', electr
 }
 
 const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+// ---------- Von der Seite: beim Gehen (aus dem Proberaum, zum Auftritt, in die Auszeit) ----------
+
+/**
+ * Haar von der Seite (Kopf schaut nach rechts, Koordinaten wie das Kartenbild). CAP: Haar über Stirn, Scheitel und Hinterkopf, das Gesicht
+ * und das Ohr bleiben frei. SIDE_BACK: was hinten herunterhängt (liegt hinter dem Kopf); SIDE_FRONT: Pony, Tolle, Kamm (über dem Kopf).
+ */
+const CAP = 'M65.8 35.4 C63 26 56 22 49 22.4 C38 23 30.6 31 30.8 42 C31 47.6 32.2 51.6 34.4 54.6 L40.6 53.6 C39.6 49 39.8 44.6 41.6 41 C44 36.4 49 33.6 55 33.4 C59.4 33.3 63 34 65.8 35.4 Z';
+const CAP_TOP = 'M65.8 35.4 C63 26 56 22 49 22.4 C42 22.8 37 26 34.6 31 C42 28.4 56 29.4 65.8 35.4 Z';
+const SIDE_BACK = {
+  lang: 'M34 31 C28 42 27.6 60 28.6 79 C33 80.6 39.6 80.6 44.4 79 C44 66 43.6 56 43.2 44 Z',
+  bob: 'M33 33 C29 42 28.8 53 30 61 C34 62.4 39.6 62.4 43.4 61 L43 42 Z',
+  zopf: 'M33.4 33.6 C25.4 36 22.4 46 23.8 57 C24.6 63 26.8 67 26 72 C31.4 66.4 32.4 60 31.4 52.4 C30.6 46.4 31.6 41.6 35.4 38.6 Z',
+  wolf: 'M32.6 37 C29.4 45 29 55 30 64 L33 59 L35.4 66 L38.4 59 L41.4 64.4 L43 52 L43 42 Z',
+  curtain: 'M32.6 37 C29.4 45 29 55 30 64 C34 66.4 39.4 66.4 43.2 63.4 L43 42 Z',
+  mullet: 'M32.4 40 C30.6 50 28.6 60 25.6 68 C31.6 69.4 37.4 67.4 41.4 62 L42.4 48 Z',
+  braids: 'M31.6 42 L35.2 42 L35 76 Q33.2 78 31.4 76 Z M36.2 45 L39.6 45 L39.6 80 Q37.8 82 36 80 Z M40.4 48 L43.6 48 L43.4 72 Q41.8 74 40.2 72 Z',
+};
+const SIDE_FRONT = {
+  bob: 'M66.2 36.2 C66.4 29 60 25 52.4 25.8 C58 29.6 61 34.4 62.2 40.4 C63.4 38.4 64.6 37 66.2 36.2 Z',
+  lang: 'M66.2 36.2 C66.4 29 60 25 52.4 25.8 C57.4 29 60 33 61.2 37.6 C62.8 36.8 64.4 36.2 66.2 36.2 Z',
+  curtain: 'M62.6 30.4 C66.8 33.6 68.4 38.6 67.8 44.4 L65.8 40.4 C65.2 36.4 64.2 33.6 62.6 30.4 Z',
+  pixie: 'M49.6 29.6 C57.6 26.6 65.8 30 69 38.6 C64.4 35.8 59.4 35.6 54 36.8 Z',
+  tolle: 'M57.6 31.6 C59.6 21.6 69.6 15.6 77.6 19.6 C71.6 21.6 68.6 26.6 68 35.6 C65 33.6 61 32.6 57.6 31.6 Z',
+  irokese: 'M64.4 30.4 C62.4 18.4 50.4 10.4 38.4 14 C34.4 16 32.4 22 33 30 C40.4 22.4 52.4 22.4 64.4 30.4 Z',
+};
+
+/** Hüte von der Seite: Krone, Band und Krempe (die Mütze mit Schirm nach vorn). */
+const HATS_SIDE = {
+  beanie: '<path d="M30.4 40 C29 18 50 15 60 18 C66 20 69 27 68.6 35 Z" fill="HAT"/><path d="M29.6 35.6 L68.8 30.6 L69.4 37 L30.2 42 Z" fill="HAT2"/>',
+  cap: '<path d="M31 37 C30 17 66 14 68 34 Z" fill="HAT"/><path d="M64 33 C74 31.4 82 32.6 85 36 L65 37 Z" fill="HAT2"/>',
+  fedora: '<path d="M34.5 33 C33.6 16 64.6 15 64.6 31 Z" fill="HAT"/><path d="M34.4 27 L64.6 26 L64.6 30.6 L34.5 31.6 Z" fill="HAT2"/><ellipse cx="50" cy="32.4" rx="25" ry="3.2" fill="HAT2" transform="rotate(-3 50 32.4)"/>',
+  cowboy: '<path d="M35 31.6 C34 19 37 13 43 12.6 C47 12.4 49 15 52 15 C55 15 57 12.6 60 13 C65 14 66 20 65.4 31 Z" fill="HAT"/><path d="M35 27 H65.6 V30 H35 Z" fill="HAT2"/><path d="M18 27 C24 31 36 32.6 50 32.6 C64 32.6 76 31 82 27 C83 31 76 36 50 36.4 C24 36 17 31 18 27 Z" fill="HAT2"/>',
+};
+
+/** Mund von der Seite: vorn am Gesicht, nach demselben Ausdruck wie von vorn. */
+const SIDE_MOUTHS = {
+  smile: line('M61 52.6 Q63.4 54.4 65.6 52.2'),
+  wide: line('M60.6 52 Q63.4 55.6 66 51.6'),
+  soft: line('M62 53 Q63.6 54 65 52.8'),
+  smirk: line('M61 53.6 Q63.8 54 65.6 51.6'),
+  flat: line('M61.4 53.4 L65.4 53.2'),
+  grin: `<path d="M60.6 52 Q63.6 56.8 66.2 51.6 Z" fill="#7a2338" stroke="${INK}" stroke-width="1.1" stroke-linejoin="round"/>`,
+  teeth: `<path d="M60.6 52 Q63.6 56.8 66.2 51.6 Z" fill="#7a2338" stroke="${INK}" stroke-width="1.1" stroke-linejoin="round"/><path d="M61.4 52.3 L65.6 51.9 L65.2 53.1 L61.8 53.4 Z" fill="#fff"/>`,
+  pout: '<ellipse cx="64.4" cy="53.4" rx="1.4" ry="1.2" fill="rgba(90, 30, 40, 0.45)"/>',
+};
+
+/** Der Kopf von der Seite: ein Auge, Nase, Mund vorn, das Ohr in der Mitte; Haar, Brille, Hut und Schmuck passend zur Vorderansicht. */
+function sideHead(look, skin, mood) {
+  const hair = look.hairColor || '#3b2a20';
+  const style = look.hair || 'kurz';
+  const hat = hatOf(look);
+  const hatted = hat !== 'none';
+  const face = MOODS[mood] ?? {};
+  const p = [];
+  if (style === 'afro') p.push(`<circle cx="43" cy="35" r="24" fill="${hair}"/>`);
+  if (SIDE_BACK[style]) p.push(`<path d="${SIDE_BACK[style]}" fill="${hair}"/><path d="${SIDE_BACK[style]}" ${SHADE}/>`);
+  if (style === 'dutt' && !hatted) p.push(`<circle cx="32.6" cy="27" r="7.6" fill="${hair}"/>`);
+  if (style === 'zopf') p.push(`<rect x="31" y="36.4" width="5" height="3.4" rx="1.6" fill="#e05d7a" transform="rotate(-30 33.5 38)"/>`);
+  if (style === 'braids') p.push(`<g fill="#e8b04a"><circle cx="33.3" cy="77.4" r="1.6"/><circle cx="37.8" cy="81.4" r="1.6"/><circle cx="41.8" cy="73.4" r="1.6"/></g>`);
+  // Kopf, Nase, Ohr
+  p.push(`<g stroke="${INK}" stroke-width="1.2"><ellipse cx="50" cy="43" rx="18" ry="18" fill="${skin}"/>`
+    + `<path d="M67.4 44.2 Q71.6 47.2 67.6 49.6" fill="${skin}" stroke-linecap="round"/></g>`);
+  p.push(`<path d="M32.4 38 Q34 53 46 60 Q36 58 32.4 46 Z" ${SHADE}/>`);
+  // Auge (mit Lidern oder zufrieden geschlossen wie von vorn), Braue, Bäckchen, Mund
+  const eye = `<ellipse cx="61.4" cy="45" rx="2.2" ry="2.8" fill="${INK}"/><circle cx="62.1" cy="44" r="0.8" fill="#fff"/>`;
+  p.push(face.eyes === 'happy' ? line('M59 45.6 Q61.4 42.8 63.8 45.6', 1.4) : eye);
+  if (face.eyes === 'lidded') p.push(`<rect x="58.6" y="41.6" width="6" height="3.4" fill="${skin}"/>${line('M58.8 45 L64.2 45')}`);
+  if (BROWS[mood]) p.push(mood === 'ehrgeizig' ? line('M58 38.6 L64 40.4') : line('M58.4 39.4 Q61.4 37.9 64.4 39.4'));
+  const [cheek, alpha] = blush(skin);
+  p.push(`<ellipse cx="59.6" cy="51" rx="3" ry="1.8" fill="${cheek}" opacity="${alpha}"/>`);
+  const lip = lipColor(skin);
+  const mouth = SIDE_MOUTHS[CALM_MOUTH[face.mouth] ?? face.mouth ?? 'smile'];
+  p.push(hasLipstick(look) ? mouth.replace(`stroke="${INK}" stroke-width="1.2"`, `stroke="${lip}" stroke-width="1.45"`).replace('fill="rgba(90, 30, 40, 0.45)"', `fill="${lip}"`) : mouth);
+  if (look.freckles) for (const [x, y] of [[56.6, 49.4], [59, 50.8], [56.2, 51.8]]) p.push(`<circle cx="${x}" cy="${y}" r="0.6" fill="#8a4b2a" opacity="0.6"/>`);
+  if (look.beard === 'full') p.push(`<path d="M41 47 C41 60 50 64 58 62.6 C63 61.8 66.6 58 67.4 54.6 C64 57.4 61 56.4 58 56 C52 55.6 47 53 44.6 49.6 Z" fill="${hair}"/>`);
+  if (look.beard === 'stubble') p.push(`<path d="M42 48 C42.6 59 51 62.6 58 61.6 C62.6 61 65.6 58 66.6 55 C63 57.4 59 57 55 56 C50 55 46 52.6 44.4 50 Z" fill="${hair}" opacity="0.3"/>`);
+  // Haar: Kappe (beim Undercut nur oben, beim Irokesen nur ein Schatten), dazu Locken, Afro-Rand, Knoten
+  if (style === 'locken') {
+    for (const [x, y, r] of [[40, 26, 7.5], [50, 23, 7.5], [59, 26, 6.5], [33, 32, 7], [31, 41, 6], [34, 50, 5]]) p.push(`<circle cx="${x}" cy="${y}" r="${r}" fill="${hair}"/>`);
+  } else if (style === 'irokese') {
+    p.push(`<path d="${CAP}" fill="${hair}" opacity="0.3"/>`);
+  } else if (style === 'sidecut') {
+    p.push(`<path d="${CAP}" fill="${hair}" opacity="0.45"/><path d="${CAP_TOP}" fill="${hair}"/>`);
+  } else if (style !== 'glatze') {
+    p.push(`<path d="${CAP}" fill="${hair}" ${style === 'buzz' ? 'opacity="0.85"' : ''}/>`);
+  }
+  if (SIDE_FRONT[style] && !hatted) p.push(`<path d="${SIDE_FRONT[style]}" fill="${hair}"/>`);
+  if (style === 'spacebuns' && !hatted) p.push(`<circle cx="39" cy="21" r="7" fill="${hair}"/><circle cx="39" cy="21" r="7" ${SHADE}/><circle cx="50" cy="19" r="7" fill="${hair}"/>`);
+  // Ohr (über dem Haar, außer lange Haare liegen darüber), Ohrring, Piercings
+  const ear = `<ellipse cx="44.5" cy="45.5" rx="3.4" ry="4.4" fill="${skin}" stroke="${INK}" stroke-width="1.2"/><path d="M45.6 43 Q43.6 44.6 45 47.6" fill="none" stroke="${INK}" stroke-width="0.7" opacity="0.45"/>`;
+  if (!['lang', 'bob', 'curtain', 'braids'].includes(style)) p.push(ear);
+  const ring = earringOf(look);
+  if (ring) p.push(earrings(ring, [44.5]));
+  const pierce = piercingOf(look);
+  if (pierce) {
+    const c = pierceColor(ring);
+    p.push({
+      brow: metalBead(63.4, 38.4, 0.75, c) + metalBead(64.4, 40.6, 0.75, c),
+      lip: metalArc('M65.2 53.4 A0.85 0.85 0 1 0 66.2 54.6', c, 0.5),
+      nose: metalArc('M68.6 48.4 A0.75 0.75 0 0 0 69.6 49.4', c, 0.34, '0 3 3 10'),
+      helix: metalArc('M45.4 40.8 A1.15 1.15 0 1 1 46.6 42.4', c, 0.5, '0 6 2 10'),
+    }[pierce]);
+  }
+  // Brille: ein Glas vor dem Auge, der Bügel zum Ohr
+  if (look.glasses && look.glasses !== 'none') {
+    const arm2 = `<path d="M57.2 44.4 L46.4 43.6" stroke="${INK}" stroke-width="1.2" stroke-linecap="round"/>`;
+    p.push(arm2 + ({
+      round: `<circle cx="61.6" cy="45" r="4.4" fill="none" stroke="${INK}" stroke-width="1.3"/>`,
+      square: `<rect x="57.4" y="41.2" width="8.6" height="7.6" rx="1.4" fill="none" stroke="${INK}" stroke-width="1.3"/>`,
+      sun: '<rect x="57.2" y="41.8" width="9" height="6.4" rx="2.6" fill="#111"/>',
+    }[look.glasses] ?? ''));
+  }
+  if (HATS_SIDE[hat]) {
+    const [c1, c2] = HAT_COLORS[hat];
+    p.push(`<g stroke="${INK}" stroke-width="1.1" stroke-linejoin="round">${HATS_SIDE[hat].replaceAll('HAT2', c2).replaceAll('HAT', c1)}</g>`);
+  }
+  return `<g transform="translate(60 44) scale(1.5) translate(-50 -42)">${p.join('')}</g>`;
+}
+
+/** Was jemand zum Auftritt mitnimmt: Saiteninstrumente in der Tasche auf dem Rücken, Sticks in der Stocktasche, sonst ein Koffer; Gesang nichts. */
+export function carryOf(instrument) {
+  if (['guitar', 'bass'].includes(instrument)) return 'gigbag';
+  if (instrument === 'violin') return 'violin';
+  if (['drums', 'edrums'].includes(instrument)) return 'sticks';
+  if (!instrument || ['none', 'vocals'].includes(instrument)) return null;
+  return 'box';
+}
+
+/** Gepäck in der Hand (vor dem Bein) oder auf dem Rücken (hinter dem Körper). */
+const CARRY = {
+  case: `<path d="M57 104 V100.6 H66 V104" fill="none" stroke="${INK}" stroke-width="2"/><rect x="50" y="104" width="23" height="16" rx="2.6" fill="#c0623a" ${STROKE}/>
+    <rect x="55" y="104" width="2.6" height="16" fill="#e8c35a"/><rect x="65.4" y="104" width="2.6" height="16" fill="#e8c35a"/><path d="M50 110 H73" stroke="${INK}" stroke-width="1" opacity="0.4"/>`,
+  box: `<path d="M58 104 V101 H65 V104" fill="none" stroke="${INK}" stroke-width="2"/><rect x="49" y="104" width="25" height="12" rx="2.4" fill="#2b2836" ${STROKE}/><path d="M53 108 H70" stroke="#fff" stroke-width="1" opacity="0.15"/>`,
+  sticks: `<rect x="57" y="101" width="9" height="20" rx="2" fill="#3a3352" ${STROKE}/><path d="M59.4 101 V96 M63.6 101 V95.4" stroke="#c9a86a" stroke-width="2.2" stroke-linecap="round"/>`,
+};
+// Hals der Tasche schräg nach oben hinter den Hinterkopf, der Bauch unten am Rücken.
+const GIGBAG = (scale) => `<g transform="translate(39 78) rotate(-19) scale(${scale})"><path d="M-3.6 -34 H3.6 V6 Q12 12 12 24 Q12 40 0 40 Q-12 40 -12 24 Q-12 12 -3.6 6 Z" fill="#2b2836" ${STROKE}/><path d="M-1.6 -30 V4" stroke="#fff" stroke-width="1.2" opacity="0.15"/></g>`;
+
+/**
+ * Figur von der Seite beim Gehen (schaut nach rechts; gespiegelt mit der CSS-Klasse „left“). Beine und Arme schwingen (CSS .fig-walker),
+ * mit Gepäck (carry: 'case' Koffer, 'box' Instrumentenkoffer, 'sticks', 'gigbag' oder 'violin' auf dem Rücken) bleibt die tragende Hand still.
+ */
+export function walker(look = {}, { carry = null, mood = null, left = false } = {}) {
+  const skin = look.skin || '#d9a27e';
+  const shirt = look.shirt || '#4a6fa5';
+  const leg = (cls, dark) => pivot(60, 104, cls, `<g ${STROKE}><path d="M54.5 103 Q54.5 100 60 100 Q65.5 100 65.5 103 L65 133 Q60 135 55 133 Z" fill="${PANTS}"/>
+    <path d="M53.6 137.6 Q53.4 131.4 59 131.2 Q68.4 131 70.4 137.6 Z" fill="${INK}"/></g>${dark ? `<path d="M54.5 103 Q54.5 100 60 100 Q65.5 100 65.5 103 L65 133 Q60 135 55 133 Z" ${SHADE}/>` : gloss('M62 133.6 Q65 132.6 67.6 133.6', 1.3, 0.28)}`);
+  const hand = CARRY[carry];
+  const back = carry === 'gigbag' ? GIGBAG(1) : carry === 'violin' ? GIGBAG(0.72) : '';
+  return `
+    <svg class="fig fig-walker${left ? ' left' : ''}" viewBox="0 0 120 150" aria-hidden="true">
+      <ellipse cx="60" cy="141" rx="22" ry="4.6" fill="rgba(0,0,0,0.25)"/>
+      <g class="fig-body">
+        ${arm('M60 80 Q59 90 60 100', [60, 101], skin, shirt, 'fw-arm-b')}
+        ${leg('fw-leg-b', true)}
+        ${leg('fw-leg-a', false)}
+        ${back}
+        <g ${STROKE}><path d="M50 77 Q60 70 70 77 L72.4 108 Q60 113 47.6 108 Z" fill="${shirt}"/></g>
+        <path d="M50 77 Q54 74.6 57 74 Q53 92 54 110.6 Q50.4 109.8 47.6 108 Z" ${SHADE}/>
+        <path d="M66 77 Q68.4 77 70 77.6 L72 104 Q70 105 68.4 105.4 Z" ${LIGHT}/>
+        ${carry === 'gigbag' || carry === 'violin' ? `<path d="M68 76.6 L52 106" stroke="${INK}" stroke-width="2.6" stroke-linecap="round"/>` : ''}
+        <path d="M55.5 74.2 Q61 80 66 74.2 Z" fill="${skin}" stroke="${INK}" stroke-width="1.4" stroke-linejoin="round"/>
+        ${pivot(60, 74, 'fw-head', sideHead(look, skin, mood))}
+        ${hand ? `${arm('M60 80 Q63 90 62.4 100', [62.4, 101], skin, shirt)}${hand}` : arm('M60 80 Q61 90 60 100', [60, 101], skin, shirt, 'fw-arm-a')}
+      </g>
+    </svg>`;
+}

@@ -535,6 +535,10 @@ als Grundlage. Einzelne Wahlen verändern zum Beispiel Tempo-Gefühl, Akkordfolg
   Anordnung abgeschickt. Zur Auszeit holen sie sich links Koffer und gehen dann rechts raus. Solange sie weg sind (Auszeit, Promo), ist der
   Raum leer und ein Zettel an der Wand sagt, wann sie zurück sind. Danach kommen sie von rechts wieder herein (nach der Auszeit mit Koffern),
   sobald das Ergebnis-Fenster zu ist. Mit „weniger Bewegung“ im Gerät entfällt das Laufen.
+  Beim Gehen sind die Signies **von der Seite** gezeichnet (`figure.js` `walker`: Profil mit einem Auge, Nase und Ohr, alle Frisuren, Hüte,
+  Brillen, Bärte und Schmuck; Beine und Arme schwingen), nach links gespiegelt. Gepäck: zur Auszeit der Koffer in der Hand, zum Auftritt das
+  eigene Instrument (Gitarre, Bass, Geige in der Tasche auf dem Rücken, Sticks in der Stocktasche, sonst ein Koffer; Gesang und wer kein
+  eigenes Instrument hat, nichts), zur Promo nichts. Angekommen stehen sie wieder von vorn da.
 - **Übersicht des Labels:** alle geäußerten Wünsche aller Bands als **Mitteilungen** untereinander; Tippen öffnet die Band, ein Knopf erfüllt direkt.
   Dazu Geld, Charts, Rangliste.
 - **Katalog** ist aufgelöst (Testversion): Jeder Künstler unter Vertrag steht sofort als Band mit einem Mitglied (Solokünstler) in der Band-Leiste, auch wer gerade unterschrieben hat oder aus einer Band genommen wurde. Die Kartei als Besetzungsplaner kommt später.

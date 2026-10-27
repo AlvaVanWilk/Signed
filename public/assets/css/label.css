@@ -1330,26 +1330,26 @@ body { background: radial-gradient(1100px 520px at 50% -12%, rgba(255, 181, 71, 
 .fig-stage .fig-member.walking .fig g.fig-body { animation: lb-walk .3s ease-in-out infinite alternate; }
 @keyframes lb-walk { from { transform: translateY(0); } to { transform: translateY(-3px); } }
 .lb-cases { position: absolute; left: 3%; bottom: 3cqh; z-index: 1; display: flex; flex-wrap: wrap-reverse; width: 16cqh; gap: 1px; }
-.lb-cases span, .lb-case-hand { display: block; }
+.lb-cases span { display: block; }
 .lb-cases svg { width: 7.5cqh; display: block; }
-.lb-case-hand { position: absolute; right: 2%; top: 64%; width: 26%; z-index: 3; animation: lb-pop .25s ease-out; }
-.lb-case-hand svg { width: 100%; display: block; }
 @keyframes lb-pop { from { transform: scale(.4); opacity: 0; } }
 /* Zurück: von rechts herein, nacheinander; nach der Auszeit mit Koffern, die danach verschwinden. */
-.lb-room.arriving .fig-stage .fig-member { animation: lb-arrive 1.6s ease-out both; }
-.lb-room.arriving .fig-stage .fig-member .fig g.fig-body { animation: lb-walk .3s ease-in-out 6 alternate; }
-.lb-room.arriving .fig-member:nth-child(2) { animation-delay: .25s; } .lb-room.arriving .fig-member:nth-child(3) { animation-delay: .5s; }
-.lb-room.arriving .fig-member:nth-child(4) { animation-delay: .75s; } .lb-room.arriving .fig-member:nth-child(5) { animation-delay: 1s; }
-.lb-room.arriving .fig-member:nth-child(6) { animation-delay: 1.25s; } .lb-room.arriving .fig-member:nth-child(7) { animation-delay: 1.5s; }
+.lb-room.arriving .fig-stage .fig-member { animation: lb-arrive 1.6s ease-out var(--ad, 0s) both; }
+.lb-room.arriving .fig-member:nth-child(2) { --ad: .25s; } .lb-room.arriving .fig-member:nth-child(3) { --ad: .5s; }
+.lb-room.arriving .fig-member:nth-child(4) { --ad: .75s; } .lb-room.arriving .fig-member:nth-child(5) { --ad: 1s; }
+.lb-room.arriving .fig-member:nth-child(6) { --ad: 1.25s; } .lb-room.arriving .fig-member:nth-child(7) { --ad: 1.5s; }
 @keyframes lb-arrive { from { translate: 110cqw 0; } }
-.lb-room.arriving .lb-case-hand { animation: lb-case-off .4s ease-in 3.4s both; }
-@keyframes lb-case-off { to { opacity: 0; transform: translateY(8px); } }
+/* Herein läuft die Figur von der Seite; ist sie angekommen, steht sie wieder von vorn da (Wechsel genau am Ende). */
+.lb-room.arriving .fig-member > svg.fig:not(.fig-walker) { animation: fw-front 1.6s steps(1, end) var(--ad, 0s) both; }
+.lb-room.arriving .fig-member > .fig-walker { animation: fw-gone 1.6s steps(1, end) var(--ad, 0s) both; }
+@keyframes fw-front { from { visibility: hidden; } to { visibility: visible; } }
+@keyframes fw-gone { from { visibility: visible; } to { visibility: hidden; } }
 /* Unterwegs: Zettel an der Wand */
 .lb-away-note { position: absolute; left: 50%; top: 40%; z-index: 2; transform: translateX(-50%) rotate(-2deg); display: grid; gap: 2px; padding: 12px 18px 14px; min-width: 200px; text-align: center;
   background: #fff7c8; color: #2a2233; box-shadow: 0 6px 14px rgba(0, 0, 0, .4); border-radius: 2px; }
 .lb-away-note::before { content: ''; position: absolute; left: 50%; top: -6px; width: 12px; height: 12px; border-radius: 50%; background: #e0566b; transform: translateX(-50%); box-shadow: 0 2px 2px rgba(0, 0, 0, .35); }
 .lb-away-note b { font-size: 1.05rem; } .lb-away-note small { color: #5a4e40; font-weight: 600; }
-@media (prefers-reduced-motion: reduce) { .lb-room.arriving .fig-stage .fig-member, .lb-case-hand { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .lb-room.arriving .fig-stage .fig-member { animation: none; } .lb-room.arriving .fig-member > .fig-walker { display: none; } }
 
 /* Proberaum-Leiste direkt am Raum (roomBar) */
 .lb-scene .lb-room { border-radius: 14px 14px 0 0; }
@@ -1397,3 +1397,16 @@ body { background: radial-gradient(1100px 520px at 50% -12%, rgba(255, 181, 71, 
   .ps-bubble.assist::before { display: none; }
   .ps-name small { display: none; }
 }
+
+/* Signies von der Seite beim Gehen (figure.js walker): Beine und Arme schwingen gegeneinander; „left“ geht nach links. */
+.fig-walker.left { transform: scaleX(-1); }
+.fig-walker .fw-leg-a, .fig-walker .fw-arm-b { animation: fw-swing .44s ease-in-out infinite alternate; }
+.fig-walker .fw-leg-b, .fig-walker .fw-arm-a { animation: fw-swing .44s ease-in-out infinite alternate-reverse; }
+.fig-walker .fw-arm-a, .fig-walker .fw-arm-b { animation-name: fw-arm; }
+@keyframes fw-swing { from { transform: rotate(-22deg); } to { transform: rotate(22deg); } }
+@keyframes fw-arm { from { transform: rotate(-26deg); } to { transform: rotate(26deg); } }
+.fig-walker .fig-body { animation: lb-walk .22s ease-in-out infinite alternate; }
+/* In der Szene liegt die Seitenansicht genau über der Figur; solange jemand geht, ist die Vorderansicht unsichtbar. */
+.fig-member > .fig-walker { position: absolute; left: 0; top: 0; width: 100%; pointer-events: none; }
+.fig-member.walking > svg.fig:not(.fig-walker) { visibility: hidden; }
+@media (prefers-reduced-motion: reduce) { .fig-walker .fw-leg-a, .fig-walker .fw-leg-b, .fig-walker .fw-arm-a, .fig-walker .fw-arm-b, .fig-walker .fig-body { animation: none; } }

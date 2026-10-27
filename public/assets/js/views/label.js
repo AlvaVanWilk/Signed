@@ -3,7 +3,7 @@ import { abilityInfo, genreGlyph, hiddenTraits, genreName, gearModel, instrument
 import { actions, app, bandById, cat, defineActions, isBusy, managerBusy, managerById, mutate, musicianById, rerender, runningFor, serverNow } from '../core.js';
 import { closePopover, confirmDialog, duration, esc, fmt0, fmt1, fmtGain, money, off, openModal, popover, toast } from '../ui.js';
 import { getAudio } from '../audio.js';
-import { figure, playedInstrument, stage } from '../figure.js';
+import { carryOf, figure, playedInstrument, stage, walker } from '../figure.js';
 import { bandStems, loadStems, playStems, stemUrl } from '../music.js';
 import { blocker, blockerNotice, courseTiles, gainRange, statTile } from './bands.js';
 import { roomSvg } from '../room.js';
@@ -291,9 +291,14 @@ function wishBubble(b, members, w) {
 /** Ein Koffer (für die Auszeit). */
 const CASE = '<svg viewBox="0 0 30 26" aria-hidden="true"><path d="M10 6 V3 H20 V6" fill="none" stroke="#1d1a2a" stroke-width="2.4"/><rect x="2" y="6" width="26" height="18" rx="3" fill="#c0623a" stroke="#1d1a2a" stroke-width="2"/><path d="M2 12 H28" stroke="#1d1a2a" stroke-width="1.4" opacity=".5"/><rect x="8" y="6" width="3" height="18" fill="#e8c35a"/><rect x="19" y="6" width="3" height="18" fill="#e8c35a"/></svg>';
 
+/** Was jemand beim Gehen trägt: zum Auftritt sein Instrument (in Tasche oder Koffer), in die Auszeit einen Koffer, zur Promo nichts. */
+const carryFor = (m, type) => (type === 'retreat' ? 'case' : type === 'gig' ? carryOf(hasGear(m) ? playedInstrument(m) : 'none') : null);
+/** Die Figur von der Seite, die beim Gehen über der Vorderansicht liegt (left: schaut nach links). */
+const sideOf = (m, carry, left = false) => walker(m.look, { carry, mood: m.personality?.[0] ?? null, left });
+
 /**
- * Die Band geht aus dem Raum (nur auf der Bandseite, ohne „weniger Bewegung“): zum Auftritt mit den Instrumenten nach rechts raus;
- * zur Auszeit erst nach links zu den Koffern, Koffer nehmen, dann nach rechts raus. Erst danach wird die Anordnung abgeschickt.
+ * Die Band geht aus dem Raum (nur auf der Bandseite, ohne „weniger Bewegung“), von der Seite gezeichnet: zum Auftritt mit den Instrumenten
+ * nach rechts raus; zur Auszeit erst nach links zu den Koffern, Koffer nehmen, dann nach rechts raus. Erst danach wird die Anordnung abgeschickt.
  */
 function leaveScene(type) {
   const room = document.querySelector('.lb-scene .lb-room');
@@ -302,6 +307,14 @@ function leaveScene(type) {
   room.classList.add('leaving');
   const width = room.clientWidth;
   const out = (el) => width + el.offsetWidth - el.offsetLeft;
+  const who = (el) => musicianById(Number(el.dataset.id));
+  // Statt der Vorderansicht geht die Figur von der Seite (die alte Ansicht bleibt unsichtbar an ihrem Platz).
+  const turn = (el, carry, left = false) => {
+    const m = who(el);
+    el.querySelector(':scope > .fig-walker')?.remove();
+    if (m) el.insertAdjacentHTML('beforeend', sideOf(m, carry, left));
+    el.classList.add('walking');
+  };
   let last = 0;
   if (type === 'retreat') {
     room.insertAdjacentHTML('beforeend', `<div class="lb-cases">${figs.map(() => `<span>${CASE}</span>`).join('')}</div>`);
@@ -311,11 +324,12 @@ function leaveScene(type) {
       const delay = i * 280;
       const walkIn = Math.max(500, Math.abs(toCases) * 1.9);
       const total = walkIn + 300 + 1400;
-      el.classList.add('walking');
+      setTimeout(() => turn(el, null, toCases < 0), delay);
       el.animate([{ translate: '0 0' }, { translate: `${toCases}px 0`, offset: walkIn / total }, { translate: `${toCases}px 0`, offset: (walkIn + 300) / total }, { translate: `${out(el)}px 0` }],
         { duration: total, delay, easing: 'linear', fill: 'forwards' });
+      // Bei den Koffern: einen nehmen, umdrehen, nach rechts raus.
       setTimeout(() => {
-        el.insertAdjacentHTML('beforeend', `<span class="lb-case-hand">${CASE}</span>`);
+        turn(el, 'case');
         pile.firstElementChild?.remove();
       }, delay + walkIn + 120);
       last = Math.max(last, delay + total);
@@ -324,7 +338,8 @@ function leaveScene(type) {
     figs.sort((x, y) => y.offsetLeft - x.offsetLeft).forEach((el, i) => {
       const delay = i * 200;
       const duration = 700 + out(el) * 1.6;
-      el.classList.add('walking');
+      const m = who(el);
+      setTimeout(() => turn(el, m ? carryFor(m, type) : null), delay);
       el.animate([{ translate: '0 0' }, { translate: `${out(el)}px 0` }], { duration, delay, easing: 'ease-in', fill: 'forwards' });
       last = Math.max(last, delay + duration);
     });
@@ -360,7 +375,8 @@ function bandScene(b, members) {
     instrumentOf: (m) => (hasGear(m) ? playedInstrument(m) : 'none'),
     finishOf: (m) => ownGear(m, playedInstrument(m)).finish,
     nameOf: (m) => esc(m.stageName ?? m.firstName),
-    below: (m) => (back === 'retreat' ? `<span class="lb-case-hand">${CASE}</span>` : '') + (wish && wish.musicianId === m.id && !back ? wishBubble(b, members, wish) : ''),
+    // Beim Zurückkommen von der Seite (nach links laufend, mit Koffer oder Instrument); danach wieder von vorn (CSS).
+    below: (m) => (back ? sideOf(m, carryFor(m, back), true) : '') + (wish && wish.musicianId === m.id && !back ? wishBubble(b, members, wish) : ''),
   })}
         ${mgr ? `<button class="lb-mgrfig fig-stage idle" data-act="managerPick" data-id="${b.id}" title="${esc(mgr.firstName)} ${esc(mgr.lastName)}, Manager · antippen zum Ändern" aria-label="Manager ${esc(mgr.firstName)}"><span class="fig-member">${figure(mgr.look, 'none', { bored: false })}<i class="lb-clip"></i></span></button>` : ''}
         <span class="lb-scene-tag">${tag}${solo ? '' : `<button class="icon-btn" data-act="bandRename" data-id="${b.id}" title="Umbenennen" aria-label="Umbenennen">✎</button>`}</span>

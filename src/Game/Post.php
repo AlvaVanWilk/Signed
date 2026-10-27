@@ -87,43 +87,49 @@ final class Post
         }
     }
 
-    /** Liegt im Eingang: nicht gemerkt, und entweder noch nicht (fertig) sortiert oder von Hand zurück in den Eingang gezogen. */
-    private const IN_INBOX = "saved = 0 AND ((box IS NULL AND (sorted_at IS NULL OR sorted_at > ?)) OR box = 'inbox')";
-
     /** Die Fächer, in die man von Hand ziehen kann ('saved' = merken). */
     public const BOXES = ['inbox', 'demos', 'interview', 'job', 'saved'];
 
     /** Spalte, Dauer je Stück und Text, wenn nichts da ist: je Zuruf ans Praktikum. */
     private const JOBS = [
-        'unpack' => ['unpacked_at', 'unpack', 'Gerade liegt kein ungeöffneter Brief da.'],
-        'listen' => ['opened_at', 'listen', 'Gerade liegt keine ungehörte Kassette da.'],
-        'sort' => ['sorted_at', 'sort', 'Im Eingang liegt nichts zum Sortieren.'],
+        'unpack' => ['unpacked_at', 'Gerade liegt kein ungeöffneter Brief da.'],
+        'listen' => ['opened_at', 'Gerade liegt keine ungehörte Kassette da.'],
+        'sort' => ['sorted_at', 'Im Eingang liegt nichts zum Sortieren.'],
     ];
 
-    /** Was das Praktikum gerade tun könnte, je Zuruf (die Stücke, die in dem Moment da liegen). */
+    /** Sekunden je Stück für diesen Zuruf. */
+    public static function seconds(string $job): int
+    {
+        return $job === 'listen' ? Balance::SUBMISSIONS['listen'] : Balance::POST[$job];
+    }
+
+    /** Bedingung, unter der ein Stück für diesen Zuruf (noch) zu tun ist, zur Zeit ? (zweimal: Ablauf, Zeitpunkt). */
+    private static function open(string $job, string $table): ?string
+    {
+        return match ($job) {
+            'unpack' => 'expires_at > ? AND unpacked_at IS NULL AND created_at <= ?',
+            // Sortieren kann man nur Ausgepacktes, und nur, was im Eingang liegt (auch von Hand zurückgelegtes).
+            'sort' => "expires_at > ? AND unpacked_at <= ? AND saved = 0 AND ((box IS NULL AND sorted_at IS NULL) OR box = 'inbox')",
+            'listen' => $table === 'submissions' ? 'expires_at > ? AND unpacked_at <= ? AND opened_at IS NULL' : null,
+            default => null,
+        };
+    }
+
+    /** Was für diesen Zuruf gerade da liegt, das Neueste zuerst: [[Tabelle, ID], …]. */
     private function pending(string $job, int $now): array
     {
-        $db = $this->repo->db;
-        $l = $this->repo->labelId;
         $rows = [];
-        $add = static function (string $t, array $list) use (&$rows): void {
-            foreach ($list as $r) {
+        foreach (self::TABLES as $t) {
+            $where = self::open($job, $t);
+            if ($where === null) {
+                continue;
+            }
+            foreach ($this->repo->db->all("SELECT id, created_at FROM $t WHERE label_id = ? AND $where", [$this->repo->labelId, $now, $now]) as $r) {
                 $rows[] = [$t, (int) $r['id'], (int) $r['created_at']];
             }
-        };
-        foreach (self::TABLES as $t) {
-            if ($job === 'unpack') {
-                $add($t, $db->all("SELECT id, created_at FROM $t WHERE label_id = ? AND expires_at > ? AND unpacked_at IS NULL", [$l, $now]));
-            } elseif ($job === 'sort') {
-                // Sortieren kann man nur Ausgepacktes, und nur, was im Eingang liegt.
-                $add($t, $db->all("SELECT id, created_at FROM $t WHERE label_id = ? AND expires_at > ? AND unpacked_at <= ? AND " . self::IN_INBOX, [$l, $now, $now, $now]));
-            } elseif ($t === 'submissions') {
-                $add($t, $db->all('SELECT id, created_at FROM submissions WHERE label_id = ? AND expires_at > ? AND unpacked_at <= ? AND opened_at IS NULL', [$l, $now, $now]));
-            }
         }
-        // Das Neueste zuerst.
         usort($rows, static fn ($a, $b) => [$b[2], $b[1]] <=> [$a[2], $a[1]]);
-        return $rows;
+        return array_map(static fn ($r) => [$r[0], $r[1]], $rows);
     }
 
     /** @return array{unpack: int, listen: int, sort: int} wie viel je Zuruf gerade da liegt */
@@ -133,26 +139,31 @@ final class Post
     }
 
     /**
-     * Zuruf ans Praktikum: nur diese eine Sache, und nur für das, was gerade da liegt (Neuestes zuerst). Dauert so lange wie selbst gemacht;
-     * läuft auch offline. Was danach kommt, bleibt liegen.
-     * @return array{int, int} Anzahl der Stücke, fertig um
+     * Zuruf ans Praktikum: die Liste dessen, was gerade da liegt (Neuestes zuerst). Abgearbeitet wird sie Stück für Stück (step); gesperrt ist
+     * immer nur das Stück, an dem das Praktikum gerade sitzt.
+     * @return list<array{string, int}>
      */
     public function order(string $job, int $now): array
     {
-        [$column, $step, $none] = self::JOBS[$job] ?? throw new ApiError('Diesen Auftrag gibt es nicht.');
+        [, $none] = self::JOBS[$job] ?? throw new ApiError('Diesen Auftrag gibt es nicht.');
         $rows = $this->pending($job, $now);
         if (!$rows) {
             throw new ApiError($none);
         }
-        $seconds = $step === 'listen' ? Balance::SUBMISSIONS['listen'] : Balance::POST[$step];
-        foreach ($rows as $k => [$t, $id]) {
-            $set = [$column => $now + ($k + 1) * $seconds, 'worker' => 'intern'];
-            if ($job === 'sort') {
-                $set['box'] = null;
-            }
-            $this->repo->db->update($t, $set, ['id' => $id]);
+        return $rows;
+    }
+
+    /** Das nächste Stück anfangen (um $at): fertig um …, oder null, wenn es inzwischen jemand anders erledigt hat (oder es weg ist). */
+    public function step(string $job, array $item, int $at): ?int
+    {
+        [$table, $id] = $item;
+        $where = self::open($job, $table);
+        if ($where === null || $this->repo->db->one("SELECT id FROM $table WHERE id = ? AND label_id = ? AND $where", [$id, $this->repo->labelId, $at, $at]) === null) {
+            return null;
         }
-        return [count($rows), $now + count($rows) * $seconds];
+        $end = $at + self::seconds($job);
+        $this->repo->db->update($table, [self::JOBS[$job][0] => $end, 'worker' => 'intern'] + ($job === 'sort' ? ['box' => null] : []), ['id' => $id]);
+        return $end;
     }
 
     /** Zuruf abbrechen: Was das Praktikum noch nicht fertig hat, bleibt liegen wie vorher; Fertiges bleibt fertig. */

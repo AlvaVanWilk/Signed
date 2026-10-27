@@ -2450,22 +2450,28 @@ test('Umschläge: Praktikum packt auf Zuruf aus, hört an, sortiert in die Fäch
     $state = $p->post('internOrder', ['staffId' => $id, 'job' => 'unpack'])['state'];
     $job = $state['assistant']['staff'][0]['job'];
     checkEquals('unpack', $job['kind']);
-    checkEquals($todo['unpack'], $job['count']);
+    checkEquals(0, $job['count'], 'noch nichts fertig');
     checkEquals(Clock::now() + $todo['unpack'] * Balance::POST['unpack'], $job['until']);
     checkApiError(fn () => $p->post('internOrder', ['staffId' => $id, 'job' => 'sort']), 'beschäftigt');
-    // Das Neueste zuerst.
-    $newest = $db->one('SELECT id, unpacked_at FROM submissions ORDER BY created_at DESC, id DESC LIMIT 1');
-    checkEquals(Clock::now() + Balance::POST['unpack'], (int) $newest['unpacked_at'], 'Neuestes zuerst');
-    // Abbrechen: Fertiges bleibt fertig, der Rest liegt wieder zu da.
+    // Das Neueste zuerst, und gesperrt ist nur das Stück, an dem es gerade sitzt.
+    $byAge = $db->all('SELECT id, unpacked_at FROM submissions ORDER BY created_at DESC, id DESC');
+    checkEquals(Clock::now() + Balance::POST['unpack'], (int) $byAge[0]['unpacked_at'], 'Neuestes zuerst');
+    checkEquals(1, count(array_filter($state['submissions'], static fn ($x) => $x['state'] === 'unpacking')), 'nur eins gesperrt');
+    // Man kann derweil selbst auspacken; das überspringt das Praktikum dann.
+    $oldest = (int) end($byAge)['id'];
+    $p->post('postUnpack', ['table' => 's', 'id' => $oldest]);
     Clock::advance(2 * Balance::POST['unpack']);
+    $state = $p->get('state');
+    checkEquals(2, $state['assistant']['staff'][0]['job']['count'], 'zwei geschafft');
+    // Abbrechen: Fertiges bleibt fertig, das angefangene liegt wieder zu da.
     $state = $p->post('internCancel', ['staffId' => $id])['state'];
     checkEquals(null, $state['assistant']['staff'][0]['job']);
-    checkEquals(2, count(array_filter($state['submissions'], static fn ($x) => $x['state'] !== 'envelope' && $x['state'] !== 'unpacking')), 'zwei geschafft');
-    checkEquals($todo['unpack'] - 2, $state['assistant']['todo']['unpack'], 'Rest wieder zu');
+    checkEquals(3, count(array_filter($state['submissions'], static fn ($x) => $x['state'] !== 'envelope' && $x['state'] !== 'unpacking')), 'zwei vom Praktikum, eins selbst');
+    checkEquals($todo['unpack'] - 3, $state['assistant']['todo']['unpack'], 'Rest wieder zu');
     checkApiError(fn () => $p->post('internCancel', ['staffId' => $id]), 'nichts zu tun');
     // Nochmal: alles öffnen, dann anhören, dann sortieren; jedes nur das, was in dem Moment da liegt.
     $p->post('internOrder', ['staffId' => $id, 'job' => 'unpack']);
-    Clock::advance(($todo['unpack'] - 2) * Balance::POST['unpack'] + 1);
+    Clock::advance(($todo['unpack'] - 3) * Balance::POST['unpack'] + 1);
     $state = $p->get('state');
     checkEquals(0, $state['assistant']['todo']['unpack'], 'alles geöffnet');
     check(in_array('office', array_column($state['history'], 'kind'), true), 'meldet sich, wenn fertig');

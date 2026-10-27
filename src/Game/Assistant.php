@@ -85,13 +85,48 @@ final class Assistant
                 throw new ApiError('Dieses Praktikum gibt es nicht mehr.');
             }
             $d = json_decode($row['data'], true);
-            if (isset($d['job']) && (int) $d['job']['until'] > $now) {
+            if (isset($d['job'])) {
                 throw new ApiError(sprintf('%s ist noch beschäftigt.', $d['first_name']));
             }
-            [$count, $until] = (new Post($this->repo))->order($job, $now);
-            $d['job'] = ['kind' => $job, 'count' => $count, 'until' => $until];
-            $db->update('staff', ['data' => json_encode($d, JSON_UNESCAPED_UNICODE)], ['id' => $staffId]);
+            $queue = (new Post($this->repo))->order($job, $now);
+            $d['job'] = ['kind' => $job, 'queue' => $queue, 'at' => $now, 'current' => null, 'end' => 0, 'count' => 0, 'until' => $now];
+            $this->advance($staffId, $d, $now);
         });
+    }
+
+    /**
+     * Das Praktikum arbeitet seine Liste ab, ein Stück nach dem anderen (auch für die Zeit, in der man offline war). Was inzwischen jemand
+     * anders erledigt hat, überspringt es. Ist die Liste leer, meldet es sich.
+     */
+    private function advance(int $staffId, array $d, int $now): void
+    {
+        $post = new Post($this->repo);
+        $j = &$d['job'];
+        while (true) {
+            if ($j['current'] !== null) {
+                if ($j['end'] > $now) {
+                    break;
+                }
+                $j['count']++;
+                $j['at'] = $j['end'];
+                $j['current'] = null;
+            }
+            if (!$j['queue']) {
+                break;
+            }
+            $item = array_shift($j['queue']);
+            $end = $post->step($j['kind'], $item, $j['at']);
+            if ($end !== null) {
+                $j['current'] = $item;
+                $j['end'] = $end;
+            }
+        }
+        $j['until'] = ($j['current'] !== null ? $j['end'] : $j['at']) + count($j['queue']) * Post::seconds($j['kind']);
+        if ($j['current'] === null) {
+            $this->internDone($d);
+        }
+        unset($j);
+        $this->repo->db->update('staff', ['data' => json_encode($d, JSON_UNESCAPED_UNICODE)], ['id' => $staffId]);
     }
 
     /** Zuruf abbrechen: Das Praktikum hört sofort auf; was es noch nicht geschafft hat, liegt wieder da wie vorher. */
@@ -102,7 +137,7 @@ final class Assistant
             $now = \Signed\Clock::now();
             $row = $db->one("SELECT * FROM staff WHERE id = ? AND label_id = ? AND role = 'intern'", [$staffId, $this->repo->labelId]);
             $d = $row === null ? null : json_decode($row['data'], true);
-            if ($d === null || !isset($d['job']) || (int) $d['job']['until'] <= $now) {
+            if ($d === null || !isset($d['job'])) {
                 throw new ApiError('Das Praktikum hat gerade nichts zu tun.');
             }
             (new Post($this->repo))->cancel($now);
@@ -112,18 +147,31 @@ final class Assistant
     }
 
     /** Fertig: Das Praktikum meldet sich (Nachricht) und hat wieder Zeit. */
-    private function internDone(int $now): void
+    private function internDone(array &$d): void
+    {
+        $n = (int) $d['job']['count'];
+        $what = ['unpack' => ['einen Brief geöffnet', '%d Briefe geöffnet'], 'listen' => ['eine Demo angehört', '%d Demos angehört'], 'sort' => ['ein Stück Post sortiert', '%d Stück Post sortiert']][$d['job']['kind']] ?? ['etwas erledigt', '%d Sachen erledigt'];
+        $this->repo->log('office', $n === 0
+            ? sprintf('%s ist fertig: Es war schon alles erledigt.', $d['first_name'])
+            : sprintf('%s ist fertig: %s.', $d['first_name'], $n === 1 ? $what[0] : sprintf($what[1], $n)));
+        unset($d['job']);
+    }
+
+    /** Laufende Zurufe weiterführen. */
+    private function internProgress(int $now): void
     {
         foreach ($this->repo->db->all("SELECT * FROM staff WHERE label_id = ? AND role = 'intern'", [$this->repo->labelId]) as $row) {
             $d = json_decode($row['data'], true);
-            if (!isset($d['job']) || (int) $d['job']['until'] > $now) {
+            if (!isset($d['job'])) {
                 continue;
             }
-            $n = (int) $d['job']['count'];
-            $what = ['unpack' => ['einen Brief geöffnet', '%d Briefe geöffnet'], 'listen' => ['eine Demo angehört', '%d Demos angehört'], 'sort' => ['ein Stück Post sortiert', '%d Stück Post sortiert']][$d['job']['kind']] ?? ['etwas erledigt', '%d Sachen erledigt'];
-            $this->repo->log('office', sprintf('%s ist fertig: %s.', $d['first_name'], $n === 1 ? $what[0] : sprintf($what[1], $n)));
-            unset($d['job']);
-            $this->repo->db->update('staff', ['data' => json_encode($d, JSON_UNESCAPED_UNICODE)], ['id' => (int) $row['id']]);
+            if (!isset($d['job']['queue'])) {
+                // Auftrag aus der Zeit vor der Liste: einfach beenden.
+                unset($d['job']);
+                $this->repo->db->update('staff', ['data' => json_encode($d, JSON_UNESCAPED_UNICODE)], ['id' => (int) $row['id']]);
+                continue;
+            }
+            $this->advance((int) $row['id'], $d, $now);
         }
     }
 
@@ -182,7 +230,7 @@ final class Assistant
     public function work(int $now): void
     {
         $this->endInternships($now);
-        $this->internDone($now);
+        $this->internProgress($now);
         $staff = $this->staff();
         if (!$staff) {
             return;
@@ -257,7 +305,8 @@ final class Assistant
             'staff' => array_map(static fn ($s) => [
                 'id' => (int) $s['id'], 'firstName' => $s['info']['first_name'], 'lastName' => $s['info']['last_name'], 'look' => $s['info']['look'], 'task' => $s['task'],
                 'intern' => $s['role'] === 'intern', 'until' => $s['role'] === 'intern' ? (int) $s['busy_until'] : null,
-                'job' => isset($s['info']['job']) && (int) $s['info']['job']['until'] > $now ? $s['info']['job'] : null,
+                // Was es gerade tut: Art, voraussichtlich fertig, wann das aktuelle Stück fertig ist (dann geht es zum nächsten)
+                'job' => isset($s['info']['job']['queue']) ? ['kind' => $s['info']['job']['kind'], 'until' => (int) $s['info']['job']['until'], 'next' => (int) $s['info']['job']['end'], 'count' => (int) $s['info']['job']['count']] : null,
             ], $staff),
             'sorts' => (bool) array_filter($staff, static fn ($s) => $s['role'] === 'assistant'),
             'todo' => (new Post($this->repo))->todo($now),

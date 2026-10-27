@@ -494,6 +494,15 @@ als Grundlage. Einzelne Wahlen verändern zum Beispiel Tempo-Gefühl, Akkordfolg
   Musikerliste als **Zeilen**: eckiges Passfoto (Hintergrund in den Genre-Farben, Rahmen in der Stimmungsfarbe), Name mit **Stimmung als Wort direkt dahinter**,
   Instrument-Symbol, Können-Strich mit **Stufe 0–3**, **quadratischer Platz für das Instrument**, **Genre-Marken in Genre-Farbe**, Beziehungen (kleines Foto des anderen mit Zahl, farblos); darunter **Werte mit Aufschlüsselung** (Sound, Ruhm, Zusammenhalt,
   Stimmung mit den Einflüssen, die gerade wirken); Wünsche der Band oben; **Auszeichnungen** als kleine Symbole. Die **Chronik** ist zugeklappt und lässt sich per Tippen öffnen. Keine Bühne.
+- **Bandseite als Szene** (gebaut, `label.js` `bandScene`, `room.js`): Oben steht der Proberaum statt eines Kopfes. Der Bandname hängt als Schild
+  an der Wand, passend zum Raum: Holzbrett (Bruchbude), Pappe mit Klebeband (Keller), Metallschild (Proberaum), Leuchtschrift mittig auf der
+  Lamellenwand (Profi-Raum). Das Schild ist Teil der Wand, alles im Raum liegt davor. Oben rechts klein „Band · Genre“ mit Umbenennen.
+  **Mit Genre-Bonus ist der Raum im Stil des Genres eingerichtet** (`THEMES`): Tapete, Boden, Teppich (Farbe und Form), Lichterkette bzw.
+  Laternen, Lamellen (Holz, Glas, Metall, Lack), Polster und Wandpaneele. Die Bruchbude bekommt nur eine Decke aufs Sofa.
+  Der **Manager** steht hinten rechts mit Klemmbrett (antippen: Manager ändern). Der **dringendste Wunsch** steht als Blase mit drei Punkten
+  über dem Kopf; angetippt zeigt sie den Wunsch und den passenden Knopf. Ist er erfüllt, kommt der nächste (Warteschlange).
+  Darunter die **Anordnungen als Schallplatten** mit farbigem Etikett (Proben türkis, Aufnehmen gelb, Auftritt rosa, Promo blau, Auszeit grün).
+  Läuft etwas (Probe, Auftritt, Aufnahme), steht dessen Szene oben, und die Wünsche stehen als Liste darunter.
 - **Übersicht des Labels:** alle geäußerten Wünsche aller Bands als **Mitteilungen** untereinander; Tippen öffnet die Band, ein Knopf erfüllt direkt.
   Dazu Geld, Charts, Rangliste.
 - **Katalog** ist aufgelöst (Testversion): Jeder Künstler unter Vertrag steht sofort als Band mit einem Mitglied (Solokünstler) in der Band-Leiste, auch wer gerade unterschrieben hat oder aus einer Band genommen wurde. Die Kartei als Besetzungsplaner kommt später.

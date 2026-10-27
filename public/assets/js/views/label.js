@@ -1,9 +1,9 @@
 import { api } from '../api.js';
 import { abilityInfo, genreGlyph, hiddenTraits, genreName, gearModel, instrumentIcon, instrumentName, ownGear, photo, sortedGenres } from '../cards.js';
-import { actions, app, bandById, cat, defineActions, isBusy, managerBusy, managerById, mutate, musicianById, runningFor, serverNow } from '../core.js';
+import { actions, app, bandById, cat, defineActions, isBusy, managerBusy, managerById, mutate, musicianById, rerender, runningFor, serverNow } from '../core.js';
 import { closePopover, confirmDialog, duration, esc, fmt0, fmt1, fmtGain, money, off, openModal, popover, toast } from '../ui.js';
 import { getAudio } from '../audio.js';
-import { playedInstrument, stage } from '../figure.js';
+import { figure, playedInstrument, stage } from '../figure.js';
 import { bandStems, loadStems, playStems, stemUrl } from '../music.js';
 import { blocker, blockerNotice, courseTiles, gainRange, statTile } from './bands.js';
 import { roomSvg } from '../room.js';
@@ -260,16 +260,57 @@ function wishBlock(b, members) {
     <section class="lb-wishes"><h2 class="lb-cap">${members.length === 1 ? 'Wünsche' : 'Wünsche der Band'}</h2>
       ${wishes.map((w) => {
         const m = musicianById(w.musicianId);
-        const [label, section] = WISH_BUTTON[w.action] ?? ['Music Store', null];
-        const target = section ? `#/band/${b.id}/${section}` : '#/store';
-        // Proben startet gleich, die übrigen führen zur passenden Seite.
-        const go = w.action === 'stageName'
-          ? `<button class="lb-pill" data-act="stageNameAsk" data-id="${m.id}">Namen aussuchen</button>`
-          : w.action === 'rehearsal' || w.action === 'gig' || w.action === 'record'
-          ? `<button class="lb-pill" data-act="${{ gig: 'gigAsk', rehearsal: 'rehearseAsk', record: 'recordAsk' }[w.action]}" data-id="${b.id}" ${off(blocker(b, members)?.text)}>${label}</button>`
-          : `<a class="lb-pill" href="${target}">${label}</a>`;
-        return `<div class="lb-wish"><a class="lb-ph sm ${w.level}" data-act="musicianInfo" data-id="${m.id}">${photo(m)}</a><span class="say">${esc(w.text)}</span>${go}</div>`;
+        return `<div class="lb-wish"><a class="lb-ph sm ${w.level}" data-act="musicianInfo" data-id="${m.id}">${photo(m)}</a><span class="say">${esc(w.text)}</span>${wishGo(b, members, w)}</div>`;
       }).join('')}
+    </section>`;
+}
+
+/** Knopf zu einem Wunsch: Proben, Auftritt und Aufnahme fragen gleich nach, die übrigen führen zur passenden Seite. */
+function wishGo(b, members, w) {
+  const [label, section] = WISH_BUTTON[w.action] ?? ['Music Store', null];
+  if (w.action === 'stageName') return `<button class="lb-pill" data-act="stageNameAsk" data-id="${w.musicianId}">Namen aussuchen</button>`;
+  if (w.action === 'rehearsal' || w.action === 'gig' || w.action === 'record') {
+    return `<button class="lb-pill" data-act="${{ gig: 'gigAsk', rehearsal: 'rehearseAsk', record: 'recordAsk' }[w.action]}" data-id="${b.id}" ${off(blocker(b, members)?.text)}>${label}</button>`;
+  }
+  return `<button class="lb-pill" data-act="wishGo" data-href="${section ? `#/band/${b.id}/${section}` : '#/store'}">${label}</button>`;
+}
+
+/**
+ * Der dringendste Wunsch als kleine Blase über dem Kopf (drei Punkte); angetippt steht der Wunsch darin, mit passendem Knopf.
+ * Ist er erfüllt, steht der nächste da (Warteschlange).
+ */
+function wishBubble(b, members, w) {
+  const m = musicianById(w.musicianId);
+  if (app.ui.wishOpen !== b.id) return `<button class="lb-wishdot ${w.level}" data-act="wishOpen" data-id="${b.id}" aria-label="Wunsch von ${esc(m?.firstName ?? '')} ansehen">···</button>`;
+  // Am Rand geht die Blase nach innen auf, damit sie im Raum bleibt.
+  const at = (members.findIndex((x) => x.id === w.musicianId) + 0.5) / members.length;
+  return `<div class="lb-wishpop ${at < 0.34 ? 'from-left' : at > 0.66 ? 'from-right' : ''}"><button class="lb-wishpop-x" data-act="wishOpen" data-id="" aria-label="Schließen">✕</button>
+    <b>„${esc(w.text)}“</b><small>${esc(m?.stageName ?? m?.firstName ?? '')} wünscht sich das.</small>${wishGo(b, members, w)}</div>`;
+}
+
+/**
+ * Oben auf der Bandseite: der Proberaum mit dem Namen als Schild an der Wand, bei Genre-Bonus im Stil des Genres eingerichtet,
+ * die Band davor, der Manager hinten rechts (antippen: Manager ändern), über einem Kopf der dringendste Wunsch.
+ */
+function bandScene(b, members) {
+  const solo = members.length === 1;
+  const genre = sortedGenres(genresOf(b))[0] ?? null;
+  const mgr = b.managerId ? managerById(b.managerId) : null;
+  const wish = (b.mood.wishes ?? [])[0];
+  const tag = `${solo ? 'Solo' : esc(b.title ?? 'Band')} · ${genresOf(b).length ? sortedGenres(genresOf(b)).map((g) => esc(genreName(g))).join(' · ') : 'gemischt'}`;
+  return `
+    <section class="lb-scene">
+      <div class="lb-room idle ${mgr ? 'with-mgr' : ''}">${roomSvg(b.room?.level ?? 0, b.id, b.name, genre)}${stage(members, {
+    className: 'idle in-room',
+    act: 'musicianInfo',
+    instrumentOf: (m) => (hasGear(m) ? playedInstrument(m) : 'none'),
+    finishOf: (m) => ownGear(m, playedInstrument(m)).finish,
+    nameOf: (m) => esc(m.stageName ?? m.firstName),
+    below: (m) => (wish && wish.musicianId === m.id ? wishBubble(b, members, wish) : ''),
+  })}
+        ${mgr ? `<button class="lb-mgrfig fig-stage idle" data-act="managerPick" data-id="${b.id}" title="${esc(mgr.firstName)} ${esc(mgr.lastName)}, Manager · antippen zum Ändern" aria-label="Manager ${esc(mgr.firstName)}"><span class="fig-member">${figure(mgr.look, 'none', { bored: false })}<i class="lb-clip"></i></span></button>` : ''}
+        <span class="lb-scene-tag">${tag}${solo ? '' : `<button class="icon-btn" data-act="bandRename" data-id="${b.id}" title="Umbenennen" aria-label="Umbenennen">✎</button>`}</span>
+      </div>
     </section>`;
 }
 
@@ -346,17 +387,19 @@ function act(b, members, type, section, title, text, icon, warn = false, busy = 
   const r = b.mood.reactions?.[type] ?? { like: [], dislike: [], locked: false };
   const names = (ids) => ids.map((id) => musicianById(id)?.firstName).filter(Boolean).join(', ');
   const plural = (ids, one, many) => (ids.length > 1 ? many : one);
+  // Jede Anordnung ist eine Schallplatte mit farbigem Etikett, darauf das Zeichen.
+  const disc = `<span class="lb-disc"><span class="lb-disc-label">${icon}</span></span>`;
   if (r.locked) {
     const red = r.refuser ? [r.refuser] : r.dislike.filter((id) => musicianById(id)?.wellbeing?.level === 'red');
-    return `<div class="lb-act lock t-${type}" data-act="tip" data-tip="${esc(names(red))}: keine Lust · erst Stimmung heben">${icon}<b>${title}</b><small>${esc(names(red))} ${plural(red, 'hat', 'haben')} keine Lust darauf.</small></div>`;
+    return `<div class="lb-act lock t-${type}" data-act="tip" data-tip="${esc(names(red))}: keine Lust · erst Stimmung heben">${disc}<b>${title}</b><small>${esc(names(red))} ${plural(red, 'hat', 'haben')} keine Lust darauf.</small></div>`;
   }
   const hint = r.dislike.length ? `<small class="no">${esc(names(r.dislike))} ${plural(r.dislike, 'mag', 'mögen')} das nicht.</small>` : `<small>${text}</small>`;
   // Ohne Unterseite: Die Anordnung startet gleich (Proben).
   if (!section) {
     const why = busy ? (blocker(b, members)?.text ?? (members.length === 1 ? 'Gerade beschäftigt.' : 'Die Band ist gerade beschäftigt.')) : '';
-    return `<button class="lb-act t-${type} ${busy ? 'idle' : ''} ${warn ? 'warn' : ''}" data-act="${{ gig: 'gigAsk', rehearsal: 'rehearseAsk', record: 'recordAsk', bandpromo: 'promoAsk', retreat: 'retreatAsk' }[type]}" data-id="${b.id}" ${off(why)}>${icon}<b>${title}</b>${busy ? `<small>${members.length === 1 ? 'Gerade beschäftigt.' : 'Die Band ist gerade beschäftigt.'}</small>` : hint}</button>`;
+    return `<button class="lb-act t-${type} ${busy ? 'idle' : ''} ${warn ? 'warn' : ''}" data-act="${{ gig: 'gigAsk', rehearsal: 'rehearseAsk', record: 'recordAsk', bandpromo: 'promoAsk', retreat: 'retreatAsk' }[type]}" data-id="${b.id}" ${off(why)}>${disc}<b>${title}</b>${busy ? `<small>${members.length === 1 ? 'Gerade beschäftigt.' : 'Die Band ist gerade beschäftigt.'}</small>` : hint}</button>`;
   }
-  return `<a class="lb-act t-${type} ${warn ? 'warn' : ''}" href="#/band/${b.id}/${section}">${icon}<b>${title}</b>${hint}</a>`;
+  return `<a class="lb-act t-${type} ${warn ? 'warn' : ''}" href="#/band/${b.id}/${section}">${disc}<b>${title}</b>${hint}</a>`;
 }
 
 /** Kurzer Hinweis am Knopf „Aufnehmen“: Songs im Vorrat, oder was zur Freigabe des nächsten Albums noch fehlt. */
@@ -387,7 +430,7 @@ function liveBlock(b, members, act) {
         <span class="lb-live-btns"><button class="btn small ghost" data-act="liveSound" data-id="${act.id}">${music?.actId === act.id ? 'Ton aus' : 'Ton an'}</button>
           <button class="btn small primary" data-act="rehearsalStop" data-id="${act.id}">Probe beenden</button></span>
       </div>
-      <div class="lb-room">${roomSvg(b.room?.level ?? 0, b.id, b.name)}${stage(members, {
+      <div class="lb-room">${roomSvg(b.room?.level ?? 0, b.id, b.name, sortedGenres(genresOf(b))[0] ?? null)}${stage(members, {
     className: 'in-room',
     act: 'musicianInfo',
     bpm: cat().genres[sortedGenres(genresOf(b))[0]]?.bpm ?? 120,
@@ -486,15 +529,9 @@ function roomBlock(b, members) {
   const room = b.room;
   if (!room) return '';
   const effect = room.level ? `Proben bringen ${pct(room.skill)} mehr Können, ${esc(whoOf(b, true))} hält ${pct(room.lust)} länger durch${room.mood ? (members.length === 1 ? ' und fühlt sich wohler' : ', alle fühlen sich wohler') : ''}.` : 'Dunkel, feucht, kaputt. Hier probt niemand gern lange.';
+  // Der Raum selbst ist oben auf der Seite zu sehen (bandScene); hier steht, was er bringt, und der Ausbau.
   return `
     <section class="lb-roomcard">
-      <div class="lb-room idle">${roomSvg(room.level, b.id, b.name)}${stage(members, {
-    className: 'idle in-room',
-    act: 'musicianInfo',
-    instrumentOf: (m) => (hasGear(m) ? playedInstrument(m) : 'none'),
-    finishOf: (m) => ownGear(m, playedInstrument(m)).finish,
-    nameOf: (m) => esc(m.stageName ?? m.firstName),
-  })}</div>
       <div class="lb-roominfo">
         <div><h2 class="lb-cap">${room.solo ? 'Eigene Übungsecke' : 'Proberaum'}</h2><b>${esc(room.stage)}</b> <small class="muted">Stufe ${room.level} von 3</small>
           <p class="muted small">${effect}</p></div>
@@ -595,18 +632,11 @@ export function page(route) {
   const courses = courseTiles(members);
   const course = courses ? `<details class="lb-more"><summary>Kurse des Tages</summary><div class="lb-course">${courses}</div></details>` : '';
   return `
-    <header class="lb-hd ${genresOf(b).length ? '' : 'mixed'}" ${genresOf(b).length ? `style="--g:var(--lb-c-${sortedGenres(genresOf(b))[0]})"` : ''}>
-      <div>
-        <h1>${esc(b.name)} ${solo ? '' : `<button class="icon-btn" data-act="bandRename" data-id="${b.id}" title="Umbenennen">✎</button>`}</h1>
-        <small>${solo ? 'Solokünstler' : esc(b.title ?? 'Band')} · ${genresOf(b).length ? sortedGenres(genresOf(b)).map((g) => esc(genreName(g))).join(' · ') : 'gemischt'}</small>
-      </div>
-      <div class="lb-hd-mood"><span class="lb-cap plain">Stimmung</span>${moodTag(b.mood.level).replace('class="lb-mood', 'class="lb-mood big')}</div>
-    </header>
+    <h1 class="sr-only">${esc(b.name)}</h1>
+    ${running?.type === 'rehearsal' ? liveBlock(b, members, running) : running?.type === 'gig' ? gigBlock(b, members, running) : running?.type === 'record' ? studioBlock(b, members, running, { soundOn: music?.actId === running.id }) : bandScene(b, members)}
     ${notice}
     ${tutorNotice(b, members)}
-    ${running?.type === 'rehearsal' ? liveBlock(b, members, running) : running?.type === 'gig' ? gigBlock(b, members, running) : running?.type === 'record' ? studioBlock(b, members, running, { soundOn: music?.actId === running.id }) : ''}
-    ${wishBlock(b, members)}
-    <h2 class="lb-cap lb-sec">Anordnungen</h2>
+    ${['rehearsal', 'gig', 'record'].includes(running?.type) ? wishBlock(b, members) : ''}
     <div class="lb-acts">
       ${act(b, members, 'rehearsal', null, 'Proben', `bis zu ${mins(b.options.rehearsal.seconds)} · Können ${gainRange(members.map((m) => m.gains?.rehearsal ?? 0))} je ${mins(cat().rules.rehearsalSeconds)}`, ICON.rehearse, false, !!blocker(b, members))}
       ${act(b, members, 'record', null, 'Aufnehmen', recordHint(b), ICON.record, b.mood.songs >= 12, !!blocker(b, members))}
@@ -865,6 +895,16 @@ defineActions({
       modal.close();
       if (await mutate('bandRetreat', { bandId: b.id, option: row.dataset.option })) toast(`${who} ist weg: ${r.options[row.dataset.option].name}.`, 'ok');
     });
+  },
+  /** Wunschblase über dem Kopf auf- oder zuklappen (id leer: zu). */
+  wishOpen({ id }) {
+    app.ui.wishOpen = id ? Number(id) : null;
+    rerender();
+  },
+  /** Knopf in der Wunschblase, der zu einer Seite führt. */
+  wishGo({ href }) {
+    app.ui.wishOpen = null;
+    location.hash = href;
   },
   /** Promo-Tour: erst fragen, mit Dauer und Wirkung, dann losschicken (wie Proben und Auszeit). */
   promoAsk({ id }) {

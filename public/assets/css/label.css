@@ -75,13 +75,6 @@
 .lb-legend .lb-mood { font-size: 0.72rem; } .lb-legend .lb-mood i { width: 8px; height: 8px; }
 
 /* Bandseite */
-.lb-hd { position: relative; display: flex; gap: 16px; align-items: center; padding: 18px 20px; border-radius: 12px; background: var(--lb-card2); border: 1px solid var(--lb-line); border-top: 3px solid var(--g, transparent); }
-/* Gemischte Band: Regenbogen-Leiste innen, damit sie der runden Ecke folgt und nicht übersteht. */
-.lb-hd.mixed { border-top-width: 1px; overflow: hidden; }
-.lb-hd.mixed::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: linear-gradient(90deg, #a8607c, #b89d57, #a9bd3a, #6590b3, #8676b5); }
-.lb-hd h1 { margin: 0; font-size: 1.55rem; }
-.lb-hd small { color: var(--lb-muted); font-weight: 600; }
-.lb-hd-mood { margin-left: auto; display: grid; gap: 6px; justify-items: end; } .lb-hd-mood .lb-cap { margin: 0; }
 .lb-acts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .lb-act { display: grid; grid-template-columns: 32px 1fr; gap: 2px 12px; align-items: center; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--lb-line); background: var(--lb-card); color: var(--lb-text); text-decoration: none; }
 .lb-act:hover { text-decoration: none; border-color: var(--lb-accent); }
@@ -149,7 +142,6 @@
   .lb-bt { flex: none; width: 210px; }
   .lb-add { flex: none; width: 120px; }
   .lb-legend { margin-top: 10px; }
-  .lb-acts { grid-template-columns: 1fr; }
   .lb-line { grid-template-columns: minmax(0, 1fr) 84px; }
   .lb-mr { grid-template-columns: 76px minmax(0, 1fr) auto; }
   .lb-genres { grid-column: 2; } .lb-rels { grid-column: 2; justify-content: flex-start; } .lb-x { grid-column: 3; grid-row: 1; }
@@ -686,15 +678,15 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .lb-room .fig-stage.in-room .fig-member b { text-shadow: 0 1px 3px rgba(0, 0, 0, .8); }
 /* Aufstellung im Raum (figure.js, stage): Jede Figur hat ihren Platz (--x Mitte, --w Breite als Anteil der freien Breite).
  * Ab fünf steht jeder Zweite hinten: etwas kleiner, weiter oben, halb verdeckt. Größe nach Breite und Höhe des Raums (Container-Einheiten). */
-.lb-room { container-type: size; }
-.lb-room .fig-stage.depth { --l: .03; --r: .03; --fb: 2cqh; --bb: 15cqh; position: absolute; inset: 0; display: block; height: auto; padding: 0; }
+.lb-room { container-type: size; --l: .03; --r: .03; --fb: 2cqh; --bb: 15cqh; }
+.lb-room .fig-stage.depth { position: absolute; inset: 0; display: block; height: auto; padding: 0; }
 .fig-stage.depth .fig-member { --fw: min(calc(100cqw * var(--w) * (1 - var(--l) - var(--r))), 50cqh); position: absolute; z-index: 2; min-width: 0; margin: 0;
   left: calc(100cqw * (var(--l) + var(--x) * (1 - var(--l) - var(--r)))); bottom: var(--fb); width: var(--fw); transform: translateX(-50%); }
 .fig-stage.depth .fig-member.fig-back { z-index: 1; bottom: var(--bb); width: calc(var(--fw) * .84); }
 .fig-stage.depth .fig-member.fig-back .fig { filter: brightness(.9); }
-.lb-room.lb-venue .fig-stage.depth { --fb: 14cqh; --bb: 26cqh; }
+.lb-room.lb-venue { --fb: 14cqh; --bb: 26cqh; }
 .lb-room.lb-venue .fig-stage.depth .fig-member { --fw: min(calc(100cqw * var(--w) * (1 - var(--l) - var(--r))), 42cqh); }
-.st-room .fig-stage.depth { --r: .36; }
+.lb-room.st-room { --r: .36; }
 .lb-live .lb-room { height: clamp(270px, 26vw, 360px); }
 /* Bühne eines Auftrittsorts: Bild hinten, Band in der Mitte, Publikum als Streifen vorne. */
 .lb-venue .lb-stageart { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
@@ -1274,8 +1266,59 @@ body { background: radial-gradient(1100px 520px at 50% -12%, rgba(255, 181, 71, 
 /* ---------- Lichtschein in den Logofarben ----------
  * Leise, nicht knallig: Kacheln werfen einen schmalen warmen Schein (Gelb des Logos) knapp unter die Unterkante,
  * beim Darüberfahren etwas mehr. In die Kacheln hinein leuchtet nichts. */
-.ov-panel, .ov-stat, .lb-wishes, .lb-mgr, .lb-act, .lb-hd { box-shadow: 0 6px 14px -9px rgba(255, 181, 71, 0.5); }
+.ov-panel, .ov-stat, .lb-wishes, .lb-mgr { box-shadow: 0 6px 14px -9px rgba(255, 181, 71, 0.5); }
 .ov-panel.ov-board { box-shadow: none; }
 .lb-act:not(.lock):hover { box-shadow: 0 7px 16px -8px rgba(255, 181, 71, 0.65); }
 .lb-cap::before { box-shadow: 0 0 8px rgba(255, 181, 71, 0.45); }
 .btn.primary { box-shadow: 0 5px 12px -7px rgba(255, 181, 71, 0.6); }
+
+/* ---------- Bandseite als Szene (bandScene) ----------
+ * Oben der Proberaum (Name als Schild an der Wand, bei Genre-Bonus im Stil des Genres), die Band davor, der Manager hinten rechts,
+ * über einem Kopf der dringendste Wunsch. Darunter die Anordnungen als Schallplatten. */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.lb-scene { margin-bottom: 16px; }
+.lb-scene .lb-room { height: clamp(280px, 30vw, 380px); overflow: visible; box-shadow: 0 6px 14px -9px rgba(255, 181, 71, 0.5); }
+.lb-scene .lb-roomart { clip-path: inset(0 round 14px); }
+.lb-room.with-mgr { --r: .1; }
+.lb-mgrfig.fig-stage { position: absolute; right: 1%; bottom: var(--bb); z-index: 1; display: block; width: calc(.84 * min(21cqw, 50cqh)); margin: 0; padding: 0;
+  border: 0; border-radius: 0; background: none; cursor: pointer; }
+.lb-mgrfig .fig-member { position: relative; display: block; width: 100%; min-width: 0; }
+.lb-mgrfig .fig { filter: brightness(.9); }
+.lb-mgrfig:hover .fig { filter: brightness(1) drop-shadow(0 0 6px rgba(255, 233, 168, .35)); }
+.lb-clip { position: absolute; left: 50%; top: 54%; width: 18%; height: 19%; transform: translate(-10%, 0) rotate(-8deg); background: #f3ead6; border: 2px solid #2a2233; border-radius: 3px; box-shadow: inset 0 5px 0 #b8a07a; }
+.lb-scene-tag { position: absolute; right: 10px; top: 10px; z-index: 4; display: inline-flex; align-items: center; gap: 4px; padding: 3px 4px 3px 10px; border-radius: 999px;
+  background: rgba(15, 13, 21, .62); color: #e6e0f0; font-size: .74rem; font-weight: 700; backdrop-filter: blur(3px); }
+.lb-scene-tag .icon-btn { width: 24px; height: 24px; font-size: .8rem; }
+/* Wunsch: drei Punkte über dem Kopf; angetippt eine Sprechblase mit dem Wunsch und dem passenden Knopf. */
+.lb-wishdot, .lb-wishpop { position: absolute; left: 50%; bottom: 93%; z-index: 6; transform: translateX(-50%); color: #2a2233; background: #f6f1e4; box-shadow: 0 3px 8px rgba(0, 0, 0, .45); }
+.lb-wishdot { padding: 4px 10px 6px; border: 0; border-radius: 14px; font: 900 1rem/1 system-ui, sans-serif; letter-spacing: 2px; cursor: pointer; animation: lb-wishbob 2.6s ease-in-out infinite; }
+.lb-wishdot.red { box-shadow: 0 0 0 2px #e0566b, 0 3px 8px rgba(0, 0, 0, .45); }
+.lb-wishdot.yellow { box-shadow: 0 0 0 2px #f2c14e, 0 3px 8px rgba(0, 0, 0, .45); }
+.lb-wishdot::after, .lb-wishpop::after { content: ''; position: absolute; left: 50%; bottom: -6px; transform: translateX(-50%); border: 6px solid transparent; border-top-color: #f6f1e4; border-bottom: 0; }
+.lb-wishpop { bottom: auto; top: 14%; width: min(230px, 60cqw); padding: 10px 12px 11px; border-radius: 14px; text-align: left; font-size: .84rem; line-height: 1.3; }
+.lb-wishpop::after { bottom: auto; top: -6px; border-top: 0; border-bottom: 6px solid #f6f1e4; }
+.lb-wishpop.from-left { left: 0; transform: none; } .lb-wishpop.from-left::after { left: 24%; }
+.lb-wishpop.from-right { left: auto; right: 0; transform: none; } .lb-wishpop.from-right::after { left: 76%; }
+.lb-wishpop b { display: block; padding-right: 18px; font-size: .9rem; }
+.lb-wishpop small { display: block; margin: 2px 0 8px; color: #7a6a52; }
+.lb-wishpop .lb-pill { background: linear-gradient(135deg, #2ec4b6, #6fd08c); color: #08201c; border: 0; }
+.lb-wishpop-x { position: absolute; right: 6px; top: 6px; width: 22px; height: 22px; border: 0; border-radius: 50%; background: rgba(42, 34, 51, .08); color: #2a2233; cursor: pointer; font-size: .72rem; }
+.fig-stage.depth .fig-member:has(.lb-wishpop) { z-index: 7; }
+@keyframes lb-wishbob { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, -3px); } }
+@media (prefers-reduced-motion: reduce) { .lb-wishdot { animation: none; } }
+/* Anordnungen als Schallplatten mit farbigem Etikett */
+.lb-acts { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin: 4px 0 18px; }
+.lb-acts .lb-act { --lc: #2ec4b6; display: grid; grid-template-columns: none; justify-items: center; align-content: start; gap: 4px; padding: 6px 4px; border: 0; border-radius: 12px; background: none; box-shadow: none; text-align: center; overflow: visible; }
+.lb-acts .lb-act::before { display: none; }
+.lb-acts .lb-act.t-record { --lc: #ffb547; } .lb-acts .lb-act.t-gig { --lc: #ff6f91; } .lb-acts .lb-act.t-bandpromo { --lc: #8fa8ff; } .lb-acts .lb-act.t-retreat { --lc: #6fd08c; }
+.lb-acts .lb-act b { font-size: .92rem; } .lb-acts .lb-act small { font-size: .72rem; line-height: 1.25; }
+.lb-disc { position: relative; display: grid; place-items: center; width: 68px; height: 68px; border-radius: 50%; background: repeating-radial-gradient(circle, #1a1820 0 2px, #26232e 2px 3px);
+  box-shadow: 0 0 0 1px #000, 0 6px 14px -6px rgba(255, 181, 71, .6), inset 0 0 0 1px rgba(255, 255, 255, .06); transition: transform .35s ease; }
+.lb-disc::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: linear-gradient(135deg, rgba(255, 255, 255, .18), transparent 42%); }
+.lb-disc-label { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: var(--lc); }
+.lb-acts .lb-disc svg { width: 22px; height: 22px; padding: 0; margin: 0; background: none; border-radius: 0; stroke: #15111e; stroke-width: 2; grid-row: auto; }
+.lb-acts .lb-act:hover:not(.idle):not(.lock) { transform: none; box-shadow: none; border: 0; }
+.lb-acts .lb-act:hover:not(.idle):not(.lock) .lb-disc { transform: rotate(30deg); }
+.lb-acts .lb-act.warn .lb-disc { box-shadow: 0 0 0 1px #000, 0 0 0 3px var(--lb-warn), 0 6px 14px -6px rgba(255, 181, 71, .6); }
+.lb-acts .lb-act.lock .lb-disc-label, .lb-acts .lb-act.idle .lb-disc-label { background: #6b6478; }
+@media (max-width: 600px) { .lb-acts { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 12px; } }

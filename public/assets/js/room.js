@@ -250,7 +250,7 @@ function nameSign(level, name) {
   const h = 40;
   // Im Profi-Raum leuchtet der Name genau mittig oben auf der Lamellenwand (sie reicht von MID + 150 bis MID + 490).
   const x = (level === 3 ? MID + 320 : MID + 200) - w / 2;
-  const y = level === 2 ? 62 : 44;
+  const y = level === 2 ? 50 : 40;
   const label = (fill, extra = '') => `<text x="${f(x + w / 2)}" y="${f(y + h / 2 + size * 0.36)}" text-anchor="middle" font-family="system-ui, sans-serif" font-size="${size}" font-weight="900" textLength="${f(tw)}" lengthAdjust="spacingAndGlyphs" fill="${fill}" ${extra}>${text}</text>`;
   if (level === 0) {
     return `<path d="M${f(x + 18)} ${y} L${f(x + 30)} 18 M${f(x + w - 18)} ${y} L${f(x + w - 30)} 18" ${st(2)} fill="none"/>`

@@ -684,6 +684,17 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .lb-room .lb-roomart { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .lb-room .fig-stage.in-room { position: relative; height: 100%; margin: 0; padding: 0 10px 8px; background: none; box-shadow: none; border: 0; align-items: flex-end; }
 .lb-room .fig-stage.in-room .fig-member b { text-shadow: 0 1px 3px rgba(0, 0, 0, .8); }
+/* Aufstellung im Raum (figure.js, stage): Jede Figur hat ihren Platz (--x Mitte, --w Breite als Anteil der freien Breite).
+ * Ab fünf steht jeder Zweite hinten: etwas kleiner, weiter oben, halb verdeckt. Größe nach Breite und Höhe des Raums (Container-Einheiten). */
+.lb-room { container-type: size; }
+.lb-room .fig-stage.depth { --l: .03; --r: .03; --fb: 2cqh; --bb: 15cqh; position: absolute; inset: 0; display: block; height: auto; padding: 0; }
+.fig-stage.depth .fig-member { --fw: min(calc(100cqw * var(--w) * (1 - var(--l) - var(--r))), 50cqh); position: absolute; z-index: 2; min-width: 0; margin: 0;
+  left: calc(100cqw * (var(--l) + var(--x) * (1 - var(--l) - var(--r)))); bottom: var(--fb); width: var(--fw); transform: translateX(-50%); }
+.fig-stage.depth .fig-member.fig-back { z-index: 1; bottom: var(--bb); width: calc(var(--fw) * .84); }
+.fig-stage.depth .fig-member.fig-back .fig { filter: brightness(.9); }
+.lb-room.lb-venue .fig-stage.depth { --fb: 14cqh; --bb: 26cqh; }
+.lb-room.lb-venue .fig-stage.depth .fig-member { --fw: min(calc(100cqw * var(--w) * (1 - var(--l) - var(--r))), 42cqh); }
+.st-room .fig-stage.depth { --r: .36; }
 .lb-live .lb-room { height: clamp(270px, 26vw, 360px); }
 /* Bühne eines Auftrittsorts: Bild hinten, Band in der Mitte, Publikum als Streifen vorne. */
 .lb-venue .lb-stageart { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }

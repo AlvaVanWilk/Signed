@@ -567,6 +567,8 @@ Beim ersten Login nach dem Umbau (Saison 2) bleiben **Labelname und Konto**, all
 
 - Statt „Musiker aufnehmen“: „mit Musiker(n) zusammentun“ (`bandJoinCandidates`, `bandMerge`). Kandidaten sind freie Solokünstler **und** Bands ohne eigene Laufbahn.
 - Sortierung: erst echte Vorteile (Genre-Titel, Genre-Bonus, neues Instrument bei steigendem Sound), dann gute Passung der Charaktere (Beziehungsziel ≥ 4), dann Sound-Änderung; Unmögliches zuletzt mit Grund. Suchfeld nach Namen (auch Mitglieder).
+- **Aufstellung im Raum** (Proberaum, Studio, Bühne; `figure.js` `stage`, `label.css` `.fig-stage.depth`): bis vier stehen nebeneinander,
+  ab fünf jeder Zweite versetzt dahinter (etwas kleiner und weiter oben). So passen bis zu sieben in jede Breite; die Größe richtet sich nach Breite und Höhe des Raums.
 - Band-Leiste links ist per Ziehen ordenbar (`navOrder`, Schlüssel `b<ID>`). Sie bleibt beim Anklicken einer Band an ihrer Scroll-Stelle (`main.js`, `render`). Gelangweilte Figuren ohne Instrument zucken ab und zu die Schultern.
 - Solokünstler: keine „Band“-Wörter, „Künstler entlassen“ statt „Band auflösen“, kein ✕, kein Zusammenhalt-Feld.
 

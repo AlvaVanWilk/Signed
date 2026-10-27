@@ -471,6 +471,15 @@ const POSES = {
   },
 };
 
+/** Ab so vielen Leuten steht jeder Zweite hinten (kleiner, weiter oben), damit bis zu sieben in einen Raum passen. */
+const DEPTH_FROM = 5;
+/** Platz im Raum: Mitte (Anteil der Breite) und Breite einer Figur; die Lage regelt label.css (.fig-stage.depth). */
+function depthOf(i, n) {
+  const x = (i + 0.5) / n;
+  const w = n >= DEPTH_FROM ? Math.min(1.9 / n, 0.3) : Math.min(0.92 / n, 0.3);
+  return `--x:${x.toFixed(4)};--w:${w.toFixed(4)}`;
+}
+
 /** Instrument, das ein Musiker in der Band spielt (wie BandCalc::instrument). */
 /**
  * Passfoto im Stil der Figuren: Kopf und Schultern derselben Figur, ohne Instrument. Blinzelt und schaut umher,
@@ -509,14 +518,18 @@ export function playedInstrument(m) {
 const TALL = ['afro', 'dutt', 'irokese', 'locken', 'spacebuns', 'tolle'];
 
 export function stage(members, { bpm = 120, names = true, className = '', electricOf = () => false, hueOf = () => null, finishOf = null, awayOf = () => null, nameOf = null, below = () => '', instrumentOf = playedInstrument, act = null } = {}) {
-  return `<div class="fig-stage ${className}" style="--beat:${(60 / bpm).toFixed(3)}s">${members.map((m) => {
+  // Im Raum (Proberaum, Studio, Bühne) stehen alle auf dem Boden: bis vier nebeneinander, ab fünf abwechselnd vorn und versetzt dahinter.
+  const room = /\bin-room\b/.test(className);
+  const place = (i) => (room ? `;${depthOf(i, members.length)}` : '');
+  return `<div class="fig-stage ${className}${room ? ' depth' : ''}" style="--beat:${(60 / bpm).toFixed(3)}s">${members.map((m, i) => {
     const away = awayOf(m);
+    const back = room && members.length >= DEPTH_FROM && i % 2 === 1 ? ' fig-back' : '';
     if (away) {
-      return `<div class="fig-member fig-away" title="${escapeHtml(away.label)}"><span class="fig-away-box"><span class="fig-away-label">${escapeHtml(away.label)}</span>
+      return `<div class="fig-member fig-away${back}" title="${escapeHtml(away.label)}" style="${place(i).slice(1)}"><span class="fig-away-box"><span class="fig-away-label">${escapeHtml(away.label)}</span>
         <span class="countdown" data-until="${away.until}"></span></span>${names ? `<b>${escapeHtml(m.firstName)}</b>` : ''}</div>`;
     }
     return `
-    <div class="fig-member${act ? ' clickable' : ''}${TALL.includes(m.look?.hair) || ['cowboy', 'fedora'].includes(hatOf(m.look ?? {})) ? ' tall' : ''}" style="--d:${(-((m.id * 7919) % 4300) / 1000).toFixed(2)}s;--tilt:${((m.id * 37) % 13) - 6}deg"${act ? ` data-act="${act}" data-id="${m.id}" title="${escapeHtml(m.firstName)} öffnen"` : ''}>${figure(m.look, instrumentOf(m), { electric: electricOf(m), hue: hueOf(m), finish: finishOf ? finishOf(m) : null, mood: m.personality?.[0] ?? null })}${names ? `<b>${nameOf ? nameOf(m) : escapeHtml(m.stageName ?? m.firstName)}</b>` : ''}${below(m)}</div>`;
+    <div class="fig-member${back}${act ? ' clickable' : ''}${TALL.includes(m.look?.hair) || ['cowboy', 'fedora'].includes(hatOf(m.look ?? {})) ? ' tall' : ''}" style="--d:${(-((m.id * 7919) % 4300) / 1000).toFixed(2)}s;--tilt:${((m.id * 37) % 13) - 6}deg${place(i)}"${act ? ` data-act="${act}" data-id="${m.id}" title="${escapeHtml(m.firstName)} öffnen"` : ''}>${figure(m.look, instrumentOf(m), { electric: electricOf(m), hue: hueOf(m), finish: finishOf ? finishOf(m) : null, mood: m.personality?.[0] ?? null })}${names ? `<b>${nameOf ? nameOf(m) : escapeHtml(m.stageName ?? m.firstName)}</b>` : ''}${below(m)}</div>`;
   }).join('')}
   </div>`;
 }

@@ -13,7 +13,8 @@ export const INTERN_JOBS = { unpack: ['Briefe öffnen', 'öffnet Briefe', 'Ich �
 
 /**
  * Die große Sprechblase erscheint erst, wenn man jemanden antippt (eine zur Zeit, bleibt beim Neuzeichnen offen). Wer keinen Auftrag
- * hat, sagt von sich aus kurz „Ich habe nichts zu tun.“; beim Praktikum steht während der Arbeit die Restzeit über dem Kopf.
+ * hat, sagt von sich aus kurz „Ich habe nichts zu tun.“ (eine Assistenz ohne Arbeitsgebiet: „Ich habe keine feste Aufgabe.“);
+ * beim Praktikum steht während der Arbeit die Restzeit über dem Kopf.
  */
 defineActions({
   psTalk({ id }) {
@@ -74,7 +75,8 @@ function wall() {
 function desk(piles) {
   let s = `<rect x="0" y="18" width="${W}" height="72" fill="#8a5c3c" ${st(3)}/><rect x="0" y="6" width="${W}" height="16" rx="4" fill="#a8744c" ${st(3)}/>`;
   s += `<rect x="0" y="22" width="${W}" height="5" fill="#000" opacity="0.15"/>`;
-  for (let x = 120; x < W; x += 240) s += box(x, 34, 180, 44, '#7a5034', 4, 2.4) + `<circle cx="${x + 90}" cy="56" r="4" fill="#c9a86a" ${st(1.6)}/>`;
+  // Glatte Front ohne Schubladen (dort hängen die Namensschilder), nur eine leichte Holzmaserung
+  for (let x = 40; x < W; x += 140) s += `<path d="M${x} 30 C${x + 30} 46 ${x - 20} 62 ${x + 10} 86" stroke="#7a5034" stroke-width="2" fill="none" opacity="0.6"/>`;
   // Poststapel links (so hoch, wie Post da ist), Kassettenkiste, Tasse
   const n = Math.min(7, piles);
   for (let i = 0; i < n; i++) s += `<rect x="${60 + (i % 2) * 4}" y="${-4 - i * 6}" width="64" height="10" rx="1.5" fill="${ENV_COLORS[i % ENV_COLORS.length]}" ${st(1.8)} transform="rotate(${(i % 3) - 1} 92 ${-i * 6})"/>`;
@@ -143,7 +145,7 @@ export function officeScene(a, posts = 0) {
   const open = staff.some((x) => x.id === app.ui.psOpen) ? app.ui.psOpen : null;
   // Ohne Auftrag (Praktikum) oder ohne Arbeitsgebiet (Assistenz) sagt man es; beim Praktikum steht während der Arbeit die Restzeit
   // über dem Kopf. Eine Assistenz mit Arbeitsgebiet sagt nichts, auch wenn sie gerade Kaffee trinkt.
-  const hint = (x) => (x.intern ? (x.job ? `<span data-until="${x.job.until}"></span>` : 'Ich habe nichts zu tun.') : x.task === 'none' ? 'Ich habe nichts zu tun.' : '');
+  const hint = (x) => (x.intern ? (x.job ? `<span data-until="${x.job.until}"></span>` : 'Ich habe nichts zu tun.') : x.task === 'none' ? 'Ich habe keine feste Aufgabe.' : '');
   const front = staff.map((x) => `
     <div class="ps-col">
       ${x.id === open ? `<div class="ps-bubble">${x.intern ? internBubble(x, a) : assistantBubble(x, a)}</div>`

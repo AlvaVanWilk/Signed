@@ -326,8 +326,8 @@ das überstimmt die Sortierung (`Post::move`, Spalte `box`).
   wirft nach den Regeln weg: ab Können-Stufe, Genres, Einzeln/Band) oder **Presse** (sagt Interview-Anfragen zu, sobald der Musiker frei ist).
   Mehrere lassen sich einstellen.
 - **Poststelle** (gebaut, `office.js`): Oben im Posteingang eine Szene statt einer Kachel: Wand mit Fenster, Postfächern, Uhr und Lampe, vorn
-  der Schreibtisch mit Namensschildern; Praktikum und Assistenzen stehen als Figuren dahinter. Wer keinen Auftrag oder kein Arbeitsgebiet hat,
-  sagt „Ich habe nichts zu tun.“ (und schaut gelangweilt); beim Praktikum steht während der Arbeit die Restzeit über dem Kopf, und es hält
+  der Schreibtisch mit Namensschildern; Praktikum und Assistenzen stehen als Figuren dahinter. Ein Praktikum ohne Auftrag sagt „Ich habe
+  nichts zu tun.“, eine Assistenz ohne Arbeitsgebiet „Ich habe keine feste Aufgabe.“ (beide schauen gelangweilt); beim Praktikum steht während der Arbeit die Restzeit über dem Kopf, und es hält
   Brief, Kassette oder Stapel in der Hand. Eine Assistenz mit Arbeitsgebiet sagt nichts; gibt es gerade nichts dafür, trinkt sie Kaffee.
   Antippen öffnet die Sprechblase mit Zurufen, Arbeitsgebiet, Regeln und Abbrechen; die Restzeit des Praktikums und „Fest übernehmen“
   stehen auf einem Zettel am Tisch.

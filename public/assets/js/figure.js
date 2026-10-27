@@ -1,4 +1,4 @@
-import { HAIR_BACK, HAIR_FRONT, HATS, HAT_COLORS, hatOf } from './avatar.js';
+import { HAIR_BACK, HAIR_FRONT, HATS, HAT_COLORS, hairExtras, hatOf } from './avatar.js';
 
 /**
  * Niedliche Ganzkörper-Figur eines Musikers: großer Kopf aus denselben Merkmalen wie das Kartenbild,
@@ -259,6 +259,7 @@ function head(look, skin, sing, mood = null) {
     p.push(`<path d="${HAIR_FRONT[hatted && style === 'sidecut' ? 'kurz' : style]}" fill="${hair}"/>`);
   }
   if (style === 'dutt' && !hatted) p.push(`<circle cx="50" cy="17" r="8" fill="${hair}"/>`);
+  p.push(hairExtras(style, hair, hatted));
   // Haar ohne Glanz (wirkte wie Glas); Struktur kommt später nach Sandras Vorlage.
 
   if (look.glasses === 'round') p.push(`<g fill="none" stroke="${INK}" stroke-width="1.3"><circle cx="43" cy="45" r="5"/><circle cx="57" cy="45" r="5"/><path d="M48 45 L52 45"/></g>`);
@@ -526,7 +527,7 @@ export function playedInstrument(m) {
  * { until, label } – dann steht statt der Figur an seinem Platz, wann er zurück ist.
  */
 /** Frisuren und Hüte, die über den Kopf hinausragen: Der Name darüber rückt ein Stück höher. */
-const TALL = ['afro', 'dutt', 'irokese', 'locken'];
+const TALL = ['afro', 'dutt', 'irokese', 'locken', 'spacebuns', 'tolle'];
 
 export function stage(members, { bpm = 120, names = true, className = '', electricOf = () => false, hueOf = () => null, awayOf = () => null, nameOf = null, below = () => '', instrumentOf = playedInstrument, act = null } = {}) {
   return `<div class="fig-stage ${className}" style="--beat:${(60 / bpm).toFixed(3)}s">${members.map((m) => {

@@ -148,9 +148,13 @@ final class Generator
     {
         $gender = (string) Rng::weighted(['f' => 47, 'm' => 47, 'd' => 6]);
         $hair = match ($gender) {
-            'f' => ['lang' => 24, 'zopf' => 14, 'dutt' => 12, 'locken' => 14, 'bob' => 14, 'kurz' => 8, 'afro' => 8, 'sidecut' => 6],
-            'm' => ['kurz' => 28, 'locken' => 12, 'glatze' => 10, 'lang' => 10, 'afro' => 8, 'sidecut' => 9, 'irokese' => 5, 'dutt' => 5, 'bob' => 3],
-            default => ['kurz' => 14, 'bob' => 14, 'locken' => 12, 'sidecut' => 12, 'lang' => 12, 'afro' => 10, 'irokese' => 8, 'dutt' => 8],
+            // Dazu neuere Schnitte (avatar.js): Wolf Cut, Mittelscheitel, Buzzcut, Space Buns, Box Braids, Vokuhila, Tolle, Pixie
+            'f' => ['lang' => 18, 'zopf' => 10, 'dutt' => 8, 'locken' => 10, 'bob' => 10, 'kurz' => 5, 'afro' => 7, 'sidecut' => 5,
+                'wolf' => 7, 'curtain' => 8, 'spacebuns' => 5, 'braids' => 6, 'pixie' => 6, 'buzz' => 2, 'mullet' => 2, 'tolle' => 1],
+            'm' => ['kurz' => 20, 'locken' => 9, 'glatze' => 8, 'lang' => 7, 'afro' => 7, 'sidecut' => 7, 'irokese' => 4, 'dutt' => 4, 'bob' => 2,
+                'wolf' => 5, 'curtain' => 6, 'buzz' => 8, 'mullet' => 5, 'tolle' => 6, 'braids' => 3, 'pixie' => 1, 'spacebuns' => 1],
+            default => ['kurz' => 9, 'bob' => 9, 'locken' => 8, 'sidecut' => 9, 'lang' => 8, 'afro' => 7, 'irokese' => 6, 'dutt' => 6,
+                'wolf' => 7, 'curtain' => 6, 'buzz' => 6, 'spacebuns' => 6, 'braids' => 5, 'mullet' => 6, 'tolle' => 5, 'pixie' => 6],
         };
         $look = [
             'gender' => $gender,
@@ -164,8 +168,8 @@ final class Generator
             'freckles' => Rng::chance(0.12),
             'shirt' => Rng::pick(Catalog::SHIRT_COLORS),
         ];
-        // Zu Dutt, Undercut, Irokese, Locken und Afro passt keine Kopfbedeckung (wie NO_HAT in avatar.js).
-        if (in_array($look['hair'], ['dutt', 'sidecut', 'irokese', 'locken', 'afro'], true)) {
+        // Zu Dutt, Undercut, Irokese, Locken, Afro, Space Buns, Tolle und Buzzcut passt keine Kopfbedeckung (wie NO_HAT in avatar.js).
+        if (in_array($look['hair'], ['dutt', 'sidecut', 'irokese', 'locken', 'afro', 'spacebuns', 'tolle', 'buzz'], true)) {
             $look['hat'] = 'none';
         }
         return $look;

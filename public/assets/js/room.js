@@ -240,7 +240,7 @@ function right(level, r, name, T) {
 
 /**
  * Name der Band als Schild an der Wand, je nach Raum: Holzbrett (Bruchbude), Pappe mit Klebeband (Keller), Metallschild (Proberaum),
- * Leuchtschrift (Profi-Raum). Es hängt oben links über der Band, zwischen Wandpaneelen und Lampe; alles im Raum liegt davor.
+ * Leuchtschrift (Profi-Raum, rechts neben der goldenen Platte). Es hängt oben über der Band an der Wand; alles im Raum liegt davor.
  */
 function nameSign(level, name) {
   const text = esc(name);
@@ -248,7 +248,8 @@ function nameSign(level, name) {
   const tw = Math.min(180, Math.max(60, name.length * size * 0.6));
   const w = tw + 34;
   const h = 40;
-  const x = MID + 200 - w / 2;
+  // Im Profi-Raum leuchtet der Name rechts über den Lamellen neben der goldenen Platte (weiter rechts würde er bei schmalen Fenstern abgeschnitten).
+  const x = (level === 3 ? MID + 412 : MID + 200) - w / 2;
   const y = level === 2 ? 62 : 44;
   const label = (fill, extra = '') => `<text x="${f(x + w / 2)}" y="${f(y + h / 2 + size * 0.36)}" text-anchor="middle" font-family="system-ui, sans-serif" font-size="${size}" font-weight="900" textLength="${f(tw)}" lengthAdjust="spacingAndGlyphs" fill="${fill}" ${extra}>${text}</text>`;
   if (level === 0) {

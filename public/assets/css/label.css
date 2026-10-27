@@ -1209,10 +1209,9 @@ body { background: radial-gradient(1100px 520px at 50% -12%, rgba(212, 176, 110,
 /* Antippen zum Reden: unsichtbare Fläche über der Figur, kleine Andeutung über dem Kopf */
 .ps-hit { position: absolute; left: 0; bottom: 24%; width: clamp(140px, 15vw, 190px); height: 62%; border: 0; background: none; cursor: pointer; border-radius: 40% 40% 10% 10%; }
 .ps-hit:hover, .ps-hit:focus-visible { background: radial-gradient(ellipse at 50% 40%, rgba(255, 240, 200, 0.12), transparent 70%); outline: none; }
-.ps-mini { position: absolute; left: clamp(96px, 10vw, 124px); top: 10%; display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border: 0; border-radius: 12px; background: #f6f0e2; color: #2b2533; font: inherit; font-size: .76rem; font-weight: 700; cursor: pointer; box-shadow: 0 4px 10px rgba(0, 0, 0, .3); }
-.ps-mini::before { content: ''; position: absolute; left: 6px; bottom: -6px; border: 6px solid transparent; border-top-color: #f6f0e2; border-bottom: 0; }
+.ps-mini { position: absolute; left: clamp(118px, 12vw, 150px); top: 14%; display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border: 0; border-radius: 12px; background: #f6f0e2; color: #2b2533; font: inherit; font-size: .76rem; font-weight: 700; cursor: pointer; box-shadow: 0 4px 10px rgba(0, 0, 0, .3); }
+.ps-mini { padding: 7px 12px; font-size: .82rem; white-space: nowrap; }
+.ps-mini::before { content: ''; position: absolute; left: -8px; bottom: 10px; border: 8px solid transparent; border-right-color: #f6f0e2; border-left: 0; }
 .ps-mini:hover { background: #fff7e4; }
-.ps-dots { width: 22px; height: 6px; background: radial-gradient(circle, #6a6070 2.4px, transparent 2.6px) 0 50% / 8px 6px repeat-x; animation: ps-dots 1.4s ease-in-out infinite; }
-@keyframes ps-dots { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }
 @media (max-width: 1100px) { .ps-note { width: 180px; font-size: .74rem; padding: 8px 10px 10px; } .ps-scene.many .ps-bubble { max-width: 170px; } }
-@media (prefers-reduced-motion: reduce) { .ps-col.busy .ps-fig .fig-body, .ps-held, .ps-dots { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .ps-col.busy .ps-fig .fig-body, .ps-held { animation: none; } }

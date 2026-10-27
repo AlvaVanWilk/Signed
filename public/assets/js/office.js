@@ -12,8 +12,8 @@ import { esc, money, off } from './ui.js';
 export const INTERN_JOBS = { unpack: ['Briefe öffnen', 'öffnet Briefe', 'Ich öffne gerade die Briefe.'], listen: ['Demos anhören', 'hört Demos an', 'Ich höre gerade die Demos an.'], sort: ['Post sortieren', 'sortiert die Post', 'Ich sortiere gerade die Post in die Fächer.'] };
 
 /**
- * Sprechblasen erscheinen erst, wenn man jemanden antippt (eine zur Zeit, bleibt beim Neuzeichnen offen). Sonst schwebt über dem Kopf nur
- * eine kleine Andeutung: „…“, wenn jemand auf einen Zuruf wartet, oder wie lange die Arbeit noch dauert.
+ * Die große Sprechblase erscheint erst, wenn man jemanden antippt (eine zur Zeit, bleibt beim Neuzeichnen offen). Ein Praktikum ohne
+ * Auftrag sagt von sich aus kurz „Ich habe nichts zu tun.“; wer arbeitet, zeigt es selbst.
  */
 defineActions({
   psTalk({ id }) {
@@ -126,9 +126,8 @@ export function officeScene(a, posts = 0) {
         ${x.job ? `<span class="ps-held">${HELD[x.job.kind] ?? ''}</span>` : ''}</div>
     </div>`).join('');
   const open = staff.some((x) => x.id === app.ui.psOpen) ? app.ui.psOpen : null;
-  const hint = (x) => (x.job
-    ? `<span class="ps-dots"></span><span data-until="${x.job.until}"></span>`
-    : x.intern && (a.todo.unpack || a.todo.listen || a.todo.sort) ? '<span class="ps-dots"></span>' : '');
+  // Wer arbeitet, zeigt es selbst (mit Brief oder Kassette in der Hand); ein Praktikum ohne Auftrag sagt es.
+  const hint = (x) => (x.intern && !x.job ? 'Ich habe nichts zu tun.' : '');
   const front = staff.map((x) => `
     <div class="ps-col">
       ${x.id === open ? `<div class="ps-bubble">${x.intern ? internBubble(x, a) : assistantBubble(x, a)}</div>`

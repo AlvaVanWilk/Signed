@@ -392,7 +392,7 @@ function liveBlock(b, members, act) {
     act: 'musicianInfo',
     bpm: cat().genres[sortedGenres(genresOf(b))[0]]?.bpm ?? 120,
     electricOf: (m) => electric.get(m.id),
-    hueOf: (m) => ownGear(m, playedInstrument(m)).hue,
+    finishOf: (m) => ownGear(m, playedInstrument(m)).finish,
     instrumentOf: (m) => (hasGear(m) ? playedInstrument(m) : 'none'),
     nameOf: (m) => `<i class="lb-glow ${m.wellbeing?.level ?? 'green'}" data-live-glow="${m.id}"></i>${esc(m.stageName ?? m.firstName)}`,
     below: (m) => (!hasGear(m)
@@ -418,7 +418,7 @@ function gigBlock(b, members, act) {
     act: 'musicianInfo',
     bpm: cat().genres[sortedGenres(genresOf(b))[0]]?.bpm ?? 120,
     electricOf: (m) => electric.get(m.id),
-    hueOf: (m) => ownGear(m, playedInstrument(m)).hue,
+    finishOf: (m) => ownGear(m, playedInstrument(m)).finish,
     instrumentOf: (m) => (hasGear(m) ? playedInstrument(m) : 'none'),
   })}
     </section>`;
@@ -492,7 +492,7 @@ function roomBlock(b, members) {
     className: 'idle in-room',
     act: 'musicianInfo',
     instrumentOf: (m) => (hasGear(m) ? playedInstrument(m) : 'none'),
-    hueOf: (m) => ownGear(m, playedInstrument(m)).hue,
+    finishOf: (m) => ownGear(m, playedInstrument(m)).finish,
     nameOf: (m) => esc(m.stageName ?? m.firstName),
   })}</div>
       <div class="lb-roominfo">

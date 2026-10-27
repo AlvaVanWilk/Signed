@@ -16,7 +16,7 @@ const f = (n) => +n.toFixed(2);
 const tilt = (inner, angle, scale) => `<g transform="rotate(${angle} 32 32) translate(32 32) scale(${scale}) translate(-32 -32)">${inner}</g>`;
 
 // Grün: natürliche Hölzer [hell, mittel, dunkel] und Metalle
-const WOODS = [
+export const WOODS = [
   ['#f6dcaa', '#e0b070', '#a8743a'], // Ahorn
   ['#eba476', '#b85a2e', '#6e2a12'], // Kirsche
   ['#b88a62', '#7a5030', '#3e2618'], // Nussbaum
@@ -25,7 +25,7 @@ const WOODS = [
   ['#dccc94', '#a08a50', '#5e4e26'], // Olive
   ['#f8c878', '#d8902e', '#8a5010'], // Honig
 ];
-const ALLOYS = [
+export const ALLOYS = [
   ['#fff1b0', '#e2b84a', '#8a6414'], // Messing
   ['#ffd9c0', '#d08a5a', '#7a3e1c'], // Rotmessing
   ['#ffffff', '#c9ccd4', '#6b6f7a'], // Silber

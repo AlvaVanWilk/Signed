@@ -110,7 +110,7 @@ function overview(b, members) {
     <div class="page-head">
       <div><div class="eyebrow">${b.title ? esc(b.title) : 'Band'}</div><h1>${esc(b.name)} <button class="icon-btn" data-act="bandRename" data-id="${b.id}" title="${b.released ? 'Namensänderung beantragen' : 'Umbenennen'}">✎</button></h1></div>
     </div>
-    ${members.length ? stage(members, { className: runningFor(b.id) ? '' : 'idle', electricOf: electricByStem(members, b), hueOf: (m) => ownGear(m, playedInstrument(m)).hue, awayOf: (m) => awayOf(b, m) }) : ''}
+    ${members.length ? stage(members, { className: runningFor(b.id) ? '' : 'idle', electricOf: electricByStem(members, b), finishOf: (m) => ownGear(m, playedInstrument(m)).finish, awayOf: (m) => awayOf(b, m) }) : ''}
     <div class="stat-grid">
       ${statTile('sound', b, fmt1(b.sound), { flash: `sound-${b.id}` })}
       ${statTile('fame', b, fmt1(b.fame), { extra: gig.nextVenue ? bar(gig.progress, 1, 'thin') : '' })}

@@ -1049,6 +1049,9 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 @keyframes fig-nod { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
 @keyframes fig-blink { 0%, 94%, 100% { transform: scaleY(1); } 96% { transform: scaleY(0.1); } }
 @keyframes fig-tap { 0%, 60%, 100% { transform: rotate(0); } 25% { transform: rotate(-14deg); } }
+/* Goldene Instrumente funkeln leise, auch wenn die Bühne still ist. */
+.fig .fig-twinkle { opacity: 0.85; animation: fig-twinkle 2.7s ease-in-out infinite; }
+@keyframes fig-twinkle { 0%, 100% { opacity: 0.15; } 45%, 55% { opacity: 1; } }
 @keyframes fig-strum { from { transform: rotate(-6deg); } to { transform: rotate(12deg); } }
 @keyframes fig-wave { from { transform: rotate(-12deg); } to { transform: rotate(14deg); } }
 @keyframes fig-sing { 0%, 100% { transform: scaleY(0.5); } 40% { transform: scaleY(1.25); } }

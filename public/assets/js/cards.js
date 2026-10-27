@@ -24,10 +24,15 @@ export function gearHue(g) {
 /** Symbol eines bestimmten Instruments: Klasse, Lackfarbe (blau), Holz oder Metall (grün, fest je Instrument), goldene Fähigkeit (gold). */
 export const gearIcon = (g) => {
   const model = cat().gear[g.model];
+  const f = gearFinish(g);
+  return instrumentIcon(model.type, !!model.electric, f.hue, f.tier, { variant: f.variant, gold: f.gold });
+};
+/** Aussehen eines Instruments (für Symbol und Figur): Klasse, Lackfarbe, Holz/Metall, goldene Fähigkeit. */
+export function gearFinish(g) {
   const seed = g.id ?? ((g.slot ?? 0) * 31 + (g.idx ?? 0) * 7);
   const gold = (g.bonuses ?? []).find((b) => b.slot === 'gold')?.kind ?? null;
-  return instrumentIcon(model.type, !!model.electric, gearHue(g), gearTier(g), { variant: (seed * 5 + 3) % 35, gold });
-};
+  return { tier: gearTier(g), hue: gearHue(g), variant: (seed * 5 + 3) % 35, gold };
+}
 
 const BONUS_SLOT = { green: 'Übung', blue: 'Klang', gold: 'Besonders' };
 /** Ein Bonus in einfachen Worten, z. B. „Ausdauer: Hält beim Proben +20 % länger durch.“ */
@@ -68,7 +73,12 @@ export function whoCanPlay(g) {
 /** Wie das eigene Instrument eines Musikers aussieht: elektrisch? welche Farbe? Bei fremden Musikern unbekannt. */
 export function ownGear(m, type) {
   const g = app.state?.gear?.find((x) => x.musicianId === m.id && cat().gear[x.model]?.type === type);
-  return g ? { electric: !!cat().gear[g.model].electric, hue: gearHue(g) } : { electric: false, hue: null };
+  return g ? { electric: !!cat().gear[g.model].electric, hue: gearHue(g), finish: gearFinish(g), gear: g } : { electric: false, hue: null, finish: null, gear: null };
+}
+/** Symbol des Instruments, das jemand gerade hat (mit Klasse und Farbe), sonst das allgemeine Symbol. */
+export function ownIcon(m, type) {
+  const own = ownGear(m, type);
+  return own.gear ? gearIcon(own.gear) : instrumentIcon(type);
 }
 export const playsElectric = (m, type) => ownGear(m, type).electric;
 export const genreName = (key) => cat().genres[key]?.name ?? key;
@@ -208,7 +218,7 @@ export function fileRow(m, { act = 'openMusician' } = {}) {
     <button class="file-row lvl-${m.level} ${status ? 'busy' : ''}" data-act="${act}" data-id="${m.id}">
       ${photo(m)}
       <span class="file-who"><b>${esc(fullName(m))}</b><small>${esc(cat().levelNames[m.level])} · ${m.genres.map((g) => esc(genreName(g))).join(', ')}</small></span>
-      <span class="file-skills">${m.instruments.map((i) => `<span class="skill-row"><span class="skill-name">${instrumentIcon(i.type, ownGear(m, i.type).electric, ownGear(m, i.type).hue)}<span> ${esc(instrumentName(i.type))}</span></span>${skillBar(i.skill)}</span>`).join('')}</span>
+      <span class="file-skills">${m.instruments.map((i) => `<span class="skill-row"><span class="skill-name">${ownIcon(m, i.type)}<span> ${esc(instrumentName(i.type))}</span></span>${skillBar(i.skill)}</span>`).join('')}</span>
       <span class="file-side">${fameStars(m)}<small>${status || (band ? esc(band.name) : 'frei')}</small></span>
     </button>`;
 }
@@ -345,10 +355,10 @@ export function musicianCard(m, { act = 'openMusician', size = '', extra = '', s
     name: fullName(m),
     badge: `<span class="tcg-genres">${sortedGenres(m.genres).map((g) => `<span class="genre-hit" role="button" data-act="genreInfo" data-genre="${g}" data-id="${m.id}" title="${esc(genreName(g))}: Was heißt das?">${genreIcon(g)}</span>`).join('')}</span>`,
     art: `${avatar(m.look)}
-      <span class="tcg-badge">${m.instruments.map((i) => instrumentIcon(i.type, ownGear(m, i.type).electric, ownGear(m, i.type).hue)).join('')}</span>
+      <span class="tcg-badge">${m.instruments.map((i) => ownIcon(m, i.type)).join('')}</span>
       ${abilities.length ? `<span class="tcg-abilities">${abilities.map((a) => `<i title="${esc(a.name)}">${a.icon}</i>`).join('')}</span>` : ''}`,
     text: `
-      ${m.instruments.map((i) => `<span class="skill-row"><span class="skill-name">${instrumentIcon(i.type, ownGear(m, i.type).electric, ownGear(m, i.type).hue)}<span> ${esc(instrumentName(i.type))}</span></span>${skillBar(i.skill)}</span>`).join('')}
+      ${m.instruments.map((i) => `<span class="skill-row"><span class="skill-name">${ownIcon(m, i.type)}<span> ${esc(instrumentName(i.type))}</span></span>${skillBar(i.skill)}</span>`).join('')}
       <span class="skill-row fame-row"><span class="skill-name">⭐<span> Bekanntheit</span></span>${fameBar(m.fame)}</span>
       <span class="tcg-traits">${abilities.length
         ? abilities.map((a) => `<b>${esc(a.name)}</b>`).join(' · ')

@@ -150,7 +150,7 @@ function envelopeSlot(x, key, id) {
   const current = unpacking && left <= total;
   const busy = !unpacking && [...(app.state.submissions ?? []), ...(app.state.mail ?? [])].some((y) => y.state === 'unpacking' && !y.byIntern);
   const drop = key === 's' ? 'submissionDrop' : 'mailDrop';
-  return `<div class="lb-slotitem lb-mailitem" data-post="${key}-${id}" style="${scatter(id * 3 + (key === 's' ? 1 : 2))}">
+  return `<div class="lb-slotitem lb-mailitem" data-post="${key}-${id}" style="${scatter(key === 's' ? id : id * 7 + 3)}">
     <div class="lb-tapeitem lb-envitem ${unpacking ? 'playing' : ''}">
       <div class="lb-env" ${unpacking ? '' : `data-act="postUnpack" data-table="${key}" data-id="${id}" ${off(busy ? 'Du packst gerade schon einen Umschlag aus.' : '')}`} title="${unpacking ? 'Wird ausgepackt …' : 'Auspacken'}">${ENVELOPE}
         ${current ? `<span class="lb-prog tiny"><i style="animation-duration:${total}s;animation-delay:-${Math.max(0, total - left).toFixed(2)}s"></i></span>` : ''}
@@ -170,11 +170,16 @@ function slot(s, busy) {
   return `<div class="lb-slotitem ${fresh ? 'fresh' : ''}" data-sid="${s.submissionId}" data-post="s-${s.submissionId}" style="${scatter(s.submissionId)}">${inner}<span class="lb-slotbar"><span class="lb-slotleft">${newTag(s)}${leftPill(s)}</span>${saveBtn(s)}</span></div>`;
 }
 
-/** Eigene Reihenfolge: Neues zuerst, danach die gemerkte Anordnung. */
+/** Merkzahl für die eigene Reihenfolge: Kassetten mit ihrer Nummer, Briefe mit minus ihrer Nummer. */
+const orderKey = (x) => (x.submissionId ? x.submissionId : -x.mailId);
+/**
+ * Eigene Reihenfolge: Neues zuerst (neueste vorn), danach die gemerkte Anordnung. Ein ausgepackter Umschlag behält
+ * seine Merkzahl, sein Inhalt liegt also genau dort, wo vorher der Umschlag lag.
+ */
 function ordered(list) {
   const saved = app.state.label.subOrder ?? [];
-  const known = list.filter((x) => saved.includes(x.submissionId)).sort((a, b) => saved.indexOf(a.submissionId) - saved.indexOf(b.submissionId));
-  return [...list.filter((x) => !saved.includes(x.submissionId)), ...known];
+  const known = list.filter((x) => saved.includes(orderKey(x))).sort((a, b) => saved.indexOf(orderKey(a)) - saved.indexOf(orderKey(b)));
+  return [...list.filter((x) => !saved.includes(orderKey(x))).sort((a, b) => b.createdAt - a.createdAt), ...known];
 }
 
 // ---------- Briefe: Interview-Anfragen und Bewerbungen ----------
@@ -275,10 +280,9 @@ export function render() {
   const f = app.ui.subFilter ?? 'all';
   const showFilter = box === 'demos' || box === 'inbox';
   const inBox = items.filter((x) => fach(x) === box);
-  // Kassetten (ausgepackt) lassen sich filtern und frei sortieren; Umschläge und Briefe stehen vorn, neueste zuerst.
+  // Alles liegt in einer Reihe und lässt sich frei sortieren; der Filter zeigt nur ausgepackte Kassetten.
   const isDemo = (x) => x.submissionId && x.state !== 'envelope' && x.state !== 'unpacking';
-  const demos = ordered(inBox.filter(isDemo)).filter((x) => f === 'all' || (f === 'unheard' ? x.state !== 'open' : x.state === 'open' && levelOf(x) === Number(f)));
-  const rest = f === 'all' ? inBox.filter((x) => !isDemo(x)).sort((x, y) => y.createdAt - x.createdAt) : [];
+  const shown = ordered(f === 'all' ? inBox : inBox.filter((x) => isDemo(x) && (f === 'unheard' ? x.state !== 'open' : x.state === 'open' && levelOf(x) === Number(f))));
   const busy = all.some((x) => x.state === 'listening' && !x.byIntern);
   const empty = box === 'saved' ? 'Noch nichts gemerkt. Mit dem Lesezeichen legst du etwas hierher – ablaufen tut es trotzdem.'
     : box === 'interview' ? 'Gerade fragt niemand nach einem Interview.' : box === 'job' ? 'Gerade bewirbt sich niemand.'
@@ -299,7 +303,7 @@ export function render() {
     ${officeScene(a, count('inbox'))}
     <div class="lb-boxes">${tabs.map(([k, label]) => `<button class="${box === k ? 'on' : ''}" data-act="subBox" data-key="${k}" data-box="${k}">${label} <small>${count(k)}</small></button>`).join('')}</div>
     ${showFilter ? `<div class="lb-filter">${[['all', 'Alle'], ['unheard', 'Ungehört'], ['0', 'Stufe 0'], ['1', 'Stufe 1'], ['2', 'Stufe 2'], ['3', 'Stufe 3']].map(([k, label]) => `<button class="${f === k ? 'on' : ''}" data-act="subFilter" data-key="${k}">${label}</button>`).join('')}</div>` : ''}
-    ${rest.length || demos.length ? `<div class="lb-slots" data-slots>${rest.map(slotOf).join('')}${demos.map(slotOf).join('')}</div>` : `<div class="empty">${empty}</div>`}`;
+    ${shown.length ? `<div class="lb-slots" data-slots>${shown.map(slotOf).join('')}</div>` : `<div class="empty">${empty}</div>`}`;
 }
 
 // ---------- Scout losschicken und Bericht ansehen ----------
@@ -614,8 +618,8 @@ function dragMove(x, y) {
   for (const t of document.querySelectorAll('.lb-boxes [data-box]')) t.classList.toggle('drop', t === tab);
   press.tab = tab?.dataset.box ?? null;
   if (tab) return;
-  // Kassetten: Platz unter dem Zeiger suchen und tauschen (Briefe und Umschläge stehen nach Datum).
-  const over = el.dataset.sid ? [...box.children].find((c) => c !== el && c.dataset.sid && hit(c)) : null;
+  // Platz unter dem Zeiger suchen und tauschen (Kassetten, Briefe und Umschläge).
+  const over = [...box.children].find((c) => c !== el && c.dataset.post && hit(c));
   if (over) {
     const kids = [...box.children];
     if (kids.indexOf(over) < kids.indexOf(el)) box.insertBefore(el, over);
@@ -643,7 +647,7 @@ function dragEnd(cancelled) {
     return;
   }
   p.el.style.transform = '';
-  const order = [...p.box.children].map((c) => Number(c.dataset.sid)).filter((n) => n > 0);
+  const order = [...p.box.children].map((c) => c.dataset.post?.split('-')).filter(Boolean).map(([t, id]) => (t === 's' ? Number(id) : -Number(id)));
   app.state.label.subOrder = order;
   api('submissionOrder', { order }).catch(() => {});
 }

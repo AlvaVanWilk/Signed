@@ -293,7 +293,10 @@ was drin ist, und muss erst auspacken (2 Sekunden, einer nach dem anderen; die L
 **vier Tage** (`Balance::POST['ttl']`, auch Interviews und Bewerbungen), lässt sich merken und ungeöffnet wegwerfen. Post kommt **zufällig
 verteilt** (man weiß nie genau, wann); am Menüpunkt steht **+N**, was seit dem letzten Blick in den Posteingang neu ist, und im Posteingang trägt
 alles Neue ein **NEU** (bis man das nächste Mal hereinkommt). Alles landet im **Eingang**; in die Fächer **Demos, Anfragen, Bewerbungen** kommt es,
-wenn jemand sortiert. **Von Hand** lässt sich alles festhalten und auf einen Reiter ziehen (auch zurück in den Eingang oder zu „Gespeichert“);
+wenn jemand sortiert. Alles liegt in **einer Reihe**: Neues vorn (neueste zuerst), danach die eigene Anordnung (`labels.sub_order`, Kassetten
+mit ihrer Nummer, Briefe mit minus ihrer Nummer). Ein ausgepackter Umschlag behält seinen Platz und seine Schräglage, sein Inhalt liegt also genau dort,
+wo der Umschlag lag. Auch Briefe und Umschläge lassen sich in der Reihe verschieben.
+**Von Hand** lässt sich alles festhalten und auf einen Reiter ziehen (auch zurück in den Eingang oder zu „Gespeichert“);
 das überstimmt die Sortierung (`Post::move`, Spalte `box`).
 - **Wie viel kommt**: Alles kommt zufällig, im Schnitt so viel wie die Rate je Tag. Jede Rate ist eine fließende Formel ohne Stufen und
   ohne Obergrenze: **Start + Zuwachs × √Label-Ruhm** (siehe oben, wie er sich berechnet; steht auf der Übersicht). Steigt er, gilt
@@ -609,6 +612,9 @@ Beim ersten Login nach dem Umbau (Saison 2) bleiben **Labelname und Konto**, all
 - **Gold wird beworben:** Schaufenster mit Wimpelkette, Vitrine mit Strahlen, Aufsteller „Einzelstück“ mit der goldenen Fähigkeit und einem Werbespruch
   (`Catalog::GEAR_BONUS_INFO[…]['ad']`), Sticker „Nur heute!“ und „Legendär“, goldenes Werbeschild und Rahmen, Stern am Menüpunkt und einmal je Angebot ein Hinweis.
 - Gekauftes hinterlässt ein leeres Fach („Verkauft“), die Vitrine bleibt leer stehen. Zurücklegen gibt es nicht mehr.
+- **Man sieht das Instrument an der Figur** (`figure.js`, `paintOf`): ohne eigenes oder grau in den Grundfarben, grün aus Holz bzw. Metall mit
+  Chrom-Beschlägen, blau in seiner Lackfarbe mit Gold, gold in den Farben seiner Fähigkeit (wie auf der Karte) mit farbiger Kante und leisem Funkeln.
+  Auch die kleinen Instrument-Symbole auf den Musikerkarten zeigen das eigene Instrument.
 - Die frühere „Neue Lieferung“ gegen Geld gibt es nicht mehr.
 - Oberfläche: gezeichnetes Regal mit Preisschildern, Seltenheit als Lichtschein, Hinweispunkt bei Instrumenten, die jemandem im Label fehlen; Übergang: Doppeltür geht beim ersten Betreten auf.
 

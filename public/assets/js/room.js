@@ -228,19 +228,47 @@ function right(level, r, name, T) {
       + box(420, 60, 54, 72, '#f1e5c8', 3) + `<path d="${blob(447, 94, 15, 20, r, 3)}" fill="#3f6fa8"/>`;
   }
   if (level === 3) {
-    // Goldene Platte an der Wand, Mischpult mit Bildschirm, Neonschrift.
+    // Goldene Platte an der Wand, Mischpult mit Bildschirm (der Name steht als Leuchtschrift links, nameSign).
     let s = box(360, 44, 62, 62, '#1d1a2a', 4) + `<circle cx="391" cy="75" r="22" fill="#e6b84f" ${st(2.4)}/><circle cx="391" cy="75" r="5" fill="#1d1a2a"/><path d="M376 64 Q384 56 394 56" stroke="#fff" stroke-width="2.4" fill="none" opacity="0.45" stroke-linecap="round"/>`;
     // Neonschild mit dem Namen der Band (lange Namen werden schmaler gesetzt, damit sie aufs Schild passen).
-    // Ohne Namen kein Neonschild (der Name steht dann als Schild an der Wand der Bandseite).
-    if (!name) return s + rightDesk();
-    const text = esc((name || 'Studio').toUpperCase());
-    const size = Math.max(11, Math.min(22, 250 / Math.max(6, (name || 'Studio').length)));
-    s += `<rect x="440" y="50" width="180" height="40" rx="10" fill="#141824" ${st(3)}/><text x="530" y="${70 + size * 0.36}" text-anchor="middle" font-family="system-ui, sans-serif" font-size="${size.toFixed(1)}" font-weight="800" letter-spacing="2" fill="none" stroke="#7fd0e6" stroke-width="${size > 15 ? 2 : 1.4}" textLength="${Math.min(164, (name || 'Studio').length * size * 0.78).toFixed(0)}" lengthAdjust="spacingAndGlyphs">${text}</text><ellipse cx="530" cy="70" rx="86" ry="22" fill="#7fd0e6" opacity="0.08"/>`;
     return s + rightDesk();
   }
   let s = box(380, 40, 56, 78, '#f1e5c8', 3) + `<path d="${blob(408, 76, 16, 22, r, 3)}" fill="#cf5b4a"/>` + line('M388 102 H428', INK, 3);
   s += `<path d="${curve([[456, 214], [456, 178], [476, 166], [604, 166], [624, 178], [624, 214]], true)}" fill="${T ? T.sofa : '#2f5f8a'}" ${st(3)}/><path d="M472 184 Q540 200 608 184" stroke="${INK}" stroke-width="2" fill="none" opacity="0.55"/>`;
   return s;
+}
+
+/**
+ * Name der Band als Schild an der Wand, je nach Raum: Holzbrett (Bruchbude), Pappe mit Klebeband (Keller), Metallschild (Proberaum),
+ * Leuchtschrift (Profi-Raum). Es hängt oben links über der Band, zwischen Wandpaneelen und Lampe; alles im Raum liegt davor.
+ */
+function nameSign(level, name) {
+  const text = esc(name);
+  const size = 22;
+  const tw = Math.min(180, Math.max(60, name.length * size * 0.6));
+  const w = tw + 34;
+  const h = 40;
+  const x = MID + 200 - w / 2;
+  const y = level === 2 ? 62 : 44;
+  const label = (fill, extra = '') => `<text x="${f(x + w / 2)}" y="${f(y + h / 2 + size * 0.36)}" text-anchor="middle" font-family="system-ui, sans-serif" font-size="${size}" font-weight="900" textLength="${f(tw)}" lengthAdjust="spacingAndGlyphs" fill="${fill}" ${extra}>${text}</text>`;
+  if (level === 0) {
+    return `<path d="M${f(x + 18)} ${y} L${f(x + 30)} 18 M${f(x + w - 18)} ${y} L${f(x + w - 30)} 18" ${st(2)} fill="none"/>`
+      + `<g transform="rotate(-2 ${f(x + w / 2)} ${y + h / 2})"><rect x="${f(x)}" y="${y}" width="${f(w)}" height="${h}" rx="5" fill="#7a4c2c" ${st(3)}/><path d="M${f(x + 6)} ${y + 14} H${f(x + w - 10)} M${f(x + 10)} ${y + 28} H${f(x + w - 6)}" stroke="#5e3a20" stroke-width="2"/>`
+      + label('#f6e7c8', `stroke="#3a2416" stroke-width="1" paint-order="stroke"`) + '</g>';
+  }
+  if (level === 1) {
+    const tape = (tx, ty, a) => `<rect x="${f(tx - 15)}" y="${f(ty - 5)}" width="30" height="10" fill="#efe6cc" opacity="0.85" transform="rotate(${a} ${f(tx)} ${f(ty)})"/>`;
+    return `<g transform="rotate(1.5 ${f(x + w / 2)} ${y + h / 2})"><path d="M${f(x)} ${y + 2} L${f(x + w * 0.4)} ${y} L${f(x + w)} ${y + 3} L${f(x + w - 2)} ${y + h} L${f(x + w * 0.55)} ${y + h - 2} L${f(x + 2)} ${y + h + 1} Z" fill="#c9a46c" stroke="#8a6a3e" stroke-width="1.5"/>`
+      + label('#2a2233') + tape(x + 2, y + 3, -38) + tape(x + w - 2, y + 4, 38) + '</g>';
+  }
+  if (level === 2) {
+    const rivet = (rx, ry) => `<circle cx="${f(rx)}" cy="${f(ry)}" r="2.6" fill="#7a818e"/><circle cx="${f(rx - 0.6)}" cy="${f(ry - 0.6)}" r="1" fill="#fff" opacity="0.8"/>`;
+    return `<rect x="${f(x)}" y="${y}" width="${f(w)}" height="${h}" rx="6" fill="#c3cad4" ${st(3)}/><rect x="${f(x + 3)}" y="${y + 3}" width="${f(w - 6)}" height="${h / 2 - 3}" rx="4" fill="#fff" opacity="0.35"/>`
+      + rivet(x + 8, y + 8) + rivet(x + w - 8, y + 8) + rivet(x + 8, y + h - 8) + rivet(x + w - 8, y + h - 8) + label('#2b3240', `letter-spacing="2" stroke="#fff" stroke-width="0.6" paint-order="stroke"`);
+  }
+  // Leuchtschrift: dunkler Kasten, Buchstaben als leuchtende Kontur.
+  return `<ellipse cx="${f(x + w / 2)}" cy="${y + h / 2}" rx="${f(w * 0.62)}" ry="${h}" fill="#7fd0e6" opacity="0.07"/><rect x="${f(x)}" y="${y}" width="${f(w)}" height="${h}" rx="10" fill="#141824" ${st(3)}/>`
+    + label('none', `stroke="#7fd0e6" stroke-width="5" opacity="0.25"`) + label('none', `stroke="#7fd0e6" stroke-width="1.8"`);
 }
 
 /** Mischpult mit Bildschirm im Profi-Raum. */
@@ -259,6 +287,6 @@ export function roomSvg(level = 0, seed = 1, name = '', genre = null) {
   const dark = level === 0 ? 0.36 : level === 1 ? 0.16 : 0;
   return `<svg class="lb-roomart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <defs><linearGradient id="rmCone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe9a8" stop-opacity="0.5"/><stop offset="1" stop-color="#ffe9a8" stop-opacity="0"/></linearGradient></defs>
-    ${walls(level, r, T)}${floor(level, r, T)}<g transform="translate(0 14)">${left(level, r, T)}</g><g transform="translate(${W - 640} 14)">${right(level, r, name, T)}</g>${ceiling(level, T)}
+    ${walls(level, r, T)}${name ? nameSign(level, name) : ''}${floor(level, r, T)}<g transform="translate(0 14)">${left(level, r, T)}</g><g transform="translate(${W - 640} 14)">${right(level, r, name, T)}</g>${ceiling(level, T)}
     ${dark ? `<rect width="${W}" height="${H}" fill="#0b0d14" opacity="${dark}"/>` : ''}</svg>`;
 }

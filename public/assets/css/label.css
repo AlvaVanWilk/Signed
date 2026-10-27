@@ -1299,6 +1299,8 @@ body { background: radial-gradient(1100px 520px at 50% -12%, rgba(255, 181, 71, 
 .lb-wishpop { width: min(220px, 56cqw); padding: 8px 11px 9px; border-radius: 14px; text-align: left; font-size: .8rem; line-height: 1.25; }
 .lb-wishpop.from-left { left: 0; transform: none; } .lb-wishpop.from-left::after { left: 24%; }
 .lb-wishpop.from-right { left: auto; right: 0; transform: none; } .lb-wishpop.from-right::after { left: 76%; }
+/* Ohne den Schatten der Namen unter den Figuren (der würde die Schrift verwaschen). */
+.lb-room .fig-stage.in-room .fig-member .lb-wishpop b, .lb-room .fig-stage.in-room .fig-member .lb-wishpop, .lb-room .fig-stage.in-room .fig-member .lb-wishdot { text-shadow: none; }
 .lb-wishpop b { display: block; padding-right: 18px; font-size: .86rem; }
 .lb-wishpop small { display: block; margin: 1px 0 6px; color: #7a6a52; }
 .lb-wishpop .lb-pill { background: linear-gradient(135deg, #2ec4b6, #6fd08c); color: #08201c; border: 0; }

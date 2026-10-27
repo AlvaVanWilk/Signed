@@ -1413,3 +1413,11 @@ body { background: radial-gradient(1100px 520px at 50% -12%, rgba(255, 181, 71, 
 .fig-member > .fig-walker { position: absolute; left: 0; top: 0; width: 100%; pointer-events: none; }
 .fig-member.walking > svg.fig:not(.fig-walker) { visibility: hidden; }
 @media (prefers-reduced-motion: reduce) { .fig-walker .fw-leg-a, .fig-walker .fw-leg-b, .fig-walker .fw-arm-a, .fig-walker .fw-arm-b, .fig-walker .fig-body { animation: none; } }
+
+/* Probe im Raum: Die Werte (Leiste, Zuwachs, „… fehlt“) liegen über den Beinen, über dem Namen, statt darunter.
+ * Sonst würde die Figur um ihre Höhe angehoben und schwebte über dem Boden. */
+.fig-stage.depth .fig-member > .lb-lv { position: absolute; left: 50%; bottom: 1.35em; z-index: 3; width: auto; min-width: 52%; margin: 0; padding: 2px 7px 3px; gap: 1px;
+  transform: translateX(-50%); border-radius: 7px; background: rgba(20, 16, 30, .62); box-shadow: 0 2px 6px rgba(0, 0, 0, .3); }
+.fig-stage.depth .fig-member > .lb-lv em { font-size: .8rem; }
+.fig-stage.depth .fig-member > .lb-lv.lb-nogear { white-space: nowrap; }
+.fig-stage.depth .fig-member > .lb-lv.lb-nogear .lb-prog { display: none; }

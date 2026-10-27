@@ -621,6 +621,8 @@ Beim ersten Login nach dem Umbau (Saison 2) bleiben **Labelname und Konto**, all
   Auf den Bühnen der Auftrittsorte gibt es dafür eine **Bühnenfläche mit Tiefe** (`stage.js` `DECK`): Die vordere Reihe steht an der
   Vorderkante, die hintere hinten auf der Fläche, beide also auf der Bühne und nicht im Publikum oder in der Luft. Die Höhen rechnen in
   Punkten des Bühnenbilds (`--u` in `label.css`), damit sie bei jeder Größe passen; in der Kneipe (ohne Bühne) steht die Band auf dem Teppich.
+  Bei der Probe liegen die Werte (Leiste, Zuwachs, „… fehlt“) als kleines Schild über den Beinen, über dem Namen; so stehen die Signies auf
+  derselben Höhe wie ohne Werte und schweben nicht.
 - Band-Leiste links ist per Ziehen ordenbar (`navOrder`, Schlüssel `b<ID>`). Sie bleibt beim Anklicken einer Band an ihrer Scroll-Stelle (`main.js`, `render`). Gelangweilte Figuren ohne Instrument zucken ab und zu die Schultern.
 - Solokünstler: keine „Band“-Wörter, „Künstler entlassen“ statt „Band auflösen“, kein ✕, kein Zusammenhalt-Feld.
 

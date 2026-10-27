@@ -252,7 +252,7 @@ sechs Tage. Später kommen hier **Veranstaltungen** hin (Festivals, Battle of th
 ### Promo-Tour (gebaut)
 
 Die einzelne Promo-Mission ist weg (dafür gibt es Interview-Anfragen). Die **Promo-Tour** der ganzen Band (oder des Solokünstlers) ist eine
-Anordnung auf der Bandseite, jederzeit ohne Anfrage: 10 Minuten, etwas Ruhm, schiebt die Platte in den Charts an und zählt für die nächste Platte.
+Anordnung auf der Bandseite, jederzeit ohne Anfrage, mit Nachfrage wie bei Proben und Auszeit (Dauer, was es bringt, wer es mag): 10 Minuten, etwas Ruhm, schiebt die Platte in den Charts an und zählt für die nächste Platte.
 
 ### Interviews und Promo-Anfragen (gebaut als Interview-Anfragen im Posteingang)
 

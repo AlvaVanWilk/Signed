@@ -354,7 +354,7 @@ function act(b, members, type, section, title, text, icon, warn = false, busy = 
   // Ohne Unterseite: Die Anordnung startet gleich (Proben).
   if (!section) {
     const why = busy ? (blocker(b, members)?.text ?? (members.length === 1 ? 'Gerade beschäftigt.' : 'Die Band ist gerade beschäftigt.')) : '';
-    return `<button class="lb-act t-${type} ${busy ? 'idle' : ''} ${warn ? 'warn' : ''}" data-act="${{ gig: 'gigAsk', rehearsal: 'rehearseAsk', record: 'recordAsk', bandpromo: 'bandPromo', retreat: 'retreatAsk' }[type]}" data-id="${b.id}" ${off(why)}>${icon}<b>${title}</b>${busy ? `<small>${members.length === 1 ? 'Gerade beschäftigt.' : 'Die Band ist gerade beschäftigt.'}</small>` : hint}</button>`;
+    return `<button class="lb-act t-${type} ${busy ? 'idle' : ''} ${warn ? 'warn' : ''}" data-act="${{ gig: 'gigAsk', rehearsal: 'rehearseAsk', record: 'recordAsk', bandpromo: 'promoAsk', retreat: 'retreatAsk' }[type]}" data-id="${b.id}" ${off(why)}>${icon}<b>${title}</b>${busy ? `<small>${members.length === 1 ? 'Gerade beschäftigt.' : 'Die Band ist gerade beschäftigt.'}</small>` : hint}</button>`;
   }
   return `<a class="lb-act t-${type} ${warn ? 'warn' : ''}" href="#/band/${b.id}/${section}">${icon}<b>${title}</b>${hint}</a>`;
 }
@@ -864,6 +864,37 @@ defineActions({
       if (!row || row.getAttribute('aria-disabled') === 'true') return;
       modal.close();
       if (await mutate('bandRetreat', { bandId: b.id, option: row.dataset.option })) toast(`${who} ist weg: ${r.options[row.dataset.option].name}.`, 'ok');
+    });
+  },
+  /** Promo-Tour: erst fragen, mit Dauer und Wirkung, dann losschicken (wie Proben und Auszeit). */
+  promoAsk({ id }) {
+    const b = bandById(id);
+    const solo = b.memberIds.length === 1;
+    const who = whoOf(b);
+    const record = b.discography.find((r) => r.promoted);
+    const c = b.record.cycle;
+    const cycle = c && !c.done && c.promos.have < c.promos.need ? `<li>Zählt für die nächste Platte: schon <b>${fmt0(c.promos.have)} von ${fmt0(c.promos.need)}</b> Promo-Touren.</li>` : '';
+    const modal = openModal({
+      className: 'lb-ask',
+      html: `
+        <div class="lb-cap">Anordnung</div>
+        <h2>Promo-Tour für ${esc(b.name)}</h2>
+        <p class="muted">${esc(who)} ist <b>${mins(cat().rules.bandPromoSeconds)}</b> unterwegs: Radio, Zeitungen, Fans treffen. So lange gibt es keine anderen Anordnungen.</p>
+        <h3>Was es bringt</h3>
+        <ul class="lb-ask-list">
+          <li>${solo ? `${esc(who)} wird` : 'Alle in der Band werden'} bekannter: etwas mehr Ruhm.</li>
+          <li>${record ? `Schub in den Charts für „${esc(record.title)}“.` : 'Schub in den Charts, sobald es eine Platte gibt.'}</li>
+          ${cycle}${reactionLines(b, 'bandpromo')}
+        </ul>
+        <div class="dialog-actions">
+          <button class="btn ghost" data-cancel>Abbrechen</button>
+          <button class="btn primary" data-go>Losschicken</button>
+        </div>`,
+    });
+    modal.body.querySelector('[data-cancel]').addEventListener('click', () => modal.close());
+    modal.body.querySelector('[data-go]').addEventListener('click', async () => {
+      modal.close();
+      await actions.bandPromo({ id: String(b.id) });
     });
   },
   /** Probe: erst fragen, mit Dauer und Wirkung, dann starten. */

@@ -210,7 +210,7 @@ final class Present
                 'submissionListen' => Balance::SUBMISSIONS['listen'],
                 'postUnpack' => Balance::POST['unpack'],
                 'postRefresh' => Balance::POST['refresh'],
-                'assistantPerDay' => Balance::ASSISTANT['tiers'][1]['perDay'],
+                'assistSoon' => Balance::ASSISTANT['soon'],
                 'reactStep' => Balance::MOOD['reactStep'],
                 'moodGreen' => Balance::MOOD['green'],
                 'moodYellow' => Balance::MOOD['yellow'],

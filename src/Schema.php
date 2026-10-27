@@ -569,6 +569,14 @@ final class Schema
             [
                 'ALTER TABLE bands ADD COLUMN stage_order TEXT NULL',
             ],
+            // 47: Assistenz in Arbeitsgebieten: Kassetten in die Genre-Unterreiter gelegt (filed_at), vom Suchauftrag gefunden (found),
+            // Briefe vom Büro gelesen (read_at); der Suchauftrag des Labels
+            [
+                'ALTER TABLE submissions ADD COLUMN filed_at INTEGER NULL',
+                'ALTER TABLE submissions ADD COLUMN found INTEGER NOT NULL DEFAULT 0',
+                'ALTER TABLE mail ADD COLUMN read_at INTEGER NULL',
+                'ALTER TABLE labels ADD COLUMN assist_search TEXT NULL',
+            ],
         ];
     }
 }

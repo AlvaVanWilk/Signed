@@ -98,6 +98,7 @@ final class Api
         'mailDrop' => ['POST', true],
         'mailTest' => ['POST', true],
         'assistRules' => ['POST', true],
+        'assistSearch' => ['POST', true],
         'assistTask' => ['POST', true],
         'assistAdopt' => ['POST', true],
         'assistDismiss' => ['POST', true],
@@ -569,6 +570,13 @@ final class Api
     private function assistRules(array $in, Repo $repo): array
     {
         (new Assistant($repo))->setRules(is_array($in['rules'] ?? null) ? $in['rules'] : []);
+        return ['state' => State::build($repo)];
+    }
+
+    /** Suchauftrag für die Kassetten-Assistenz (search: null = nichts mehr suchen). */
+    private function assistSearch(array $in, Repo $repo): array
+    {
+        (new Assistant($repo))->setSearch(is_array($in['search'] ?? null) ? $in['search'] : null);
         return ['state' => State::build($repo)];
     }
 

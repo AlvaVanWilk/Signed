@@ -1,4 +1,4 @@
-import { instrumentIcon, photo } from '../cards.js';
+import { instrumentIcon, instrumentName, photo } from '../cards.js';
 import { app, bandById, cat, isBusy, liveMoney, managerById, musicianById, serverNow } from '../core.js';
 import { coverHtml } from '../play.js';
 import { INTERN_JOBS } from '../office.js';
@@ -7,7 +7,8 @@ import { esc, fmt0, fmt1, fmtGain, money, timeAgo } from '../ui.js';
 /**
  * Übersicht = das Büro des Labels. Oben die Zahlen, darunter (am Anfang) die ersten Schritte, dann was gerade läuft und was das Büro notiert hat,
  * das Plattenregal mit allen Platten und ihrem Chartplatz, der Zettel vom Schwarzen Brett und die Chronik.
- * Die Notizen zur Post schreibt nur, wer im Büro arbeitet (Praktikum oder Assistenz). Über die Bands schreiben ihre Manager; ohne Manager
+ * Die Notizen zur Post schreibt nur, wer im Büro arbeitet (Praktikum oder Assistenz), und jede Assistenz über ihr Gebiet: Post (was bald
+ * abläuft), Kassetten (was sie angehört und gefunden hat), Büro (Bewerbungen, Interview-Anfragen, Scout-Berichte). Über die Bands schreiben ihre Manager; ohne Manager
  * erfährt man nur, wer richtig unzufrieden ist.
  */
 
@@ -89,37 +90,56 @@ function firstSteps(s) {
 
 // ---------- Das Büro: Notizen von Praktikum und Assistenz ----------
 
-/** Was das Büro aufschreibt: wichtigste zuerst (rot), dann was wartet, dann Hinweise. */
+/**
+ * Was das Büro aufschreibt: wichtigste zuerst (rot), dann was wartet, dann Hinweise. Von Briefen erzählt nur das Büro (und nur, was es
+ * schon gelesen hat), von bald Ablaufendem nur die Post, vom Kassettenhören und vom Suchauftrag nur die Kassetten-Assistenz.
+ */
 function notes(s) {
   const out = [];
   const add = (level, html) => out.push({ level, html });
   const mail = s.mail ?? [];
-  if (!s.assistant?.press) {
-    for (const m of mail.filter((x) => x.kind === 'interview').sort((x, y) => x.expiresAt - y.expiresAt)) {
+  const areas = s.assistant?.areas ?? {};
+  const subs = s.submissions ?? [];
+  if (areas.office) {
+    for (const m of mail.filter((x) => x.kind === 'interview' && x.read).sort((x, y) => x.expiresAt - y.expiresAt)) {
       const w = musicianById(m.musicianId);
       if (w) add(m.expiresAt - serverNow() < 2 * 3600 ? 0 : 1, go('interview', `Interview-Anfrage für <b>${esc(w.firstName)}</b> (${esc(m.medium)}, ${left(m.expiresAt)})`));
     }
+    for (const m of mail.filter((x) => x.kind === 'report' && x.read && x.cards.some((c) => !c.signed))) {
+      add(1, go('demos', `<b>${esc(m.scoutName)}</b> ist zurück und stellt dir ${m.cards.length} Talente vor (${left(m.expiresAt)})`));
+    }
+    // Lehrer: wer sich beworben hat und bei wem das Instrument passt; wer zu niemandem passt, steht zusammen in einer Zeile.
+    const unfit = [];
+    for (const m of mail.filter((x) => x.kind === 'job' && x.read && x.role === 'teacher')) {
+      const fits = s.musicians.filter((x) => x.instruments.some((i) => i.type === m.instrument && i.skill < m.maxSkill));
+      if (fits.length) add(1, go('job', `<b>${esc(m.firstName)}</b> möchte ${esc(instrumentName(m.instrument))} unterrichten (+${m.gain} Können), passt zu ${fits.slice(0, 3).map((x) => esc(x.firstName)).join(', ')}.`));
+      else unfit.push(m);
+    }
+    if (unfit.length) add(3, go('job', `${unfit.length === 1 ? 'Eine Lehrkraft möchte' : `${unfit.length} Lehrkräfte möchten`} ${[...new Set(unfit.map((m) => instrumentName(m.instrument)))].map(esc).join(', ')} unterrichten, aber das spielt bei dir gerade niemand.`));
+    const jobs = mail.filter((x) => x.kind === 'job' && x.read && x.role !== 'teacher');
+    if (jobs.length) {
+      const names = jobs.slice(0, 3).map((m) => `${esc(m.firstName)} (${esc(cat().staffRoles[m.role]?.tiers[m.tier] ?? '')})`).join(', ');
+      add(2, go('job', `${jobs.length === 1 ? 'Eine Bewerbung' : `${jobs.length} Bewerbungen`}: ${names}${jobs.length > 3 ? ' …' : ''}`));
+    }
   }
-  for (const m of mail.filter((x) => x.kind === 'report' && x.cards.some((c) => !c.signed))) {
-    add(1, go('demos', `<b>${esc(m.scoutName)}</b> stellt dir ${m.cards.length} Talente vor (${left(m.expiresAt)})`));
+  if (areas.post) {
+    const soon = [...subs, ...mail].filter((x) => x.expiresAt - serverNow() < (cat().rules.assistSoon ?? 43200)).length;
+    if (soon) add(1, go('inbox', `${soon === 1 ? 'Eine Sache läuft' : `${soon} Sachen laufen`} bald ab (in den nächsten ${Math.round((cat().rules.assistSoon ?? 43200) / 3600)} Stunden).`));
   }
-  const jobs = mail.filter((x) => x.kind === 'job');
-  if (jobs.length) {
-    const names = jobs.slice(0, 3).map((m) => `${esc(m.firstName)} (${esc(cat().staffRoles[m.role]?.tiers[m.tier] ?? '')})`).join(', ');
-    add(2, go('job', `${jobs.length === 1 ? 'Eine Bewerbung' : `${jobs.length} Bewerbungen`}: ${names}${jobs.length > 3 ? ' …' : ''}`));
-  }
-  const unheard = (s.submissions ?? []).filter((x) => x.state === 'closed' && !x.saved).length;
-  const envelopes = [...(s.submissions ?? []), ...mail].filter((x) => x.state === 'envelope' && !x.saved).length;
-  if (envelopes) add(2, go('inbox', `${envelopes === 1 ? 'Ein Umschlag liegt' : `${envelopes} Umschläge liegen`} noch ungeöffnet im Eingang.`));
+  const unheard = subs.filter((x) => x.state === 'closed' && !x.saved).length;
+  const envelopes = [...subs, ...mail].filter((x) => x.state === 'envelope' && !x.saved).length;
+  if (envelopes && !areas.post) add(2, go('inbox', `${envelopes === 1 ? 'Ein Umschlag liegt' : `${envelopes} Umschläge liegen`} noch ungeöffnet im Eingang.`));
   for (const x of (s.assistant?.staff ?? []).filter((y) => y.intern && !y.ended)) {
     const todo = s.assistant.todo;
     add(2, x.job ? `<b>${esc(x.firstName)}</b> ${esc(INTERN_JOBS[x.job.kind]?.[1] ?? 'arbeitet')}, fertig in <span data-until="${x.job.until}"></span>.`
       : (todo.unpack || todo.listen || todo.sort ? go('inbox', `<b>${esc(x.firstName)}</b> langweilt sich und wartet auf einen Auftrag.`) : `<b>${esc(x.firstName)}</b> hat gerade nichts zu tun.`));
   }
-  const good = (s.submissions ?? []).filter((x) => x.state === 'open' && !x.saved && Math.max(...(x.members ?? [x]).map((m) => m.level ?? 0)) >= 1).length;
+  const found = subs.filter((x) => x.found).length;
+  if (found && areas.demos) add(0, go('saved', `${found === 1 ? 'Eine Kassette passt zu deiner Suche. Sie liegt' : `${found} Kassetten passen zu deiner Suche. Sie liegen`} bei den gemerkten.`));
+  const good = subs.filter((x) => x.state === 'open' && !x.saved && Math.max(...(x.members ?? [x]).map((m) => m.level ?? 0)) >= 1).length;
   if (good) add(1, go('demos', `${good === 1 ? 'Eine gute Kassette wartet' : `${good} gute Kassetten warten`} auf dich.`));
-  if (unheard && !s.assistant?.perDay) add(2, go('demos', `${unheard === 1 ? 'Eine Kassette ist' : `${unheard} Kassetten sind`} noch nicht angehört.`));
-  if (s.assistant?.perDay) add(3, `Heute ${s.assistant.today.opened} Kassetten angehört, ${s.assistant.today.dropped} weggeworfen.`);
+  if (unheard && !areas.demos) add(2, go('demos', `${unheard === 1 ? 'Eine Kassette ist' : `${unheard} Kassetten sind`} noch nicht angehört.`));
+  if (areas.demos) add(3, `Heute ${s.assistant.today.opened} Kassetten angehört, ${s.assistant.today.dropped} weggeworfen.`);
   for (const x of (s.scouts ?? []).filter((y) => !y.away) ) {
     if (!mail.some((m) => m.kind === 'report' && m.scoutName === x.firstName)) add(2, `<b>${esc(x.firstName)}</b> hat gerade nichts zu tun. Unter der Künstlerleiste kannst du den Scout losschicken.`);
   }
@@ -127,6 +147,7 @@ function notes(s) {
     add(1, x.ended ? go('inbox', `Das Praktikum von <b>${esc(x.firstName)}</b> ist vorbei. ${esc(x.firstName)} möchte gern bleiben: übernehmen oder verabschieden?`)
       : go('inbox', `Das Praktikum von <b>${esc(x.firstName)}</b> endet bald (${left(x.until)}). Danach kannst du ${esc(x.firstName)} übernehmen.`));
   }
+  if (!areas.office && mail.some((x) => ['job', 'interview', 'report'].includes(x.kind))) add(3, 'Von Bewerbungen und Interview-Anfragen erzählt dir eine Assistenz im Büro.');
   const c = (s.courses ?? [])[0];
   if (c) {
     const fits = c.candidates.filter((x) => !x.visited).map((x) => musicianById(x.musicianId)).filter(Boolean);
@@ -178,7 +199,7 @@ function office(s) {
     return `
       <section class="ov-panel ov-office ov-none ov-c-office">
         <h2>Das Büro</h2>
-        <p class="muted">Noch arbeitet niemand im Büro. Ein Praktikum oder eine Assistenz sortiert die Post und schreibt dir hier auf, was wichtig ist.</p>
+        <p class="muted">Noch arbeitet niemand im Büro. Ein Praktikum hilft dir auf Zuruf mit der Post. Eine Assistenz arbeitet von selbst in ihrem Gebiet (Post, Kassetten oder Büro) und schreibt dir hier auf, was wichtig ist.</p>
         ${go('job', 'Zu den Bewerbungen')}
       </section>`;
   }

@@ -1,7 +1,7 @@
 import { figure } from './figure.js';
 import { app, defineActions, rerender } from './core.js';
 import { esc, money, off } from './ui.js';
-import { genreName } from './cards.js';
+import { genreName, instrumentName } from './cards.js';
 
 /**
  * Die Poststelle des Labels als kleine Szene statt einer Kachel: Wand mit Fenster und Postfächern, vorn der Schreibtisch, dahinter stehen
@@ -91,19 +91,27 @@ const HELD = {
   unpack: `<svg viewBox="0 0 40 28"><rect x="2" y="2" width="36" height="24" rx="2" fill="#e9dcc0" ${st(2)}/><path d="M2 3 L20 16 L38 3" fill="none" ${st(2)}/></svg>`,
   listen: `<svg viewBox="0 0 40 28"><rect x="2" y="2" width="36" height="24" rx="4" fill="#2b2836" ${st(2)}/><rect x="7" y="6" width="26" height="8" rx="1.5" fill="#d8d2c4"/><circle cx="13" cy="20" r="3" fill="#c9a86a"/><circle cx="27" cy="20" r="3" fill="#c9a86a"/></svg>`,
   sort: `<svg viewBox="0 0 40 28"><rect x="6" y="2" width="30" height="20" rx="2" fill="#d8c6a2" ${st(2)}/><rect x="2" y="6" width="30" height="20" rx="2" fill="#f0e6d2" ${st(2)}/></svg>`,
+  read: `<svg viewBox="0 0 40 28"><rect x="6" y="1" width="28" height="26" rx="1.5" fill="#f4efe4" ${st(2)}/><path d="M11 8 H29 M11 13 H29 M11 18 H24" stroke="#8a8396" stroke-width="2" stroke-linecap="round"/></svg>`,
   coffee: `<svg viewBox="0 0 40 34"><path class="ps-steam" d="M14 9 C11 6 16 4 13 1 M22 9 C19 6 24 4 21 1" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="2" stroke-linecap="round"/><path d="M6 12 H30 V26 a6 6 0 0 1 -6 6 H12 a6 6 0 0 1 -6 -6 Z" fill="#cf7f9b" ${st(2)}/><path d="M30 15 a5 5 0 0 1 0 10" fill="none" ${st(2)}/></svg>`,
 };
 
+HELD.tape = HELD.listen;
+
+/** Was eine Assistenz bei welcher Arbeit in der Hand hat (Kassetten einsortieren: die Kassette, aber ohne Kopfhörer). */
+const DOING = { unpack: 'unpack', autosort: 'sort', listen: 'listen', file: 'tape', read: 'read' };
+
 /**
- * Was jemand gerade in der Hand hat: Das Praktikum zeigt seinen Zuruf; eine Assistenz mit Arbeitsgebiet die Kassette oder den
- * Interview-Brief, wenn es dafür gerade etwas gibt, sonst trinkt sie Kaffee. Wer gar nichts zu tun hat, hat nichts in der Hand.
+ * Was jemand gerade in der Hand hat: Das Praktikum zeigt seinen Zuruf; eine Assistenz mit Arbeitsgebiet das Stück, an dem sie gerade sitzt,
+ * und wenn gerade nichts da ist, trinkt sie Kaffee. Wer gar nichts zu tun hat, hat nichts in der Hand.
  */
-function heldOf(x, a) {
+function heldOf(x) {
   if (x.intern) return x.job ? x.job.kind : null;
-  if (x.task === 'demos') return a.todo.listen ? 'listen' : 'coffee';
-  if (x.task === 'presse') return (app.state.mail ?? []).some((m) => m.kind === 'interview') ? 'unpack' : 'coffee';
-  return null;
+  if (x.task === 'none') return null;
+  return DOING[x.doing] ?? 'coffee';
 }
+
+/** Die Kassetten-Assistenz wartet, wenn noch Umschläge zu sind und nichts Ausgepacktes zum Anhören da ist. */
+const waitsForPost = (x) => x.task === 'demos' && !x.doing && (app.state.submissions ?? []).some((y) => y.state === 'envelope');
 
 const name = (x) => esc(x.firstName);
 
@@ -138,14 +146,32 @@ export function rulesText(r) {
   return parts.length ? `Wirft weg: ${parts.join(', ')}.` : 'Wirft nichts weg.';
 }
 
-/** Sprechblase einer Assistenz: was sie laufend tut, ihr Arbeitsgebiet zum Umstellen. */
+/** Was der Suchauftrag sucht, in einem Satz. */
+export function searchText(q) {
+  if (!q) return 'Sucht nichts Bestimmtes.';
+  const what = [q.instrument ? instrumentName(q.instrument) : '', q.genre ? genreName(q.genre) : '', q.minLevel ? `ab Stufe ${q.minLevel}` : ''].filter(Boolean).join(', ');
+  return `Sucht: ${what}.`;
+}
+
+/** Die Arbeitsgebiete, kurz für die Knöpfe, und was die Assistenz darin sagt. */
+export const AREAS = {
+  none: ['Keins', 'Ich habe noch kein Arbeitsgebiet. Wo soll ich dir helfen?'],
+  post: ['Post', 'Ich packe die Umschläge aus und lege alles in den richtigen Reiter.'],
+  demos: ['Kassetten', 'Ich höre die Kassetten an und lege sie nach Genre in die Reiter.'],
+  office: ['Büro', 'Ich lese Bewerbungen und Anfragen und erzähle dir davon.'],
+};
+
+/** Sprechblase einer Assistenz: was sie in ihrem Gebiet tut, ihre Einstellungen, und das Gebiet zum Umstellen. */
 function assistantBubble(x, a) {
-  // Kurz, damit es in die Sprechblase passt (die langen Namen stehen in Catalog::STAFF_ROLES).
-  const tasks = { none: 'Nur Post', demos: 'Kassetten', presse: 'Interviews' };
-  const doing = { none: 'Was soll ich sonst machen?', demos: 'Dazu höre ich Kassetten an.', presse: 'Dazu sage ich Interviews zu.' }[x.task] ?? '';
-  return `<p>Ich packe die Post aus und sortiere sie. ${esc(doing)}${x.task === 'demos' ? `<small>Heute ${a.today.opened} angehört, ${a.today.dropped} weggeworfen. ${esc(rulesText(a.rules))}</small>` : ''}</p>
-    <div class="ps-say">${Object.entries(tasks).map(([k, label]) => `<button class="ps-pill ${x.task === k ? 'on' : ''}" data-act="assistTask" data-id="${x.id}" data-task="${k}">${esc(label)}</button>`).join('')}
-    ${x.task === 'demos' ? '<button class="ps-pill ghost" data-act="assistRulesAsk">Wegwerfen …</button>' : ''}</div>`;
+  const extra = x.task === 'demos'
+    ? `<small>${waitsForPost(x) ? 'Gerade warte ich, bis jemand die Umschläge auspackt. ' : ''}Heute ${a.today.opened} angehört, ${a.today.dropped} weggeworfen. ${esc(rulesText(a.rules))} ${esc(searchText(a.search))}</small>`
+    : x.task === 'office' ? `<small>Das steht dann auf der Übersicht. ${a.rules.accept ? 'Interviews sage ich selbst zu, sobald der Musiker frei ist.' : 'Interviews sagst du selbst zu.'}</small>`
+    : x.task === 'post' ? '<small>Was bald abläuft, schreibe ich dir auf die Übersicht.</small>' : '';
+  const settings = x.task === 'demos' ? '<button class="ps-pill ghost" data-act="assistRulesAsk">Wegwerfen …</button><button class="ps-pill ghost" data-act="assistSearchAsk">Suchen …</button>'
+    : x.task === 'office' ? `<button class="ps-pill ghost" data-act="assistAccept">${a.rules.accept ? 'Interviews mache ich selbst' : 'Interviews selbst zusagen'}</button>` : '';
+  return `<p>${esc(AREAS[x.task]?.[1] ?? '')}${extra}</p>
+    <div class="ps-say">${Object.entries(AREAS).map(([k, [label]]) => `<button class="ps-pill ${x.task === k ? 'on' : ''}" data-act="assistTask" data-id="${x.id}" data-task="${k}">${esc(label)}</button>`).join('')}
+    ${settings}</div>`;
 }
 
 /** Die ganze Szene. a = app.state.assistant (oder null: niemand da). */
@@ -153,7 +179,7 @@ export function officeScene(a, posts = 0) {
   const staff = (a?.staff ?? []).slice(0, 3);
   // Drei Ebenen mit denselben Spalten: Figuren hinter dem Tisch, der Tisch, davor Sprechblasen und Namensschilder.
   const people = staff.map((x) => {
-    const held = heldOf(x, a);
+    const held = heldOf(x);
     return `
     <div class="ps-col ${held && held !== 'coffee' ? 'busy' : ''}">
       <div class="ps-fig fig-stage idle"><div class="fig-member" style="--d:${(-((x.id * 7919) % 4300) / 1000).toFixed(2)}s">${figure(x.look, 'none', { bored: !held, phones: held === 'listen' })}</div>
@@ -163,13 +189,14 @@ export function officeScene(a, posts = 0) {
   const open = staff.some((x) => x.id === app.ui.psOpen) ? app.ui.psOpen : null;
   // Ohne Auftrag (Praktikum) oder ohne Arbeitsgebiet (Assistenz) sagt man es; beim Praktikum steht während der Arbeit die Restzeit
   // über dem Kopf. Eine Assistenz mit Arbeitsgebiet sagt nichts, auch wenn sie gerade Kaffee trinkt.
-  const hint = (x) => (x.intern ? (x.ended ? 'Darf ich bleiben?' : x.job ? `<span data-until="${x.job.until}"></span>` : 'Ich habe nichts zu tun.') : x.task === 'none' ? 'Ich habe keine feste Aufgabe.' : '');
+  const hint = (x) => (x.intern ? (x.ended ? 'Darf ich bleiben?' : x.job ? `<span data-until="${x.job.until}"></span>` : 'Ich habe nichts zu tun.')
+    : x.task === 'none' ? 'Ich habe keine feste Aufgabe.' : waitsForPost(x) ? 'Ich warte auf ausgepackte Kassetten.' : '');
   const front = staff.map((x) => `
     <div class="ps-col">
-      ${x.id === open ? `<div class="ps-bubble">${x.intern ? internBubble(x, a) : assistantBubble(x, a)}</div>`
+      ${x.id === open ? `<div class="ps-bubble ${x.intern ? '' : 'assist'}">${x.intern ? internBubble(x, a) : assistantBubble(x, a)}</div>`
     : hint(x) ? `<button class="ps-mini" data-act="psTalk" data-id="${x.id}" title="Mit ${name(x)} reden">${hint(x)}</button>` : ''}
       <button class="ps-hit" data-act="psTalk" data-id="${x.id}" title="Mit ${name(x)} reden" aria-label="Mit ${name(x)} reden"></button>
-      <button class="ps-name" data-act="psTalk" data-id="${x.id}">${name(x)}<small>· ${x.intern ? 'Praktikum' : 'Assistenz'}</small></button>
+      <button class="ps-name" data-act="psTalk" data-id="${x.id}">${name(x)}<small>· ${x.intern ? 'Praktikum' : x.task === 'none' ? 'Assistenz' : esc(AREAS[x.task]?.[0] ?? '')}</small></button>
     </div>`).join('');
   const intern = staff.find((x) => x.intern);
   const note = intern
@@ -177,7 +204,7 @@ export function officeScene(a, posts = 0) {
       ? `<div class="ps-note">Das Praktikum von <b>${name(intern)}</b> ist vorbei. Tipp ${name(intern)} an und sag, ob ${name(intern)} bleiben darf.</div>`
       : `<div class="ps-note"><b>${name(intern)}</b> ist noch <span data-until="${intern.until}"></span> im Praktikum. Danach kannst du ${name(intern)} übernehmen.</div>`
     : !staff.length
-      ? `<div class="ps-note ps-empty">Hier sitzt noch niemand. Ein <b>Praktikum</b> hilft dir auf Zuruf, eine <b>Assistenz</b> erledigt die Post von allein.<br>
+      ? `<div class="ps-note ps-empty">Hier sitzt noch niemand. Ein <b>Praktikum</b> hilft dir auf Zuruf, eine <b>Assistenz</b> arbeitet von allein in ihrem Gebiet.<br>
         <button class="ps-pill" data-act="subBox" data-key="job">Zu den Bewerbungen</button></div>`
       : '';
   return `<section class="ps-scene ${staff.length > 1 ? 'many' : ''}">${wall()}<div class="ps-row ps-people">${people}</div>${desk(posts)}<div class="ps-row ps-front">${front}</div>${note}</section>`;

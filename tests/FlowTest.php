@@ -2065,51 +2065,92 @@ test('Posteingang: Bewerber werden mit dem Erfolg besser (gesättigt); Assistenz
     $res = $p->post('mailHire', ['mailId' => $jobs[0]['mailId']]);
     checkEquals($money - Balance::ASSISTANT['tiers'][1]['price'], $res['state']['label']['money'], 'einmalig bezahlt');
     checkEquals('none', $res['state']['assistant']['staff'][0]['task'], 'fängt ohne Arbeitsgebiet an');
-    checkEquals(0, $res['state']['assistant']['perDay']);
-    $state = $p->post('assistTask', ['staffId' => $res['staffId'], 'task' => 'demos'])['state'];
-    checkEquals(50, $state['assistant']['perDay']);
+    checkEquals(['post' => false, 'demos' => false, 'office' => false], $res['state']['assistant']['areas']);
     checkApiError(fn () => $p->post('mailHire', ['mailId' => $jobs[0]['mailId']]), 'nicht mehr');
-    // Regeln gleich von Anfang an.
+    // Regeln gleich von Anfang an; was nicht mitkommt, bleibt.
     $p->post('assistRules', ['rules' => ['minLevel' => 2, 'genres' => ['jazz', 'nope'], 'kind' => 'any']]);
     checkEquals(['jazz'], $p->get('state')['assistant']['rules']['genres'], 'nur bekannte Genres');
-    $p->post('assistRules', ['rules' => ['minLevel' => 2, 'genres' => [], 'kind' => 'any']]);
-    // Ungehörte Kassetten: 50 am Tag, in einer Stunde also zwei; was nicht passt, fliegt raus.
-    $labelId = (int) $state['label']['id'];
+    $p->post('assistRules', ['rules' => ['genres' => []]]);
+    checkEquals(2, $p->get('state')['assistant']['rules']['minLevel'], 'bleibt');
+    // Kassetten: eine nach der anderen, so schnell wie man selbst; was nicht passt, fliegt raus.
+    $labelId = (int) $res['state']['label']['id'];
     $repo = new Signed\Game\Repo($db, $labelId);
     $db->exec('DELETE FROM submissions');
+    $db->exec('DELETE FROM mail');
     (new Signed\Game\Submissions($repo))->testClosed();
     (new Signed\Game\Submissions($repo))->testClosed();
-    $db->update('labels', ['submit_at' => Clock::now() + 10 * 86400, 'assist_at' => Clock::now()], ['id' => $labelId]);
-    Clock::advance(3600);
-    $stats = $p->get('state')['assistant']['today'];
-    checkEquals(2, $stats['opened'], 'eine Stunde: zwei Kassetten');
-    Clock::advance(10 * 3600);
+    $db->update('labels', ['submit_at' => Clock::now() + 10 * 86400, 'job_at' => Clock::now() + 10 * 86400, 'interview_at' => Clock::now() + 10 * 86400], ['id' => $labelId]);
+    $state = $p->post('assistTask', ['staffId' => $res['staffId'], 'task' => 'demos'])['state'];
+    checkEquals(true, $state['assistant']['areas']['demos']);
+    Clock::advance(Balance::SUBMISSIONS['listen'] * 2);
     $state = $p->get('state');
-    checkEquals([], array_values(array_filter($state['submissions'], static fn ($s) => $s['state'] === 'closed')), 'alle bearbeitet');
+    checkEquals(2, $state['assistant']['today']['opened'] + $state['assistant']['today']['dropped'], 'zwei Kassetten in zehn Sekunden');
+    checkEquals('listen', $state['assistant']['staff'][0]['doing'], 'sitzt an der nächsten');
+    Clock::advance(3600);
+    $state = $p->get('state');
+    checkEquals([], array_values(array_filter($state['submissions'], static fn ($s) => $s['state'] !== 'open')), 'alle bearbeitet');
     check(count($state['submissions']) >= 2, 'die guten bleiben');
     foreach ($state['submissions'] as $s) {
         $level = max(array_map(static fn ($m) => max(array_map(static fn ($i) => Signed\Game\Levels::forSkill($i['skill']), $m['instruments'])), $s['members'] ?? [$s]));
         check($level >= 2, 'nur ab Stufe 2 geblieben');
+        check($s['filed'], 'in den Genre-Unterreitern');
     }
     check($state['assistant']['today']['dropped'] >= 8, 'aussortiert: ' . $state['assistant']['today']['dropped']);
-    // Eine zweite für die Presse: sagt Interviews zu, sobald der Musiker frei ist; Kassetten hört dann nur noch die erste.
+    checkEquals(null, $state['assistant']['staff'][0]['doing'], 'nichts mehr da');
+    // Selbst angehört: Sie legt die Kassette nur noch in die Unterreiter (wirft sie nicht weg).
+    $db->exec('DELETE FROM submissions');
+    (new Signed\Game\Submissions($repo))->testFill();
+    Clock::advance(60);
+    $state = $p->get('state');
+    checkEquals(10, count(array_filter($state['submissions'], static fn ($s) => $s['filed'])), 'alles in den Unterreitern, nichts weggeworfen');
+    // Suchauftrag: Was passt, wird gemerkt und gemeldet.
+    $db->exec('DELETE FROM submissions');
+    $p->post('assistRules', ['rules' => ['minLevel' => 0]]);
+    $p->post('assistSearch', ['search' => ['instrument' => 'nope', 'genre' => '', 'minLevel' => 0]]);
+    checkEquals(null, $p->get('state')['assistant']['search'], 'ohne Vorgabe sucht sie nichts');
+    (new Signed\Game\Submissions($repo))->testClosed();
+    $card = json_decode((string) $db->value('SELECT card FROM submissions WHERE card NOT LIKE ? ORDER BY id LIMIT 1', ['%"kind":"band"%']), true);
+    $state = $p->post('assistSearch', ['search' => ['instrument' => $card['instr1'], 'genre' => $card['genres'][0], 'minLevel' => 0]])['state'];
+    checkEquals(['instrument' => $card['instr1'], 'genre' => $card['genres'][0], 'minLevel' => 0], $state['assistant']['search']);
+    Clock::advance(3600);
+    $found = array_values(array_filter($p->get('state')['submissions'], static fn ($s) => $s['found']));
+    check(count($found) >= 1, 'gefunden');
+    check($found[0]['saved'], 'gemerkt');
+    check((int) $db->value("SELECT COUNT(*) FROM history WHERE text LIKE '%zu deiner Suche passt%'") >= 1, 'meldet sich');
+    // Umschläge packt die Kassetten-Assistenz nicht selbst aus: Sie wartet, bis jemand auspackt.
+    $db->exec('DELETE FROM submissions');
+    (new Signed\Game\Submissions($repo))->testClosed();
+    $db->exec('UPDATE submissions SET unpacked_at = NULL, sorted_at = NULL');
+    Clock::advance(3600);
+    $state = $p->get('state');
+    checkEquals(7, count(array_filter($state['submissions'], static fn ($s) => $s['state'] === 'envelope')), 'alles noch zu');
+    // Eine zweite für die Post: packt aus und legt in die Reiter, danach hört die erste an.
+    $state = $p->post('mailTest')['state'];
     $second = array_values(array_filter($state['mail'], static fn ($m) => $m['kind'] === 'job' && $m['role'] === 'assistant'))[0];
     $staffId = $p->post('mailHire', ['mailId' => $second['mailId']])['staffId'];
-    checkEquals(50, $p->get('state')['assistant']['perDay'], 'die Neue hat noch kein Arbeitsgebiet');
-    $state = $p->post('assistTask', ['staffId' => $staffId, 'task' => 'presse'])['state'];
-    checkEquals(50, $state['assistant']['perDay']);
+    $p->post('assistTask', ['staffId' => $staffId, 'task' => 'post']);
     checkApiError(fn () => $p->post('assistTask', ['staffId' => $staffId, 'task' => 'kaffee']), 'Aufgabe');
-    // Wer gerade beim Interview ist, bekommt die nächste Zusage danach.
     Clock::advance(3600);
-    $p->get('state');
-    $state = $p->post('mailTest')['state'];
-    checkEquals([], array_values(array_filter($state['mail'], static fn ($m) => $m['kind'] === 'interview')), 'alle Interviews zugesagt');
-    check(count(array_filter($state['running'], static fn ($a) => $a['type'] === 'interview')) === count($state['musicians']), 'alle sind beim Interview');
+    $state = $p->get('state');
+    checkEquals([], array_values(array_filter([...$state['submissions'], ...$state['mail']], static fn ($s) => in_array($s['state'] ?? '', ['envelope', 'unpacking'], true) || !$s['sorted'])), 'ausgepackt und einsortiert');
+    checkEquals([], array_values(array_filter($state['submissions'], static fn ($s) => $s['state'] !== 'open')), 'und angehört');
+    // Büro: liest die Briefe und erzählt davon; Interviews sagt sie nur zu, wenn man es will, und nur, wer frei ist.
+    checkEquals(false, (bool) array_filter($state['mail'], static fn ($m) => $m['read'] ?? false), 'ohne Büro liest niemand');
+    $third = array_values(array_filter($state['mail'], static fn ($m) => $m['kind'] === 'job' && $m['role'] === 'assistant'))[0];
+    $staffId = $p->post('mailHire', ['mailId' => $third['mailId']])['staffId'];
+    $p->post('assistTask', ['staffId' => $staffId, 'task' => 'office']);
+    Clock::advance(3600);
+    $state = $p->get('state');
+    checkEquals([], array_values(array_filter($state['mail'], static fn ($m) => !$m['read'])), 'alles gelesen');
+    check((bool) array_filter($state['mail'], static fn ($m) => $m['kind'] === 'interview'), 'Interviews liegen noch da');
     $db->exec('UPDATE musicians SET busy_until = ? WHERE id = ?', [Clock::now() + 9999, $state['musicians'][0]['id']]);
-    Clock::advance(3600);
-    $p->get('state');
-    $state = $p->post('mailTest')['state'];
+    $state = $p->post('assistRules', ['rules' => ['accept' => true]])['state'];
     checkEquals(1, count(array_filter($state['mail'], static fn ($m) => $m['kind'] === 'interview')), 'wer unterwegs ist, wartet');
+    check(count(array_filter($state['running'], static fn ($a) => $a['type'] === 'interview')) === count($state['musicians']) - 1, 'die anderen sind beim Interview');
+    checkEquals(true, Assistant::fits(['instr1' => 'drums', 'skill1' => 40.0, 'instr2' => null, 'skill2' => null, 'genres' => ['metal']], ['instrument' => 'drums', 'genre' => 'metal', 'minLevel' => 1]));
+    checkEquals(false, Assistant::fits(['instr1' => 'drums', 'skill1' => 20.0, 'instr2' => null, 'skill2' => null, 'genres' => ['metal']], ['instrument' => 'drums', 'genre' => '', 'minLevel' => 1]));
+    checkEquals(false, Assistant::fits(['instr1' => 'guitar', 'skill1' => 90.0, 'instr2' => 'drums', 'skill2' => 10.0, 'genres' => ['metal']], ['instrument' => 'drums', 'genre' => '', 'minLevel' => 1]), 'zählt das gesuchte Instrument');
+    checkEquals(true, Assistant::fits(['kind' => 'band', 'members' => [['instr1' => 'bass', 'skill1' => 10.0, 'genres' => ['pop']], ['instr1' => 'drums', 'skill1' => 10.0, 'genres' => ['pop']]]], ['instrument' => 'drums', 'genre' => 'pop', 'minLevel' => 0]));
     checkEquals(true, Assistant::matches(['kind' => 'band', 'members' => [['skill1' => 70.0, 'genres' => ['rock']], ['skill1' => 10.0, 'genres' => ['pop']]]], ['minLevel' => 2, 'genres' => ['pop'], 'kind' => 'band']));
     checkEquals(false, Assistant::matches(['skill1' => 70.0, 'genres' => ['rock']], ['minLevel' => 2, 'genres' => ['pop'], 'kind' => 'any']));
     checkEquals(false, Assistant::matches(['skill1' => 30.0, 'genres' => ['rock']], ['minLevel' => 1, 'genres' => [], 'kind' => 'solo']));
@@ -2352,7 +2393,7 @@ test('Praktikum: günstig, sortiert nur die Post, lässt sich erst nach den sieb
     $money = $state['label']['money'];
     $state = $p->post('mailHire', ['mailId' => $intern['mailId']])['state'];
     checkEquals($money - Balance::INTERN['price'], $state['label']['money']);
-    checkEquals(0, $state['assistant']['perDay'], 'hört keine Kassetten an');
+    checkEquals(['post' => false, 'demos' => false, 'office' => false], $state['assistant']['areas'], 'arbeitet nur auf Zuruf');
     checkEquals('post', $state['assistant']['staff'][0]['task']);
     checkEquals(true, $state['assistant']['staff'][0]['intern']);
     $id = $state['assistant']['staff'][0]['id'];
@@ -2369,7 +2410,7 @@ test('Praktikum: günstig, sortiert nur die Post, lässt sich erst nach den sieb
     $state = $p->post('assistAdopt', ['staffId' => $id])['state'];
     checkEquals(false, $state['assistant']['staff'][0]['intern']);
     checkEquals('none', $state['assistant']['staff'][0]['task']);
-    checkEquals(50, $p->post('assistTask', ['staffId' => $id, 'task' => 'demos'])['state']['assistant']['perDay']);
+    checkEquals(true, $p->post('assistTask', ['staffId' => $id, 'task' => 'demos'])['state']['assistant']['areas']['demos']);
     Clock::advance(30 * 86400);
     checkEquals(1, count($p->get('state')['assistant']['staff']), 'bleibt');
     // Ein zweites Praktikum ohne Antwort geht nach der Bedenkzeit.
@@ -2505,12 +2546,17 @@ test('Umschläge: Praktikum packt auf Zuruf aus, hört an, sortiert in die Fäch
     $state = $p->post('postMove', ['table' => 's', 'id' => $sid, 'box' => 'inbox'])['state'];
     checkEquals('inbox', $state['submissions'][0]['box']);
     checkEquals(1, $state['assistant']['todo']['sort']);
-    // Übernehmen (nach dem Praktikum): bekommt einen Nachnamen und sieht erwachsen aus; packt ab jetzt laufend aus und sortiert.
+    // Übernehmen (nach dem Praktikum): bekommt einen Nachnamen und sieht erwachsen aus; im Gebiet Post packt sie laufend aus und sortiert.
     $db->exec('UPDATE staff SET busy_until = ? WHERE id = ?', [Clock::now() - 1, $id]);
     $state = $p->post('assistAdopt', ['staffId' => $id])['state'];
     check($state['assistant']['staff'][0]['lastName'] !== '', 'mit Nachnamen');
     check(!isset($state['assistant']['staff'][0]['look']['young']), 'erwachsen');
-    $db->exec('UPDATE submissions SET unpacked_at = NULL, sorted_at = NULL');
+    $db->exec('UPDATE submissions SET unpacked_at = NULL, sorted_at = NULL, box = NULL');
+    $p->post('assistTask', ['staffId' => $id, 'task' => 'post']);
+    Clock::advance(Balance::POST['unpack']);
+    $state = $p->get('state');
+    checkEquals(1, count(array_filter($state['submissions'], static fn ($x) => !in_array($x['state'], ['envelope', 'unpacking'], true))), 'erst einer ausgepackt');
+    Clock::advance(3600);
     $state = $p->get('state');
     checkEquals([], array_values(array_filter($state['submissions'], static fn ($x) => in_array($x['state'], ['envelope', 'unpacking'], true) || !$x['sorted'])), 'Assistenz packt aus und sortiert');
 });

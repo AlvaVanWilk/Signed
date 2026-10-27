@@ -537,14 +537,17 @@ setInterval(() => {
   const due = app.state.running.some((a) => a.endsAt <= serverNow());
   // Eine gesichtete Kassette soll sich sofort öffnen: kurz nach dem Ablauf (mit Reserve für die Uhr) schnell und wiederholt nachfragen.
   const now0 = serverNow();
-  const tapeDone = (app.state.submissions ?? []).some((x) => x.state === 'listening' && x.opensAt + 0.4 <= now0)
-    // Auch Umschläge (selbst oder vom Praktikum ausgepackt) und ein fertiges Praktikum zeigen sich sofort.
-    || [...(app.state.submissions ?? []), ...(app.state.mail ?? [])].some((x) => x.state === 'unpacking' && x.unpacksAt + 0.4 <= now0)
-    // Das Praktikum geht Stück für Stück weiter: nachfragen, wenn das aktuelle Stück fertig ist.
-    || (app.state.assistant?.staff ?? []).some((x) => (x.job && (x.job.next || x.job.until) + 0.4 <= now0)
-      // Ende des Praktikums (dann fragt es, ob es bleiben darf) und Ende der Bedenkzeit
-      || (x.intern && ((!x.ended && x.until + 0.4 <= now0) || x.leaves + 0.4 <= now0)));
-  if (tapeDone && Date.now() - lastTapeRefresh > 700) {
+  // Eigene Kassetten und Umschläge zeigen sich sofort. Was Praktikum und Assistenz tun, zeigt sich laufend nur im Posteingang und
+  // höchstens alle paar Sekunden (sonst würde ständig neu gezeichnet).
+  const inbox = location.hash.startsWith('#/einsendungen');
+  const post = [...(app.state.submissions ?? []), ...(app.state.mail ?? [])];
+  const done = (x) => (x.state === 'listening' && x.opensAt + 0.4 <= now0) || (x.state === 'unpacking' && x.unpacksAt + 0.4 <= now0);
+  const ownDone = post.some((x) => done(x) && !x.byIntern)
+    // Ende des Praktikums (dann fragt es, ob es bleiben darf) und Ende der Bedenkzeit
+    || (app.state.assistant?.staff ?? []).some((x) => x.intern && ((!x.ended && x.until + 0.4 <= now0) || x.leaves + 0.4 <= now0 || (x.job && x.job.until + 0.4 <= now0)));
+  const staffDone = post.some((x) => done(x) && x.byIntern)
+    || (app.state.assistant?.staff ?? []).some((x) => (x.job && (x.job.next || x.job.until) + 0.4 <= now0) || (x.doingUntil && x.doingUntil + 0.4 <= now0));
+  if ((ownDone && Date.now() - lastTapeRefresh > 700) || (staffDone && inbox && Date.now() - lastTapeRefresh > 3000)) {
     lastTapeRefresh = Date.now();
     refresh();
   }

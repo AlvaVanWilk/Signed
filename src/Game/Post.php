@@ -11,8 +11,9 @@ use Signed\Rng;
  * Post im Posteingang (Kassetten in `submissions`, Briefe in `mail`): Alles kommt in Umschlägen und landet im Eingang.
  * Auspacken dauert ein paar Sekunden (Balance::POST), selbst oder per Praktikum (gleich schnell, aber nebenbei). Das Praktikum arbeitet nur
  * auf Zuruf, eine Sache auf einmal (Briefe öffnen, Demos anhören oder Post sortieren), nur an dem, was gerade da liegt, das Neueste zuerst,
- * und lässt sich abbrechen. Eine Assistenz packt laufend aus
- * und sortiert. Von Hand kann man alles in ein anderes Fach ziehen (`box`, überstimmt die Sortierung).
+ * und lässt sich abbrechen. Eine Assistenz arbeitet laufend in ihrem Arbeitsgebiet (Assistant::run), ebenfalls Stück für Stück, das Älteste
+ * zuerst. Wer gerade an einem Stück sitzt, steht in `worker` ('intern' oder 'a' + Nummer der Assistenz; selbst: leer).
+ * Von Hand kann man alles in ein anderes Fach ziehen (`box`, überstimmt die Sortierung).
  */
 final class Post
 {
@@ -78,29 +79,38 @@ final class Post
         $db->update($table, ['unpacked_at' => $now + Balance::POST['unpack'], 'worker' => null], ['id' => $id]);
     }
 
-    /** Assistenz: Alles, was kommt, ist sofort ausgepackt und in die Fächer sortiert. */
-    public function autoSort(int $now): void
-    {
-        foreach (self::TABLES as $t) {
-            $this->repo->db->exec("UPDATE $t SET unpacked_at = ? WHERE label_id = ? AND unpacked_at IS NULL", [$now - 1, $this->repo->labelId]);
-            $this->repo->db->exec("UPDATE $t SET sorted_at = ? WHERE label_id = ? AND sorted_at IS NULL AND unpacked_at <= ?", [$now - 1, $this->repo->labelId, $now]);
-        }
-    }
-
     /** Die Fächer, in die man von Hand ziehen kann ('saved' = merken). */
     public const BOXES = ['inbox', 'demos', 'interview', 'job', 'saved'];
 
-    /** Spalte, Dauer je Stück und Text, wenn nichts da ist: je Zuruf ans Praktikum. */
+    /** Spalte und Text, wenn nichts da ist: je Zuruf ans Praktikum. */
     private const JOBS = [
         'unpack' => ['unpacked_at', 'Gerade liegt kein ungeöffneter Brief da.'],
         'listen' => ['opened_at', 'Gerade liegt keine ungehörte Kassette da.'],
         'sort' => ['sorted_at', 'Im Eingang liegt nichts zum Sortieren.'],
     ];
 
-    /** Sekunden je Stück für diesen Zuruf. */
+    /**
+     * Arbeit der Assistenz: Spalte, die das Stück als erledigt markiert, und ab wann es dafür bereit liegt. `autosort` legt nur, was noch nie
+     * sortiert wurde, in die Reiter (was man von Hand in den Eingang zurückgelegt hat, bleibt dort); `file` legt selbst angehörte Kassetten
+     * in die Genre-Unterreiter; `read` = einen Brief lesen (fürs Büro).
+     */
+    private const STAFF_JOBS = [
+        'unpack' => ['unpacked_at', 'created_at'],
+        'autosort' => ['sorted_at', 'unpacked_at'],
+        'listen' => ['opened_at', 'unpacked_at'],
+        'file' => ['filed_at', 'opened_at'],
+        'read' => ['read_at', 'unpacked_at'],
+    ];
+
+    /** Sekunden je Stück für diesen Zuruf (oder diese Arbeit der Assistenz). */
     public static function seconds(string $job): int
     {
-        return $job === 'listen' ? Balance::SUBMISSIONS['listen'] : Balance::POST[$job];
+        return match ($job) {
+            'listen' => Balance::SUBMISSIONS['listen'],
+            'autosort' => Balance::POST['sort'],
+            'file', 'read' => Balance::ASSISTANT['seconds'][$job],
+            default => Balance::POST[$job],
+        };
     }
 
     /** Bedingung, unter der ein Stück für diesen Zuruf (noch) zu tun ist, zur Zeit ? (zweimal: Ablauf, Zeitpunkt). */
@@ -110,7 +120,10 @@ final class Post
             'unpack' => 'expires_at > ? AND unpacked_at IS NULL AND created_at <= ?',
             // Sortieren kann man nur Ausgepacktes, und nur, was im Eingang liegt (auch von Hand zurückgelegtes).
             'sort' => "expires_at > ? AND unpacked_at <= ? AND saved = 0 AND ((box IS NULL AND sorted_at IS NULL) OR box = 'inbox')",
+            'autosort' => 'expires_at > ? AND unpacked_at <= ? AND saved = 0 AND box IS NULL AND sorted_at IS NULL',
             'listen' => $table === 'submissions' ? 'expires_at > ? AND unpacked_at <= ? AND opened_at IS NULL' : null,
+            'file' => $table === 'submissions' ? 'expires_at > ? AND opened_at <= ? AND filed_at IS NULL' : null,
+            'read' => $table === 'mail' ? 'expires_at > ? AND unpacked_at <= ? AND read_at IS NULL' : null,
             default => null,
         };
     }
@@ -154,7 +167,7 @@ final class Post
     }
 
     /** Das nächste Stück anfangen (um $at): fertig um …, oder null, wenn es inzwischen jemand anders erledigt hat (oder es weg ist). */
-    public function step(string $job, array $item, int $at): ?int
+    public function step(string $job, array $item, int $at, string $worker = 'intern'): ?int
     {
         [$table, $id] = $item;
         $where = self::open($job, $table);
@@ -162,19 +175,55 @@ final class Post
             return null;
         }
         $end = $at + self::seconds($job);
-        $this->repo->db->update($table, [self::JOBS[$job][0] => $end, 'worker' => 'intern'] + ($job === 'sort' ? ['box' => null] : []), ['id' => $id]);
+        $column = (self::JOBS[$job] ?? self::STAFF_JOBS[$job])[0];
+        $this->repo->db->update($table, [$column => $end, 'worker' => $worker] + ($job === 'sort' ? ['box' => null] : []), ['id' => $id]);
         return $end;
     }
 
-    /** Zuruf abbrechen: Was das Praktikum noch nicht fertig hat, bleibt liegen wie vorher; Fertiges bleibt fertig. */
-    public function cancel(int $now): void
+    /** Aufhören: Was diese Hilfe (Praktikum oder Assistenz) noch nicht fertig hat, liegt wieder da wie vorher; Fertiges bleibt fertig. */
+    public function cancel(int $now, string $worker = 'intern'): void
     {
         $db = $this->repo->db;
         foreach (self::TABLES as $t) {
-            foreach ($t === 'submissions' ? ['unpacked_at', 'opened_at', 'sorted_at'] : ['unpacked_at', 'sorted_at'] as $column) {
-                $db->exec("UPDATE $t SET $column = NULL WHERE label_id = ? AND worker = 'intern' AND $column > ?", [$this->repo->labelId, $now]);
+            foreach ($t === 'submissions' ? ['unpacked_at', 'opened_at', 'sorted_at', 'filed_at'] : ['unpacked_at', 'sorted_at', 'read_at'] as $column) {
+                $db->exec("UPDATE $t SET $column = NULL WHERE label_id = ? AND worker = ? AND $column > ?", [$this->repo->labelId, $worker, $now]);
             }
         }
+    }
+
+    /** Das älteste Stück, das um $t für diese Arbeit der Assistenz bereit liegt: [Tabelle, ID] oder null. */
+    public function oldest(string $job, int $t): ?array
+    {
+        $best = null;
+        foreach (self::TABLES as $table) {
+            $where = self::open($job, $table);
+            if ($where === null) {
+                continue;
+            }
+            $r = $this->repo->db->one("SELECT id, created_at FROM $table WHERE label_id = ? AND $where ORDER BY created_at, id LIMIT 1", [$this->repo->labelId, $t, $t]);
+            if ($r !== null && ($best === null || (int) $r['created_at'] < $best[2])) {
+                $best = [$table, (int) $r['id'], (int) $r['created_at']];
+            }
+        }
+        return $best === null ? null : [$best[0], $best[1]];
+    }
+
+    /** Wann (nach $t, bis $until) frühestens wieder etwas für diese Arbeit bereit liegt, nach dem, was man jetzt schon weiß; sonst null. */
+    public function readyAt(string $job, int $t, int $until): ?int
+    {
+        $ready = self::STAFF_JOBS[$job][1];
+        $min = null;
+        foreach (self::TABLES as $table) {
+            $where = self::open($job, $table);
+            if ($where === null) {
+                continue;
+            }
+            $v = $this->repo->db->value("SELECT MIN($ready) FROM $table WHERE label_id = ? AND $where AND $ready > ?", [$this->repo->labelId, $t, $until, $t]);
+            if ($v !== null && ($min === null || (int) $v < $min)) {
+                $min = (int) $v;
+            }
+        }
+        return $min;
     }
 
     /** Von Hand in ein Fach ziehen (auch zurück in den Eingang oder zu den Gemerkten). */

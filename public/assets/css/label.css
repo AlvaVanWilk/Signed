@@ -1371,3 +1371,29 @@ body { background: radial-gradient(1100px 520px at 50% -12%, rgba(255, 181, 71, 
 .lb-sortbox select { padding: 6px 10px; border-radius: 999px; border: 1px solid var(--lb-line); background: var(--lb-card); color: var(--lb-text); font: inherit; font-size: .84rem; }
 .lb-pick-row.on { border-color: var(--brand-a, #2ec4b6); box-shadow: 0 0 0 1px var(--brand-a, #2ec4b6) inset; }
 .lb-rules-now { margin: 12px 0 0; font-weight: 700; }
+
+/* Posteingang: Genre-Unterreiter der Kassetten-Assistenz und die Markierung „gefunden“ (Suchauftrag) */
+.lb-subtabs button { display: inline-flex; align-items: center; gap: 5px; }
+.lb-subtabs button i { font-style: normal; color: var(--g, currentColor); display: inline-flex; }
+.lb-subtabs button i svg { width: 15px; height: 15px; }
+.lb-subtabs button small { font-weight: 600; opacity: .7; }
+.lb-found { font-size: .62rem; font-weight: 800; letter-spacing: .06em; padding: 1px 6px; border-radius: 4px; background: var(--brand-b); color: #1d1a2a; pointer-events: none; }
+
+/* Sprechblase der Assistenz: breiter (Gebiete und Einstellungen), darf über die Szene hinausragen; ganz rechts öffnet sie nach links */
+.ps-wall { border-radius: 15px; }
+.ps-scene:has(.ps-bubble) { overflow: visible; z-index: 6; }
+.ps-scene:has(.ps-bubble) .ps-desk { clip-path: inset(-120px 0 0 0 round 0 0 15px 15px); }
+.ps-bubble.assist, .ps-scene.many .ps-bubble.assist { width: 300px; max-width: 300px; }
+.ps-scene.many .ps-col:last-child .ps-bubble.assist { left: auto; right: calc(100% - 20px); }
+.ps-scene.many .ps-col:last-child .ps-bubble.assist::before { left: auto; right: -9px; border-right: 0; border-left: 9px solid #f6f0e2; }
+.ps-front .ps-col:has(.ps-bubble) { z-index: 2; }
+@media (min-width: 701px) and (max-width: 1100px) {
+  .ps-scene.many .ps-col:not(:first-child) .ps-bubble.assist { left: auto; right: calc(100% - 20px); }
+  .ps-scene.many .ps-col:not(:first-child) .ps-bubble.assist::before { left: auto; right: -9px; border-right: 0; border-left: 9px solid #f6f0e2; }
+}
+/* Handy: Die Sprechblase steht als Zettel unten am Bildschirm, damit nichts abgeschnitten wird; die Namensschilder ohne Gebiet. */
+@media (max-width: 700px) {
+  .ps-bubble.assist, .ps-scene.many .ps-bubble.assist, .ps-scene.many .ps-col .ps-bubble.assist { position: fixed; left: 12px; right: 12px; top: auto; bottom: 12px; width: auto; max-width: none; z-index: 60; }
+  .ps-bubble.assist::before { display: none; }
+  .ps-name small { display: none; }
+}

@@ -326,19 +326,32 @@ das überstimmt die Sortierung (`Post::move`, Spalte `box`).
   **Übernehmen geht erst nach den 7 Tagen:** Dann hört es auf zu arbeiten (ein laufender Auftrag endet, der Rest liegt wieder da), meldet sich
   einmal („möchte gern bleiben“) und wartet einen Tag (`Balance::INTERN['decide']`) auf eine Antwort: für 400 ₲ als Assistenz **übernehmen**
   (bekommt einen Nachnamen und sieht erwachsen aus) oder **verabschieden** (dann kann ein neues Praktikum kommen). Ohne Antwort geht es.
-- **Assistenz** (gebaut, `Assistant`): einmalig bezahlt (400 ₲). Jede **packt laufend alle Post aus und sortiert sie** in die Fächer und schreibt
-  Notizen auf die Übersicht. Dazu ein **Arbeitsgebiet**, jederzeit umstellbar: keins (so fangen neue an), **Kassetten anhören** (50 am Tag,
-  wirft nach den Regeln weg: ab Können-Stufe, Genres, Einzeln/Band) oder **Presse** (sagt Interview-Anfragen zu, sobald der Musiker frei ist).
-  Mehrere lassen sich einstellen.
+- **Assistenz** (gebaut, `Assistant`): einmalig bezahlt (400 ₲). Jede hat **ein Arbeitsgebiet** (jederzeit umstellbar, neue fangen ohne an) und
+  arbeitet darin **laufend von selbst**, aber **Stück für Stück und so schnell wie man selbst** (Umschlag 2 s, einsortieren 1 s, Kassette 5 s,
+  Brief lesen 5 s; `Balance::ASSISTANT`), das Älteste zuerst, auch offline (höchstens vier Tage). Nichts passiert auf einen Schlag. Gleichwertig
+  sind die Gebiete über den Nutzen, nicht über die Menge (Kassetten sind die meiste Arbeit):
+  - **Post**: packt Umschläge aus und legt alles in den richtigen Reiter (Demos, Anfragen, Bewerbungen); was man von Hand in den Eingang
+    zurücklegt, bleibt dort. Schreibt auf die Übersicht, was in den nächsten 12 Stunden abläuft.
+  - **Kassetten**: hört ausgepackte Kassetten an (Umschläge packt sie nicht aus: ohne Post-Assistenz wartet sie, „Ich warte auf ausgepackte
+    Kassetten.“) und legt sie in **Genre-Reiter**; selbst Angehörtes legt sie dort auch hinein (1 s). Wirft nach Regel weg (Standard: nichts).
+    **Suchauftrag** („Suchen …“: Instrument, Genre, ab Stufe; bei Bands reicht ein Mitglied): Passt eine Kassette, merkt sie sie (dann wirft sie
+    niemand weg), markiert sie „gefunden“ und meldet sich in der Chronik und auf der Übersicht.
+  - **Büro**: liest Bewerbungen, Interview-Anfragen und Scout-Berichte und erzählt auf der Übersicht davon (Lehrkräfte einzeln, mit wem es
+    passt). Auf Wunsch („Interviews selbst zusagen“) sagt sie gelesene Interview-Anfragen zu, sobald der Musiker frei ist.
+  Mehrere im selben Gebiet teilen sich die Arbeit. Alte Aufgaben: „Presse“ wurde Büro, „Kassetten anhören“ Kassetten.
   **Wegwerfen ist eine Wahl** („Wegwerfen …“ in der Sprechblase): Standard „Nichts wegwerfen“; nur wer „Unpassendes gleich wegwerfen“ wählt,
   stellt Stufe, Genres und Einzeln/Band ein. Es betrifft nur, was sie neu anhört; Angehörtes und Gemerktes bleibt. Die Sprechblase sagt, was gilt.
-  **Mit einer Assistenz kann man im Posteingang nach Genre filtern und sortieren** (eigene Reihenfolge, Neueste, Stufe, Können), wie in der
-  Musiker-Übersicht; beim Genre-Filter nach den übrigen Genres gruppiert. Ungehörte Kassetten haben noch kein Genre. Solange gefiltert oder
-  sortiert ist, lässt sich nur auf Reiter ziehen, nicht in der Reihe umstellen. Ohne Assistenz ist der Knopf grau, mit Grund.
+  **Genre-Reiter**: Mit einer Kassetten-Assistenz hat das Fach „Demos“ Unterreiter: Alle, Ungehört und je Genre (nur, was sie angehört und
+  einsortiert hat; wer mehrere Genres hat, liegt in mehreren). In jedem lässt sich sortieren (eigene Reihenfolge, im Genre-Reiter nach den
+  übrigen Genres gruppiert; Neueste, Stufe, Können). Solange ein Unterreiter oder eine Sortierung gilt, lässt sich nur auf Reiter ziehen.
+  Ohne Kassetten-Assistenz gibt es dort den Filter nach Stufen, der Knopf „Genre-Reiter und Sortieren“ ist grau, mit Grund.
 - **Poststelle** (gebaut, `office.js`): Oben im Posteingang eine Szene statt einer Kachel: Wand mit Fenster, Postfächern, Uhr und Lampe, vorn
   der Schreibtisch mit Namensschildern; Praktikum und Assistenzen stehen als Figuren dahinter. Ein Praktikum ohne Auftrag sagt „Ich habe
   nichts zu tun.“, eine Assistenz ohne Arbeitsgebiet „Ich habe keine feste Aufgabe.“ (beide schauen gelangweilt); beim Praktikum steht während der Arbeit die Restzeit über dem Kopf, und es hält
-  Brief, Kassette oder Stapel in der Hand; wer Demos hört (Praktikum oder Assistenz), trägt dabei Kopfhörer. Eine Assistenz mit Arbeitsgebiet sagt nichts; gibt es gerade nichts dafür, trinkt sie Kaffee.
+  Brief, Kassette oder Stapel in der Hand; wer Demos hört (Praktikum oder Assistenz), trägt dabei Kopfhörer. Eine Assistenz mit Arbeitsgebiet hält,
+  woran sie gerade sitzt (Umschlag, Stapel, Kassette, Brief) und sagt nichts; gibt es gerade nichts dafür, trinkt sie Kaffee. Auf dem Namensschild
+  steht ihr Gebiet. Ihre Sprechblase ist breiter, öffnet rechts nach links und steht auf dem Handy als Zettel unten am Bildschirm.
+  Im Posteingang fragt das Spiel alle paar Sekunden nach, damit man sie arbeiten sieht (anderswo nicht).
   Antippen öffnet die Sprechblase mit Zurufen, Arbeitsgebiet, Regeln und Abbrechen; die Restzeit des Praktikums steht auf einem Zettel am Tisch.
   Ist das Praktikum vorbei, fragt es „Darf ich bleiben?“; in der Sprechblase stehen dann „Übernehmen“ und „Verabschieden“.
 - **Scout-Karte** (gebaut): Der eingestellte Scout steht unter der Künstlerleiste: losschicken, Countdown, danach „Ansehen“ für den Bericht.
@@ -482,8 +495,10 @@ als Grundlage. Einzelne Wahlen verändern zum Beispiel Tempo-Gefühl, Akkordfolg
 - **Erste Schritte** mit Fortschritt (Kassette anhören, Büro besetzen, Instrument kaufen, proben, Auftritt, Platte, Scout); verschwindet, wenn alles einmal gemacht ist.
 - **Notizen der Manager**: je Manager, was seine Leute brauchen (siehe Manager). Ohne Manager stehen dort nur die, die richtig unzufrieden
   sind, mit ihrem Wunsch, und wer noch keinen Manager hat.
-- **Notizen vom Büro**, von der Assistenz (das Praktikum meldet nur, ob es beschäftigt ist oder sich langweilt), wichtigste zuerst (rot, gelb, Rest):
-  Interview-Anfragen (ohne Presse-Assistenz), Scout-Berichte, Bewerbungen, gute und ungehörte Kassetten, ein Praktikum, das bald endet, der
+- **Notizen vom Büro**, von der Assistenz (das Praktikum meldet nur, ob es beschäftigt ist oder sich langweilt), wichtigste zuerst (rot, gelb, Rest),
+  je nach Gebiet: Büro (gelesene Interview-Anfragen, Scout-Berichte, Lehrkräfte einzeln mit passenden Musikern, übrige Bewerbungen), Post (was
+  bald abläuft; ohne Post: ungeöffnete Umschläge), Kassetten (Funde des Suchauftrags, heute angehört und weggeworfen; ohne: ungehörte Kassetten);
+  dazu gute Kassetten, ein Praktikum, das bald endet, der
   Kurs des Tages. Ohne Büro steht dort nur, dass niemand da ist.
 - **Gerade los**: alles, was läuft, nach Ende sortiert (Proben, Auftritte, Studio, Promo, Interviews, Scout unterwegs, Lehrer und Coaches).
 - **Schwarzes Brett** (der heutige Kurs als Zettel, mit „hinschicken“), **Chronik** (die letzten zehn Einträge) und das **Plattenregal**

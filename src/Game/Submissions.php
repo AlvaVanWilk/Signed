@@ -165,17 +165,19 @@ final class Submissions
     {
         $rows = $this->repo->db->all('SELECT * FROM submissions WHERE label_id = ? AND expires_at > ? ORDER BY created_at DESC, id DESC', [$this->repo->labelId, $now]);
         return array_map(static function (array $r) use ($now): array {
-            $base = ['submissionId' => (int) $r['id'], 'createdAt' => (int) $r['created_at'], 'expiresAt' => (int) $r['expires_at'], 'saved' => (bool) ($r['saved'] ?? 0), 'sorted' => Post::sorted($r, $now), 'box' => $r['box'] ?? null];
+            $base = ['submissionId' => (int) $r['id'], 'createdAt' => (int) $r['created_at'], 'expiresAt' => (int) $r['expires_at'], 'saved' => (bool) ($r['saved'] ?? 0), 'sorted' => Post::sorted($r, $now), 'box' => $r['box'] ?? null,
+                // In die Genre-Unterreiter gelegt (Kassetten-Assistenz); vom Suchauftrag gefunden
+                'filed' => $r['filed_at'] !== null && (int) $r['filed_at'] <= $now, 'found' => (bool) $r['found']];
             // Im Umschlag: Man weiß noch nicht einmal, dass eine Kassette drin ist.
             $closed = Post::envelope($r, $now);
             if ($closed !== null) {
-                return $base + ['state' => $closed, 'unpacksAt' => $r['unpacked_at'] === null ? null : (int) $r['unpacked_at'], 'byIntern' => $r['worker'] === 'intern'];
+                return $base + ['state' => $closed, 'unpacksAt' => $r['unpacked_at'] === null ? null : (int) $r['unpacked_at'], 'byIntern' => $r['worker'] !== null];
             }
             if ($r['opened_at'] === null) {
                 return $base + ['state' => 'closed'];
             }
             if ((int) $r['opened_at'] > $now) {
-                return $base + ['state' => 'listening', 'opensAt' => (int) $r['opened_at'], 'byIntern' => $r['worker'] === 'intern'];
+                return $base + ['state' => 'listening', 'opensAt' => (int) $r['opened_at'], 'byIntern' => $r['worker'] !== null];
             }
             $card = json_decode($r['card'], true);
             $present = [self::class, 'presentCard'];

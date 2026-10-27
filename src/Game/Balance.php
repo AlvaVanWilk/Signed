@@ -271,18 +271,23 @@ final class Balance
         'ttl' => 4 * 86400,
     ];
     /**
-     * Assistenz: einmalig bezahlt, alle gleich gut. Jede sortiert den Posteingang (Reiter, Notizen auf der Übersicht) und hat dazu eine Aufgabe:
-     * `demos` = hört je Tag `perDay` Kassetten an (die ältesten zuerst, gemerkte nicht) und wirft nach den Regeln weg, was nicht passt;
-     * `presse` = sagt Interview-Anfragen zu, sobald der Musiker frei ist. Mehr Eingang oder mehr Aufgaben: mehr Assistenzen einstellen.
+     * Assistenz: einmalig bezahlt, alle gleich gut. Jede hat ein Arbeitsgebiet und arbeitet darin laufend, Stück für Stück, so schnell wie man
+     * selbst (POST, SUBMISSIONS['listen'], dazu `seconds`): `post` = Umschläge auspacken und in die Reiter legen, meldet, was bald abläuft
+     * (`soon` Sekunden vorher); `demos` = Kassetten anhören, in die Genre-Unterreiter legen (selbst Angehörte: `file`), nach den Regeln
+     * wegwerfen, Suchauftrag; `office` = Briefe lesen (`read`) und auf der Übersicht davon erzählen, auf Wunsch Interviews zusagen.
+     * Mehrere im selben Gebiet teilen sich die Arbeit. Liegen geblieben ist höchstens `catchUp` Sekunden Arbeit (offline).
      */
     public const ASSISTANT = [
-        'tiers' => [1 => ['perDay' => 50, 'price' => 400, 'from' => 0.0]],
-        // none = kein Arbeitsgebiet (packt nur die Post aus und sortiert sie); so fangen neue an
-        'tasks' => ['none', 'demos', 'presse'],
+        'tiers' => [1 => ['price' => 400, 'from' => 0.0]],
+        // none = kein Arbeitsgebiet; so fangen neue an
+        'tasks' => ['none', 'post', 'demos', 'office'],
+        'seconds' => ['file' => 1, 'read' => 5],
+        'soon' => 12 * 3600,
+        'catchUp' => 4 * 86400,
     ];
     /**
-     * Praktikum: bewirbt sich gleich zu Beginn und danach immer wieder (Balance::JOBS), günstig und für `seconds`. Sortiert nur die Post und schreibt Notizen auf die Übersicht
-     * (hört keine Kassetten an, macht keine Presse). Ist das Praktikum vorbei, wartet sie noch `decide` Sekunden auf eine Antwort: übernehmen
+     * Praktikum: bewirbt sich gleich zu Beginn und danach immer wieder (Balance::JOBS), günstig und für `seconds`. Arbeitet nur auf Zuruf: Briefe öffnen, Demos anhören
+     * oder Post sortieren (ohne wegzuwerfen). Ist das Praktikum vorbei, wartet sie noch `decide` Sekunden auf eine Antwort: übernehmen
      * (Preis der Assistenz) oder verabschieden. Vorher lässt sie sich nicht übernehmen; ohne Antwort geht sie.
      */
     public const INTERN = ['price' => 50, 'seconds' => 7 * 86400, 'decide' => 86400];

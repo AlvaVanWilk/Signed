@@ -235,9 +235,11 @@ final class Inbox
             // Im Umschlag: Man sieht nicht, was drin ist.
             $closed = Post::envelope($r, $now);
             if ($closed !== null) {
-                return $base + ['kind' => 'envelope', 'state' => $closed, 'unpacksAt' => $r['unpacked_at'] === null ? null : (int) $r['unpacked_at'], 'byIntern' => $r['worker'] === 'intern'];
+                return $base + ['kind' => 'envelope', 'state' => $closed, 'unpacksAt' => $r['unpacked_at'] === null ? null : (int) $r['unpacked_at'], 'byIntern' => $r['worker'] !== null];
             }
             $base['kind'] = $r['kind'];
+            // Vom Büro gelesen: Dann steht es auf der Übersicht.
+            $base['read'] = $r['read_at'] !== null && (int) $r['read_at'] <= $now;
             if ($r['kind'] === 'interview') {
                 return $base + [
                     'musicianId' => (int) $d['musicianId'], 'medium' => $d['medium'], 'level' => (int) $d['level'],
@@ -359,7 +361,6 @@ final class Inbox
             if (in_array($d['role'], ['assistant', 'intern'], true)) {
                 // Was bisher liegen blieb, erledigen die alten; die neue fängt jetzt an.
                 (new Assistant($this->repo))->work(Clock::now());
-                $db->update('labels', ['assist_at' => Clock::now()], ['id' => $this->repo->labelId]);
             }
             $staffId = $db->insert('staff', [
                 'label_id' => $this->repo->labelId, 'role' => $d['role'], 'tier' => (int) $d['tier'],

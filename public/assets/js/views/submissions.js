@@ -3,7 +3,7 @@ import { api } from '../api.js';
 import { actions, app, bandById, cat, defineActions, isBusy, mutate, musicianById, rerender, serverNow } from '../core.js';
 import { confirmDialog, esc, money, off, openModal, toast } from '../ui.js';
 import { fitWord, levelClass, levelProgress, relColor } from './label.js';
-import { INTERN_JOBS, closeTalk, officeScene, rulesText } from '../office.js';
+import { INTERN_JOBS, closeTalk, officeScene, rulesText, searchText } from '../office.js';
 
 /**
  * Posteingang: Demos (Musiker bewerben sich von selbst beim Label), Interview-Anfragen und Bewerbungen fürs Label.
@@ -68,6 +68,9 @@ function byOtherGenres(a, b, genre) {
   }
   return 0;
 }
+
+/** Genres ohne Doppelte, in der festen Reihenfolge (Pop, Rock …). */
+const genreOrderList = (list) => [...new Set(list)].sort((p, q) => genreOrder(p) - genreOrder(q));
 
 /** Kassette: Antippen hört sie gleich an (ein paar Sekunden), das kleine × wirft sie ungehört weg. */
 function tape(s, busy) {
@@ -188,7 +191,8 @@ function slot(s, busy) {
   // Eine eben gesichtete Kassette wird an ihrem Platz zur Karte (kurzes Umdrehen, nur beim ersten Zeigen).
   const fresh = s.state === 'open' && !app.ui.subSeen.has(s.submissionId);
   if (s.state === 'open') app.ui.subSeen.add(s.submissionId);
-  return `<div class="lb-slotitem ${fresh ? 'fresh' : ''}" data-sid="${s.submissionId}" data-post="s-${s.submissionId}" style="${scatter(s.submissionId)}">${inner}<span class="lb-slotbar"><span class="lb-slotleft">${newTag(s)}${leftPill(s)}</span>${saveBtn(s)}</span></div>`;
+  const found = s.found ? '<span class="lb-found" title="Passt zu deinem Suchauftrag">gefunden</span>' : '';
+  return `<div class="lb-slotitem ${fresh ? 'fresh' : ''}" data-sid="${s.submissionId}" data-post="s-${s.submissionId}" style="${scatter(s.submissionId)}">${inner}<span class="lb-slotbar"><span class="lb-slotleft">${newTag(s)}${found}${leftPill(s)}</span>${saveBtn(s)}</span></div>`;
 }
 
 /** Merkzahl für die eigene Reihenfolge: Kassetten mit ihrer Nummer, Briefe mit minus ihrer Nummer. */
@@ -230,8 +234,8 @@ function interviewLetter(m) {
 
 function jobLetter(m) {
   const money0 = app.state.label.money;
-  const what = m.role === 'intern' ? 'sortiert die Post und schreibt dir Notizen auf die Übersicht'
-    : m.role === 'assistant' ? `sortiert die Post, hört ${m.perDay} Kassetten am Tag an oder kümmert sich um die Presse`
+  const what = m.role === 'intern' ? 'hilft dir auf Zuruf: Briefe öffnen, Demos anhören oder Post sortieren'
+    : m.role === 'assistant' ? 'arbeitet von allein in einem Gebiet: Post, Kassetten oder Büro'
     : m.role === 'scout' ? `${m.candidates} Talente in ${mins(m.seconds)} (Können bis ${m.maxSkill})`
     : m.role === 'teacher' ? `${instrumentName(m.instrument)} für einen Musiker: +${m.gain} Können (bis ${m.maxSkill})${m.genre ? `, bei ${genreName(m.genre)} mehr` : ''}`
     : m.role === 'coach' ? `${days(m.seconds)} für eine Band: Songs ${fmtFactor(m.speed)} so schnell, Platte +${Math.round(m.quality * 100)} %`
@@ -309,18 +313,28 @@ export function render() {
   // NEU gilt für alles, was seit dem letzten Besuch kam (auch, was während des Besuchs kommt).
   app.ui.postSeenAt ??= s.label.inboxSeenAt ?? 0;
   const f = app.ui.subFilter ?? 'all';
-  const showFilter = box === 'demos' || box === 'inbox';
   const inBox = items.filter((x) => fach(x) === box);
   // Alles liegt in einer Reihe und lässt sich frei sortieren; der Filter zeigt nur ausgepackte Kassetten.
   const isDemo = (x) => x.submissionId && x.state !== 'envelope' && x.state !== 'unpacking';
-  // Mit Assistenz: nach Genre filtern und sortieren (wie die Musiker-Übersicht). Dann gilt nicht die eigene Reihenfolge.
-  const helper = (a?.staff ?? []).some((x) => !x.intern);
-  const genre = helper ? app.ui.subGenre ?? '' : '';
-  const sort = helper ? app.ui.subSort ?? 'own' : 'own';
-  app.ui.subSorted = sort !== 'own' || !!genre;
-  let shown = (f === 'all' ? inBox : inBox.filter((x) => isDemo(x) && (f === 'unheard' ? x.state !== 'open' : x.state === 'open' && levelOf(x) === Number(f))))
-    .filter((x) => !genre || (isDemo(x) && genresOfSub(x).includes(genre)));
-  shown = sort === 'own' && !genre ? ordered(shown) : ordered(shown).sort((x, y) => (genre ? byOtherGenres(x, y, genre) : 0) || (SUB_SORTS[sort] ? SUB_SORTS[sort](x, y) : 0));
+  // Mit einer Kassetten-Assistenz hat das Fach „Demos“ Unterreiter: Alle, Ungehört und je Genre (was sie angehört und einsortiert hat;
+  // wer zwei Genres hat, liegt in beiden). Dann lässt sich auch sortieren. Ohne sie gibt es den Filter nach Stufen.
+  const tapes = box === 'demos' && !!a?.areas?.demos;
+  const genres = tapes ? genreOrderList(inBox.filter((x) => x.submissionId && x.filed).flatMap(genresOfSub)) : [];
+  const sub = tapes && (['all', 'unheard'].includes(app.ui.subTab) || genres.includes(app.ui.subTab)) ? app.ui.subTab : 'all';
+  const genre = genres.includes(sub) ? sub : '';
+  const sort = tapes ? app.ui.subSort ?? 'own' : 'own';
+  app.ui.subSorted = sort !== 'own' || sub !== 'all';
+  const inSub = (x) => (sub === 'all' ? true : sub === 'unheard' ? isDemo(x) && x.state !== 'open' : x.submissionId && x.filed && genresOfSub(x).includes(genre));
+  let shown = tapes ? inBox.filter(inSub)
+    : (f === 'all' || !['demos', 'inbox'].includes(box) ? inBox : inBox.filter((x) => isDemo(x) && (f === 'unheard' ? x.state !== 'open' : x.state === 'open' && levelOf(x) === Number(f))));
+  // Im Genre-Reiter heißt „eigene Reihenfolge“: nach den übrigen Genres gruppiert.
+  shown = sort === 'own' && !genre ? ordered(shown) : ordered(shown).sort((x, y) => (sort === 'own' ? byOtherGenres(x, y, genre) : SUB_SORTS[sort](x, y)));
+  const subCount = (k) => inBox.filter((x) => (k === 'all' ? true : k === 'unheard' ? isDemo(x) && x.state !== 'open' : x.submissionId && x.filed && genresOfSub(x).includes(k))).length;
+  const filterBar = tapes
+    ? `<div class="lb-filterbar"><div class="lb-filter lb-subtabs">${[['all', 'Alle'], ['unheard', 'Ungehört'], ...genres.map((g) => [g, genreName(g)])].map(([k, label]) => `<button class="${sub === k ? 'on' : ''}" ${genres.includes(k) ? `style="--g:var(--lb-c-${k})"` : ''} data-act="subTab" data-key="${k}">${genres.includes(k) ? `<i>${genreGlyph(k)}</i>` : ''}${esc(label)} <small>${subCount(k)}</small></button>`).join('')}</div>
+      <span class="lb-sortbox"><select data-change="subSort" aria-label="Sortieren">${[['own', genre ? 'Nach den anderen Genres' : 'Eigene Reihenfolge'], ['newest', 'Neueste zuerst'], ['level', 'Stufe'], ['skill', 'Können']].map(([k, label]) => `<option value="${k}" ${sort === k ? 'selected' : ''}>${label}</option>`).join('')}</select></span></div>`
+    : ['demos', 'inbox'].includes(box) ? `<div class="lb-filterbar"><div class="lb-filter">${[['all', 'Alle'], ['unheard', 'Ungehört'], ['0', 'Stufe 0'], ['1', 'Stufe 1'], ['2', 'Stufe 2'], ['3', 'Stufe 3']].map(([k, label]) => `<button class="${f === k ? 'on' : ''}" data-act="subFilter" data-key="${k}">${label}</button>`).join('')}</div>
+      ${box === 'demos' ? `<span class="lb-sortbox"><button class="lb-pill" ${off('Nach Genre ordnen und sortieren kann eine Assistenz im Gebiet Kassetten. Sie hört die Kassetten an und legt sie in Genre-Reiter.')}>Genre-Reiter und Sortieren</button></span>` : ''}</div>` : '';
   const busy = all.some((x) => x.state === 'listening' && !x.byIntern);
   const empty = box === 'saved' ? 'Noch nichts gemerkt. Mit dem Lesezeichen legst du etwas hierher – ablaufen tut es trotzdem.'
     : box === 'interview' ? 'Gerade fragt niemand nach einem Interview.' : box === 'job' ? 'Gerade bewirbt sich niemand.'
@@ -340,10 +354,7 @@ export function render() {
     ${(s.tutors ?? []).map(tutorBar).join('')}
     ${officeScene(a, count('inbox'))}
     <div class="lb-boxes">${tabs.map(([k, label]) => `<button class="${box === k ? 'on' : ''}" data-act="subBox" data-key="${k}" data-box="${k}">${label} <small>${count(k)}</small></button>`).join('')}</div>
-    ${showFilter ? `<div class="lb-filterbar"><div class="lb-filter">${[['all', 'Alle'], ['unheard', 'Ungehört'], ['0', 'Stufe 0'], ['1', 'Stufe 1'], ['2', 'Stufe 2'], ['3', 'Stufe 3']].map(([k, label]) => `<button class="${f === k ? 'on' : ''}" data-act="subFilter" data-key="${k}">${label}</button>`).join('')}</div>
-      ${helper ? `<span class="lb-sortbox"><select data-change="subGenre" aria-label="Genre"><option value="">Alle Genres</option>${Object.keys(cat().genres).map((g) => `<option value="${g}" ${genre === g ? 'selected' : ''}>${esc(genreName(g))}</option>`).join('')}</select>
-        <select data-change="subSort" aria-label="Sortieren">${[['own', 'Eigene Reihenfolge'], ['newest', 'Neueste zuerst'], ['level', 'Stufe'], ['skill', 'Können']].map(([k, label]) => `<option value="${k}" ${sort === k ? 'selected' : ''}>${label}</option>`).join('')}</select></span>`
-      : `<span class="lb-sortbox"><button class="lb-pill" ${off('Nach Genre filtern und sortieren kann eine Assistenz für dich. Assistenzen bewerben sich im Posteingang.')}>Genre und Sortieren</button></span>`}</div>` : ''}
+    ${filterBar}
     ${shown.length ? `<div class="lb-slots" data-slots>${shown.map(slotOf).join('')}</div>` : `<div class="empty">${empty}</div>`}`;
 }
 
@@ -507,7 +518,7 @@ function rulesDialog() {
     render: () => `
       <div class="lb-cap">Assistenz</div>
       <h2>Soll sie etwas wegwerfen?</h2>
-      <p class="muted">Sie hört jede neue Kassette an. Was schon angehört daliegt und was du gemerkt hast, wirft sie nie weg. Sortieren und nach Genre filtern kannst du die Kassetten im Fach „Demos“.</p>
+      <p class="muted">Sie hört jede neue Kassette an. Was schon angehört daliegt und was du gemerkt hast, wirft sie nie weg. Was sie behält, legt sie im Fach „Demos“ in die Genre-Reiter.</p>
       <div class="lb-pick">
         <button class="lb-pick-row ${on ? '' : 'on'}" data-mode="off"><span><b>Nichts wegwerfen</b><small class="muted">Alle Kassetten bleiben liegen, bis du sie wegwirfst oder sie ablaufen.</small></span></button>
         <button class="lb-pick-row ${on ? 'on' : ''}" data-mode="on"><span><b>Unpassendes gleich wegwerfen</b><small class="muted">Was nicht zu dem passt, was du unten wählst, wirft sie nach dem Anhören weg.</small></span></button>
@@ -545,6 +556,46 @@ function rulesDialog() {
       if (await mutate('assistRules', { rules })) {
         modal.close();
         toast(`Gespeichert. ${rulesText(rules)}`, 'ok');
+      }
+    }
+  });
+}
+
+/**
+ * Suchauftrag: Man sagt vorher, was man sucht (Instrument, Genre, ab Stufe). Passt eine Kassette, die sie anhört oder einsortiert, merkt sie
+ * sie (dann wirft sie niemand weg) und meldet sich. Bei Bands reicht ein Mitglied, das passt.
+ */
+function searchDialog() {
+  const q = { instrument: '', genre: '', minLevel: 0, ...(app.state.assistant.search ?? {}) };
+  const modal = openModal({
+    className: 'lb-rules-modal',
+    render: () => `
+      <div class="lb-cap">Assistenz</div>
+      <h2>Wonach soll sie suchen?</h2>
+      <p class="muted">Findet sie beim Anhören so jemanden, merkt sie die Kassette und sagt dir Bescheid. Bei Bands reicht einer, der passt.</p>
+      <h3>Instrument</h3>
+      <div class="lb-filter"><button class="${q.instrument === '' ? 'on' : ''}" data-q="instrument" data-v="">Egal</button>${Object.keys(cat().instruments).map((i) => `<button class="${q.instrument === i ? 'on' : ''}" data-q="instrument" data-v="${i}">${esc(instrumentName(i))}</button>`).join('')}</div>
+      <h3>Genre</h3>
+      <div class="lb-filter"><button class="${q.genre === '' ? 'on' : ''}" data-q="genre" data-v="">Egal</button>${Object.keys(cat().genres).map((g) => `<button class="${q.genre === g ? 'on' : ''}" data-q="genre" data-v="${g}">${esc(genreName(g))}</button>`).join('')}</div>
+      <h3>Ab Stufe</h3>
+      <div class="lb-filter">${[0, 1, 2, 3].map((l) => `<button class="${q.minLevel === l ? 'on' : ''}" data-q="minLevel" data-v="${l}">${l === 0 ? 'Jede Stufe' : `Stufe ${l}`}</button>`).join('')}</div>
+      <p class="lb-rules-now">${q.instrument || q.genre || q.minLevel ? esc(searchText(q)) : 'Ohne Vorgabe sucht sie nichts Bestimmtes.'}</p>
+      <div class="dialog-actions">${app.state.assistant.search ? '<button class="btn ghost" data-stop>Nichts mehr suchen</button>' : ''}<button class="btn ghost" data-close>Abbrechen</button><button class="btn primary" data-ok>Suchen</button></div>`,
+  });
+  modal.body.addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-q]');
+    if (b) {
+      q[b.dataset.q] = b.dataset.q === 'minLevel' ? Number(b.dataset.v) : b.dataset.v;
+      modal.refresh?.();
+      return;
+    }
+    if (e.target.closest('[data-close]')) modal.close();
+    const stop = !!e.target.closest('[data-stop]');
+    if (stop || e.target.closest('[data-ok]')) {
+      const search = stop ? null : q;
+      if (await mutate('assistSearch', { search })) {
+        modal.close();
+        toast(stop || !(q.instrument || q.genre || q.minLevel) ? 'Sie sucht nichts Bestimmtes mehr.' : `Gespeichert. ${searchText(q)}`, 'ok');
       }
     }
   });
@@ -755,8 +806,8 @@ defineActions({
     app.ui.subFilter = key;
     rerender();
   },
-  subGenre(value) {
-    app.ui.subGenre = value;
+  subTab({ key }) {
+    app.ui.subTab = key;
     rerender();
   },
   subSort(value) {
@@ -848,11 +899,20 @@ defineActions({
   async assistTask({ id, task }) {
     const x = app.state.assistant?.staff.find((y) => y.id === Number(id));
     if (!x || x.task === task) return;
-    if (await mutate('assistTask', { staffId: Number(id), task })) toast({ presse: `${x.firstName} kümmert sich jetzt um die Presse.`, demos: `${x.firstName} hört jetzt Kassetten an.` }[task] ?? `${x.firstName} packt jetzt nur noch die Post aus.`, 'ok');
+    const say = { none: 'hat jetzt kein Arbeitsgebiet', post: 'kümmert sich jetzt um die Post', demos: 'hört jetzt Kassetten an', office: 'arbeitet jetzt im Büro' };
+    if (await mutate('assistTask', { staffId: Number(id), task })) toast(`${x.firstName} ${say[task]}.`, 'ok');
+  },
+  /** Büro: Interviews selbst zusagen (oder dir überlassen). */
+  async assistAccept() {
+    const on = !app.state.assistant?.rules.accept;
+    if (await mutate('assistRules', { rules: { accept: on } })) toast(on ? 'Interviews sagt jetzt das Büro zu, sobald der Musiker frei ist.' : 'Interviews sagst du wieder selbst zu.', 'ok');
+  },
+  assistSearchAsk() {
+    searchDialog();
   },
   async assistAdopt({ id }) {
     const x = app.state.assistant?.staff.find((y) => y.id === Number(id));
-    if (!x || !(await confirmDialog(`${x.firstName} für ${money(app.state.assistant.adoptPrice)} als Assistenz übernehmen? Dann bleibt ${x.firstName} und kann auch Kassetten anhören oder sich um die Presse kümmern.`, { ok: 'Übernehmen' }))) return;
+    if (!x || !(await confirmDialog(`${x.firstName} für ${money(app.state.assistant.adoptPrice)} als Assistenz übernehmen? Dann bleibt ${x.firstName} und arbeitet von allein in einem Gebiet: Post, Kassetten oder Büro.`, { ok: 'Übernehmen' }))) return;
     if (await mutate('assistAdopt', { staffId: Number(id) })) toast(`${x.firstName} bleibt jetzt als Assistenz.`, 'ok');
   },
   async assistDismiss({ id }) {

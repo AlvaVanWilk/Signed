@@ -1261,10 +1261,10 @@ body { background: radial-gradient(1100px 520px at 50% -12%, rgba(255, 181, 71, 
 .ov-progress i { background: var(--brand); }
 
 /* ---------- Lichtschein in den Logofarben ----------
- * Leise, nicht knallig: Kacheln werfen einen warmen Schein nach unten außen (Gelb des Logos mit etwas Türkis),
+ * Leise, nicht knallig: Kacheln werfen einen schmalen warmen Schein (Gelb des Logos) knapp unter die Unterkante,
  * beim Darüberfahren etwas mehr. In die Kacheln hinein leuchtet nichts. */
-.ov-panel, .ov-stat, .lb-wishes, .lb-mgr, .lb-act, .lb-hd { box-shadow: 0 14px 34px -20px rgba(255, 181, 71, 0.5), 0 10px 28px -22px rgba(46, 196, 182, 0.35); }
+.ov-panel, .ov-stat, .lb-wishes, .lb-mgr, .lb-act, .lb-hd { box-shadow: 0 6px 14px -9px rgba(255, 181, 71, 0.5); }
 .ov-panel.ov-board { box-shadow: none; }
-.lb-act:not(.lock):hover { box-shadow: 0 14px 32px -16px rgba(255, 181, 71, 0.65), 0 10px 26px -18px rgba(46, 196, 182, 0.4); }
+.lb-act:not(.lock):hover { box-shadow: 0 7px 16px -8px rgba(255, 181, 71, 0.65); }
 .lb-cap::before { box-shadow: 0 0 8px rgba(255, 181, 71, 0.45); }
-.btn.primary { box-shadow: 0 8px 18px -8px rgba(255, 181, 71, 0.6); }
+.btn.primary { box-shadow: 0 5px 12px -7px rgba(255, 181, 71, 0.6); }

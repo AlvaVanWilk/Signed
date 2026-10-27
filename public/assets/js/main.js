@@ -191,7 +191,13 @@ function render() {
     return;
   }
   const route = parseRoute();
+  // Die Künstlerleiste bleibt, wo man hingescrollt hat (breit: senkrecht, schmal: waagerecht), auch wenn man eine Band anklickt.
+  const was = ['.lb-side', '.lb-bar'].map((sel) => root.querySelector(sel)).map((el) => (el ? [el.scrollTop, el.scrollLeft] : null));
   root.innerHTML = layout(VIEWS[route.name](route), route);
+  ['.lb-side', '.lb-bar'].forEach((sel, i) => {
+    const el = was[i] && root.querySelector(sel);
+    if (el) [el.scrollTop, el.scrollLeft] = was[i];
+  });
   updateCountdowns();
   showResults();
   help.maybeStartTour();

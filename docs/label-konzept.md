@@ -567,7 +567,7 @@ Beim ersten Login nach dem Umbau (Saison 2) bleiben **Labelname und Konto**, all
 
 - Statt „Musiker aufnehmen“: „mit Musiker(n) zusammentun“ (`bandJoinCandidates`, `bandMerge`). Kandidaten sind freie Solokünstler **und** Bands ohne eigene Laufbahn.
 - Sortierung: erst echte Vorteile (Genre-Titel, Genre-Bonus, neues Instrument bei steigendem Sound), dann gute Passung der Charaktere (Beziehungsziel ≥ 4), dann Sound-Änderung; Unmögliches zuletzt mit Grund. Suchfeld nach Namen (auch Mitglieder).
-- Band-Leiste links ist per Ziehen ordenbar (`navOrder`, Schlüssel `b<ID>`). Gelangweilte Figuren ohne Instrument zucken ab und zu die Schultern.
+- Band-Leiste links ist per Ziehen ordenbar (`navOrder`, Schlüssel `b<ID>`). Sie bleibt beim Anklicken einer Band an ihrer Scroll-Stelle (`main.js`, `render`). Gelangweilte Figuren ohne Instrument zucken ab und zu die Schultern.
 - Solokünstler: keine „Band“-Wörter, „Künstler entlassen“ statt „Band auflösen“, kein ✕, kein Zusammenhalt-Feld.
 
 ## Zusammentun, Namen und ehemalige Bands
@@ -617,7 +617,7 @@ Beim ersten Login nach dem Umbau (Saison 2) bleiben **Labelname und Konto**, all
 - **Man sieht das Instrument an der Figur** (`figure.js`, `held`): Die Figur hält dieselbe Zeichnung wie im Laden (`gearart.js`, ohne
   Schlagzeugstöcke und Geigenbogen, die hält sie selbst), in Güteklasse und Farbe des eigenen Instruments; ohne eigenes in Grau.
   Gold funkelt dazu leise. Was der Laden von oben zeigt, hat für die Figur eine eigene Ansicht von vorn bzw. von der Seite (`gearart.js`, `SIDE`):
-  Keyboard (immer als Synthesizer), E-Drums und Geige (schmal unterm Kinn). Plattenspieler liegen flach auf dem Tisch.
+  Keyboard (immer als Synthesizer), E-Drums und Geige (schräg unterm Kinn, mit sichtbarer Zarge). Plattenspieler liegen flach auf dem Tisch.
   Auch die kleinen Instrument-Symbole auf den Musikerkarten zeigen das eigene Instrument.
 - Die frühere „Neue Lieferung“ gegen Geld gibt es nicht mehr.
 - Oberfläche: gezeichnetes Regal mit Preisschildern, Seltenheit als Lichtschein, Hinweispunkt bei Instrumenten, die jemandem im Label fehlen; Übergang: Doppeltür geht beim ersten Betreten auf.

@@ -350,7 +350,7 @@ const bassPose = (skin, shirt, electric, p, fin) => `
 const SAX = (p, fin) => `${held('sax', fin, { a: [12.6, 11.3], at: [61, 62], r: 13.6, s: 0.85 })}${twinkle(p, [[92, 84], [58, 100, 2.2]])}`;
 const TRUMPET = (p, fin) => `${held('trumpet', fin, { a: [9.2, 30.5], at: [62, 62], r: -7.7, s: 0.81 })}${twinkle(p, [[101, 50], [68, 52, 2]])}`;
 const FLUTE = (p, fin) => `${held('flute', fin, { a: [12, 39], at: [62, 61], r: -37, s: 0.8, flip: true })}${twinkle(p, [[22, 64], [50, 59, 2]])}`;
-const VIOLIN = (p, fin) => `${held('violin', fin, { a: [32, 2], at: [26, 55], r: -61, s: 0.75, sx: 0.4 })}${twinkle(p, [[38, 58], [66, 78, 2]])}`;
+const VIOLIN = (p, fin) => `${held('violin', fin, { a: [32, 2], at: [26, 55], r: -61, s: 0.75, sx: 0.55 })}${twinkle(p, [[38, 58], [66, 78, 2]])}`;
 /** Mikrofon: in der Hand am Mund (singen) oder hängend in der Hand (Pause). */
 const MIC_UP = (fin) => held('vocals', fin, { a: [24.5, 21.3], at: [69.5, 59], r: 10.6, s: 0.44 });
 const MIC_DOWN = (fin) => held('vocals', fin, { a: [24.5, 21.3], at: [79.6, 114], r: -155, s: 0.4 });

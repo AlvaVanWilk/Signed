@@ -341,8 +341,11 @@ const VL_BODY = 'M32 17.4 C26.2 17.4 23.2 19.6 23.2 23.8 C23.2 26.6 25.4 27.8 24
 const SX_BODY = 'M25 8.6 L30.4 8.6 L32.6 42 C33 47.6 36.2 50.4 39.8 49.4 C42.2 48.6 42.8 46 42.2 42.4 L41.4 37.4 L51.4 28.6 L54.6 41.6 L49.8 43 C51 52.6 46.8 59.8 39.2 60.4 C30.8 61 25.8 55 26 46.8 Z';
 const strings = (n, x0, dx, top, bottom, w) => Array.from({ length: n }, (_, i) => `<path d="M${f(x0 + i * dx)} ${top} V${bottom}" stroke="#eef0f4" stroke-width="${w}"/>`).join('');
 
-/** Geige aufrecht (Schnecke oben), ohne Bogen: im Laden schräg gestellt, an der Figur von der Seite. */
-function violinUpright(L) {
+/**
+ * Geige aufrecht (Schnecke oben), ohne Bogen: im Laden schräg gestellt, an der Figur schräg von der Seite.
+ * depth: Breite der sichtbaren Zarge (Seitenwand) neben der Decke, damit sie an der Figur Tiefe hat (negativ: links).
+ */
+function violinUpright(L, depth = 0) {
   const body = [`path d="${VL_BODY}"`];
   const bb = [20.6, 17.4, 22.8, 36.2];
   const fill = L.tier === 2 ? L.fill('paint') : L.fill('wood');
@@ -353,6 +356,8 @@ function violinUpright(L) {
       <circle cx="32.6" cy="3.4" r="1.2" fill="none" stroke="#3a1606" stroke-width="0.5"/>
       ${pegs(L, [[29.6, 6], [34.4, 6]], 0.8)}
       ${L.glow(body)}
+      ${depth ? `<g transform="translate(${depth} 0.6)">${draw(body, `fill="${L.dark}" stroke="${line}" stroke-width="0.8"`)}${draw(body, 'fill="#000" opacity="0.22"')}</g>
+        <path d="M${32 + depth * 0.5} 17.6 V53.4" stroke="${L.dark}" stroke-width="${Math.abs(depth)}" opacity="0.9"/>` : ''}
       ${draw(body, `fill="${fill}" stroke="${line}" stroke-width="0.8"`)}
       ${L.decor(body, bb, L.tier === 2 ? 'paint' : 'wood', { k: 0.95, center: [0.5, 0.62] })}
       <rect x="30.4" y="7.6" width="3.2" height="30" rx="1.2" fill="${L.theme === 'studio' ? '#1c1a20' : L.theme === 'hit' ? '#2a1a0c' : '#14100c'}"/>
@@ -751,8 +756,8 @@ const SIDE = {
       ${L.extras([6, 12, 52, 48], { anchor: [56, 43], badge: [32, 56], spark: [[0.98, 0.1], [0.04, 0.95], [0.72, 1]] })}`;
   },
 
-  // Geige aufrecht ohne Bogen; die Figur stellt sie schmal (von der Seite) unters Kinn.
-  violin: (L) => violinUpright(L),
+  // Geige aufrecht ohne Bogen, mit sichtbarer Zarge; die Figur stellt sie schräg unters Kinn.
+  violin: (L) => violinUpright(L, -5),
 };
 
 /**

@@ -684,7 +684,10 @@ a.btn.wk-back { display: inline-flex; width: auto; }
   left: calc(100cqw * (var(--l) + var(--x) * (1 - var(--l) - var(--r)))); bottom: var(--fb); width: var(--fw); transform: translateX(-50%); }
 .fig-stage.depth .fig-member.fig-back { z-index: 1; bottom: var(--bb); width: calc(var(--fw) * .84); }
 .fig-stage.depth .fig-member.fig-back .fig { filter: brightness(.9); }
-.lb-room.lb-venue { --fb: 14cqh; --bb: 26cqh; }
+/* Auf der Bühne: vorn an der Vorderkante, hinten auf der Bühnenfläche (stage.js TOP, DECK). --u = ein Punkt des Bühnenbilds
+ * (960 × 320, unten bündig und randlos eingepasst); in der Kneipe gibt es keine Bühne, dort steht die Band auf dem Teppich. */
+.lb-room.lb-venue { --u: max(calc(100cqw / 960), calc(100cqh / 320)); --fb: calc(var(--u) * 90); --bb: calc(var(--u) * 116); }
+.lb-room.lb-venue.v-kneipe { --fb: calc(var(--u) * 52); --bb: calc(var(--u) * 78); }
 .lb-room.lb-venue .fig-stage.depth .fig-member { --fw: min(calc(100cqw * var(--w) * (1 - var(--l) - var(--r))), 42cqh); }
 .lb-room.st-room { --r: .36; }
 .lb-live .lb-room { height: clamp(270px, 26vw, 360px); }

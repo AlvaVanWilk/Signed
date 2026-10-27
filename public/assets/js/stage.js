@@ -6,8 +6,10 @@
 const INK = '#1d1a2a';
 const W = 960;
 const H = 320;
-/** Oberkante der Bühne: Hier stehen die Füße der Figuren ungefähr. */
+/** Vorderkante der Bühne (die vordere Reihe steht hier). */
 const TOP = 236;
+/** Tiefe der Bühnenfläche: Hinter der Vorderkante ist so viel Boden zu sehen (die hintere Reihe steht hinten darauf, label.css .lb-venue). */
+const DECK = 38;
 
 function rng(seed) {
   let s = (seed * 2654435761) >>> 0 || 1;
@@ -24,8 +26,11 @@ const beam = (x, y, x1, x2, color, o) => `<path d="M${x} ${y} L${x1} ${TOP + 4} 
 const lamp = (x, y, color = '#ffe9a8') => `<g><rect x="${x - 9}" y="${y - 6}" width="18" height="14" rx="4" fill="#3a3448" ${st(2.4)}/><ellipse cx="${x}" cy="${y + 8}" rx="6" ry="2.4" fill="${color}"/></g>`;
 /** Lautsprecher-Box. */
 const speaker = (x, y, w, h) => `${box(x, y, w, h, '#2a2636', 4)}<circle cx="${x + w / 2}" cy="${y + h * 0.36}" r="${w * 0.18}" fill="#17141f" ${st(2)}/><circle cx="${x + w / 2}" cy="${y + h * 0.74}" r="${w * 0.28}" fill="#17141f" ${st(2)}/>${gloss(`M${x + 6} ${y + 6} H${x + w - 10}`, 2, 0.12)}`;
-/** Bühnenkante: Oberfläche und Vorderseite. */
+/** Bühne: Fläche mit Tiefe (hinten etwas dunkler), Kante und Vorderseite. */
 const platform = (top, face, x0 = 0, x1 = W, lip = 10) => `
+  <path d="M${x0} ${TOP - DECK} H${x1} V${TOP} H${x0} Z" fill="${top}" ${st(3)}/>
+  <path d="M${x0} ${TOP - DECK} H${x1} V${TOP - DECK + 12} H${x0} Z" fill="#000" opacity="0.18"/>
+  ${[0.35, 0.7].map((k) => `<path d="M${x0} ${TOP - DECK * k} H${x1}" stroke="#000" stroke-width="1.4" opacity="0.12"/>`).join('')}
   <path d="M${x0} ${TOP} H${x1} V${TOP + lip} H${x0} Z" fill="${top}" ${st(3)}/>
   <path d="M${x0} ${TOP + lip} H${x1} V${H} H${x0} Z" fill="${face}" ${st(3)}/>
   ${gloss(`M${x0 + 20} ${TOP + 3} H${x1 - 20}`, 2, 0.16)}`;
@@ -69,7 +74,7 @@ const SCENES = {
     <rect width="${W}" height="${H}" fill="#2a2030"/>
     <rect x="150" y="30" width="660" height="${TOP - 30}" fill="#3a2c45"/>
     ${beam(480, 0, 330, 630, '#f4efe6', 0.1)}
-    <ellipse cx="480" cy="${TOP + 6}" rx="170" ry="10" fill="#f4efe6" opacity="0.22"/>
+    <ellipse cx="480" cy="${TOP - DECK / 2}" rx="190" ry="14" fill="#f4efe6" opacity="0.22"/>
     <path d="M0 0 H200 Q186 120 214 ${TOP} H0 Z" fill="#b23a48" ${st(3)}/>
     <path d="M${W} 0 H760 Q774 120 746 ${TOP} H${W} Z" fill="#b23a48" ${st(3)}/>
     ${[40, 90, 140, 820, 870, 920].map((x) => `<path d="M${x} 20 Q${x + (x < 480 ? -8 : 8)} 130 ${x + (x < 480 ? 6 : -6)} ${TOP}" fill="none" stroke="#8a2836" stroke-width="4"/>`).join('')}

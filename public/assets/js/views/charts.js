@@ -104,8 +104,7 @@ const HEADS = {
     <ul><li>Er kommt aus Auftritten, Platten, Charts und Promo.</li></ul>`],
   label: ['Label', 'Label', () => '<p>Das Plattenlabel, also der Spieler.</p>'],
   bands: ['Bands', 'Bands', () => '<p>Wie viele Bands das Label gerade hat.</p>'],
-  labelFame: ['Ruhm', 'Ruhm', () => `<p>Der Ruhm aller Bands des Labels zusammen.</p>
-    <ul><li>Mehr Label-Ruhm schaltet <b>weitere Bands</b> frei.</li></ul>`],
+  labelFame: ['Ruhm', 'Ruhm', () => `<p>Der Ruhm aller Bands des Labels zusammen. Große Bands zählen dabei stärker als viele kleine.</p>`],
 };
 
 function headCell(key) {

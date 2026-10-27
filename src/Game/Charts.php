@@ -393,26 +393,27 @@ final class Charts
         ];
     }
 
-    /** Label-Gesamtliste: Summe des Ruhms aller eigenen Bands (Bandnamen und Mitglieder). */
+    /** Label-Gesamtliste: Label-Ruhm wie überall im Spiel (BandCalc::labelFame: große Bands zählen stärker). */
     private static function labels(Db $db, int $labelId): array
     {
-        $rows = $db->all(
-            'SELECT l.id, l.name, COUNT(DISTINCT b.id) AS bands, COALESCE(SUM(m.fame), 0) AS fame
-             FROM labels l
-             JOIN bands b ON b.label_id = l.id AND b.retired_at IS NULL
+        $bands = $db->all(
+            'SELECT b.label_id, l.name, b.fame_own + COALESCE(SUM(m.fame), 0) AS fame
+             FROM bands b
+             JOIN labels l ON l.id = b.label_id
              LEFT JOIN musicians m ON m.band_id = b.id
-             GROUP BY l.id, l.name'
+             WHERE b.retired_at IS NULL
+             GROUP BY b.id, b.label_id, l.name, b.fame_own'
         );
-        $own = [];
-        foreach ($db->all('SELECT label_id, SUM(fame_own) AS fame FROM bands WHERE retired_at IS NULL GROUP BY label_id') as $r) {
-            $own[(int) $r['label_id']] = (float) $r['fame'];
+        $labels = [];
+        foreach ($bands as $r) {
+            $labels[(int) $r['label_id']]['name'] = $r['name'];
+            $labels[(int) $r['label_id']]['fames'][] = (float) $r['fame'];
         }
-        return array_map(static fn ($r) => [
-            'label' => $r['name'],
-            'bands' => (int) $r['bands'],
-            'points' => round((float) $r['fame'] + ($own[(int) $r['id']] ?? 0), 1),
-            'own' => (int) $r['id'] === $labelId,
-        ], $rows);
+        $out = [];
+        foreach ($labels as $id => $l) {
+            $out[] = ['label' => $l['name'], 'bands' => count($l['fames']), 'points' => BandCalc::labelFame($l['fames']), 'own' => $id === $labelId];
+        }
+        return $out;
     }
 
     /** Hall of Fame: alle Bands aller Labels nach Ruhm (am Namen plus Bekanntheit der Mitglieder, wie BandCalc::bandFame). */

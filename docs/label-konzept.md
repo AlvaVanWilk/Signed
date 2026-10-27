@@ -572,6 +572,18 @@ Wir reduzieren stark und schauen dann, was wirklich fehlt.
 
 ## Übergang für bestehende Labels
 
+**Stand der Prüfung (noch nicht entschieden, wird nach dem Fertigbauen geprüft):** Ein mit dem Code von `main` durchgespieltes Label
+(zwei Bands, Platte, Auftritte, Karten, Instrumente, Manager, Fan-Karte, Katalog, Wechselbörse, laufender Auftritt) lässt sich mit der neuen
+Version öffnen: alle Umbauschritte der Datenbank laufen durch, alle Seiten öffnen ohne Fehler. Alte Instrumente werden schon umgerechnet
+(Seltenheit → Farbklasse, Boni aus den alten Werten, `Gear::legacy`). Ein Neuanfang ist technisch also **nicht nötig**; Vorschlag statt der
+Einsendungen unten: **weiterspielen mit einem einmaligen Umbau** (Wechselbörse zurück, alte Karten und Gutscheine in Geld, alte laufende
+Aktivitäten abrechnen, Beziehungen aus der gemeinsamen Bandzeit, Tour „Was ist neu?“) und einer **Saison-Rangliste**, die nur zählt, was nach
+dem Übergang dazukommt. Offen und erst mit der fertigen App zu prüfen: ob alter Ruhm, altes Geld und alte (goldene) Instrumente einen
+unfairen Vorsprung geben (Durchspiel-Prüfung im neuen Spiel, dazu die echten Werte aus einer Sicherung, nur Ruhm, Geld und Instrumente).
+Die Rangliste der Labels rechnet inzwischen wie das übrige Spiel (große Bands zählen stärker, `BandCalc::labelFame`).
+
+Ursprünglicher Plan:
+
 Beim ersten Login nach dem Umbau (Saison 2) bleiben **Labelname und Konto**, alles andere fängt neu an (Ruhm, Platten, Charts, Lager, Katalog). Die alten Bands kommen **als Einsendungen zurück**:
 
 - **Jede alte Band kommt als normale Einsendung** ins Haus (ein Umschlag wie alle anderen), mit **denselben Regeln**: sie läuft nach **4 Tagen** ab (steht darauf), man kann sie wegwerfen, aufnehmen,

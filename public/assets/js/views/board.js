@@ -17,7 +17,7 @@ function todayNote(c, n) {
   return `<article class="bb-note" style="${tilt(n)}">
     <span class="bb-pin"></span>
     <div class="bb-head"><span class="bb-ico">${instrumentIcon(c.instrument)}</span><div><b>${esc(c.prefix)}-${esc(c.name)}</b><small>bei ${esc(c.teacher)} · ${duration(c.seconds)}</small></div></div>
-    <p class="bb-gain">+${fmt0(c.gain)} Können, ohne Bremse</p>
+    <p class="bb-gain">+${fmt0(c.gain)} Können</p>
     <ul class="bb-prices">${c.levels.map((l) => `<li>${esc(l.name)} <b>${money(l.price)}</b></li>`).join('')}</ul>
     ${list.length ? `<div class="bb-who">${list.map((x) => (x.visited
       ? `<span class="bb-done">${esc(x.m.firstName)}: heute schon im Kurs</span>`

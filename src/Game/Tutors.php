@@ -8,7 +8,7 @@ use Signed\Clock;
 
 /**
  * Privatlehrer und Songwriting-Coaches: bewerben sich im Posteingang und werden für eine Zeit gebucht, immer für genau einen Musiker
- * bzw. eine Band (einmal bezahlt, danach gehen sie wieder). Lehrer geben in der Zeit gleichmäßig Können ohne Stufen-Bremse,
+ * bzw. eine Band (einmal bezahlt, danach gehen sie wieder). Lehrer geben in der Zeit gleichmäßig Können (ohne Lernkurve),
  * Coaches lassen die Band schneller und besser schreiben.
  */
 final class Tutors

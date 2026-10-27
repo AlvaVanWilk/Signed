@@ -194,17 +194,13 @@ final class BandCalc
         foreach ($m['personality'] ?? [] as $p) {
             $trait *= Balance::TRAITS['rehearsalGain'][$p] ?? 1.0;
         }
-        return self::trainingGain($m, Balance::REHEARSAL['skill'] * $trait, null, $model, false);
+        return self::trainingGain($m, Balance::REHEARSAL['skill'] * $trait, null, $model);
     }
 
-    /** $paced = false: ohne die Bremse der Stufen (Balance::LEVEL_PACE); dann bremst nur die Lernkurve. */
-    public static function trainingGain(array $m, float $base, ?int $slot = null, ?array $model = null, bool $paced = true): float
+    /** Können-Zuwachs: ohne Stufen-Bremse, es bremst nur die Lernkurve (wer schon gut ist, lernt langsamer). */
+    public static function trainingGain(array $m, float $base, ?int $slot = null, ?array $model = null): float
     {
-        $talent = 1.0;
-        $talent *= 1 + Gear::value($model, 'learn');
-        if ($paced) {
-            $talent *= Levels::pace(Levels::forSkill(self::skill($m, $slot)));
-        }
+        $talent = 1 + Gear::value($model, 'learn');
         return $base * $talent * max(0.003, max(0.0, 1 - self::skill($m, $slot) / 110) ** Balance::TRAINING_CURVE);
     }
 

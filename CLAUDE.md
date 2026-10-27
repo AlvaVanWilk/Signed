@@ -25,11 +25,11 @@ Es wird nur in der Testversion gebaut; `main` (das echte Spiel) bleibt unveränd
 
 ## Spielbalance – unbedingt beachten
 
-- Profi/Szenegröße (Stufe 2) ist mit den heutigen Mitteln sehr schwer, Virtuose/Star (Stufe 3) praktisch
-  unerreichbar (`Balance::LEVEL_PACE`). Das ist Absicht: Neue Inhalte (Tourneen, Manager, …) sollen genau diese
-  Stufen erreichbar machen – etwa mit eigenen Gewinnen, die nicht durch LEVEL_PACE gebremst werden, oder indem sie
-  die Bremse lockern. Neue Inhalte also nicht einfach in das bestehende Tempo einhängen, sondern bewusst den Weg
-  nach oben öffnen und das in `docs/kern.md` (Abschnitt Tempo) festhalten.
+- **Keine künstliche Bremse.** Die alte Stufen-Bremse (`LEVEL_PACE`) ist im Umbau entfernt. Das Tempo soll sich aus gut
+  abgestimmten Gewinnen, Kosten, Schwellen und der Lernkurve ergeben. Schaukelt sich etwas auf oder geht es zu schnell,
+  ist das ein Fehler in den Formeln und wird dort behoben, nicht mit einer Bremse. Grundsatz: Ruhm darf nie den eigenen
+  Zuwachs verstärken. Neue Inhalte und Zahlen so wählen, dass alle Stufen mit Einsatz erreichbar sind, und das in
+  `docs/kern.md` (Abschnitt Tempo) festhalten.
 
 ## Musik
 

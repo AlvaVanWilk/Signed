@@ -286,8 +286,7 @@ final class Studio
         $lp = 1 + Balance::RECORD_LP_BONUS * max(0, $songs - Balance::RECORD_MIN_SONGS);
         $fame = $songs * Balance::RECORD_FAME_PER_SONG * BandCalc::soundFactor($sound) * (0.3 + $quality ** 1.5) * $lp * ($perfect ? Balance::RECORD_PERFECT_BONUS : 1.0);
         $gains = BandCalc::splitFame($members, $fame, $gear);
-        // Mit der Legende ist der Ruhm nicht durch die Stufen-Bremse gebremst: ein Weg nach oben.
-        $this->repo->addBandFame($band['id'], $gains, empty($producer['unpaced']));
+        $this->repo->addBandFame($band['id'], $gains);
         $this->repo->earn($money, sprintf('Erstverkauf „%s“', $record['title']));
 
         $db->exec(

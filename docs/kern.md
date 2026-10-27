@@ -229,7 +229,7 @@ den Gesangsspuren der Aufnahmen (`Music::melodyChart`, für Studio-Aufnahmen).
   spielt, bekommt je nach Treffern bis zum Vierfachen. Beim Platte-Aufnehmen gibt es diese Wahl nicht.
 - Solo-Probe: Können + 0,8 × Trefferquote^1,5 × Talent × Lernkurve; auf Stufe 0 (unter 35) × 3 –
   eine perfekte Probe bringt dann +1,7 (bei Können 15) bis +0,95 (bei 34). Von 15 auf 35 sind es bei 90 % Treffern
-  rund 19 Proben (~13 Minuten), danach normales Tempo (Stufen-Bremse).
+  rund 19 Proben (~13 Minuten), danach normales Tempo (alter Stand, mit der inzwischen entfernten Stufen-Bremse).
 - Lernkurve (alle Können-Gewinne): (1 − Können/110)^2,5. Je besser jemand ist, desto langsamer geht es.
 
 ### Tempo
@@ -239,26 +239,26 @@ Die Probe ist offen und wird laufend gutgeschrieben; Gewinne gelten je 15 Minute
 Rechnung ab Können 15 (ohne Talent), in Probenzeit: Stufe 1 nach rund 2,5 Stunden, Stufe 2 nach rund 9, Stufe 3 nach rund 36 Stunden.
 Die Solo-Probe und das „Allein üben“ der Musikerseite gehören nicht mehr zu Signed (siehe `ausgelagert-musikerspiel.md`); die Beschreibung darunter gilt für den alten Stand.
 
-Ziel: Ein Anfänger (Können 15) ist schnell fortgeschritten – mit gezieltem Üben (Solo-Probe × 3 auf Stufe 0) in rund 13 Minuten. Darüber hinaus geht es mit den
-heutigen Mitteln kaum weiter: Ab Stufe 1 wirken alle Können- und Bekanntheitsgewinne nur noch zu 25 %, ab Stufe 2
-nur noch zu 3 %. Profi bzw. Szenegröße dauert so rund 40 Stunden Spielzeit, Virtuose bzw. Star weit über 1.000 –
-praktisch unerreichbar, bis Tourneen und Manager dazukommen.
-**Tageskurse** öffnen diesen Weg als erste: ohne Bremse, aber teuer und je Musiker nur einmal am Tag. Es gibt einen am Tag (`Balance::COURSE['perDay']`);
+**Keine Stufen-Bremse mehr** (Umbau): Die alte Bremse (`LEVEL_PACE`: ab Stufe 1 wirkten Können- und Bekanntheitsgewinne nur noch zu 25 %,
+ab Stufe 2 zu 3 %) ist ganz entfernt, auch für Bekanntheit aus Auftritten, Promo, Charts und Platten und für Können aus dem Studio.
+Das Tempo soll sich aus gut abgestimmten Gewinnen, Kosten, steigenden Schwellen (Bekanntheit 20 / 120 / 600, Können 35 / 60 / 85),
+dem Anspruch der Bands und der Lernkurve ergeben. Was sich aufschaukelt, ist ein Fehler in den Formeln und wird dort behoben.
+**Noch zu prüfen** (Durchspiel-Prüfung): Größere Orte bringen mehr Ruhm je Lied und werden mit mehr Ruhm erreichbar; ohne Bremse muss
+die Rechnung zeigen, dass das nicht davonläuft.
+**Tageskurse:** teuer und je Musiker nur einmal am Tag, dafür ohne Lernkurve. Es gibt einen am Tag (`Balance::COURSE['perDay']`);
 die Woche steht auf dem Schwarzen Brett, so kann man planen.
 **Songs** (Umbau): Das Tempo hängt an den Mitgliedern, (Summe der Beiträge)^1,5 mit 0,25 je Mitglied mal Charakter-Faktor (`Balance::SONGWRITING`, `Balance::TRAITS['write']`).
 Eine Vierer-Band schreibt wie bisher, Solokünstler achtmal langsamer. Bands sind so der schnellere Weg nach oben; Solo lohnt sich nur kreativ, mit Pop/Elektro oder egozentrisch.
-Der Beitrag hängt am Charakter (Kreativ ×3, Impulsiv ×1,6, Perfektionistisch ×0,6, Technisch 0; siehe label-konzept.md, Charakterzüge). Technische lernen beim Proben ×1,25 – ein Weg nach oben fürs Können, ohne die Stufen-Bremse zu ändern.
+Der Beitrag hängt am Charakter (Kreativ ×3, Impulsiv ×1,6, Perfektionistisch ×0,6, Technisch 0; siehe label-konzept.md, Charakterzüge). Technische lernen beim Proben ×1,25.
 **Große Bands** sind ein bewusster Weg nach oben: mehr Sound (+5 % je Mitglied über 2) und mehr Gage (+10 % je Mitglied über 2) – sie kosten mehr Zeit und Geld, dafür kommen sie schneller zu größeren Bühnen.
 **Fans** großer Bühnen sind ein weiterer, kleiner Weg: In Halle und Arena kommen auch epische und legendäre Musiker, so gut wie fast die Band.
-**Für neue Inhalte:** Tourneen, Manager und Co. sollen genau diese Stufen erreichbar machen (eigene, ungebremste
-Gewinne oder eine gelockerte Bremse) – nicht einfach dem heutigen Tempo unterliegen. Lokal bekannt ist man nach einigen Stunden Auftritten.
-Nur die Gewinne sind klein; wie oft man etwas hintereinander spielt, ist nicht begrenzt.
+**Für neue Inhalte** (Tourneen und Co.): eigene, gut abgestimmte Gewinne, die zum übrigen Tempo passen; keine Bremse und keine Ausnahme davon.
 **Interviews** (Posteingang) öffnen den Weg zur Bekanntheit: Jede Anfrage bringt einen festen Anteil (8–14 %, je Medium) des Weges von der eigenen
-Bekanntheitsstufe zur nächsten, **ohne Bremse** (`Balance::INTERVIEW`, `Catalog::INTERVIEW_MEDIA`). Wie oft Anfragen kommen, hängt nur an der
+Bekanntheitsstufe zur nächsten (`Balance::INTERVIEW`, `Catalog::INTERVIEW_MEDIA`). Wie oft Anfragen kommen, hängt nur an der
 eigenen Bekanntheit: je Tag 0,1 + 0,05 × √Bekanntheit (unbekannt etwa alle zehn Tage eine, Bekanntheit 120 etwa 0,65, 600 etwa 1,3), höchstens
 1 + Stufe zugleich offen; sie liegen vier Tage. Für Unbekannte ist das also kaum ein Weg (erst Auftritte und Platten), ab Stufe 1 schafft man mit
 allen Anfragen eine Stufe in grob zwei bis vier Wochen, weiter oben schneller, weil mehr kommen; Auftritte und Platten kommen dazu.
-**Privatunterricht** öffnet den Weg beim Können: +8 / +12 / +16 in zwei Tagen ohne Bremse, für einen Musiker (bis Können 55 / 80 / 100).
+**Privatunterricht** öffnet den Weg beim Können: +8 / +12 / +16 in zwei Tagen ohne Lernkurve, für einen Musiker (bis Können 55 / 80 / 100).
 Bei Können 70 entspricht +16 etwa zwölf Stunden Proben; für Anfänger lohnt er sich kaum, weil die Proben dort schnell sind (`Balance::TEACHER`).
 
 ### Platte
@@ -284,7 +284,7 @@ Bei Können 70 entspricht +16 etwa zwölf Stunden Proben; für Anfänger lohnt e
 
   Qualität = 0,35 + Studio + Produzent + 0,04 je Perfektionist + goldene Studio-Instrumente, höchstens 1; ab 0,95 **perfekt** (× 1,5).
   Jeder Produzent hilft auch in einem schlechteren Studio. Ruben Stille nimmt nur Bands ab Sound 45, alle sind mit ihm
-  entspannt (+6 Wohlbefinden), und der Ruhm aus seiner Platte ist **nicht durch LEVEL_PACE gebremst** – ein Weg zu Stufe 2 und 3.
+  entspannt (+6 Wohlbefinden).
 - **Anspruch:** Ruhm-Stufe der Band gegen Produktionsniveau (Mittel aus Studio-Stufe und Produzenten-Stufe, gerundet).
   Je Stufe darunter −6 Wohlbefinden (Egozentrische und Perfektionistische × 1,5), je Stufe darüber +3.
 - Der Dialog zeigt für jede Wahl Kosten, Qualität und den erwarteten Ertrag: Erstverkauf plus Tantiemen, solange sie chartet

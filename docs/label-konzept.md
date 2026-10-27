@@ -287,7 +287,7 @@ ein **Medienpaket** (bessere Interview-Anfragen), **Teambuilding** (Beziehungen 
 Jede neue Art braucht einen eigenen Zweck und Wunsch (Perfektionist → Proberaum, Diva → Bühnentechnik und Fahrzeug, Gelassen → Auszeit), sonst ist sie nur Beiwerk.
 
 **Warnung zur Größe:** Mehr Reiter bedeuten mehr Klicken. Ich würde mit **Instrumente, Kurse, Proberaum, Auszeit und Stellenbörse** beginnen und
-**Bühnentechnik und Fahrzeuge zusammen mit Tourneen** nachlegen. Der Weg zu den hohen Stufen (Konzept „Tempo“) läuft dann über diese Bereiche, nicht über eine Bremse.
+**Bühnentechnik und Fahrzeuge zusammen mit Tourneen** nachlegen. Eine Stufen-Bremse gibt es nicht (mehr); das Tempo ergibt sich aus den Gewinnen selbst (`kern.md`, Tempo).
 
 ### Woher neue Musiker kommen
 

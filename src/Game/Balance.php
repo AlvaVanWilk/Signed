@@ -185,7 +185,7 @@ final class Balance
      * (Unbekannte selten, Bekannte oft), offen höchstens 1 + Bekanntheitsstufe je Musiker (wer bekannt ist, hat mehrere Anfragen zugleich).
      * Wie viele Bands das Label sonst hat, spielt keine Rolle. Sie liegen `ttl` Sekunden.
      * Das Medium passt zur Bekanntheitsstufe (Catalog::INTERVIEW_MEDIA, dort auch der Anteil je Medium). Gewinn = Anteil × Weg von dieser Stufe
-     * zur nächsten (FAME_LEVELS), ohne Stufen-Bremse; auf der höchsten Stufe zählt `topSpan`. Annehmen schickt den Musiker `seconds[Stufe]` weg.
+     * zur nächsten (FAME_LEVELS); auf der höchsten Stufe zählt `topSpan`. Annehmen schickt den Musiker `seconds[Stufe]` weg.
      */
     public const INTERVIEW = ['perDay' => ['start' => 0.1, 'root' => 0.05], 'ttl' => 4 * 86400, 'seconds' => [900, 1200, 1800, 2700], 'topSpan' => 600.0, 'maxCatchUp' => 86400];
     /**
@@ -213,7 +213,7 @@ final class Balance
     public const POST = ['unpack' => 2, 'sort' => 1, 'ttl' => 4 * 86400, 'refresh' => 60];
     /**
      * Privatlehrer: für ein Instrument, manchmal mit Lieblingsgenre. Gebucht für `seconds` und genau einen Musiker (einmal bezahlt), der in der Zeit
-     * `gain` Können dazugewinnt, gleichmäßig verteilt und ohne Stufen-Bremse (mit passendem Genre × `genreFactor`). Unterrichtet nur bis `maxSkill`.
+     * `gain` Können dazugewinnt, gleichmäßig verteilt und ohne Lernkurve (mit passendem Genre × `genreFactor`). Unterrichtet nur bis `maxSkill`.
      * `ownInstrument`: so oft bewirbt sich jemand für ein Instrument, das im Label gespielt wird.
      */
     public const TEACHER = [
@@ -556,17 +556,11 @@ final class Balance
      * langsamer geht es: Zuwachs × (1 − Können/110) hoch TRAINING_CURVE.
      */
     public const TRAINING_CURVE = 2.5;
-    /**
-     * Über Stufe 1 hinaus geht es mit den heutigen Mitteln kaum weiter: Können- und Bekanntheitsgewinne wirken
-     * je nach aktueller Stufe nur noch zu diesem Anteil (Stufe 0, 1, 2+). Profi/Szenegröße ist sehr schwer,
-     * Virtuose/Star praktisch unerreichbar – Platz für Tourneen und Manager, die später dazukommen.
-     */
-    public const LEVEL_PACE = [1.0, 0.25, 0.03];
     public const PRACTICE_GAIN = 0.8;
     /**
      * Tageskurse: Jeden Tag ein zufälliges Instrument und eine zufällige Kursart, für alle Spieler gleich.
      * Kursart: [Name, Häufigkeit, Dauer in Sekunden, Können, Grundpreis] – der Zuwachs ist für jeden Teilnehmer gleich,
-     * ohne Lernkurve und ohne Stufen-Bremse (der Weg nach oben). Angeboten wird sie in drei Schwierigkeiten
+     * ohne Lernkurve. Angeboten wird sie in drei Schwierigkeiten
      * (Anfänger, Fortgeschrittene, Profis = Stufe 0, 1, 2+); jeder nur in seiner, der Preis × PRICE_FACTOR.
      * Ein Musiker hat etwa jeden zehnten Tag sein Instrument: im Schnitt +4,5 Können, eine Stufe (25 Punkte) allein
      * durch Kurse in rund zwei Monaten.
@@ -610,8 +604,7 @@ final class Balance
      * Qualität = RECORD_QUALITY_BASE + Studio + Produzent (+ Charakter und goldene Instrumente), höchstens 1; ab RECORD_PERFECT_FROM gilt sie als perfekt.
      * Studio: `quality`, Preis je Lied. Produzent: `quality`, Honorar je Platte, `unlocks` = bestes Studio, in das er die Band bringt
      * (ohne Produzent nur die Garage). Jeder Produzent hilft auch in einem schlechteren Studio.
-     * Die Legende geht in jedes Studio, nimmt aber nur Bands ab `minSound`; ihr Ruhm aus der Platte ist nicht durch LEVEL_PACE gebremst
-     * (`unpaced`) – ein Weg zu Stufe 2 und 3. `mood`: Wohlbefinden für alle, wenn sie mit ihr aufnehmen.
+     * Die Legende geht in jedes Studio, nimmt aber nur Bands ab `minSound`. `mood`: Wohlbefinden für alle, wenn sie mit ihr aufnehmen.
      */
     public const RECORD_SECONDS_PER_SONG = 300;
     public const RECORD_QUALITY_BASE = 0.35;
@@ -627,7 +620,7 @@ final class Balance
         'mo' => ['name' => 'Mo Beats', 'quality' => 0.08, 'fee' => 150, 'unlocks' => 1, 'level' => 1],
         'roxy' => ['name' => 'Roxy Reverb', 'quality' => 0.16, 'fee' => 500, 'unlocks' => 2, 'level' => 2],
         'diamond' => ['name' => 'Diamond Dee', 'quality' => 0.24, 'fee' => 1500, 'unlocks' => 3, 'level' => 3],
-        'legend' => ['name' => 'Ruben Stille', 'quality' => 0.3, 'fee' => 2500, 'unlocks' => 3, 'level' => 3, 'minSound' => 45, 'unpaced' => true, 'mood' => 6.0],
+        'legend' => ['name' => 'Ruben Stille', 'quality' => 0.3, 'fee' => 2500, 'unlocks' => 3, 'level' => 3, 'minSound' => 45, 'mood' => 6.0],
     ];
     /**
      * Anspruch: Ruhm-Stufe der Band gegen Produktionsniveau (Mittel aus Studio und Produzent, gerundet). Je Stufe darunter

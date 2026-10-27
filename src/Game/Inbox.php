@@ -213,7 +213,7 @@ final class Inbox
         ]);
     }
 
-    /** Was man bei einem Interview bekäme (ohne Bremse). */
+    /** Was man bei einem Interview bekäme. */
     public static function interviewGain(array $data): float
     {
         return round((float) $data['share'] * self::span((int) $data['level']), 2);
@@ -309,7 +309,7 @@ final class Inbox
     public static function settle(Repo $repo, array $row, array $data): array
     {
         $musicianId = (int) $row['musician_id'];
-        $gain = $repo->addMusicianFame($musicianId, (float) ($data['reward']['fame'] ?? 0), false);
+        $gain = $repo->addMusicianFame($musicianId, (float) ($data['reward']['fame'] ?? 0));
         $m = $repo->db->one('SELECT * FROM musicians WHERE id = ?', [$musicianId]);
         if ($m === null) {
             return ['fame' => 0, 'total' => 0];

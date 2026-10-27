@@ -86,8 +86,7 @@ final class Repo
      * @param array<int, float> $gains Musiker-ID => Gewinn
      * @return float der ganze Gewinn
      */
-    /** @param bool $paced false: ohne Stufen-Bremse (z. B. Platte mit der Legende) */
-    public function addBandFame(int $bandId, array $gains, bool $paced = true): float
+    public function addBandFame(int $bandId, array $gains): float
     {
         $total = array_sum($gains);
         if ($total <= 0) {
@@ -96,20 +95,19 @@ final class Repo
         $own = $total * Balance::BAND_FAME_SHARE;
         $this->db->exec('UPDATE bands SET fame_own = fame_own + ? WHERE id = ? AND label_id = ?', [$own, $bandId, $this->labelId]);
         foreach ($gains as $musicianId => $gain) {
-            $own += $this->addMusicianFame((int) $musicianId, $gain * (1 - Balance::BAND_FAME_SHARE), $paced);
+            $own += $this->addMusicianFame((int) $musicianId, $gain * (1 - Balance::BAND_FAME_SHARE));
         }
         return $own;
     }
 
-    /** Bekanntheit für einen Musiker – über Stufe 1 hinaus nur noch zum Teil (Balance::LEVEL_PACE). Liefert den echten Gewinn. */
-    public function addMusicianFame(int $musicianId, float $gain, bool $paced = true): float
+    /** Bekanntheit für einen Musiker (ohne Bremse: Wie schnell es geht, regeln die Gewinne selbst). Liefert den Gewinn. */
+    public function addMusicianFame(int $musicianId, float $gain): float
     {
         $fame = $this->db->value('SELECT fame FROM musicians WHERE id = ? AND label_id = ?', [$musicianId, $this->labelId]);
         if ($fame === null || $gain <= 0) {
             return 0.0;
         }
         $before = Levels::forFame((float) $fame);
-        $gain *= $paced ? Levels::pace($before) : 1.0;
         $this->db->exec('UPDATE musicians SET fame = fame + ? WHERE id = ? AND label_id = ?', [$gain, $musicianId, $this->labelId]);
         $after = Levels::forFame((float) $fame + $gain);
         if ($after > $before) {

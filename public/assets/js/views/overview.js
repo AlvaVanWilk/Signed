@@ -111,7 +111,7 @@ function notes(s) {
   const unheard = (s.submissions ?? []).filter((x) => x.state === 'closed' && !x.saved).length;
   const envelopes = [...(s.submissions ?? []), ...mail].filter((x) => x.state === 'envelope' && !x.saved).length;
   if (envelopes) add(2, go('inbox', `${envelopes === 1 ? 'Ein Umschlag liegt' : `${envelopes} Umschläge liegen`} noch ungeöffnet im Eingang.`));
-  for (const x of (s.assistant?.staff ?? []).filter((y) => y.intern)) {
+  for (const x of (s.assistant?.staff ?? []).filter((y) => y.intern && !y.ended)) {
     const todo = s.assistant.todo;
     add(2, x.job ? `<b>${esc(x.firstName)}</b> ${esc(INTERN_JOBS[x.job.kind]?.[1] ?? 'arbeitet')}, fertig in <span data-until="${x.job.until}"></span>.`
       : (todo.unpack || todo.listen || todo.sort ? go('inbox', `<b>${esc(x.firstName)}</b> langweilt sich und wartet auf einen Auftrag.`) : `<b>${esc(x.firstName)}</b> hat gerade nichts zu tun.`));
@@ -124,7 +124,8 @@ function notes(s) {
     if (!mail.some((m) => m.kind === 'report' && m.scoutName === x.firstName)) add(2, `<b>${esc(x.firstName)}</b> hat gerade nichts zu tun. Unter der Künstlerleiste kannst du den Scout losschicken.`);
   }
   for (const x of (s.assistant?.staff ?? []).filter((y) => y.intern && y.until - serverNow() < 2 * 86400)) {
-    add(1, go('demos', `Das Praktikum von <b>${esc(x.firstName)}</b> endet bald (${left(x.until)}). Übernehmen?`));
+    add(1, x.ended ? go('inbox', `Das Praktikum von <b>${esc(x.firstName)}</b> ist vorbei. ${esc(x.firstName)} möchte gern bleiben: übernehmen oder verabschieden?`)
+      : go('inbox', `Das Praktikum von <b>${esc(x.firstName)}</b> endet bald (${left(x.until)}). Danach kannst du ${esc(x.firstName)} übernehmen.`));
   }
   const c = (s.courses ?? [])[0];
   if (c) {

@@ -787,6 +787,11 @@ defineActions({
     if (!x || !(await confirmDialog(`${x.firstName} für ${money(app.state.assistant.adoptPrice)} als Assistenz übernehmen? Dann bleibt ${x.firstName} und kann auch Kassetten anhören oder sich um die Presse kümmern.`, { ok: 'Übernehmen' }))) return;
     if (await mutate('assistAdopt', { staffId: Number(id) })) toast(`${x.firstName} bleibt jetzt als Assistenz.`, 'ok');
   },
+  async assistDismiss({ id }) {
+    const x = app.state.assistant?.staff.find((y) => y.id === Number(id));
+    if (!x || !(await confirmDialog(`${x.firstName} verabschieden? Dann ist ${x.firstName} weg, und ein neues Praktikum kann kommen.`, { ok: 'Verabschieden' }))) return;
+    if (await mutate('assistDismiss', { staffId: Number(id) })) toast(`${x.firstName} ist verabschiedet.`, 'ok');
+  },
   assistRulesAsk() {
     rulesDialog();
   },

@@ -533,7 +533,9 @@ setInterval(() => {
     // Auch Umschläge (selbst oder vom Praktikum ausgepackt) und ein fertiges Praktikum zeigen sich sofort.
     || [...(app.state.submissions ?? []), ...(app.state.mail ?? [])].some((x) => x.state === 'unpacking' && x.unpacksAt + 0.4 <= now0)
     // Das Praktikum geht Stück für Stück weiter: nachfragen, wenn das aktuelle Stück fertig ist.
-    || (app.state.assistant?.staff ?? []).some((x) => x.job && (x.job.next || x.job.until) + 0.4 <= now0);
+    || (app.state.assistant?.staff ?? []).some((x) => (x.job && (x.job.next || x.job.until) + 0.4 <= now0)
+      // Ende des Praktikums (dann fragt es, ob es bleiben darf) und Ende der Bedenkzeit
+      || (x.intern && ((!x.ended && x.until + 0.4 <= now0) || x.leaves + 0.4 <= now0)));
   if (tapeDone && Date.now() - lastTapeRefresh > 700) {
     lastTapeRefresh = Date.now();
     refresh();

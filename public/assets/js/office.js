@@ -106,8 +106,16 @@ function heldOf(x, a) {
 
 const name = (x) => esc(x.firstName);
 
+/** Nach dem Praktikum: übernehmen (als Assistenz) oder verabschieden. */
+const stayButtons = (x, a) => `<button class="ps-pill" data-act="assistAdopt" data-id="${x.id}" ${off(app.state.label.money < a.adoptPrice ? `Dafür fehlen noch ${money(a.adoptPrice - app.state.label.money)}.` : '')}>Übernehmen · ${money(a.adoptPrice)}</button>
+  <button class="ps-pill ghost" data-act="assistDismiss" data-id="${x.id}">Verabschieden</button>`;
+
 /** Sprechblase des Praktikums: Langeweile und Zurufe, oder was es gerade tut (mit Abbrechen). */
 function internBubble(x, a) {
+  if (x.ended) {
+    return `<p>Mein Praktikum ist vorbei. Darf ich bei euch bleiben? <small>Ich warte noch <span data-until="${x.leaves}"></span> auf deine Antwort.</small></p>
+      <div class="ps-say">${stayButtons(x, a)}</div>`;
+  }
   if (x.job) {
     const say = INTERN_JOBS[x.job.kind]?.[2] ?? 'Ich bin beschäftigt.';
     return `<p>${esc(say)} <small>Fertig in <span data-until="${x.job.until}"></span>.</small></p>
@@ -145,7 +153,7 @@ export function officeScene(a, posts = 0) {
   const open = staff.some((x) => x.id === app.ui.psOpen) ? app.ui.psOpen : null;
   // Ohne Auftrag (Praktikum) oder ohne Arbeitsgebiet (Assistenz) sagt man es; beim Praktikum steht während der Arbeit die Restzeit
   // über dem Kopf. Eine Assistenz mit Arbeitsgebiet sagt nichts, auch wenn sie gerade Kaffee trinkt.
-  const hint = (x) => (x.intern ? (x.job ? `<span data-until="${x.job.until}"></span>` : 'Ich habe nichts zu tun.') : x.task === 'none' ? 'Ich habe keine feste Aufgabe.' : '');
+  const hint = (x) => (x.intern ? (x.ended ? 'Darf ich bleiben?' : x.job ? `<span data-until="${x.job.until}"></span>` : 'Ich habe nichts zu tun.') : x.task === 'none' ? 'Ich habe keine feste Aufgabe.' : '');
   const front = staff.map((x) => `
     <div class="ps-col">
       ${x.id === open ? `<div class="ps-bubble">${x.intern ? internBubble(x, a) : assistantBubble(x, a)}</div>`
@@ -155,8 +163,9 @@ export function officeScene(a, posts = 0) {
     </div>`).join('');
   const intern = staff.find((x) => x.intern);
   const note = intern
-    ? `<div class="ps-note"><b>${name(intern)}</b> bleibt noch <span data-until="${intern.until}"></span>
-        <button class="ps-pill" data-act="assistAdopt" data-id="${intern.id}" ${off(app.state.label.money < a.adoptPrice ? `Dafür fehlen noch ${money(a.adoptPrice - app.state.label.money)}.` : '')}>Fest übernehmen · ${money(a.adoptPrice)}</button></div>`
+    ? intern.ended
+      ? `<div class="ps-note">Das Praktikum von <b>${name(intern)}</b> ist vorbei. Tipp ${name(intern)} an und sag, ob ${name(intern)} bleiben darf.</div>`
+      : `<div class="ps-note"><b>${name(intern)}</b> ist noch <span data-until="${intern.until}"></span> im Praktikum. Danach kannst du ${name(intern)} übernehmen.</div>`
     : !staff.length
       ? `<div class="ps-note ps-empty">Hier sitzt noch niemand. Ein <b>Praktikum</b> hilft dir auf Zuruf, eine <b>Assistenz</b> erledigt die Post von allein.<br>
         <button class="ps-pill" data-act="subBox" data-key="job">Zu den Bewerbungen</button></div>`

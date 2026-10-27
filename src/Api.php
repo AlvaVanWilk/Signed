@@ -99,6 +99,7 @@ final class Api
         'assistRules' => ['POST', true],
         'assistTask' => ['POST', true],
         'assistAdopt' => ['POST', true],
+        'assistDismiss' => ['POST', true],
         'postUnpack' => ['POST', true],
         'internOrder' => ['POST', true],
         'internCancel' => ['POST', true],
@@ -549,6 +550,12 @@ final class Api
     private function assistAdopt(array $in, Repo $repo): array
     {
         (new Assistant($repo))->adopt(self::int($in, 'staffId'));
+        return ['state' => State::build($repo)];
+    }
+
+    private function assistDismiss(array $in, Repo $repo): array
+    {
+        (new Assistant($repo))->dismiss(self::int($in, 'staffId'));
         return ['state' => State::build($repo)];
     }
 

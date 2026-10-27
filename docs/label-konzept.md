@@ -323,7 +323,9 @@ das überstimmt die Sortierung (`Post::move`, Spalte `box`).
   liegt, kommt ins passende Fach). Es macht das für alles, was in dem Moment da liegt, **das Neueste zuerst**; was danach kommt, bleibt liegen.
   Man kann es jederzeit **abbrechen**: Fertiges bleibt fertig, der Rest liegt wieder da wie vorher. Es ist nicht schneller als man selbst,
   aber man kann derweil etwas anderes tun; auch offline. Ist es fertig, kommt eine Meldung.
-  Bis zum Ende lässt es sich für 400 ₲ als Assistenz übernehmen (bekommt einen Nachnamen und sieht erwachsen aus), sonst geht es.
+  **Übernehmen geht erst nach den 7 Tagen:** Dann hört es auf zu arbeiten (ein laufender Auftrag endet, der Rest liegt wieder da), meldet sich
+  einmal („möchte gern bleiben“) und wartet einen Tag (`Balance::INTERN['decide']`) auf eine Antwort: für 400 ₲ als Assistenz **übernehmen**
+  (bekommt einen Nachnamen und sieht erwachsen aus) oder **verabschieden** (dann kann ein neues Praktikum kommen). Ohne Antwort geht es.
 - **Assistenz** (gebaut, `Assistant`): einmalig bezahlt (400 ₲). Jede **packt laufend alle Post aus und sortiert sie** in die Fächer und schreibt
   Notizen auf die Übersicht. Dazu ein **Arbeitsgebiet**, jederzeit umstellbar: keins (so fangen neue an), **Kassetten anhören** (50 am Tag,
   wirft nach den Regeln weg: ab Können-Stufe, Genres, Einzeln/Band) oder **Presse** (sagt Interview-Anfragen zu, sobald der Musiker frei ist).
@@ -332,8 +334,8 @@ das überstimmt die Sortierung (`Post::move`, Spalte `box`).
   der Schreibtisch mit Namensschildern; Praktikum und Assistenzen stehen als Figuren dahinter. Ein Praktikum ohne Auftrag sagt „Ich habe
   nichts zu tun.“, eine Assistenz ohne Arbeitsgebiet „Ich habe keine feste Aufgabe.“ (beide schauen gelangweilt); beim Praktikum steht während der Arbeit die Restzeit über dem Kopf, und es hält
   Brief, Kassette oder Stapel in der Hand. Eine Assistenz mit Arbeitsgebiet sagt nichts; gibt es gerade nichts dafür, trinkt sie Kaffee.
-  Antippen öffnet die Sprechblase mit Zurufen, Arbeitsgebiet, Regeln und Abbrechen; die Restzeit des Praktikums und „Fest übernehmen“
-  stehen auf einem Zettel am Tisch.
+  Antippen öffnet die Sprechblase mit Zurufen, Arbeitsgebiet, Regeln und Abbrechen; die Restzeit des Praktikums steht auf einem Zettel am Tisch.
+  Ist das Praktikum vorbei, fragt es „Darf ich bleiben?“; in der Sprechblase stehen dann „Übernehmen“ und „Verabschieden“.
 - **Scout-Karte** (gebaut): Der eingestellte Scout steht unter der Künstlerleiste: losschicken, Countdown, danach „Ansehen“ für den Bericht.
 - Die **Sprechblasen** mit Wünschen auf den Band-Kacheln sind vorerst geparkt.
 - **Interviews** siehe „Interviews und Promo-Anfragen“; Zahlen in `kern.md` (Promo, Tempo).

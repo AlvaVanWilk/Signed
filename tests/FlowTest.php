@@ -2341,7 +2341,7 @@ test('Cover: Designer machen es klarer und verkaufen mehr, das Bandlogo wird ein
     checkEquals(Balance::COVER_LOGO_SALES, (float) $cover['sales']);
 });
 
-test('Praktikum: günstig, sortiert nur die Post, lässt sich als Assistenz übernehmen oder geht nach sieben Tagen', function () {
+test('Praktikum: günstig, sortiert nur die Post, lässt sich erst nach den sieben Tagen übernehmen, sonst geht es', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Praktikum');
     $p->get('state');
@@ -2357,6 +2357,14 @@ test('Praktikum: günstig, sortiert nur die Post, lässt sich als Assistenz übe
     checkEquals(true, $state['assistant']['staff'][0]['intern']);
     $id = $state['assistant']['staff'][0]['id'];
     checkApiError(fn () => $p->post('assistTask', ['staffId' => $id, 'task' => 'presse']), 'gibt es nicht');
+    // Während des Praktikums geht Übernehmen (und Verabschieden) noch nicht.
+    checkApiError(fn () => $p->post('assistAdopt', ['staffId' => $id]), 'erst, wenn das Praktikum vorbei ist');
+    checkApiError(fn () => $p->post('assistDismiss', ['staffId' => $id]), 'noch im Praktikum');
+    // Danach wartet es auf eine Antwort und arbeitet nicht mehr.
+    Clock::advance(Balance::INTERN['seconds'] + 60);
+    $state = $p->get('state');
+    checkEquals(true, $state['assistant']['staff'][0]['ended']);
+    checkApiError(fn () => $p->post('internOrder', ['staffId' => $id, 'job' => 'sort']), 'ist vorbei');
     // Übernehmen: jetzt eine feste Assistenz; ein Arbeitsgebiet bekommt sie erst, wenn man es ihr gibt.
     $state = $p->post('assistAdopt', ['staffId' => $id])['state'];
     checkEquals(false, $state['assistant']['staff'][0]['intern']);
@@ -2364,13 +2372,15 @@ test('Praktikum: günstig, sortiert nur die Post, lässt sich als Assistenz übe
     checkEquals(50, $p->post('assistTask', ['staffId' => $id, 'task' => 'demos'])['state']['assistant']['perDay']);
     Clock::advance(30 * 86400);
     checkEquals(1, count($p->get('state')['assistant']['staff']), 'bleibt');
-    // Ein zweites Praktikum ohne Übernahme geht nach sieben Tagen.
+    // Ein zweites Praktikum ohne Antwort geht nach der Bedenkzeit.
     $p2 = registerPlayer($db, 'Kurzzeit');
     $p2->get('state');
     unpackAll($db);
     $mail = array_values(array_filter($p2->get('state')['mail'], static fn ($m) => $m['kind'] === 'job' && $m['role'] === 'intern'))[0];
     $p2->post('mailHire', ['mailId' => $mail['mailId']]);
     Clock::advance(Balance::INTERN['seconds'] + 60);
+    checkEquals(true, $p2->get('state')['assistant']['staff'][0]['ended'], 'wartet noch auf eine Antwort');
+    Clock::advance(Balance::INTERN['decide']);
     $p2->get('state');
     unpackAll($db);
     $state = $p2->get('state');
@@ -2495,11 +2505,44 @@ test('Umschläge: Praktikum packt auf Zuruf aus, hört an, sortiert in die Fäch
     $state = $p->post('postMove', ['table' => 's', 'id' => $sid, 'box' => 'inbox'])['state'];
     checkEquals('inbox', $state['submissions'][0]['box']);
     checkEquals(1, $state['assistant']['todo']['sort']);
-    // Übernehmen: bekommt einen Nachnamen und sieht erwachsen aus; packt ab jetzt laufend aus und sortiert.
+    // Übernehmen (nach dem Praktikum): bekommt einen Nachnamen und sieht erwachsen aus; packt ab jetzt laufend aus und sortiert.
+    $db->exec('UPDATE staff SET busy_until = ? WHERE id = ?', [Clock::now() - 1, $id]);
     $state = $p->post('assistAdopt', ['staffId' => $id])['state'];
     check($state['assistant']['staff'][0]['lastName'] !== '', 'mit Nachnamen');
     check(!isset($state['assistant']['staff'][0]['look']['young']), 'erwachsen');
     $db->exec('UPDATE submissions SET unpacked_at = NULL, sorted_at = NULL');
     $state = $p->get('state');
     checkEquals([], array_values(array_filter($state['submissions'], static fn ($x) => in_array($x['state'], ['envelope', 'unpacking'], true) || !$x['sorted'])), 'Assistenz packt aus und sortiert');
+});
+
+test('Praktikum: Auftrag endet mit dem Praktikum, verabschieden macht Platz für ein neues', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Abschied');
+    $p->get('state');
+    unpackAll($db);
+    $intern = array_values(array_filter($p->get('state')['mail'], static fn ($m) => $m['kind'] === 'job' && $m['role'] === 'intern'))[0];
+    $id = $p->post('mailHire', ['mailId' => $intern['mailId']])['state']['assistant']['staff'][0]['id'];
+    // Kurz vor Schluss ein langer Auftrag: Was nach dem Ende dran wäre, bleibt liegen.
+    $db->exec('UPDATE submissions SET unpacked_at = NULL, sorted_at = NULL');
+    $todo = $p->get('state')['assistant']['todo']['unpack'];
+    check($todo >= 2, 'genug Umschläge');
+    $db->exec('UPDATE staff SET busy_until = ? WHERE id = ?', [Clock::now() + Balance::POST['unpack'] + 1, $id]);
+    $p->post('internOrder', ['staffId' => $id, 'job' => 'unpack']);
+    Clock::advance($todo * Balance::POST['unpack'] + 60);
+    $state = $p->get('state');
+    $x = $state['assistant']['staff'][0];
+    checkEquals(true, $x['ended']);
+    checkEquals(null, $x['job'], 'arbeitet nicht mehr');
+    check($state['assistant']['todo']['unpack'] > 0, 'Rest liegt noch da');
+    checkEquals(1, (int) $db->value("SELECT COUNT(*) FROM history WHERE text LIKE '%möchte gern bleiben%'"), 'fragt einmal nach');
+    $p->get('state');
+    checkEquals(1, (int) $db->value("SELECT COUNT(*) FROM history WHERE text LIKE '%möchte gern bleiben%'"), 'nur einmal');
+    // Verabschieden: weg, und ein neues Praktikum lässt sich einstellen.
+    $state = $p->post('assistDismiss', ['staffId' => $id])['state'];
+    checkEquals(null, $state['assistant']);
+    $next = array_values(array_filter($state['mail'], static fn ($m) => $m['kind'] === 'job' && $m['role'] === 'intern' && $m['mailId'] !== $intern['mailId']));
+    if ($next) {
+        $state = $p->post('mailHire', ['mailId' => $next[0]['mailId']])['state'];
+        checkEquals(true, $state['assistant']['staff'][0]['intern']);
+    }
 });

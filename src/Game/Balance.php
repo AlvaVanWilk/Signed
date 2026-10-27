@@ -282,9 +282,10 @@ final class Balance
     ];
     /**
      * Praktikum: bewirbt sich gleich zu Beginn und danach immer wieder (Balance::JOBS), günstig und für `seconds`. Sortiert nur die Post und schreibt Notizen auf die Übersicht
-     * (hört keine Kassetten an, macht keine Presse). Bis zum Ende lässt sie sich als Assistenz übernehmen (Preis der Assistenz), sonst geht sie.
+     * (hört keine Kassetten an, macht keine Presse). Ist das Praktikum vorbei, wartet sie noch `decide` Sekunden auf eine Antwort: übernehmen
+     * (Preis der Assistenz) oder verabschieden. Vorher lässt sie sich nicht übernehmen; ohne Antwort geht sie.
      */
-    public const INTERN = ['price' => 50, 'seconds' => 7 * 86400];
+    public const INTERN = ['price' => 50, 'seconds' => 7 * 86400, 'decide' => 86400];
     /**
      * Künstlername: Nicht jeder will einen. Wer ihn sich wünscht, hängt am Charakter (Eigenschaft => ab welchem Ruhm): Diven früh, Rampensäue etwas später,
      * Ehrgeizige erst, wenn sie richtig bekannt sind. Das Label sucht einen von drei aus, das freut (Wohlbefinden +mood, höchstens bis 100).

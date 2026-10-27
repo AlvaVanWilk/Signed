@@ -51,16 +51,16 @@ final class Assistant
         $this->repo->db->update('staff', ['data' => json_encode($d, JSON_UNESCAPED_UNICODE)], ['id' => $staffId]);
     }
 
-    /** Praktikum übernehmen: Aus der Praktikantin wird eine feste Assistenz (Preis der Assistenz). */
+    /** Praktikum übernehmen: Aus der Praktikantin wird eine feste Assistenz (Preis der Assistenz). Erst, wenn das Praktikum vorbei ist. */
     public function adopt(int $staffId): void
     {
         $db = $this->repo->db;
         $db->transaction(function () use ($db, $staffId): void {
-            $row = $db->one("SELECT * FROM staff WHERE id = ? AND label_id = ? AND role = 'intern' AND busy_until > ?", [$staffId, $this->repo->labelId, \Signed\Clock::now()]);
-            if ($row === null) {
-                throw new ApiError('Dieses Praktikum gibt es nicht mehr.');
-            }
+            $row = $this->internRow($staffId);
             $d = json_decode($row['data'], true);
+            if ((int) $row['busy_until'] > \Signed\Clock::now()) {
+                throw new ApiError(sprintf('Übernehmen kannst du %s erst, wenn das Praktikum vorbei ist.', $d['first_name']));
+            }
             $this->repo->spend(Balance::ASSISTANT['tiers'][1]['price'], sprintf('Übernommen: %s als Assistenz', $d['first_name']));
             $this->work(\Signed\Clock::now());
             // Ein Arbeitsgebiet bekommt sie erst, wenn man es ihr gibt.
@@ -69,10 +69,32 @@ final class Assistant
             if (($d['last_name'] ?? '') === '') {
                 $d['last_name'] = (string) \Signed\Rng::pick(Catalog::LAST_NAMES);
             }
-            unset($d['look']['young'], $d['job']);
+            unset($d['look']['young'], $d['job'], $d['asked']);
             $db->update('staff', ['role' => 'assistant', 'busy_until' => 0, 'data' => json_encode($d, JSON_UNESCAPED_UNICODE)], ['id' => $staffId]);
             $this->repo->log('staff', sprintf('%s %s bleibt bei uns, jetzt als Assistenz.', $d['first_name'], $d['last_name']));
         });
+    }
+
+    /** Nach dem Praktikum verabschieden, statt zu übernehmen. */
+    public function dismiss(int $staffId): void
+    {
+        $row = $this->internRow($staffId);
+        $d = json_decode($row['data'], true);
+        if ((int) $row['busy_until'] > \Signed\Clock::now()) {
+            throw new ApiError(sprintf('%s ist noch im Praktikum.', $d['first_name']));
+        }
+        $this->repo->db->exec('DELETE FROM staff WHERE id = ?', [$staffId]);
+        $this->repo->log('staff', sprintf('%s ist verabschiedet. Das Praktikum ist zu Ende.', $d['first_name']));
+    }
+
+    /** Ein Praktikum dieses Labels (auch nach dem Ende, solange es noch auf eine Antwort wartet). */
+    private function internRow(int $staffId): array
+    {
+        $row = $this->repo->db->one("SELECT * FROM staff WHERE id = ? AND label_id = ? AND role = 'intern'", [$staffId, $this->repo->labelId]);
+        if ($row === null) {
+            throw new ApiError('Dieses Praktikum gibt es nicht mehr.');
+        }
+        return $row;
     }
 
     /** Auftrag ans Praktikum (auspacken, anhören, sortieren): erledigt alles, was gerade da ist, nacheinander. */
@@ -81,11 +103,11 @@ final class Assistant
         $db = $this->repo->db;
         $db->transaction(function () use ($db, $staffId, $job): void {
             $now = \Signed\Clock::now();
-            $row = $db->one("SELECT * FROM staff WHERE id = ? AND label_id = ? AND role = 'intern' AND busy_until > ?", [$staffId, $this->repo->labelId, $now]);
-            if ($row === null) {
-                throw new ApiError('Dieses Praktikum gibt es nicht mehr.');
-            }
+            $row = $this->internRow($staffId);
             $d = json_decode($row['data'], true);
+            if ((int) $row['busy_until'] <= $now) {
+                throw new ApiError(sprintf('Das Praktikum von %s ist vorbei.', $d['first_name']));
+            }
             if (isset($d['job'])) {
                 throw new ApiError(sprintf('%s ist noch beschäftigt.', $d['first_name']));
             }
@@ -172,17 +194,39 @@ final class Assistant
                 $this->repo->db->update('staff', ['data' => json_encode($d, JSON_UNESCAPED_UNICODE)], ['id' => (int) $row['id']]);
                 continue;
             }
-            $this->advance((int) $row['id'], $d, $now);
+            // Gearbeitet wird nur bis zum Ende des Praktikums; was dann noch offen ist, liegt wieder da wie vorher.
+            $end = (int) $row['busy_until'];
+            $this->advance((int) $row['id'], $d, min($now, $end));
+            $d = json_decode((string) $this->repo->db->value('SELECT data FROM staff WHERE id = ?', [(int) $row['id']]), true);
+            if ($now >= $end && isset($d['job'])) {
+                (new Post($this->repo))->cancel($end);
+                unset($d['job']);
+                $this->repo->db->update('staff', ['data' => json_encode($d, JSON_UNESCAPED_UNICODE)], ['id' => (int) $row['id']]);
+            }
         }
     }
 
-    /** Abgelaufene Praktika: Sie verabschiedet sich. */
+    /** Abgelaufene Praktika: Wer nicht übernommen oder verabschiedet wurde, geht nach der Bedenkzeit. */
     private function endInternships(int $now): void
+    {
+        foreach ($this->repo->db->all("SELECT * FROM staff WHERE label_id = ? AND role = 'intern' AND busy_until <= ?", [$this->repo->labelId, $now - Balance::INTERN['decide']]) as $row) {
+            $d = json_decode($row['data'], true);
+            $this->repo->db->exec('DELETE FROM staff WHERE id = ?', [(int) $row['id']]);
+            $this->repo->log('staff', sprintf('%s ist gegangen. Das Praktikum war vorbei, und niemand hat geantwortet.', $d['first_name']));
+        }
+    }
+
+    /** Gerade zu Ende gegangene Praktika fragen einmal, ob sie bleiben dürfen. */
+    private function askInterns(int $now): void
     {
         foreach ($this->repo->db->all("SELECT * FROM staff WHERE label_id = ? AND role = 'intern' AND busy_until <= ?", [$this->repo->labelId, $now]) as $row) {
             $d = json_decode($row['data'], true);
-            $this->repo->db->exec('DELETE FROM staff WHERE id = ?', [(int) $row['id']]);
-            $this->repo->log('staff', sprintf('Das Praktikum von %s ist zu Ende.', $d['first_name']));
+            if (!empty($d['asked'])) {
+                continue;
+            }
+            $d['asked'] = true;
+            $this->repo->db->update('staff', ['data' => json_encode($d, JSON_UNESCAPED_UNICODE)], ['id' => (int) $row['id']]);
+            $this->repo->log('staff', sprintf('Das Praktikum von %s ist vorbei. %s möchte gern bleiben: Im Posteingang kannst du übernehmen oder verabschieden.', $d['first_name'], $d['first_name']));
         }
     }
 
@@ -232,6 +276,7 @@ final class Assistant
     {
         $this->endInternships($now);
         $this->internProgress($now);
+        $this->askInterns($now);
         $staff = $this->staff();
         if (!$staff) {
             return;
@@ -306,6 +351,8 @@ final class Assistant
             'staff' => array_map(static fn ($s) => [
                 'id' => (int) $s['id'], 'firstName' => $s['info']['first_name'], 'lastName' => $s['info']['last_name'], 'look' => $s['info']['look'], 'task' => $s['task'],
                 'intern' => $s['role'] === 'intern', 'until' => $s['role'] === 'intern' ? (int) $s['busy_until'] : null,
+                // Praktikum vorbei: wartet bis `leaves` auf eine Antwort (übernehmen oder verabschieden)
+                'ended' => $s['role'] === 'intern' && (int) $s['busy_until'] <= $now, 'leaves' => $s['role'] === 'intern' ? (int) $s['busy_until'] + Balance::INTERN['decide'] : null,
                 // Was es gerade tut: Art, voraussichtlich fertig, wann das aktuelle Stück fertig ist (dann geht es zum nächsten)
                 'job' => isset($s['info']['job']['queue']) ? ['kind' => $s['info']['job']['kind'], 'until' => (int) $s['info']['job']['until'], 'next' => (int) $s['info']['job']['end'], 'count' => (int) $s['info']['job']['count']] : null,
             ], $staff),

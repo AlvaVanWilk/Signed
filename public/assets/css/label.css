@@ -76,7 +76,9 @@
 
 /* Bandseite */
 .lb-hd { position: relative; display: flex; gap: 16px; align-items: center; padding: 18px 20px; border-radius: 12px; background: var(--lb-card2); border: 1px solid var(--lb-line); border-top: 3px solid var(--g, transparent); }
-.lb-hd.mixed::before { content: ''; position: absolute; left: -1px; right: -1px; top: -1px; height: 3px; border-radius: 12px 12px 0 0; background: linear-gradient(90deg, #a8607c, #b89d57, #a9bd3a, #6590b3, #8676b5); }
+/* Gemischte Band: Regenbogen-Leiste innen, damit sie der runden Ecke folgt und nicht übersteht. */
+.lb-hd.mixed { border-top-width: 1px; overflow: hidden; }
+.lb-hd.mixed::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: linear-gradient(90deg, #a8607c, #b89d57, #a9bd3a, #6590b3, #8676b5); }
 .lb-hd h1 { margin: 0; font-size: 1.55rem; }
 .lb-hd small { color: var(--lb-muted); font-weight: 600; }
 .lb-hd-mood { margin-left: auto; display: grid; gap: 6px; justify-items: end; } .lb-hd-mood .lb-cap { margin: 0; }

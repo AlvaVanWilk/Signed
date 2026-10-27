@@ -349,6 +349,10 @@ das überstimmt die Sortierung (`Post::move`, Spalte `box`).
   einsortiert hat; wer mehrere Genres hat, liegt in mehreren). In jedem lässt sich sortieren (eigene Reihenfolge, im Genre-Reiter nach den
   übrigen Genres gruppiert; Neueste, Stufe, Können). Solange ein Unterreiter oder eine Sortierung gilt, lässt sich nur auf Reiter ziehen.
   Ohne Kassetten-Assistenz gibt es dort den Filter nach Stufen, der Knopf „Genre-Reiter und Sortieren“ ist grau, mit Grund.
+  **Unterreiter bei den Bewerbungen**: Mit einer Büro-Assistenz hat das Fach „Bewerbungen“ ebenso Unterreiter: Alle, Ungelesen und je Beruf
+  (Lehrkräfte, Coaches, Manager, Scouts, Assistenz, Praktikum; nur was sie gelesen hat und was gerade da ist). Sortieren: eigene Reihenfolge
+  (bei den Lehrkräften nach Instrument), Neueste, Beste zuerst (Stufe), Günstigste zuerst, Läuft bald ab. Ohne Büro-Assistenz ist der Knopf
+  „Unterreiter und Sortieren“ grau, mit Grund.
 - **Poststelle** (gebaut, `office.js`): Oben im Posteingang eine Szene statt einer Kachel: Wand mit Fenster, Postfächern, Uhr und Lampe, vorn
   der Schreibtisch mit Namensschildern; Praktikum und Assistenzen stehen als Figuren dahinter. Ein Praktikum ohne Auftrag sagt „Ich habe
   nichts zu tun.“, eine Assistenz ohne Arbeitsgebiet „Ich habe keine feste Aufgabe.“ (beide schauen gelangweilt); beim Praktikum steht während der Arbeit die Restzeit über dem Kopf, und es hält

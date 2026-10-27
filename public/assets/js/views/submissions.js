@@ -69,6 +69,17 @@ function byOtherGenres(a, b, genre) {
   return 0;
 }
 
+/** Bewerbungen nach Beruf (Unterreiter der Büro-Assistenz), in dieser Reihenfolge, und wie sie sich sortieren lassen. Briefe ohne Beruf stehen hinten. */
+const JOB_ROLES = ['teacher', 'coach', 'manager', 'scout', 'assistant', 'intern'];
+const JOB_LABELS = { teacher: 'Lehrkräfte', coach: 'Coaches', manager: 'Manager', scout: 'Scouts', assistant: 'Assistenz', intern: 'Praktikum' };
+const jobFirst = (a, b) => (b.kind === 'job') - (a.kind === 'job');
+const JOB_SORTS = {
+  newest: (a, b) => b.createdAt - a.createdAt,
+  tier: (a, b) => jobFirst(a, b) || (b.tier ?? 0) - (a.tier ?? 0) || (a.price ?? 0) - (b.price ?? 0),
+  cheap: (a, b) => jobFirst(a, b) || (a.price ?? 0) - (b.price ?? 0),
+  soon: (a, b) => a.expiresAt - b.expiresAt,
+};
+
 /** Genres ohne Doppelte, in der festen Reihenfolge (Pop, Rock …). */
 const genreOrderList = (list) => [...new Set(list)].sort((p, q) => genreOrder(p) - genreOrder(q));
 
@@ -330,11 +341,29 @@ export function render() {
   // Im Genre-Reiter heißt „eigene Reihenfolge“: nach den übrigen Genres gruppiert.
   shown = sort === 'own' && !genre ? ordered(shown) : ordered(shown).sort((x, y) => (sort === 'own' ? byOtherGenres(x, y, genre) : SUB_SORTS[sort](x, y)));
   const subCount = (k) => inBox.filter((x) => (k === 'all' ? true : k === 'unheard' ? isDemo(x) && x.state !== 'open' : x.submissionId && x.filed && genresOfSub(x).includes(k))).length;
-  const filterBar = tapes
+  let filterBar = tapes
     ? `<div class="lb-filterbar"><div class="lb-filter lb-subtabs">${[['all', 'Alle'], ['unheard', 'Ungehört'], ...genres.map((g) => [g, genreName(g)])].map(([k, label]) => `<button class="${sub === k ? 'on' : ''}" ${genres.includes(k) ? `style="--g:var(--lb-c-${k})"` : ''} data-act="subTab" data-key="${k}">${genres.includes(k) ? `<i>${genreGlyph(k)}</i>` : ''}${esc(label)} <small>${subCount(k)}</small></button>`).join('')}</div>
       <span class="lb-sortbox"><select data-change="subSort" aria-label="Sortieren">${[['own', genre ? 'Nach den anderen Genres' : 'Eigene Reihenfolge'], ['newest', 'Neueste zuerst'], ['level', 'Stufe'], ['skill', 'Können']].map(([k, label]) => `<option value="${k}" ${sort === k ? 'selected' : ''}>${label}</option>`).join('')}</select></span></div>`
     : ['demos', 'inbox'].includes(box) ? `<div class="lb-filterbar"><div class="lb-filter">${[['all', 'Alle'], ['unheard', 'Ungehört'], ['0', 'Stufe 0'], ['1', 'Stufe 1'], ['2', 'Stufe 2'], ['3', 'Stufe 3']].map(([k, label]) => `<button class="${f === k ? 'on' : ''}" data-act="subFilter" data-key="${k}">${label}</button>`).join('')}</div>
       ${box === 'demos' ? `<span class="lb-sortbox"><button class="lb-pill" ${off('Nach Genre ordnen und sortieren kann eine Assistenz im Gebiet Kassetten. Sie hört die Kassetten an und legt sie in Genre-Reiter.')}>Genre-Reiter und Sortieren</button></span>` : ''}</div>` : '';
+  // Mit einer Büro-Assistenz hat das Fach „Bewerbungen“ Unterreiter: Alle, Ungelesen und je Beruf (was sie gelesen hat), sortierbar wie die Kassetten.
+  if (box === 'job') {
+    const office = !!a?.areas?.office;
+    const isJob = (x) => x.kind === 'job';
+    const roles = office ? JOB_ROLES.filter((r) => inBox.some((x) => isJob(x) && x.read && x.role === r)) : [];
+    const tab = office && (['all', 'unread'].includes(app.ui.jobTab) || roles.includes(app.ui.jobTab)) ? app.ui.jobTab : 'all';
+    const order = office ? app.ui.jobSort ?? 'own' : 'own';
+    app.ui.subSorted = order !== 'own' || tab !== 'all';
+    const inTab = (x, k) => k === 'all' || (k === 'unread' ? isJob(x) && !x.read : isJob(x) && x.read && x.role === k);
+    shown = ordered(inBox.filter((x) => inTab(x, tab)));
+    // Bei den Lehrkräften heißt „eigene Reihenfolge“: nach Instrument gruppiert.
+    if (order !== 'own') shown.sort(JOB_SORTS[order]);
+    else if (tab === 'teacher') shown.sort((x, y) => instrumentName(x.instrument).localeCompare(instrumentName(y.instrument), 'de'));
+    filterBar = office
+      ? `<div class="lb-filterbar"><div class="lb-filter lb-subtabs">${[['all', 'Alle'], ['unread', 'Ungelesen'], ...roles.map((r) => [r, JOB_LABELS[r]])].map(([k, label]) => `<button class="${tab === k ? 'on' : ''}" data-act="jobTab" data-key="${k}">${esc(label)} <small>${inBox.filter((x) => inTab(x, k)).length}</small></button>`).join('')}</div>
+        <span class="lb-sortbox"><select data-change="jobSort" aria-label="Sortieren">${[['own', tab === 'teacher' ? 'Nach Instrument' : 'Eigene Reihenfolge'], ['newest', 'Neueste zuerst'], ['tier', 'Beste zuerst'], ['cheap', 'Günstigste zuerst'], ['soon', 'Läuft bald ab']].map(([k, label]) => `<option value="${k}" ${order === k ? 'selected' : ''}>${label}</option>`).join('')}</select></span></div>`
+      : `<div class="lb-filterbar"><span></span><span class="lb-sortbox"><button class="lb-pill" ${off('Nach Beruf ordnen und sortieren kann eine Assistenz im Gebiet Büro. Sie liest die Bewerbungen und legt sie in Unterreiter.')}>Unterreiter und Sortieren</button></span></div>`;
+  }
   const busy = all.some((x) => x.state === 'listening' && !x.byIntern);
   const empty = box === 'saved' ? 'Noch nichts gemerkt. Mit dem Lesezeichen legst du etwas hierher – ablaufen tut es trotzdem.'
     : box === 'interview' ? 'Gerade fragt niemand nach einem Interview.' : box === 'job' ? 'Gerade bewirbt sich niemand.'
@@ -808,6 +837,14 @@ defineActions({
   },
   subTab({ key }) {
     app.ui.subTab = key;
+    rerender();
+  },
+  jobTab({ key }) {
+    app.ui.jobTab = key;
+    rerender();
+  },
+  jobSort(value) {
+    app.ui.jobSort = value;
     rerender();
   },
   subSort(value) {

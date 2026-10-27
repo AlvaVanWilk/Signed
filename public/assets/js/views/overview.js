@@ -157,7 +157,7 @@ function managerNotes(s) {
   const job = (s.mail ?? []).find((x) => x.kind === 'job' && x.role === 'manager');
   const hasJob = !!job;
   return `
-    <section class="ov-panel ov-office">
+    <section class="ov-panel ov-office ov-c-mgr">
       <h2>Notizen der Manager</h2>
       ${[...groups.values()].map(block).join('')}
       ${loud.length ? `<ul class="ov-notes">${loud.map((b) => {
@@ -175,7 +175,7 @@ function office(s) {
   const a = s.assistant;
   if (!a) {
     return `
-      <section class="ov-panel ov-office ov-none">
+      <section class="ov-panel ov-office ov-none ov-c-office">
         <h2>Das Büro</h2>
         <p class="muted">Noch arbeitet niemand im Büro. Ein Praktikum oder eine Assistenz sortiert die Post und schreibt dir hier auf, was wichtig ist.</p>
         ${go('job', 'Zu den Bewerbungen')}
@@ -184,7 +184,7 @@ function office(s) {
   const list = notes(s);
   const names = a.staff.map((x) => esc(x.firstName));
   return `
-    <section class="ov-panel ov-office">
+    <section class="ov-panel ov-office ov-c-office">
       <h2><span class="ov-faces">${a.staff.slice(0, 4).map((x) => `<span class="lb-ph sm">${photo({ id: x.id, look: x.look })}</span>`).join('')}</span>
         Notizen von ${names.length > 1 ? `${names.slice(0, -1).join(', ')} und ${names.at(-1)}` : names[0]}</h2>
       ${list.length ? `<ul class="ov-notes">${list.map((n) => `<li class="l${n.level}">${n.html}</li>`).join('')}</ul>` : '<p class="muted">Alles erledigt. Gerade gibt es nichts Wichtiges.</p>'}
@@ -216,7 +216,7 @@ function now(s) {
   }
   rows.sort((a, b) => a.until - b.until);
   return `
-    <section class="ov-panel">
+    <section class="ov-panel ov-c-now">
       <h2>Gerade los</h2>
       ${rows.length ? `<div class="ov-now">${rows.map((r) => `<div class="ov-now-row">${r.html}</div>`).join('')}</div>` : `<p class="muted">Gerade ist niemand unterwegs.${s.bands.length ? ' Auf der Seite einer Band kannst du proben, auftreten oder aufnehmen.' : ''}</p>`}
     </section>`;
@@ -247,7 +247,7 @@ function boardNote(s) {
 function chronicle(s) {
   const list = s.history.slice(0, 10);
   return `
-    <section class="ov-panel">
+    <section class="ov-panel ov-c-chron">
       <h2>Chronik</h2>
       ${list.length ? `<ul class="ov-history">${list.map((h) => `<li><span>${esc(h.text)}</span><time>${timeAgo(h.createdAt, serverNow())}</time></li>`).join('')}</ul>` : '<p class="muted">Noch nichts passiert.</p>'}
     </section>`;

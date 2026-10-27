@@ -1114,3 +1114,63 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .lb-intern-job { display: inline-flex; gap: 8px; align-items: center; font-size: .85rem; }
 .lb-intern-left { margin-left: auto; }
 .lb-assist-row { flex-wrap: wrap; }
+
+/* ---------- Farbe und Licht ----------
+ * Mehr Kontrast und Orientierung, ohne knallig zu werden: etwas hellere Karten mit einem Lichtschimmer oben, klarere Ränder,
+ * und je Bereich eine eigene, gedämpfte Farbe (Anordnungen, Tafeln der Übersicht, Fächer im Posteingang). */
+.shell, .modal, .modal-backdrop {
+  --lb-card: #211e2c; --lb-card2: #2a2637; --lb-line: #3a354a; --lb-muted: #a39db4; --lb-text: #f0ecf6;
+  --lb-glow: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0) 46%);
+  --tone-gold: #d4b06e; --tone-teal: #4fb3a9; --tone-blue: #6f9bd6; --tone-violet: #9d8ad8; --tone-rose: #cf7f9b; --tone-green: #73c08f;
+}
+body { background: radial-gradient(1100px 520px at 50% -12%, rgba(212, 176, 110, 0.13), transparent 62%),
+  radial-gradient(900px 600px at 100% 0%, rgba(79, 179, 169, 0.10), transparent 60%),
+  radial-gradient(800px 600px at 0% 30%, rgba(157, 138, 216, 0.08), transparent 60%), #0f0d15; background-attachment: fixed; }
+
+/* Karten: heller, mit Licht von oben und etwas Tiefe */
+.ov-panel, .ov-stat, .lb-act, .lb-wishes, .lb-mgr, .lb-assist, .lb-bt {
+  background: var(--lb-glow), var(--lb-card);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 6px 18px rgba(0, 0, 0, 0.22);
+}
+
+/* Abschnittsüberschriften: lesbarer, mit einem kleinen Farbstrich */
+.lb-cap { color: #c9c3d6; display: flex; align-items: center; gap: 8px; }
+.lb-cap::before { content: ''; width: 14px; height: 3px; border-radius: 2px; background: var(--cap, var(--tone-gold)); flex: none; }
+.lb-wishes .lb-cap { --cap: var(--tone-rose); }
+
+/* Anordnungen: jede mit eigener Farbe, Symbol in einem farbigen Feld */
+.lb-act { --tc: var(--tone-gold); border-left: 3px solid color-mix(in srgb, var(--tc) 70%, transparent); transition: border-color .15s, box-shadow .15s, transform .15s; }
+.lb-act.t-rehearsal { --tc: var(--tone-teal); } .lb-act.t-record { --tc: var(--tone-violet); } .lb-act.t-gig { --tc: var(--tone-gold); }
+.lb-act.t-bandpromo { --tc: var(--tone-rose); } .lb-act.t-retreat { --tc: var(--tone-green); }
+.lb-act svg { stroke: var(--tc); background: color-mix(in srgb, var(--tc) 16%, transparent); border-radius: 9px; padding: 4px; width: 38px; height: 38px; box-sizing: border-box; }
+.lb-act { grid-template-columns: 38px 1fr; }
+.lb-act:hover:not(.idle):not(.lock) { border-color: var(--tc); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 8px 22px rgba(0, 0, 0, 0.28), 0 0 0 1px color-mix(in srgb, var(--tc) 35%, transparent); transform: translateY(-1px); }
+.lb-act.warn { border-color: var(--lb-warn); }
+
+/* Übersicht: Kennzahlen und Tafeln mit eigener Farbkante */
+.ov-stat { border-top: 3px solid var(--sc, var(--tone-gold)); }
+.ov-stat:nth-child(1) { --sc: var(--tone-gold); } .ov-stat:nth-child(2) { --sc: var(--tone-violet); }
+.ov-stat:nth-child(3) { --sc: var(--tone-blue); } .ov-stat:nth-child(4) { --sc: var(--tone-teal); }
+.ov-stat b { color: color-mix(in srgb, var(--sc) 55%, #fff); }
+.ov-panel { border-top: 3px solid var(--pc, var(--lb-line)); }
+.ov-steps { --pc: var(--tone-gold); } .ov-c-mgr { --pc: var(--tone-teal); } .ov-c-office { --pc: var(--tone-blue); }
+.ov-c-now { --pc: var(--tone-green); } .ov-c-chron { --pc: var(--tone-violet); } .ov-shelf { --pc: var(--tone-rose); }
+.ov-panel > h2::before { content: ''; width: 9px; height: 9px; border-radius: 50%; background: var(--pc, var(--tone-gold)); box-shadow: 0 0 10px color-mix(in srgb, var(--pc, var(--tone-gold)) 60%, transparent); flex: none; }
+.ov-notes li { background: color-mix(in srgb, var(--pc, #fff) 6%, var(--lb-card2)); }
+
+/* Posteingang: jedes Fach mit eigener Farbe */
+.lb-boxes button { --bc: var(--tone-gold); }
+.lb-boxes [data-box=demos] { --bc: var(--tone-teal); } .lb-boxes [data-box=interview] { --bc: var(--tone-blue); }
+.lb-boxes [data-box=job] { --bc: var(--tone-violet); } .lb-boxes [data-box=saved] { --bc: var(--tone-rose); }
+.lb-boxes button.on { border-bottom-color: var(--bc); color: var(--lb-text); background: linear-gradient(0deg, color-mix(in srgb, var(--bc) 14%, transparent), transparent); border-radius: 8px 8px 0 0; }
+.lb-boxes small { display: inline-block; min-width: 20px; padding: 0 6px; border-radius: 999px; background: color-mix(in srgb, var(--bc) 22%, transparent); color: color-mix(in srgb, var(--bc) 55%, #fff); opacity: 1; text-align: center; }
+.lb-filter button.on { background: color-mix(in srgb, var(--tone-gold) 14%, transparent); }
+
+/* Band-Leiste: die gewählte Band leuchtet etwas */
+.lb-bt.on, .lb-bt[aria-current] { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 0 0 1px color-mix(in srgb, var(--tone-gold) 50%, transparent), 0 8px 22px rgba(0, 0, 0, 0.3); }
+/* Schwarzes Brett bleibt ein Zettel ohne Karte dahinter */
+.ov-panel.ov-board { background: none; box-shadow: none; border: 0; }
+.ov-board { --pc: var(--tone-gold); }
+/* Posteingang: Büro-Leiste mit Farbkante, die Post liegt auf einer leicht beleuchteten Fläche */
+.lb-assist { border-left: 3px solid color-mix(in srgb, var(--tone-teal) 70%, transparent); }
+.lb-slots { background: radial-gradient(ellipse 70% 60% at 50% 0%, rgba(212, 176, 110, 0.07), transparent 70%), rgba(255, 255, 255, 0.015); border: 1px solid var(--lb-line); border-radius: 16px; padding: 16px; }

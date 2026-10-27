@@ -565,6 +565,10 @@ final class Schema
             [
                 'ALTER TABLE bands ADD COLUMN manager_since INTEGER NULL',
             ],
+            // 46: Eigene Aufstellung der Mitglieder im Raum (Musiker-IDs als JSON; wer fehlt, steht hinten an)
+            [
+                'ALTER TABLE bands ADD COLUMN stage_order TEXT NULL',
+            ],
         ];
     }
 }

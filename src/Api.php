@@ -68,6 +68,7 @@ final class Api
         'stageNameGive' => ['POST', true],
         'bandCreate' => ['POST', true],
         'bandRename' => ['POST', true],
+        'bandStageOrder' => ['POST', true],
         'bandAddMember' => ['POST', true],
         'bandRemoveMember' => ['POST', true],
         'bandSetSlot' => ['POST', true],
@@ -378,6 +379,12 @@ final class Api
     private function bandRename(array $in, Repo $repo): array
     {
         (new Bands($repo))->rename(self::int($in, 'bandId'), self::str($in, 'name'));
+        return ['state' => State::build($repo)];
+    }
+
+    private function bandStageOrder(array $in, Repo $repo): array
+    {
+        (new Bands($repo))->setStageOrder(self::int($in, 'bandId'), is_array($in['order'] ?? null) ? $in['order'] : []);
         return ['state' => State::build($repo)];
     }
 

@@ -353,7 +353,7 @@ function bandScene(b, members) {
   const note = away ? `<div class="lb-away-note"><b>${away.type === 'retreat' ? `${esc(away.title.split(':')[0])}!` : 'Auf Promo-Tour!'}</b><small>${solo ? esc(whoOf(b)) : 'Die Band'} ist zurück in <span data-until="${away.endsAt}"></span></small></div>` : '';
   const tag = `${solo ? 'Solo' : esc(b.title ?? 'Band')} · ${genresOf(b).length ? sortedGenres(genresOf(b)).map((g) => esc(genreName(g))).join(' · ') : 'gemischt'}`;
   return `
-    <section class="lb-scene">
+    <section class="lb-scene" data-band="${b.id}">
       <div class="lb-room idle ${mgr ? 'with-mgr' : ''} ${back ? `arriving from-${back}` : ''}">${roomSvg(b.room?.level ?? 0, b.id, b.name, genre)}${away ? note : stage(members, {
     className: 'idle in-room',
     act: 'musicianInfo',
@@ -365,6 +365,7 @@ function bandScene(b, members) {
         ${mgr ? `<button class="lb-mgrfig fig-stage idle" data-act="managerPick" data-id="${b.id}" title="${esc(mgr.firstName)} ${esc(mgr.lastName)}, Manager · antippen zum Ändern" aria-label="Manager ${esc(mgr.firstName)}"><span class="fig-member">${figure(mgr.look, 'none', { bored: false })}<i class="lb-clip"></i></span></button>` : ''}
         <span class="lb-scene-tag">${tag}${solo ? '' : `<button class="icon-btn" data-act="bandRename" data-id="${b.id}" title="Umbenennen" aria-label="Umbenennen">✎</button>`}</span>
       </div>
+      ${roomBar(b, members)}
     </section>`;
 }
 
@@ -579,19 +580,16 @@ function openGenreOverview() {
 const pct = (x) => `${Math.round((x - 1) * 100)} %`;
 
 /** Proberaum: die Band in ihrem Raum (ohne laufende Probe), Stufe, Wirkung und der nächste Ausbau. */
-function roomBlock(b, members) {
+/** Leiste direkt unter dem Raum: welcher Raum, was er bringt, und der Ausbau. */
+function roomBar(b, members) {
   const room = b.room;
   if (!room) return '';
   const effect = room.level ? `Proben bringen ${pct(room.skill)} mehr Können, ${esc(whoOf(b, true))} hält ${pct(room.lust)} länger durch${room.mood ? (members.length === 1 ? ' und fühlt sich wohler' : ', alle fühlen sich wohler') : ''}.` : 'Dunkel, feucht, kaputt. Hier probt niemand gern lange.';
-  // Der Raum selbst ist oben auf der Seite zu sehen (bandScene); hier steht, was er bringt, und der Ausbau.
   return `
-    <section class="lb-roomcard">
-      <div class="lb-roominfo">
-        <div><h2 class="lb-cap">${room.solo ? 'Eigene Übungsecke' : 'Proberaum'}</h2><b>${esc(room.stage)}</b> <small class="muted">Stufe ${room.level} von 3</small>
-          <p class="muted small">${effect}</p></div>
+      <div class="lb-roombar">
+        <span><b>${esc(room.stage)}</b> <small class="muted">${room.solo ? 'Eigene Übungsecke' : 'Proberaum'} · Stufe ${room.level} von 3</small><small class="muted">${effect}</small></span>
         ${room.next ? `<button class="btn small" data-act="roomUpgrade" data-id="${b.id}" ${off(app.state.label.money < room.next.cost ? `Dafür fehlen noch ${fmt0(room.next.cost - app.state.label.money)} ₲.` : '')}>Ausbauen: ${esc(room.next.name)} · ${fmt0(room.next.cost)} ₲</button>` : '<span class="muted small">voll ausgebaut</span>'}
-      </div>
-    </section>`;
+      </div>`;
 }
 
 // ---------- Ton der Probe ----------
@@ -700,7 +698,6 @@ export function page(route) {
     </div>
     ${course}
     ${managerBlock(b)}
-    ${running ? '' : roomBlock(b, members)}
     <h2 class="lb-cap lb-sec">Musiker</h2>
     <div class="lb-members">
       ${members.map((m) => memberRow(b, m, members, genreSlots(members))).join('')}
@@ -1104,3 +1101,85 @@ defineActions({
     });
   },
 });
+
+// ---------- Aufstellung im Raum per Ziehen ----------
+// Maus: drücken und ziehen; Finger: kurz halten, dann ziehen. Die anderen rücken schon beim Ziehen zur Seite.
+// Losgelassen wird die Reihenfolge gespeichert (gilt dann überall: Raum, Bühne, Musikerliste). Ein kurzes Antippen öffnet weiter den Musiker.
+let stageDrag = null;
+let stageSwallow = 0;
+const STAGE_HOLD = 320;
+
+function stageDragStart() {
+  const d = stageDrag;
+  if (!d) return;
+  d.active = true;
+  d.slots = d.figs.map((f) => f.offsetLeft);
+  d.el.classList.add('stage-dragging');
+  d.room.classList.add('stage-sorting');
+}
+
+function stageTarget(d, dx) {
+  const x = d.slots[d.figs.indexOf(d.el)] + dx;
+  let best = 0;
+  d.slots.forEach((sx, i) => { if (Math.abs(sx - x) < Math.abs(d.slots[best] - x)) best = i; });
+  return best;
+}
+
+document.addEventListener('pointerdown', (e) => {
+  const el = e.target.closest?.('.lb-scene .fig-stage.depth .fig-member');
+  if (!el || e.button > 0 || e.target.closest('.lb-wishdot, .lb-wishpop')) return;
+  const room = el.closest('.lb-room');
+  const figs = [...room.querySelectorAll('.fig-stage .fig-member')];
+  if (figs.length < 2 || room.classList.contains('leaving')) return;
+  stageDrag = { el, room, figs, x0: e.clientX, y0: e.clientY, active: false, touch: e.pointerType !== 'mouse' };
+  if (stageDrag.touch) stageDrag.timer = setTimeout(stageDragStart, STAGE_HOLD);
+});
+
+document.addEventListener('pointermove', (e) => {
+  const d = stageDrag;
+  if (!d) return;
+  const dx = e.clientX - d.x0;
+  const dy = e.clientY - d.y0;
+  if (!d.active) {
+    // Finger: Wer vor dem Halten wischt, will scrollen. Maus: ab ein paar Pixeln ist es Ziehen.
+    if (d.touch) { if (Math.hypot(dx, dy) > 10) { clearTimeout(d.timer); stageDrag = null; } return; }
+    if (Math.hypot(dx, dy) < 6) return;
+    stageDragStart();
+  }
+  d.el.style.translate = `${dx}px 0`;
+  const t = stageTarget(d, dx);
+  const rest = d.figs.filter((f) => f !== d.el);
+  rest.splice(t, 0, d.el);
+  rest.forEach((f, i) => { if (f !== d.el) f.style.translate = `${d.slots[i] - d.slots[d.figs.indexOf(f)]}px 0`; });
+  d.order = rest;
+});
+
+document.addEventListener('touchmove', (e) => { if (stageDrag?.active) e.preventDefault(); }, { passive: false });
+
+async function stageDragEnd() {
+  const d = stageDrag;
+  stageDrag = null;
+  if (!d) return;
+  clearTimeout(d.timer);
+  if (!d.active) return;
+  stageSwallow = Date.now() + 400;
+  const bandId = Number(d.room.closest('.lb-scene')?.dataset.band);
+  const order = (d.order ?? d.figs).map((f) => Number(f.dataset.id)).filter(Boolean);
+  const b = bandById(bandId);
+  if (!b || order.join() === b.memberIds.join()) {
+    d.figs.forEach((f) => { f.style.translate = ''; });
+    d.el.classList.remove('stage-dragging');
+    d.room.classList.remove('stage-sorting');
+    return;
+  }
+  b.memberIds = order;
+  rerender();
+  await mutate('bandStageOrder', { bandId, order });
+}
+document.addEventListener('pointerup', stageDragEnd);
+document.addEventListener('pointercancel', stageDragEnd);
+// Nach dem Ziehen nicht noch den Musiker öffnen.
+document.addEventListener('click', (e) => {
+  if (Date.now() < stageSwallow && e.target.closest?.('.lb-scene .fig-member')) { e.stopPropagation(); e.preventDefault(); }
+}, true);
+

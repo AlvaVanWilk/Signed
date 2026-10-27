@@ -1277,7 +1277,7 @@ body { background: radial-gradient(1100px 520px at 50% -12%, rgba(255, 181, 71, 
  * über einem Kopf der dringendste Wunsch. Darunter die Anordnungen als Schallplatten. */
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .lb-scene { margin-bottom: 16px; }
-.lb-scene .lb-room { height: clamp(280px, 30vw, 380px); overflow: visible; box-shadow: 0 6px 14px -9px rgba(255, 181, 71, 0.5); }
+.lb-scene .lb-room { height: clamp(280px, 30vw, 380px); overflow: visible; }
 .lb-scene .lb-roomart { clip-path: inset(0 round 14px); }
 .lb-room.with-mgr { --r: .1; }
 .lb-mgrfig.fig-stage { position: absolute; right: 1%; bottom: var(--bb); z-index: 1; display: block; width: calc(.84 * min(21cqw, 50cqh)); margin: 0; padding: 0;
@@ -1350,3 +1350,17 @@ body { background: radial-gradient(1100px 520px at 50% -12%, rgba(255, 181, 71, 
 .lb-away-note::before { content: ''; position: absolute; left: 50%; top: -6px; width: 12px; height: 12px; border-radius: 50%; background: #e0566b; transform: translateX(-50%); box-shadow: 0 2px 2px rgba(0, 0, 0, .35); }
 .lb-away-note b { font-size: 1.05rem; } .lb-away-note small { color: #5a4e40; font-weight: 600; }
 @media (prefers-reduced-motion: reduce) { .lb-room.arriving .fig-stage .fig-member, .lb-case-hand { animation: none; } }
+
+/* Proberaum-Leiste direkt am Raum (roomBar) */
+.lb-scene .lb-room { border-radius: 14px 14px 0 0; }
+.lb-scene .lb-roomart { clip-path: inset(0 round 14px 14px 0 0); }
+.lb-roombar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 9px 14px 10px; border: 1px solid var(--lb-line); border-top: 0;
+  border-radius: 0 0 14px 14px; background: linear-gradient(180deg, #2a2534, #221e2c); box-shadow: 0 6px 14px -9px rgba(255, 181, 71, 0.5); }
+.lb-roombar > span { display: grid; gap: 1px; min-width: 0; flex: 1 1 260px; }
+.lb-roombar b { font-size: .95rem; } .lb-roombar small { font-size: .78rem; line-height: 1.3; }
+/* Aufstellung per Ziehen */
+.lb-scene .fig-stage.depth .fig-member { cursor: grab; touch-action: pan-y; }
+.lb-room.stage-sorting .fig-stage.depth .fig-member { transition: translate .2s ease; }
+.lb-room.stage-sorting .fig-stage.depth .fig-member.stage-dragging { transition: none; z-index: 8; cursor: grabbing; }
+.fig-member.stage-dragging .fig { filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .45)) brightness(1.05); }
+.lb-room.stage-sorting .lb-wishdot, .lb-room.stage-sorting .lb-wishpop { display: none; }

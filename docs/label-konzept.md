@@ -501,6 +501,10 @@ als Grundlage. Einzelne Wahlen verändern zum Beispiel Tempo-Gefühl, Akkordfolg
   Laternen, Lamellen (Holz, Glas, Metall, Lack), Polster und Wandpaneele. Die Bruchbude bekommt nur eine Decke aufs Sofa.
   Der **Manager** steht hinten rechts mit Klemmbrett (antippen: Manager ändern). Der **dringendste Wunsch** steht als Blase mit drei Punkten
   über dem Kopf; angetippt zeigt sie den Wunsch und den passenden Knopf. Ist er erfüllt, kommt der nächste (Warteschlange).
+  Direkt am Raum hängt eine Leiste mit dem Proberaum (Name, Stufe, Wirkung) und dem Knopf zum Ausbauen.
+  **Aufstellung per Ziehen:** Einen Signie festhalten (Maus: drücken und ziehen; Finger: kurz halten) und an eine andere Stelle ziehen; die anderen
+  rücken dabei zur Seite. Die Reihenfolge wird gespeichert (`bands.stage_order`, `bandStageOrder`) und gilt überall (Raum, Bühne, Musikerliste,
+  Leiste). Neu Dazugekommene stehen hinten an. Kurz antippen öffnet weiter den Musiker.
   Darunter die **Anordnungen als Schallplatten** mit farbigem Etikett (Proben türkis, Aufnehmen gelb, Auftritt rosa, Promo blau, Auszeit grün).
   Läuft etwas (Probe, Auftritt, Aufnahme), steht dessen Szene oben, und die Wünsche stehen als Liste darunter.
   **Kommen und Gehen** (`leaveScene`): Zum Auftritt und zur Promo-Tour geht die Band nacheinander rechts aus dem Raum, erst dann wird die

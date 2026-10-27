@@ -140,7 +140,7 @@ final class State
                 'managerId' => $band['manager_id'],
                 'managerLevel' => $level,
                 'managerFit' => $fit === null ? null : round($fit, 2),
-                'memberIds' => array_map(static fn ($m) => $m['id'], $list),
+                'memberIds' => Bands::stageOrder($band, array_map(static fn ($m) => $m['id'], $list)),
                 'room' => Rooms::present($repo, $band, count($list)),
                 'sound' => $sound,
                 'slotPreview' => $slotPreview,

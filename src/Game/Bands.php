@@ -397,6 +397,26 @@ final class Bands
     }
 
     /** Umbenennen kostet kein Geld, aber den Ruhm am Namen; die Platten bleiben beim alten Namen (ehemalige Band, Tantiemen laufen weiter). */
+    /**
+     * Mitglieder in der eigenen Aufstellung: erst die gemerkte Reihenfolge, wer darin fehlt (neu dazugekommen), steht hinten an.
+     * @param list<int> $ids
+     * @return list<int>
+     */
+    public static function stageOrder(array $band, array $ids): array
+    {
+        $order = array_values(array_filter($band['stage_order'] ?? [], static fn ($id) => in_array($id, $ids, true)));
+        return array_values(array_merge($order, array_diff($ids, $order)));
+    }
+
+    /** Aufstellung im Raum ändern (Musiker per Ziehen umgestellt). */
+    public function setStageOrder(int $bandId, array $order): void
+    {
+        $this->repo->band($bandId);
+        $ids = array_map(static fn ($m) => (int) $m['id'], $this->repo->members($bandId));
+        $clean = array_values(array_unique(array_filter(array_map('intval', $order), static fn ($id) => in_array($id, $ids, true))));
+        $this->repo->db->update('bands', ['stage_order' => json_encode($clean)], ['id' => $bandId]);
+    }
+
     public function rename(int $bandId, string $name): void
     {
         $band = $this->repo->band($bandId);

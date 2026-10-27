@@ -2546,3 +2546,19 @@ test('Praktikum: Auftrag endet mit dem Praktikum, verabschieden macht Platz für
         checkEquals(true, $state['assistant']['staff'][0]['intern']);
     }
 });
+
+test('Aufstellung im Raum: eigene Reihenfolge der Mitglieder bleibt gespeichert, Fremde werden ignoriert', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Aufstellung');
+    $band = foundBand($p);
+    $ids = $band['memberIds'];
+    check(count($ids) >= 2, 'Band mit mehreren Mitgliedern');
+    $want = array_reverse($ids);
+    $state = $p->post('bandStageOrder', ['bandId' => $band['id'], 'order' => array_merge($want, [999999])])['state'];
+    checkEquals($want, bandById($state, $band['id'])['memberIds']);
+    checkEquals($want, bandById($p->get('state'), $band['id'])['memberIds'], 'bleibt nach dem Neuladen');
+    // Nur ein Teil angegeben: der Rest steht hinten an.
+    $state = $p->post('bandStageOrder', ['bandId' => $band['id'], 'order' => [$ids[1]]])['state'];
+    checkEquals($ids[1], bandById($state, $band['id'])['memberIds'][0]);
+    checkEquals(count($ids), count(bandById($state, $band['id'])['memberIds']));
+});

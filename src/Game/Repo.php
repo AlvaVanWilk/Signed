@@ -394,6 +394,7 @@ final class Repo
             'genre2' => $r['genre2'] ?? null,
             'manager_id' => $r['manager_id'] === null ? null : (int) $r['manager_id'],
             'manager_since' => (int) ($r['manager_since'] ?? 0),
+            'stage_order' => array_map('intval', json_decode((string) ($r['stage_order'] ?? ''), true) ?: []),
             'cohesion' => (float) $r['cohesion'],
             'sound' => (float) $r['sound'],
             'songs_recorded' => (int) $r['songs_recorded'],

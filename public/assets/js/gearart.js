@@ -448,7 +448,7 @@ const ART = {
     return `<circle cx="${f(31 + Math.cos(a) * 14.6)}" cy="${f(42 + Math.sin(a) * 14.6)}" r="0.9"/>`;
   }).join('')}</g>
       ${L.tier === 0 ? '' : '<path d="M22 35.6 C24.4 32.6 28 31 31.6 31" fill="none" stroke="#fff" stroke-width="1.2" opacity="0.5"/>'}
-      <g ${LINE}><path d="M18 5 L28 19" stroke="#8a5a2c" stroke-width="2"/><path d="M18 5 L28 19" stroke="#e6c48a" stroke-width="1.1"/><path d="M41 4 L33 18.6" stroke="#8a5a2c" stroke-width="2"/><path d="M41 4 L33 18.6" stroke="#e6c48a" stroke-width="1.1"/></g>
+      ${L.held ? '' : `<g ${LINE}><path d="M18 5 L28 19" stroke="#8a5a2c" stroke-width="2"/><path d="M18 5 L28 19" stroke="#e6c48a" stroke-width="1.1"/><path d="M41 4 L33 18.6" stroke="#8a5a2c" stroke-width="2"/><path d="M41 4 L33 18.6" stroke="#e6c48a" stroke-width="1.1"/></g>`}
       ${L.extras([15, 26, 32, 32], { anchor: [44.6, 37], badge: [31, 56.6], spark: [[0.98, 0.12], [0.02, 0.9], [0.8, 1]], charmScale: 1.1 })}`;
   },
 
@@ -624,10 +624,10 @@ const ART = {
       ${strings(4, 31.1, 0.6, 7, 45, 0.25)}
       ${L.tier === 0 ? '' : '<ellipse cx="27.6" cy="24" rx="2.4" ry="3.4" fill="#fff" opacity="0.2"/>'}
       ${L.extras(bb, { anchor: [33.6, 5.6], badge: [32, 49.6], spark: [[0.98, 0.1], [0.04, 0.86], [0.7, 1.02]] })}`, -34, 0.95)}
-      <path d="M8 54 L56 8" stroke="${L.tier === 3 ? (L.theme === 'studio' ? '#e8e0cc' : L.dark) : '#5a2a0c'}" stroke-width="1.6" stroke-linecap="round"/>
+      ${L.held ? '' : `<path d="M8 54 L56 8" stroke="${L.tier === 3 ? (L.theme === 'studio' ? '#e8e0cc' : L.dark) : '#5a2a0c'}" stroke-width="1.6" stroke-linecap="round"/>
       <path d="M9.8 55.8 L57.6 10" stroke="#f4efe6" stroke-width="0.9" stroke-linecap="round"/>
       <path d="M6.4 52.4 L10.6 56.6" stroke="${L.tier === 3 && L.theme !== 'hit' ? L.hw.fill : '#1a1a1e'}" stroke-width="2.6" stroke-linecap="round"/>
-      <circle cx="56.6" cy="8.6" r="1" fill="#1a1a1e"/>`;
+      <circle cx="56.6" cy="8.6" r="1" fill="#1a1a1e"/>`}`;
   },
 
   flute(L) {
@@ -682,12 +682,14 @@ const ART = {
 
 /**
  * Zeichnung eines Instruments in seiner Güteklasse. key: guitar, eguitar, bass, drums, edrums, synth, piano, vocals, sax, trumpet, violin, flute, turntables.
+ * held: für die Figuren, die es spielen (ohne Schlagzeugstöcke und Geigenbogen, die halten sie selbst).
  * @returns {?string} SVG-Inhalt (64 × 64) oder null, wenn es die Form nicht gibt
  */
-export function tierArt(key, tier, hue = null, variant = 0, gold = null) {
+export function tierArt(key, tier, hue = null, variant = 0, gold = null, held = false) {
   const art = ART[key];
   if (!art) return null;
   const L = makeLook(tier, hue, variant, gold);
+  L.held = held;
   const body = art(L);
   return `<defs>${L.defs.join('')}</defs>${body}`;
 }

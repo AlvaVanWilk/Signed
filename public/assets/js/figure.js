@@ -1,5 +1,5 @@
 import { HAIR_BACK, HAIR_FRONT, HATS, HAT_COLORS, hairExtras, hatOf } from './avatar.js';
-import { ALLOYS, WOODS } from './gearart.js';
+import { ALLOYS, WOODS, tierArt } from './gearart.js';
 
 /**
  * Niedliche Ganzkörper-Figur eines Musikers: großer Kopf aus denselben Merkmalen wie das Kartenbild,
@@ -48,8 +48,6 @@ export function paintOf(finish) {
   const g = GOLD_PAINT[finish.gold] ?? GOLD_PAINT.show;
   return { tier, ...g, metal: g.body, metalDark: g.dark };
 }
-/** Umriss des Instruments: bei Gold in der Kantenfarbe, sonst dunkel wie die Figur. */
-const inkOf = (p) => (p?.edge ? `stroke="${p.edge}" stroke-width="2" stroke-linejoin="round"` : STROKE);
 /** Funkeln an einem goldenen Instrument (vierzackige Sterne, die nacheinander aufleuchten). */
 const twinkle = (p, spots) => (p?.tier !== 3 ? '' : spots.map(([x, y, r = 2.6], i) => `<path class="fig-twinkle" style="animation-delay:${(i * 0.9).toFixed(1)}s" d="M${x} ${y - r} Q${x + r * 0.2} ${y - r * 0.2} ${x + r} ${y} Q${x + r * 0.2} ${y + r * 0.2} ${x} ${y + r} Q${x - r * 0.2} ${y + r * 0.2} ${x - r} ${y} Q${x - r * 0.2} ${y - r * 0.2} ${x} ${y - r} Z" fill="${p.spark}"/>`).join(''));
 
@@ -57,7 +55,8 @@ export function figure(look = {}, instrument = 'guitar', { electric = false, hue
   const skin = look.skin || '#d9a27e';
   const shirt = look.shirt || '#4a6fa5';
   const pose = POSES[instrument] ? instrument : instrument === 'synth' ? 'keys' : instrument === 'none' ? 'none' : 'guitar';
-  const paint = paintOf(finish ?? (hue === null ? null : { tier: 2, hue }));
+  const fin = finish ?? (hue === null ? null : { tier: 2, hue });
+  const paint = paintOf(fin);
   const sing = pose === 'vocals';
   return `
     <svg class="fig fig-${pose}" viewBox="0 0 120 150" aria-hidden="true">
@@ -78,9 +77,9 @@ export function figure(look = {}, instrument = 'guitar', { electric = false, hue
         <ellipse cx="60" cy="78.5" rx="15" ry="4.5" ${SHADE}/>
         <path d="M52.5 74.2 Q60 82 67.5 74.2 Z" fill="${skin}" stroke="${INK}" stroke-width="1.4" stroke-linejoin="round"/>
         <path d="M52.5 74.2 Q60 79 67.5 74.2 Q60 77 52.5 74.2 Z" ${SHADE}/>
-        ${POSES[pose].back(skin, shirt, paint)}
+        ${POSES[pose].back(skin, shirt, paint, fin)}
         ${pivot(60, 74, 'fig-head', head(look, skin, sing, pose === 'none' && bored ? 'bored' : mood))}
-        ${POSES[pose].front(skin, shirt, electric, paint)}
+        ${POSES[pose].front(skin, shirt, electric, paint, fin)}
       </g>
     </svg>`;
 }
@@ -319,96 +318,42 @@ const arm = (d, hand, skin, shirt, cls = '') => {
   return pivot(x, y, cls, inner);
 };
 
-/** Gitarre/Bass: Korpus vor dem Bauch, Hals schräg nach links oben. reach = wie weit der Hals reicht. */
-const guitarLike = (baseColor, reach, baseE) => (skin, shirt, electric, p) => {
-  const color = p?.body ?? baseColor;
-  const eColor = p?.body ?? baseE;
-  const ink = p?.edge ?? INK;
-  const end = [36 - reach, 84 - reach * 0.45];
-  const grip = [end[0] + 8, end[1] + 4];
-  // Akustisch: runder Holzkorpus mit Schallloch. Elektrisch: schmaler, geschwungener Korpus mit Schlagbrett und Tonabnehmern.
-  const body = electric ? `
-    <path d="M58 94 C62 91 67 93 67 97 C71 96 75 98 74 102 C79 104 81 109 77 113 C73 118 64 117 60 112 C55 112 52 107 55 103 C53 99 55 96 58 94 Z" fill="${eColor}"/>
-    <path d="M59 103 C62 101 67 104 68 108 C64 112 58 110 57 107 Z" fill="#fff"/>
-    <path d="M61 99 L65 103 M64 96.5 L68 100.5" stroke="${p ? p.hw : INK}" stroke-width="2.2"/>` : `
-    <circle cx="61" cy="99" r="9" fill="${color}"/><circle cx="71" cy="105" r="11" fill="${color}"/>
-    <path d="M60 99 Q66 96 71 105" fill="none" stroke="${color}" stroke-width="6"/>
-    <circle cx="65" cy="101" r="3" fill="${INK}"${p ? ` stroke="${p.hw}" stroke-width="1.2"` : ''}/>`;
-  return `
-  <g ${inkOf(p)}>
-    <path d="M60 97 L${end[0]} ${end[1]}" stroke="${INK}" stroke-width="7" stroke-linecap="round"/>
-    <path d="M60 97 L${end[0]} ${end[1]}" stroke="${electric ? '#d9b38c' : '#a06a3b'}" stroke-width="4" stroke-linecap="round"/>
-    <rect x="${end[0] - 5}" y="${end[1] - 4}" width="9" height="7" rx="2" fill="${p?.dark ?? (electric ? INK : '#5b3a21')}" stroke="${ink}" transform="rotate(25 ${end[0]} ${end[1]})"/>
-    ${body}
-  </g>
-  ${twinkle(p, [[51, 91], [82, 109, 2.2]])}
-  <g fill="${p?.hw ?? '#e8e2d4'}" opacity="0.9"><circle cx="${end[0] - 2.6}" cy="${end[1] - 3.2}" r="0.9"/><circle cx="${end[0] + 1.4}" cy="${end[1] - 1.4}" r="0.9"/></g>
-  ${electric ? gloss('M59 96 Q63 93.6 66 95', 1.4, 0.35) : gloss('M55.6 95 Q58.6 91.8 63 92.2', 1.6, 0.32) + `<path d="M64 112 Q75 116 81 106 Q79 115 71 116 Q66 116 64 112 Z" ${SHADE}/>`}
-  ${arm(`M45 80 Q${grip[0] + 4} ${grip[1] - 6} ${grip[0]} ${grip[1]}`, grip, skin, shirt)}
-  ${arm('M75 80 Q84 92 72 102', [72, 102], skin, shirt, 'fig-strum')}`;
-};
-
+let heldSerial = 0;
 /**
- * Bass: deutlich anders als die Gitarre – viel längerer, dickerer Hals, der weit über die Schulter ragt,
- * großer Kopf mit vier dicken Mechaniken, größerer, länglicher Korpus mit dunklem Schlagbrett.
+ * Das Instrument aus dem Laden (gearart.js, 64 × 64) in den Händen der Figur, in seiner Güteklasse und Farbe (fin = finish, ohne eigenes: grau).
+ * a: Punkt in der Zeichnung, der auf at landet; r: Drehung; s: Größe; flip: gespiegelt (Hals nach links); sy: eigene Höhe (flach gelegt).
+ * Jede Kopie bekommt eigene Kennungen für ihre Farbverläufe.
  */
-const bassLike = (skin, shirt, electric, p) => {
-  const body = p?.body ?? (electric ? '#3a86ff' : '#c98a4b');
-  const end = [10, 66];
-  const grip = [30, 80];
-  return `
-  <g ${inkOf(p)}>
-    <path d="M62 100 L${end[0]} ${end[1]}" stroke="${INK}" stroke-width="8.5" stroke-linecap="round"/>
-    <path d="M62 100 L${end[0]} ${end[1]}" stroke="${electric ? '#d9b38c' : '#7a4a22'}" stroke-width="5.4" stroke-linecap="round"/>
-    <path d="M${end[0] + 2} ${end[1] + 1} L${end[0] - 8} ${end[1] - 6} L${end[0] - 10} ${end[1] - 2} L${end[0] - 1} ${end[1] + 5} Z" fill="${p?.dark ?? INK}"/>
-    ${[0, 1, 2, 3].map((i) => `<circle cx="${end[0] - 3 - i * 2.4}" cy="${end[1] - 5.4 + i * 1.2}" r="1.7" fill="${p?.hw ?? '#d6d9e0'}" stroke-width="1"/>`).join('')}
-    <path d="M55 96 C60 91 68 93 69 98 C74 96 80 99 79 104 C85 107 87 114 82 119 C76 125 63 124 58 117 C52 117 48 111 52 106 C49 101 51 97 55 96 Z" fill="${body}"/>
-    <path d="M56 104 C60 101 67 104 68 109 C64 115 56 113 54 110 Z" fill="#2a2233" opacity="0.85"/>
-    ${electric ? '' : `<circle cx="66" cy="107" r="3.4" fill="${INK}"/>`}
-    <path d="M60 102 L67 108" stroke="${INK}" stroke-width="2.6"/>
-  </g>
-  ${gloss('M53.6 99 Q57 94.4 63 94.2', 1.6, 0.32)}
-  <path d="M66 119 Q78 122 83 112 Q82 121 73 123 Q67 123 66 119 Z" ${SHADE}/>
-  ${twinkle(p, [[50, 95], [86, 112, 2.2]])}
-  ${arm(`M45 80 Q${grip[0] + 6} ${grip[1] - 6} ${grip[0]} ${grip[1]}`, grip, skin, shirt)}
-  ${arm('M75 80 Q86 94 70 106', [70, 106], skin, shirt, 'fig-strum')}`;
-};
+function held(key, fin, { a, at, r = 0, s = 1, flip = false, sy = null }) {
+  const art = tierArt(key, fin?.tier ?? 0, fin?.hue ?? null, fin?.variant ?? 0, fin?.gold ?? null, true);
+  if (!art) return '';
+  const n = ++heldSerial;
+  const unique = art.replace(/id="([\w-]+)"/g, `id="$1-h${n}"`).replace(/url\(#([\w-]+)\)/g, `url(#$1-h${n})`);
+  return `<g transform="translate(${at[0]} ${at[1]}) rotate(${r}) scale(${flip ? -s : s} ${sy ?? s}) translate(${-a[0]} ${-a[1]})">${unique}</g>`;
+}
 
-/** Bläser und Geige ohne Arme, damit sie beim Spielen und in der Pause gleich aussehen. */
-const SAX = (p) => `
-  <path d="M61 62 Q66 66 64 74 L64 98 Q66 108 76 104 L82 94" fill="none" stroke="${p?.edge ?? INK}" stroke-width="9" stroke-linecap="round"/>
-  <path d="M61 62 Q66 66 64 74 L64 98 Q66 108 76 104 L82 94" fill="none" stroke="${p?.metal ?? '#f2c14e'}" stroke-width="6" stroke-linecap="round"/>
-  <path d="M78 96 L88 88 L90 96 Z" fill="${p?.metal ?? '#f2c14e'}" ${inkOf(p)}/>
-  ${gloss('M62.6 76 L62.6 96', 1.4, 0.45)}
-  <g fill="${p?.hw ?? '#d9a531'}" stroke="${INK}" stroke-width="0.7">${[78, 84, 90].map((y) => `<circle cx="66.6" cy="${y}" r="1.5"/>`).join('')}</g>
-  ${twinkle(p, [[90, 85], [58, 100, 2.2]])}`;
-const TRUMPET = (p) => `
-  <path d="M62 62 L88 57" stroke="${p?.edge ?? INK}" stroke-width="6" stroke-linecap="round"/>
-  <path d="M62 62 L88 57" stroke="${p?.metal ?? '#f2c14e'}" stroke-width="3.5" stroke-linecap="round"/>
-  <path d="M86 57 L97 50 L99 64 Z" fill="${p?.metal ?? '#f2c14e'}" ${inkOf(p)}/>
-  <rect x="70" y="56" width="10" height="6" rx="1.5" fill="${p?.metal ?? '#f2c14e'}" ${inkOf(p)} stroke-width="1.2"/>
-  <g fill="${p?.hw ?? '#d9a531'}" stroke="${INK}" stroke-width="0.7">${[72, 75, 78].map((x) => `<rect x="${x - 0.9}" y="53" width="1.8" height="3" rx="0.6"/>`).join('')}</g>
-  ${gloss('M64 61 L69 60.1', 1, 0.5)}${gloss('M88 55.4 L95 51.6', 1, 0.45)}
-  ${twinkle(p, [[101, 47], [66, 56, 2]])}`;
-const FLUTE = (p) => `
-  <path d="M62 61 L22 69" stroke="${p?.edge ?? INK}" stroke-width="5" stroke-linecap="round"/>
-  <path d="M62 61 L22 69" stroke="${p?.metal ?? '#d6d9e0'}" stroke-width="2.6" stroke-linecap="round"/>
-  <g fill="${p?.metalDark ?? '#a9adb8'}">${[0, 1, 2, 3, 4].map((i) => `<circle cx="${40 + i * 3.6}" cy="${65.4 - i * 0.72}" r="0.8"/>`).join('')}</g>
-  ${gloss('M58 61.3 L44 64.1', 0.7, 0.6)}
-  ${twinkle(p, [[22, 64], [50, 59, 2]])}`;
-const VIOLIN = (p) => `
-  <g ${inkOf(p)}>
-    <path d="M44 70 L20 58" stroke="${INK}" stroke-width="5" stroke-linecap="round"/>
-    <path d="M44 70 L20 58" stroke="${p?.dark ?? '#5b3a21'}" stroke-width="2.5" stroke-linecap="round"/>
-    <g transform="rotate(28 44 72)"><ellipse cx="44" cy="72" rx="9" ry="6.5" fill="${p?.body ?? '#b5651d'}"/><ellipse cx="53" cy="72" rx="7" ry="5.5" fill="${p?.body ?? '#b5651d'}"/></g>
-  </g>
-  ${twinkle(p, [[33, 63], [60, 80, 2]])}
-  <g transform="rotate(28 44 72)">
-    <path d="M44 69.6 Q45 71 44 72.6 M50 69.6 Q51 71 50 72.6" fill="none" stroke="${INK}" stroke-width="0.7"/>
-    <path d="M38 72 L58 72" stroke="#f4efe6" stroke-width="0.4" opacity="0.7"/>
-    <path d="M45 77 Q51 78 56 75.4 Q54 78.4 48 78.4 Z" ${SHADE}/>
-    ${gloss('M38 68.6 Q41 66.4 45 66.2', 1.1, 0.35)}
-  </g>`;
+/** Gitarre: Korpus vor dem Bauch, Hals schräg nach links oben; die linke Hand greift am Hals, die rechte schlägt an. */
+const guitarPose = (skin, shirt, electric, p, fin) => `
+  ${electric ? held('eguitar', fin, { a: [26.9, 40.5], at: [66, 104], r: -22, s: 1.24, flip: true }) : held('guitar', fin, { a: [27.7, 40.5], at: [67, 103], r: -20, s: 1.35, flip: true })}
+  ${twinkle(p, [[48, 90], [84, 112, 2.2]])}
+  ${arm('M45 80 Q42 79 38 85', [38, 85], skin, shirt)}
+  ${arm('M75 80 Q84 92 72 102', [72, 102], skin, shirt, 'fig-strum')}`;
+
+/** Bass: länger als die Gitarre, der Hals ragt weit über die Schulter. */
+const bassPose = (skin, shirt, electric, p, fin) => `
+  ${held('bass', fin, { a: [24.5, 41.6], at: [68, 107], r: -15, s: 1.55, flip: true })}
+  ${twinkle(p, [[48, 92], [88, 114, 2.2]])}
+  ${arm('M45 80 Q36 74 30 80', [30, 80], skin, shirt)}
+  ${arm('M75 80 Q86 94 70 106', [70, 106], skin, shirt, 'fig-strum')}`;
+
+/** Bläser und Geige ohne Arme, damit sie beim Spielen und in der Pause gleich aussehen (die Arme kommen je Haltung dazu). */
+const SAX = (p, fin) => `${held('sax', fin, { a: [12.6, 11.3], at: [61, 62], r: 13.6, s: 0.85 })}${twinkle(p, [[92, 84], [58, 100, 2.2]])}`;
+const TRUMPET = (p, fin) => `${held('trumpet', fin, { a: [9.2, 30.5], at: [62, 62], r: -7.7, s: 0.81 })}${twinkle(p, [[101, 50], [68, 52, 2]])}`;
+const FLUTE = (p, fin) => `${held('flute', fin, { a: [12, 39], at: [62, 61], r: -37, s: 0.8, flip: true })}${twinkle(p, [[22, 64], [50, 59, 2]])}`;
+const VIOLIN = (p, fin) => `${held('violin', fin, { a: [19.2, 8.5], at: [26, 55], r: -27.5, s: 0.9 })}${twinkle(p, [[38, 58], [66, 78, 2]])}`;
+/** Mikrofon: in der Hand am Mund (singen) oder hängend in der Hand (Pause). */
+const MIC_UP = (fin) => held('vocals', fin, { a: [24.5, 21.3], at: [69.5, 59], r: 10.6, s: 0.44 });
+const MIC_DOWN = (fin) => held('vocals', fin, { a: [24.5, 21.3], at: [79.6, 114], r: -155, s: 0.4 });
 
 const POSES = {
   // Ohne Instrument: Er steht nur dabei, die Arme hängen.
@@ -416,122 +361,101 @@ const POSES = {
     back: () => '',
     front: (skin, shirt) => `${arm('M45 80 Q40 92 42 103', [42, 103], skin, shirt, 'fig-shrug-l')}${arm('M75 80 Q81 92 78 103', [78, 103], skin, shirt, 'fig-shrug-r')}`,
   },
-  guitar: { back: () => '', front: guitarLike('#e9a24b', 6, '#e4572e') },
-  bass: { back: () => '', front: bassLike },
+  guitar: { back: () => '', front: guitarPose },
+  bass: { back: () => '', front: bassPose },
   vocals: {
     back: () => '',
-    front: (skin, shirt, electric, p) => `
+    front: (skin, shirt, electric, p, fin) => `
       <g class="fig-resting">
         ${arm('M45 80 Q40 92 42 103', [42, 103], skin, shirt)}
+        ${MIC_DOWN(fin)}
         ${arm('M75 80 Q81 92 78 103', [78, 103], skin, shirt)}
-        <rect x="76.6" y="103" width="3.6" height="9" rx="1.6" fill="${p?.body ?? '#444'}" stroke="${p?.edge ?? INK}" stroke-width="1.2" transform="rotate(12 78 106)"/>
-        <circle cx="79.6" cy="113.6" r="3.2" fill="${p?.hw ?? '#9a9aa8'}" stroke="${p?.edge ?? INK}" stroke-width="1.2"/>
-        ${twinkle(p, [[85, 110, 2]])}
+        ${twinkle(p, [[86, 110, 2]])}
       </g>
       <g class="fig-singing">
       ${arm('M45 80 Q34 72 29 60', [29, 60], skin, shirt, 'fig-wave')}
-      ${pivot(75, 80, 'fig-mic-arm', `${arm('M75 80 Q84 76 73 70', [73, 70], skin, shirt)}
-        <rect x="70" y="58" width="5" height="12" rx="2" transform="rotate(-25 72 64)" fill="${p?.body ?? '#444'}" stroke="${p?.edge ?? INK}" stroke-width="1.4"/>
-        <circle cx="69.5" cy="59" r="4" fill="${p?.hw ?? '#9a9aa8'}" stroke="${p?.edge ?? INK}" stroke-width="1.4"/>
-        ${twinkle(p, [[64, 53, 2.2]])}`)}
+      ${pivot(75, 80, 'fig-mic-arm', `${MIC_UP(fin)}${arm('M75 80 Q84 76 73 70', [73, 70], skin, shirt)}${twinkle(p, [[63, 52, 2.2]])}`)}
       </g>`,
   },
+  // Schlagzeug: das ganze Set vor der Figur, die Stöcke in den Händen treffen Trommel und Becken.
   drums: {
-    back: () => `
-      <g ${STROKE}><path d="M98 140 L98 96" fill="none"/>${pivot(98, 94, 'fig-cymbal', '<ellipse cx="98" cy="94" rx="14" ry="3.5" fill="#f2c14e"/><ellipse cx="98" cy="93" rx="3.4" ry="1.5" fill="#d9a531" stroke-width="0.8"/><path d="M88 93.2 Q93 92 96 92.2" fill="none" stroke="#fff" stroke-width="1" opacity="0.5"/>')}</g>`,
-    front: (skin, shirt, electric, p) => `
-      <g ${inkOf(p)}>
-        <rect x="36" y="112" width="48" height="16" rx="3" fill="${p?.body ?? '#e4572e'}"/>
-        <ellipse cx="60" cy="112" rx="24" ry="6" fill="#f4efe6"/>
-        <path d="M38 120 L82 120" stroke="#fff" stroke-width="2"/>
-      </g>
-      <path d="M71 114.5 L84 112 L84 125 Q84 128 81 128 L71 128 Z" ${SHADE}/>
-      <g fill="${p?.hw ?? '#d6d9e0'}" stroke="${INK}" stroke-width="0.8">${[42, 52, 62, 72].map((x) => `<rect x="${x}" y="115" width="3" height="4.6" rx="1"/>`).join('')}</g>
-      ${gloss('M40 110.6 Q50 107.6 60 107.4', 1.4, 0.5)}
-      ${twinkle(p, [[34, 109], [87, 127, 2.2]])}
-      ${pivot(45, 80, 'fig-hit-l', `${arm('M45 80 Q38 94 47 102', [47, 102], skin, shirt)}<path d="M47 102 L62 109" stroke="#c8a165" stroke-width="3" stroke-linecap="round"/>`)}
-      ${pivot(75, 80, 'fig-hit-r', `${arm('M75 80 Q84 90 82 98', [82, 98], skin, shirt)}<path d="M82 98 L96 92" stroke="#c8a165" stroke-width="3" stroke-linecap="round"/>`)}`,
+    back: () => '',
+    front: (skin, shirt, electric, p, fin) => `
+      ${electric ? held('edrums', fin, { a: [32, 40], at: [60, 121], s: 1.1 }) : held('drums', fin, { a: [31, 42], at: [60, 124], s: 1.1 })}
+      ${twinkle(p, [[30, 104], [92, 126, 2.2]])}
+      ${pivot(45, 80, 'fig-hit-l', `${arm('M45 80 Q38 94 47 102', [47, 102], skin, shirt)}<path d="M47 102 L60 97" stroke="#c8a165" stroke-width="3" stroke-linecap="round"/>`)}
+      ${pivot(75, 80, 'fig-hit-r', `${arm('M75 80 Q84 90 82 98', [82, 98], skin, shirt)}<path d="M82 98 L92 91" stroke="#c8a165" stroke-width="3" stroke-linecap="round"/>`)}`,
   },
   keys: {
     back: () => '',
-    front: (skin, shirt, electric, p) => `
-      <g ${inkOf(p)}>
-        <path d="M38 112 L34 140 M82 112 L86 140" fill="none" stroke="${INK}"/>
-        <rect x="24" y="100" width="72" height="12" rx="2" fill="${p?.body ?? '#2b2d42'}"/>
-        <rect x="27" y="102" width="66" height="6" fill="#fff" stroke-width="1"/>
-      </g>
-      <g fill="${INK}">${Array.from({ length: 10 }, (_, i) => `<rect x="${30 + i * 6.4}" y="102" width="2.4" height="3.6"/>`).join('')}</g>
-      <g stroke="${INK}" stroke-width="0.5" opacity="0.35">${Array.from({ length: 10 }, (_, i) => `<path d="M${33.6 + i * 6.4} 105.6 L${33.6 + i * 6.4} 108"/>`).join('')}</g>
-      <path d="M26 109.4 L94 109.4 L94 110.6 Q94 112 92 112 L28 112 Q26 112 26 110.6 Z" ${SHADE}/>
-      ${gloss('M27 100.8 L60 100.8', 1, 0.3)}
-      <circle cx="90" cy="105" r="1.2" fill="${p?.hw ?? '#4fd1ff'}" opacity="0.8"/>
-      ${twinkle(p, [[22, 97], [98, 113, 2.2]])}
-      <g class="fig-key-l">${arm('M45 80 Q38 92 42 101', [42, 101], skin, shirt)}</g>
-      <g class="fig-key-r">${arm('M75 80 Q82 92 78 101', [78, 101], skin, shirt)}</g>`,
+    front: (skin, shirt, electric, p, fin) => `
+      <path d="M40 112 L36 140 M80 112 L84 140" fill="none" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>
+      ${held('synth', fin, { a: [32, 40], at: [60, 104], s: 0.85 })}
+      ${twinkle(p, [[30, 86], [92, 114, 2.2]])}
+      <g class="fig-key-l">${arm('M45 80 Q38 92 44 101', [44, 101], skin, shirt)}</g>
+      <g class="fig-key-r">${arm('M75 80 Q82 92 76 101', [76, 101], skin, shirt)}</g>`,
   },
+  // Zwei Plattenspieler flach auf dem Tisch (von schräg oben), davor die Tischkante.
   turntables: {
     back: () => '',
-    front: (skin, shirt, electric, p) => `
-      <g ${inkOf(p)}>
-        <path d="M34 112 L32 140 M86 112 L88 140" fill="none" stroke="${INK}"/>
-        <rect x="22" y="100" width="76" height="12" rx="3" fill="${p?.body ?? '#2b2d42'}"/>
-        <ellipse cx="40" cy="100" rx="13" ry="3.5" fill="#111"/><ellipse cx="80" cy="100" rx="13" ry="3.5" fill="#111"/>
-        <ellipse cx="40" cy="100" rx="3" ry="1" fill="#ff4f8b" stroke-width="0.6"/><ellipse cx="80" cy="100" rx="3" ry="1" fill="#4fd1ff" stroke-width="0.6"/>
+    front: (skin, shirt, electric, p, fin) => `
+      <g ${STROKE}>
+        <path d="M30 112 L28 140 M90 112 L92 140" fill="none"/>
+        <rect x="20" y="102" width="80" height="12" rx="3" fill="${p?.dark ?? '#2b2d42'}"/>
       </g>
-      <g fill="none" stroke="#fff" stroke-width="0.4" opacity="0.18"><ellipse cx="40" cy="100" rx="9" ry="2.4"/><ellipse cx="80" cy="100" rx="9" ry="2.4"/><ellipse cx="40" cy="100" rx="6" ry="1.6"/><ellipse cx="80" cy="100" rx="6" ry="1.6"/></g>
-      <path d="M24 109.6 L96 109.6 Q96 112 93 112 L27 112 Q24 112 24 109.6 Z" ${SHADE}/>
-      <g fill="${p?.hw ?? '#d6d9e0'}" stroke="${INK}" stroke-width="0.6"><circle cx="56" cy="106" r="1.4"/><circle cx="60" cy="106" r="1.4"/><circle cx="64" cy="106" r="1.4"/></g>
-      ${twinkle(p, [[20, 97], [100, 113, 2.2]])}
-      ${arm('M45 80 Q50 92 58 99', [58, 99], skin, shirt)}
+      ${held('turntables', fin, { a: [32, 32], at: [41, 100], s: 0.62, sy: 0.26 })}
+      ${held('turntables', fin, { a: [32, 32], at: [79, 100], s: 0.62, sy: 0.26 })}
+      ${twinkle(p, [[18, 97], [102, 113, 2.2]])}
+      ${arm('M45 80 Q50 92 56 99', [56, 99], skin, shirt)}
       ${arm('M75 80 Q86 88 80 98', [80, 98], skin, shirt, 'fig-scratch')}`,
   },
   // Bläser und Geige: beim Spielen am Mund oder unterm Kinn, in der Pause (Bühne still) weg vom Gesicht.
   sax: {
     back: () => '',
-    front: (skin, shirt, electric, p) => `
-      <g class="fig-play">${pivot(60, 62, 'fig-horn', `${SAX(p)}
+    front: (skin, shirt, electric, p, fin) => `
+      <g class="fig-play">${pivot(60, 62, 'fig-horn', `${SAX(p, fin)}
         ${arm('M45 80 Q56 78 63 80', [63, 80], skin, shirt)}
         ${arm('M75 80 Q76 92 67 94', [67, 94], skin, shirt)}`)}</g>
       <g class="fig-rest">
         ${arm('M45 80 Q40 92 42 103', [42, 103], skin, shirt)}
         <path d="M53 75 L59 84 M67 75 L61 84" stroke="${INK}" stroke-width="1" opacity="0.7"/>
-        <g transform="translate(-4 20) rotate(-8 61 62)">${SAX(p)}</g>
+        <g transform="translate(-4 20) rotate(-8 61 62)">${SAX(p, fin)}</g>
         ${arm('M75 80 Q82 94 72 104', [72, 104], skin, shirt)}
       </g>`,
   },
   trumpet: {
     back: () => '',
-    front: (skin, shirt, electric, p) => `
-      <g class="fig-play">${pivot(60, 62, 'fig-horn', `${TRUMPET(p)}
+    front: (skin, shirt, electric, p, fin) => `
+      <g class="fig-play">${pivot(60, 62, 'fig-horn', `${TRUMPET(p, fin)}
         ${arm('M45 80 Q58 76 68 64', [68, 64], skin, shirt)}
-        <g class="fig-key-r">${arm('M75 80 Q80 72 77 63', [77, 63], skin, shirt)}</g>`)}</g>
+        <g class="fig-key-r">${arm('M75 80 Q80 72 77 59', [77, 59], skin, shirt)}</g>`)}</g>
       <g class="fig-rest">
         ${arm('M45 80 Q40 92 42 103', [42, 103], skin, shirt)}
-        <g transform="translate(80 104) rotate(72) translate(-75 -59)">${TRUMPET(p)}</g>
+        <g transform="translate(80 104) rotate(72) translate(-75 -59)">${TRUMPET(p, fin)}</g>
         ${arm('M75 80 Q81 92 79 103', [79, 103], skin, shirt)}
       </g>`,
   },
   flute: {
     back: () => '',
-    front: (skin, shirt, electric, p) => `
-      <g class="fig-play">${pivot(60, 62, 'fig-horn', `${FLUTE(p)}
+    front: (skin, shirt, electric, p, fin) => `
+      <g class="fig-play">${pivot(60, 62, 'fig-horn', `${FLUTE(p, fin)}
         ${arm('M45 80 Q36 76 32 67', [32, 67], skin, shirt)}
         <g class="fig-key-r">${arm('M75 80 Q64 76 50 64', [50, 64], skin, shirt)}</g>`)}</g>
       <g class="fig-rest">
         ${arm('M45 80 Q40 92 42 103', [42, 103], skin, shirt)}
-        <g transform="translate(80 104) rotate(-88) translate(-50 -63.4)">${FLUTE(p)}</g>
+        <g transform="translate(80 104) rotate(-88) translate(-50 -63.4)">${FLUTE(p, fin)}</g>
         ${arm('M75 80 Q81 92 79 103', [79, 103], skin, shirt)}
       </g>`,
   },
   violin: {
     back: () => '',
-    front: (skin, shirt, electric, p) => `
-      <g class="fig-play">${VIOLIN(p)}
-        ${arm('M45 80 Q28 80 22 61', [22, 61], skin, shirt)}
+    front: (skin, shirt, electric, p, fin) => `
+      <g class="fig-play">${VIOLIN(p, fin)}
+        ${arm('M45 80 Q30 78 26 58', [26, 58], skin, shirt)}
         ${pivot(75, 80, 'fig-bow', `${arm('M75 80 Q78 72 62 70', [62, 70], skin, shirt)}
           <path d="M44 60 L86 80" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>`)}</g>
       <g class="fig-rest">
-        <g transform="translate(41 103) rotate(70) translate(-23 -59.5)">${VIOLIN(p)}</g>
+        <g transform="translate(41 103) rotate(70) translate(-23 -59.5)">${VIOLIN(p, fin)}</g>
         ${arm('M45 80 Q39 92 41 103', [41, 103], skin, shirt)}
         <path d="M80 98 L84 134" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>
         ${arm('M75 80 Q81 92 79 103', [79, 103], skin, shirt)}

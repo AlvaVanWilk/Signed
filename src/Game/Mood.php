@@ -270,7 +270,7 @@ final class Mood
                 $noGear = ['musicianId' => $m['id'], 'text' => 'Ich brauche ein Instrument.', 'action' => 'gear', 'level' => $level];
             } elseif ($noGear === null && Gear::modelTier($gear[$m['id']][$played]['key']) < Gear::levelFor($m, $played)) {
                 // Mit dem Können über das Instrument hinausgewachsen
-                $noGear = ['musicianId' => $m['id'], 'text' => 'Ich spiele besser, als mein Instrument kann.', 'action' => 'gear', 'level' => $level];
+                $noGear = ['musicianId' => $m['id'], 'text' => 'Ich will ein besseres Instrument.', 'action' => 'gear', 'level' => $level];
             }
             if ($level !== 'green') {
                 $table = count($members) === 1 ? Catalog::WISHES_SOLO : Catalog::WISHES;

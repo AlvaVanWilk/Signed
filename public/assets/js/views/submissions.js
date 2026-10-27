@@ -3,6 +3,7 @@ import { api } from '../api.js';
 import { actions, app, bandById, cat, defineActions, isBusy, mutate, musicianById, rerender, serverNow } from '../core.js';
 import { confirmDialog, esc, money, off, openModal, toast } from '../ui.js';
 import { fitWord, levelClass, levelProgress, relColor } from './label.js';
+import { INTERN_JOBS, officeScene } from '../office.js';
 
 /**
  * Posteingang: Demos (Musiker bewerben sich von selbst beim Label), Interview-Anfragen und Bewerbungen fürs Label.
@@ -244,50 +245,6 @@ function reportLetter(m) {
 const mailSave = (m) => `<button class="lb-save ${m.saved ? 'on' : ''}" data-act="mailSave" data-id="${m.mailId}" data-saved="${m.saved ? '' : '1'}" title="${m.saved ? 'Zurück in den Eingang' : 'Merken'}" aria-label="${m.saved ? 'Zurück in den Eingang' : 'Merken'}">${BOOKMARK}</button>`;
 const letterSlot = (m) => (m.kind === 'envelope' ? envelopeSlot(m, 'm', m.mailId) : `<div class="lb-slotitem lb-mailitem" data-post="m-${m.mailId}" style="${scatter(m.mailId * 7 + 3)}">${m.kind === 'interview' ? interviewLetter(m) : m.kind === 'report' ? reportLetter(m) : jobLetter(m)}<span class="lb-slotbar"><span class="lb-slotleft">${newTag(m)}${leftPill(m)}</span>${mailSave(m)}</span></div>`);
 
-/** Die Assistenz stellt sich oben vor: wer, wie viel am Tag, was heute erledigt ist, und ihre Regeln. */
-function assistantBar(a) {
-  const r = a.rules;
-  const parts = [];
-  if (r.minLevel > 0) parts.push(`ab Stufe ${r.minLevel}`);
-  if (r.genres.length) parts.push(r.genres.map((g) => genreName(g)).join(', '));
-  if (r.kind !== 'any') parts.push(r.kind === 'solo' ? 'nur Einzelne' : 'nur Bands');
-  const ruleText = parts.length ? `Behält nur: ${parts.join(' · ')}.` : 'Behält alle Kassetten.';
-  const tasks = cat().staffRoles.assistant.tasks;
-  return `<div class="lb-assist lb-assist-team">
-    <span class="lb-assist-head"><b>${a.staff.length > 1 ? 'Dein Büro' : a.staff[0].intern ? internWord(a.staff[0]) : 'Deine Assistenz'}</b>
-      ${a.sorts ? 'packt alle Post aus und sortiert sie in die Fächer.' : 'hilft dir auf Zuruf.'}
-      <small class="muted">${a.perDay ? `Zusammen ${a.perDay} Kassetten am Tag. Heute ${a.today.opened} angehört, ${a.today.dropped} weggeworfen. ${esc(ruleText)}` : a.sorts ? 'Kassetten hört gerade niemand an.' : 'Sag, was zu tun ist: Briefe öffnen, Demos anhören oder Post sortieren. Das Praktikum macht das für alles, was gerade da liegt, das Neueste zuerst. Es ist nicht schneller als du, aber du kannst derweil etwas anderes machen.'}${a.press ? ' Interview-Anfragen werden zugesagt, sobald der Musiker frei ist.' : ''}</small></span>
-    ${a.perDay ? '<button class="btn small" data-act="assistRulesAsk">Regeln</button>' : ''}
-    <div class="lb-assist-list">${a.staff.map((x) => `
-      <div class="lb-assist-row"><span class="lb-ph sm">${photo({ id: x.id, look: x.look })}</span><b>${esc(x.firstName)}</b>
-        ${x.intern
-    ? `${internOrders(x, a)}
-          <span class="muted small lb-intern-left">Praktikum noch <span data-until="${x.until}"></span></span>
-          <button class="btn small" data-act="assistAdopt" data-id="${x.id}" ${off(app.state.label.money < a.adoptPrice ? `Dafür fehlen noch ${money(a.adoptPrice - app.state.label.money)}.` : '')}>Als Assistenz übernehmen · ${money(a.adoptPrice)}</button>`
-    : `<span class="lb-seg">${Object.entries(tasks).map(([k, label]) => `<button class="${x.task === k ? 'on' : ''}" data-act="assistTask" data-id="${x.id}" data-task="${k}">${esc(label)}</button>`).join('')}</span>`}</div>`).join('')}</div>
-  </div>`;
-}
-
-const internWord = (x) => ({ f: 'Deine Praktikantin', m: 'Dein Praktikant' }[x.look?.gender] ?? 'Dein Praktikum');
-
-/** Was das Praktikum gerade tut, in Worten. */
-export const INTERN_JOBS = { unpack: ['Briefe öffnen', 'öffnet Briefe'], listen: ['Demos anhören', 'hört Demos an'], sort: ['Post sortieren', 'sortiert die Post'] };
-
-/**
- * Zurufe ans Praktikum: Es tut nichts von allein, immer nur eine Sache, für das, was gerade da liegt (Neuestes zuerst).
- * Während es arbeitet, steht da, was und wie lange noch, und man kann abbrechen.
- */
-function internOrders(x, a) {
-  if (x.job) {
-    return `<span class="lb-intern-job"><span class="pulse"></span>${esc(INTERN_JOBS[x.job.kind]?.[1] ?? 'arbeitet')} · noch <span data-until="${x.job.until}"></span></span>
-      <button class="btn small ghost" data-act="internCancel" data-id="${x.id}">Abbrechen</button>`;
-  }
-  const t = a.todo;
-  const none = { unpack: 'Gerade liegt kein ungeöffneter Brief da.', listen: 'Gerade liegt keine ungehörte Kassette da.', sort: 'Im Eingang liegt nichts zum Sortieren.' };
-  return `<span class="lb-intern-orders"><small class="muted">${t.unpack || t.listen || t.sort ? 'langweilt sich.' : 'hat nichts zu tun.'}</small>
-    ${Object.entries(INTERN_JOBS).map(([job, [label]]) => `<button class="btn small" data-act="internOrder" data-id="${x.id}" data-job="${job}" ${off(t[job] ? '' : none[job])}>${label}</button>`).join('')}</span>`;
-}
-
 /** Gebuchte Lehrer und Coaches: bei wem, was schon gebracht ist, wie lange noch. */
 function tutorBar(t) {
   const who = t.role === 'teacher' ? musicianById(t.musicianId) : bandById(t.bandId);
@@ -339,7 +296,7 @@ export function render() {
     <div class="section-head"><h1>Posteingang</h1>${isTest() ? '<span class="lb-test"><button class="btn small" data-act="submissionsTest" data-closed="1">Test: neue Kassetten</button><button class="btn small" data-act="submissionsTest">Test: gesichtete Bewerber</button><button class="btn small" data-act="mailTest">Test: Briefe</button></span>' : ''}</div>
     <p class="muted">Hier kommt alles an, in Umschlägen: Kassetten von Musikern, die zu dir wollen, Interview-Anfragen für deine Leute und Bewerbungen fürs Label. Tipp einen Umschlag an, dann packst du ihn aus. Halt etwas fest und zieh es auf einen Reiter, dann liegt es in diesem Fach. Alles liegt vier Tage, dann ist es weg.</p>
     ${(s.tutors ?? []).map(tutorBar).join('')}
-    ${a ? assistantBar(a) : '<p class="lb-assist-hint muted small">Ohne Hilfe packst du alles selbst aus. Ein Praktikum hilft dir auf Zuruf, eine Assistenz erledigt die Post von allein. Schau, wer sich bewirbt.</p>'}
+    ${officeScene(a, count('inbox'))}
     <div class="lb-boxes">${tabs.map(([k, label]) => `<button class="${box === k ? 'on' : ''}" data-act="subBox" data-key="${k}" data-box="${k}">${label} <small>${count(k)}</small></button>`).join('')}</div>
     ${showFilter ? `<div class="lb-filter">${[['all', 'Alle'], ['unheard', 'Ungehört'], ['0', 'Stufe 0'], ['1', 'Stufe 1'], ['2', 'Stufe 2'], ['3', 'Stufe 3']].map(([k, label]) => `<button class="${f === k ? 'on' : ''}" data-act="subFilter" data-key="${k}">${label}</button>`).join('')}</div>` : ''}
     ${rest.length || demos.length ? `<div class="lb-slots" data-slots>${rest.map(slotOf).join('')}${demos.map(slotOf).join('')}</div>` : `<div class="empty">${empty}</div>`}`;

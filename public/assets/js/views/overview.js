@@ -1,7 +1,7 @@
 import { instrumentIcon, photo } from '../cards.js';
 import { app, bandById, cat, isBusy, liveMoney, managerById, musicianById, serverNow } from '../core.js';
 import { coverHtml } from '../play.js';
-import { INTERN_JOBS } from './submissions.js';
+import { INTERN_JOBS } from '../office.js';
 import { esc, fmt0, fmt1, fmtGain, money, timeAgo } from '../ui.js';
 
 /**

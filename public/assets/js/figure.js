@@ -19,7 +19,7 @@ const STROKE = `stroke="${INK}" stroke-width="2" stroke-linejoin="round"`;
  */
 const pivot = (x, y, cls, inner) => `<g transform="translate(${x} ${y})"><g class="${cls}"><g transform="translate(${-x} ${-y})">${inner}</g></g></g>`;
 
-export function figure(look = {}, instrument = 'guitar', { electric = false, hue = null, mood = null } = {}) {
+export function figure(look = {}, instrument = 'guitar', { electric = false, hue = null, mood = null, bored = true } = {}) {
   const skin = look.skin || '#d9a27e';
   const shirt = look.shirt || '#4a6fa5';
   const pose = POSES[instrument] ? instrument : instrument === 'synth' ? 'keys' : instrument === 'none' ? 'none' : 'guitar';
@@ -44,7 +44,7 @@ export function figure(look = {}, instrument = 'guitar', { electric = false, hue
         <path d="M52.5 74.2 Q60 82 67.5 74.2 Z" fill="${skin}" stroke="${INK}" stroke-width="1.4" stroke-linejoin="round"/>
         <path d="M52.5 74.2 Q60 79 67.5 74.2 Q60 77 52.5 74.2 Z" ${SHADE}/>
         ${POSES[pose].back(skin, shirt)}
-        ${pivot(60, 74, 'fig-head', head(look, skin, sing, pose === 'none' ? 'bored' : mood))}
+        ${pivot(60, 74, 'fig-head', head(look, skin, sing, pose === 'none' && bored ? 'bored' : mood))}
         ${POSES[pose].front(skin, shirt, electric, hue)}
       </g>
     </svg>`;

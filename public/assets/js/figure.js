@@ -306,6 +306,10 @@ function head(look, skin, sing, mood = null) {
   return `<g transform="translate(60 44) scale(1.5) translate(-50 -42)">${p.join('')}</g>`;
 }
 
+/** Nur die Hand (Faust), um sie vor ein Instrument zu legen, das vor dem Arm liegt. */
+const fist = (hand, skin) => `<circle cx="${hand[0]}" cy="${hand[1]}" r="4.2" fill="${skin}" stroke="${INK}" stroke-width="1.6"/>
+  <path d="M${hand[0] + 1.2} ${hand[1] - 3.2} A3.4 3.4 0 0 1 ${hand[0] + 1.6} ${hand[1] + 3}" fill="none" stroke="#140f1e" stroke-width="1.6" opacity="0.13"/>`;
+
 /** Arm als dicker Strich im Hemd, mit Hand am Ende. */
 const arm = (d, hand, skin, shirt, cls = '') => {
   const inner = `<path d="${d}" fill="none" stroke="${INK}" stroke-width="10" stroke-linecap="round"/>
@@ -348,12 +352,16 @@ const bassPose = (skin, shirt, electric, p, fin) => `
 
 /** Bläser und Geige ohne Arme, damit sie beim Spielen und in der Pause gleich aussehen (die Arme kommen je Haltung dazu). */
 const SAX = (p, fin) => `${held('sax', fin, { a: [12.6, 11.3], at: [61, 62], r: 13.6, s: 0.85 })}${twinkle(p, [[92, 84], [58, 100, 2.2]])}`;
-const TRUMPET = (p, fin) => `${held('trumpet', fin, { a: [9.2, 30.5], at: [62, 62], r: -7.7, s: 0.81 })}${twinkle(p, [[101, 50], [68, 52, 2]])}`;
-const FLUTE = (p, fin) => `${held('flute', fin, { a: [12, 39], at: [62, 61], r: -37, s: 0.8, flip: true })}${twinkle(p, [[22, 64], [50, 59, 2]])}`;
+// Trompete schräg nach unten zum Publikum (nicht quer übers Gesicht); in der Pause waagerecht an der Seite, die Hand an den Ventilen.
+const TRUMPET = (p, fin) => `${held('trumpet', fin, { a: [9.2, 30.5], at: [60, 61], r: 30, s: 0.81 })}${twinkle(p, [[95, 80], [80, 56, 2]])}`;
+const TRUMPET_REST = (p, fin) => `${held('trumpet', fin, { a: [28, 27], at: [79, 104], r: 8, s: 0.7 })}${twinkle(p, [[100, 104, 2]])}`;
+// Querflöte: das Mundloch an der Unterlippe, fast waagerecht zur Seite, lang genug für beide Hände.
+const FLUTE = (p, fin) => `${held('flute', fin, { a: [12, 39], at: [60, 61], r: -33.7, s: 0.95, flip: true })}${twinkle(p, [[12, 65], [40, 61, 2]])}`;
 const VIOLIN = (p, fin) => `${held('violin', fin, { a: [32, 2], at: [26, 55], r: -61, s: 0.75, sx: 0.55 })}${twinkle(p, [[38, 58], [66, 78, 2]])}`;
 /** Mikrofon: in der Hand am Mund (singen) oder hängend in der Hand (Pause). */
-const MIC_UP = (fin) => held('vocals', fin, { a: [24.5, 21.3], at: [69.5, 59], r: 10.6, s: 0.44 });
-const MIC_DOWN = (fin) => held('vocals', fin, { a: [24.5, 21.3], at: [79.6, 114], r: -155, s: 0.4 });
+// Singen: der Kopf des Mikros knapp unter dem Mund, die Faust um den Griff. Pause: locker in der Hand, der Kopf zeigt nach vorn oben.
+const MIC_UP = (fin) => held('vocals', fin, { a: [24.5, 21.3], at: [62, 67], r: 15, s: 0.5 });
+const MIC_DOWN = (fin) => held('vocals', fin, { a: [24.5, 21.3], at: [84, 96], r: 66.6, s: 0.5 });
 
 const POSES = {
   // Ohne Instrument: Er steht nur dabei, die Arme hängen.
@@ -368,13 +376,13 @@ const POSES = {
     front: (skin, shirt, electric, p, fin) => `
       <g class="fig-resting">
         ${arm('M45 80 Q40 92 42 103', [42, 103], skin, shirt)}
-        ${MIC_DOWN(fin)}
         ${arm('M75 80 Q81 92 78 103', [78, 103], skin, shirt)}
-        ${twinkle(p, [[86, 110, 2]])}
+        ${MIC_DOWN(fin)}${fist([78, 103], skin)}
+        ${twinkle(p, [[90, 92, 2]])}
       </g>
       <g class="fig-singing">
       ${arm('M45 80 Q34 72 29 60', [29, 60], skin, shirt, 'fig-wave')}
-      ${pivot(75, 80, 'fig-mic-arm', `${MIC_UP(fin)}${arm('M75 80 Q84 76 73 70', [73, 70], skin, shirt)}${twinkle(p, [[63, 52, 2.2]])}`)}
+      ${pivot(75, 80, 'fig-mic-arm', `${arm('M75 80 Q82 84 66 77', [66, 77], skin, shirt)}${MIC_UP(fin)}${fist([66, 77], skin)}${twinkle(p, [[54, 60, 2.2]])}`)}
       </g>`,
   },
   // Schlagzeug: das ganze Set vor der Figur, die Stöcke in den Händen treffen Trommel und Becken.
@@ -426,21 +434,21 @@ const POSES = {
   trumpet: {
     back: () => '',
     front: (skin, shirt, electric, p, fin) => `
-      <g class="fig-play">${pivot(60, 62, 'fig-horn', `${TRUMPET(p, fin)}
-        ${arm('M45 80 Q58 76 68 64', [68, 64], skin, shirt)}
-        <g class="fig-key-r">${arm('M75 80 Q80 72 77 59', [77, 59], skin, shirt)}</g>`)}</g>
+      <g class="fig-play">${pivot(60, 62, 'fig-horn', `${arm('M45 80 Q58 82 70 70', [70, 70], skin, shirt)}
+        <g class="fig-key-r">${arm('M75 80 Q84 72 78 61', [78, 61], skin, shirt)}</g>
+        ${TRUMPET(p, fin)}${fist([70, 70], skin)}<g class="fig-key-r">${fist([78, 61], skin)}</g>`)}</g>
       <g class="fig-rest">
         ${arm('M45 80 Q40 92 42 103', [42, 103], skin, shirt)}
-        <g transform="translate(80 104) rotate(72) translate(-75 -59)">${TRUMPET(p, fin)}</g>
         ${arm('M75 80 Q81 92 79 103', [79, 103], skin, shirt)}
+        ${TRUMPET_REST(p, fin)}${fist([79, 103], skin)}
       </g>`,
   },
   flute: {
     back: () => '',
     front: (skin, shirt, electric, p, fin) => `
       <g class="fig-play">${pivot(60, 62, 'fig-horn', `${FLUTE(p, fin)}
-        ${arm('M45 80 Q36 76 32 67', [32, 67], skin, shirt)}
-        <g class="fig-key-r">${arm('M75 80 Q64 76 50 64', [50, 64], skin, shirt)}</g>`)}</g>
+        ${arm('M45 80 Q30 80 25 66', [25, 66], skin, shirt)}
+        <g class="fig-key-r">${arm('M75 80 Q62 78 48 63', [48, 63], skin, shirt)}</g>`)}</g>
       <g class="fig-rest">
         ${arm('M45 80 Q40 92 42 103', [42, 103], skin, shirt)}
         <g transform="translate(80 104) rotate(-88) translate(-50 -63.4)">${FLUTE(p, fin)}</g>

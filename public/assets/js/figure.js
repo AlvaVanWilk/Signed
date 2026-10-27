@@ -51,7 +51,7 @@ export function paintOf(finish) {
 /** Funkeln an einem goldenen Instrument (vierzackige Sterne, die nacheinander aufleuchten). */
 const twinkle = (p, spots) => (p?.tier !== 3 ? '' : spots.map(([x, y, r = 2.6], i) => `<path class="fig-twinkle" style="animation-delay:${(i * 0.9).toFixed(1)}s" d="M${x} ${y - r} Q${x + r * 0.2} ${y - r * 0.2} ${x + r} ${y} Q${x + r * 0.2} ${y + r * 0.2} ${x} ${y + r} Q${x - r * 0.2} ${y + r * 0.2} ${x - r} ${y} Q${x - r * 0.2} ${y - r * 0.2} ${x} ${y - r} Z" fill="${p.spark}"/>`).join(''));
 
-export function figure(look = {}, instrument = 'guitar', { electric = false, hue = null, finish = null, mood = null, bored = true } = {}) {
+export function figure(look = {}, instrument = 'guitar', { electric = false, hue = null, finish = null, mood = null, bored = true, phones = false } = {}) {
   const skin = look.skin || '#d9a27e';
   const shirt = look.shirt || '#4a6fa5';
   const pose = POSES[instrument] ? instrument : instrument === 'synth' ? 'keys' : instrument === 'none' ? 'none' : 'guitar';
@@ -78,7 +78,7 @@ export function figure(look = {}, instrument = 'guitar', { electric = false, hue
         <path d="M52.5 74.2 Q60 82 67.5 74.2 Z" fill="${skin}" stroke="${INK}" stroke-width="1.4" stroke-linejoin="round"/>
         <path d="M52.5 74.2 Q60 79 67.5 74.2 Q60 77 52.5 74.2 Z" ${SHADE}/>
         ${POSES[pose].back(skin, shirt, paint, fin)}
-        ${pivot(60, 74, 'fig-head', head(look, skin, sing, pose === 'none' && bored ? 'bored' : mood))}
+        ${pivot(60, 74, 'fig-head', head(look, skin, sing, pose === 'none' && bored ? 'bored' : mood, phones))}
         ${POSES[pose].front(skin, shirt, electric, paint, fin)}
       </g>
     </svg>`;
@@ -235,7 +235,7 @@ function lipColor(skin) {
   return `rgb(${c.map((v, i) => Math.round((v * 0.45 + rose[i] * 0.55) * 0.86)).join(',')})`;
 }
 
-function head(look, skin, sing, mood = null) {
+function head(look, skin, sing, mood = null, phones = false) {
   const hair = look.hairColor || '#3b2a20';
   const style = look.hair || 'kurz';
   const hat = hatOf(look);
@@ -302,6 +302,12 @@ function head(look, skin, sing, mood = null) {
   if (HATS[hat]) {
     const [c1, c2] = HAT_COLORS[hat];
     p.push(`<g stroke="${INK}" stroke-width="1.1" stroke-linejoin="round">${HATS[hat].replaceAll('HAT2', c2).replaceAll('HAT', c1)}</g>`);
+  }
+  // Kopfhörer (z. B. beim Demo-Hören in der Poststelle): Bügel über den Kopf, Muscheln auf den Ohren; über Haar und Mütze.
+  if (phones) {
+    const top = style === 'afro' ? 8 : style === 'dutt' && !hatted ? 12 : hatted ? 16 : 20;
+    p.push(`<path d="M30.5 42 C29 ${top} 71 ${top} 69.5 42" fill="none" stroke="${INK}" stroke-width="4.6" stroke-linecap="round"/><path d="M30.5 42 C29 ${top} 71 ${top} 69.5 42" fill="none" stroke="#3a3f52" stroke-width="2.6" stroke-linecap="round"/>`
+      + [27, 65.6].map((x) => `<rect x="${x}" y="37.5" width="7.4" height="14" rx="3.4" fill="#2ec4b6" stroke="${INK}" stroke-width="1.3"/><rect x="${x + 1.6}" y="40" width="2" height="8" rx="1" fill="#fff" opacity="0.35"/>`).join(''));
   }
   return `<g transform="translate(60 44) scale(1.5) translate(-50 -42)">${p.join('')}</g>`;
 }

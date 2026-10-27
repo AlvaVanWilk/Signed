@@ -146,7 +146,7 @@ export function officeScene(a, posts = 0) {
     const held = heldOf(x, a);
     return `
     <div class="ps-col ${held && held !== 'coffee' ? 'busy' : ''}">
-      <div class="ps-fig fig-stage idle"><div class="fig-member" style="--d:${(-((x.id * 7919) % 4300) / 1000).toFixed(2)}s">${figure(x.look, 'none', { bored: !held })}</div>
+      <div class="ps-fig fig-stage idle"><div class="fig-member" style="--d:${(-((x.id * 7919) % 4300) / 1000).toFixed(2)}s">${figure(x.look, 'none', { bored: !held, phones: held === 'listen' })}</div>
         ${held ? `<span class="ps-held ${held === 'coffee' ? 'coffee' : ''}">${HELD[held]}</span>` : ''}</div>
     </div>`;
   }).join('');

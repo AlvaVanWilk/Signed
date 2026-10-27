@@ -226,7 +226,7 @@ function jobLetter(m) {
       <div class="lb-card-foot">
         <b class="lb-price" title="Einmal bezahlen, keine laufenden Kosten">${money(m.price)}</b>
         <button class="lb-iconbtn drop" data-act="mailDrop" data-id="${m.mailId}" title="Absagen" aria-label="Absagen">✕</button>
-        <button class="btn small primary" data-act="${book ? 'tutorAsk' : 'mailHire'}" data-id="${m.mailId}" ${off(money0 < m.price ? `Dafür fehlen noch ${money(m.price - money0)}.` : '')}>${book ? 'Buchen' : 'Einstellen'}</button>
+        <button class="btn small primary" data-act="${book ? 'tutorAsk' : 'mailHire'}" data-id="${m.mailId}" ${off(hireBlock(m) || (money0 < m.price ? `Dafür fehlen noch ${money(m.price - money0)}.` : ''))}>${book ? 'Buchen' : 'Einstellen'}</button>
       </div>
     </article>`;
 }
@@ -245,6 +245,16 @@ function reportLetter(m) {
         <button class="btn small primary" data-act="reportShow" data-id="${m.mailId}">Ansehen</button>
       </div>
     </article>`;
+}
+
+/** Warum eine Bewerbung gerade nicht geht (leer: geht). Ein Praktikum gibt es immer nur eins zur gleichen Zeit. */
+function hireBlock(m) {
+  if (m.role !== 'intern') return '';
+  const now = (app.state.assistant?.staff ?? []).find((x) => x.intern);
+  if (!now) return '';
+  return now.ended
+    ? `Erst entscheiden, ob ${now.firstName} bleiben darf: übernehmen oder verabschieden. Danach geht ein neues Praktikum.`
+    : `Du hast schon ein Praktikum: ${now.firstName}. Ein neues geht erst, wenn das jetzige vorbei ist.`;
 }
 
 const mailSave = (m) => `<button class="lb-save ${m.saved ? 'on' : ''}" data-act="mailSave" data-id="${m.mailId}" data-saved="${m.saved ? '' : '1'}" title="${m.saved ? 'Zurück in den Eingang' : 'Merken'}" aria-label="${m.saved ? 'Zurück in den Eingang' : 'Merken'}">${BOOKMARK}</button>`;

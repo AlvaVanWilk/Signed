@@ -318,7 +318,7 @@ das überstimmt die Sortierung (`Post::move`, Spalte `box`).
   anderen Medium seiner Stufe (Unbekannte: Schülerzeitung, Blog; Bekannte: Musikzeitschriften, Sender; Stars: Fernsehshows). Wie viele andere
   Bands das Label hat, spielt keine Rolle. Ein Praktikum liegt immer da; ganz zu Beginn bewerben sich dazu ein Scout und ein Manager. Wie gut
   die Bewerber sind, folgt dem Label-Ruhm gesättigt: Güte = Ruhm / (Ruhm + 300) (`Balance::JOBS`, `Balance::SUBMISSIONS['perDay']`, `Balance::INTERVIEW`).
-- **Praktikum** (gebaut): 50 ₲, 7 Tage, nur ein Vorname, sieht jünger aus (kleinerer Kopf). Immer nur **eins zur gleichen Zeit**. Es arbeitet
+- **Praktikum** (gebaut): 50 ₲, 7 Tage, nur ein Vorname, sieht jünger aus (kleinerer Kopf). Immer nur **eins zur gleichen Zeit** (solange eins da ist oder auf eine Antwort wartet, ist „Einstellen“ bei weiteren Praktikums-Bewerbungen ausgegraut, mit Grund). Es arbeitet
   **nur auf Zuruf** und immer nur eine Sache: **Briefe öffnen**, **Demos anhören** (ohne wegzuwerfen) oder **Post sortieren** (was im Eingang
   liegt, kommt ins passende Fach). Es macht das für alles, was in dem Moment da liegt, **das Neueste zuerst**; was danach kommt, bleibt liegen.
   Man kann es jederzeit **abbrechen**: Fertiges bleibt fertig, der Rest liegt wieder da wie vorher. Es ist nicht schneller als man selbst,
@@ -333,7 +333,7 @@ das überstimmt die Sortierung (`Post::move`, Spalte `box`).
 - **Poststelle** (gebaut, `office.js`): Oben im Posteingang eine Szene statt einer Kachel: Wand mit Fenster, Postfächern, Uhr und Lampe, vorn
   der Schreibtisch mit Namensschildern; Praktikum und Assistenzen stehen als Figuren dahinter. Ein Praktikum ohne Auftrag sagt „Ich habe
   nichts zu tun.“, eine Assistenz ohne Arbeitsgebiet „Ich habe keine feste Aufgabe.“ (beide schauen gelangweilt); beim Praktikum steht während der Arbeit die Restzeit über dem Kopf, und es hält
-  Brief, Kassette oder Stapel in der Hand. Eine Assistenz mit Arbeitsgebiet sagt nichts; gibt es gerade nichts dafür, trinkt sie Kaffee.
+  Brief, Kassette oder Stapel in der Hand; wer Demos hört (Praktikum oder Assistenz), trägt dabei Kopfhörer. Eine Assistenz mit Arbeitsgebiet sagt nichts; gibt es gerade nichts dafür, trinkt sie Kaffee.
   Antippen öffnet die Sprechblase mit Zurufen, Arbeitsgebiet, Regeln und Abbrechen; die Restzeit des Praktikums steht auf einem Zettel am Tisch.
   Ist das Praktikum vorbei, fragt es „Darf ich bleiben?“; in der Sprechblase stehen dann „Übernehmen“ und „Verabschieden“.
 - **Scout-Karte** (gebaut): Der eingestellte Scout steht unter der Künstlerleiste: losschicken, Countdown, danach „Ansehen“ für den Bericht.

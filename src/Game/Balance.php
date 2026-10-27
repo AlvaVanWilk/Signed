@@ -304,11 +304,19 @@ final class Balance
      */
     public const SONGWRITING = ['share' => 0.25, 'norm' => 1.0, 'exp' => 1.5];
     /**
+     * Unerfüllte Bedürfnisse wachsen, wie Hunger: Wer seinen Wunsch geäußert hat (nicht mehr grün, Charakter-Wunsch aus Catalog::WISHES),
+     * wird nach `grace` Stunden mit jeder weiteren Stunde um `perHour` Punkte (Ziel des Wohlbefindens) unzufriedener, bis die Band etwas macht,
+     * das er mag (Mood::react setzt die Uhr zurück) oder er wieder grün ist. Ohne Instrument oder mit einem, über das er hinausgewachsen ist,
+     * genauso (`gear`, Diven × MOOD['gear']['traits']), bis er ein passendes hat. Gezählt wird nur gerechnete Zeit: Offline im Roten steht die Uhr still.
+     */
+    public const NEEDS = ['wish' => ['grace' => 2.0, 'perHour' => 0.4], 'gear' => ['grace' => 4.0, 'perHour' => 0.3]];
+    /**
      * Charakterzüge: Stärke und Schwäche je Zug (Schlüssel wie Catalog::PERSONALITIES).
      * write: Faktor auf den Beitrag zum Songschreiben. rehearsalGain: Faktor aufs Können je Probe (die Ausdauer steht in Catalog::LUST).
      * live: Zuschläge auf die Chance, live zu glänzen oder zu patzen. stageFame: Zuschlag auf den eigenen Anteil am Ruhm bei Auftritten.
      * recordQuality: Zuschlag auf die Qualität einer Platte je Mitglied. recordSales: Zuschlag auf den Erstverkauf je Mitglied.
-     * restless: so viele Punkte weniger Wohlbefinden-Ziel, wenn seit `hours` kein Auftritt war. stagnant: dasselbe ohne neue Platte.
+     * restless: so viele Punkte weniger Wohlbefinden-Ziel, wenn seit `hours` kein Auftritt war, und mit jeder weiteren Stunde mehr (`grow`).
+     * stagnant: dasselbe ohne neue Platte.
      * calm: sinkt langsamer (tau × `tau`, wenn das Ziel darunter liegt), Songstau zählt × `stau`, kleine Bühnen ärgern nicht.
      * pulled: Faktor, wie stark Unzufriedene in der Band jemanden mit herunterziehen.
      */
@@ -319,8 +327,9 @@ final class Balance
         'stageFame' => ['rampensau' => 0.2, 'partytier' => 0.15],
         'recordQuality' => ['perfektionist' => 0.04],
         'recordSales' => ['diva' => 0.1],
-        'restless' => ['hours' => 8, 'traits' => ['rampensau' => 6.0, 'partytier' => 5.0]],
-        'stagnant' => ['hours' => 48, 'traits' => ['ehrgeizig' => 6.0]],
+        // grow: ab der Schwelle wird es mit jeder Stunde um diesen Anteil des Grundwerts schlimmer (6 Punkte, grow 0,04: nach einem Tag 11,8)
+        'restless' => ['hours' => 8, 'grow' => 0.04, 'traits' => ['rampensau' => 6.0, 'partytier' => 5.0]],
+        'stagnant' => ['hours' => 48, 'grow' => 0.015, 'traits' => ['ehrgeizig' => 6.0]],
         'calm' => ['trait' => 'gelassen', 'tau' => 1.8, 'stau' => 0.5],
         'pulled' => ['teamplayer' => 1.5],
     ];

@@ -577,6 +577,12 @@ final class Schema
                 'ALTER TABLE mail ADD COLUMN read_at INTEGER NULL',
                 'ALTER TABLE labels ADD COLUMN assist_search TEXT NULL',
             ],
+            // 48: Unerfüllte Bedürfnisse wachsen: wie viele Stunden ein Musiker schon auf seinen Wunsch und auf ein (besseres) Instrument wartet
+            // (NULL = nichts offen). Gezählt wird nur Zeit, die gerechnet wird (eingefroren offline im Roten, siehe Mood::run).
+            [
+                'ALTER TABLE musicians ADD COLUMN wish_wait REAL NULL',
+                'ALTER TABLE musicians ADD COLUMN gear_wait REAL NULL',
+            ],
         ];
     }
 }

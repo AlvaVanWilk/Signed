@@ -232,6 +232,16 @@ den Gesangsspuren der Aufnahmen (`Music::melodyChart`, für Studio-Aufnahmen).
   rund 19 Proben (~13 Minuten), danach normales Tempo (alter Stand, mit der inzwischen entfernten Stufen-Bremse).
 - Lernkurve (alle Können-Gewinne): (1 − Können/110)^2,5. Je besser jemand ist, desto langsamer geht es.
 
+### Bedürfnisse (Umbau)
+
+- Das Wohlbefinden läuft auf ein Ziel zu (Halbwert über `Balance::MOOD['tau']`, 12 Std.); das Ziel ergibt sich aus den Gründen (Beziehungen,
+  Genre, Können-Abstand, Instrument, Songstau, Miesepeter, Unruhe).
+- **Unerfüllte Bedürfnisse wachsen** (`Balance::NEEDS`): Wer nicht grün ist, wartet auf seinen Wunsch; nach 2 Std. Schonzeit −0,4 je Stunde,
+  bis die Band etwas macht, das er mag (Mood::react setzt `wish_wait` zurück). Auf ein passendes Instrument warten: nach 4 Std. −0,3 je Stunde
+  (Diven ×2). Ohne Bühne (Rampensau 6, Partytier 5 ab 8 Std.) und ohne Platte (Ehrgeizige 6 ab 48 Std.) wächst der Abzug je Stunde um 4 % bzw.
+  1,5 % des Grundwerts (`TRAITS` restless/stagnant `grow`). Ein Auftritt, der offline zu Ende ging, setzt die Unruhe ab seinem Ende zurück.
+- Offline rechnet die Stimmung bis zum ersten Rot und bleibt dann stehen, auch die Wartezeiten.
+
 ### Tempo
 
 **Umbau (Label-Ebene):** Die **Bandprobe** ist jetzt die Hauptquelle für Können und läuft **ohne Stufen-Bremse** (nur die Lernkurve bremst).

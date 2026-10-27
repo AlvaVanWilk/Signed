@@ -285,7 +285,7 @@ function wishBubble(b, members, w) {
   // Am Rand geht die Blase nach innen auf, damit sie im Raum bleibt.
   const at = (members.findIndex((x) => x.id === w.musicianId) + 0.5) / members.length;
   return `<div class="lb-wishpop ${at < 0.34 ? 'from-left' : at > 0.66 ? 'from-right' : ''}"><button class="lb-wishpop-x" data-act="wishOpen" data-id="" aria-label="Schließen">✕</button>
-    <b>„${esc(w.text)}“</b><small>${esc(m?.stageName ?? m?.firstName ?? '')} wünscht sich das.</small>${wishGo(b, members, w)}</div>`;
+    <b>„${esc(w.text)}“</b><small>${esc(m?.stageName ?? m?.firstName ?? '')} wünscht sich das.${w.wait ? ` Wartet schon ${w.wait} Std. darauf und wird jede Stunde unzufriedener.` : ''}</small>${wishGo(b, members, w)}</div>`;
 }
 
 /** Ein Koffer (für die Auszeit). */

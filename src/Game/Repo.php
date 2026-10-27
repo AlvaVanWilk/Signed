@@ -248,6 +248,9 @@ final class Repo
             'band_slot' => (int) $r['band_slot'],
             'busy_until' => (int) $r['busy_until'],
             'wellbeing' => (float) ($r['wellbeing'] ?? 60),
+            // Stunden, die er schon auf seinen Wunsch bzw. ein (besseres) Instrument wartet (null: nichts offen), siehe Mood::run
+            'wish_wait' => isset($r['wish_wait']) ? (float) $r['wish_wait'] : null,
+            'gear_wait' => isset($r['gear_wait']) ? (float) $r['gear_wait'] : null,
             'origin' => $r['origin'],
             'created_at' => (int) $r['created_at'],
         ];

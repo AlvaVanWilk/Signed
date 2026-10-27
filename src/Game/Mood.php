@@ -199,7 +199,8 @@ final class Mood
             $score = self::liking($m['personality'], $type);
             if ($score !== 0) {
                 $value = max(0.0, min(100.0, $m['wellbeing'] + $step * max(-1, min(1, $score)) * $factor * ($score < 0 ? $soften : 1.0)));
-                $repo->db->update('musicians', ['wellbeing' => round($value, 3)], ['id' => $m['id']]);
+                // Was er mag, erfüllt seinen Wunsch: Die Uhr fängt von vorn an (NEEDS['wish']).
+                $repo->db->update('musicians', ['wellbeing' => round($value, 3)] + ($score > 0 ? ['wish_wait' => null] : []), ['id' => $m['id']]);
             }
         }
         Traits::revealLiking($repo, $members, $type);
@@ -267,15 +268,15 @@ final class Mood
             $level = self::level($m['wellbeing']);
             $played = $m['band_slot'] === 2 && $m['instr2'] !== null ? $m['instr2'] : $m['instr1'];
             if ($noGear === null && !isset($gear[$m['id']][$played])) {
-                $noGear = ['musicianId' => $m['id'], 'text' => 'Ich brauche ein Instrument.', 'action' => 'gear', 'level' => $level];
+                $noGear = ['musicianId' => $m['id'], 'text' => 'Ich brauche ein Instrument.', 'action' => 'gear', 'level' => $level, 'wait' => self::waitHours($m['gear_wait'] ?? null)];
             } elseif ($noGear === null && Gear::modelTier($gear[$m['id']][$played]['key']) < Gear::levelFor($m, $played)) {
                 // Mit dem Können über das Instrument hinausgewachsen
-                $noGear = ['musicianId' => $m['id'], 'text' => 'Ich will ein besseres Instrument.', 'action' => 'gear', 'level' => $level];
+                $noGear = ['musicianId' => $m['id'], 'text' => 'Ich will ein besseres Instrument.', 'action' => 'gear', 'level' => $level, 'wait' => self::waitHours($m['gear_wait'] ?? null)];
             }
             if ($level !== 'green') {
                 $table = count($members) === 1 ? Catalog::WISHES_SOLO : Catalog::WISHES;
                 [$text, $action] = $table[$m['personality'][0] ?? 'gelassen'] ?? $table['gelassen'];
-                $char[] = ['musicianId' => $m['id'], 'text' => $text, 'action' => $action, 'level' => $level];
+                $char[] = ['musicianId' => $m['id'], 'text' => $text, 'action' => $action, 'level' => $level, 'wait' => self::waitHours($m['wish_wait'] ?? null)];
             }
         }
         // Die Unzufriedensten zuerst
@@ -297,6 +298,12 @@ final class Mood
             $out[] = ['musicianId' => $members[0]['id'], 'text' => count($members) === 1 ? 'Ich will aufnehmen!' : 'Wir wollen aufnehmen!', 'action' => 'record', 'level' => 'yellow', 'band' => true];
         }
         return $out;
+    }
+
+    /** Wartezeit in ganzen Stunden für die Anzeige (null: noch keine volle Stunde). */
+    private static function waitHours(?float $hours): ?int
+    {
+        return $hours !== null && $hours >= 1 ? (int) floor($hours) : null;
     }
 
     /** Songs je Stunde bei dieser Stimmung (Ampel und Wert): grün schnell, gelb halb so schnell, rot gar nicht, ganz oben mit Schub. */
@@ -328,23 +335,6 @@ final class Mood
         $c = Balance::MOOD['stau'];
         $calm = in_array(Balance::TRAITS['calm']['trait'], $m['personality'], true) ? Balance::TRAITS['calm']['stau'] : 1.0;
         return min($c['max'], max(0.0, $songs - $c['from']) * $c['per']) * $calm;
-    }
-
-    /**
-     * Abzug, wenn die Band lange nichts erlebt hat, das jemandem wichtig ist: Extrovertierte und Gesellige wollen auf die Bühne,
-     * Ehrgeizige wollen neue Platten. Die Stunden seit dem letzten Auftritt und der letzten Platte stehen in $band (stageIdle, recordIdle).
-     */
-    private static function idle(array $m, array $band): float
-    {
-        $t = Balance::TRAITS;
-        $off = 0.0;
-        if (($band['stageIdle'] ?? 0) >= $t['restless']['hours']) {
-            $off += self::traitMax($m, $t['restless']['traits'], 0.0);
-        }
-        if (($band['recordIdle'] ?? 0) >= $t['stagnant']['hours']) {
-            $off += self::traitMax($m, $t['stagnant']['traits'], 0.0);
-        }
-        return $off;
     }
 
     /** Größter Wert aus einer Tabelle nach Charakterzug (oder $none, wenn keiner zutrifft). */
@@ -409,6 +399,7 @@ final class Mood
             $add(...$m['gearMood']);
         }
         $mates = array_values(array_filter($members, static fn ($x) => $x['id'] !== $m['id']));
+        self::waitWhy($m, !$mates, $add);
         if (!$mates) {
             // Solokünstler: keine Beziehungen, kein Genre der Band; es zählen Einsamkeit, Charakter (Band-Wunsch oder Rampenlicht) und Songstau.
             $add('Allein ist es manchmal einsam', $c['soloBase']);
@@ -489,21 +480,52 @@ final class Mood
             : ['Mag sein Instrument', $c['fits'] * $factor];
     }
 
-    /** Mitglieder mit ihrer Instrument-Laune (für target()). */
-    public static function withGear(array $members, array $gear): array
+    /** Fehlt ein Instrument, oder ist er über seins hinausgewachsen? Dann wartet er auf ein passendes (NEEDS['gear']). */
+    public static function gearNeed(array $m, array $gear): bool
     {
-        return array_map(static fn ($m) => $m + ['gearMood' => self::gearMood($m, $gear)], $members);
+        $type = BandCalc::instrument($m);
+        $item = $gear[$m['id']][$type] ?? null;
+        return $item === null || Gear::levelFor($m, $type) > Gear::modelTier($item['key']);
     }
 
-    /** Unruhe ohne Auftritt oder neue Platte, als einzelne Gründe (gleiche Rechnung wie idle()). */
+    /** Mitglieder mit ihrer Instrument-Laune (für target()) und ob sie auf ein passendes Instrument warten. */
+    public static function withGear(array $members, array $gear): array
+    {
+        return array_map(static fn ($m) => $m + ['gearMood' => self::gearMood($m, $gear), 'gearNeed' => self::gearNeed($m, $gear)], $members);
+    }
+
+    /**
+     * Unruhe, wenn die Band lange nichts erlebt hat, das jemandem wichtig ist: Extrovertierte und Gesellige wollen auf die Bühne, Ehrgeizige
+     * wollen neue Platten. Ab der Schwelle drückt es, und mit jeder weiteren Stunde mehr (TRAITS restless/stagnant `grow`).
+     */
     private static function idleWhy(array $m, array $band, callable $add): void
     {
         $t = Balance::TRAITS;
-        if (($band['stageIdle'] ?? 0) >= $t['restless']['hours']) {
-            $add('Will endlich wieder auf die Bühne', -self::traitMax($m, $t['restless']['traits'], 0.0));
+        foreach (['restless' => ['stageIdle', 'Will endlich wieder auf die Bühne'], 'stagnant' => ['recordIdle', 'Will endlich eine neue Platte machen']] as $key => [$hours, $text]) {
+            $over = ($band[$hours] ?? 0) - $t[$key]['hours'];
+            $base = self::traitMax($m, $t[$key]['traits'], 0.0);
+            if ($over >= 0 && $base > 0) {
+                $add($text, -$base * (1 + $t[$key]['grow'] * $over));
+            }
         }
-        if (($band['recordIdle'] ?? 0) >= $t['stagnant']['hours']) {
-            $add('Will endlich eine neue Platte machen', -self::traitMax($m, $t['stagnant']['traits'], 0.0));
+    }
+
+    /**
+     * Was schon lange offen ist, wird schlimmer: der eigene Wunsch (wer nicht mehr grün ist) und ein fehlendes oder zu schwaches Instrument.
+     * Die Wartezeit in Stunden steht am Musiker (wish_wait, gear_wait; Mood::run zählt sie hoch).
+     */
+    private static function waitWhy(array $m, bool $solo, callable $add): void
+    {
+        $n = Balance::NEEDS;
+        $wish = ($m['wish_wait'] ?? 0) - $n['wish']['grace'];
+        if ($wish > 0) {
+            $table = $solo ? Catalog::WISHES_SOLO : Catalog::WISHES;
+            $text = ($table[$m['personality'][0] ?? 'gelassen'] ?? $table['gelassen'])[0];
+            $add(sprintf('Wartet schon %d Std. darauf: „%s“', (int) round($m['wish_wait']), $text), -$n['wish']['perHour'] * $wish);
+        }
+        $gear = ($m['gear_wait'] ?? 0) - $n['gear']['grace'];
+        if ($gear > 0) {
+            $add(sprintf('Wartet schon %d Std. auf ein passendes Instrument', (int) round($m['gear_wait'])), -$n['gear']['perHour'] * $gear * self::traitMax($m, Balance::MOOD['gear']['traits'], 1.0));
         }
     }
 
@@ -538,17 +560,22 @@ final class Mood
                 continue;
             }
             $relations = self::relations($repo, $members, $now);
-            [$band['stageIdle'], $band['recordIdle']] = self::idleHours($repo, $band, $now);
+            // Wann zuletzt Bühne und Platte waren (auch während der nachgerechneten Zeit, z. B. ein Auftritt, der offline zu Ende ging)
+            [$band['stageTimes'], $band['recordTimes']] = self::idleTimes($repo, $band, $now - $span, $now);
+            $band['stageIdle'] = self::hoursSince($band['stageTimes'], $now);
+            $band['recordIdle'] = self::hoursSince($band['recordTimes'], $now);
             $members = self::withGear($members, $gear);
-            $state = ['w' => array_column($members, 'wellbeing', 'id'), 'songs' => $band['songs_written']];
+            $state = ['w' => array_column($members, 'wellbeing', 'id'), 'songs' => $band['songs_written'],
+                'wish' => array_column($members, 'wish_wait', 'id'), 'gear' => array_column($members, 'gear_wait', 'id')];
             $onlineSpan = min($online, $span);
             [$coachSpeed, $coachShare, $coachQuality] = Tutors::coaching($repo, $band['id'], $now - $span, $now);
             $factor = self::writeFactor($repo, $band['id'], $now - $span, $now) * self::crewFactor($members) * $coachSpeed;
-            $state = self::run($state, $members, $band, $relations, $span - $onlineSpan, true, $factor);
-            $state = self::run($state, $members, $band, $relations, $onlineSpan, false, $factor);
+            $state = self::run($state, $members, $band, $relations, $now - $span, $span - $onlineSpan, true, $factor);
+            $state = self::run($state, $members, $band, $relations, $now - $onlineSpan, $onlineSpan, false, $factor);
             $after = self::bandMood($state['w']);
             foreach ($state['w'] as $id => $w) {
-                $repo->db->update('musicians', ['wellbeing' => round($w, 3)], ['id' => $id]);
+                $wait = static fn (?float $h) => $h === null ? null : round($h, 3);
+                $repo->db->update('musicians', ['wellbeing' => round($w, 3), 'wish_wait' => $wait($state['wish'][$id] ?? null), 'gear_wait' => $wait($state['gear'][$id] ?? null)], ['id' => $id]);
             }
             // Geduld: nur online im Roten; sonst erholt sie sich
             $patience = $band['patience'];
@@ -571,18 +598,51 @@ final class Mood
     /** Stunden seit dem letzten Auftritt (Gig, Straße, offene Bühne) und seit der letzten fertigen Platte (ohne: seit Gründung). */
     public static function idleHours(Repo $repo, array $band, int $now): array
     {
-        $stage = (int) $repo->db->value("SELECT MAX(ends_at) FROM activities WHERE band_id = ? AND type IN ('gig', 'busking', 'openstage') AND ends_at <= ?", [$band['id'], $now]);
-        $record = (int) $repo->db->value("SELECT MAX(finished_at) FROM records WHERE band_id = ? AND status = 'done'", [$band['id']]);
-        $since = static fn (int $at) => max(0.0, ($now - max($at, (int) $band['created_at'])) / 3600);
-        return [$since($stage), $since($record)];
+        [$stage, $record] = self::idleTimes($repo, $band, $now, $now);
+        return [self::hoursSince($stage, $now), self::hoursSince($record, $now)];
+    }
+
+    /**
+     * Zeitpunkte, ab denen die Unruhe neu zählt: Gründung, der letzte Auftritt bzw. die letzte Platte bis $from und alle danach bis $to.
+     * @return array{0: list<int>, 1: list<int>} Bühne, Platte (aufsteigend)
+     */
+    public static function idleTimes(Repo $repo, array $band, int $from, int $to): array
+    {
+        $db = $repo->db;
+        // $col: Spalte mit dem Zeitpunkt, $from: Tabelle und Bedingung (ohne den Zeitraum)
+        $list = static function (string $col, string $where, array $args) use ($db, $band, $from, $to): array {
+            $times = [(int) $band['created_at'], (int) $db->value("SELECT MAX($col) FROM $where AND $col <= ?", [...$args, $from])];
+            foreach ($db->all("SELECT $col AS t FROM $where AND $col > ? AND $col <= ? ORDER BY $col", [...$args, $from, $to]) as $r) {
+                $times[] = (int) $r['t'];
+            }
+            sort($times);
+            return $times;
+        };
+        return [
+            $list('ends_at', "activities WHERE band_id = ? AND type IN ('gig', 'busking', 'openstage', 'tourgig', 'battle', 'festival')", [$band['id']]),
+            $list('finished_at', "records WHERE band_id = ? AND status = 'done'", [$band['id']]),
+        ];
+    }
+
+    /** Stunden seit dem letzten Zeitpunkt bis $t aus einer aufsteigenden Liste. */
+    private static function hoursSince(array $times, int $t): float
+    {
+        $last = 0;
+        foreach ($times as $x) {
+            if ($x <= $t) {
+                $last = max($last, $x);
+            }
+        }
+        return max(0.0, ($t - $last) / 3600);
     }
 
     /**
      * Rechnet $seconds in Schritten. $freezeAtRed: Offline-Zeit – rot am Anfang überspringt alles, rot unterwegs hält an.
      * @return array{w: array<int, float>, songs: float}
      */
-    private static function run(array $state, array $members, array $band, array $relations, int $seconds, bool $freezeAtRed, float $writeFactor = 1.0): array
+    private static function run(array $state, array $members, array $band, array $relations, int $from, int $seconds, bool $freezeAtRed, float $writeFactor = 1.0): array
     {
+        $t = $from;
         $c = Balance::MOOD;
         $byId = [];
         foreach ($members as $m) {
@@ -594,7 +654,18 @@ final class Mood
             }
             $dt = min($c['step'], $seconds);
             $seconds -= $dt;
-            $state['songs'] = min((float) $c['songCap'], $state['songs'] + self::songRate(self::bandMood($state['w'])) * $writeFactor * $dt / 3600);
+            $t += $dt;
+            $hours = $dt / 3600;
+            $state['songs'] = min((float) $c['songCap'], $state['songs'] + self::songRate(self::bandMood($state['w'])) * $writeFactor * $hours);
+            // Die Zeit läuft: lange ohne Bühne und Platte, und wer auf seinen Wunsch oder ein Instrument wartet, wartet länger.
+            $band['stageIdle'] = self::hoursSince($band['stageTimes'] ?? [], $t);
+            $band['recordIdle'] = self::hoursSince($band['recordTimes'] ?? [], $t);
+            foreach ($state['w'] as $id => $w) {
+                $state['wish'][$id] = self::level($w) === 'green' ? null : ($state['wish'][$id] ?? 0.0) + $hours;
+                $state['gear'][$id] = !empty($byId[$id]['gearNeed']) ? ($state['gear'][$id] ?? 0.0) + $hours : null;
+                $byId[$id]['wish_wait'] = $state['wish'][$id];
+                $byId[$id]['gear_wait'] = $state['gear'][$id];
+            }
             $next = [];
             foreach ($state['w'] as $id => $w) {
                 $target = self::target($byId[$id], $band, $members, $state['w'], $relations, $state['songs']);

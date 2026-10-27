@@ -739,3 +739,22 @@ test('Spieltechniken: nur lernbar, wenn man eins ihrer Genres mag, und Sound nur
     checkEquals(1.0, BandCalc::techniqueBonus([$growler, $growler], []), 'gemischte Band: nichts');
     check(BandCalc::techniqueBonus([$growler], []) > 1.0, 'solo zählen die eigenen Genres');
 });
+
+test('Bedürfnisse wachsen: Wer lange auf seinen Wunsch, ein Instrument oder die Bühne wartet, wird mit jeder Stunde unzufriedener', function (): void {
+    $band = ['genre' => 'rock'];
+    $a = musician(['id' => 1, 'genres' => ['rock'], 'personality' => ['rampensau']]);
+    $b = musician(['id' => 2, 'genres' => ['rock'], 'personality' => []]);
+    $t = static fn (array $m, array $bandX = ['genre' => 'rock']) => Signed\Game\Mood::target($m, $bandX, [$m, $b], [2 => 70.0], ['1-2' => 0.0], 0.0);
+    $n = Balance::NEEDS;
+    // Der eigene Wunsch: erst die Schonzeit, dann je Stunde weniger.
+    checkEquals($t($a), $t($a + ['wish_wait' => $n['wish']['grace']]), 'in der Schonzeit noch nichts');
+    check(abs($t($a) - $t($a + ['wish_wait' => $n['wish']['grace'] + 10]) - 10 * $n['wish']['perHour']) < 1e-9, 'danach je Stunde perHour');
+    check($t($a + ['wish_wait' => 48.0]) < $t($a + ['wish_wait' => 24.0]), 'zwei Tage schlimmer als einer');
+    // Auf ein passendes Instrument warten genauso.
+    check($t($a + ['gear_wait' => 30.0]) < $t($a + ['gear_wait' => 10.0]), 'Instrument: wächst');
+    // Lange keine Bühne: ab der Schwelle der Grundwert, danach mehr.
+    $r = Balance::TRAITS['restless'];
+    $at = $t($a, $band + ['stageIdle' => $r['hours']]);
+    $later = $t($a, $band + ['stageIdle' => $r['hours'] + 25]);
+    check(abs(($at - $later) - 6.0 * $r['grow'] * 25) < 1e-9, 'Unruhe wächst mit jeder Stunde');
+});

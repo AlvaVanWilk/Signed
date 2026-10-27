@@ -102,7 +102,13 @@ Jede Anordnung ist beliebt (+), unbeliebt (−) oder egal. Daraus entstehen die 
 Typische **Wünsche** (acht Symbole): Auftritt, Probe, Aufnahme, Ruhe, Kurs/Förderung, besseres Instrument, bessere Bühne/Studio, Songs produzieren.
 Jeder Wunsch hat ein Symbol und einen Satz und ist mit einer passenden Anordnung verknüpft (ein Tipp darauf führt dorthin oder erfüllt ihn direkt).
 Wünsche ergeben sich aus der Lage: **Wer kein Instrument hat, wünscht sich eins; wer mit besserem Können sein Instrument überholt hat, wünscht sich ein besseres** (gebaut: „Ich will ein besseres Instrument.“).
-Je länger ein Wunsch offen bleibt, desto mehr drückt er das Wohlbefinden.
+Je länger ein Wunsch offen bleibt, desto mehr drückt er das Wohlbefinden (gebaut, `Balance::NEEDS`): Unerfüllte Bedürfnisse wachsen wie
+Hunger. Wer nicht mehr grün ist, hat seinen Charakter-Wunsch geäußert; nach 2 Stunden Schonzeit sinkt sein Ziel um 0,4 Punkte je Stunde,
+bis die Band etwas macht, das er mag (dann fängt die Uhr von vorn an) oder er wieder grün ist. Wer auf ein (besseres) Instrument wartet, genauso
+(nach 4 Stunden 0,3 je Stunde, Diven doppelt), bis er eins hat. Auch „lange nicht auf der Bühne“ (Rampensau, Partytier) und „lange keine
+Platte“ (Ehrgeizige) werden mit jeder Stunde schlimmer statt bei einem festen Abzug stehen zu bleiben. Gezählt wird nur gerechnete Zeit:
+Offline im Roten steht alles still, ein Urlaub kostet also keine Band. Die Sprechblase sagt, wie lange schon gewartet wird; mit Manager steht es
+auch im „Warum?“.
 
 ### Charakterzüge: Stärke und Schwäche (gebaut)
 
@@ -608,7 +614,7 @@ Beim ersten Login nach dem Umbau (Saison 2) bleiben **Labelname und Konto**, all
 1. Konzept und Auslagerung dokumentieren (diese Dateien).
 2. Datenmodell: Wohlbefinden, Beziehungen (Paare), Songs, Spielzeit, Stimmung.
 3. Band-Leiste und Bandseite (neue Oberfläche, ohne Untermenü). **Gebaut** (Testversion). **Zusammenspiel und Chemie sind ersetzt** durch den Zusammenhalt aus den Beziehungen (siehe `kern.md`). Noch offen: Verschieben der Knöpfe.
-   Dazu gebaut (vorgezogen aus Schritt 6): **Charakter-Reaktionen** (`Catalog::LIKES`: Eine Anordnung, die der Charakter mag, hebt das Wohlbefinden sofort um `Balance::MOOD['reactStep']`, eine unbeliebte drückt es), **Sperre bei Rot** (ein roter Musiker, der die Anordnung nicht mag, sperrt sie; jede Eigenschaft mag mindestens eine Anordnung, damit es immer einen Ausweg gibt) und **Wünsche** (unzufriedene Musiker nennen ihren Charakter-Wunsch, `Catalog::WISHES`; fehlendes Instrument; Songstau). Offen: die Wirkung offener Wünsche auf das Wohlbefinden über die Zeit (bisher nur der Stoß beim Erfüllen), Anspruch und Studio.
+   Dazu gebaut (vorgezogen aus Schritt 6): **Charakter-Reaktionen** (`Catalog::LIKES`: Eine Anordnung, die der Charakter mag, hebt das Wohlbefinden sofort um `Balance::MOOD['reactStep']`, eine unbeliebte drückt es), **Sperre bei Rot** (ein roter Musiker, der die Anordnung nicht mag, sperrt sie; jede Eigenschaft mag mindestens eine Anordnung, damit es immer einen Ausweg gibt) und **Wünsche** (unzufriedene Musiker nennen ihren Charakter-Wunsch, `Catalog::WISHES`; fehlendes Instrument; Songstau). Gebaut: offene Wünsche drücken das Wohlbefinden mit der Zeit immer mehr (`Balance::NEEDS`). Offen: Anspruch und Studio.
 4. Anordnungen: Proben (neue Können-Quelle), Auftritt buchen mit Kosten und Gewinn-Schätzung.
 5. Aufnehmen mit Studio und Produzent, Cover-Wahl.
 6. Wünsche, Mitteilungen, Charakter-Tabelle.

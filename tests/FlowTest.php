@@ -1887,7 +1887,9 @@ test('Verborgene Charakterzüge und Bedürfnisse: ohne Manager nur die Stimmung,
     // Wirken allein verrät nichts mehr (Straßenmusik, Zeit vergeht).
     $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'busking']);
     Clock::advance(2 * 86400);
+    // Ohne die Stimmung nachzurechnen (sonst würde sein offener Wunsch ihn mit der Zeit rot und laut machen, siehe Balance::NEEDS).
     $db->exec('UPDATE musicians SET wellbeing = 45 WHERE id = ?', [$ids[0]]);
+    $db->exec('UPDATE bands SET mood_at = ? WHERE id = ?', [Clock::now() - 60, $band['id']]);
     checkEquals([], $find($p->get('state'), $ids[0])['personality'], 'auch nach zwei Tagen unbekannt');
     // Rot: sagt laut, was er will, und man erfährt den Zug dahinter.
     $db->exec('UPDATE musicians SET wellbeing = 10 WHERE id = ?', [$ids[0]]);
@@ -2607,4 +2609,28 @@ test('Aufstellung im Raum: eigene Reihenfolge der Mitglieder bleibt gespeichert,
     $state = $p->post('bandStageOrder', ['bandId' => $band['id'], 'order' => [$ids[1]]])['state'];
     checkEquals($ids[1], bandById($state, $band['id'])['memberIds'][0]);
     checkEquals(count($ids), count(bandById($state, $band['id'])['memberIds']));
+});
+
+test('Bedürfnisse: Die Wartezeit läuft nur, solange er nicht grün ist; was er mag, setzt sie zurück; offline im Roten steht sie still', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Wartend');
+    $band = foundBand($p);
+    $id = (int) $db->value('SELECT id FROM musicians WHERE band_id = ? ORDER BY id LIMIT 1', [$band['id']]);
+    $db->exec("UPDATE musicians SET personality = '[\"rampensau\"]', wellbeing = 50 WHERE id = ?", [$id]);
+    $p->get('state');
+    // Online (alle paar Sekunden ein Lebenszeichen): drei Stunden
+    for ($i = 0; $i < 3 * 60; $i++) {
+        Clock::advance(60);
+        $p->get('state');
+    }
+    $wait = (float) $db->value('SELECT wish_wait FROM musicians WHERE id = ?', [$id]);
+    check($wait > 2.5 && $wait < 3.5, 'wartet seit etwa drei Stunden: ' . $wait);
+    // Was er mag (ein Interview), setzt die Uhr zurück.
+    Signed\Game\Mood::react(new Signed\Game\Repo($db, (int) $p->get('state')['label']['id']), [Signed\Game\Repo::hydrateMusician($db->one('SELECT * FROM musicians WHERE id = ?', [$id]))], 'interview');
+    checkEquals(null, $db->value('SELECT wish_wait FROM musicians WHERE id = ?', [$id]));
+    // Offline und schon rot: Die Uhr steht still.
+    $db->exec('UPDATE musicians SET wellbeing = 20, wish_wait = 5 WHERE id = ?', [$id]);
+    Clock::advance(2 * 86400);
+    $p->get('state');
+    checkEquals(5.0, (float) $db->value('SELECT wish_wait FROM musicians WHERE id = ?', [$id]), 'offline im Roten keine Wartezeit dazu');
 });

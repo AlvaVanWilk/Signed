@@ -253,7 +253,8 @@ final class Mood
     }
 
     /**
-     * Die Wünsche der Band (Anzeige): unzufriedene Musiker nennen ihren Charakter-Wunsch, wer kein Instrument hat, wünscht sich eins,
+     * Die Wünsche der Band (Anzeige): unzufriedene Musiker nennen ihren Charakter-Wunsch, wer kein Instrument hat, wünscht sich eins
+     * (wer mit seinem Können über sein Instrument hinausgewachsen ist, ein besseres),
      * und bei Songstau wollen sie aufnehmen.
      * @param array<int, array<string, array>> $gear Instrumente je Musiker und Art
      * @return list<array{musicianId: int, text: string, action: string, level: string}>
@@ -267,6 +268,9 @@ final class Mood
             $played = $m['band_slot'] === 2 && $m['instr2'] !== null ? $m['instr2'] : $m['instr1'];
             if ($noGear === null && !isset($gear[$m['id']][$played])) {
                 $noGear = ['musicianId' => $m['id'], 'text' => 'Ich brauche ein Instrument.', 'action' => 'gear', 'level' => $level];
+            } elseif ($noGear === null && Gear::modelTier($gear[$m['id']][$played]['key']) < Gear::levelFor($m, $played)) {
+                // Mit dem Können über das Instrument hinausgewachsen
+                $noGear = ['musicianId' => $m['id'], 'text' => 'Ich spiele besser, als mein Instrument kann.', 'action' => 'gear', 'level' => $level];
             }
             if ($level !== 'green') {
                 $table = count($members) === 1 ? Catalog::WISHES_SOLO : Catalog::WISHES;
@@ -400,6 +404,10 @@ final class Mood
             }
         };
         $why = $why === null ? null : [];
+        // Das Instrument (vorher eingetragen, siehe withGear)
+        if (isset($m['gearMood'])) {
+            $add(...$m['gearMood']);
+        }
         $mates = array_values(array_filter($members, static fn ($x) => $x['id'] !== $m['id']));
         if (!$mates) {
             // Solokünstler: keine Beziehungen, kein Genre der Band; es zählen Einsamkeit, Charakter (Band-Wunsch oder Rampenlicht) und Songstau.
@@ -461,6 +469,32 @@ final class Mood
         return max(0.0, min(100.0, $value));
     }
 
+    /**
+     * Wie das Instrument die Laune beeinflusst: [Grund, Wert]. Keins drückt, eins unter dem eigenen Können drückt je Stufe Abstand,
+     * eins, das zum Können passt, freut; Diven nehmen es stärker (Balance::MOOD['gear']).
+     * @param array<int, array<string, array>> $gear aus Repo::gearByMusician
+     */
+    public static function gearMood(array $m, array $gear): array
+    {
+        $c = Balance::MOOD['gear'];
+        $factor = self::traitMax($m, $c['traits'], 1.0);
+        $type = BandCalc::instrument($m);
+        $item = $gear[$m['id']][$type] ?? null;
+        if ($item === null) {
+            return ['Hat kein Instrument', $c['none'] * $factor];
+        }
+        $behind = Gear::levelFor($m, $type) - Gear::modelTier($item['key']);
+        return $behind > 0
+            ? ['Spielt besser, als das Instrument hergibt', $c['behind'] * $behind * $factor]
+            : ['Mag sein Instrument', $c['fits'] * $factor];
+    }
+
+    /** Mitglieder mit ihrer Instrument-Laune (für target()). */
+    public static function withGear(array $members, array $gear): array
+    {
+        return array_map(static fn ($m) => $m + ['gearMood' => self::gearMood($m, $gear)], $members);
+    }
+
     /** Unruhe ohne Auftritt oder neue Platte, als einzelne Gründe (gleiche Rechnung wie idle()). */
     private static function idleWhy(array $m, array $band, callable $add): void
     {
@@ -487,6 +521,7 @@ final class Mood
         $online = $onlineAt > 0 && $gap >= 0 && $gap <= $c['onlineCredit'] ? $gap : 0;
         $repo->db->update('labels', ['online_at' => $now], ['id' => $repo->labelId]);
 
+        $gear = $repo->gearByMusician();
         foreach ($repo->bands() as $band) {
             self::syncCohesion($repo, $band['id']);
             if ($band['mood_at'] <= 0) {
@@ -504,6 +539,7 @@ final class Mood
             }
             $relations = self::relations($repo, $members, $now);
             [$band['stageIdle'], $band['recordIdle']] = self::idleHours($repo, $band, $now);
+            $members = self::withGear($members, $gear);
             $state = ['w' => array_column($members, 'wellbeing', 'id'), 'songs' => $band['songs_written']];
             $onlineSpan = min($online, $span);
             [$coachSpeed, $coachShare, $coachQuality] = Tutors::coaching($repo, $band['id'], $now - $span, $now);

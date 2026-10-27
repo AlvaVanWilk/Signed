@@ -137,11 +137,13 @@ final class Balance
         'genre' => ['fits' => 6.0, 'misfit' => -8.0, 'mixed' => -4.0],
         'stau' => ['from' => 12, 'per' => 1.5, 'max' => 18.0],
         'pull' => ['per' => 0.15, 'max' => 20.0, 'friend' => 0.5],
+        // Instrument: keins drückt, eins unter dem eigenen Können drückt je Stufe, ein passendes freut; Diven nehmen es doppelt so wichtig
+        'gear' => ['none' => -6.0, 'behind' => -3.0, 'fits' => 2.0, 'traits' => ['diva' => 2.0]],
         // Songs je Stunde nach Ampel, Vorrat höchstens cap
         'songsPerHour' => ['green' => 1.0, 'yellow' => 0.5, 'red' => 0.0], 'songCap' => 24,
         // Wer ausgesprochen gut drauf ist (grün ab Wert `from`), schreibt schneller; auf der Bühne oder Promo-Tour ruht das Schreiben, beim Proben geht es langsamer weiter
         'songsBoost' => ['from' => 80.0, 'factor' => 1.5],
-        'songsActivity' => ['stop' => ['gig', 'busking', 'openstage', 'bandpromo'], 'rehearsal' => 0.6],
+        'songsActivity' => ['stop' => ['gig', 'busking', 'openstage', 'bandpromo', 'retreat'], 'rehearsal' => 0.6],
         // Geduld (Sekunden Spielzeit im Roten) bis die Band geht; erst eingeschaltet, wenn die Anordnungen da sind
         'patience' => 1800.0, 'patienceRecover' => 2.0, 'leaving' => false,
         // Allein ist es einsam (soloBase für alle); wer eine Band oder Publikum um sich braucht, leidet stärker, Diven genießen es
@@ -156,7 +158,7 @@ final class Balance
      */
     public const RELATION = [
         'max' => 10.0, 'scale' => 10.0, 'base' => 3.0, 'drift' => 0.2,
-        'bond' => ['rehearsal' => 0.12, 'gig' => 0.10, 'record' => 0.08, 'bandpromo' => 0.05],
+        'bond' => ['rehearsal' => 0.12, 'gig' => 0.10, 'record' => 0.08, 'bandpromo' => 0.05, 'retreat' => 0.08],
         'clash' => -0.5, 'teamplayer' => 0.25, 'party' => 0.3,
         'genres' => [0 => -0.3, 1 => 0.1, 2 => 0.3, 3 => 0.4], 'gapFrom' => 30, 'gapBig' => 50, 'gapPenalty' => [-0.2, -0.4],
     ];
@@ -450,6 +452,19 @@ final class Balance
      * werden laufend gutgeschrieben. `lust` = Sekunden bis jemand genug hat (nach Charakter, Catalog::LUST), mindestens `minLust`.
      */
     public const REHEARSAL = ['seconds' => 900, 'lust' => 3600, 'minLust' => 60, 'cohesion' => 5.0, 'skill' => 4.0, 'songSpan' => 150];
+    /**
+     * Auszeit für eine Band (oder einen Solokünstler): Ausflug, Wochenende oder Urlaub. Die Band ist so lange weg (keine Songs, keine Anordnungen),
+     * kostet `perMember` je Mitglied und hebt danach das Wohlbefinden aller um `gain` (Gelassene und Ruhepole mehr, Ehrgeizige weniger: `traits`).
+     * Geht auch, wenn die Band rot ist: Sie ist ein Ausweg.
+     */
+    public const RETREAT = [
+        'options' => [
+            'ausflug' => ['name' => 'Ausflug', 'seconds' => 3600, 'perMember' => 20, 'gain' => 8.0],
+            'wochenende' => ['name' => 'Wochenende', 'seconds' => 4 * 3600, 'perMember' => 60, 'gain' => 16.0],
+            'urlaub' => ['name' => 'Urlaub', 'seconds' => 12 * 3600, 'perMember' => 150, 'gain' => 28.0],
+        ],
+        'traits' => ['gelassen' => 1.5, 'ruhepol' => 1.5, 'ehrgeizig' => 0.5],
+    ];
     /** Band-Promo: alle Mitglieder sind unterwegs, jeder bringt Bekanntheit wie bei der Promo-Mission. */
     public const BAND_PROMO = ['seconds' => 600, 'fame' => [0.1, 0.25]];
     /** Jam-Café: nur Musiker ohne Band; danach drei passende Musiker (Stufe 0) zur Auswahl für eine Band. */

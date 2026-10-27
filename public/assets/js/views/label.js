@@ -156,7 +156,14 @@ const ICON = {
   record: '<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="12"/><circle cx="16" cy="16" r="4.5"/><path d="M16 4 V9"/></svg>',
   gig: '<svg viewBox="0 0 32 32"><rect x="12" y="4" width="8" height="15" rx="4"/><path d="M8 15 a8 8 0 0 0 16 0 M16 23 V28 M11 28 H21"/></svg>',
   promo: '<svg viewBox="0 0 32 32"><path d="M5 13 V19 H10 L22 26 V6 L10 13 Z"/><path d="M26 11 a6 6 0 0 1 0 10"/></svg>',
+  retreat: '<svg viewBox="0 0 32 32"><path d="M6 26 H26"/><path d="M16 26 V10"/><path d="M5 12 a11 7 0 0 1 22 0 Z"/></svg>',
 };
+
+/** Auszeit: Was sie kostet und bringt (die günstigste Wahl). */
+function retreatHint(b) {
+  const r = cat().rules.retreat.options.ausflug;
+  return `ab ${money(r.perMember * b.memberIds.length)} · erholt sich, auch wenn es schlecht läuft`;
+}
 
 const relWord = (v) => (v >= 7 ? 'verstehen sich sehr gut' : v >= 3 ? 'verstehen sich gut' : v > -3 ? 'kennen sich kaum' : v > -7 ? 'sind angespannt' : 'sind zerstritten');
 
@@ -347,7 +354,7 @@ function act(b, members, type, section, title, text, icon, warn = false, busy = 
   // Ohne Unterseite: Die Anordnung startet gleich (Proben).
   if (!section) {
     const why = busy ? (blocker(b, members)?.text ?? (members.length === 1 ? 'Gerade beschäftigt.' : 'Die Band ist gerade beschäftigt.')) : '';
-    return `<button class="lb-act ${busy ? 'idle' : ''} ${warn ? 'warn' : ''}" data-act="${{ gig: 'gigAsk', rehearsal: 'rehearseAsk', record: 'recordAsk', bandpromo: 'bandPromo' }[type]}" data-id="${b.id}" ${off(why)}>${icon}<b>${title}</b>${busy ? `<small>${members.length === 1 ? 'Gerade beschäftigt.' : 'Die Band ist gerade beschäftigt.'}</small>` : hint}</button>`;
+    return `<button class="lb-act ${busy ? 'idle' : ''} ${warn ? 'warn' : ''}" data-act="${{ gig: 'gigAsk', rehearsal: 'rehearseAsk', record: 'recordAsk', bandpromo: 'bandPromo', retreat: 'retreatAsk' }[type]}" data-id="${b.id}" ${off(why)}>${icon}<b>${title}</b>${busy ? `<small>${members.length === 1 ? 'Gerade beschäftigt.' : 'Die Band ist gerade beschäftigt.'}</small>` : hint}</button>`;
   }
   return `<a class="lb-act ${warn ? 'warn' : ''}" href="#/band/${b.id}/${section}">${icon}<b>${title}</b>${hint}</a>`;
 }
@@ -605,6 +612,7 @@ export function page(route) {
       ${act(b, members, 'record', null, 'Aufnehmen', recordHint(b), ICON.record, b.mood.songs >= 12, !!blocker(b, members))}
       ${act(b, members, 'gig', null, 'Auftritt buchen', 'Orte, Kosten und Gewinn sehen', ICON.gig, false, !!blocker(b, members))}
       ${act(b, members, 'bandpromo', null, 'Promo-Tour', promoHint(b), ICON.promo, false, !!blocker(b, members))}
+      ${act(b, members, 'retreat', null, 'Auszeit', retreatHint(b), ICON.retreat, false, !!blocker(b, members))}
     </div>
     ${course}
     ${managerBlock(b)}
@@ -829,6 +837,34 @@ defineActions({
   /** Kurzer Hinweis am Knopf (Genre, Stufe, Instrument, gesperrte Anordnung). */
   tip({ tip }, el) {
     popover(el, tip);
+  },
+  /** Auszeit: Ausflug, Wochenende oder Urlaub wählen; kostet je Mitglied, die Band ist so lange weg. */
+  retreatAsk({ id }) {
+    const b = bandById(id);
+    const r = cat().rules.retreat;
+    const n = b.memberIds.length;
+    const who = whoOf(b);
+    const modal = openModal({
+      className: 'lb-rules-modal',
+      html: `
+        <div class="lb-cap">Anordnung</div>
+        <h2>Auszeit für ${esc(b.name)}</h2>
+        <p class="muted">${esc(who)} fährt weg und erholt sich. So lange gibt es keine Songs und keine Anordnungen. Danach geht es allen besser, auch wenn die Stimmung gerade schlecht ist. Gelassene und ruhige Leute erholen sich am meisten, Ehrgeizige weniger.</p>
+        <div class="lb-pick">${Object.entries(r.options).map(([k, o]) => {
+          const cost = o.perMember * n;
+          const poor = app.state.label.money < cost;
+          return `<button class="lb-pick-row" data-option="${k}" ${off(poor ? `Dafür fehlen noch ${money(cost - app.state.label.money)}.` : '')}>
+            <span><b>${esc(o.name)}</b> · ${mins(o.seconds)}<small class="muted">Stimmung etwa +${fmt0(o.gain)} · ${money(cost)}${n > 1 ? ` (${money(o.perMember)} je Mitglied)` : ''}</small></span></button>`;
+        }).join('')}</div>
+        <div class="dialog-actions"><button class="btn ghost" data-close>Abbrechen</button></div>`,
+    });
+    modal.body.addEventListener('click', async (e) => {
+      if (e.target.closest('[data-close]')) return modal.close();
+      const row = e.target.closest('[data-option]');
+      if (!row || row.getAttribute('aria-disabled') === 'true') return;
+      modal.close();
+      if (await mutate('bandRetreat', { bandId: b.id, option: row.dataset.option })) toast(`${who} ist weg: ${r.options[row.dataset.option].name}.`, 'ok');
+    });
   },
   /** Probe: erst fragen, mit Dauer und Wirkung, dann starten. */
   rehearseAsk({ id }) {

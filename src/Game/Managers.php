@@ -110,7 +110,8 @@ final class Managers
         foreach ($members as $m) {
             $type = BandCalc::instrument($m);
             $gear = $gearMap[$m['id']][$type] ?? null;
-            if ($gear !== null && Gear::modelTier($gear['key']) < Gear::levelFor($m, $type)) {
+            $wished = (bool) array_filter($wishes, static fn ($w) => $w['action'] === 'gear' && $w['musicianId'] === $m['id']);
+            if (!$wished && $gear !== null && Gear::modelTier($gear['key']) < Gear::levelFor($m, $type)) {
                 $out[] = ['level' => 2, 'text' => sprintf('%s spielt inzwischen besser, als %s es hergibt. Ein besseres Instrument wäre gut.', $name($m), $gear['name']), 'musicianId' => $m['id'], 'action' => 'gear'];
             }
         }

@@ -221,6 +221,7 @@ final class Present
                 'skillLevels' => Balance::SKILL_LEVELS,
                 'fameLevels' => Balance::FAME_LEVELS,
                 'bandPromoSeconds' => Balance::BAND_PROMO['seconds'],
+                'retreat' => Balance::RETREAT,
                 'scoutCards' => Balance::SCOUT_CARDS,
                 'chartLpSongs' => Balance::CHART_LP_SONGS,
                 'chartSize' => Balance::CHART_SIZE,

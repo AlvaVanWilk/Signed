@@ -290,6 +290,43 @@ final class Activities
         });
     }
 
+    /** Was eine Auszeit für diese Band kostet (je Mitglied). */
+    public static function retreatCost(string $option, int $members): int
+    {
+        return Balance::RETREAT['options'][$option]['perMember'] * max(1, $members);
+    }
+
+    /** Auszeit: Die Band ist weg und erholt sich; danach geht es allen besser (auch aus dem Roten heraus). */
+    public function retreat(int $bandId, string $option): array
+    {
+        $db = $this->repo->db;
+        return $db->transaction(function () use ($db, $bandId, $option): array {
+            $now = Clock::now();
+            $cfg = Balance::RETREAT['options'][$option] ?? throw new ApiError('Diese Auszeit gibt es nicht.');
+            $band = $this->repo->band($bandId);
+            $members = $this->repo->members($bandId);
+            $blocker = self::blocker($band, $members, $now);
+            if ($blocker !== null) {
+                throw new ApiError($blocker);
+            }
+            $endsAt = $now + $cfg['seconds'];
+            if ($db->exec('UPDATE bands SET busy_until = ? WHERE id = ? AND busy_until <= ?', [$endsAt, $bandId, $now]) === 0) {
+                throw new ApiError(Bands::who($members) . ' ist gerade beschäftigt.');
+            }
+            $this->repo->spend(self::retreatCost($option, count($members)), sprintf('Auszeit: %s (%s)', $band['name'], $cfg['name']));
+            $gains = [];
+            foreach ($members as $m) {
+                $db->update('musicians', ['busy_until' => $endsAt], ['id' => $m['id']]);
+                $gains[$m['id']] = round($cfg['gain'] * Mood::traitMax($m, Balance::RETREAT['traits'], 1.0), 1);
+            }
+            return $this->insert($bandId, null, 'retreat', $now, $endsAt, [
+                'title' => sprintf('%s: %s', $cfg['name'], $band['name']),
+                'songs' => 0,
+                'reward' => ['wellbeing' => $gains],
+            ]);
+        });
+    }
+
     /** Band-Promo: Alle Mitglieder sind unterwegs und werden bekannter. */
     public function bandPromo(int $bandId): array
     {
@@ -423,9 +460,17 @@ final class Activities
         // Gemeinsam erlebt: Die Beziehungen der Mitglieder wachsen (je nach Passung).
         Mood::bond($repo, $repo->members($bandId), $row['type']);
         Mood::react($repo, $repo->members($bandId), $row['type']);
+        // Auszeit: erholt zurück
+        foreach ($reward['wellbeing'] ?? [] as $id => $gain) {
+            $w = $db->value('SELECT wellbeing FROM musicians WHERE id = ? AND band_id = ?', [(int) $id, $bandId]);
+            if ($w !== null) {
+                $db->update('musicians', ['wellbeing' => round(min(100.0, (float) $w + (float) $gain), 3)], ['id' => (int) $id]);
+            }
+        }
         $result = [
             'money' => (int) ($reward['money'] ?? 0) - $bill,
             'bill' => $bill,
+            'mood' => ($reward['wellbeing'] ?? null) ? round(array_sum($reward['wellbeing']) / count($reward['wellbeing']), 1) : null,
             'fame' => round($fameGain, 2),
             'meter' => $reward['meter'] ?? null,
             'drops' => [],
@@ -436,7 +481,7 @@ final class Activities
         ];
 
         $bandRow = $db->one('SELECT * FROM bands WHERE id = ?', [$bandId]);
-        if ($bandRow !== null && $row['type'] !== 'bandpromo') {
+        if ($bandRow !== null && !in_array($row['type'], ['bandpromo', 'retreat'], true)) {
             $band = Repo::hydrateBand($bandRow);
             $updates = [];
             if ($row['type'] === 'gig') {

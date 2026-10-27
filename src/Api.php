@@ -79,6 +79,7 @@ final class Api
         'activityStart' => ['POST', true],
         'activityAck' => ['POST', true],
         'bandPromo' => ['POST', true],
+        'bandRetreat' => ['POST', true],
         'promoCancel' => ['POST', true],
         'rehearsalStop' => ['POST', true],
         'bandJoinCandidates' => ['POST', true],
@@ -594,6 +595,12 @@ final class Api
     private function bandPromo(array $in, Repo $repo): array
     {
         $activity = (new Activities($repo))->bandPromo(self::int($in, 'bandId'));
+        return ['activity' => $activity, 'state' => State::build($repo)];
+    }
+
+    private function bandRetreat(array $in, Repo $repo): array
+    {
+        $activity = (new Activities($repo))->retreat(self::int($in, 'bandId'), self::str($in, 'option'));
         return ['activity' => $activity, 'state' => State::build($repo)];
     }
 

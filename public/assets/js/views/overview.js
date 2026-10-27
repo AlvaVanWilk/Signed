@@ -191,7 +191,7 @@ function office(s) {
 
 // ---------- Was gerade läuft ----------
 
-const ACT = { rehearsal: 'Probt', gig: 'Auftritt', record: 'Im Studio', bandpromo: 'Promo-Tour', interview: 'Interview', course: 'Im Kurs', practice: 'Übt', busking: 'Straßenmusik', openstage: 'Offene Bühne' };
+const ACT = { rehearsal: 'Probt', gig: 'Auftritt', record: 'Im Studio', bandpromo: 'Promo-Tour', retreat: 'Auszeit', interview: 'Interview', course: 'Im Kurs', practice: 'Übt', busking: 'Straßenmusik', openstage: 'Offene Bühne' };
 
 function now(s) {
   const rows = [];

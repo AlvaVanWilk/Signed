@@ -160,7 +160,7 @@ final class State
                     'reactions' => Mood::reactions($list),
                     // Warum jemand gut oder schlecht drauf ist: Ziel des Wohlbefindens und die Gründe dafür (je Musiker).
                     // Nur mit Manager: Gründe und alle Wünsche. Ohne sagt nur, wer rot ist, was er will.
-                    'why' => $managed ? self::moodWhy($repo, $band, $list, $bandRelations[$band['id']] ?? [], $now) : (object) [],
+                    'why' => $managed ? self::moodWhy($repo, $band, Mood::withGear($list, $gearMap), $bandRelations[$band['id']] ?? [], $now) : (object) [],
                     'wishes' => $managed ? $wishes : array_values(array_filter($wishes, static fn ($w) => $w['level'] === 'red')),
                 ],
                 'managed' => $managed,

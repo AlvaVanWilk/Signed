@@ -77,7 +77,7 @@ Wohlbefinden ist ein versteckter Wert 0–100 (Start ca. 60). Er setzt sich aus 
 | Anordnungen des Labels | je nach Charakter + oder − (siehe Tabelle) |
 | Produktion gegen Anspruch | Studio besser als der Anspruch: Freude; schlechter: Ärger |
 | Songstau (Band-Ebene) | liegen viele Songs ohne Produktion, sinkt die Stimmung aller |
-| Instrument | ein gutes Instrument hebt, vor allem bei Diva; ein schlechtes drückt |
+| Instrument | (gebaut) keins: −6; eins unter dem eigenen Können: −3 je Stufe Abstand; eins, das passt: +2; Diven nehmen es doppelt (`Balance::MOOD['gear']`) |
 | Wünsche, die lange offen bleiben | ziehen langsam nach unten |
 | **Miesepeter** | Wer selbst rot ist, zieht die anderen mit runter: mit jeder schlechten Beziehung mehr, aber auch Freunde leiden mit |
 
@@ -101,7 +101,7 @@ Jede Anordnung ist beliebt (+), unbeliebt (−) oder egal. Daraus entstehen die 
 
 Typische **Wünsche** (acht Symbole): Auftritt, Probe, Aufnahme, Ruhe, Kurs/Förderung, besseres Instrument, bessere Bühne/Studio, Songs produzieren.
 Jeder Wunsch hat ein Symbol und einen Satz und ist mit einer passenden Anordnung verknüpft (ein Tipp darauf führt dorthin oder erfüllt ihn direkt).
-Wünsche ergeben sich aus der Lage: **Wer kein Instrument hat, wünscht sich eins; wer mit besserem Können sein Instrument überholt hat, wünscht sich ein besseres.**
+Wünsche ergeben sich aus der Lage: **Wer kein Instrument hat, wünscht sich eins; wer mit besserem Können sein Instrument überholt hat, wünscht sich ein besseres** (gebaut: „Ich spiele besser, als mein Instrument kann.“).
 Je länger ein Wunsch offen bleibt, desto mehr drückt er das Wohlbefinden.
 
 ### Charakterzüge: Stärke und Schwäche (gebaut)
@@ -273,7 +273,7 @@ nicht pro Spieler gewürfelt), wie bei den Tageskursen. Man sieht vorher Preis u
 | **Instrumente** | gezielt für einen Musiker, in verschiedener Güte | Klang, Sound, Wohlbefinden (Wünsche), nötig zum Proben | von Anfang an |
 | **Kurse** | einzelne Musiker fördern; mehrere Kurse, aus denen man wählt (Instrument, Dauer, Preis), täglich gleich für alle (gebaut: einer am Tag, `Balance::COURSE['perDay']`; die Woche steht auf dem Schwarzen Brett) | Können (ohne Bremse), Wohlbefinden je Charakter (Ehrgeizige mögen Kurse) | von Anfang an |
 | **Proberaum** | Ausstattung **einer Band**, in Stufen | Proben bringen mehr Können und stärken die Beziehung | früh, teure Stufen später |
-| **Auszeit** | Wochenende, Urlaub, Ausflug für **eine Band** | hebt die Stimmung (Gelassene und Ruhepole freuen sich besonders), Band ist dabei für eine Zeit nicht verfügbar | mittel; Preis steigt mit der Bandgröße |
+| **Auszeit** | Wochenende, Urlaub, Ausflug für **eine Band** | hebt die Stimmung (Gelassene und Ruhepole freuen sich besonders), Band ist dabei für eine Zeit nicht verfügbar | mittel; Preis steigt mit der Bandgröße. **Gebaut** als Anordnung auf der Bandseite: Ausflug 1 Std. (+8, 20 ₲ je Mitglied), Wochenende 4 Std. (+16, 60 ₲), Urlaub 12 Std. (+28, 150 ₲); Gelassene und Ruhepole ×1,5, Ehrgeizige ×0,5; keine Songs in der Zeit, die Beziehungen wachsen etwas; geht auch bei Rot (`Balance::RETREAT`) |
 | **Bühnentechnik** | Licht, Ton, Show, Stufen | größere Orte füllen sich leichter (Erwartung sinkt), Diva und Rampensau freuen sich | mit größeren Bühnen |
 | **Fahrzeuge** | **kleiner Tourbus**, **großer Tourbus**, **Jet**, jeweils in verschiedener Güte | Komfort auf Tour (Stimmung), später Voraussetzung für Tourneen mit mehreren Auftritten | **nur im späten Spiel**, erst mit hohem Label-Erfolg freigeschaltet |
 | **Stellenbörse** | Manager und Assistenz, täglich 1–3, teuer | siehe Manager und Einsendungen | früh |

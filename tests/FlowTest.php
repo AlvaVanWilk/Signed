@@ -1925,6 +1925,27 @@ test('Verborgene Charakterzüge und Bedürfnisse: ohne Manager nur die Stimmung,
     }
 });
 
+test('Auszeit: kostet je Mitglied, die Band ist weg, danach geht es allen besser, auch aus dem Roten; Gelassene erholen sich mehr', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Ferien');
+    $band = foundBand($p);
+    $ids = $band['memberIds'];
+    $db->exec('UPDATE labels SET money = 1000');
+    $db->exec("UPDATE musicians SET wellbeing = 20, personality = '[\"diva\"]' WHERE band_id = ?", [$band['id']]);
+    $db->exec("UPDATE musicians SET personality = '[\"gelassen\"]' WHERE id = ?", [$ids[0]]);
+    checkApiError(fn () => $p->post('bandRetreat', ['bandId' => $band['id'], 'option' => 'kreuzfahrt']), 'gibt es nicht');
+    $res = $p->post('bandRetreat', ['bandId' => $band['id'], 'option' => 'ausflug']);
+    checkEquals(1000 - Balance::RETREAT['options']['ausflug']['perMember'] * count($ids), $res['state']['label']['money']);
+    checkApiError(fn () => $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'rehearsal']), 'beschäftigt');
+    $before = array_column($db->all('SELECT id, wellbeing FROM musicians WHERE band_id = ?', [$band['id']]), 'wellbeing', 'id');
+    Clock::advance(Balance::RETREAT['options']['ausflug']['seconds'] + 5);
+    $p->get('state');
+    $after = array_column($db->all('SELECT id, wellbeing FROM musicians WHERE band_id = ?', [$band['id']]), 'wellbeing', 'id');
+    $gain = static fn ($id) => (float) $after[$id] - (float) $before[$id];
+    check($gain($ids[1]) >= 5, 'erholt: ' . $gain($ids[1]));
+    check($gain($ids[0]) > $gain($ids[1]) + 2, 'Gelassene erholen sich mehr');
+});
+
 test('Manager-Notizen: besseres Instrument, Streit, lange ohne Bühne, bereit fürs Studio; eine Band oder bis zu vier Solokünstler', function () {
     $band = ['name' => 'Testband', 'songs_written' => 4.0, 'records' => 0];
     $members = [

@@ -140,6 +140,19 @@ test('Auftrittsorte nach Ruhm', function () {
     checkEquals(0.5, BandCalc::venue(15)['progress']);
 });
 
+test('Instrument und Laune: keins drückt, zu schwaches drückt je Stufe, passendes freut, Diven doppelt; Wunsch nach einem besseren', function () {
+    $m = ['id' => 1, 'personality' => [], 'band_slot' => 1, 'instr1' => 'guitar', 'instr2' => null, 'skill1' => 70.0, 'skill2' => null, 'wellbeing' => 70.0, 'fame' => 0.0, 'stage_name' => null];
+    $c = Balance::MOOD['gear'];
+    checkEquals($c['none'], Signed\Game\Mood::gearMood($m, [])[1]);
+    $school = [1 => ['guitar' => ['key' => 'gtr_school']]];
+    $level = Signed\Game\Gear::levelFor($m, 'guitar');
+    checkEquals($c['behind'] * $level, Signed\Game\Mood::gearMood($m, $school)[1]);
+    checkEquals($c['behind'] * $level * 2, Signed\Game\Mood::gearMood(['personality' => ['diva']] + $m, $school)[1], 'Diva doppelt');
+    checkEquals($c['fits'], Signed\Game\Mood::gearMood(['skill1' => 10.0] + $m, $school)[1]);
+    $wishes = Signed\Game\Mood::wishes([$m], $school, 0);
+    checkEquals('gear', $wishes[0]['action'] ?? null, 'wünscht sich ein besseres');
+});
+
 test('Label-Ruhm: eine Band zählt mit ihrem Ruhm, große Bands wiegen mehr, viele kleine wenig', function () {
     checkEquals(500.0, BandCalc::labelFame([500]));
     checkEquals(0.0, BandCalc::labelFame([]));

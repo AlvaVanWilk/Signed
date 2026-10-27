@@ -1,7 +1,7 @@
 import { api } from './api.js';
 import { actions, app, bandById, cat, defineActions, isBusy, liveMoney, musicianById, mutate, navigate, onRender, refresh, rerender, serverNow } from './core.js';
 import { bandFill, genreGlyph, levelUpBanners, musicianCard } from './cards.js';
-import { closeAllModals, duration, esc, fmt1, fmtGain, money, openModal, percent, timeAgo, toast, topModal } from './ui.js';
+import { closeAllModals, duration, esc, fmt0, fmt1, fmtGain, money, openModal, percent, timeAgo, toast, topModal } from './ui.js';
 import './celebrate.js';
 import './settings.js';
 import './genre-info.js';
@@ -347,6 +347,7 @@ function resultHtml(r) {
     ${res.meter ? `<p class="muted">${moodText(res.meter)}</p>` : ''}
     <div class="reward-grid">
       ${res.money ? reward(r.type === 'busking' ? 'Im Hut' : res.bill ? 'Gage nach Rechnung' : 'Gage', `+${money(0)}`, { to: res.money, kind: 'money' }) : ''}
+      ${res.mood ? reward('Stimmung', `+${fmt0(res.mood)}`) : ''}
       ${res.fame ? reward('Ruhm', `+${fmtGain(0)}`, { to: res.fame, kind: 'fame' }) : ''}
       ${res.skill?.length ? reward('Können je Musiker', skillSpan(res.skill)) : ''}
       ${res.meter ? reward('Publikum', percent(res.meter / 100)) : ''}

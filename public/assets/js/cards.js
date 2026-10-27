@@ -55,7 +55,12 @@ export function whoCanPlay(g) {
   const players = (app.state?.musicians ?? []).map((m) => ({ m, skill: m.instruments.find((i) => i.type === model.type)?.skill })).filter((x) => x.skill !== undefined);
   if (!players.length) return 'Im Label spielt niemand dieses Instrument.';
   const can = players.filter((x) => x.skill >= need);
-  if (can.length) return `Spielen können: ${can.map((x) => esc(x.m.stageName ?? x.m.firstName)).join(', ')}`;
+  if (can.length) {
+    // Gleiche Vornamen auseinanderhalten: dann mit dem ersten Buchstaben des Nachnamens.
+    const short = (m) => m.stageName ?? m.firstName;
+    const twice = new Set(can.map((x) => short(x.m)).filter((n, i, all) => all.indexOf(n) !== i));
+    return `Spielen können: ${can.map((x) => esc(twice.has(short(x.m)) && !x.m.stageName ? `${x.m.firstName} ${x.m.lastName.slice(0, 1)}.` : short(x.m))).join(', ')}`;
+  }
   const near = players.sort((a, b) => b.skill - a.skill)[0];
   return `Noch niemand. Am nächsten: ${esc(near.m.stageName ?? near.m.firstName)} (braucht noch ${Math.ceil(need - near.skill)} Können)`;
 }

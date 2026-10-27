@@ -942,7 +942,7 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 /* Instrumente: Schwelle erreicht (grün) oder nicht (rot), Pfeil wenn jemand in der Band profitiert. */
 .tcg-text .ok { color: #1d8a3a; }
 .tcg-text .bad { color: #c62828; }
-.tcg-up { position: absolute; top: 5%; right: 5%; display: grid; place-items: center; width: 17cqi; height: 17cqi; border-radius: 50%; background: #2fa84f; color: #fff; font-size: 9cqi; font-style: normal; box-shadow: 0 0 0 1cqi rgba(255, 255, 255, 0.85), 0 2px 8px rgba(0, 0, 0, 0.35); }
+.tcg-up { position: absolute; top: 5%; right: 5%; display: grid; place-items: center; width: min(17cqi, 30px); height: min(17cqi, 30px); border-radius: 50%; background: #2fa84f; color: #fff; font-size: min(9cqi, 15px); font-style: normal; box-shadow: 0 0 0 1cqi rgba(255, 255, 255, 0.85), 0 2px 8px rgba(0, 0, 0, 0.35); }
 .gear-upgrades { display: grid; gap: 8px; margin: 0 0 14px; padding: 0; list-style: none; }
 .gear-upgrades li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 10px 12px; border-radius: 10px; background: var(--panel-2, rgba(255, 255, 255, 0.05)); }
 .gear-upgrades li > span:first-child { flex: 1 1 180px; }

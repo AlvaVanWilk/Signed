@@ -715,7 +715,8 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .gt-rar { position: absolute; top: 4px; left: -6px; padding: 1px 7px; background: var(--rc); color: #17141d; font-size: .6rem; letter-spacing: .06em; text-transform: uppercase; border-radius: 0 3px 3px 0; }
 .gt-perks { position: absolute; bottom: 3px; right: 4px; display: flex; gap: 2px; font-size: .8rem; }
 .gt-perks i { font-style: normal; }
-.gt .tcg-up { position: absolute; top: 2px; right: 4px; }
+/* Feste Größe: außerhalb einer Karte gäbe es keinen Bezugsrahmen für cqi, und der Pfeil würde riesig (z. B. im Instrument-Fenster auf dem iPad). */
+.gt .tcg-up { position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; font-size: 12px; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85), 0 2px 6px rgba(0, 0, 0, 0.35); }
 .gt-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
 .gt-name { font-family: Georgia, 'Times New Roman', serif; font-weight: 400; font-size: 1.05rem; line-height: 1.15; }
 .gt-bars { display: flex; flex-direction: column; gap: 3px; margin-top: 3px; }

@@ -1,6 +1,7 @@
 import { instrumentIcon, photo } from '../cards.js';
 import { app, bandById, cat, isBusy, liveMoney, managerById, musicianById, serverNow } from '../core.js';
 import { coverHtml } from '../play.js';
+import { INTERN_JOBS } from './submissions.js';
 import { esc, fmt0, fmt1, fmtGain, money, timeAgo } from '../ui.js';
 
 /**
@@ -111,8 +112,9 @@ function notes(s) {
   const envelopes = [...(s.submissions ?? []), ...mail].filter((x) => x.state === 'envelope' && !x.saved).length;
   if (envelopes) add(2, go('inbox', `${envelopes === 1 ? 'Ein Umschlag liegt' : `${envelopes} Umschläge liegen`} noch ungeöffnet im Eingang.`));
   for (const x of (s.assistant?.staff ?? []).filter((y) => y.intern)) {
-    add(2, x.job ? `<b>${esc(x.firstName)}</b> bearbeitet gerade die Post, fertig in <span data-until="${x.job.until}"></span>.`
-      : (s.assistant.todo ? go('inbox', `<b>${esc(x.firstName)}</b> langweilt sich und wartet auf einen Auftrag.`) : `<b>${esc(x.firstName)}</b> hat gerade nichts zu tun.`));
+    const todo = s.assistant.todo;
+    add(2, x.job ? `<b>${esc(x.firstName)}</b> ${esc(INTERN_JOBS[x.job.kind]?.[1] ?? 'arbeitet')}, fertig in <span data-until="${x.job.until}"></span>.`
+      : (todo.unpack || todo.listen || todo.sort ? go('inbox', `<b>${esc(x.firstName)}</b> langweilt sich und wartet auf einen Auftrag.`) : `<b>${esc(x.firstName)}</b> hat gerade nichts zu tun.`));
   }
   const good = (s.submissions ?? []).filter((x) => x.state === 'open' && !x.saved && Math.max(...(x.members ?? [x]).map((m) => m.level ?? 0)) >= 1).length;
   if (good) add(1, go('demos', `${good === 1 ? 'Eine gute Kassette wartet' : `${good} gute Kassetten warten`} auf dich.`));

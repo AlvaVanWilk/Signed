@@ -75,10 +75,10 @@ final class Assistant
     }
 
     /** Auftrag ans Praktikum (auspacken, anhören, sortieren): erledigt alles, was gerade da ist, nacheinander. */
-    public function internOrder(int $staffId): void
+    public function internOrder(int $staffId, string $job): void
     {
         $db = $this->repo->db;
-        $db->transaction(function () use ($db, $staffId): void {
+        $db->transaction(function () use ($db, $staffId, $job): void {
             $now = \Signed\Clock::now();
             $row = $db->one("SELECT * FROM staff WHERE id = ? AND label_id = ? AND role = 'intern' AND busy_until > ?", [$staffId, $this->repo->labelId, $now]);
             if ($row === null) {
@@ -88,8 +88,25 @@ final class Assistant
             if (isset($d['job']) && (int) $d['job']['until'] > $now) {
                 throw new ApiError(sprintf('%s ist noch beschäftigt.', $d['first_name']));
             }
-            [$count, $until] = (new Post($this->repo))->order($now);
-            $d['job'] = ['kind' => 'post', 'count' => $count, 'until' => $until];
+            [$count, $until] = (new Post($this->repo))->order($job, $now);
+            $d['job'] = ['kind' => $job, 'count' => $count, 'until' => $until];
+            $db->update('staff', ['data' => json_encode($d, JSON_UNESCAPED_UNICODE)], ['id' => $staffId]);
+        });
+    }
+
+    /** Zuruf abbrechen: Das Praktikum hört sofort auf; was es noch nicht geschafft hat, liegt wieder da wie vorher. */
+    public function internCancel(int $staffId): void
+    {
+        $db = $this->repo->db;
+        $db->transaction(function () use ($db, $staffId): void {
+            $now = \Signed\Clock::now();
+            $row = $db->one("SELECT * FROM staff WHERE id = ? AND label_id = ? AND role = 'intern'", [$staffId, $this->repo->labelId]);
+            $d = $row === null ? null : json_decode($row['data'], true);
+            if ($d === null || !isset($d['job']) || (int) $d['job']['until'] <= $now) {
+                throw new ApiError('Das Praktikum hat gerade nichts zu tun.');
+            }
+            (new Post($this->repo))->cancel($now);
+            unset($d['job']);
             $db->update('staff', ['data' => json_encode($d, JSON_UNESCAPED_UNICODE)], ['id' => $staffId]);
         });
     }
@@ -103,7 +120,8 @@ final class Assistant
                 continue;
             }
             $n = (int) $d['job']['count'];
-            $this->repo->log('office', sprintf('%s ist fertig: %s ausgepackt, angehört und in die Fächer gelegt.', $d['first_name'], $n === 1 ? 'ein Stück Post' : "$n Stück Post"));
+            $what = ['unpack' => ['einen Brief geöffnet', '%d Briefe geöffnet'], 'listen' => ['eine Demo angehört', '%d Demos angehört'], 'sort' => ['ein Stück Post sortiert', '%d Stück Post sortiert']][$d['job']['kind']] ?? ['etwas erledigt', '%d Sachen erledigt'];
+            $this->repo->log('office', sprintf('%s ist fertig: %s.', $d['first_name'], $n === 1 ? $what[0] : sprintf($what[1], $n)));
             unset($d['job']);
             $this->repo->db->update('staff', ['data' => json_encode($d, JSON_UNESCAPED_UNICODE)], ['id' => (int) $row['id']]);
         }

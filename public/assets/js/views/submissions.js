@@ -256,7 +256,7 @@ function assistantBar(a) {
   return `<div class="lb-assist lb-assist-team">
     <span class="lb-assist-head"><b>${a.staff.length > 1 ? 'Dein Büro' : a.staff[0].intern ? internWord(a.staff[0]) : 'Deine Assistenz'}</b>
       ${a.sorts ? 'packt alle Post aus und sortiert sie in die Fächer.' : 'hilft dir auf Zuruf.'}
-      <small class="muted">${a.perDay ? `Zusammen ${a.perDay} Kassetten am Tag. Heute ${a.today.opened} angehört, ${a.today.dropped} weggeworfen. ${esc(ruleText)}` : a.sorts ? 'Kassetten hört gerade niemand an.' : 'Auf Zuruf packt es alles aus, was gerade im Eingang liegt, hört die Kassetten an und legt alles ins richtige Fach. Es ist nicht schneller als du, aber du kannst derweil etwas anderes machen.'}${a.press ? ' Interview-Anfragen werden zugesagt, sobald der Musiker frei ist.' : ''}</small></span>
+      <small class="muted">${a.perDay ? `Zusammen ${a.perDay} Kassetten am Tag. Heute ${a.today.opened} angehört, ${a.today.dropped} weggeworfen. ${esc(ruleText)}` : a.sorts ? 'Kassetten hört gerade niemand an.' : 'Sag, was zu tun ist: Briefe öffnen, Demos anhören oder Post sortieren. Das Praktikum macht das für alles, was gerade da liegt, das Neueste zuerst. Es ist nicht schneller als du, aber du kannst derweil etwas anderes machen.'}${a.press ? ' Interview-Anfragen werden zugesagt, sobald der Musiker frei ist.' : ''}</small></span>
     ${a.perDay ? '<button class="btn small" data-act="assistRulesAsk">Regeln</button>' : ''}
     <div class="lb-assist-list">${a.staff.map((x) => `
       <div class="lb-assist-row"><span class="lb-ph sm">${photo({ id: x.id, look: x.look })}</span><b>${esc(x.firstName)}</b>
@@ -270,11 +270,22 @@ function assistantBar(a) {
 
 const internWord = (x) => ({ f: 'Deine Praktikantin', m: 'Dein Praktikant' }[x.look?.gender] ?? 'Dein Praktikum');
 
-/** Auftrag ans Praktikum: Es tut nichts von allein. Auf Zuruf bearbeitet es alles, was gerade im Eingang liegt; währenddessen steht da, wie lange noch. */
+/** Was das Praktikum gerade tut, in Worten. */
+export const INTERN_JOBS = { unpack: ['Briefe öffnen', 'öffnet Briefe'], listen: ['Demos anhören', 'hört Demos an'], sort: ['Post sortieren', 'sortiert die Post'] };
+
+/**
+ * Zurufe ans Praktikum: Es tut nichts von allein, immer nur eine Sache, für das, was gerade da liegt (Neuestes zuerst).
+ * Während es arbeitet, steht da, was und wie lange noch, und man kann abbrechen.
+ */
 function internOrders(x, a) {
-  if (x.job) return `<span class="lb-intern-job"><span class="pulse"></span>bearbeitet die Post · noch <span data-until="${x.job.until}"></span></span>`;
-  return `<span class="lb-intern-orders"><small class="muted">${a.todo ? 'langweilt sich.' : 'hat nichts zu tun.'}</small>
-    <button class="btn small" data-act="internOrder" data-id="${x.id}" ${off(a.todo ? '' : 'Im Eingang liegt gerade nichts.')}>Post bearbeiten</button></span>`;
+  if (x.job) {
+    return `<span class="lb-intern-job"><span class="pulse"></span>${esc(INTERN_JOBS[x.job.kind]?.[1] ?? 'arbeitet')} · noch <span data-until="${x.job.until}"></span></span>
+      <button class="btn small ghost" data-act="internCancel" data-id="${x.id}">Abbrechen</button>`;
+  }
+  const t = a.todo;
+  const none = { unpack: 'Gerade liegt kein ungeöffneter Brief da.', listen: 'Gerade liegt keine ungehörte Kassette da.', sort: 'Im Eingang liegt nichts zum Sortieren.' };
+  return `<span class="lb-intern-orders"><small class="muted">${t.unpack || t.listen || t.sort ? 'langweilt sich.' : 'hat nichts zu tun.'}</small>
+    ${Object.entries(INTERN_JOBS).map(([job, [label]]) => `<button class="btn small" data-act="internOrder" data-id="${x.id}" data-job="${job}" ${off(t[job] ? '' : none[job])}>${label}</button>`).join('')}</span>`;
 }
 
 /** Gebuchte Lehrer und Coaches: bei wem, was schon gebracht ist, wie lange noch. */
@@ -778,9 +789,13 @@ defineActions({
   async postUnpack({ table, id }) {
     await mutate('postUnpack', { table, id: Number(id) });
   },
-  async internOrder({ id }) {
+  async internOrder({ id, job }) {
     const x = app.state.assistant?.staff.find((y) => y.id === Number(id));
-    if (await mutate('internOrder', { staffId: Number(id) })) toast(`${x?.firstName ?? 'Das Praktikum'} legt los. Du kannst derweil etwas anderes machen.`, 'ok');
+    if (await mutate('internOrder', { staffId: Number(id), job })) toast(`${x?.firstName ?? 'Das Praktikum'} ${INTERN_JOBS[job][1]}. Du kannst derweil etwas anderes machen.`, 'ok');
+  },
+  async internCancel({ id }) {
+    const x = app.state.assistant?.staff.find((y) => y.id === Number(id));
+    if (await mutate('internCancel', { staffId: Number(id) })) toast(`${x?.firstName ?? 'Das Praktikum'} hört auf. Was noch nicht fertig ist, liegt wieder da.`, 'ok');
   },
   async mailTest() {
     await mutate('mailTest');

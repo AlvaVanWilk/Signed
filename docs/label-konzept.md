@@ -316,9 +316,10 @@ das überstimmt die Sortierung (`Post::move`, Spalte `box`).
   Bands das Label hat, spielt keine Rolle. Ein Praktikum liegt immer da; ganz zu Beginn bewerben sich dazu ein Scout und ein Manager. Wie gut
   die Bewerber sind, folgt dem Label-Ruhm gesättigt: Güte = Ruhm / (Ruhm + 300) (`Balance::JOBS`, `Balance::SUBMISSIONS['perDay']`, `Balance::INTERVIEW`).
 - **Praktikum** (gebaut): 50 ₲, 7 Tage, nur ein Vorname, sieht jünger aus (kleinerer Kopf). Immer nur **eins zur gleichen Zeit**. Es arbeitet
-  **nur auf Zuruf**: „Post bearbeiten“ heißt, alles, was in dem Moment im Eingang liegt, Stück für Stück **auspacken**, Kassetten **anhören**
-  (ohne wegzuwerfen) und **ins passende Fach legen**. Was danach kommt, bleibt liegen. Es ist nicht schneller als man selbst, aber man kann
-  derweil etwas anderes tun; auch offline. Ist es fertig, kommt eine Meldung.
+  **nur auf Zuruf** und immer nur eine Sache: **Briefe öffnen**, **Demos anhören** (ohne wegzuwerfen) oder **Post sortieren** (was im Eingang
+  liegt, kommt ins passende Fach). Es macht das für alles, was in dem Moment da liegt, **das Neueste zuerst**; was danach kommt, bleibt liegen.
+  Man kann es jederzeit **abbrechen**: Fertiges bleibt fertig, der Rest liegt wieder da wie vorher. Es ist nicht schneller als man selbst,
+  aber man kann derweil etwas anderes tun; auch offline. Ist es fertig, kommt eine Meldung.
   Bis zum Ende lässt es sich für 400 ₲ als Assistenz übernehmen (bekommt einen Nachnamen und sieht erwachsen aus), sonst geht es.
 - **Assistenz** (gebaut, `Assistant`): einmalig bezahlt (400 ₲). Jede **packt laufend alle Post aus und sortiert sie** in die Fächer und schreibt
   Notizen auf die Übersicht. Dazu eine **Aufgabe**, jederzeit umstellbar: **Kassetten anhören** (50 am Tag, wirft nach den Regeln weg: ab

@@ -101,6 +101,7 @@ final class Api
         'assistAdopt' => ['POST', true],
         'postUnpack' => ['POST', true],
         'internOrder' => ['POST', true],
+        'internCancel' => ['POST', true],
         'inboxSeen' => ['POST', true],
         'postMove' => ['POST', true],
         'scoutSend' => ['POST', true],
@@ -521,7 +522,13 @@ final class Api
 
     private function internOrder(array $in, Repo $repo): array
     {
-        (new Assistant($repo))->internOrder(self::int($in, 'staffId'));
+        (new Assistant($repo))->internOrder(self::int($in, 'staffId'), self::str($in, 'job'));
+        return ['state' => State::build($repo)];
+    }
+
+    private function internCancel(array $in, Repo $repo): array
+    {
+        (new Assistant($repo))->internCancel(self::int($in, 'staffId'));
         return ['state' => State::build($repo)];
     }
 

@@ -2438,35 +2438,54 @@ test('Umschläge: Praktikum packt auf Zuruf aus, hört an, sortiert in die Fäch
     $other = array_values(array_filter($p->get('state')['mail'], static fn ($m) => $m['kind'] === 'job' && $m['role'] === 'intern'));
     check($other !== [], 'Praktika bewerben sich weiter');
     checkApiError(fn () => $p->post('mailHire', ['mailId' => $other[0]['mailId']]), 'schon ein Praktikum');
-    // Neue Umschläge: Auf Zuruf bearbeitet es alles, was gerade im Eingang liegt (auspacken, anhören, einsortieren), so schnell wie man selbst.
+    // Neue Umschläge: Auf Zuruf macht es nur eine Sache, für alles, was gerade da liegt, das Neueste zuerst, so schnell wie man selbst.
     $db->exec('UPDATE submissions SET unpacked_at = NULL, opened_at = NULL, sorted_at = NULL');
     $db->exec('UPDATE mail SET sorted_at = NULL');
     $state = $p->get('state');
     $todo = $state['assistant']['todo'];
     $tapes = count($state['submissions']);
-    check($tapes >= 5 && $todo >= $tapes);
-    $state = $p->post('internOrder', ['staffId' => $id])['state'];
+    check($tapes >= 5 && $todo['unpack'] >= $tapes);
+    checkEquals(0, $todo['listen'], 'zu: noch nichts zum Anhören');
+    checkApiError(fn () => $p->post('internOrder', ['staffId' => $id, 'job' => 'listen']), 'keine ungehörte');
+    $state = $p->post('internOrder', ['staffId' => $id, 'job' => 'unpack'])['state'];
     $job = $state['assistant']['staff'][0]['job'];
-    checkEquals('post', $job['kind']);
-    checkEquals($todo, $job['count']);
-    checkEquals(Clock::now() + $tapes * (Balance::POST['unpack'] + Balance::SUBMISSIONS['listen']) + $todo * Balance::POST['sort'], $job['until']);
-    checkApiError(fn () => $p->post('internOrder', ['staffId' => $id]), 'beschäftigt');
-    // Nebenbei: Die erste Kassette ist schon fertig, während die anderen noch warten.
-    Clock::advance(Balance::POST['unpack'] + Balance::SUBMISSIONS['listen'] + Balance::POST['sort']);
+    checkEquals('unpack', $job['kind']);
+    checkEquals($todo['unpack'], $job['count']);
+    checkEquals(Clock::now() + $todo['unpack'] * Balance::POST['unpack'], $job['until']);
+    checkApiError(fn () => $p->post('internOrder', ['staffId' => $id, 'job' => 'sort']), 'beschäftigt');
+    // Das Neueste zuerst.
+    $newest = $db->one('SELECT id, unpacked_at FROM submissions ORDER BY created_at DESC, id DESC LIMIT 1');
+    checkEquals(Clock::now() + Balance::POST['unpack'], (int) $newest['unpacked_at'], 'Neuestes zuerst');
+    // Abbrechen: Fertiges bleibt fertig, der Rest liegt wieder zu da.
+    Clock::advance(2 * Balance::POST['unpack']);
+    $state = $p->post('internCancel', ['staffId' => $id])['state'];
+    checkEquals(null, $state['assistant']['staff'][0]['job']);
+    checkEquals(2, count(array_filter($state['submissions'], static fn ($x) => $x['state'] !== 'envelope' && $x['state'] !== 'unpacking')), 'zwei geschafft');
+    checkEquals($todo['unpack'] - 2, $state['assistant']['todo']['unpack'], 'Rest wieder zu');
+    checkApiError(fn () => $p->post('internCancel', ['staffId' => $id]), 'nichts zu tun');
+    // Nochmal: alles öffnen, dann anhören, dann sortieren; jedes nur das, was in dem Moment da liegt.
+    $p->post('internOrder', ['staffId' => $id, 'job' => 'unpack']);
+    Clock::advance(($todo['unpack'] - 2) * Balance::POST['unpack'] + 1);
     $state = $p->get('state');
-    check(count(array_filter([...$state['submissions'], ...$state['mail']], static fn ($x) => $x['sorted'])) >= 1, 'erste fertig');
-    check(count(array_filter($state['submissions'], static fn ($x) => $x['state'] === 'envelope' || $x['state'] === 'unpacking')) >= 1, 'andere warten noch');
-    Clock::advance($job['until'] - Clock::now() + 1);
-    $state = $p->get('state');
-    checkEquals([], array_values(array_filter($state['submissions'], static fn ($x) => $x['state'] !== 'open' || !$x['sorted'])), 'alle angehört und einsortiert, keine weggeworfen');
-    checkEquals(0, $state['assistant']['todo'], 'Eingang leer');
+    checkEquals(0, $state['assistant']['todo']['unpack'], 'alles geöffnet');
     check(in_array('office', array_column($state['history'], 'kind'), true), 'meldet sich, wenn fertig');
-    checkApiError(fn () => $p->post('internOrder', ['staffId' => $id]), 'nichts');
+    $listen = $state['assistant']['todo']['listen'];
+    $p->post('internOrder', ['staffId' => $id, 'job' => 'listen']);
+    Clock::advance($listen * Balance::SUBMISSIONS['listen'] + 1);
+    $state = $p->get('state');
+    checkEquals([], array_values(array_filter($state['submissions'], static fn ($x) => $x['state'] !== 'open')), 'alle angehört, keine weggeworfen');
+    checkEquals(false, $state['submissions'][0]['sorted'], 'noch im Eingang');
+    $sort = $state['assistant']['todo']['sort'];
+    $p->post('internOrder', ['staffId' => $id, 'job' => 'sort']);
+    Clock::advance($sort * Balance::POST['sort'] + 1);
+    $state = $p->get('state');
+    checkEquals([], array_values(array_filter($state['submissions'], static fn ($x) => !$x['sorted'])), 'alles in den Fächern');
+    checkApiError(fn () => $p->post('internOrder', ['staffId' => $id, 'job' => 'sort']), 'nichts zum Sortieren');
     // Von Hand zurück in den Eingang ziehen: liegt dort, bis jemand wieder sortiert.
     $sid = $state['submissions'][0]['submissionId'];
     $state = $p->post('postMove', ['table' => 's', 'id' => $sid, 'box' => 'inbox'])['state'];
     checkEquals('inbox', $state['submissions'][0]['box']);
-    checkEquals(1, $state['assistant']['todo']);
+    checkEquals(1, $state['assistant']['todo']['sort']);
     // Übernehmen: bekommt einen Nachnamen und sieht erwachsen aus; packt ab jetzt laufend aus und sortiert.
     $state = $p->post('assistAdopt', ['staffId' => $id])['state'];
     check($state['assistant']['staff'][0]['lastName'] !== '', 'mit Nachnamen');

@@ -10,7 +10,8 @@ use Signed\Rng;
 /**
  * Post im Posteingang (Kassetten in `submissions`, Briefe in `mail`): Alles kommt in Umschlägen und landet im Eingang.
  * Auspacken dauert ein paar Sekunden (Balance::POST), selbst oder per Praktikum (gleich schnell, aber nebenbei). Das Praktikum arbeitet nur
- * auf Zuruf und nur an dem, was gerade im Eingang liegt: auspacken, Kassetten anhören, in die Fächer sortieren. Eine Assistenz packt laufend aus
+ * auf Zuruf, eine Sache auf einmal (Briefe öffnen, Demos anhören oder Post sortieren), nur an dem, was gerade da liegt, das Neueste zuerst,
+ * und lässt sich abbrechen. Eine Assistenz packt laufend aus
  * und sortiert. Von Hand kann man alles in ein anderes Fach ziehen (`box`, überstimmt die Sortierung).
  */
 final class Post
@@ -92,58 +93,77 @@ final class Post
     /** Die Fächer, in die man von Hand ziehen kann ('saved' = merken). */
     public const BOXES = ['inbox', 'demos', 'interview', 'job', 'saved'];
 
-    /** Wie viel gerade im Eingang liegt (das bearbeitet das Praktikum auf Zuruf). */
-    public function todo(int $now): int
+    /** Spalte, Dauer je Stück und Text, wenn nichts da ist: je Zuruf ans Praktikum. */
+    private const JOBS = [
+        'unpack' => ['unpacked_at', 'unpack', 'Gerade liegt kein ungeöffneter Brief da.'],
+        'listen' => ['opened_at', 'listen', 'Gerade liegt keine ungehörte Kassette da.'],
+        'sort' => ['sorted_at', 'sort', 'Im Eingang liegt nichts zum Sortieren.'],
+    ];
+
+    /** Was das Praktikum gerade tun könnte, je Zuruf (die Stücke, die in dem Moment da liegen). */
+    private function pending(string $job, int $now): array
     {
-        $n = 0;
+        $db = $this->repo->db;
+        $l = $this->repo->labelId;
+        $rows = [];
+        $add = static function (string $t, array $list) use (&$rows): void {
+            foreach ($list as $r) {
+                $rows[] = [$t, (int) $r['id'], (int) $r['created_at']];
+            }
+        };
         foreach (self::TABLES as $t) {
-            $n += (int) $this->repo->db->value("SELECT COUNT(*) FROM $t WHERE label_id = ? AND expires_at > ? AND " . self::IN_INBOX, [$this->repo->labelId, $now, $now]);
+            if ($job === 'unpack') {
+                $add($t, $db->all("SELECT id, created_at FROM $t WHERE label_id = ? AND expires_at > ? AND unpacked_at IS NULL", [$l, $now]));
+            } elseif ($job === 'sort') {
+                // Sortieren kann man nur Ausgepacktes, und nur, was im Eingang liegt.
+                $add($t, $db->all("SELECT id, created_at FROM $t WHERE label_id = ? AND expires_at > ? AND unpacked_at <= ? AND " . self::IN_INBOX, [$l, $now, $now, $now]));
+            } elseif ($t === 'submissions') {
+                $add($t, $db->all('SELECT id, created_at FROM submissions WHERE label_id = ? AND expires_at > ? AND unpacked_at <= ? AND opened_at IS NULL', [$l, $now, $now]));
+            }
         }
-        return $n;
+        // Das Neueste zuerst.
+        usort($rows, static fn ($a, $b) => [$b[2], $b[1]] <=> [$a[2], $a[1]]);
+        return $rows;
+    }
+
+    /** @return array{unpack: int, listen: int, sort: int} wie viel je Zuruf gerade da liegt */
+    public function todo(int $now): array
+    {
+        return array_map(fn ($job) => count($this->pending($job, $now)), array_combine(array_keys(self::JOBS), array_keys(self::JOBS)));
     }
 
     /**
-     * Auftrag ans Praktikum: alles, was gerade im Eingang liegt, Stück für Stück auspacken, Kassetten anhören und ins passende Fach legen.
-     * Dauert so lange wie selbst gemacht; läuft auch offline. Was später kommt, bleibt liegen.
+     * Zuruf ans Praktikum: nur diese eine Sache, und nur für das, was gerade da liegt (Neuestes zuerst). Dauert so lange wie selbst gemacht;
+     * läuft auch offline. Was danach kommt, bleibt liegen.
      * @return array{int, int} Anzahl der Stücke, fertig um
      */
-    public function order(int $now): array
+    public function order(string $job, int $now): array
+    {
+        [$column, $step, $none] = self::JOBS[$job] ?? throw new ApiError('Diesen Auftrag gibt es nicht.');
+        $rows = $this->pending($job, $now);
+        if (!$rows) {
+            throw new ApiError($none);
+        }
+        $seconds = $step === 'listen' ? Balance::SUBMISSIONS['listen'] : Balance::POST[$step];
+        foreach ($rows as $k => [$t, $id]) {
+            $set = [$column => $now + ($k + 1) * $seconds, 'worker' => 'intern'];
+            if ($job === 'sort') {
+                $set['box'] = null;
+            }
+            $this->repo->db->update($t, $set, ['id' => $id]);
+        }
+        return [count($rows), $now + count($rows) * $seconds];
+    }
+
+    /** Zuruf abbrechen: Was das Praktikum noch nicht fertig hat, bleibt liegen wie vorher; Fertiges bleibt fertig. */
+    public function cancel(int $now): void
     {
         $db = $this->repo->db;
-        $rows = [];
         foreach (self::TABLES as $t) {
-            foreach ($db->all("SELECT * FROM $t WHERE label_id = ? AND expires_at > ? AND " . self::IN_INBOX, [$this->repo->labelId, $now, $now]) as $r) {
-                $rows[] = [$t, $r];
+            foreach ($t === 'submissions' ? ['unpacked_at', 'opened_at', 'sorted_at'] : ['unpacked_at', 'sorted_at'] as $column) {
+                $db->exec("UPDATE $t SET $column = NULL WHERE label_id = ? AND worker = 'intern' AND $column > ?", [$this->repo->labelId, $now]);
             }
         }
-        if (!$rows) {
-            throw new ApiError('Im Eingang liegt gerade nichts.');
-        }
-        // Die ältesten zuerst (die laufen als Erste ab).
-        usort($rows, static fn ($a, $b) => [(int) $a[1]['created_at'], (int) $a[1]['id']] <=> [(int) $b[1]['created_at'], (int) $b[1]['id']]);
-        $at = $now;
-        foreach ($rows as [$t, $r]) {
-            $set = ['box' => null];
-            // Was man gerade selbst auspackt oder anhört, macht man fertig; das Praktikum wartet darauf.
-            if ($r['unpacked_at'] === null) {
-                $at += Balance::POST['unpack'];
-                $set += ['unpacked_at' => $at, 'worker' => 'intern'];
-            } else {
-                $at = max($at, (int) $r['unpacked_at']);
-            }
-            if ($t === 'submissions') {
-                if ($r['opened_at'] === null) {
-                    $at += Balance::SUBMISSIONS['listen'];
-                    $set += ['opened_at' => $at, 'worker' => 'intern'];
-                } else {
-                    $at = max($at, (int) $r['opened_at']);
-                }
-            }
-            $at += Balance::POST['sort'];
-            $set['sorted_at'] = $at;
-            $db->update($t, $set, ['id' => (int) $r['id']]);
-        }
-        return [count($rows), $at];
     }
 
     /** Von Hand in ein Fach ziehen (auch zurück in den Eingang oder zu den Gemerkten). */

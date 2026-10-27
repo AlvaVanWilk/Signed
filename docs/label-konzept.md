@@ -330,6 +330,11 @@ das überstimmt die Sortierung (`Post::move`, Spalte `box`).
   Notizen auf die Übersicht. Dazu ein **Arbeitsgebiet**, jederzeit umstellbar: keins (so fangen neue an), **Kassetten anhören** (50 am Tag,
   wirft nach den Regeln weg: ab Können-Stufe, Genres, Einzeln/Band) oder **Presse** (sagt Interview-Anfragen zu, sobald der Musiker frei ist).
   Mehrere lassen sich einstellen.
+  **Wegwerfen ist eine Wahl** („Wegwerfen …“ in der Sprechblase): Standard „Nichts wegwerfen“; nur wer „Unpassendes gleich wegwerfen“ wählt,
+  stellt Stufe, Genres und Einzeln/Band ein. Es betrifft nur, was sie neu anhört; Angehörtes und Gemerktes bleibt. Die Sprechblase sagt, was gilt.
+  **Mit einer Assistenz kann man im Posteingang nach Genre filtern und sortieren** (eigene Reihenfolge, Neueste, Stufe, Können), wie in der
+  Musiker-Übersicht; beim Genre-Filter nach den übrigen Genres gruppiert. Ungehörte Kassetten haben noch kein Genre. Solange gefiltert oder
+  sortiert ist, lässt sich nur auf Reiter ziehen, nicht in der Reihe umstellen. Ohne Assistenz ist der Knopf grau, mit Grund.
 - **Poststelle** (gebaut, `office.js`): Oben im Posteingang eine Szene statt einer Kachel: Wand mit Fenster, Postfächern, Uhr und Lampe, vorn
   der Schreibtisch mit Namensschildern; Praktikum und Assistenzen stehen als Figuren dahinter. Ein Praktikum ohne Auftrag sagt „Ich habe
   nichts zu tun.“, eine Assistenz ohne Arbeitsgebiet „Ich habe keine feste Aufgabe.“ (beide schauen gelangweilt); beim Praktikum steht während der Arbeit die Restzeit über dem Kopf, und es hält

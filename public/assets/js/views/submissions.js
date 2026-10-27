@@ -1,9 +1,9 @@
-import { genreGlyph, genreName, hiddenTraits, traitNames, instrumentIcon, instrumentName, photo, sortedGenres } from '../cards.js';
+import { genreGlyph, genreName, genreOrder, hiddenTraits, traitNames, instrumentIcon, instrumentName, photo, sortedGenres } from '../cards.js';
 import { api } from '../api.js';
 import { actions, app, bandById, cat, defineActions, isBusy, mutate, musicianById, rerender, serverNow } from '../core.js';
 import { confirmDialog, esc, money, off, openModal, toast } from '../ui.js';
 import { fitWord, levelClass, levelProgress, relColor } from './label.js';
-import { INTERN_JOBS, closeTalk, officeScene } from '../office.js';
+import { INTERN_JOBS, closeTalk, officeScene, rulesText } from '../office.js';
 
 /**
  * Posteingang: Demos (Musiker bewerben sich von selbst beim Label), Interview-Anfragen und Bewerbungen fürs Label.
@@ -47,6 +47,27 @@ function scatter(id) {
 
 const levelCount = (skill) => Math.min(3, cat().rules.skillLevels.filter((t) => skill >= t).length);
 const levelOf = (s) => Math.max(...(s.kind === 'band' ? s.members : [s]).flatMap((m) => m.instruments.map((i) => i.skill)).map(levelCount));
+const skillOf = (s) => Math.max(...(s.kind === 'band' ? s.members : [s]).flatMap((m) => m.instruments.map((i) => i.skill)));
+/** Genres einer Kassette: angehört alle der Person bzw. Band, ungehört die vom Etikett. */
+const genresOfSub = (x) => (x.state === 'open' ? [...new Set((x.kind === 'band' ? x.members : [x]).flatMap((m) => m.genres ?? []))] : (x.hint?.genres ?? []));
+/** Sortieren (mit Assistenz), wie in der Musiker-Übersicht: Ungehörte stehen hinten. */
+const SUB_SORTS = {
+  newest: (a, b) => b.createdAt - a.createdAt,
+  level: (a, b) => (b.state === 'open') - (a.state === 'open') || (b.state === 'open' ? levelOf(b) - levelOf(a) : 0) || b.createdAt - a.createdAt,
+  skill: (a, b) => (b.state === 'open') - (a.state === 'open') || (b.state === 'open' ? skillOf(b) - skillOf(a) : 0) || b.createdAt - a.createdAt,
+};
+/** Nach Genre gefiltert: nach den übrigen Genres gruppieren (nur dieses Genre zuerst, dann Pop, Rock … in fester Reihenfolge), wie im Katalog. */
+function byOtherGenres(a, b, genre) {
+  const rest = (x) => genresOfSub(x).filter((g) => g !== genre).map(genreOrder).sort((p, q) => p - q);
+  const ra = rest(a);
+  const rb = rest(b);
+  for (let i = 0; i < Math.max(ra.length, rb.length); i++) {
+    if (ra[i] === undefined) return -1;
+    if (rb[i] === undefined) return 1;
+    if (ra[i] !== rb[i]) return ra[i] - rb[i];
+  }
+  return 0;
+}
 
 /** Kassette: Antippen hört sie gleich an (ein paar Sekunden), das kleine × wirft sie ungehört weg. */
 function tape(s, busy) {
@@ -292,7 +313,14 @@ export function render() {
   const inBox = items.filter((x) => fach(x) === box);
   // Alles liegt in einer Reihe und lässt sich frei sortieren; der Filter zeigt nur ausgepackte Kassetten.
   const isDemo = (x) => x.submissionId && x.state !== 'envelope' && x.state !== 'unpacking';
-  const shown = ordered(f === 'all' ? inBox : inBox.filter((x) => isDemo(x) && (f === 'unheard' ? x.state !== 'open' : x.state === 'open' && levelOf(x) === Number(f))));
+  // Mit Assistenz: nach Genre filtern und sortieren (wie die Musiker-Übersicht). Dann gilt nicht die eigene Reihenfolge.
+  const helper = (a?.staff ?? []).some((x) => !x.intern);
+  const genre = helper ? app.ui.subGenre ?? '' : '';
+  const sort = helper ? app.ui.subSort ?? 'own' : 'own';
+  app.ui.subSorted = sort !== 'own' || !!genre;
+  let shown = (f === 'all' ? inBox : inBox.filter((x) => isDemo(x) && (f === 'unheard' ? x.state !== 'open' : x.state === 'open' && levelOf(x) === Number(f))))
+    .filter((x) => !genre || (isDemo(x) && genresOfSub(x).includes(genre)));
+  shown = sort === 'own' && !genre ? ordered(shown) : ordered(shown).sort((x, y) => (genre ? byOtherGenres(x, y, genre) : 0) || (SUB_SORTS[sort] ? SUB_SORTS[sort](x, y) : 0));
   const busy = all.some((x) => x.state === 'listening' && !x.byIntern);
   const empty = box === 'saved' ? 'Noch nichts gemerkt. Mit dem Lesezeichen legst du etwas hierher – ablaufen tut es trotzdem.'
     : box === 'interview' ? 'Gerade fragt niemand nach einem Interview.' : box === 'job' ? 'Gerade bewirbt sich niemand.'
@@ -312,7 +340,10 @@ export function render() {
     ${(s.tutors ?? []).map(tutorBar).join('')}
     ${officeScene(a, count('inbox'))}
     <div class="lb-boxes">${tabs.map(([k, label]) => `<button class="${box === k ? 'on' : ''}" data-act="subBox" data-key="${k}" data-box="${k}">${label} <small>${count(k)}</small></button>`).join('')}</div>
-    ${showFilter ? `<div class="lb-filter">${[['all', 'Alle'], ['unheard', 'Ungehört'], ['0', 'Stufe 0'], ['1', 'Stufe 1'], ['2', 'Stufe 2'], ['3', 'Stufe 3']].map(([k, label]) => `<button class="${f === k ? 'on' : ''}" data-act="subFilter" data-key="${k}">${label}</button>`).join('')}</div>` : ''}
+    ${showFilter ? `<div class="lb-filterbar"><div class="lb-filter">${[['all', 'Alle'], ['unheard', 'Ungehört'], ['0', 'Stufe 0'], ['1', 'Stufe 1'], ['2', 'Stufe 2'], ['3', 'Stufe 3']].map(([k, label]) => `<button class="${f === k ? 'on' : ''}" data-act="subFilter" data-key="${k}">${label}</button>`).join('')}</div>
+      ${helper ? `<span class="lb-sortbox"><select data-change="subGenre" aria-label="Genre"><option value="">Alle Genres</option>${Object.keys(cat().genres).map((g) => `<option value="${g}" ${genre === g ? 'selected' : ''}>${esc(genreName(g))}</option>`).join('')}</select>
+        <select data-change="subSort" aria-label="Sortieren">${[['own', 'Eigene Reihenfolge'], ['newest', 'Neueste zuerst'], ['level', 'Stufe'], ['skill', 'Können']].map(([k, label]) => `<option value="${k}" ${sort === k ? 'selected' : ''}>${label}</option>`).join('')}</select></span>`
+      : `<span class="lb-sortbox"><button class="lb-pill" ${off('Nach Genre filtern und sortieren kann eine Assistenz für dich. Assistenzen bewerben sich im Posteingang.')}>Genre und Sortieren</button></span>`}</div>` : ''}
     ${shown.length ? `<div class="lb-slots" data-slots>${shown.map(slotOf).join('')}</div>` : `<div class="empty">${empty}</div>`}`;
 }
 
@@ -463,28 +494,44 @@ function tutorDialog(m) {
 
 // ---------- Regeln der Assistenz ----------
 
+/**
+ * Wegwerfen einstellen: Standard ist „Nichts wegwerfen“. Wer will, lässt sie Unpassendes gleich nach dem Anhören wegwerfen.
+ * Betrifft nur, was sie ab jetzt neu anhört; Angehörtes und Gemerktes bleibt.
+ */
 function rulesDialog() {
   const a = app.state.assistant;
   const r = { ...a.rules, genres: [...a.rules.genres] };
-  const need = () => '';
+  let on = r.minLevel > 0 || r.genres.length > 0 || r.kind !== 'any';
   const modal = openModal({
     className: 'lb-rules-modal',
     render: () => `
       <div class="lb-cap">Assistenz</div>
-      <h2>Was soll sie behalten?</h2>
-      <p class="muted">Was nicht passt, wirft sie gleich nach dem Anhören weg. Gemerkte Kassetten fasst sie nicht an.</p>
-      <h3>Können</h3>
-      <div class="lb-filter">${[0, 1, 2, 3].map((l) => `<button class="${r.minLevel === l ? 'on' : ''}" data-rule="minLevel" data-v="${l}" ${off(need('minLevel'))}>${l === 0 ? 'Alle' : `ab Stufe ${l}`}</button>`).join('')}</div>
-      <h3>Genres</h3>
-      <div class="lb-filter">${Object.keys(cat().genres).map((g) => `<button class="${r.genres.includes(g) ? 'on' : ''}" data-rule="genre" data-v="${g}" ${off(need('genres'))}>${esc(genreName(g))}</button>`).join('')}</div>
-      <small class="muted">Nichts gewählt heißt: alle Genres.</small>
+      <h2>Soll sie etwas wegwerfen?</h2>
+      <p class="muted">Sie hört jede neue Kassette an. Was schon angehört daliegt und was du gemerkt hast, wirft sie nie weg. Sortieren und nach Genre filtern kannst du die Kassetten im Fach „Demos“.</p>
+      <div class="lb-pick">
+        <button class="lb-pick-row ${on ? '' : 'on'}" data-mode="off"><span><b>Nichts wegwerfen</b><small class="muted">Alle Kassetten bleiben liegen, bis du sie wegwirfst oder sie ablaufen.</small></span></button>
+        <button class="lb-pick-row ${on ? 'on' : ''}" data-mode="on"><span><b>Unpassendes gleich wegwerfen</b><small class="muted">Was nicht zu dem passt, was du unten wählst, wirft sie nach dem Anhören weg.</small></span></button>
+      </div>
+      ${on ? `
+      <h3>Behalten ab</h3>
+      <div class="lb-filter">${[0, 1, 2, 3].map((l) => `<button class="${r.minLevel === l ? 'on' : ''}" data-rule="minLevel" data-v="${l}">${l === 0 ? 'Jede Stufe' : `Stufe ${l}`}</button>`).join('')}</div>
+      <h3>Nur diese Genres behalten</h3>
+      <div class="lb-filter">${Object.keys(cat().genres).map((g) => `<button class="${r.genres.includes(g) ? 'on' : ''}" data-rule="genre" data-v="${g}">${esc(genreName(g))}</button>`).join('')}</div>
+      <small class="muted">Nichts gewählt heißt: jedes Genre behalten.</small>
       <h3>Einzeln oder Band</h3>
-      <div class="lb-filter">${[['any', 'Beides'], ['solo', 'Nur Einzelne'], ['band', 'Nur Bands']].map(([k, label]) => `<button class="${r.kind === k ? 'on' : ''}" data-rule="kind" data-v="${k}" ${off(need('kind'))}>${label}</button>`).join('')}</div>
+      <div class="lb-filter">${[['any', 'Beides behalten'], ['solo', 'Nur Einzelne'], ['band', 'Nur Bands']].map(([k, label]) => `<button class="${r.kind === k ? 'on' : ''}" data-rule="kind" data-v="${k}">${label}</button>`).join('')}</div>
+      <p class="lb-rules-now">${esc(rulesText(r))}</p>` : ''}
       <div class="dialog-actions"><button class="btn ghost" data-close>Abbrechen</button><button class="btn primary" data-ok>Speichern</button></div>`,
   });
   modal.body.addEventListener('click', async (e) => {
+    const mode = e.target.closest('[data-mode]');
+    if (mode) {
+      on = mode.dataset.mode === 'on';
+      modal.refresh?.();
+      return;
+    }
     const b = e.target.closest('[data-rule]');
-    if (b && b.getAttribute('aria-disabled') !== 'true') {
+    if (b) {
       const v = b.dataset.v;
       if (b.dataset.rule === 'minLevel') r.minLevel = Number(v);
       if (b.dataset.rule === 'kind') r.kind = v;
@@ -494,9 +541,10 @@ function rulesDialog() {
     }
     if (e.target.closest('[data-close]')) modal.close();
     if (e.target.closest('[data-ok]')) {
-      if (await mutate('assistRules', { rules: r })) {
+      const rules = on ? r : { minLevel: 0, genres: [], kind: 'any' };
+      if (await mutate('assistRules', { rules })) {
         modal.close();
-        toast('Die Regeln gelten ab jetzt.', 'ok');
+        toast(`Gespeichert. ${rulesText(rules)}`, 'ok');
       }
     }
   });
@@ -629,7 +677,8 @@ function dragMove(x, y) {
   press.tab = tab?.dataset.box ?? null;
   if (tab) return;
   // Platz unter dem Zeiger suchen und tauschen (Kassetten, Briefe und Umschläge).
-  const over = [...box.children].find((c) => c !== el && c.dataset.post && hit(c));
+  // Ist gefiltert oder sortiert, gilt die Sortierung: dann nur auf Reiter ziehen, nicht in der Reihe umstellen.
+  const over = app.ui.subSorted ? null : [...box.children].find((c) => c !== el && c.dataset.post && hit(c));
   if (over) {
     const kids = [...box.children];
     if (kids.indexOf(over) < kids.indexOf(el)) box.insertBefore(el, over);
@@ -657,6 +706,7 @@ function dragEnd(cancelled) {
     return;
   }
   p.el.style.transform = '';
+  if (app.ui.subSorted) return;
   const order = [...p.box.children].map((c) => c.dataset.post?.split('-')).filter(Boolean).map(([t, id]) => (t === 's' ? Number(id) : -Number(id)));
   app.state.label.subOrder = order;
   api('submissionOrder', { order }).catch(() => {});
@@ -703,6 +753,14 @@ defineActions({
   },
   subFilter({ key }) {
     app.ui.subFilter = key;
+    rerender();
+  },
+  subGenre(value) {
+    app.ui.subGenre = value;
+    rerender();
+  },
+  subSort(value) {
+    app.ui.subSort = value;
     rerender();
   },
   /** Karte umdrehen (ohne neu zu zeichnen, damit die Drehung zu sehen ist). */

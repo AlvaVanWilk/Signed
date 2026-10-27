@@ -1364,3 +1364,10 @@ body { background: radial-gradient(1100px 520px at 50% -12%, rgba(255, 181, 71, 
 .lb-room.stage-sorting .fig-stage.depth .fig-member.stage-dragging { transition: none; z-index: 8; cursor: grabbing; }
 .fig-member.stage-dragging .fig { filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .45)) brightness(1.05); }
 .lb-room.stage-sorting .lb-wishdot, .lb-room.stage-sorting .lb-wishpop { display: none; }
+
+/* Posteingang: Filter-Leiste mit Genre und Sortieren (mit Assistenz) */
+.lb-filterbar { display: flex; justify-content: space-between; align-items: center; gap: 8px 12px; flex-wrap: wrap; }
+.lb-sortbox { display: flex; gap: 6px; flex-wrap: wrap; }
+.lb-sortbox select { padding: 6px 10px; border-radius: 999px; border: 1px solid var(--lb-line); background: var(--lb-card); color: var(--lb-text); font: inherit; font-size: .84rem; }
+.lb-pick-row.on { border-color: var(--brand-a, #2ec4b6); box-shadow: 0 0 0 1px var(--brand-a, #2ec4b6) inset; }
+.lb-rules-now { margin: 12px 0 0; font-weight: 700; }

@@ -1,6 +1,7 @@
 import { figure } from './figure.js';
 import { app, defineActions, rerender } from './core.js';
 import { esc, money, off } from './ui.js';
+import { genreName } from './cards.js';
 
 /**
  * Die Poststelle des Labels als kleine Szene statt einer Kachel: Wand mit Fenster und Postfächern, vorn der Schreibtisch, dahinter stehen
@@ -128,14 +129,23 @@ function internBubble(x, a) {
     <div class="ps-say">${Object.entries(INTERN_JOBS).map(([job, [label]]) => `<button class="ps-pill" data-act="internOrder" data-id="${x.id}" data-job="${job}" ${off(t[job] ? '' : none[job])}>${label}</button>`).join('')}</div>`;
 }
 
+/** Was die Assistenz gerade wegwirft, in einem Satz (auch für die Sprechblase). */
+export function rulesText(r) {
+  const parts = [];
+  if (r.minLevel > 0) parts.push(`unter Stufe ${r.minLevel}`);
+  if (r.genres.length) parts.push(`nicht ${r.genres.map((g) => genreName(g)).join(' oder ')}`);
+  if (r.kind !== 'any') parts.push(r.kind === 'solo' ? 'Bands' : 'Einzelne');
+  return parts.length ? `Wirft weg: ${parts.join(', ')}.` : 'Wirft nichts weg.';
+}
+
 /** Sprechblase einer Assistenz: was sie laufend tut, ihr Arbeitsgebiet zum Umstellen. */
 function assistantBubble(x, a) {
   // Kurz, damit es in die Sprechblase passt (die langen Namen stehen in Catalog::STAFF_ROLES).
   const tasks = { none: 'Nur Post', demos: 'Kassetten', presse: 'Interviews' };
   const doing = { none: 'Was soll ich sonst machen?', demos: 'Dazu höre ich Kassetten an.', presse: 'Dazu sage ich Interviews zu.' }[x.task] ?? '';
-  return `<p>Ich packe die Post aus und sortiere sie. ${esc(doing)}${x.task === 'demos' ? `<small>Heute ${a.today.opened} angehört, ${a.today.dropped} weggeworfen.</small>` : ''}</p>
+  return `<p>Ich packe die Post aus und sortiere sie. ${esc(doing)}${x.task === 'demos' ? `<small>Heute ${a.today.opened} angehört, ${a.today.dropped} weggeworfen. ${esc(rulesText(a.rules))}</small>` : ''}</p>
     <div class="ps-say">${Object.entries(tasks).map(([k, label]) => `<button class="ps-pill ${x.task === k ? 'on' : ''}" data-act="assistTask" data-id="${x.id}" data-task="${k}">${esc(label)}</button>`).join('')}
-    ${x.task === 'demos' ? '<button class="ps-pill ghost" data-act="assistRulesAsk">Regeln</button>' : ''}</div>`;
+    ${x.task === 'demos' ? '<button class="ps-pill ghost" data-act="assistRulesAsk">Wegwerfen …</button>' : ''}</div>`;
 }
 
 /** Die ganze Szene. a = app.state.assistant (oder null: niemand da). */

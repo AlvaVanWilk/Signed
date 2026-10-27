@@ -1219,3 +1219,38 @@ body { background: radial-gradient(1100px 520px at 50% -12%, rgba(212, 176, 110,
 @keyframes ps-steam { 0%, 100% { opacity: .2; transform: translateY(2px); } 50% { opacity: .8; transform: translateY(-1px); } }
 @media (max-width: 1100px) { .ps-note { width: 180px; font-size: .74rem; padding: 8px 10px 10px; } .ps-scene.many .ps-bubble { max-width: 170px; } }
 @media (prefers-reduced-motion: reduce) { .ps-col.busy .ps-fig .fig-body, .ps-held, .ps-held.coffee, .ps-steam { animation: none; } }
+
+/* ---------- Ein Farbkonzept: der Verlauf des Signed-Logos ----------
+ * Farben stehen im Spiel schon für Genres, Stimmung und Stufen. Deshalb tragen die Bereiche keine eigenen Farben mehr, sondern alle
+ * denselben Verlauf wie das Logo (Türkis nach Gelb): Kanten, Punkte, Striche, Unterstreichungen. Symbole und Zähler in Türkis. */
+.shell, .modal, .modal-backdrop {
+  --brand-a: var(--accent, #2ec4b6); --brand-b: var(--accent-2, #ffb547); --brand: linear-gradient(90deg, var(--brand-a), var(--brand-b));
+  --tone-gold: var(--brand-a); --tone-teal: var(--brand-a); --tone-blue: var(--brand-a); --tone-violet: var(--brand-a); --tone-rose: var(--brand-a); --tone-green: var(--brand-a);
+}
+body { background: radial-gradient(1100px 520px at 50% -12%, rgba(255, 181, 71, 0.08), transparent 62%),
+  radial-gradient(900px 600px at 100% 0%, rgba(46, 196, 182, 0.10), transparent 60%), #0f0d15; background-attachment: fixed; }
+
+/* Striche und Punkte im Verlauf */
+.lb-cap::before { background: var(--brand); }
+.ov-panel > h2::before { background: var(--brand); box-shadow: 0 0 10px rgba(46, 196, 182, 0.45); }
+
+/* Obere Kanten im Verlauf (als Leiste, damit die runden Ecken bleiben) */
+.ov-panel, .ov-stat { position: relative; overflow: hidden; border-top: 1px solid var(--lb-line); }
+.ov-panel::after, .ov-stat::after { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: var(--brand); opacity: .85; pointer-events: none; }
+.ov-panel.ov-board::after { display: none; }
+.ov-panel.ov-board { overflow: visible; }
+.ov-stat b { color: #fff; }
+
+/* Anordnungen: alle gleich, Kante im Verlauf, Symbol türkis */
+.lb-act { --tc: var(--brand-a); border-left: 1px solid var(--lb-line); position: relative; overflow: hidden; }
+.lb-act::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: linear-gradient(180deg, var(--brand-a), var(--brand-b)); }
+.lb-act svg { stroke: var(--brand-a); background: linear-gradient(135deg, rgba(46, 196, 182, 0.16), rgba(255, 181, 71, 0.12)); }
+.lb-act.warn { border-color: var(--lb-warn); }
+
+/* Posteingang: Fächer einheitlich, das gewählte mit Verlauf unterstrichen */
+.lb-boxes button { --bc: var(--brand-a); }
+.lb-boxes button.on { border-bottom-color: transparent; background: linear-gradient(0deg, rgba(46, 196, 182, 0.12), transparent), var(--brand) no-repeat 0 100% / 100% 2px; }
+.lb-boxes small { background: rgba(46, 196, 182, 0.16); color: #9be7df; }
+.lb-filter button.on { background: rgba(46, 196, 182, 0.12); border-color: var(--brand-a); }
+.lb-assist { border-left: 1px solid var(--lb-line); }
+.ov-progress i { background: var(--brand); }

@@ -600,7 +600,7 @@ export function page(route) {
         <h1>${esc(b.name)} ${solo ? '' : `<button class="icon-btn" data-act="bandRename" data-id="${b.id}" title="Umbenennen">✎</button>`}</h1>
         <small>${solo ? 'Solokünstler' : esc(b.title ?? 'Band')} · ${genresOf(b).length ? sortedGenres(genresOf(b)).map((g) => esc(genreName(g))).join(' · ') : 'gemischt'}</small>
       </div>
-      <div class="lb-hd-mood"><span class="lb-cap">Stimmung</span>${moodTag(b.mood.level).replace('class="lb-mood', 'class="lb-mood big')}</div>
+      <div class="lb-hd-mood"><span class="lb-cap plain">Stimmung</span>${moodTag(b.mood.level).replace('class="lb-mood', 'class="lb-mood big')}</div>
     </header>
     ${notice}
     ${tutorNotice(b, members)}
@@ -911,7 +911,7 @@ defineActions({
       const red = m.wellbeing?.level === 'red';
       const modal = openModal({
         html: `
-          <div class="lb-cap">Stimmung</div>
+          <div class="lb-cap plain">Stimmung</div>
           <h2>${esc(m.stageName ?? m.firstName)} ist ${moodWord(m.wellbeing?.level ?? 'green')}</h2>
           <p class="muted">${red ? `${esc(m.firstName)} ist richtig unzufrieden und sagt laut, was fehlt. Mehr erfährst du nur über einen Manager.` : `Warum, erzählt ${esc(m.firstName)} nur einem Manager. Ohne Manager erfährst du es erst, wenn ${esc(m.firstName)} richtig unzufrieden ist.`}</p>
           <div class="dialog-actions"><button class="btn primary" data-close>Okay</button></div>`,
@@ -924,7 +924,7 @@ defineActions({
     const row = (text, v) => `<li class="${v > 0 ? 'up' : v < 0 ? 'down' : ''}"><span>${esc(text)}</span><b>${v > 0 ? '+' : ''}${fmt0(Math.round(v))}</b></li>`;
     const modal = openModal({
       html: `
-        <div class="lb-cap">Stimmung</div>
+        <div class="lb-cap plain">Stimmung</div>
         <h2>${esc(m.stageName ?? m.firstName)} ist ${moodWord(m.wellbeing?.level ?? 'green')}</h2>
         <p class="muted">Jetzt: <b>${fmt0(now)}</b> von 100. ${dir} – auf etwa <b>${fmt0(w.target)}</b>, wenn sich nichts ändert.</p>
         <ul class="lb-why">${row('Grundlaune', 60)}${w.items.map(([text, v]) => row(text, v)).join('')}</ul>

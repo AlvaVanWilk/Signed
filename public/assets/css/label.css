@@ -1235,6 +1235,8 @@ body { background: radial-gradient(1100px 520px at 50% -12%, rgba(255, 181, 71, 
 
 /* Striche und Punkte im Verlauf */
 .lb-cap::before { background: var(--brand); }
+/* Über einer Stimmung kein Farbstrich: Er sähe aus wie die Farbe der Stimmung. */
+.lb-cap.plain::before { display: none; }
 .ov-panel > h2::before { background: var(--brand); box-shadow: 0 0 10px rgba(46, 196, 182, 0.45); }
 
 /* Obere Kanten im Verlauf (als Leiste, damit die runden Ecken bleiben) */

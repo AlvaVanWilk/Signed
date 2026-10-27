@@ -277,7 +277,8 @@ final class Balance
      */
     public const ASSISTANT = [
         'tiers' => [1 => ['perDay' => 50, 'price' => 400, 'from' => 0.0]],
-        'tasks' => ['demos', 'presse'],
+        // none = kein Arbeitsgebiet (packt nur die Post aus und sortiert sie); so fangen neue an
+        'tasks' => ['none', 'demos', 'presse'],
     ];
     /**
      * Praktikum: bewirbt sich gleich zu Beginn und danach immer wieder (Balance::JOBS), günstig und für `seconds`. Sortiert nur die Post und schreibt Notizen auf die Übersicht

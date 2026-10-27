@@ -12,8 +12,8 @@ import { esc, money, off } from './ui.js';
 export const INTERN_JOBS = { unpack: ['Briefe öffnen', 'öffnet Briefe', 'Ich öffne gerade die Briefe.'], listen: ['Demos anhören', 'hört Demos an', 'Ich höre gerade die Demos an.'], sort: ['Post sortieren', 'sortiert die Post', 'Ich sortiere gerade die Post in die Fächer.'] };
 
 /**
- * Die große Sprechblase erscheint erst, wenn man jemanden antippt (eine zur Zeit, bleibt beim Neuzeichnen offen). Ein Praktikum ohne
- * Auftrag sagt von sich aus kurz „Ich habe nichts zu tun.“; wer arbeitet, zeigt es selbst.
+ * Die große Sprechblase erscheint erst, wenn man jemanden antippt (eine zur Zeit, bleibt beim Neuzeichnen offen). Wer keinen Auftrag
+ * hat, sagt von sich aus kurz „Ich habe nichts zu tun.“; beim Praktikum steht während der Arbeit die Restzeit über dem Kopf.
  */
 defineActions({
   psTalk({ id }) {
@@ -88,7 +88,19 @@ const HELD = {
   unpack: `<svg viewBox="0 0 40 28"><rect x="2" y="2" width="36" height="24" rx="2" fill="#e9dcc0" ${st(2)}/><path d="M2 3 L20 16 L38 3" fill="none" ${st(2)}/></svg>`,
   listen: `<svg viewBox="0 0 40 28"><rect x="2" y="2" width="36" height="24" rx="4" fill="#2b2836" ${st(2)}/><rect x="7" y="6" width="26" height="8" rx="1.5" fill="#d8d2c4"/><circle cx="13" cy="20" r="3" fill="#c9a86a"/><circle cx="27" cy="20" r="3" fill="#c9a86a"/></svg>`,
   sort: `<svg viewBox="0 0 40 28"><rect x="6" y="2" width="30" height="20" rx="2" fill="#d8c6a2" ${st(2)}/><rect x="2" y="6" width="30" height="20" rx="2" fill="#f0e6d2" ${st(2)}/></svg>`,
+  coffee: `<svg viewBox="0 0 40 34"><path class="ps-steam" d="M14 9 C11 6 16 4 13 1 M22 9 C19 6 24 4 21 1" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="2" stroke-linecap="round"/><path d="M6 12 H30 V26 a6 6 0 0 1 -6 6 H12 a6 6 0 0 1 -6 -6 Z" fill="#cf7f9b" ${st(2)}/><path d="M30 15 a5 5 0 0 1 0 10" fill="none" ${st(2)}/></svg>`,
 };
+
+/**
+ * Was jemand gerade in der Hand hat: Das Praktikum zeigt seinen Zuruf; eine Assistenz mit Arbeitsgebiet die Kassette oder den
+ * Interview-Brief, wenn es dafür gerade etwas gibt, sonst trinkt sie Kaffee. Wer gar nichts zu tun hat, hat nichts in der Hand.
+ */
+function heldOf(x, a) {
+  if (x.intern) return x.job ? x.job.kind : null;
+  if (x.task === 'demos') return a.todo.listen ? 'listen' : 'coffee';
+  if (x.task === 'presse') return (app.state.mail ?? []).some((m) => m.kind === 'interview') ? 'unpack' : 'coffee';
+  return null;
+}
 
 const name = (x) => esc(x.firstName);
 
@@ -106,28 +118,32 @@ function internBubble(x, a) {
     <div class="ps-say">${Object.entries(INTERN_JOBS).map(([job, [label]]) => `<button class="ps-pill" data-act="internOrder" data-id="${x.id}" data-job="${job}" ${off(t[job] ? '' : none[job])}>${label}</button>`).join('')}</div>`;
 }
 
-/** Sprechblase einer Assistenz: was sie laufend tut, ihre Aufgabe zum Umstellen. */
+/** Sprechblase einer Assistenz: was sie laufend tut, ihr Arbeitsgebiet zum Umstellen. */
 function assistantBubble(x, a) {
   // Kurz, damit es in die Sprechblase passt (die langen Namen stehen in Catalog::STAFF_ROLES).
-  const tasks = { demos: 'Kassetten', presse: 'Interviews' };
-  const doing = x.task === 'presse' ? 'Ich sage Interviews zu.' : 'Ich höre Kassetten an.';
-  return `<p>Ich packe die Post aus und sortiere sie. ${esc(doing)}${x.task !== 'presse' ? `<small>Heute ${a.today.opened} angehört, ${a.today.dropped} weggeworfen.</small>` : ''}</p>
+  const tasks = { none: 'Nur Post', demos: 'Kassetten', presse: 'Interviews' };
+  const doing = { none: 'Was soll ich sonst machen?', demos: 'Dazu höre ich Kassetten an.', presse: 'Dazu sage ich Interviews zu.' }[x.task] ?? '';
+  return `<p>Ich packe die Post aus und sortiere sie. ${esc(doing)}${x.task === 'demos' ? `<small>Heute ${a.today.opened} angehört, ${a.today.dropped} weggeworfen.</small>` : ''}</p>
     <div class="ps-say">${Object.entries(tasks).map(([k, label]) => `<button class="ps-pill ${x.task === k ? 'on' : ''}" data-act="assistTask" data-id="${x.id}" data-task="${k}">${esc(label)}</button>`).join('')}
-    ${x.task !== 'presse' ? '<button class="ps-pill ghost" data-act="assistRulesAsk">Regeln</button>' : ''}</div>`;
+    ${x.task === 'demos' ? '<button class="ps-pill ghost" data-act="assistRulesAsk">Regeln</button>' : ''}</div>`;
 }
 
 /** Die ganze Szene. a = app.state.assistant (oder null: niemand da). */
 export function officeScene(a, posts = 0) {
   const staff = (a?.staff ?? []).slice(0, 3);
   // Drei Ebenen mit denselben Spalten: Figuren hinter dem Tisch, der Tisch, davor Sprechblasen und Namensschilder.
-  const people = staff.map((x) => `
-    <div class="ps-col ${x.job ? 'busy' : ''}">
-      <div class="ps-fig fig-stage idle"><div class="fig-member" style="--d:${(-((x.id * 7919) % 4300) / 1000).toFixed(2)}s">${figure(x.look, 'none', { bored: !!x.intern && !x.job })}</div>
-        ${x.job ? `<span class="ps-held">${HELD[x.job.kind] ?? ''}</span>` : ''}</div>
-    </div>`).join('');
+  const people = staff.map((x) => {
+    const held = heldOf(x, a);
+    return `
+    <div class="ps-col ${held && held !== 'coffee' ? 'busy' : ''}">
+      <div class="ps-fig fig-stage idle"><div class="fig-member" style="--d:${(-((x.id * 7919) % 4300) / 1000).toFixed(2)}s">${figure(x.look, 'none', { bored: !held })}</div>
+        ${held ? `<span class="ps-held ${held === 'coffee' ? 'coffee' : ''}">${HELD[held]}</span>` : ''}</div>
+    </div>`;
+  }).join('');
   const open = staff.some((x) => x.id === app.ui.psOpen) ? app.ui.psOpen : null;
-  // Wer arbeitet, zeigt es selbst (mit Brief oder Kassette in der Hand); ein Praktikum ohne Auftrag sagt es.
-  const hint = (x) => (x.intern && !x.job ? 'Ich habe nichts zu tun.' : '');
+  // Ohne Auftrag (Praktikum) oder ohne Arbeitsgebiet (Assistenz) sagt man es; beim Praktikum steht während der Arbeit die Restzeit
+  // über dem Kopf. Eine Assistenz mit Arbeitsgebiet sagt nichts, auch wenn sie gerade Kaffee trinkt.
+  const hint = (x) => (x.intern ? (x.job ? `<span data-until="${x.job.until}"></span>` : 'Ich habe nichts zu tun.') : x.task === 'none' ? 'Ich habe nichts zu tun.' : '');
   const front = staff.map((x) => `
     <div class="ps-col">
       ${x.id === open ? `<div class="ps-bubble">${x.intern ? internBubble(x, a) : assistantBubble(x, a)}</div>`

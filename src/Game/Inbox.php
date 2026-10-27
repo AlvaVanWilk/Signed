@@ -363,7 +363,7 @@ final class Inbox
             }
             $staffId = $db->insert('staff', [
                 'label_id' => $this->repo->labelId, 'role' => $d['role'], 'tier' => (int) $d['tier'],
-                'data' => json_encode(['first_name' => $d['first_name'], 'last_name' => $d['last_name'], 'look' => $d['look']] + ($d['role'] === 'assistant' ? ['task' => 'demos'] : []), JSON_UNESCAPED_UNICODE),
+                'data' => json_encode(['first_name' => $d['first_name'], 'last_name' => $d['last_name'], 'look' => $d['look']] + ($d['role'] === 'assistant' ? ['task' => 'none'] : []), JSON_UNESCAPED_UNICODE),
                 'hired_at' => Clock::now(),
                 // Das Praktikum endet nach einer festen Zeit.
                 'busy_until' => $d['role'] === 'intern' ? Clock::now() + Balance::INTERN['seconds'] : 0,

@@ -322,8 +322,15 @@ das überstimmt die Sortierung (`Post::move`, Spalte `box`).
   aber man kann derweil etwas anderes tun; auch offline. Ist es fertig, kommt eine Meldung.
   Bis zum Ende lässt es sich für 400 ₲ als Assistenz übernehmen (bekommt einen Nachnamen und sieht erwachsen aus), sonst geht es.
 - **Assistenz** (gebaut, `Assistant`): einmalig bezahlt (400 ₲). Jede **packt laufend alle Post aus und sortiert sie** in die Fächer und schreibt
-  Notizen auf die Übersicht. Dazu eine **Aufgabe**, jederzeit umstellbar: **Kassetten anhören** (50 am Tag, wirft nach den Regeln weg: ab
-  Können-Stufe, Genres, Einzeln/Band) oder **Presse** (sagt Interview-Anfragen zu, sobald der Musiker frei ist). Mehrere lassen sich einstellen.
+  Notizen auf die Übersicht. Dazu ein **Arbeitsgebiet**, jederzeit umstellbar: keins (so fangen neue an), **Kassetten anhören** (50 am Tag,
+  wirft nach den Regeln weg: ab Können-Stufe, Genres, Einzeln/Band) oder **Presse** (sagt Interview-Anfragen zu, sobald der Musiker frei ist).
+  Mehrere lassen sich einstellen.
+- **Poststelle** (gebaut, `office.js`): Oben im Posteingang eine Szene statt einer Kachel: Wand mit Fenster, Postfächern, Uhr und Lampe, vorn
+  der Schreibtisch mit Namensschildern; Praktikum und Assistenzen stehen als Figuren dahinter. Wer keinen Auftrag oder kein Arbeitsgebiet hat,
+  sagt „Ich habe nichts zu tun.“ (und schaut gelangweilt); beim Praktikum steht während der Arbeit die Restzeit über dem Kopf, und es hält
+  Brief, Kassette oder Stapel in der Hand. Eine Assistenz mit Arbeitsgebiet sagt nichts; gibt es gerade nichts dafür, trinkt sie Kaffee.
+  Antippen öffnet die Sprechblase mit Zurufen, Arbeitsgebiet, Regeln und Abbrechen; die Restzeit des Praktikums und „Fest übernehmen“
+  stehen auf einem Zettel am Tisch.
 - **Scout-Karte** (gebaut): Der eingestellte Scout steht unter der Künstlerleiste: losschicken, Countdown, danach „Ansehen“ für den Bericht.
 - Die **Sprechblasen** mit Wünschen auf den Band-Kacheln sind vorerst geparkt.
 - **Interviews** siehe „Interviews und Promo-Anfragen“; Zahlen in `kern.md` (Promo, Tempo).

@@ -63,7 +63,8 @@ final class Assistant
             $d = json_decode($row['data'], true);
             $this->repo->spend(Balance::ASSISTANT['tiers'][1]['price'], sprintf('Übernommen: %s als Assistenz', $d['first_name']));
             $this->work(\Signed\Clock::now());
-            $d['task'] = 'demos';
+            // Ein Arbeitsgebiet bekommt sie erst, wenn man es ihr gibt.
+            $d['task'] = 'none';
             // Aus dem Praktikum wird eine richtige Assistenz: mit Nachnamen, und sie sieht auf einmal erwachsener aus.
             if (($d['last_name'] ?? '') === '') {
                 $d['last_name'] = (string) \Signed\Rng::pick(Catalog::LAST_NAMES);

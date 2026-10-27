@@ -1213,5 +1213,9 @@ body { background: radial-gradient(1100px 520px at 50% -12%, rgba(212, 176, 110,
 .ps-mini { padding: 7px 12px; font-size: .82rem; white-space: nowrap; }
 .ps-mini::before { content: ''; position: absolute; left: -8px; bottom: 10px; border: 8px solid transparent; border-right-color: #f6f0e2; border-left: 0; }
 .ps-mini:hover { background: #fff7e4; }
+.ps-held.coffee { bottom: 40%; left: 52%; width: 22%; animation: ps-sip 5s ease-in-out infinite; }
+@keyframes ps-sip { 0%, 70%, 100% { transform: translateY(0) rotate(0); } 80%, 90% { transform: translate(-6px, -22px) rotate(-14deg); } }
+.ps-steam { animation: ps-steam 2.4s ease-in-out infinite; }
+@keyframes ps-steam { 0%, 100% { opacity: .2; transform: translateY(2px); } 50% { opacity: .8; transform: translateY(-1px); } }
 @media (max-width: 1100px) { .ps-note { width: 180px; font-size: .74rem; padding: 8px 10px 10px; } .ps-scene.many .ps-bubble { max-width: 170px; } }
-@media (prefers-reduced-motion: reduce) { .ps-col.busy .ps-fig .fig-body, .ps-held { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .ps-col.busy .ps-fig .fig-body, .ps-held, .ps-held.coffee, .ps-steam { animation: none; } }

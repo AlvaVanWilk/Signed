@@ -2064,8 +2064,10 @@ test('Posteingang: Bewerber werden mit dem Erfolg besser (gesättigt); Assistenz
     $money = $state['label']['money'];
     $res = $p->post('mailHire', ['mailId' => $jobs[0]['mailId']]);
     checkEquals($money - Balance::ASSISTANT['tiers'][1]['price'], $res['state']['label']['money'], 'einmalig bezahlt');
-    checkEquals(50, $res['state']['assistant']['perDay']);
-    checkEquals('demos', $res['state']['assistant']['staff'][0]['task']);
+    checkEquals('none', $res['state']['assistant']['staff'][0]['task'], 'fängt ohne Arbeitsgebiet an');
+    checkEquals(0, $res['state']['assistant']['perDay']);
+    $state = $p->post('assistTask', ['staffId' => $res['staffId'], 'task' => 'demos'])['state'];
+    checkEquals(50, $state['assistant']['perDay']);
     checkApiError(fn () => $p->post('mailHire', ['mailId' => $jobs[0]['mailId']]), 'nicht mehr');
     // Regeln gleich von Anfang an.
     $p->post('assistRules', ['rules' => ['minLevel' => 2, 'genres' => ['jazz', 'nope'], 'kind' => 'any']]);
@@ -2093,7 +2095,7 @@ test('Posteingang: Bewerber werden mit dem Erfolg besser (gesättigt); Assistenz
     // Eine zweite für die Presse: sagt Interviews zu, sobald der Musiker frei ist; Kassetten hört dann nur noch die erste.
     $second = array_values(array_filter($state['mail'], static fn ($m) => $m['kind'] === 'job' && $m['role'] === 'assistant'))[0];
     $staffId = $p->post('mailHire', ['mailId' => $second['mailId']])['staffId'];
-    checkEquals(100, $p->get('state')['assistant']['perDay'], 'zwei hören Kassetten');
+    checkEquals(50, $p->get('state')['assistant']['perDay'], 'die Neue hat noch kein Arbeitsgebiet');
     $state = $p->post('assistTask', ['staffId' => $staffId, 'task' => 'presse'])['state'];
     checkEquals(50, $state['assistant']['perDay']);
     checkApiError(fn () => $p->post('assistTask', ['staffId' => $staffId, 'task' => 'kaffee']), 'Aufgabe');
@@ -2355,10 +2357,11 @@ test('Praktikum: günstig, sortiert nur die Post, lässt sich als Assistenz übe
     checkEquals(true, $state['assistant']['staff'][0]['intern']);
     $id = $state['assistant']['staff'][0]['id'];
     checkApiError(fn () => $p->post('assistTask', ['staffId' => $id, 'task' => 'presse']), 'gibt es nicht');
-    // Übernehmen: jetzt eine feste Assistenz, die Kassetten anhört.
+    // Übernehmen: jetzt eine feste Assistenz; ein Arbeitsgebiet bekommt sie erst, wenn man es ihr gibt.
     $state = $p->post('assistAdopt', ['staffId' => $id])['state'];
     checkEquals(false, $state['assistant']['staff'][0]['intern']);
-    checkEquals(50, $state['assistant']['perDay']);
+    checkEquals('none', $state['assistant']['staff'][0]['task']);
+    checkEquals(50, $p->post('assistTask', ['staffId' => $id, 'task' => 'demos'])['state']['assistant']['perDay']);
     Clock::advance(30 * 86400);
     checkEquals(1, count($p->get('state')['assistant']['staff']), 'bleibt');
     // Ein zweites Praktikum ohne Übernahme geht nach sieben Tagen.

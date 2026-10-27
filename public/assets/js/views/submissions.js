@@ -776,7 +776,7 @@ defineActions({
   async assistTask({ id, task }) {
     const x = app.state.assistant?.staff.find((y) => y.id === Number(id));
     if (!x || x.task === task) return;
-    if (await mutate('assistTask', { staffId: Number(id), task })) toast(task === 'presse' ? `${x.firstName} kümmert sich jetzt um die Presse.` : `${x.firstName} hört jetzt Kassetten an.`, 'ok');
+    if (await mutate('assistTask', { staffId: Number(id), task })) toast({ presse: `${x.firstName} kümmert sich jetzt um die Presse.`, demos: `${x.firstName} hört jetzt Kassetten an.` }[task] ?? `${x.firstName} packt jetzt nur noch die Post aus.`, 'ok');
   },
   async assistAdopt({ id }) {
     const x = app.state.assistant?.staff.find((y) => y.id === Number(id));

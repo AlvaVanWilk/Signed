@@ -266,7 +266,7 @@ function celebrateResult(body, res, audience) {
   }
   if (els.length) requestAnimationFrame(tick);
   // Erst klimpert das Geld, dann klatscht das Publikum – gleichzeitig klingt beides wie ein Münzregen.
-  if (audience && res.meter !== null && res.meter !== undefined) playApplause((res.meter - 35) / 60, moneyTile ? duration / 1000 : 0);
+  if (audience && res.meter !== null && res.meter !== undefined) playApplause((res.meter - 35) / 60, moneyTile ? duration / 1000 : 0, res.venue ?? null);
 }
 
 /** „ · Bandname“ für Ergebnisse einzelner Musiker, damit man weiß, wer gemeint ist. */

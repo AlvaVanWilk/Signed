@@ -243,6 +243,10 @@ Aufnahme zeigt die Bandseite das Studio (`studio.js`) mit dem Produzenten hinter
 - Meist ist die Wahl einfach: **der Ort mit dem größten erwarteten Gewinn.** Es wird nur schwierig, wenn die Band **etwas anderes will** als das Wirtschaftliche:
   ein Wunsch nach der größeren Bühne (zum Beispiel Stadion) kostet das Label womöglich mehr, als er einbringt. Dann muss man abwägen:
   Geld gegen Stimmung. Ein Ort **unter** dem Anspruch der Band ärgert sie, auch wenn er sicher Gewinn bringt.
+- **Applaus** (gebaut, `audio.js`): Nach dem Auftritt klatscht eine echte Aufnahme je nach Ort (`public/assets/sfx/`, frei verwendbare
+  Aufnahmen, mit ffmpeg gekürzt, ausgeblendet und gleich laut gemacht): wenig Publikum (Kneipe, Straßenmusik, Offene Bühne), Club (auch
+  Konzertsaal), große Halle (auch Arena, von 26 auf 11 Sekunden gekürzt). Je begeisterter, desto lauter und länger; wer kaum jemanden
+  begeistert, hört auch in der Halle nur ein paar Hände. Lädt die Aufnahme nicht, klatscht wie früher der Synthesizer.
 
 ### Schwarzes Brett (gebaut)
 

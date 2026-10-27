@@ -473,6 +473,8 @@ final class Activities
             'mood' => ($reward['wellbeing'] ?? null) ? round(array_sum($reward['wellbeing']) / count($reward['wellbeing']), 1) : null,
             'fame' => round($fameGain, 2),
             'meter' => $reward['meter'] ?? null,
+            // Ort des Auftritts (für den passenden Applaus)
+            'venue' => $reward['venue'] ?? null,
             'drops' => [],
             'venueUp' => null,
             'levelUps' => self::applySkill($repo, $reward['skill'] ?? []),

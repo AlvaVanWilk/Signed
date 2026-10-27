@@ -391,14 +391,68 @@ export function scheduleBacking({ genre, bpm, start, duration, drums = true, bas
 // ---------- Nach dem Auftritt ----------
 
 /**
- * Applaus: vor allem das breite, warme Rauschen vieler Hände, darin einige einzelne Klatscher in eigenem Takt
- * (3–5 pro Sekunde, gedämpft – keine hellen Klicks, die nach Münzen klingen). strength 0–1: wie begeistert das Publikum ist.
- * Bei wenig Begeisterung klatschen nur ein paar Leute, kurz.
+ * Echte Applaus-Aufnahmen (frei verwendbar, mit ffmpeg gekürzt, ausgeblendet und gleich laut gemacht), je nach Größe des Ortes:
+ * wenig Publikum (Kneipe, Straße, Offene Bühne), Club (auch Konzertsaal), große Halle (auch Arena). Lautstärke je Aufnahme dazu.
  */
-export function playApplause(strength, delay = 0) {
+const APPLAUSE = { kneipe: 'klein', club: 'club', saal: 'club', halle: 'halle', arena: 'halle' };
+const APPLAUSE_GAIN = { klein: 0.6, club: 0.8, halle: 0.95 };
+const applauseBuffers = {};
+
+/** Aufnahme laden (einmal, dann aus dem Speicher); null, wenn es nicht klappt (dann klatscht der Synthesizer). */
+function applauseBuffer(c, name) {
+  applauseBuffers[name] ??= fetch(`assets/sfx/applaus-${name}.mp3`)
+    .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(r.statusText))))
+    // Die Rückruf-Form, weil ältere Safaris decodeAudioData noch nicht als Promise kennen.
+    .then((data) => new Promise((resolve, reject) => c.decodeAudioData(data, resolve, reject)))
+    .catch(() => {
+      delete applauseBuffers[name];
+      return null;
+    });
+  return applauseBuffers[name];
+}
+
+/**
+ * Applaus nach einem Auftritt. strength 0–1: wie begeistert das Publikum ist (lauter und länger, wenig Begeisterung: leiser und kürzer);
+ * venue: Ort (Schlüssel aus Balance::VENUES, sonst kleines Publikum). Wer fast niemanden begeistert, hört auch in der Halle nur ein paar Hände.
+ */
+export function playApplause(strength, delay = 0, venue = null) {
   const c = getAudio();
   if (!c) return;
   const s = Math.max(0, Math.min(1, strength));
+  const name = s < 0.15 ? 'klein' : APPLAUSE[venue] ?? 'klein';
+  const at = c.currentTime + 0.05 + delay;
+  applauseBuffer(c, name).then((buf) => {
+    if (!buf) {
+      synthApplause(s, Math.max(0, at - c.currentTime));
+      return;
+    }
+    const start = Math.max(c.currentTime + 0.02, at);
+    const length = buf.duration * (0.45 + 0.55 * s);
+    const volume = APPLAUSE_GAIN[name] * (0.45 + 0.55 * s);
+    const src = c.createBufferSource();
+    src.buffer = buf;
+    const g = c.createGain();
+    g.gain.setValueAtTime(volume, start);
+    // Kürzer als die Aufnahme: sanft ausblenden statt abschneiden.
+    if (length < buf.duration - 0.05) {
+      g.gain.setValueAtTime(volume, start + length * 0.6);
+      g.gain.linearRampToValueAtTime(0.0001, start + length);
+    }
+    src.connect(g).connect(master);
+    src.start(start);
+    src.stop(start + length + 0.05);
+    src.onended = () => g.disconnect();
+  });
+}
+
+/**
+ * Applaus aus dem Synthesizer (falls die Aufnahme nicht lädt): vor allem das breite, warme Rauschen vieler Hände, darin einige einzelne
+ * Klatscher in eigenem Takt (3–5 pro Sekunde, gedämpft – keine hellen Klicks, die nach Münzen klingen). Bei wenig Begeisterung klatschen
+ * nur ein paar Leute, kurz.
+ */
+function synthApplause(s, delay = 0) {
+  const c = getAudio();
+  if (!c) return;
   const bus = c.createGain();
   bus.gain.value = 0.5 + 0.4 * s;
   // Alles Helle oben weg: Hände klingen dumpf, nicht klirrend.

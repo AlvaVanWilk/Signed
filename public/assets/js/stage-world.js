@@ -1,5 +1,6 @@
 /**
- * Bühnen der Tournee: je Land ein Bild voller Klischees (Frankreich mit Bistro und Baguettes, Japan mit Fuji und Kirschblüten …),
+ * Bühnen der Tournee: je Land ein Bild voller Klischees (Frankreich mit Bistro und Baguettes, Japan mit Fuji und Kirschblüten,
+ * Deutschland mit Brandenburger Tor und Brezeln …),
  * gezeichnet wie die übrigen Bühnen (stage.js): ruhige Flächen, dunkle Kontur. Die Mitte bleibt für die Band frei,
  * Wahrzeichen stehen oben und an den Seiten. h: Zeichenhilfen aus stage.js.
  */
@@ -226,5 +227,77 @@ export function worldScenes(h) {
       ${[40, 920].map((x, i) => `<path d="M${x} ${DY} Q${x + (i ? -8 : 8)} 140 ${x} 90" fill="none" stroke="#c9b8a0" stroke-width="8"/><ellipse cx="${x}" cy="84" rx="40" ry="26" fill="#7fa88a" opacity="0.9" ${st(1.8)}/><ellipse cx="${x + (i ? -20 : 20)}" cy="108" rx="24" ry="14" fill="#8ab894" opacity="0.9" ${st(1.6)}/>`).join('')}
       ${sign(130, 104, KANGAROO)}
       ${platform('#3b4256', '#232838')}`,
+
+    // Deutschland: Brandenburger Tor hinter der Bühne, Fernsehturm, Fachwerkhaus, Brezeln, Gartenzwerg, schwarz-rot-goldene Wimpel.
+    de: (r) => `
+      ${sky('w-de', [[0, '#1b2140'], [1, '#4a5a8e']])}${stars(r, 16, 80)}
+      <g transform="translate(830 0)"><path d="M-4 ${DY} L-3 40 H3 L4 ${DY} Z" fill="#9aa3b4" ${st(2.2)}/><circle cx="0" cy="58" r="20" fill="#c9cfdb" ${st(2.6)}/><path d="M-20 58 H20" stroke="${INK}" stroke-width="1.6"/>${[-12, -4, 4, 12].map((x) => `<rect x="${x - 2}" y="52" width="4" height="4" fill="#ffd27a"/>`).join('')}<path d="M0 38 V4" stroke="${INK}" stroke-width="2.4"/><circle cx="0" cy="4" r="3" fill="#e04a4a"/></g>
+      <g transform="translate(480 0)"><path d="M-150 70 H150 V84 H-150 Z" fill="#d8c9a6" ${st(2.6)}/><path d="M-160 58 H160 L150 70 H-150 Z" fill="#c9b892" ${st(2.4)}/>
+        ${[-136, -82, -28, 28, 82, 136].map((x) => `<rect x="${x - 9}" y="84" width="18" height="${DY - 84}" fill="#e6d8b6" ${st(2.2)}/>`).join('')}
+        <path d="M-26 58 L-20 36 H20 L26 58 Z" fill="#b89a6a" ${st(2)}/><path d="M-16 36 Q0 20 16 36" fill="#5f8f6a" ${st(2)}/><path d="M-6 22 V14 M0 24 V10 M6 22 V14" stroke="${INK}" stroke-width="2"/></g>
+      ${box(10, 70, 170, DY - 70, '#f1e5c8', 2)}<path d="M2 74 L95 20 L188 74 Z" fill="#a8463a" ${st(3)}/>
+      <path d="M10 110 H180 M10 150 H180 M66 70 V${DY} M124 70 V${DY} M10 70 L66 110 M66 70 L10 110 M124 110 L180 150 M180 110 L124 150" stroke="#5a3a24" stroke-width="5"/>
+      ${[[24, 118], [80, 118], [138, 118]].map(([x, y]) => box(x, y, 28, 26, '#ffe1a0', 2, 2)).join('')}
+      ${bunting(190, 30, 770, 30, 26, ['#1d1a24', '#d4202a', '#f2c230'], 18)}
+      ${platform('#6a6e78', '#44474f')}
+      <g transform="translate(96 ${DY - 2})"><ellipse cx="0" cy="-4" rx="26" ry="5" fill="#d9d4cc" ${st(2.2)}/><path d="M0 0 V26 M-10 26 H10" stroke="${INK}" stroke-width="3"/>
+        ${[-12, 10].map((x) => `<g transform="translate(${x} -16)"><path d="M-10 4 Q-12 -10 0 -10 Q12 -10 10 4 Q4 0 2 -4 L6 6 M-10 4 Q-4 0 -2 -4 L-6 6" fill="none" stroke="#a8602a" stroke-width="5" stroke-linecap="round"/></g>`).join('')}</g>
+      <g transform="translate(880 ${DY - 2})"><path d="M-12 0 L-10 -20 H10 L12 0 Z" fill="#2f6fb0" ${st(2)}/><circle cx="0" cy="-26" r="8" fill="#f2c9a6" ${st(1.8)}/><path d="M-6 -22 Q0 -12 6 -22 L4 -16 Q0 -10 -4 -16 Z" fill="#f4f1ea" ${st(1.4)}/><path d="M-10 -30 L0 -56 L10 -30 Z" fill="#d4202a" ${st(2)}/></g>`,
+
+    // Italien: Kolosseum, schiefer Turm von Pisa, Zypressen, Vespa, Pizza, grün-weiß-rote Wimpel im Abendlicht.
+    it: () => `
+      ${sky('w-it', [[0, '#f0905a'], [0.7, '#ffd08a'], [1, '#ffe9c0']])}
+      <g transform="translate(140 0)"><path d="M-130 ${DY} V70 Q0 44 130 70 V${DY} Z" fill="#d9b48a" ${st(2.6)}/>
+        ${[0, 1, 2].map((k) => Array.from({ length: 7 }, (_, i) => `<path d="M${-112 + i * 34} ${170 - k * 38} V${150 - k * 38} Q${-100 + i * 34} ${136 - k * 38} ${-88 + i * 34} ${150 - k * 38} V${170 - k * 38} Z" fill="#7a5a3e" opacity="0.85"/>`).join('')).join('')}
+        <path d="M-130 112 Q0 92 130 112 M-130 74 Q0 52 130 74" stroke="#a8825a" stroke-width="3" fill="none"/></g>
+      <g transform="translate(820 ${DY}) rotate(5)"><rect x="-26" y="-180" width="52" height="180" fill="#f4ecd8" ${st(2.6)}/>${Array.from({ length: 6 }, (_, i) => `<path d="M-26 ${-30 - i * 28} H26" stroke="#c9b892" stroke-width="2"/>${[-16, 0, 16].map((x) => `<rect x="${x - 4}" y="${-24 - i * 28}" width="8" height="14" rx="4" fill="#c9b892"/>`).join('')}`).join('')}<rect x="-20" y="-196" width="40" height="16" fill="#f4ecd8" ${st(2.2)}/></g>
+      ${[300, 660].map((x) => `<path d="M${x} ${DY} Q${x - 14} 120 ${x} 60 Q${x + 14} 120 ${x} ${DY} Z" fill="#2f5a3a" ${st(2)}/>`).join('')}
+      ${bunting(250, 24, 710, 24, 24, ['#2f9a4a', '#f4f1ea', '#d4202a'], 15)}
+      ${platform('#b8763e', '#7a4a2a')}
+      <g transform="translate(70 ${DY - 2})"><path d="M-30 0 H22 Q30 -4 28 -16 L18 -20 Q14 -34 -2 -34 L-12 -20 H-26 Q-34 -12 -30 0 Z" fill="#7fc8b8" ${st(2.2)}/><circle cx="-20" cy="0" r="9" fill="#2a2433" ${st(2)}/><circle cx="20" cy="0" r="9" fill="#2a2433" ${st(2)}/><path d="M18 -20 L24 -40 M20 -40 H30" stroke="${INK}" stroke-width="3" stroke-linecap="round"/></g>
+      <g transform="translate(900 ${DY - 2})"><ellipse cx="0" cy="-4" rx="26" ry="5" fill="#d9d4cc" ${st(2.2)}/><path d="M0 0 V26 M-10 26 H10" stroke="${INK}" stroke-width="3"/><circle cx="0" cy="-14" r="20" fill="#e8b45a" ${st(2)}/><circle cx="0" cy="-14" r="16" fill="#d4402a"/>${[[-7, -18], [6, -20], [2, -8], [-4, -6], [9, -11]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="2.6" fill="#f4ecd8"/>`).join('')}</g>`,
+
+    // Mexiko: Papel picado über der Bühne, Stufenpyramide, Kakteen, Sombrero und Maracas.
+    mx: () => `
+      ${sky('w-mx', [[0, '#3a8fd6'], [1, '#ffd59a']])}
+      <path d="M560 ${DY} L600 120 H760 L800 ${DY} Z" fill="#c9a06a" ${st(2.4)}/>${[0, 1, 2, 3].map((k) => `<path d="M${590 + k * 10} ${180 - k * 18} H${770 - k * 10}" stroke="#8a6a3e" stroke-width="3"/>`).join('')}${box(662, 100, 36, 22, '#a8825a', 1, 2)}<path d="M672 ${DY} V130 H688 V${DY}" fill="#8a6a3e"/>
+      ${line(0, 16, W, 16, 4)}${Array.from({ length: 16 }, (_, i) => `<g transform="translate(${i * 60 + 30} 18)"><path d="M-26 0 H26 V40 L18 34 L10 40 L2 34 L-6 40 L-14 34 L-22 40 L-26 36 Z" fill="${['#ff5a8a', '#3fc3d9', '#ffd23a', '#8ad14a', '#b07aff', '#ff8a3a'][i % 6]}" ${st(1.4)}/><circle cx="-8" cy="14" r="4" fill="#fff" opacity="0.7"/><circle cx="8" cy="14" r="4" fill="#fff" opacity="0.7"/><path d="M-4 24 L0 28 L4 24" stroke="#fff" stroke-width="2" fill="none" opacity="0.7"/></g>`).join('')}
+      ${[[60, 1.1], [180, 0.8], [880, 1.2]].map(([x, s]) => `<g transform="translate(${x} ${DY})"><path d="M-10 0 V${-110 * s} Q0 ${-122 * s} 10 ${-110 * s} V0 Z" fill="#3f8f4a" ${st(2.2)}/><path d="M-10 ${-50 * s} H-28 V${-80 * s} Q-22 ${-88 * s} -16 ${-80 * s} V${-62 * s} H-10 M10 ${-64 * s} H26 V${-92 * s} Q32 ${-100 * s} 38 ${-92 * s} V${-56 * s} H10" fill="#3f8f4a" ${st(2.2)}/></g>`).join('')}
+      ${platform('#c0623a', '#8a3f24')}
+      <g transform="translate(120 ${DY - 4})"><ellipse cx="0" cy="0" rx="40" ry="9" fill="#e8c35a" ${st(2.2)}/><path d="M-16 -2 Q-14 -30 0 -32 Q14 -30 16 -2 Z" fill="#e8c35a" ${st(2.2)}/><path d="M-36 -2 Q0 8 36 -2" stroke="#d4202a" stroke-width="3" fill="none"/><path d="M-15 -10 H15" stroke="#2f9a4a" stroke-width="4"/></g>
+      ${[[790, -20], [820, 16]].map(([x, a]) => `<g transform="translate(${x} ${DY - 10}) rotate(${a})"><ellipse cx="0" cy="-14" rx="10" ry="13" fill="${a < 0 ? '#ff5a8a' : '#3fc3d9'}" ${st(2)}/><path d="M0 0 V14" stroke="#8a5a32" stroke-width="4"/><path d="M-6 -18 H6 M-6 -10 H6" stroke="#fff" stroke-width="2"/></g>`).join('')}`,
+
+    // Argentinien: bunte Häuser wie in La Boca, Obelisk, Laternen zum Tango, hellblau-weiße Wimpel mit Sonne.
+    ar: () => `
+      ${sky('w-ar', [[0, '#5aa8e8'], [1, '#e2f4ff']])}
+      <path d="M470 ${DY} L476 40 L480 26 L484 40 L490 ${DY} Z" fill="#f4f1ea" ${st(2.4)}/><path d="M478 30 H482" stroke="${INK}" stroke-width="2"/>
+      ${[[0, '#3fa0d9', 130], [70, '#ffd23a', 100], [140, '#e04a4a', 120], [760, '#8ad14a', 110], [830, '#ff8a3a', 90], [900, '#3fa0d9', 126]].map(([x, c, h]) => `${box(x, DY - h, 70, h, c, 1, 2.4)}<path d="M${x} ${DY - h} h70" stroke="${INK}" stroke-width="2"/>${Array.from({ length: 6 }, (_, i) => `<path d="M${x + 6 + i * 11} ${DY - h + 4} V${DY - 4}" stroke="#000" stroke-width="1.2" opacity="0.15"/>`).join('')}${box(x + 18, DY - h + 20, 32, 26, '#f4f1ea', 2, 2)}<path d="M${x + 14} ${DY - h + 46} H${x + 54}" stroke="${INK}" stroke-width="3"/>`).join('')}
+      ${[300, 660].map((x) => `<path d="M${x} ${DY} V90 Q${x} 72 ${x + 16} 72" fill="none" stroke="#2a2433" stroke-width="5"/><path d="M${x + 8} 72 H${x + 26} L${x + 22} 92 H${x + 12} Z" fill="#ffe08a" ${st(2)}/><circle cx="${x + 17}" cy="96" r="18" fill="#ffe08a" opacity="0.2"/>`).join('')}
+      ${bunting(230, 20, 730, 20, 22, ['#7fc6f0', '#f4f1ea'], 16)}
+      <g transform="translate(480 56)"><circle r="14" fill="#f2c230" ${st(2)}/>${Array.from({ length: 12 }, (_, i) => `<path d="M0 -16 L0 -24" transform="rotate(${i * 30})" stroke="#f2c230" stroke-width="3"/>`).join('')}</g>
+      ${platform('#5a3a2e', '#3a2620')}`,
+
+    // Südkorea: Seoul bei Nacht mit dem Namsan-Turm, Neonlichter, Hanok-Dach, Leuchtstäbe der Fans.
+    kr: (r) => `
+      ${sky('w-kr', [[0, '#141030'], [1, '#3a2a6a']])}${stars(r, 18, 80)}
+      ${[[230, 110], [290, 80], [350, 120], [600, 90], [660, 70], [720, 110]].map(([x, y], i) => `<rect x="${x}" y="${y}" width="52" height="${DY - y}" fill="#221c3e"/>${Array.from({ length: 5 }, (_, k) => `<rect x="${x + 8}" y="${y + 10 + k * 18}" width="36" height="5" fill="${['#ff5ac8', '#5ad6ff', '#b07aff'][(i + k) % 3]}" opacity="0.7"/>`).join('')}`).join('')}
+      <g transform="translate(860 0)"><path d="M-60 ${DY} Q0 110 60 ${DY} Z" fill="#2f3a5a"/><path d="M-3 120 L-2 46 H2 L3 120 Z" fill="#c9cfdb" ${st(2)}/><ellipse cx="0" cy="56" rx="14" ry="8" fill="#e8eef6" ${st(2)}/><path d="M0 46 V18" stroke="${INK}" stroke-width="2"/><circle cx="0" cy="18" r="3" fill="#ff5ac8"/></g>
+      <g transform="translate(110 0)"><path d="M-100 96 Q-60 88 0 90 Q60 88 100 96 Q90 80 60 76 H-60 Q-90 80 -100 96 Z" fill="#2a2433" ${st(2.4)}/><path d="M-100 96 Q-104 88 -110 84 M100 96 Q104 88 110 84" stroke="${INK}" stroke-width="3" fill="none"/>${box(-80, 96, 160, DY - 96, '#8a3a2e', 1)}${[-50, 0, 50].map((x) => box(x - 16, 112, 32, 44, '#f4ecd8', 1, 2)).join('')}<path d="M-84 96 H84" stroke="#3f8f86" stroke-width="5"/></g>
+      ${lights(240, 30, 720, 30, 24, ['#ff5ac8', '#5ad6ff', '#b07aff', '#ffd23a'], 16)}
+      ${platform('#2a2433', '#141024')}`,
+
+    // Ägypten: Pyramiden in der Wüste im Abendrot, Kamel, Palmen, orientalische Laternen.
+    eg: () => `
+      ${sky('w-eg', [[0, '#e86a3a'], [0.6, '#ffb45a'], [1, '#ffe2a0']])}
+      <circle cx="480" cy="70" r="40" fill="#fff1c4" opacity="0.8"/>
+      <path d="M-10 ${DY} Q200 160 480 170 T970 ${DY} Z" fill="#e8b46a"/>
+      ${[[620, 150, 1], [760, 110, 0.8], [330, 120, 0.6]].map(([x, h, s]) => `<path d="M${x - h} ${DY - 10} L${x} ${DY - 10 - h} L${x + h} ${DY - 10} Z" fill="#d49a52" ${st(2.4)}/><path d="M${x} ${DY - 10 - h} L${x + h} ${DY - 10} H${x + h * 0.3} Z" fill="#b8803e" opacity="0.6"/>`).join('')}
+      <g transform="translate(180 ${DY - 2})" fill="#8a6038" stroke="${INK}" stroke-width="2" stroke-linejoin="round">
+        <path d="M-30 -36 Q-34 -50 -22 -54 Q-14 -72 -2 -56 Q8 -72 20 -54 Q30 -52 30 -40 Q40 -46 44 -60 L48 -76 Q50 -84 58 -82 L66 -78 L64 -72 L56 -72 L54 -58 Q50 -40 36 -30 Q20 -24 -20 -26 Q-30 -28 -30 -36 Z"/>
+        <path d="M-22 -28 L-24 0 M-12 -26 L-10 0 M18 -26 L16 0 M28 -28 L30 0" fill="none" stroke="#8a6038" stroke-width="5" stroke-linecap="round"/>
+        <path d="M-30 -36 Q-40 -30 -38 -20" fill="none" stroke-width="2.4"/><circle cx="60" cy="-77" r="1.4" fill="${INK}" stroke="none"/></g>
+      ${palm(60, DY, 1, 1)}${palm(900, DY, 1.1, -1)}
+      ${[[270, 0], [690, 1]].map(([x, i]) => `<g transform="translate(${x} 18)"><path d="M0 0 V14" stroke="${INK}" stroke-width="2"/><path d="M-12 14 H12 L16 30 L10 50 H-10 L-16 30 Z" fill="${i ? '#3f8f86' : '#c8323a'}" ${st(2)}/><path d="M-10 30 H10 M-6 22 V44 M6 22 V44" stroke="#ffd27a" stroke-width="2"/><circle cx="0" cy="34" r="22" fill="#ffd27a" opacity="0.2"/><path d="M-6 50 L0 58 L6 50" fill="${INK}"/></g>`).join('')}
+      ${platform('#b8803e', '#7a5226')}`,
   };
 }

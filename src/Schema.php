@@ -664,6 +664,11 @@ final class Schema
                 'ALTER TABLE labels ADD COLUMN transition TEXT NULL',
                 static fn (Db $db) => \Signed\Game\Transition::prepare($db, self::$from),
             ],
+            // 54: Tournee in Stufen: Fahrzeuge der Band (Bus für Europa, Flugzeug für die Welt), je Stufe 0 (keins) bis 4
+            [
+                'ALTER TABLE bands ADD COLUMN bus INTEGER NOT NULL DEFAULT 0',
+                'ALTER TABLE bands ADD COLUMN plane INTEGER NOT NULL DEFAULT 0',
+            ],
         ];
     }
 }

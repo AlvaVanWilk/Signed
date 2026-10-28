@@ -78,7 +78,8 @@ final class Gigs
         $players = array_map(static fn ($m) => Activities::player($m, $gear), $members);
         $out = [];
         foreach (Balance::VENUES as $i => $venue) {
-            if ($i > $claim + $c['reach']) {
+            // Die Arena gibt es nur auf Tournee.
+            if ($i > $claim + $c['reach'] || !empty($venue['tour'])) {
                 break;
             }
             $key = $venue['key'];

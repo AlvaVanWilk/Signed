@@ -10,7 +10,8 @@ import { roomSvg } from '../room.js';
 import { crowdMeter, venueArt } from '../venues.js';
 import { crowdSvg, stageSvg } from '../stage.js';
 import { studioBlock } from './recording.js';
-import { tourHint, tourPanel } from '../tour.js';
+import { startTour, tourPanel, tourTab, vehicleRows } from '../tour.js';
+import { vehicleSvg } from '../vehicle.js';
 import { awardList, roomAwards } from '../awards.js';
 
 /** Label-Ebene: Band-Leiste links und die ruhige Bandseite. Stimmung als Punkt und Wort (grün, gelb, rot). */
@@ -93,7 +94,7 @@ function genreTip(b, members, g) {
  * die übrige Fläche öffnet die Band.
  */
 function tile(b, selected) {
-  const away = isBusy(b.busyUntil) || !!runningFor(b.id);
+  const away = isBusy(b.busyUntil) || !!runningFor(b.id) || !!b.tour;
   const solo = b.memberIds.length === 1;
   const bonusGenres = b.genreBonus > 1 ? sortedGenres(b.genres) : [];
   const members = b.memberIds.map(musicianById).filter(Boolean);
@@ -393,7 +394,39 @@ function bandScene(b, members) {
         <span class="lb-scene-tag">${tag}${solo ? '' : `<button class="icon-btn" data-act="bandRename" data-id="${b.id}" title="Umbenennen" aria-label="Umbenennen">✎</button>`}</span>
       </div>
       ${roomBar(b, members)}
+      ${vehicleRows(b)}
     </section>`;
+}
+
+/**
+ * Auf Tournee: Die Band steht in ihrem Bus oder Flugzeug (unterwegs zieht draußen die Landschaft vorbei, im Land steht es in der Stadt),
+ * darunter Karte, Städte und die Knöpfe der Tournee.
+ */
+function tourScene(b, members) {
+  const t = b.tour;
+  const level = b.vehicles?.[t.vehicle] ?? 1;
+  const name = cat().vehicles[t.vehicle][Math.max(1, level) - 1].name;
+  const moving = t.state === 'travel' || t.state === 'home';
+  const wish = (b.mood.wishes ?? [])[0];
+  return `
+    <section class="lb-scene" data-band="${b.id}">
+      <div class="lb-room idle">${vehicleSvg(t.vehicle, level, b.id, b.name, moving)}${stage(members, {
+    className: 'idle in-room',
+    act: 'musicianInfo',
+    instrumentOf: (m) => (hasGear(m) ? playedInstrument(m) : 'none'),
+    finishOf: (m) => ownGear(m, playedInstrument(m)).finish,
+    nameOf: (m) => esc(m.stageName ?? m.firstName),
+    below: (m) => (wish && wish.musicianId === m.id ? wishBubble(b, members, wish) : ''),
+  })}
+        <span class="lb-scene-tag">${esc(name)} · ${moving ? 'unterwegs' : esc(cat().countries[t.country]?.name ?? '')}</span>
+      </div>
+      ${tourPanel(b)}
+    </section>`;
+}
+
+/** Am Knopf „Auftritt buchen“: ab der ersten Tournee-Stufe steht dort auch die Tournee. */
+function gigHint(b) {
+  return (b.tours ?? []).some((o) => o.reached) ? 'Hier spielen oder auf Tournee' : 'Orte, Kosten und Gewinn sehen';
 }
 
 /** Eine Anordnung: gesperrt, wenn ein roter Musiker sie ablehnt; sonst mit Hinweis, wem sie nicht gefällt. */
@@ -501,8 +534,10 @@ function tutorNotice(b, members) {
   return lines.length ? `<div class="lb-tutor">${lines.map((l) => `<div>${l}</div>`).join('')}</div>` : '';
 }
 
-function act(b, members, type, section, title, text, icon, warn = false, busy = false) {
+function act(b, members, type, section, title, text, icon, warn = false, busy = false, away = '') {
   const r = b.mood.reactions?.[type] ?? { like: [], dislike: [], locked: false };
+  // Auf Tournee: Was nur zu Hause geht, ist grau (antippen sagt warum).
+  if (away) return `<button class="lb-act t-${type} idle" data-id="${b.id}" ${off(away)}><span class="lb-disc"><span class="lb-disc-label">${icon}</span></span><b>${title}</b><small>erst wieder zu Hause</small></button>`;
   const names = (ids) => ids.map((id) => musicianById(id)?.firstName).filter(Boolean).join(', ');
   const plural = (ids, one, many) => (ids.length > 1 ? many : one);
   // Jede Anordnung ist eine Schallplatte mit farbigem Etikett, darauf das Zeichen.
@@ -544,11 +579,11 @@ function liveBlock(b, members, act) {
     <section class="lb-live" data-live-act="${act.id}">
       <div class="lb-live-head">
         <div><h2 class="lb-cap">${members.length === 1 ? 'Probt' : 'Die Band probt'}</h2>
-          <small class="muted">Seit <span data-live-since="${act.startedAt}"></span> · spätestens zu Ende in <b data-live-left="${act.endsAt}">${duration(left)}</b> (${esc(who?.firstName ?? '')}${act.rehearsal.limit.why === 'red' ? ' wird genervt' : ' hat dann keine Lust mehr'})</small></div>
+          <small class="muted">${b.tour ? `Im ${esc(cat().vehicles[b.tour.vehicle][(b.vehicles?.[b.tour.vehicle] ?? 1) - 1].name)} · ` : ''}Seit <span data-live-since="${act.startedAt}"></span> · spätestens zu Ende in <b data-live-left="${act.endsAt}">${duration(left)}</b> (${esc(who?.firstName ?? '')}${act.rehearsal.limit.why === 'red' ? ' wird genervt' : ' hat dann keine Lust mehr'})</small></div>
         <span class="lb-live-btns"><button class="btn small ghost" data-act="liveSound" data-id="${act.id}">${music?.actId === act.id ? 'Ton aus' : 'Ton an'}</button>
           <button class="btn small primary" data-act="rehearsalStop" data-id="${act.id}">Probe beenden</button></span>
       </div>
-      <div class="lb-room">${roomSvg(b.room?.level ?? 0, b.id, b.name, sortedGenres(genresOf(b))[0] ?? null)}${stage(members, {
+      <div class="lb-room">${b.tour ? vehicleSvg(b.tour.vehicle, b.vehicles?.[b.tour.vehicle] ?? 1, b.id, b.name, ['travel', 'home'].includes(b.tour.state)) : roomSvg(b.room?.level ?? 0, b.id, b.name, sortedGenres(genresOf(b))[0] ?? null)}${stage(members, {
     className: 'in-room',
     act: 'musicianInfo',
     bpm: cat().genres[sortedGenres(genresOf(b))[0]]?.bpm ?? 120,
@@ -742,24 +777,25 @@ export function page(route) {
   const solo = members.length === 1;
   const running = runningFor(b.id);
   const notice = ['rehearsal', 'gig', 'record', 'festival', 'tourgig'].includes(running?.type) || b.tour ? '' : blockerNotice(b, members);
+  // Auf Tournee lebt die Band im Bus oder Flugzeug: proben geht, alles andere erst wieder zu Hause.
+  const away = (what) => (b.tour ? `Die Band ist auf Tournee. ${what}` : '');
   const free = cat().rules.maxMembers - members.length;
   const base = `#/band/${b.id}`;
   const courses = courseTiles(members);
   const course = courses ? `<details class="lb-more"><summary>Kurse des Tages</summary><div class="lb-course">${courses}</div></details>` : '';
   return `
     <h1 class="sr-only">${esc(b.name)}</h1>
-    ${running?.type === 'rehearsal' ? liveBlock(b, members, running) : ['gig', 'festival', 'tourgig'].includes(running?.type) ? gigBlock(b, members, running) : b.tour ? tourPanel(b) : running?.type === 'record' ? studioBlock(b, members, running, { soundOn: music?.actId === running.id }) : bandScene(b, members)}
+    ${running?.type === 'rehearsal' ? liveBlock(b, members, running) + (b.tour ? tourPanel(b) : '') : ['gig', 'festival', 'tourgig'].includes(running?.type) ? gigBlock(b, members, running) : b.tour ? tourScene(b, members) : running?.type === 'record' ? studioBlock(b, members, running, { soundOn: music?.actId === running.id }) : bandScene(b, members)}
     ${notice}
     ${eventNotice(b)}
     ${tutorNotice(b, members)}
-    ${['rehearsal', 'gig', 'record', 'festival', 'tourgig'].includes(running?.type) || b.tour ? wishBlock(b, members) : ''}
+    ${['rehearsal', 'gig', 'record', 'festival', 'tourgig'].includes(running?.type) ? wishBlock(b, members) : ''}
     <div class="lb-acts">
       ${act(b, members, 'rehearsal', null, 'Proben', `bis zu ${mins(b.options.rehearsal.seconds)} · Können ${gainRange(members.map((m) => m.gains?.rehearsal ?? 0))} je ${mins(cat().rules.rehearsalSeconds)}`, ICON.rehearse, false, !!blocker(b, members))}
-      ${act(b, members, 'record', null, 'Aufnehmen', recordHint(b), ICON.record, b.mood.songs >= 12, !!blocker(b, members))}
-      ${act(b, members, 'gig', null, 'Auftritt buchen', 'Orte, Kosten und Gewinn sehen', ICON.gig, false, !!blocker(b, members))}
-      ${act(b, members, 'bandpromo', null, 'Promo-Tour', promoHint(b), ICON.promo, false, !!blocker(b, members))}
-      ${act(b, members, 'retreat', null, 'Auszeit', retreatHint(b), ICON.retreat, false, !!blocker(b, members))}
-      ${act(b, members, 'tour', null, 'Tournee', tourHint(b), ICON.tour, false, !!blocker(b, members))}
+      ${act(b, members, 'record', null, 'Aufnehmen', recordHint(b), ICON.record, b.mood.songs >= 12, !!blocker(b, members), away('Aufnehmen geht nur zu Hause im Studio.'))}
+      ${act(b, members, 'gig', null, 'Auftritt buchen', gigHint(b), ICON.gig, false, !!blocker(b, members), away('Unterwegs spielt ihr die Städte der Tournee (oben).'))}
+      ${act(b, members, 'bandpromo', null, 'Promo-Tour', promoHint(b), ICON.promo, false, !!blocker(b, members), away('Eine Promo-Tour geht erst wieder zu Hause.'))}
+      ${act(b, members, 'retreat', null, 'Auszeit', retreatHint(b), ICON.retreat, false, !!blocker(b, members), away('Eine Auszeit gibt es erst wieder zu Hause.'))}
     </div>
     ${course}
     ${managerBlock(b)}
@@ -889,17 +925,37 @@ async function openGigs(b) {
         </div>
       </div>`;
   };
+  // Ab der ersten Tournee-Stufe (oder mit Fahrzeug) gibt es einen zweiten Reiter: Tournee.
+  const touring = (b.tours ?? []).some((o) => o.reached) || b.vehicles?.bus || b.vehicles?.plane;
+  let tab = touring ? (app.ui.gigTab ?? 'local') : 'local';
   const modal = openModal({
     wide: true,
     className: 'gg-modal',
-    html: `
+    render: () => `
       <div class="lb-cap">Anordnung</div>
-      <h2>Auftritt buchen für ${esc(b.name)}</h2>
+      <h2>${tab === 'tour' ? 'Auf Tournee' : 'Auftritt buchen'} für ${esc(b.name)}</h2>
+      ${touring ? `<div class="tabs gg-tabs"><button class="tab ${tab === 'local' ? 'active' : ''}" data-tab="local">Hier spielen</button><button class="tab ${tab === 'tour' ? 'active' : ''}" data-tab="tour">Tournee</button></div>` : ''}
+      ${tab === 'tour' ? tourTab(bandById(b.id) ?? b) : `
       <p class="muted small">Sound der Band ${fmt1(data.sound)} · ${data.songs} ${data.songs === 1 ? 'Song' : 'Songs'} spielbar (aufgenommen und geschrieben).
-        Die Kosten sind fest und werden nach dem Auftritt von der Gage bezahlt, der Gewinn hängt vom Abend ab.${r.like.length ? ` ${esc(names(r.like))} ${r.like.length > 1 ? 'freuen' : 'freut'} sich auf die Bühne.` : ''}${r.dislike.length ? ` ${esc(names(r.dislike))} ${r.dislike.length > 1 ? 'mögen' : 'mag'} keine Auftritte.` : ''}</p>
-      <div class="gg-list">${data.options.map(row).join('')}</div>`,
+        Die Kosten sind fest und werden nach dem Auftritt von der Gage bezahlt, der Gewinn hängt vom Abend ab.${r.like.length ? ` ${esc(names(r.like))} ${r.like.length > 1 ? 'freuen' : 'freut'} sich auf die Bühne.` : ''}${r.dislike.length ? ` ${esc(names(r.dislike))} ${r.dislike.length > 1 ? 'mögen' : 'mag'} keine Auftritte.` : ''}${touring ? '' : ' Die Arena gibt es nur auf Tournee.'}</p>
+      <div class="gg-list">${data.options.map(row).join('')}</div>`}`,
   });
   modal.body.addEventListener('click', async (e) => {
+    const tabBtn = e.target.closest('[data-tab]');
+    if (tabBtn) {
+      tab = tabBtn.dataset.tab;
+      app.ui.gigTab = tab;
+      modal.refresh();
+      return;
+    }
+    const go = e.target.closest('[data-region]');
+    if (go) {
+      if (go.getAttribute('aria-disabled') === 'true') return;
+      modal.close();
+      await leaveScene('gig');
+      await startTour(b, go.dataset.region, Number(go.dataset.len ?? 0));
+      return;
+    }
     const btn = e.target.closest('[data-book]');
     if (!btn || btn.getAttribute('aria-disabled') === 'true') return;
     btn.disabled = true;

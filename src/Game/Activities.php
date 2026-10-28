@@ -52,6 +52,10 @@ final class Activities
             if ($blocker !== null) {
                 throw new ApiError($blocker);
             }
+            // Auf Tournee probt die Band im Fahrzeug; alles andere geht erst wieder zu Hause.
+            if ($type !== 'rehearsal') {
+                Tours::assertHome($db, $bandId);
+            }
             $refuser = Mood::refuser($members, $type);
             if ($refuser !== null) {
                 throw new ApiError($refuser['first_name'] . ' hat darauf gerade keine Lust. Eine Anordnung, die der Band gefällt, hebt zuerst die Stimmung.');
@@ -66,7 +70,7 @@ final class Activities
 
             $rehearsal = null;
             if ($type === 'rehearsal') {
-                [$duration, $limit] = Mood::rehearsalLimits($members, Rooms::rules(Rooms::level($this->repo, $band, count($members)))['lust'], $gear);
+                [$duration, $limit] = Mood::rehearsalLimits($members, Rooms::here($this->repo, $band, count($members))['lust'], $gear);
                 $songs = max(1, intdiv($duration, Balance::REHEARSAL['songSpan']));
                 $title = 'Bandprobe';
                 $sim = ['timeline' => self::rehearsalTimeline($members, $songs, $duration), 'meter' => 0.0, 'perf' => 0.0];
@@ -312,6 +316,7 @@ final class Activities
             if ($blocker !== null) {
                 throw new ApiError($blocker);
             }
+            Tours::assertHome($db, $bandId);
             $endsAt = $now + $cfg['seconds'];
             Events::assertFree($db, $bandId, $endsAt);
             if ($db->exec('UPDATE bands SET busy_until = ? WHERE id = ? AND busy_until <= ?', [$endsAt, $bandId, $now]) === 0) {
@@ -343,6 +348,7 @@ final class Activities
             if ($blocker !== null) {
                 throw new ApiError($blocker);
             }
+            Tours::assertHome($db, $bandId);
             $cfg = Balance::BAND_PROMO;
             $endsAt = $now + $cfg['seconds'];
             Events::assertFree($db, $bandId, $endsAt);
@@ -466,8 +472,10 @@ final class Activities
         Charts::boost($repo, $bandId, (float) ($reward['chartBoost'] ?? 0));
         // Gemeinsam erlebt: Die Beziehungen der Mitglieder wachsen (je nach Passung).
         Mood::bond($repo, $repo->members($bandId), $row['type']);
-        // Ein Auftritt auf Tournee gefällt, wem Auftritte gefallen.
-        Mood::react($repo, $repo->members($bandId), $row['type'] === Tours::GIG ? 'gig' : $row['type']);
+        // Ein Auftritt auf Tournee gefällt, wem Auftritte gefallen – einmal je Land, nicht in jeder Stadt neu.
+        if ($row['type'] !== Tours::GIG || ($reward['tour']['first'] ?? true)) {
+            Mood::react($repo, $repo->members($bandId), $row['type'] === Tours::GIG ? 'gig' : $row['type']);
+        }
         // Auszeit: erholt zurück
         foreach ($reward['wellbeing'] ?? [] as $id => $gain) {
             $w = $db->value('SELECT wellbeing FROM musicians WHERE id = ? AND band_id = ?', [(int) $id, $bandId]);
@@ -693,7 +701,7 @@ final class Activities
             return;
         }
         $gear = $repo->gearByMusician();
-        $room = Rooms::rules(Rooms::level($repo, $repo->band($bandId), count($members)));
+        $room = Rooms::here($repo, $repo->band($bandId), count($members));
         $gains = [];
         foreach ($members as $m) {
             $gains[$m['id']] = BandCalc::rehearsalGain($m, BandCalc::gearOf($m, $gear)) * $room['skill'] * $f;

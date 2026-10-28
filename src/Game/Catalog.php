@@ -249,6 +249,13 @@ final class Catalog
             ['name' => 'Late-Night-Show', 'share' => 0.14], ['name' => 'Weltweiter Musikpodcast', 'share' => 0.12],
         ],
     ];
+    /** Auf Tournee fragen die Medien im Land (%s = Stadt), je Bekanntheitsstufe wie INTERVIEW_MEDIA. */
+    public const INTERVIEW_MEDIA_ABROAD = [
+        0 => [['name' => 'Studentenradio in %s', 'share' => 0.10], ['name' => 'Stadtblog aus %s', 'share' => 0.10]],
+        1 => [['name' => 'Stadtmagazin in %s', 'share' => 0.11], ['name' => 'Lokalradio in %s', 'share' => 0.12]],
+        2 => [['name' => 'Musikzeitschrift aus %s', 'share' => 0.11], ['name' => 'Radiosender in %s', 'share' => 0.13]],
+        3 => [['name' => 'Fernsehshow in %s', 'share' => 0.13], ['name' => 'Großes Magazin aus %s', 'share' => 0.11]],
+    ];
 
     /** Leute, die sich beim Label bewerben: Name der Rolle und der Stufen. */
     public const STAFF_ROLES = [
@@ -277,22 +284,32 @@ final class Catalog
         'manager' => '%2$s kennt %1$s inzwischen gut.',
     ];
     /** Anordnungen im Satz („Lust auf …“). */
-    /** Länder für Tourneen (Tours): Stadt, Lieblings-Genre des Publikums, Lage (Breite, Länge) für Karte und Entfernung; `in`, wo „in …“ anders heißt. */
+    /**
+     * Länder für Tourneen (Tours): Region (Balance::TOUR['regions']), Städte (so viele Auftritte gibt es dort, die erste ist die größte und
+     * wird auf der Welttournee bespielt), Lieblings-Genre des Publikums, Lage der ersten Stadt (Breite, Länge) für Karte und Entfernung;
+     * `in`, wo „in …“ anders heißt. Jedes Land hat eine eigene Bühne (stage-world.js).
+     */
     public const COUNTRIES = [
-        'gb' => ['name' => 'England', 'city' => 'London', 'genre' => 'rock', 'lat' => 51.5, 'lon' => -0.1],
-        'ie' => ['name' => 'Irland', 'city' => 'Dublin', 'genre' => 'folk', 'lat' => 53.3, 'lon' => -6.3],
-        'fr' => ['name' => 'Frankreich', 'city' => 'Paris', 'genre' => 'pop', 'lat' => 48.9, 'lon' => 2.4],
-        'es' => ['name' => 'Spanien', 'city' => 'Madrid', 'genre' => 'folk', 'lat' => 40.4, 'lon' => -3.7],
-        'nl' => ['name' => 'Niederlande', 'city' => 'Amsterdam', 'genre' => 'elektro', 'lat' => 52.4, 'lon' => 4.9, 'in' => 'in den Niederlanden'],
-        'se' => ['name' => 'Schweden', 'city' => 'Stockholm', 'genre' => 'elektro', 'lat' => 59.3, 'lon' => 18.1],
-        'no' => ['name' => 'Norwegen', 'city' => 'Oslo', 'genre' => 'metal', 'lat' => 59.9, 'lon' => 10.7],
-        'fi' => ['name' => 'Finnland', 'city' => 'Helsinki', 'genre' => 'metal', 'lat' => 60.2, 'lon' => 24.9],
-        'us' => ['name' => 'USA', 'city' => 'New York', 'genre' => 'hiphop', 'lat' => 40.7, 'lon' => -74.0, 'in' => 'in den USA'],
-        'ca' => ['name' => 'Kanada', 'city' => 'Toronto', 'genre' => 'punk', 'lat' => 43.7, 'lon' => -79.4],
-        'br' => ['name' => 'Brasilien', 'city' => 'Rio de Janeiro', 'genre' => 'jazz', 'lat' => -22.9, 'lon' => -43.2],
-        'za' => ['name' => 'Südafrika', 'city' => 'Kapstadt', 'genre' => 'jazz', 'lat' => -33.9, 'lon' => 18.4],
-        'jp' => ['name' => 'Japan', 'city' => 'Tokio', 'genre' => 'pop', 'lat' => 35.7, 'lon' => 139.7],
-        'au' => ['name' => 'Australien', 'city' => 'Sydney', 'genre' => 'rock', 'lat' => -33.9, 'lon' => 151.2],
+        'de' => ['name' => 'Deutschland', 'region' => 'europa', 'cities' => ['Berlin', 'München', 'Köln'], 'genre' => 'elektro', 'lat' => 52.5, 'lon' => 13.4],
+        'gb' => ['name' => 'England', 'region' => 'europa', 'cities' => ['London', 'Manchester', 'Birmingham'], 'genre' => 'rock', 'lat' => 51.5, 'lon' => -0.1],
+        'fr' => ['name' => 'Frankreich', 'region' => 'europa', 'cities' => ['Paris', 'Lyon', 'Marseille'], 'genre' => 'pop', 'lat' => 48.9, 'lon' => 2.4],
+        'es' => ['name' => 'Spanien', 'region' => 'europa', 'cities' => ['Madrid', 'Barcelona'], 'genre' => 'folk', 'lat' => 40.4, 'lon' => -3.7],
+        'it' => ['name' => 'Italien', 'region' => 'europa', 'cities' => ['Rom', 'Mailand'], 'genre' => 'jazz', 'lat' => 41.9, 'lon' => 12.5],
+        'nl' => ['name' => 'Niederlande', 'region' => 'europa', 'cities' => ['Amsterdam', 'Rotterdam'], 'genre' => 'elektro', 'lat' => 52.4, 'lon' => 4.9, 'in' => 'in den Niederlanden'],
+        'ie' => ['name' => 'Irland', 'region' => 'europa', 'cities' => ['Dublin'], 'genre' => 'folk', 'lat' => 53.3, 'lon' => -6.3],
+        'se' => ['name' => 'Schweden', 'region' => 'europa', 'cities' => ['Stockholm'], 'genre' => 'pop', 'lat' => 59.3, 'lon' => 18.1],
+        'no' => ['name' => 'Norwegen', 'region' => 'europa', 'cities' => ['Oslo'], 'genre' => 'metal', 'lat' => 59.9, 'lon' => 10.7],
+        'fi' => ['name' => 'Finnland', 'region' => 'europa', 'cities' => ['Helsinki'], 'genre' => 'metal', 'lat' => 60.2, 'lon' => 24.9],
+        'us' => ['name' => 'USA', 'region' => 'nordamerika', 'cities' => ['New York', 'Los Angeles', 'Chicago', 'Nashville', 'Atlanta', 'Las Vegas'], 'genre' => 'hiphop', 'lat' => 40.7, 'lon' => -74.0, 'in' => 'in den USA'],
+        'ca' => ['name' => 'Kanada', 'region' => 'nordamerika', 'cities' => ['Toronto', 'Montreal', 'Vancouver'], 'genre' => 'punk', 'lat' => 43.7, 'lon' => -79.4],
+        'mx' => ['name' => 'Mexiko', 'region' => 'nordamerika', 'cities' => ['Mexiko-Stadt', 'Guadalajara'], 'genre' => 'folk', 'lat' => 19.4, 'lon' => -99.1],
+        'br' => ['name' => 'Brasilien', 'region' => 'suedamerika', 'cities' => ['Rio de Janeiro', 'São Paulo', 'Salvador'], 'genre' => 'jazz', 'lat' => -22.9, 'lon' => -43.2],
+        'ar' => ['name' => 'Argentinien', 'region' => 'suedamerika', 'cities' => ['Buenos Aires', 'Córdoba'], 'genre' => 'rock', 'lat' => -34.6, 'lon' => -58.4],
+        'za' => ['name' => 'Südafrika', 'region' => 'afrika', 'cities' => ['Kapstadt', 'Johannesburg', 'Durban'], 'genre' => 'jazz', 'lat' => -33.9, 'lon' => 18.4],
+        'eg' => ['name' => 'Ägypten', 'region' => 'afrika', 'cities' => ['Kairo'], 'genre' => 'pop', 'lat' => 30.0, 'lon' => 31.2],
+        'jp' => ['name' => 'Japan', 'region' => 'asien', 'cities' => ['Tokio', 'Osaka', 'Nagoya'], 'genre' => 'pop', 'lat' => 35.7, 'lon' => 139.7],
+        'kr' => ['name' => 'Südkorea', 'region' => 'asien', 'cities' => ['Seoul', 'Busan'], 'genre' => 'pop', 'lat' => 37.6, 'lon' => 127.0],
+        'au' => ['name' => 'Australien', 'region' => 'asien', 'cities' => ['Sydney', 'Melbourne', 'Brisbane'], 'genre' => 'rock', 'lat' => -33.9, 'lon' => 151.2],
     ];
     /** Von hier geht jede Tournee los, und hierhin kommt die Band zurück. */
     public const HOME = ['name' => 'Deutschland', 'city' => 'Berlin', 'lat' => 52.5, 'lon' => 13.4];

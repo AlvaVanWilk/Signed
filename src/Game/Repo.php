@@ -429,6 +429,8 @@ final class Repo
             'released' => (bool) $r['released'],
             'retired' => ($r['retired_at'] ?? null) !== null,
             'room' => (int) ($r['room'] ?? 0),
+            'bus' => (int) ($r['bus'] ?? 0),
+            'plane' => (int) ($r['plane'] ?? 0),
             'fame_own' => (float) $r['fame_own'],
             'songs_written' => (float) ($r['songs_written'] ?? 0),
             'coached_songs' => (float) ($r['coached_songs'] ?? 0),

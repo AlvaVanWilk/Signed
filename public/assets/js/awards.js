@@ -28,9 +28,9 @@ function numberOne() {
     <path d="M10.6 9.6 L12.6 8.4 V15.4 M10.8 15.4 H14.4" fill="none" stroke="#7a5a12" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 }
 
-/** Bühnenpass am Band (erster Auftritt in einer Halle oder Arena). */
+/** Bühnenpass am Band (erster Auftritt in einer Halle, Arena oder einem Stadion). */
 function pass(kind) {
-  const color = kind === 'arena' ? '#e8c35a' : '#6f9bd6';
+  const color = { arena: '#e8c35a', stadium: '#ee7a8a' }[kind] ?? '#6f9bd6';
   return `<svg class="trophy award-pass" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 1 L12 8 L16 1" fill="none" stroke="#c8323a" stroke-width="1.6"/>
     <rect x="5.5" y="7" width="13" height="16" rx="1.6" fill="#f4f1ea" stroke="#1d1a2a" stroke-width="1"/><rect x="5.5" y="7" width="13" height="5" rx="1.2" fill="${color}"/>
     <rect x="10" y="8.2" width="4" height="1.4" rx=".7" fill="#1d1a2a" opacity=".5"/><path d="M12 13.6 l1.2 2.4 2.6.4 -1.9 1.8 .5 2.6 -2.4-1.3 -2.4 1.3 .5-2.6 -1.9-1.8 2.6-.4 Z" fill="${color}" stroke="#1d1a2a" stroke-width=".6"/></svg>`;
@@ -40,7 +40,7 @@ function pass(kind) {
 export function awardIcon(a) {
   if (DISC[a.kind]) return disc(a.kind);
   if (a.kind === 'number1') return numberOne();
-  if (a.kind === 'hall' || a.kind === 'arena') return pass(a.kind);
+  if (a.kind === 'hall' || a.kind === 'arena' || a.kind === 'stadium') return pass(a.kind);
   if (a.kind === 'festival') return poster();
   if (a.kind === 'world') return globe();
   return trophy(a.place);
@@ -50,12 +50,12 @@ export function awardIcon(a) {
 export function awardName(a) {
   return {
     gold: 'Goldene Schallplatte', platinum: 'Platin-Schallplatte', diamond: 'Diamant-Schallplatte', number1: 'Platz 1 der Charts',
-    hall: 'Große Halle', arena: 'Arena', festival: 'Festival-Headliner', world: 'Weltenbummler',
+    hall: 'Große Halle', arena: 'Arena', stadium: 'Stadion', festival: 'Festival-Headliner', world: 'Weltenbummler',
   }[a.kind] ?? (a.place === 1 ? 'Battle of the Bands: Sieger' : `Battle of the Bands: Platz ${a.place}`);
 }
 
 /** Was hängt an der Wand und was steht auf dem Boden? */
-const WALL = ['gold', 'platinum', 'diamond', 'number1', 'hall', 'arena', 'festival'];
+const WALL = ['gold', 'platinum', 'diamond', 'number1', 'hall', 'arena', 'stadium', 'festival'];
 
 /** Im Proberaum: Schallplatten, Pässe und Plakate an der Wand, Pokale und Globus auf dem Boden (die neuesten, mit „+N“ für den Rest). */
 export function roomAwards(b) {
@@ -96,6 +96,7 @@ export function celebrateAwards() {
     : a.kind === 'number1' ? `${record} steht auf Platz 1 der Charts!`
       : a.kind === 'hall' ? 'Zum ersten Mal in einer großen Halle gespielt. Der Bühnenpass hängt jetzt im Proberaum.'
         : a.kind === 'arena' ? 'Zum ersten Mal in einer Arena gespielt. Der goldene Bühnenpass hängt jetzt im Proberaum.'
+          : a.kind === 'stadium' ? 'Zum ersten Mal in einem Stadion gespielt. Dieser Bühnenpass hängt jetzt im Proberaum.'
           : a.title;
   open = true;
   openModal({

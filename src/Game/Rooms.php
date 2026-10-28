@@ -17,6 +17,12 @@ final class Rooms
         return (int) $band['room'];
     }
 
+    /** Wo die Band gerade probt: auf Tournee im Fahrzeug (dessen Werte), sonst im Proberaum. */
+    public static function here(Repo $repo, array $band, int $members): array
+    {
+        return Tours::rehearsalRules($repo->db, $band) ?? self::rules(self::level($repo, $band, $members));
+    }
+
     public static function rules(int $level): array
     {
         $levels = Balance::ROOM['levels'];

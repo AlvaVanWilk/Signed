@@ -526,13 +526,16 @@ final class Balance
         'cells' => 14, 'rarity' => [8, 3, 2, 1], 'points' => [0, 1, 2, 4],
         'speeds' => [6.0, 7.5, 9.0, 10.5], 'salesMax' => 0.10,
     ];
-    /** Auftrittsorte für Gigs nach Bandruhm. gage und fame gelten pro Lied, expect = erwarteter Sound. */
+    /**
+     * Auftrittsorte nach Bandruhm. gage und fame gelten pro Lied, expect = erwarteter Sound. Die Arena gibt es nur auf Tournee (`tour`):
+     * Zu Hause spielt man höchstens in der Halle, wer berühmter ist, geht auf Tournee.
+     */
     public const VENUES = [
         ['key' => 'kneipe', 'name' => 'Kneipe', 'minFame' => 0, 'gage' => 30, 'fame' => 0.25, 'expect' => 15],
         ['key' => 'club', 'name' => 'Club', 'minFame' => 30, 'gage' => 70, 'fame' => 0.5, 'expect' => 28],
         ['key' => 'saal', 'name' => 'Konzertsaal', 'minFame' => 150, 'gage' => 160, 'fame' => 1.0, 'expect' => 42],
         ['key' => 'halle', 'name' => 'Halle', 'minFame' => 600, 'gage' => 380, 'fame' => 2.0, 'expect' => 58],
-        ['key' => 'arena', 'name' => 'Arena', 'minFame' => 2500, 'gage' => 900, 'fame' => 4.0, 'expect' => 75],
+        ['key' => 'arena', 'name' => 'Arena', 'minFame' => 2500, 'gage' => 900, 'fame' => 4.0, 'expect' => 75, 'tour' => true],
     ];
     /**
      * Auftritt buchen: je Ort feste Kosten (Miete, Technik), Länge in Liedern. Die Gage hängt am Auftritt: Füllgrad nach Sound gegen Erwartung
@@ -541,6 +544,7 @@ final class Balance
      */
     public const GIG_BOOKING = [
         'cost' => ['kneipe' => 20, 'club' => 90, 'saal' => 350, 'halle' => 1100, 'arena' => 3200],
+        // Länge auch für Tournee-Auftritte (dort ohne Miete; das Stadion steht in TOUR)
         'songs' => ['kneipe' => 3, 'club' => 4, 'saal' => 5, 'halle' => 7, 'arena' => 9],
         // Füllgrad = Sound gegen Erwartung × Bekanntheit gegen Größe des Ortes ((Ruhm + fameSoft) / (Mindestruhm + fameSoft)); Unbekannte füllen keinen Saal.
         'fillMin' => 0.05, 'fameSoft' => 10, 'perfBase' => 0.7, 'perfWeight' => 0.3,
@@ -742,23 +746,53 @@ final class Balance
         ],
     ];
     /**
-     * Tournee (Tours): `lengths` Stationen zur Wahl; jedes Ziel wird ausgewürfelt (echte Länder, Catalog::COUNTRIES, keins doppelt).
-     * Reisezeit = base + Entfernung × perKm (Sekunden), Reisekosten je Strecke = Mitglieder × (perMember + Entfernung × perKmCost) ₲,
-     * der Heimflug ist frei. Ein Auftritt wie ein Gig am Ort nach Ruhm mit ganzer Setlist; im Ausland kennt noch niemand die Lieder
-     * (keine Abnutzung) und es kommt neues Publikum (`abroad`: mehr Ruhm und Gage als zu Hause). Mag das Land das Genre der Band
-     * (`match`): noch mehr Ruhm und Gage, das Publikum ist leichter zu begeistern.
-     * Zwischen den Stationen wartet die Band höchstens `wait` Sekunden auf das nächste Antippen, dann fliegt sie selbst nach Hause.
-     * Beziehungen: je Auftritt RELATION['bond']['tourgig'], am Ende ['tour'], dazu am Ende `lift` je gespielte Station obendrauf
+     * Tournee in Stufen (Tours): Zu Hause spielt die Band in Kneipe bis Halle; wer bekannt genug ist und das Fahrzeug hat, geht auf Tournee.
+     * `regions`: Europa (Bus, ab Konzertsaal-Ruhm), die Kontinente (Flugzeug, ab Hallen-Ruhm), Welttournee (Flugzeug, ab Arena-Ruhm, nur die
+     * größte Stadt je Land, ab `stadium` minFame im Stadion, davor in der Arena). `lengths`: Länder zur Wahl (null = alle Länder der Region, Reihenfolge ausgewürfelt). Jedes Ziel wird
+     * ausgewürfelt, keins doppelt. In jedem Land spielt die Band in jeder seiner Städte einmal (Catalog::COUNTRIES 'cities'), ohne Fahrt dazwischen.
+     * Reisezeit = (base + Entfernung × perKm) × Tempo des Fahrzeugs (VEHICLES `speed`), Kosten je Strecke = Mitglieder × (perMember + km × perKm) ₲
+     * (Sprit, Kerosin), die Heimreise ist frei. Unterwegs ist die Band nicht beschäftigt: Sie probt im Fahrzeug, schreibt Songs, gibt Interviews.
+     * Ein Auftritt wie ein Gig am Ort nach Ruhm (Welttournee ab 8.000 Ruhm: `stadium`), im Ausland kennt noch niemand die Lieder (keine Abnutzung), und es
+     * kommt neues Publikum (`abroad`). Mag das Land das Genre der Band (`match`): noch mehr Ruhm und Gage, das Publikum ist leichter zu begeistern.
+     * Im Land wartet die Band höchstens `wait` Sekunden auf das nächste Antippen, dann fährt sie selbst nach Hause.
+     * Beziehungen: je Auftritt RELATION['bond']['tourgig'], am Ende ['tour'], dazu am Ende `lift` je bespieltes Land obendrauf
      * (höchstens `liftMax`): Das gemeinsame Abenteuer schweißt zusammen, auch wer sich sonst eher reibt.
      */
     public const TOUR = [
-        'lengths' => [3, 5, 7],
-        'travel' => ['base' => 1800, 'perKm' => 0.6],
+        'regions' => [
+            'europa' => ['name' => 'Europa-Tournee', 'fame' => 150, 'vehicle' => 'bus', 'lengths' => [3, 5, 7]],
+            'nordamerika' => ['name' => 'Nordamerika-Tournee', 'fame' => 600, 'vehicle' => 'plane', 'lengths' => null],
+            'suedamerika' => ['name' => 'Südamerika-Tournee', 'fame' => 600, 'vehicle' => 'plane', 'lengths' => null],
+            'afrika' => ['name' => 'Afrika-Tournee', 'fame' => 600, 'vehicle' => 'plane', 'lengths' => null],
+            'asien' => ['name' => 'Asien-Pazifik-Tournee', 'fame' => 600, 'vehicle' => 'plane', 'lengths' => null],
+            'welt' => ['name' => 'Welttournee', 'fame' => 2500, 'vehicle' => 'plane', 'lengths' => [5, 7, 9], 'stadium' => true],
+        ],
+        'travel' => ['bus' => ['base' => 1200, 'perKm' => 1.5], 'plane' => ['base' => 1800, 'perKm' => 0.6]],
         'cost' => ['perMember' => 15, 'perKm' => 0.01],
+        'stadium' => ['key' => 'stadion', 'name' => 'Stadion', 'minFame' => 8000, 'gage' => 2000, 'fame' => 7.0, 'expect' => 82, 'songs' => 10],
         'abroad' => ['fame' => 2.0, 'money' => 1.25],
         'match' => ['fame' => 1.5, 'money' => 1.5, 'expect' => 0.85],
         'wait' => 2 * 86400,
         'lift' => 0.6, 'liftMax' => 3.0,
+    ];
+    /**
+     * Fahrzeuge einer Band, wie der Proberaum in vier Stufen und für immer gekauft: der Bus für Europa, das Flugzeug für die Welt.
+     * `cost` je Stufe, `speed` Faktor auf die Reisezeit, und unterwegs ist das Fahrzeug der Proberaum (`skill`, `lust`, `mood` wie Balance::ROOM).
+     * Gekauft werden kann erst, wenn die Band bekannt genug für die erste Tournee damit ist.
+     */
+    public const VEHICLES = [
+        'bus' => [
+            ['name' => 'VW-Bus', 'cost' => 1500, 'speed' => 1.0, 'skill' => 0.85, 'lust' => 0.8, 'mood' => 0.0],
+            ['name' => 'Kleinbus mit Anhänger', 'cost' => 4000, 'speed' => 0.85, 'skill' => 0.95, 'lust' => 0.95, 'mood' => 0.5],
+            ['name' => 'Tourbus', 'cost' => 9000, 'speed' => 0.7, 'skill' => 1.05, 'lust' => 1.1, 'mood' => 1.5],
+            ['name' => 'Nightliner', 'cost' => 18000, 'speed' => 0.55, 'skill' => 1.15, 'lust' => 1.3, 'mood' => 3.0],
+        ],
+        'plane' => [
+            ['name' => 'Propellerflugzeug', 'cost' => 25000, 'speed' => 1.0, 'skill' => 0.9, 'lust' => 0.9, 'mood' => 0.5],
+            ['name' => 'Privatjet', 'cost' => 60000, 'speed' => 0.8, 'skill' => 1.0, 'lust' => 1.05, 'mood' => 1.5],
+            ['name' => 'Großer Jet', 'cost' => 120000, 'speed' => 0.65, 'skill' => 1.1, 'lust' => 1.2, 'mood' => 2.5],
+            ['name' => 'Tour-Jumbo', 'cost' => 250000, 'speed' => 0.5, 'skill' => 1.2, 'lust' => 1.4, 'mood' => 4.0],
+        ],
     ];
     /**
      * Auszeichnungen (Awards): Verkäufe einer Platte = Chartpunkt-Stunden × `copies` Stück (nur solange sie chartet und Tantiemen bringt,

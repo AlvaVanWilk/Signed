@@ -31,7 +31,7 @@ eigenen Zuwachs verstärken.
   Instrument, Probe, Auftritt, Platte, Scout).
 - **Jeden Tag:** Post sortieren und Musiker unter Vertrag nehmen, Bands zusammenstellen und ausstatten, proben, auftreten, aufnehmen, auf
   Wünsche reagieren. Neu im Music Store und auf dem Schwarzen Brett (Kurs des Tages).
-- **Jede Woche:** Mittwoch Festival, Samstag Battle of the Bands. Dazu jederzeit Tourneen.
+- **Jede Woche:** Mittwoch Festival, Samstag Battle of the Bands. Dazu jederzeit Tourneen (wer bekannt genug ist).
 - **Ziel:** Geld, Ruhm, Charts und Auszeichnungen; in der Rangliste der Labels nach oben.
 
 ## Werte
@@ -164,11 +164,10 @@ Auf der Bandseite als Schallplatten mit farbigem Etikett; jede fragt vorher nach
 | Anordnung | Wirkung | Bedingungen |
 |---|---|---|
 | **Proben** | **Hauptquelle für Können**, Beziehungen, Wohlbefinden je Charakter | alle haben ein Instrument, niemand Rotes mag es nicht |
-| **Auftritt buchen** | Gage, Ruhm, Bekanntheit; Ort mit Kosten und Gewinn-Schätzung | genug Songs; Ort unter dem Anspruch ärgert |
+| **Auftritt buchen** | Gage, Ruhm, Bekanntheit; Ort mit Kosten und Gewinn-Schätzung; Reiter „Tournee“ | genug Songs; Ort unter dem Anspruch ärgert |
 | **Aufnehmen** | Songs → Platte; Studio, Produzent, Cover | genug Songs; Studio unter dem Anspruch ärgert |
 | **Promo-Tour** | etwas Ruhm, schiebt die neueste Platte an | 10 Minuten, jederzeit |
 | **Auszeit** | hebt die Stimmung, Beziehungen wachsen etwas | Ausflug / Wochenende / Urlaub, geht auch bei Rot |
-| **Tournee** | Auftritte in echten Ländern, stärkt die Beziehungen | siehe Tournee |
 
 ### Proben
 
@@ -179,11 +178,13 @@ mag, zu unzufrieden wird. Alles wird **laufend** gutgeschrieben (Können mit Stu
 
 ### Auftritt buchen
 
-- Das Fenster zeigt die Orte vom kleinsten bis zwei Stufen über dem Anspruch, jeden von außen (Fachwerk-Kneipe, Club, Konzertsaal, Halle, Arena)
+- Zwei Reiter: **Hier spielen** und **Tournee** (siehe unten).
+- „Hier spielen“ zeigt die Orte vom kleinsten bis zwei Stufen über dem Anspruch, jeden von außen (Fachwerk-Kneipe, Club, Konzertsaal, Halle)
   mit **festen Kosten**, Länge in Songs, **Gage-Spanne und Gewinn** (aus sechs durchgespielten Abenden), erwartetem Ruhm, einer Ampel, ob der
   Sound die Erwartung erfüllt, und wie die Band den Ort findet.
 - Gespielt werden aufgenommene und geschriebene Songs; eine Platte ist keine Voraussetzung. Wer oft dieselben Lieder spielt, zieht weniger
   Leute; eine neue Platte macht die Auftritte wieder voll.
+- Die **Arena** gibt es nur auf Tournee: Eine Arena als Auftritt zu Hause wäre ungewöhnlich.
 - **Bezahlt wird hinterher** aus der Gage; vorher nur, was selbst der schlechteste Abend nicht einspielt. So rutscht das Label nie ins Minus.
 - Beim Auftritt steht die Band auf der Bühne des Ortes (je größer, desto prächtiger) mit wippendem Publikum, Live-Ticker und echtem Applaus.
 - Solokünstler buchen Studiomusiker dazu (Kosten ×1,5, Pop ×1,2).
@@ -240,15 +241,28 @@ Computer-Bands. Ablauf wie bei einer WM: Gruppen, dann K.-o. bis zum Finale; Ban
 Uhrzeit, den K.-o.-Baum und das Spiel, das gerade auf der Bühne ist. Während des Battles ist die Band weg (Zettel im Proberaum mit
 „Zuschauen“). Danach: Platz, Preisgeld, Ruhm und für die ersten drei ein Pokal im Proberaum. Online sein muss niemand.
 
-### Tournee (jederzeit)
+### Tournee: die zweite Stufe der Auftritte
 
-Eine Band geht auf Tournee durch echte Länder (14, von Frankreich bis Japan). Man wählt nur die Länge (3, 5 oder 7 Stationen); wohin es geht,
-wird ausgewürfelt, das nächste Ziel erst beim Weiterreisen. Die Reise dauert nach der echten Entfernung; bei der Ankunft kommt eine Meldung,
-den Auftritt startet man selbst, danach „Weiterreisen“ oder „Nach Hause“ (wer zu lange wartet, fliegt nach zwei Tagen von selbst heim, der
-Heimflug ist frei). Jedes Land hat ein Lieblings-Genre; passt es zur Band, wird der Abend besonders gut. Im Ausland gibt es mehr Ruhm und
-etwas mehr Gage. Die Bandseite zeigt statt des Proberaums eine Weltkarte mit der Route und dem Flugzeug. Jedes Land hat eine eigene,
-klischeehafte Bühne (Frankreich: Bistro mit Baguettes und Eiffelturm, Japan: Fuji, Torii und Kirschblüten …). Eine Tournee schweißt zusammen.
-Wer mit einer Band in allen Ländern gespielt hat, bekommt den goldenen Globus.
+Wer bekannt genug ist, spielt nicht mehr nur zu Hause, sondern zieht durch die Welt. Die Stufen der Band zum „Durchspielen“:
+**Proberaum** (zu Hause) → **Bus** (Europa, ab 150 Ruhm) → **Flugzeug** (Nordamerika, Südamerika, Afrika, Asien-Pazifik ab 600 Ruhm;
+Welttournee ab 2.500 Ruhm). Die Tournee ist ein zweiter Reiter bei „Auftritt buchen“, die Gigs zu Hause bleiben (so gerät niemand in
+Geldnot, weil er sich keinen Bus leisten kann).
+
+- **Bus und Flugzeug** hat jede Band einmal, wie den Proberaum in vier Stufen: VW-Bus → Kleinbus mit Anhänger → Tourbus → Nightliner;
+  Propellerflugzeug → Privatjet → Großer Jet → Tour-Jumbo. Besser heißt: schnellere Reise, und das Proben unterwegs geht besser.
+- **Unterwegs lebt die Band im Fahrzeug:** Sie probt dort, schreibt Songs und gibt Interviews für Medien im Land. Die Bandseite zeigt statt des
+  Proberaums das Innere von Bus oder Flugzeug (im Fahren zieht draußen die Landschaft vorbei, im Land die Stadt) und die Karte mit der Route.
+  Aufnehmen, Auszeit, Promo-Tour, Kurse und Auftritte zu Hause gehen erst wieder danach.
+- **Länder und Städte:** 20 echte Länder in fünf Regionen. Jedes Land hat so viele Städte, wie es hergibt (Schweden 1: Stockholm;
+  Deutschland 3: Berlin, München, Köln; USA 6). Die Band spielt in jeder Stadt einmal, ohne Fahrt dazwischen. Welches Land als Nächstes kommt,
+  wird ausgewürfelt. Europa: 3, 5 oder 7 Länder; die Kontinente: alle Länder der Region; Welttournee: 5, 7 oder 9 Länder, nur die größte
+  Stadt, in großen Arenen und ab 8.000 Ruhm im **Stadion**.
+- **Ablauf:** Reise → „angekommen“ → Auftritt in der ersten Stadt starten → nächste Stadt … → Weiterreisen oder Nach Hause. Wer zwei Tage
+  nichts tut, fährt von selbst heim; die Heimreise ist frei.
+- Jedes Land hat ein **Lieblings-Genre**; passt es zur Band, wird der Abend besonders gut. Im Ausland gibt es mehr Ruhm und etwas mehr Gage.
+  Jedes Land hat eine eigene, klischeehafte Bühne (Frankreich: Bistro mit Baguettes und Eiffelturm, Japan: Fuji, Torii und Kirschblüten …).
+- Keine eigene Tournee-Müdigkeit: Wer Auftritte nicht mag, ärgert sich einmal je Land. Eine Tournee schweißt zusammen.
+  Wer mit einer Band in allen 20 Ländern gespielt hat, bekommt den goldenen Globus.
 
 ## Das Label
 
@@ -341,7 +355,7 @@ Genre-Bonus ist der Raum im Stil des Genres eingerichtet. Beim Zusammentun bleib
 - **Charts und Tantiemen:** Platten aller Labels; je höher, desto mehr verkauft sich eine Platte. Tantiemen laufen laufend (sichtbar am Geld),
   solange die Platte höchstens auf Platz 50 steht, längstens 7 Tage. Auftritte, Promo und Festivals schieben an. Dazu Rangliste der Labels und Bands.
 - **Auszeichnungen** (nur echte Pokale, alle im Proberaum): **Goldene Schallplatte** (100.000 verkauft), **Platin** (250.000), **Diamant** (1 Million),
-  **Platz 1** der Charts, Bühnenpass für den ersten Auftritt in einer **Halle** und einer **Arena**, **Battle-Pokale** (Platz 1 bis 3),
+  **Platz 1** der Charts, Bühnenpass für den ersten Auftritt in einer **Halle**, einer **Arena** und einem **Stadion**, **Battle-Pokale** (Platz 1 bis 3),
   **Festival-Plakat** (Headliner), **goldener Globus** (alle Länder der Tournee). Neue werden einmal gefeiert.
 - **WikiSignia:** Lexikon über alle Labels: Labels, Bands (auch ehemalige) und Signies (auch Entlassene) mit Infobox, Diskografie, Auszeichnungen
   und Geschichte. Von fremden Labels sieht man nichts über Geld.
@@ -399,12 +413,11 @@ Der Code der rausgenommenen Teile ist noch da (nicht erreichbar) und wird am End
 ## Offen und später
 
 **Wartet auf Sandras Entscheidung**
-- **Reisen auf Tournee:** Vorschlag, je Tournee das Verkehrsmittel zu wählen (Billigflieger / normal / Privatjet: Preis gegen Stimmung und
-  Reisezeit), statt Fahrzeuge im Music Store zu kaufen. Noch nicht gebaut.
 - **Saison-Rangliste**, die nur zählt, was nach dem Übergang dazukommt. Sandra ist noch nicht sicher.
 
 **Geparkt (später vielleicht)**
 - Ausgeschriebene Gigs (Veranstalter suchen eine Band für einen Abend) und Charity-Konzerte.
+- Hotelzimmer als eigene Szene auf Tournee (zwischendurch, statt immer im Bus oder Flugzeug).
 - Outfits/Styling (Bekanntheit wächst schneller), Songschreiber/Texter für eine Band, Medienpaket (bessere Interviews), Teambuilding
   (Beziehungen wachsen schneller), Bühnentechnik (größere Orte füllen sich leichter). Jede Art braucht einen eigenen Zweck und Wunsch.
 - **Klangprofil:** Die Band spielt manchmal zwei Versionen vor, das Label wählt; daraus entsteht ihr Klang (aus den vorhandenen Bausteinen in `Styles`).

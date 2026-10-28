@@ -383,7 +383,7 @@ final class Bands
             }
             $db->exec('UPDATE musicians SET band_id = ?, band_slot = band_slot WHERE band_id = ?', [$keep['id'], $gone['id']]);
             // Der bessere Proberaum bleibt.
-            $db->exec('UPDATE bands SET room = ? WHERE id = ?', [max($a['room'], $b['room']), $keep['id']]);
+            $db->exec('UPDATE bands SET room = ?, bus = ?, plane = ? WHERE id = ?', [max($a['room'], $b['room']), max($a['bus'], $b['bus']), max($a['plane'], $b['plane']), $keep['id']]);
             // Ein Einzelmusiker mit zwei Instrumenten sagt, welches er in der neuen Band spielt.
             if (count($joining) === 1 && $joining[0]['instr2'] !== null) {
                 $db->update('musicians', ['band_slot' => self::slot($joining[0], $slot)], ['id' => $joining[0]['id']]);
@@ -725,6 +725,7 @@ final class Bands
         if ($band['busy_until'] > Clock::now()) {
             throw new ApiError(count($this->repo->members($bandId)) === 1 ? 'Gerade beschäftigt. Warte, bis alles fertig ist.' : 'Die Band ist gerade beschäftigt. Warte, bis sie fertig ist.');
         }
+        Tours::assertHome($this->repo->db, $bandId);
         return $band;
     }
 

@@ -53,10 +53,10 @@ final class Awards
         self::give($repo, $bandId, 'number1', sprintf('Platz 1 der Charts: „%s“', $title), sprintf('„%s“ von %s steht auf Platz 1 der Charts!', $title, $band), $recordId);
     }
 
-    /** Erster Auftritt in einer Halle oder Arena (Gig oder auf Tournee). */
+    /** Erster Auftritt in einer Halle, Arena oder einem Stadion (Gig oder auf Tournee). */
     public static function bigStage(Repo $repo, int $bandId, string $venue): void
     {
-        $names = ['halle' => ['hall', 'Halle', 'einer großen Halle'], 'arena' => ['arena', 'Arena', 'einer Arena']];
+        $names = ['halle' => ['hall', 'Halle', 'einer großen Halle'], 'arena' => ['arena', 'Arena', 'einer Arena'], 'stadion' => ['stadium', 'Stadion', 'einem Stadion']];
         if (!isset($names[$venue])) {
             return;
         }

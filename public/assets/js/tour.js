@@ -1,10 +1,12 @@
 import { app, bandById, cat, defineActions, mutate, navigate, serverNow } from './core.js';
 import { genreGlyph } from './cards.js';
-import { closeAllModals, duration, esc, fmt1, fmtGain, money, off, openModal, percent } from './ui.js';
+import { closeAllModals, confirmDialog, duration, esc, fmt0, fmt1, fmtGain, money, off, openModal, percent } from './ui.js';
+import { BUS_GLYPH } from './vehicle.js';
 
 /**
- * Tournee: Weltkarte mit der Route, was die Band gerade macht (fliegt, ist angekommen, hat gespielt), und die Knöpfe für die nächste
- * Station. Ziele werden ausgewürfelt (der Server entscheidet); hier läuft dazu ein kleiner Würfel, der auf dem Ziel landet.
+ * Tournee in Stufen: Karte mit der Route (Europa herangezoomt, Bus oder Flugzeug fährt mit), was die Band gerade macht (unterwegs,
+ * im Land mit seinen Städten, fertig im Land) und die Knöpfe dazu. Gestartet wird im Fenster „Auftritt buchen“, Reiter Tournee
+ * (tourTab). Ziele werden ausgewürfelt (der Server entscheidet); hier läuft dazu ein kleiner Würfel, der auf dem Ziel landet.
  */
 
 const W = 1000;
@@ -59,11 +61,11 @@ const at = (key) => {
   const p = place(key);
   return xy([p.lon, p.lat]);
 };
-/** Flugbogen zwischen zwei Orten (leicht nach oben gewölbt). */
-function arc(from, to) {
+/** Reisebogen zwischen zwei Orten (leicht nach oben gewölbt; mit dem Bus flacher). */
+function arc(from, to, flat = false) {
   const [a, b] = [at(from), at(to)];
   const d = Math.hypot(b[0] - a[0], b[1] - a[1]);
-  const c = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 - Math.min(80, d * 0.22)];
+  const c = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 - Math.min(flat ? 20 : 80, d * (flat ? 0.12 : 0.22))];
   return { a, b, c };
 }
 const onArc = ({ a, b, c }, t) => [
@@ -72,51 +74,68 @@ const onArc = ({ a, b, c }, t) => [
 ];
 const PLANE = '<path d="M-7 0 L5 -1.4 L9 0 L5 1.4 Z M-1 0 L-4 -6 L-1.5 -6 L3 0 L-1.5 6 L-4 6 Z M-6 0 L-8 -3 L-6.6 -3 L-4.5 0 L-6.6 3 L-8 3 Z" fill="#fff" stroke="#1d1a2a" stroke-width="0.8"/>';
 
-/** Weltkarte mit allen Ländern der Tournee-Liste, der Route und (beim Fliegen) dem Flugzeug. */
+const regionOf = (key) => cat().tour.regions[key] ?? cat().tour.regions.welt;
+/** Länder einer Region (Welttournee: alle). */
+const countriesOf = (region) => Object.keys(cat().countries).filter((k) => region === 'welt' || cat().countries[k].region === region);
+
+/** Ausschnitt der Karte: Europa herangezoomt, sonst die ganze Welt. */
+function frame(region) {
+  if (region !== 'europa') return { x: 0, y: TOP, w: W, h: H, k: 1 };
+  const [x0, y0] = xy([-13, 66]);
+  const [x1, y1] = xy([36, 33]);
+  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0, k: (x1 - x0) / W };
+}
+
+/** Karte mit den Ländern der Tournee, der Route und dem Fahrzeug unterwegs. */
 export function worldMap(tour, travel, been = []) {
-  const countries = cat().countries;
+  const region = tour?.region ?? 'welt';
+  const view = frame(region);
+  const k = view.k;
+  const countries = countriesOf(region);
   const visited = new Set((tour?.visits ?? []).map((v) => v.country));
   const before = new Set(been);
   const target = tour?.country;
   const legs = tour?.legs ?? [];
+  const bus = tour?.vehicle === 'bus';
   const now = serverNow();
   const routes = legs.map((l, i) => {
-    const g = arc(l.from, l.to);
-    const flying = i === legs.length - 1 && l.until > now;
-    return `<path class="tr-route ${flying ? 'flying' : ''}" d="M${g.a.join(' ')} Q${g.c.join(' ')} ${g.b.join(' ')}"/>`;
+    const g = arc(l.from, l.to, bus);
+    const moving = i === legs.length - 1 && l.until > now;
+    return `<path class="tr-route ${moving ? 'flying' : ''}" style="stroke-width:${2 * k}" d="M${g.a.join(' ')} Q${g.c.join(' ')} ${g.b.join(' ')}"/>`;
   }).join('');
   const last = legs[legs.length - 1];
-  const plane = last && last.until > now && travel
-    ? (() => {
-      const g = arc(last.from, last.to);
-      return `<g class="tr-plane" data-from="${last.from}" data-to="${last.to}" data-at="${last.at}" data-until="${last.until}" transform="translate(${onArc(g, 0).join(' ')})">${PLANE}</g>`;
-    })()
+  const glyph = last && last.until > now && travel
+    ? `<g class="tr-plane ${bus ? 'bus' : ''}" data-from="${last.from}" data-to="${last.to}" data-at="${last.at}" data-until="${last.until}" data-k="${k}" transform="translate(${onArc(arc(last.from, last.to, bus), 0).join(' ')}) scale(${k})">${bus ? BUS_GLYPH : PLANE}</g>`
     : '';
-  const pins = Object.entries(countries).map(([key, c]) => {
+  const pins = countries.map((key) => {
+    const c = cat().countries[key];
     const [x, y] = xy([c.lon, c.lat]);
     const state = key === target ? 'here' : visited.has(key) ? 'done' : before.has(key) ? 'been' : '';
-    return `<g class="tr-pin ${state}"><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${state && state !== 'been' ? 5 : state ? 4 : 3}"/>${state && state !== 'been' ? `<text x="${(x + 8).toFixed(1)}" y="${(y + 4).toFixed(1)}">${esc(c.city)}</text>` : ''}</g>`;
+    const r = (state && state !== 'been' ? 5 : state ? 4 : 3) * k;
+    return `<g class="tr-pin ${state}"><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(2)}" style="stroke-width:${k}"/>${state && state !== 'been' ? `<text x="${(x + 8 * k).toFixed(1)}" y="${(y + 4 * k).toFixed(1)}" style="font-size:${(13 * k).toFixed(2)}px;stroke-width:${(3 * k).toFixed(2)}px">${esc(c.city)}</text>` : ''}</g>`;
   }).join('');
   const [hx, hy] = at('home');
-  return `<svg class="tr-map" viewBox="0 ${TOP} ${W} ${H}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-    <rect x="0" y="${TOP}" width="${W}" height="${H}" fill="#18263d"/>
-    <path d="${LAND_PATH}" fill="#33435a" stroke="#4a5d78" stroke-width="0.8" stroke-linejoin="round"/>
+  return `<svg class="tr-map" viewBox="${view.x.toFixed(1)} ${view.y.toFixed(1)} ${view.w.toFixed(1)} ${view.h.toFixed(1)}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+    <rect x="${view.x}" y="${view.y}" width="${view.w}" height="${view.h}" fill="#18263d"/>
+    <path d="${LAND_PATH}" fill="#33435a" stroke="#4a5d78" stroke-width="${0.8 * k}" stroke-linejoin="round"/>
     ${routes}${pins}
-    <g class="tr-home"><path d="M${hx} ${hy - 7} l2 5 h5 l-4 3 l1.6 5 l-4.6 -3 l-4.6 3 l1.6 -5 l-4 -3 h5 Z"/></g>
-    ${plane}
+    <g class="tr-home" transform="translate(${hx} ${hy}) scale(${k})"><path d="M0 -7 l2 5 h5 l-4 3 l1.6 5 l-4.6 -3 l-4.6 3 l1.6 -5 l-4 -3 h5 Z"/></g>
+    ${glyph}
   </svg>`;
 }
 
-/** Jede Sekunde: Das Flugzeug rückt auf seinem Bogen vor. */
+/** Jede Sekunde: Flugzeug oder Bus rückt auf der Route vor (der Bus dreht sich nicht, er schaut nur in Fahrtrichtung). */
 export function tick() {
   const now = serverNow();
   for (const el of document.querySelectorAll('.tr-plane')) {
-    const g = arc(el.dataset.from, el.dataset.to);
+    const bus = el.classList.contains('bus');
+    const g = arc(el.dataset.from, el.dataset.to, bus);
     const t = Math.max(0, Math.min(1, (now - Number(el.dataset.at)) / (Number(el.dataset.until) - Number(el.dataset.at))));
     const [x, y] = onArc(g, t);
     const [x2, y2] = onArc(g, Math.min(1, t + 0.01));
-    const angle = (Math.atan2(y2 - y, x2 - x) * 180) / Math.PI;
-    el.setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${angle.toFixed(0)})`);
+    const k = Number(el.dataset.k) || 1;
+    const turn = bus ? (x2 < x ? ' scale(-1 1)' : '') : ` rotate(${((Math.atan2(y2 - y, x2 - x) * 180) / Math.PI).toFixed(0)})`;
+    el.setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${k})${turn}`);
   }
 }
 
@@ -132,43 +151,57 @@ export function matchText(country, match) {
   const g = genreName(place(country).genre);
   const where = inCountry(country);
   return match
-    ? `${where} lieben sie ${g}. Und genau das spielt ihr! Das wird ein besonderer Abend: mehr Ruhm und mehr Gage.`
+    ? `${where} lieben sie ${g}. Und genau das spielt ihr! Das werden besondere Abende: mehr Ruhm und mehr Gage.`
     : `${where} lieben sie ${g}. Das spielt ihr nicht: Die Leute sind neugierig, aber so richtig begeistert wären sie bei ${g}.`;
 }
 
 const runningOf = (b, type) => app.state.running.find((a) => a.bandId === b.id && a.type === type);
+const vehicleOf = (b, kind) => cat().vehicles[kind][Math.max(1, b.vehicles?.[kind] ?? 1) - 1];
+const by = (kind) => (kind === 'bus' ? 'Bus' : 'Flugzeug');
 
-/** Auf der Bandseite statt des Proberaums: Karte, was gerade los ist, und was als Nächstes geht. */
+/** Städte im Land: gespielte abgehakt, die nächste hervorgehoben. */
+function cityList(t) {
+  const played = new Set(t.playedHere ?? []);
+  const next = (t.cities ?? []).find((c) => !played.has(c));
+  return `<ul class="tr-cities">${(t.cities ?? []).map((c) => `<li class="${played.has(c) ? 'done' : c === next ? 'next' : ''}">${played.has(c) ? '✓ ' : ''}${esc(c)}</li>`).join('')}</ul>`;
+}
+
+/** Unter der Szene im Fahrzeug: Karte, was gerade los ist, und was als Nächstes geht. */
 export function tourPanel(b) {
   const t = b.tour;
   const travel = runningOf(b, 'tourtravel') ?? runningOf(b, 'tour');
-  const station = t.visits.length + (t.state === 'travel' || t.state === 'arrived' ? 1 : 0);
   const c = t.country ? place(t.country) : null;
   const lastVisit = t.visits[t.visits.length - 1];
-  const left = t.stations - t.visits.length;
+  const leftCountries = t.stations - t.station;
+  const played = new Set(t.playedHere ?? []);
+  const nextCity = (t.cities ?? []).find((x) => !played.has(x));
+  const v = vehicleOf(b, t.vehicle);
+  const wait = `<p class="muted small">Die Band wartet hier noch <span data-until="${t.deadline}"></span>, dann reist sie von selbst nach Hause.</p>`;
+  const go = (primary) => `${leftCountries > 0 ? `<button class="btn ${primary ? 'primary' : 'ghost'}" data-act="tourNext" data-id="${b.id}">${t.roll ? `Weiter nach ${esc(place(t.roll.country).name)}` : 'Weiterreisen: nächstes Land auswürfeln'}</button>` : ''}
+        <button class="btn ${primary && leftCountries <= 0 ? 'primary' : 'ghost'}" data-act="tourHome" data-id="${b.id}">Nach Hause</button>`;
   let status = '';
   if (t.state === 'travel') {
-    status = `<p class="tr-status">Unterwegs nach <b>${esc(c.city)}, ${esc(c.name)}</b>. Ankunft in <span data-until="${travel?.endsAt ?? 0}"></span></p>`;
-  } else if (t.state === 'arrived') {
+    status = `<p class="tr-status">Unterwegs nach <b>${esc(c.name)}</b> im ${esc(v.name)}. Ankunft in <span data-until="${travel?.endsAt ?? 0}"></span></p>
+      <p class="muted small">Unterwegs kann die Band im ${esc(by(t.vehicle))} proben und Interviews geben.</p>`;
+  } else if (t.state === 'arrived' || t.state === 'show') {
     const match = (b.genres ?? []).includes(c.genre);
-    status = `<p class="tr-status">Angekommen in <b>${esc(c.city)}, ${esc(c.name)}</b>!</p>
+    status = `<p class="tr-status">In <b>${esc(c.name)}</b>: ${(t.cities ?? []).length === 1 ? 'ein Auftritt' : `${t.cities.length} Auftritte`}.</p>
+      ${cityList(t)}
       <p class="muted">${esc(matchText(t.country, match))}</p>
-      <div class="tr-btns"><button class="btn primary" data-act="tourShow" data-id="${b.id}">Auftritt starten</button>
-        <button class="btn ghost" data-act="tourHome" data-id="${b.id}">Gleich nach Hause fliegen</button></div>
-      <p class="muted small">Die Band wartet hier noch <span data-until="${t.deadline}"></span>, dann fliegt sie von selbst nach Hause.</p>`;
+      ${t.state === 'arrived' ? `<div class="tr-btns"><button class="btn primary" data-act="tourShow" data-id="${b.id}">Auftritt in ${esc(nextCity ?? '')} starten</button>${go(false)}</div>${wait}` : ''}`;
   } else if (t.state === 'after') {
     const roll = t.roll ? place(t.roll.country) : null;
-    status = `<p class="tr-status">Der Auftritt in <b>${esc(c.city)}</b> ist vorbei${lastVisit ? `: +${fmtGain(lastVisit.fame)} Ruhm, +${money(lastVisit.money)}` : ''}.</p>
-      ${roll ? `<p class="tr-short">Ausgewürfelt: <b>${esc(roll.city)}, ${esc(roll.name)}</b>. Der Flug kostet ${money(t.roll.cost)}, dafür fehlt noch Geld. Verdient erst mehr oder fliegt nach Hause.</p>` : ''}
-      <div class="tr-btns">${left > 0 ? `<button class="btn primary" data-act="tourNext" data-id="${b.id}">${roll ? `Weiter nach ${esc(roll.name)}` : 'Weiterreisen: nächstes Ziel auswürfeln'}</button>` : ''}
-        <button class="btn ${left > 0 ? 'ghost' : 'primary'}" data-act="tourHome" data-id="${b.id}">Nach Hause fliegen</button></div>
-      <p class="muted small">${left > 0 ? `Noch ${left} ${left === 1 ? 'Station' : 'Stationen'}. ` : 'Das war die letzte Station. '}Die Band wartet hier noch <span data-until="${t.deadline}"></span>, dann fliegt sie von selbst nach Hause.</p>`;
+    status = `<p class="tr-status">${esc(c.name)} ist geschafft${lastVisit ? `: zuletzt ${esc(lastVisit.city ?? c.city)} mit +${fmtGain(lastVisit.fame)} Ruhm, +${money(lastVisit.money)}` : ''}.</p>
+      ${cityList(t)}
+      ${roll ? `<p class="tr-short">Ausgewürfelt: <b>${esc(roll.name)}</b>. Die Reise kostet ${money(t.roll.cost)}, dafür fehlt noch Geld. Verdient erst mehr oder reist nach Hause.</p>` : ''}
+      <div class="tr-btns">${go(true)}</div>
+      <p class="muted small">${leftCountries > 0 ? `Noch ${leftCountries} ${leftCountries === 1 ? 'Land' : 'Länder'}. ` : 'Das war das letzte Land. '}Die Band wartet hier noch <span data-until="${t.deadline}"></span>, dann reist sie von selbst nach Hause.</p>`;
   } else if (t.state === 'home') {
-    status = `<p class="tr-status">Auf dem Heimflug nach ${esc(cat().home.city)}. Zurück in <span data-until="${travel?.endsAt ?? 0}"></span></p>`;
+    status = `<p class="tr-status">Auf dem Heimweg nach ${esc(cat().home.city)}. Zurück in <span data-until="${travel?.endsAt ?? 0}"></span></p>`;
   }
   return `<section class="tr-panel">
-    <div class="tr-head"><div><div class="eyebrow">Auf Tournee</div><h2>${esc(b.name)}</h2></div>
-      <span class="tr-count">Station ${Math.min(station, t.stations)} von ${t.stations}</span></div>
+    <div class="tr-head"><div><div class="eyebrow">${esc(regionOf(t.region).name)}</div><h2>${esc(b.name)}</h2></div>
+      <span class="tr-count">Land ${Math.max(1, Math.min(t.station, t.stations))} von ${t.stations}</span></div>
     ${worldMap(t, travel, b.toured)}
     ${status}
     ${visitList(t.visits)}
@@ -180,19 +213,19 @@ function visitList(visits) {
   if (!visits.length) return '';
   return `<ol class="tr-visits">${visits.map((v) => {
     const c = place(v.country);
-    return `<li><span><b>${esc(c.city)}</b> <small>${esc(c.name)}</small></span>
+    return `<li><span><b>${esc(v.city ?? c.city)}</b> <small>${esc(c.name)}</small></span>
       <span class="tr-genre ${v.match ? 'hit' : ''}">${genreGlyph(c.genre)}${v.match ? 'euer Genre' : esc(genreName(c.genre))}</span>
-      <span>+${fmtGain(v.fame)} Ruhm</span><span>+${money(v.money)}</span>${v.meter !== null && v.meter !== undefined ? `<span class="muted">Publikum ${percent(v.meter / 100)}</span>` : ''}</li>`;
+      <span class="tr-nums"><span>+${fmtGain(v.fame)} Ruhm</span><span>+${money(v.money)}</span>${v.meter !== null && v.meter !== undefined ? `<span class="muted">Publikum ${percent(v.meter / 100)}</span>` : ''}</span></li>`;
   }).join('')}</ol>`;
 }
 
-/** Würfel: Ländernamen laufen durch und bleiben beim Ziel stehen. */
-function rollReveal(country, lines) {
-  const keys = Object.keys(cat().countries);
+/** Würfel: Ländernamen der Region laufen durch und bleiben beim Ziel stehen. */
+function rollReveal(region, country, lines) {
+  const keys = countriesOf(region);
   const c = place(country);
   const modal = openModal({
     className: 'tr-roll-modal',
-    html: `<div class="eyebrow">Das nächste Ziel wird ausgewürfelt</div>
+    html: `<div class="eyebrow">Das nächste Land wird ausgewürfelt</div>
       <div class="tr-roll"><span class="tr-die">⚂</span><b class="tr-roll-name">…</b></div>
       <div class="tr-roll-after" hidden>${lines}</div>
       <div class="dialog-actions"><button class="btn primary" data-close hidden>Gute Reise!</button></div>`,
@@ -203,7 +236,7 @@ function rollReveal(country, lines) {
   const name = modal.body.querySelector('.tr-roll-name');
   const die = modal.body.querySelector('.tr-die');
   const done = () => {
-    name.textContent = `${c.city}, ${c.name}`;
+    name.textContent = c.name;
     name.classList.add('landed');
     modal.body.querySelector('.tr-roll-after').hidden = false;
     modal.body.querySelector('[data-close]').hidden = false;
@@ -216,7 +249,7 @@ function rollReveal(country, lines) {
     if (modal.closed) return;
     if (delay > 320) return done();
     const k = keys[(i += 1 + Math.floor(Math.random() * 3)) % keys.length];
-    name.textContent = `${place(k).city}, ${place(k).name}`;
+    name.textContent = place(k).name;
     die.textContent = faces[i % 6];
     delay *= 1.14;
     setTimeout(step, delay);
@@ -224,65 +257,86 @@ function rollReveal(country, lines) {
   step();
 }
 
-/** Was nach dem Würfeln dasteht: Flugzeit, Kosten, Lieblings-Genre. */
-function legLines(b, country, activity, cost) {
+/** Was nach dem Würfeln dasteht: Reisezeit, Kosten, Städte, Lieblings-Genre. */
+function legLines(b, country, activity, cost, kind) {
   const c = place(country);
   const match = (b.genres ?? []).includes(c.genre);
-  return `<p>Flug: ${duration(activity.endsAt - activity.startedAt)}${cost ? ` · ${money(cost)}` : ''}</p>
-    <p class="muted">${esc(inCountry(country))} lieben sie <b>${genreGlyph(c.genre)}${esc(genreName(c.genre))}</b>.${match ? ' Das spielt ihr! Daumen drücken für einen besonderen Abend.' : ''}</p>`;
+  const cities = c.cities ?? [c.city];
+  const world = b.tour?.region === 'welt';
+  return `<p>${kind === 'bus' ? 'Busfahrt' : 'Flug'}: ${duration(activity.endsAt - activity.startedAt)}${cost ? ` · ${money(cost)}` : ''}</p>
+    <p>${world ? `Auftritt ${b.fame >= cat().tour.stadium.minFame ? 'im Stadion' : 'in der Arena'} von ${esc(cities[0])}` : cities.length === 1 ? `Ein Auftritt: ${esc(cities[0])}` : `${cities.length} Auftritte: ${esc(cities.join(', '))}`}</p>
+    <p class="muted">${esc(inCountry(country))} lieben sie <b>${genreGlyph(c.genre)}${esc(genreName(c.genre))}</b>.${match ? ' Das spielt ihr! Daumen drücken für besondere Abende.' : ''}</p>`;
 }
 
-/** Was eine Strecke für diese Band ungefähr kostet (nächstes und weitestes Ziel von zu Hause). */
-function costRange(n) {
-  const r = cat().tour;
-  const home = cat().home;
-  const km = (c) => {
-    const rad = Math.PI / 180;
-    const h = Math.sin(((c.lat - home.lat) * rad) / 2) ** 2 + Math.cos(home.lat * rad) * Math.cos(c.lat * rad) * Math.sin(((c.lon - home.lon) * rad) / 2) ** 2;
-    return 2 * 6371 * Math.asin(Math.min(1, Math.sqrt(h)));
+/** Tournee starten (aus dem Fenster „Auftritt buchen“): das erste Land wird ausgewürfelt. */
+export async function startTour(b, region, stations) {
+  const res = await mutate('tourStart', { bandId: b.id, region, stations });
+  if (!res?.activity) return;
+  const t = bandById(b.id)?.tour;
+  rollReveal(region, t.country, legLines(bandById(b.id), t.country, res.activity, t.legs[t.legs.length - 1]?.cost ?? 0, t.vehicle));
+}
+
+/** Reiter „Tournee“ im Fenster „Auftritt buchen“: Fahrzeuge und je Region, was geht (sonst warum nicht). */
+export function tourTab(b) {
+  const regions = b.tours ?? [];
+  const card = (o) => {
+    const fans = o.countries.filter((k) => (b.genres ?? []).includes(cat().countries[k].genre)).map((k) => cat().countries[k].name);
+    const go = o.lengths
+      ? o.lengths.map((n) => `<button class="btn small ${n === o.lengths[0] ? 'primary' : ''}" data-region="${o.key}" data-len="${n}" ${off(o.blocked)}>${n} Länder</button>`).join('')
+      : `<button class="btn small primary" data-region="${o.key}" ${off(o.blocked)}>Los: alle ${o.countries.length} Länder</button>`;
+    return `<div class="tt-card ${o.blocked ? 'locked' : ''}">
+      <div class="tt-icon">${o.vehicle === 'bus' ? '<svg viewBox="-12 -8 24 16">' + BUS_GLYPH + '</svg>' : `<svg viewBox="-12 -8 24 16">${PLANE}</svg>`}</div>
+      <div class="tt-main"><b>${esc(o.name)}</b>
+        <small>${o.countries.length} Länder · ${o.cities} ${o.stadium ? 'größte Städte' : 'Städte'} · ab ${fmt0(o.fame)} Ruhm · mit ${o.vehicle === 'bus' ? 'dem Bus' : 'dem Flugzeug'}</small>
+        ${o.stadium ? `<small class="muted">In großen Arenen, ab ${fmt0(cat().tour.stadium.minFame)} Ruhm im Stadion.</small>` : ''}
+        <small class="muted">${esc(o.countries.map((k) => cat().countries[k].name).join(', '))}</small>
+        ${fans.length && !o.blocked ? `<small class="good">Euer Genre lieben sie in: ${esc(fans.join(', '))}</small>` : ''}
+        ${o.blocked ? `<small class="bad">${esc(o.blocked)}</small>` : ''}</div>
+      <div class="tt-go">${go}</div>
+    </div>`;
   };
-  const costs = Object.values(cat().countries).map((c) => Math.round(Math.max(1, n) * (r.cost.perMember + km(c) * r.cost.perKm)));
-  return [Math.min(...costs), Math.max(...costs)];
+  return `<p class="muted small">Auf Tournee spielt die Band in jeder Stadt eines Landes einmal; welches Land als Nächstes kommt, wird ausgewürfelt. Im Ausland kennt noch niemand die Lieder: Es gibt mehr Ruhm und mehr Gage als zu Hause. Unterwegs lebt die Band im ${esc(by(regions.find((o) => !o.blocked)?.vehicle ?? 'bus'))}, probt dort und gibt Interviews. Aufnehmen, Auszeit und Auftritte zu Hause gehen erst wieder danach.</p>
+    ${vehicleRows(b)}
+    <div class="tt-list">${regions.map(card).join('')}</div>`;
 }
 
-/** Hinweis am Knopf auf der Bandseite. */
-export function tourHint(b) {
-  return b.records ? 'Länder werden ausgewürfelt · gut für die Band' : 'erst mit einer Platte';
+/** Ab welchem Ruhm es ein Fahrzeug braucht (die erste Tournee damit). */
+export const vehicleFame = (kind) => Math.min(...Object.values(cat().tour.regions).filter((r) => r.vehicle === kind).map((r) => r.fame));
+
+/** Bus und Flugzeug der Band: was sie haben, was es bringt, und der nächste Ausbau (erst, wenn die Band bekannt genug ist). */
+export function vehicleRows(b) {
+  const pc = (x) => `${x >= 1 ? '+' : '−'}${Math.abs(Math.round((x - 1) * 100))} %`;
+  return ['bus', 'plane'].map((kind) => {
+    const level = b.vehicles?.[kind] ?? 0;
+    if (!level && b.fame < vehicleFame(kind)) return '';
+    const levels = cat().vehicles[kind];
+    const now = level ? levels[level - 1] : null;
+    const next = levels[level] ?? null;
+    const what = kind === 'bus' ? 'Bus für Europa' : 'Flugzeug für Übersee und die Welt';
+    const effect = now
+      ? `${Math.round((1 - now.speed) * 100) ? `Reist ${Math.round((1 - now.speed) * 100)} % schneller. ` : ''}Proben unterwegs: ${pc(now.skill)} Können, ${pc(now.lust)} Ausdauer${now.mood ? ', alle fühlen sich wohler' : ''}.`
+      : kind === 'bus' ? 'Damit geht es auf Europa-Tournee. Unterwegs probt die Band im Bus.' : 'Damit geht es auf Tournee nach Übersee und um die Welt.';
+    const poor = next && app.state.label.money < next.cost ? `Dafür fehlen noch ${fmt0(next.cost - app.state.label.money)} ₲.` : '';
+    return `<div class="lb-roombar lb-vehbar">
+        <span><b>${now ? esc(now.name) : kind === 'bus' ? 'Noch kein Bus' : 'Noch kein Flugzeug'}</b> <small class="muted">${what}${level ? ` · Stufe ${level} von ${levels.length}` : ''}</small><small class="muted">${effect}</small></span>
+        ${next ? `<button class="btn small" data-act="vehicleBuy" data-id="${b.id}" data-kind="${kind}" ${off(poor)}>${level ? 'Ausbauen' : 'Kaufen'}: ${esc(next.name)} · ${fmt0(next.cost)} ₲</button>` : '<span class="muted small">voll ausgebaut</span>'}
+      </div>`;
+  }).join('');
 }
 
 defineActions({
-  /** Tournee starten: Länge wählen, dann wird das erste Ziel ausgewürfelt. */
-  tourAsk({ id }) {
+  /** Bus oder Flugzeug kaufen bzw. ausbauen. */
+  async vehicleBuy({ id, kind }) {
     const b = bandById(id);
-    const n = b.memberIds.length;
-    const [low, high] = costRange(n);
-    const lengths = cat().tour.lengths;
-    const names = { [lengths[0]]: 'Kurz', [lengths[1]]: 'Mittel', [lengths[2]]: 'Lang' };
-    const why = !b.records ? 'Auf Tournee geht es erst mit einer Platte: Die Band braucht Lieder für die Auftritte.' : '';
-    const modal = openModal({
-      className: 'lb-rules-modal',
-      html: `
-        <div class="lb-cap">Anordnung</div>
-        <h2>${esc(b.name)} geht auf Tournee</h2>
-        <p class="muted">Die Band fliegt von Land zu Land und spielt in jedem Land einmal. Wohin es geht, wird ausgewürfelt. Jedes Land hat ein Lieblings-Genre: Passt es zur Band, wird der Abend besonders gut. Jeden Auftritt startet ihr selbst, danach entscheidet ihr: weiter oder nach Hause. Unterwegs wächst die Band zusammen.</p>
-        <p class="muted">${worldProgress(b)}</p>
-        <p class="muted">Die Flüge dauern lange (in Europa etwa eine Stunde, bis Australien vier Stunden) und kosten je Strecke ${money(low)} bis ${money(high)}. Der Heimflug ist bezahlt. So lange kann die Band nichts anderes machen.</p>
-        <div class="lb-pick">${lengths.map((k) => `<button class="lb-pick-row" data-stations="${k}" ${off(why)}><span><b>${names[k] ?? ''}</b> · ${k} Stationen</span></button>`).join('')}</div>
-        <div class="dialog-actions"><button class="btn ghost" data-close>Abbrechen</button></div>`,
-    });
-    modal.body.addEventListener('click', async (e) => {
-      if (e.target.closest('[data-close]')) return modal.close();
-      const row = e.target.closest('[data-stations]');
-      if (!row || row.getAttribute('aria-disabled') === 'true') return;
-      modal.close();
-      const res = await mutate('tourStart', { bandId: b.id, stations: Number(row.dataset.stations) });
-      if (res?.activity) {
-        const t = bandById(b.id)?.tour;
-        rollReveal(t.country, legLines(b, t.country, res.activity, t.legs[t.legs.length - 1]?.cost ?? 0));
-      }
-    });
+    const level = b.vehicles?.[kind] ?? 0;
+    const next = cat().vehicles[kind][level];
+    if (!next) return;
+    const why = level
+      ? `${next.name} für ${fmt0(next.cost)} ₲? Damit reist ${b.name} schneller und probt unterwegs besser.`
+      : `${next.name} für ${fmt0(next.cost)} ₲ kaufen? ${kind === 'bus' ? `Damit kann ${b.name} auf Europa-Tournee.` : `Damit kann ${b.name} nach Übersee und um die Welt.`} Das gehört der Band für immer.`;
+    if (await confirmDialog(why, { ok: level ? 'Ausbauen' : 'Kaufen' })) await mutate('vehicleBuy', { bandId: b.id, kind });
   },
-  /** Angekommen: Auftritt starten (auch aus der Ankunfts-Meldung). */
+  /** Im Land: Auftritt in der nächsten Stadt starten (auch aus der Ankunfts-Meldung). */
   async tourShow({ id }) {
     closeAllModals();
     if (await mutate('tourShow', { bandId: Number(id) })) navigate(`#/band/${id}`);
@@ -292,12 +346,13 @@ defineActions({
     const b = bandById(id);
     const res = await mutate('tourNext', { bandId: Number(id) });
     if (!res) return;
+    const region = b.tour?.region ?? 'welt';
     if (res.short) {
       const c = place(res.roll);
-      rollReveal(res.roll, `<p class="tr-short">Der Flug nach ${esc(c.city)} kostet ${money(res.cost)}. So viel hat das Label gerade nicht. Verdient erst mehr oder fliegt nach Hause.</p>`);
+      rollReveal(region, res.roll, `<p class="tr-short">Die Reise nach ${esc(c.name)} kostet ${money(res.cost)}. So viel hat das Label gerade nicht. Verdient erst mehr oder reist nach Hause.</p>`);
       return;
     }
-    rollReveal(res.roll, legLines(b, res.roll, res.activity, res.cost));
+    rollReveal(region, res.roll, legLines(bandById(id), res.roll, res.activity, res.cost, b.tour?.vehicle));
   },
   async tourHome({ id }) {
     closeAllModals();
@@ -307,19 +362,21 @@ defineActions({
 
 // ---------- Meldungen (Ergebnis-Fenster) ----------
 
-/** Angekommen: Wo, welches Genre dort geliebt wird, und los geht's. */
+/** Angekommen: Wo, welche Städte warten, welches Genre dort geliebt wird. */
 export function arrivalHtml(r) {
   const res = r.result;
   const b = bandById(r.bandId);
   const c = place(res.country);
-  return `<div class="eyebrow">Tournee · Station ${res.station} von ${res.stations}</div>
-    <h2>${esc(b?.name ?? '')} ist in ${esc(c.city)} angekommen!</h2>
-    <p>${esc(c.name)} · ${genreGlyph(c.genre)}${esc(genreName(c.genre))}</p>
-    <p class="muted">${esc(matchText(res.country, res.match))}</p>`;
+  const cities = res.cities ?? [c.city];
+  return `<div class="eyebrow">Tournee · Land ${res.station} von ${res.stations}</div>
+    <h2>${esc(b?.name ?? '')} ist in ${esc(c.name)} angekommen!</h2>
+    <p>${cities.length === 1 ? `Ein Auftritt wartet: ${esc(cities[0])}` : `${cities.length} Auftritte warten: ${esc(cities.join(', '))}`}</p>
+    <p class="muted">${genreGlyph(c.genre)} ${esc(matchText(res.country, res.match))}</p>`;
 }
 
 export function arrivalActions(r) {
-  return `<button class="btn ghost" data-close>Später</button><button class="btn primary" data-act="tourShow" data-id="${r.bandId}">Auftritt starten</button>`;
+  const first = r.result.cities?.[0] ?? place(r.result.country).city;
+  return `<button class="btn ghost" data-close>Später</button><button class="btn primary" data-act="tourShow" data-id="${r.bandId}">Auftritt in ${esc(first)} starten</button>`;
 }
 
 /** Wie viele Länder die Band schon bespielt hat (alle: Weltenbummler-Globus). */
@@ -337,35 +394,37 @@ export function globe() {
     <path d="M4 7 A9 9 0 0 0 16 18" fill="none" stroke="#8b93a1" stroke-width="1.4"/><path d="M12 17 V20 M8 21.5 H16 L15 20 H9 Z" fill="#8b93a1" stroke="#5c6370" stroke-width="1.1"/></svg>`;
 }
 
-/** Nach einem Auftritt auf Tournee: welches Land, ob das Genre gepasst hat, und ob damit alle Länder bespielt sind. */
+/** Nach einem Auftritt auf Tournee: welche Stadt, ob das Genre gepasst hat, was noch kommt, und ob damit alle Länder bespielt sind. */
 export function gigExtras(res) {
   const t = res.tour;
   if (!t?.country) return '';
   const all = Object.keys(cat().countries).length;
-  return `<p class="muted">Tournee · Station ${t.station} von ${t.stations} · ${t.match ? `${esc(inCountry(t.country))} lieben sie euer Genre!` : `${esc(inCountry(t.country))} hätten sie lieber ${esc(genreName(place(t.country).genre))} gehört.`}</p>
+  const next = t.next ? `Als Nächstes: ${esc(t.next)}.` : t.last ? 'Das war der letzte Auftritt der Tournee.' : `${esc(place(t.country).name)} ist geschafft.`;
+  return `<p class="muted">Tournee · ${esc(t.city ?? '')} · ${t.match ? `${esc(inCountry(t.country))} lieben sie euer Genre!` : `${esc(inCountry(t.country))} hätten sie lieber ${esc(genreName(place(t.country).genre))} gehört.`} ${next}</p>
     ${t.world ? `<div class="banner">${globe()} In allen ${all} Ländern gespielt! Dafür steht jetzt ein goldener Globus im Proberaum.</div>` : ''}`;
 }
 
 export function gigActions(r) {
   const t = r.result.tour;
   if (!t?.country) return null;
+  if (t.next) return `<button class="btn ghost" data-close>Später</button><button class="btn primary" data-act="tourShow" data-id="${r.bandId}">Auftritt in ${esc(t.next)} starten</button>`;
   return `<button class="btn ghost" data-close>Später</button>
     <button class="btn ${t.last ? 'primary' : 'ghost'}" data-act="tourHome" data-id="${r.bandId}">Nach Hause</button>
     ${t.last ? '' : `<button class="btn primary" data-act="tourNext" data-id="${r.bandId}">Weiterreisen</button>`}`;
 }
 
-/** Zurück zu Hause: alle Stationen, was es gebracht hat. */
+/** Zurück zu Hause: alle Auftritte, was es gebracht hat. */
 export function homeHtml(r) {
   const res = r.result;
   const b = bandById(r.bandId);
-  const hits = (res.visits ?? []).filter((v) => v.match).length;
-  return `<div class="eyebrow">Tournee vorbei</div>
+  const hits = new Set((res.visits ?? []).filter((v) => v.match).map((v) => v.country)).size;
+  return `<div class="eyebrow">${esc(regionOf(res.region).name)} vorbei</div>
     <h2>${esc(b?.name ?? '')} ist wieder zu Hause</h2>
     ${visitList(res.visits ?? [])}
     <div class="reward-grid">
       <div class="reward"><span>Ruhm</span><b>+${fmt1(res.fame ?? 0)}</b></div>
       <div class="reward reward-money"><span>Gagen</span><b>+${money(res.earned ?? 0)}</b></div>
-      <div class="reward"><span>Flüge</span><b>−${money(res.spent ?? 0)}</b></div>
+      <div class="reward"><span>Reisen</span><b>−${money(res.spent ?? 0)}</b></div>
     </div>
     <p class="muted">${hits ? `${hits} ${hits === 1 ? 'Land liebte' : 'Länder liebten'} euer Genre. ` : ''}${res.together ? 'Die Tournee hat die Band zusammengeschweißt: Alle verstehen sich jetzt besser.' : ''}</p>`;
 }

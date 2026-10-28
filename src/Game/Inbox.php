@@ -95,6 +95,11 @@ final class Inbox
             $media[$id][] = $d['medium'] ?? '';
         }
         $byId = array_column($musicians, null, 'id');
+        // Wer auf Tournee ist, bekommt Anfragen von Medien im Land (größte Stadt).
+        $abroad = [];
+        foreach ($db->all("SELECT band_id, country FROM tours WHERE label_id = ? AND state IN ('arrived', 'after', 'show') AND country IS NOT NULL", [$this->repo->labelId]) as $t) {
+            $abroad[(int) $t['band_id']] = Catalog::COUNTRIES[$t['country']]['cities'][0] ?? null;
+        }
         for (; $next <= $now; $next += Post::gap($mean)) {
             $free = array_filter($rates, static fn ($r, $id) => ($open[$id] ?? 0) < self::interviewMax($byId[$id]), ARRAY_FILTER_USE_BOTH);
             if (!$free || $next + Balance::POST['ttl'] <= $now) {
@@ -104,8 +109,11 @@ final class Inbox
             $open[$m['id']] = ($open[$m['id']] ?? 0) + 1;
             $level = Levels::forFame((float) $m['fame']);
             // Nicht zweimal dasselbe Medium für denselben Musiker.
-            $choices = array_values(array_filter(Catalog::INTERVIEW_MEDIA[min(3, $level)], static fn ($x) => !in_array($x['name'], $media[$m['id']] ?? [], true)));
-            $medium = Rng::pick($choices ?: Catalog::INTERVIEW_MEDIA[min(3, $level)]);
+            $city = $m['band_id'] === null ? null : ($abroad[(int) $m['band_id']] ?? null);
+            $list = $city === null ? Catalog::INTERVIEW_MEDIA[min(3, $level)]
+                : array_map(static fn ($x) => ['name' => sprintf($x['name'], $city)] + $x, Catalog::INTERVIEW_MEDIA_ABROAD[min(3, $level)]);
+            $choices = array_values(array_filter($list, static fn ($x) => !in_array($x['name'], $media[$m['id']] ?? [], true)));
+            $medium = Rng::pick($choices ?: $list);
             $media[$m['id']][] = $medium['name'];
             $this->store('interview', ['musicianId' => $m['id'], 'level' => $level, 'medium' => $medium['name'], 'share' => $medium['share']], $next, Balance::POST['ttl']);
         }

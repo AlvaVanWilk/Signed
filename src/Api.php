@@ -58,6 +58,7 @@ final class Api
         'bandView' => ['POST', true],
         'storeBuy' => ['POST', true],
         'roomUpgrade' => ['POST', true],
+        'vehicleBuy' => ['POST', true],
         'gigOptions' => ['POST', true],
         'storeBuyBasic' => ['POST', true],
         'wikiIndex' => ['POST', true],
@@ -313,6 +314,13 @@ final class Api
     {
         Rooms::upgrade($repo, self::int($in, 'bandId'));
         return ['state' => State::build($repo)];
+    }
+
+    /** Bus oder Flugzeug kaufen bzw. eine Stufe ausbauen. */
+    private function vehicleBuy(array $in, Repo $repo): array
+    {
+        $vehicle = Tours::buyVehicle($repo, self::int($in, 'bandId'), self::str($in, 'kind'));
+        return ['vehicle' => $vehicle, 'state' => State::build($repo)];
     }
 
     private function storeBuy(array $in, Repo $repo): array
@@ -653,7 +661,7 @@ final class Api
 
     private function tourStart(array $in, Repo $repo): array
     {
-        $activity = Tours::start($repo, self::int($in, 'bandId'), self::int($in, 'stations'));
+        $activity = Tours::start($repo, self::int($in, 'bandId'), self::str($in, 'region'), (int) ($in['stations'] ?? 0));
         return ['activity' => $activity, 'state' => State::build($repo)];
     }
 

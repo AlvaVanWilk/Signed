@@ -866,3 +866,27 @@ test('Tournee: echte Entfernungen, weite Reisen dauern länger und kosten mehr, 
     // Jedes Genre wird in mindestens einem Land geliebt.
     checkEquals([], array_values(array_diff(array_keys(Catalog::GENRES), array_column(Catalog::COUNTRIES, 'genre'))));
 });
+
+test('Tournee-Stufen: jedes Land gehört zu einer Region und hat Städte; Längen passen; die Arena gibt es nur auf Tournee', function () {
+    $regions = Balance::TOUR['regions'];
+    foreach (Catalog::COUNTRIES as $key => $c) {
+        check(isset($regions[$c['region']]) && $c['region'] !== 'welt', "$key: Region");
+        check(count($c['cities']) >= 1 && count($c['cities']) <= 6, "$key: Städte");
+    }
+    foreach ($regions as $key => $r) {
+        $n = count(Signed\Game\Tours::countriesOf($key));
+        check($n >= 2, "$key: mehrere Länder");
+        check($r['lengths'] === null || max($r['lengths']) <= $n, "$key: Längen");
+        check(isset(Balance::VEHICLES[$r['vehicle']]), "$key: Fahrzeug");
+    }
+    checkEquals(count(Catalog::COUNTRIES), count(Signed\Game\Tours::countriesOf('welt')));
+    // Je Stufe teurer, schneller, besser zum Proben
+    foreach (Balance::VEHICLES as $kind => $levels) {
+        for ($i = 1; $i < count($levels); $i++) {
+            check($levels[$i]['cost'] > $levels[$i - 1]['cost'] && $levels[$i]['speed'] < $levels[$i - 1]['speed'] && $levels[$i]['skill'] > $levels[$i - 1]['skill'], "$kind Stufe $i");
+        }
+    }
+    $arena = array_values(array_filter(Balance::VENUES, static fn ($v) => $v['key'] === 'arena'))[0];
+    check(!empty($arena['tour']), 'Arena nur auf Tournee');
+    check(Balance::TOUR['regions']['europa']['fame'] < Balance::TOUR['regions']['asien']['fame'] && Balance::TOUR['regions']['asien']['fame'] < Balance::TOUR['regions']['welt']['fame'], 'Stufen nacheinander');
+});

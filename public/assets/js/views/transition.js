@@ -14,7 +14,7 @@ const NEWS = [
   ['mood', 'Stimmung und Wünsche', 'Jeder Musiker ist grün, gelb oder rot. Jeder Charakter mag andere Dinge. Wer unzufrieden ist, wünscht sich etwas, und ein Manager sagt dir, was.'],
   ['orders', 'Proben statt Üben', 'Besser werden deine Musiker jetzt beim Proben mit ihrer Band. Die Minispiele zum Üben gibt es nicht mehr.'],
   ['post', 'Post statt Packs', 'Neue Musiker schicken Kassetten in den Posteingang. Scouts, Manager und Lehrer bewerben sich dort. Packs, Karten und die Wechselbörse gibt es nicht mehr.'],
-  ['week', 'Jede Woche ist was los', 'Mittwochs gibt es ein Festival, samstags das Battle of the Bands. Dazu Tourneen um die Welt und Auszeichnungen im Proberaum.'],
+  ['week', 'Jede Woche ist was los', 'Mittwochs gibt es ein Festival, samstags das Battle of the Bands. Wer bekannt genug ist, geht mit Bus oder Flugzeug auf Tournee. Dazu Auszeichnungen im Proberaum.'],
 ];
 
 let open = false;

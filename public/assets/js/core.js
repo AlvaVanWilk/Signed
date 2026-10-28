@@ -127,7 +127,8 @@ export function managerBusy(m, b) {
   return '';
 }
 export const gearById = (id) => app.state.gear.find((g) => g.id === Number(id));
-export const runningFor = (bandId) => app.state.running.find((a) => a.bandId === Number(bandId));
+/** Was die Band gerade macht. Reisen auf Tournee zählen nicht: Unterwegs ist die Band frei (sie probt im Bus, gibt Interviews). */
+export const runningFor = (bandId) => app.state.running.find((a) => a.bandId === Number(bandId) && a.type !== 'tourtravel' && a.type !== 'tour');
 
 export function isBusy(until) {
   return until > serverNow();

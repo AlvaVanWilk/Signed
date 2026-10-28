@@ -44,7 +44,7 @@ final class State
         // Proberaum: Faktor auf das Können je Probe, je Band
         $roomSkill = [];
         foreach ($bands as $band) {
-            $roomSkill[$band['id']] = Rooms::rules(Rooms::level($repo, $band, count($members[$band['id']] ?? [])))['skill'];
+            $roomSkill[$band['id']] = Rooms::here($repo, $band, count($members[$band['id']] ?? []))['skill'];
         }
         $managerBands = [];
         foreach ($bands as $band) {
@@ -151,6 +151,9 @@ final class State
                 'managerFit' => $fit === null ? null : round($fit, 2),
                 'memberIds' => Bands::stageOrder($band, array_map(static fn ($m) => $m['id'], $list)),
                 'room' => Rooms::present($repo, $band, count($list)),
+                // Tournee in Stufen: Fahrzeuge der Band (Stufe 0 = keins) und welche Tourneen gehen
+                'vehicles' => ['bus' => $band['bus'], 'plane' => $band['plane']],
+                'tours' => Tours::options($band, $list),
                 'sound' => $sound,
                 'slotPreview' => $slotPreview,
                 'slotReturn' => array_map('strval', array_keys($band['slot_return'])),
@@ -196,7 +199,7 @@ final class State
                 'options' => [
                     'busking' => ['songs' => Balance::BUSKING['songs']],
                     'rehearsal' => (static function () use ($list, $repo, $band, $gearMap): array {
-                        [$seconds, $limit] = Mood::rehearsalLimits($list, Rooms::rules(Rooms::level($repo, $band, count($list)))['lust'], $gearMap);
+                        [$seconds, $limit] = Mood::rehearsalLimits($list, Rooms::here($repo, $band, count($list))['lust'], $gearMap);
                         return ['seconds' => $seconds, 'limit' => $limit];
                     })(),
                     'openstage' => [

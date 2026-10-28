@@ -177,6 +177,9 @@ final class Courses
             if ($m['band_id'] !== null && $this->repo->band($m['band_id'])['busy_until'] > $now) {
                 throw new ApiError(sprintf('Die Band von %s ist gerade beschäftigt.', $m['first_name']));
             }
+            if (Tours::away($db, $m['band_id']) !== null) {
+                throw new ApiError(sprintf('%s ist mit der Band auf Tournee. Der Kurs ist hier zu Hause.', $m['first_name']));
+            }
             $level = self::levelFor($m, $slot);
             $price = self::price($course, $level);
             $title = sprintf('%s-%s für %s', $course['prefix'], $course['name'], Balance::COURSE['levels'][$level]);

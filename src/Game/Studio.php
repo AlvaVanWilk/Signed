@@ -180,7 +180,7 @@ final class Studio
             $spec = Cover::validate($cover, $designer, $logo);
             $coverSales = Balance::COVER_DESIGNERS[$designer]['sales'] + ($band['logo'] !== null && $band['records'] > 0 ? Balance::COVER_LOGO_SALES : 0.0);
             $members = $this->repo->members($bandId);
-            $blocker = self::blocker($band, count($members), $this->repo->openRecord($bandId)) ?? Activities::blocker($band, $members, $now);
+            $blocker = self::blocker($band, count($members), $this->repo->openRecord($bandId)) ?? Activities::blocker($band, $members, $now) ?? Tours::away($db, $bandId);
             if ($blocker !== null) {
                 throw new ApiError($blocker);
             }

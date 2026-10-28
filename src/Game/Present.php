@@ -142,11 +142,15 @@ final class Present
             'rarities' => Catalog::RARITIES,
             'genres' => Catalog::GENRES,
             // Tournee: Länder mit Lieblings-Genre und Lage, dazu der Heimatort
-            'countries' => Catalog::COUNTRIES,
+            'countries' => array_map(static fn ($c) => $c + ['city' => $c['cities'][0]], Catalog::COUNTRIES),
             // Verkaufte Stück für Gold, Platin, Diamant
             'awards' => Balance::AWARDS,
             'home' => Catalog::HOME,
-            'tour' => ['lengths' => Balance::TOUR['lengths'], 'wait' => Balance::TOUR['wait'], 'match' => Balance::TOUR['match'], 'cost' => Balance::TOUR['cost'], 'travel' => Balance::TOUR['travel']],
+            'tour' => [
+                'regions' => Balance::TOUR['regions'], 'wait' => Balance::TOUR['wait'], 'match' => Balance::TOUR['match'], 'abroad' => Balance::TOUR['abroad'],
+                'cost' => Balance::TOUR['cost'], 'travel' => Balance::TOUR['travel'], 'stadium' => Balance::TOUR['stadium'],
+            ],
+            'vehicles' => Balance::VEHICLES,
             'instruments' => array_map(
                 static fn ($i) => ['name' => $i['name'], 'at' => $i['at'], 'icon' => $i['icon'], 'genres' => $i['genres'], 'techniques' => $i['techniques']],
                 Catalog::INSTRUMENTS

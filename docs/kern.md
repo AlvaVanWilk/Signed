@@ -12,9 +12,9 @@ feste Daten in [`src/Game/Catalog.php`](../src/Game/Catalog.php); sie sind Start
 | Label | Name, 2.000 ₲ Startkapital, keine Musiker zu Beginn; Konto mit Kontoauszug (Klick aufs Geld), Tantiemen laufen sichtbar mit |
 | Posteingang | Kassetten (Musiker und Bands), Briefe (Interviews, Scout-Berichte), Bewerbungen (Praktikum, Assistenz, Scout, Manager, Lehrkraft, Coach) |
 | Musiker | zufällig erzeugt: 1–2 Instrumente, Können, Bekanntheit, Genres, Spieltechnik, Charakterzüge (erst verborgen), Wohlbefinden, Aussehen |
-| Bands | ohne Obergrenze; jeder unter Vertrag ist in einer Band oder Solokünstler; Genre aus der Besetzung; Proberaum je Band |
-| Anordnungen | Proben, Auftritt buchen, Aufnehmen, Promo-Tour, Auszeit, Tournee; Interviews einzelner Musiker |
-| Fördern | Kurs des Tages, Privatlehrer, Songwriting-Coach, Instrumente (Music Store), Proberaum |
+| Bands | ohne Obergrenze; jeder unter Vertrag ist in einer Band oder Solokünstler; Genre aus der Besetzung; Proberaum, Bus und Flugzeug je Band |
+| Anordnungen | Proben, Auftritt buchen (hier spielen oder auf Tournee), Aufnehmen, Promo-Tour, Auszeit; Interviews einzelner Musiker |
+| Fördern | Kurs des Tages, Privatlehrer, Songwriting-Coach, Instrumente (Music Store), Proberaum, Bus und Flugzeug |
 | Jede Woche | Festival (Mittwoch), Battle of the Bands (Samstag) |
 | Erfolg | Album-Charts aller Labels, Rangliste, Auszeichnungen, WikiSignia |
 | Einführung und Hilfe | sechs Schritte beim ersten Mal, Hilfe nach Themen (?); alte Labels sehen einmal „Was ist neu?“ |
@@ -121,8 +121,8 @@ Solokünstler: kein Genre-Bonus außer halb für Pop und Elektro, Zusammenhalt 1
 
 ### Auftritte
 
-- **Orte** nach Bandruhm (Anspruch): Kneipe (ab 0), Club (30), Konzertsaal (150), Halle (600), Arena (2.500). Buchbar vom kleinsten bis zwei
-  Stufen über dem Anspruch. Grund-Gage je Lied 30 / 70 / 160 / 380 / 900 ₲, Grund-Ruhm je Lied 0,25 / 0,5 / 1 / 2 / 4, Erwartung 15 / 28 / 42 / 58 / 75.
+- **Orte** nach Bandruhm (Anspruch): Kneipe (ab 0), Club (30), Konzertsaal (150), Halle (600), Arena (2.500). Zu Hause buchbar vom kleinsten
+  bis zwei Stufen über dem Anspruch, höchstens die Halle: Die **Arena gibt es nur auf Tournee** (`'tour' => true`). Grund-Gage je Lied 30 / 70 / 160 / 380 / 900 ₲, Grund-Ruhm je Lied 0,25 / 0,5 / 1 / 2 / 4, Erwartung 15 / 28 / 42 / 58 / 75.
 - **Kosten** 20 / 90 / 350 / 1.100 / 3.200 ₲ (Solokünstler ×1,5, Pop ×1,2), **Länge** 3 / 4 / 5 / 7 / 9 Songs (aufgenommene und geschriebene zählen).
 - **Gage** = Grund-Gage × Songs × Frische × (1 + 10 % je Mitglied über 2) × (1 + Verhandler) × **Füllgrad** × (0,7 + 0,3 × Leistung)
   (beim Buchen mit der Mitte des Ortes gerechnet).
@@ -190,6 +190,7 @@ Solokünstler: kein Genre-Bonus außer halb für Pop und Elektro, Zusammenhalt 1
 - **Interview** (Anfrage im Posteingang): Annehmen schickt den Musiker weg (15 / 20 / 30 / 45 Minuten je Bekanntheitsstufe).
   Gewinn = Anteil des Mediums (8–14 %) × Weg zur nächsten Stufe (Stufe 0: 20, 1: 100, 2: 480, 3: 600), ohne Bremse; Netzwerker +10 % je Stufe.
   Anfragen je Tag: 0,1 + 0,05 × √Bekanntheit, höchstens 1 + Stufe zugleich offen, sie liegen vier Tage.
+  Auf Tournee fragen Medien aus dem Land (größte Stadt), gleicher Gewinn (`Catalog::INTERVIEW_MEDIA_ABROAD`).
 
 ### Kurse, Privatlehrer, Coach
 
@@ -259,24 +260,67 @@ Genre (auch als zweites oder drittes Genre), jedes Label mit so vielen, wie es w
 
 ### Tournee
 
-Anordnung auf der Bandseite (`Balance::TOUR`, `Tours`), erst mit einer Platte. Man wählt nur die Länge (3, 5 oder 7 Stationen);
-**jedes Ziel wird ausgewürfelt** (echte Länder, `Catalog::COUNTRIES`, keins doppelt) und erst bekannt, wenn es weitergeht.
+Die zweite Stufe der Auftritte (`Balance::TOUR`, `Balance::VEHICLES`, `Tours`): Im Fenster **Auftritt buchen** gibt es zwei Reiter,
+„Hier spielen“ (Kneipe bis Halle) und „Tournee“. Proberaum (zu Hause) → Bus (Europa) → Flugzeug (Übersee und Welt).
 
-- **Ablauf, alles per Klick:** Flug zum Ziel (Reisezeit 30 Min. + 0,6 s je km: London etwa 40 Min., Tokio 2 Std., Sydney 3 Std.) →
-  Meldung „angekommen“ → **Auftritt starten** → danach **Weiterreisen** oder **Nach Hause**. Nach der letzten Station bleibt nur der Heimflug.
-  Wer zwei Tage nicht weitermacht, fliegt von selbst heim. Die Band kann während der Tournee nichts anderes machen; wer für Battle oder
-  Festival angemeldet ist, kann nicht los.
-- **Kosten:** je Strecke Mitglieder × (15 + 0,01 ₲ je km), bei vier Musikern etwa 80 ₲ (Amsterdam) bis 700 ₲ (Sydney); der Heimflug ist frei.
-  Reicht das Geld nicht, bleibt das ausgewürfelte Ziel stehen.
-- **Ein Auftritt** wie im Ort nach Ruhm mit ganzer Setlist, aber ohne Abnutzung (im Ausland kennt niemand die Lieder): Ruhm × 2, Gage × 1,25.
-  **Lieblings-Genre** des Landes (England Rock, Irland Folk, Frankreich Pop, Spanien Folk, Niederlande Elektro, Schweden Elektro, Norwegen Metal,
-  Finnland Metal, USA Hip-Hop, Kanada Punk, Brasilien Jazz, Südafrika Jazz, Japan Pop, Australien Rock): Spielt die Band es, noch einmal
-  Ruhm × 1,5 und Gage × 1,5, und das Publikum ist leichter zu begeistern (Erwartung × 0,85).
-- **Bühne des Landes** (`stage-world.js`, als `tour-fr` …): klischeehaft; Größe und Gage richten sich trotzdem nach dem Ort nach Ruhm.
-- **Weltenbummler:** Hat eine Band (über alle Tourneen) in allen 14 Ländern gespielt, steht ein goldener Globus in ihrem Proberaum.
-- **Beziehungen:** Jeder Auftritt wie ein Auftritt, am Ende die ganze Tournee und zusätzlich ein fester Schub von +0,6 je gespielte Station
-  (höchstens +3) auf jede Beziehung, auch über den Zielwert hinaus. Ehrgeizige, Impulsive, Extrovertierte und Gesellige mögen Tourneen,
-  Gemütliche und Ausgeglichene nicht.
+| Tournee | ab Ruhm | Fahrzeug | Länder |
+|---|---|---|---|
+| Europa | 150 | Bus | 3, 5 oder 7 von 10 |
+| Nordamerika, Südamerika, Afrika, Asien-Pazifik | 600 | Flugzeug | alle der Region |
+| Welttournee | 2.500 | Flugzeug | 5, 7 oder 9 von allen 20, nur die größte Stadt; ab 8.000 Ruhm im Stadion |
+
+- **Länder und Städte** (`Catalog::COUNTRIES`): Europa: Deutschland (Berlin, München, Köln), England (London, Manchester, Birmingham),
+  Frankreich (Paris, Lyon, Marseille), Spanien (Madrid, Barcelona), Italien (Rom, Mailand), Niederlande (Amsterdam, Rotterdam), Irland (Dublin),
+  Schweden (Stockholm), Norwegen (Oslo), Finnland (Helsinki). Nordamerika: USA (New York, Los Angeles, Chicago, Nashville, Atlanta, Las Vegas),
+  Kanada (Toronto, Montreal, Vancouver), Mexiko (Mexiko-Stadt, Guadalajara). Südamerika: Brasilien (Rio de Janeiro, São Paulo, Salvador),
+  Argentinien (Buenos Aires, Córdoba). Afrika: Südafrika (Kapstadt, Johannesburg, Durban), Ägypten (Kairo). Asien-Pazifik: Japan (Tokio, Osaka,
+  Nagoya), Südkorea (Seoul, Busan), Australien (Sydney, Melbourne, Brisbane).
+- **Ablauf, alles per Klick:** Die Länder kommen ausgewürfelt (keins doppelt) und werden erst bekannt, wenn es weitergeht. Reise ins Land →
+  „angekommen“ → in jeder Stadt des Landes ein **Auftritt** (ohne Fahrt dazwischen) → **Weiterreisen** (nächstes Land auswürfeln) oder
+  **Nach Hause**. Wer zwei Tage nicht weitermacht, fährt von selbst heim. Wer für Battle oder Festival angemeldet ist, kann nicht los.
+- **Unterwegs lebt die Band im Fahrzeug:** Während der Reise ist sie nicht beschäftigt. Sie probt im Bus oder Flugzeug (das Fahrzeug gilt als
+  Proberaum, siehe unten), schreibt Songs und gibt Interviews. Aufnehmen, Auszeit, Promo-Tour, Auftritte zu Hause, Kurse und Änderungen an der Besetzung gehen
+  erst wieder zu Hause.
+- **Reisezeit** = (Grundzeit + Entfernung × je km) × Tempo des Fahrzeugs; Bus 20 Min. + 1,5 s/km, Flugzeug 30 Min. + 0,6 s/km.
+  Beispiele ab Deutschland: London im VW-Bus 43 Min., im Nightliner 24; New York im Propellerflugzeug 1 Std. 34, im Tour-Jumbo 47 Min.;
+  Sydney 3 Std. 11 bzw. 1 Std. 35.
+- **Kosten** je Strecke: Mitglieder × (15 + 0,01 ₲ je km) für Sprit oder Kerosin, bei vier Musikern etwa 100 ₲ (London) bis 700 ₲ (Sydney);
+  die Heimreise ist frei. Reicht das Geld nicht, bleibt das ausgewürfelte Ziel stehen.
+- **Ein Auftritt** wie im Ort nach Ruhm (ab 2.500 Ruhm also in der Arena) mit der Setlist dieses Ortes, aber ohne Abnutzung (im Ausland kennt
+  niemand die Lieder): Ruhm × 2, Gage × 1,25. Auf der **Welttournee** ab 8.000 Ruhm im **Stadion**: Gage je Lied 2.000 ₲, Ruhm je Lied 7,
+  Erwartung 82, 10 Lieder (darunter in der Arena; die Leiter geht also Arena 2.500 → Stadion 8.000 weiter, nur auf der Welttournee).
+- **Lieblings-Genre** des Landes (Deutschland Elektro, England Rock, Frankreich Pop, Spanien Folk, Italien Jazz, Niederlande Elektro, Irland Folk,
+  Schweden Pop, Norwegen Metal, Finnland Metal, USA Hip-Hop, Kanada Punk, Mexiko Folk, Brasilien Jazz, Argentinien Rock, Südafrika Jazz,
+  Ägypten Pop, Japan Pop, Südkorea Pop, Australien Rock): Spielt die Band es, noch einmal Ruhm × 1,5 und Gage × 1,5, und das Publikum ist
+  leichter zu begeistern (Erwartung × 0,85).
+- **Bühne des Landes** (`stage-world.js`, als `tour-fr` …): klischeehaft; Größe und Gage richten sich trotzdem nach dem Ort.
+- **Laune:** Wer Auftritte mag oder nicht mag, reagiert einmal je Land (nicht in jeder Stadt neu). Am Ende wirkt die ganze Tournee:
+  Ehrgeizige, Impulsive, Extrovertierte und Gesellige mögen Tourneen, Gemütliche und Ausgeglichene nicht. Eine eigene Tournee-Müdigkeit gibt es nicht.
+- **Beziehungen:** Jeder Auftritt wie ein Auftritt, am Ende die ganze Tournee und zusätzlich ein fester Schub von +0,6 je bespieltes Land
+  (höchstens +3) auf jede Beziehung, auch über den Zielwert hinaus.
+- **Weltenbummler:** Hat eine Band (über alle Tourneen) in allen 20 Ländern gespielt, steht ein goldener Globus in ihrem Proberaum.
+
+#### Bus und Flugzeug
+
+Ein Bus und ein Flugzeug je Band, wie der Proberaum in vier Stufen und für immer gekauft. Kaufen geht erst, wenn die Band bekannt genug für die
+erste Tournee damit ist (Bus ab 150, Flugzeug ab 600 Ruhm). Unterwegs ist das Fahrzeug der Proberaum: Können je Probe, Ausdauer, Wohlbefinden
+je 15 Minuten Probe.
+
+| Bus | Preis | Reisezeit | Können | Ausdauer | Wohlbefinden |
+|---|---|---|---|---|---|
+| VW-Bus | 1.500 ₲ | ×1 | ×0,85 | ×0,8 | – |
+| Kleinbus mit Anhänger | 4.000 ₲ | ×0,85 | ×0,95 | ×0,95 | +0,5 |
+| Tourbus | 9.000 ₲ | ×0,7 | ×1,05 | ×1,1 | +1,5 |
+| Nightliner | 18.000 ₲ | ×0,55 | ×1,15 | ×1,3 | +3 |
+
+| Flugzeug | Preis | Reisezeit | Können | Ausdauer | Wohlbefinden |
+|---|---|---|---|---|---|
+| Propellerflugzeug | 25.000 ₲ | ×1 | ×0,9 | ×0,9 | +0,5 |
+| Privatjet | 60.000 ₲ | ×0,8 | ×1,0 | ×1,05 | +1,5 |
+| Großer Jet | 120.000 ₲ | ×0,65 | ×1,1 | ×1,2 | +2,5 |
+| Tour-Jumbo | 250.000 ₲ | ×0,5 | ×1,2 | ×1,4 | +4 |
+
+Der Bus ist im Fahren ein Fenster mit vorbeiziehender Landschaft, im Land mit Stadt-Silhouette (`vehicle.js`).
 
 ### Auszeichnungen
 
@@ -285,8 +329,8 @@ auf dem Boden) und als Liste auf der Bandseite und in WikiSignia. Neue werden ei
 - **Goldene Schallplatte** ab 100.000 verkauften Stück, **Platin** ab 250.000, **Diamant** ab 1 Million (je Platte einmal). Eine Platte mit
   30 Punkten schafft etwa Gold, mit 75 Platin, Diamant nur die besten (um 300 Punkte). Beim Umbau werden die bisherigen Verkäufe geschätzt
   (ohne Schub) und die Auszeichnungen ohne Feier vergeben.
-- **Platz 1 der Charts** (je Platte, nur mit Konkurrenz aus mindestens 3 Labels), **Große Halle** und **Arena** (erster Auftritt dort, je Band;
-  auf Tournee zählt die Größe des Ortes).
+- **Platz 1 der Charts** (je Platte, nur mit Konkurrenz aus mindestens 3 Labels), **Große Halle**, **Arena** und **Stadion** (erster Auftritt
+  dort, je Band; auf Tournee zählt die Größe des Ortes).
 - Dazu: Battle-Pokale (Platz 1 bis 3), Festival-Plakat (Headliner), Weltenbummler-Globus (alle Länder).
 
 ### Posteingang und Leute
@@ -351,7 +395,7 @@ ist ein Fehler in den Formeln und wird dort behoben. Neue Inhalte bekommen eigen
   (im Schnitt +4,5, eine Stufe allein durch Kurse in rund zwei Monaten). Privatlehrer lohnen sich vor allem für Bessere (bei Können 70 sind +16
   etwa zwölf Stunden Proben).
 - **Bekanntheit:** Auftritte (größere Orte bringen mehr je Lied, werden aber erst mit Ruhm erreichbar und kosten mehr), Festivals (fest je Bühne),
-  Battle (fest nach Platz), Tournee (Ausland ×2), Charts (nach Punkten), Interviews (Anteil des Weges zur nächsten Stufe: ab Stufe 1 schafft man
+  Battle (fest nach Platz), Tournee (Ausland ×2; Europa ab 150, Kontinente ab 600, Welt ab 2.500 Ruhm), Charts (nach Punkten), Interviews (Anteil des Weges zur nächsten Stufe: ab Stufe 1 schafft man
   mit allen Anfragen eine Stufe in grob zwei bis vier Wochen).
 - **Songs:** Vierer-Band ein Song je Stunde, Solokünstler achtmal langsamer; Bands sind der schnellere Weg, Solo lohnt sich nur kreativ, mit Pop/Elektro
   oder egozentrisch.

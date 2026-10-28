@@ -119,14 +119,14 @@ function signup(battle) {
   return `<section class="panel bt-panel">
     <div class="eyebrow">Anmeldung</div>
     <h2>${esc(n.when)}</h2>
-    <p class="muted">Jedes Label darf bis zu ${n.perLabel} Bands anmelden. Angemeldete Bands müssen pünktlich da sein: Was länger dauert als bis zum Beginn, geht dann nicht mehr.</p>
+    <p class="muted">Jedes Label darf bis zu ${n.perLabel} Bands anmelden, nur Bands (keine Solokünstler). Online sein muss dafür niemand: Das Battle läuft auch so, das Ergebnis kommt beim nächsten Öffnen. Nur kann eine angemeldete Band vorher nichts anfangen, was bis über den Beginn hinaus dauert.</p>
     ${own.length ? `<div class="bt-entry-list">${own.map((o) => `
       <div class="bt-entry ${o.entered ? 'in' : ''}">
         <span><b>${esc(o.b.name)}</b><small>Sound ${fmt1(o.b.sound)} · Laune ${pct(o.moodBonus)}</small></span>
         ${o.entered
     ? '<span class="bt-in">angemeldet</span><button class="btn small ghost" data-act="battleWithdraw" data-id="' + o.b.id + '">Abmelden</button>'
     : `<button class="btn small primary" data-act="battleEnter" data-id="${o.b.id}" ${off(o.blocked)}>Anmelden</button>`}
-      </div>`).join('')}</div>` : '<p class="muted">Du hast noch keine Band.</p>'}
+      </div>`).join('')}</div>` : '<p class="muted">Du hast noch keine Band mit mindestens zwei Musikern.</p>'}
     <h3>Angemeldet: ${n.entries.length} ${n.entries.length === 1 ? 'Band' : 'Bands'}${mineCount ? `, ${mineCount} von dir` : ''}</h3>
     ${n.entries.length ? `<ul class="bt-entries">${n.entries.map((e) => `<li class="${e.mine ? 'mine' : ''}"><b>${esc(e.name)}</b> <small>${esc(e.label)}</small></li>`).join('')}</ul>` : '<p class="muted small">Noch niemand. Wenn bis zum Beginn weniger als zwei Bands dabei sind, fällt das Battle aus.</p>'}
     <details class="bt-rules"><summary>So wird entschieden</summary>

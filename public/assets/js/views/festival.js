@@ -73,7 +73,7 @@ function apply(f) {
     <details class="bt-rules"><summary>Was es gibt</summary>
       ${rules.stages.map((s) => `<p><b>${esc(s.name)}</b>: ${s.songs} Lieder, ${money(s.money)} Gage und viel Bekanntheit (je größer die Bühne, desto mehr; dazu zählen Sound und Publikum wie bei einem Gig).</p>`).join('')}
       <p>Nach dem Auftritt will ein größeres Magazin oder ein Sender ein Interview (im Posteingang). Der Headliner bekommt ein Plakat für den Proberaum. Und vielleicht wartet ein Fan, der mitspielen will.</p>
-      <p>Die Band ist vom Beginn des Festivals bis zu ihrem Auftritt dort. Was sie auf dem Festival an Bekanntheit sammelt, zählt nicht für die Bühnen der nächsten Woche.</p>
+      <p>Die Band ist vom Beginn des Festivals bis zu ihrem Auftritt dort.</p>
     </details>
   </section>`;
 }

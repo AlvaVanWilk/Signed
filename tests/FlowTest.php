@@ -2720,7 +2720,7 @@ function genreBand(Signed\Db $db, Player $p, string $genre, string $name): int
     return $p->post('bandCreate', ['name' => $name, 'members' => array_map(static fn ($id) => ['id' => $id, 'slot' => 1], $ids)])['bandId'];
 }
 
-test('Festival: nur das Genre der Woche, Bühnen nach der Bekanntheit der Woche, Headliner zuletzt; Festival-Ruhm zählt nicht für die nächste Woche', function () {
+test('Festival: nur das Genre der Woche, Bühnen nach der Bekanntheit der Woche, Headliner zuletzt', function () {
     $db = freshDb();
     $a = registerPlayer($db, 'Festa');
     $b = registerPlayer($db, 'Festb');
@@ -2770,7 +2770,7 @@ test('Festival: nur das Genre der Woche, Bühnen nach der Bekanntheit der Woche,
     checkEquals([], array_values(array_filter($stateB['running'], static fn ($r) => $r['type'] === 'festival')), 'der Headliner spielt noch nicht');
     check(bandById($stateB, $big)['busyUntil'] > Clock::now(), 'ist aber schon auf dem Festival');
 
-    // Vorbei: Ruhm, Gage, Interview-Anfrage; Festival-Ruhm zählt nicht zur Wochen-Bekanntheit; Plakat für den Headliner.
+    // Vorbei: Ruhm, Gage, Interview-Anfrage (Festival-Ruhm zählt wie jeder andere); Plakat für den Headliner.
     $weekBefore = Signed\Game\Festival::weekGain($db, $big, Clock::now());
     Clock::set((int) $cur['endsAt'] + 2);
     $res = array_values(array_filter($a->get('state')['results'], static fn ($r) => $r['type'] === 'festival'))[0]['result'];
@@ -2778,7 +2778,7 @@ test('Festival: nur das Genre der Woche, Bühnen nach der Bekanntheit der Woche,
     check(!empty($res['festival']['interview']['medium']), 'Interview-Anfrage');
     check((int) $db->value("SELECT COUNT(*) FROM mail WHERE label_id = ? AND kind = 'interview' AND data LIKE ?", [$repoA->labelId, '%' . $res['festival']['interview']['medium'] . '%']) >= 1, 'Anfrage im Posteingang');
     $b->get('state');
-    checkEquals($weekBefore, Signed\Game\Festival::weekGain($db, $big, Clock::now()), 'Festival-Ruhm zählt nicht');
+    check(Signed\Game\Festival::weekGain($db, $big, Clock::now()) > $weekBefore, 'Festival-Ruhm zählt mit');
     checkEquals(1, (int) $db->value("SELECT COUNT(*) FROM awards WHERE band_id = ? AND kind = 'festival'", [$big]), 'Plakat');
     checkEquals('done', $a->get('state')['festival']['current']['state']);
 });
@@ -2883,4 +2883,13 @@ test('Tournee: Wer zu lange nicht weitermacht, fliegt von selbst heim; mit Anmel
     check((bool) $db->value("SELECT id FROM history WHERE text LIKE '%zu lange gewartet%'"), 'Meldung');
     Clock::advance(4 * 3600);
     checkEquals(null, bandById($p->get('state'), $band['id'])['tour']);
+});
+
+test('Battle: nur Bands, keine Solokünstler', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Solo');
+    $state = $p->get('state');
+    $solo = array_values(array_filter($state['bands'], static fn ($b) => count($b['memberIds']) === 1))[0];
+    checkApiError(fn () => $p->post('battleEnter', ['bandId' => $solo['id']]), 'keine Solokünstler');
+    checkEquals([], array_values(array_filter($state['battle']['next']['options'], static fn ($o) => $o['bandId'] === $solo['id'])), 'nicht in der Auswahl');
 });

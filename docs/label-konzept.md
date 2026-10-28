@@ -277,7 +277,7 @@ Schwarzen Brett aus), bis zu zwei Bands je Label, keine Computer-Bands. Ablauf w
 wann die eigene Band als Nächstes spielt. Bands eines Labels werden möglichst getrennt. Es entscheiden **Sound und Laune**, der Zufall nur
 in der Spanne der Tagesform; Ruhm, Proben und eine Wahl „sicher/riskant“ gibt es nicht. Während des Battles ist die Band weg (Zettel im
 Proberaum mit „Zuschauen“); danach gibt es Platz, Preisgeld, Ruhm und für die ersten drei einen Pokal, der im Proberaum steht.
-Offen: ob Solokünstler mitmachen dürfen (heute ja, sie sind im Spiel auch „Bands“), und ob 16 Uhr passt.
+Nur Bands, keine Solokünstler. Online sein muss dafür niemand. Offen: ob 16 Uhr passt.
 
 ### Tournee (gebaut)
 

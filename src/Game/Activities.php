@@ -458,8 +458,7 @@ final class Activities
         $repo->earn((int) ($reward['money'] ?? 0), sprintf($row['type'] === Battle::KIND ? 'Preisgeld: %s' : 'Gage: %s', $data['title']));
         $bill = min((int) ($reward['bill'] ?? 0), (int) ($reward['money'] ?? 0));
         $repo->spend($bill, sprintf('Rechnung: %s', $data['title']));
-        // Festival-Ruhm zählt nicht als „in dieser Woche gesammelt“ (sonst bekäme dieselbe Band immer wieder die Hauptbühne).
-        $fameGain = $repo->addBandFame($bandId, $reward['fameGains'] ?? [], $row['type'] !== Festival::KIND);
+        $fameGain = $repo->addBandFame($bandId, $reward['fameGains'] ?? []);
         if ($row['type'] === 'bandpromo') {
             // Album-Zyklus: Band-Promo zählt (abgebrochene kommen hier nicht an).
             $db->exec('UPDATE bands SET band_promos = band_promos + 1 WHERE id = ?', [$bandId]);

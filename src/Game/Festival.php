@@ -58,7 +58,7 @@ final class Festival
         return array_sum(array_column(Balance::FESTIVAL['stages'], 'slots'));
     }
 
-    /** Bekanntheit, die eine Band in den letzten Tagen gesammelt hat (ohne Festival-Ruhm, siehe Repo::addBandFame). */
+    /** Bekanntheit, die eine Band in den letzten Tagen gesammelt hat (alles, auch vom Festival). */
     public static function weekGain(Db $db, int $bandId, int $now): float
     {
         $from = Courses::day($now - (Balance::FESTIVAL['days'] - 1) * 86400);

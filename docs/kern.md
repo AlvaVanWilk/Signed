@@ -172,8 +172,10 @@ Das Stadion bleibt der Tournee vorbehalten.
 ### Battle of the Bands (Umbau)
 
 Jeden **Samstag um 16 Uhr** (deutsche Zeit) für alle Labels (`Balance::BATTLE`, `Battle`, `Events`). Anmeldung die ganze Woche, höchstens
-**2 Bands je Label** und 32 insgesamt; keine Computer-Bands, unter 2 Anmeldungen fällt es aus. Angemeldete Bands müssen pünktlich da sein:
-Alles, was über den Beginn hinaus dauern würde (Auftritt, Probe, Promo, Auszeit, Studio, Kurs, Interview eines Mitglieds), wird abgelehnt.
+**2 Bands je Label** und 32 insgesamt; nur Bands mit mindestens 2 Musikern (keine Solokünstler), keine Computer-Bands, unter 2 Anmeldungen
+fällt es aus. **Online sein muss niemand:** Der Server spielt das Battle aus, das Ergebnis kommt beim nächsten Öffnen. Eine angemeldete Band
+kann nur vorher nichts anfangen, was über den Beginn hinaus dauern würde (Auftritt, Probe, Promo, Auszeit, Studio, Tournee, Kurs, Interview
+eines Mitglieds); das wird mit Hinweis abgelehnt.
 
 - **Ablauf wie bei einer WM:** 2 Bands spielen nur das Finale, 3–5 eine Gruppe (die ersten zwei ins Finale, 3. und 4. um Platz 3),
   6–11 zwei Gruppen, 12–23 vier, 24–32 acht. In der Gruppe jeder gegen jeden, die ersten zwei kommen weiter (Erster gegen Zweiten der
@@ -200,9 +202,9 @@ Genre (auch als zweites oder drittes Genre), jedes Label mit so vielen, wie es w
 
 - **Plätze:** Hauptbühne 2, Nebenbühne 3, Zeltbühne 3. Sind es mehr Bewerbungen, entscheidet das Los (gezeigt als „der Veranstalter hat sich
   für andere Bands entschieden“). Wer nicht mehr passt (Genre gewechselt, Band aufgelöst), fällt raus.
-- **Bühnen nach der Bekanntheit der letzten 7 Tage** (`fame_days`, jede Bekanntheit je Band und Tag mitgeschrieben): die meiste spielt als
-  **Headliner** zuletzt auf der Hauptbühne, dann der Reihe nach Hauptbühne, Nebenbühne, Zeltbühne (auf jeder Bühne die Bessere später).
-  **Festival-Ruhm zählt dabei nicht mit**, sonst bekäme dieselbe Band immer wieder die Hauptbühne.
+- **Bühnen nach der Bekanntheit der letzten 7 Tage** (`fame_days`, jede Bekanntheit je Band und Tag mitgeschrieben, auch vom Festival):
+  die meiste spielt als **Headliner** zuletzt auf der Hauptbühne, dann der Reihe nach Hauptbühne, Nebenbühne, Zeltbühne (auf jeder
+  Bühne die Bessere später). Das letzte Festival liegt schon außerhalb der 7 Tage, und das Genre wechselt jede Woche.
 - Auftritte alle 10 Minuten, auf allen Bühnen zugleich, alle enden zur selben Zeit; mit wenigen Bands geht es gleich zu Beginn los.
   Das Line-up hängt vom Anmeldeschluss bis zum Beginn aus; alle Labels bekommen die Nachricht, wer Headliner ist.
 - **Ein Auftritt** wird beim Beginn wie ein Gig berechnet (Publikumsleiste, Ticker, „Zuschauen“) und zu seiner Zeit gezeigt.

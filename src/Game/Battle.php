@@ -51,8 +51,8 @@ final class Battle
     {
         $c = Balance::BATTLE;
         $start = (int) $event['starts_at'];
-        if (count($members) < Balance::MIN_MEMBERS) {
-            return sprintf('Die Band braucht mindestens %d Musiker.', Balance::MIN_MEMBERS);
+        if (count($members) < $c['members']) {
+            return 'Beim Battle of the Bands treten nur Bands an, keine Solokünstler.';
         }
         if ($band['busy_until'] > $start) {
             return sprintf('%s ist dann noch unterwegs.', Bands::who($members));
@@ -145,7 +145,7 @@ final class Battle
         }
         $band = Repo::hydrateBand($row);
         $members = $repo->members($bandId);
-        if (count($members) < Balance::MIN_MEMBERS || $band['busy_until'] > $start) {
+        if (count($members) < Balance::BATTLE['members'] || $band['busy_until'] > $start) {
             return null;
         }
         foreach ($members as $m) {
@@ -528,6 +528,10 @@ final class Battle
         foreach ($bands as $band) {
             $in = in_array($band['id'], $entered, true);
             $list = $members[$band['id']] ?? [];
+            // Solokünstler tauchen hier gar nicht erst auf.
+            if (!$in && count($list) < Balance::BATTLE['members']) {
+                continue;
+            }
             $options[] = [
                 'bandId' => $band['id'], 'entered' => $in, 'blocked' => $in ? null : self::blocker($repo, $band, $list, $next, $entries),
                 // So viel macht die Laune gerade aus (+0,05 = 5 % mehr Punkte)

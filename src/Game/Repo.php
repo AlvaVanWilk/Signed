@@ -83,11 +83,10 @@ final class Repo
 
     /**
      * Ruhm für eine Band: Ein Teil bleibt am Bandnamen hängen, der Rest wird Bekanntheit der Mitglieder.
-     * $week = false: zählt nicht als „in dieser Woche gesammelt“ (Festival, damit es sich nicht selbst verstärkt).
      * @param array<int, float> $gains Musiker-ID => Gewinn
      * @return float der ganze Gewinn
      */
-    public function addBandFame(int $bandId, array $gains, bool $week = true): float
+    public function addBandFame(int $bandId, array $gains): float
     {
         $total = array_sum($gains);
         if ($total <= 0) {
@@ -98,13 +97,14 @@ final class Repo
         foreach ($gains as $musicianId => $gain) {
             $own += $this->addMusicianFame((int) $musicianId, $gain * (1 - Balance::BAND_FAME_SHARE), false);
         }
-        if ($week) {
-            $this->noteFame($bandId, $own);
-        }
+        $this->noteFame($bandId, $own);
         return $own;
     }
 
-    /** Bekanntheit für einen Musiker (ohne Bremse: Wie schnell es geht, regeln die Gewinne selbst). Liefert den Gewinn. */
+    /**
+     * Bekanntheit für einen Musiker (ohne Bremse: Wie schnell es geht, regeln die Gewinne selbst). Liefert den Gewinn.
+     * $week = false: nicht noch einmal für die Band mitschreiben (addBandFame schreibt den ganzen Gewinn selbst).
+     */
     public function addMusicianFame(int $musicianId, float $gain, bool $week = true): float
     {
         $m = $this->db->one('SELECT fame, band_id FROM musicians WHERE id = ? AND label_id = ?', [$musicianId, $this->labelId]);

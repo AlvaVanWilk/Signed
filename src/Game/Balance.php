@@ -705,7 +705,8 @@ final class Balance
     public const CHART_INTERVAL = 3 * 3600;
     /**
      * Battle of the Bands: jeden Samstag (`weekday`, ISO: 1 = Montag) um `time` deutscher Zeit, Anmeldung die ganze Woche davor,
-     * höchstens `perLabel` Bands je Label und `max` insgesamt; unter `min` fällt es aus. Keine Computer-Bands.
+     * höchstens `perLabel` Bands je Label und `max` insgesamt; unter `min` fällt es aus. Keine Computer-Bands, keine Solokünstler
+     * (eine Band hat mindestens `members` Musiker).
      * Ablauf wie bei einer WM: Gruppen (jeder gegen jeden), dann K.-o.-Runden. Alle `round` Sekunden eine Runde; in einem Spiel spielt
      * jede Band `songs` Lieder, danach berät die Jury `jury` Sekunden.
      * Wer gewinnt: Sound × Laune × Tagesform. Laune = 1 + (Stimmung − mood.at) × mood.per; Tagesform zufällig zwischen 1 − luck und 1 + luck.
@@ -715,7 +716,7 @@ final class Balance
      */
     public const BATTLE = [
         'weekday' => 6, 'time' => [16, 0],
-        'perLabel' => 2, 'min' => 2, 'max' => 32,
+        'perLabel' => 2, 'min' => 2, 'max' => 32, 'members' => 2,
         'round' => 300, 'songs' => 2, 'jury' => 12,
         'luck' => 0.2,
         'mood' => ['at' => 60, 'per' => 0.0025],
@@ -727,8 +728,8 @@ final class Balance
      * Festival: jeden Mittwoch (`weekday`) um `time`, Anmeldeschluss am selben Tag um `close` (deutsche Zeit). Jedes Festival sucht ein
      * Genre (aus der Woche berechnet, nie zweimal hintereinander dasselbe, Catalog::FESTIVALS); genommen werden nur Bands mit diesem Genre
      * (auch hybrid). Jedes Label darf alle passenden Bands anmelden. Plätze je Bühne (`slots`); melden sich mehr an, entscheidet das Los.
-     * Wer auf welche Bühne kommt, entscheidet die Bekanntheit, die die Band in den letzten `days` Tagen gesammelt hat (Festival-Ruhm zählt
-     * dabei nicht mit): die meiste spielt als Headliner zuletzt auf der Hauptbühne. Auftritte alle `gap` Sekunden, auf allen Bühnen zugleich.
+     * Wer auf welche Bühne kommt, entscheidet die Bekanntheit, die die Band in den letzten `days` Tagen gesammelt hat: die meiste spielt
+     * als Headliner zuletzt auf der Hauptbühne. Auftritte alle `gap` Sekunden, auf allen Bühnen zugleich.
      * Je Bühne: Lieder, Ruhm je Lied (× Sound wie bei Gigs, × Publikum), Gage, Erwartung des Publikums, Bild der Bühne und Fan-Chance (`fanVenue`).
      * Danach fragt ein größeres Medium nach einem Interview; der Headliner bekommt ein Plakat für den Proberaum.
      */

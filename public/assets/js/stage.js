@@ -3,6 +3,8 @@
  * Je größer der Ort, desto prächtiger: von der Ecke in der Kneipe bis zur Arena mit Leinwänden und Lichtstrahlen.
  * Die Mitte bleibt frei für die Band; das Publikum liegt als eigener Streifen vorne darüber (crowdSvg).
  */
+import { worldScenes } from './stage-world.js';
+
 const INK = '#1d1a2a';
 const W = 960;
 const H = 320;
@@ -149,6 +151,9 @@ const SCENES = {
     ${Array.from({ length: 12 }, (_, i) => `<path d="M${i * 80 + 40} ${TOP + 12} V${H}" stroke="#5e3e22" stroke-width="2"/>`).join('')}`,
 };
 
+// Tournee: je Land eine eigene Bühne (stage-world.js), als „tour-fr“, „tour-jp“ …
+Object.assign(SCENES, Object.fromEntries(Object.entries(worldScenes({ W, H, TOP, DECK, INK, st, box, platform })).map(([k, scene]) => [`tour-${k}`, scene])));
+
 /** Bühne eines Orts als SVG-Text. key: kneipe, club, saal, halle, arena, openair (Festival), zelt (Festival); seed hält Kleinigkeiten fest. */
 export function stageSvg(key, seed = 1) {
   const scene = SCENES[key] ?? SCENES.kneipe;
@@ -197,8 +202,9 @@ function person(x, y, k, r, color, rim, { hand = false, phone = false } = {}) {
  */
 export function crowdSvg(key, seed = 1) {
   const r = rng(seed + 31);
-  const n = COUNT[key] ?? 6;
-  const rim = RIM[key] ?? RIM.kneipe;
+  const tour = key?.startsWith('tour-');
+  const n = COUNT[key] ?? (tour ? 12 : 6);
+  const rim = RIM[key] ?? (tour ? '#ffd9a8' : RIM.kneipe);
   const big = key === 'halle' || key === 'arena' || key === 'openair';
   let out = '';
   for (const [row, k, color, yBase, count] of [[0, 0.74, '#2a2238', 52, Math.round(n * 1.15)], [1, 1, '#120e1a', 72, n]]) {

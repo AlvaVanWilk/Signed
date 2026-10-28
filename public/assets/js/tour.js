@@ -73,9 +73,10 @@ const onArc = ({ a, b, c }, t) => [
 const PLANE = '<path d="M-7 0 L5 -1.4 L9 0 L5 1.4 Z M-1 0 L-4 -6 L-1.5 -6 L3 0 L-1.5 6 L-4 6 Z M-6 0 L-8 -3 L-6.6 -3 L-4.5 0 L-6.6 3 L-8 3 Z" fill="#fff" stroke="#1d1a2a" stroke-width="0.8"/>';
 
 /** Weltkarte mit allen Ländern der Tournee-Liste, der Route und (beim Fliegen) dem Flugzeug. */
-export function worldMap(tour, travel) {
+export function worldMap(tour, travel, been = []) {
   const countries = cat().countries;
   const visited = new Set((tour?.visits ?? []).map((v) => v.country));
+  const before = new Set(been);
   const target = tour?.country;
   const legs = tour?.legs ?? [];
   const now = serverNow();
@@ -93,8 +94,8 @@ export function worldMap(tour, travel) {
     : '';
   const pins = Object.entries(countries).map(([key, c]) => {
     const [x, y] = xy([c.lon, c.lat]);
-    const state = key === target ? 'here' : visited.has(key) ? 'done' : '';
-    return `<g class="tr-pin ${state}"><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${state ? 5 : 3}"/>${state ? `<text x="${(x + 8).toFixed(1)}" y="${(y + 4).toFixed(1)}">${esc(c.city)}</text>` : ''}</g>`;
+    const state = key === target ? 'here' : visited.has(key) ? 'done' : before.has(key) ? 'been' : '';
+    return `<g class="tr-pin ${state}"><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${state && state !== 'been' ? 5 : state ? 4 : 3}"/>${state && state !== 'been' ? `<text x="${(x + 8).toFixed(1)}" y="${(y + 4).toFixed(1)}">${esc(c.city)}</text>` : ''}</g>`;
   }).join('');
   const [hx, hy] = at('home');
   return `<svg class="tr-map" viewBox="0 ${TOP} ${W} ${H}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
@@ -168,9 +169,10 @@ export function tourPanel(b) {
   return `<section class="tr-panel">
     <div class="tr-head"><div><div class="eyebrow">Auf Tournee</div><h2>${esc(b.name)}</h2></div>
       <span class="tr-count">Station ${Math.min(station, t.stations)} von ${t.stations}</span></div>
-    ${worldMap(t, travel)}
+    ${worldMap(t, travel, b.toured)}
     ${status}
     ${visitList(t.visits)}
+    <p class="muted small tr-world">${worldProgress(b)}</p>
   </section>`;
 }
 
@@ -263,6 +265,7 @@ defineActions({
         <div class="lb-cap">Anordnung</div>
         <h2>${esc(b.name)} geht auf Tournee</h2>
         <p class="muted">Die Band fliegt von Land zu Land und spielt in jedem Land einmal. Wohin es geht, wird ausgewürfelt. Jedes Land hat ein Lieblings-Genre: Passt es zur Band, wird der Abend besonders gut. Jeden Auftritt startet ihr selbst, danach entscheidet ihr: weiter oder nach Hause. Unterwegs wächst die Band zusammen.</p>
+        <p class="muted">${worldProgress(b)}</p>
         <p class="muted">Die Flüge dauern lange (in Europa etwa eine Stunde, bis Australien vier Stunden) und kosten je Strecke ${money(low)} bis ${money(high)}. Der Heimflug ist bezahlt. So lange kann die Band nichts anderes machen.</p>
         <div class="lb-pick">${lengths.map((k) => `<button class="lb-pick-row" data-stations="${k}" ${off(why)}><span><b>${names[k] ?? ''}</b> · ${k} Stationen</span></button>`).join('')}</div>
         <div class="dialog-actions"><button class="btn ghost" data-close>Abbrechen</button></div>`,
@@ -319,11 +322,28 @@ export function arrivalActions(r) {
   return `<button class="btn ghost" data-close>Später</button><button class="btn primary" data-act="tourShow" data-id="${r.bandId}">Auftritt starten</button>`;
 }
 
-/** Nach einem Auftritt auf Tournee: welches Land, ob das Genre gepasst hat. */
+/** Wie viele Länder die Band schon bespielt hat (alle: Weltenbummler-Globus). */
+function worldProgress(b) {
+  const all = Object.keys(cat().countries).length;
+  const n = (b.toured ?? []).length;
+  return n >= all ? `In allen ${all} Ländern gespielt: Der goldene Globus steht im Proberaum.`
+    : `Schon in ${n} von ${all} Ländern gespielt. Wer in allen spielt, bekommt einen goldenen Globus für den Proberaum.`;
+}
+
+/** Goldener Globus auf einem Sockel (Weltenbummler: in allen Ländern gespielt). */
+export function globe() {
+  return `<svg class="trophy globe" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="10" r="7" fill="#e8c35a" stroke="#a8801f" stroke-width="1.2"/>
+    <path d="M5 10 H19 M12 3 C9 6 9 14 12 17 M12 3 C15 6 15 14 12 17 M6.2 6.5 H17.8 M6.2 13.5 H17.8" fill="none" stroke="#a8801f" stroke-width="0.9"/>
+    <path d="M4 7 A9 9 0 0 0 16 18" fill="none" stroke="#8b93a1" stroke-width="1.4"/><path d="M12 17 V20 M8 21.5 H16 L15 20 H9 Z" fill="#8b93a1" stroke="#5c6370" stroke-width="1.1"/></svg>`;
+}
+
+/** Nach einem Auftritt auf Tournee: welches Land, ob das Genre gepasst hat, und ob damit alle Länder bespielt sind. */
 export function gigExtras(res) {
   const t = res.tour;
   if (!t?.country) return '';
-  return `<p class="muted">Tournee · Station ${t.station} von ${t.stations} · ${t.match ? `${esc(inCountry(t.country))} lieben sie euer Genre!` : `${esc(inCountry(t.country))} hätten sie lieber ${esc(genreName(place(t.country).genre))} gehört.`}</p>`;
+  const all = Object.keys(cat().countries).length;
+  return `<p class="muted">Tournee · Station ${t.station} von ${t.stations} · ${t.match ? `${esc(inCountry(t.country))} lieben sie euer Genre!` : `${esc(inCountry(t.country))} hätten sie lieber ${esc(genreName(place(t.country).genre))} gehört.`}</p>
+    ${t.world ? `<div class="banner">${globe()} In allen ${all} Ländern gespielt! Dafür steht jetzt ein goldener Globus im Proberaum.</div>` : ''}`;
 }
 
 export function gigActions(r) {

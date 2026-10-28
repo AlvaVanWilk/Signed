@@ -238,6 +238,10 @@ Neue Anordnung auf der Bandseite (`Balance::TOUR`, `Tours`), erst mit einer Plat
   Niederlande Elektro, Schweden Elektro, Norwegen Metal, Finnland Metal, USA Hip-Hop, Kanada Punk, Brasilien Jazz, Südafrika Jazz,
   Japan Pop, Australien Rock): Spielt die Band es (auch als zweites oder drittes Genre), noch einmal Ruhm × 1,5 und Gage × 1,5,
   und das Publikum ist leichter zu begeistern (Erwartung × 0,85). Das ist Glück, weil man das Ziel nicht wählt.
+- **Bühne des Landes** (`stage-world.js`, als `tour-fr` …): klischeehaft, z. B. Frankreich mit Bistro, Baguettes und Eiffelturm, England mit
+  Big Ben und Telefonzelle, Japan mit Fuji, Torii und Kirschblüten. Größe und Gage richten sich trotzdem nach dem Ort nach Ruhm.
+- **Weltenbummler:** Hat eine Band (über alle Tourneen) in allen 14 Ländern gespielt, steht ein goldener Globus in ihrem Proberaum
+  (einmal je Band). Die Tournee zeigt, wie viele Länder es schon sind.
 - **Beziehungen:** Jeder Auftritt wirkt wie ein Gig (`RELATION['bond']['tourgig']`), am Ende die ganze Tournee (`['tour']`) und
   zusätzlich ein fester Schub von +0,6 je gespielte Station (höchstens +3) auf jede Beziehung, auch über den Zielwert hinaus:
   Das gemeinsame Abenteuer schweißt zusammen. Mit der Zeit rücken gemeinsame Erlebnisse die Beziehung wieder Richtung Charakter.

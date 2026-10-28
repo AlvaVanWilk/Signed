@@ -1551,3 +1551,7 @@ body { background: radial-gradient(1100px 520px at 50% -12%, rgba(255, 181, 71, 
 .tr-roll-name { font-size: 1.5rem; }
 .tr-roll-name.landed { color: var(--accent-2); animation: tr-land .4s ease-out; }
 @keyframes tr-land { from { transform: scale(1.25); } }
+.tr-pin.been circle { fill: #7fc8a0; }
+.tr-world { margin: 8px 0 0; }
+.banner .globe { width: 22px; height: 22px; vertical-align: -5px; }
+.lb-trophies .globe { filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .45)); }

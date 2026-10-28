@@ -94,6 +94,7 @@ final class State
         $bandRelations = [];
         $registrations = Events::registrations($db, $repo->labelId);
         $tours = Tours::present($repo, $members);
+        $played = Tours::played($db, $repo->labelId);
         // Pokale (Battle of the Bands, Festival) je Band
         $awards = [];
         foreach ($db->all('SELECT band_id, kind, place, title FROM awards WHERE label_id = ? ORDER BY id', [$repo->labelId]) as $row) {
@@ -177,6 +178,8 @@ final class State
                 'awards' => $awards[$band['id']] ?? [],
                 // Laufende Tournee (Stationen, Strecken, Ergebnisse), sonst null
                 'tour' => $tours[$band['id']] ?? null,
+                // Länder, in denen die Band schon auf Tournee gespielt hat (alle: Weltenbummler-Globus)
+                'toured' => $played[$band['id']] ?? [],
                 'managerNotes' => $managed ? Managers::notes($band, $list, $gearMap, $bandRelations[$band['id']] ?? [], $wishes, Mood::idleHours($repo, $band, $now)[0]) : [],
                 'cohesion' => round($band['cohesion'], 1),
                 'maxCohesion' => BandCalc::maxCohesion($identity),

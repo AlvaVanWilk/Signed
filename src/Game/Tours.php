@@ -179,7 +179,8 @@ final class Tours
                     'money' => $gage,
                     'fameGains' => BandCalc::splitFame($members, $fame, $gear, true),
                     'chartBoost' => round($songs * Balance::CHART_GIG_BOOST, 3),
-                    'venue' => $venue['key'],
+                    // Bühne des Landes (stage-world.js); Größe und Gage richten sich trotzdem nach dem Ort nach Ruhm.
+                    'venue' => 'tour-' . $tour['country'],
                     'meter' => $sim['meter'],
                     'drops' => $drops,
                     'tour' => ['id' => $tour['id'], 'country' => $tour['country'], 'match' => $match],
@@ -294,7 +295,39 @@ final class Tours
         $tour['deadline'] = Clock::now() + Balance::TOUR['wait'];
         self::save($repo->db, $tour);
         $repo->db->exec('UPDATE bands SET busy_until = ? WHERE id = ?', [$tour['deadline'], $bandId]);
-        return $info + ['station' => count($tour['data']['visits']), 'stations' => $tour['stations'], 'last' => count($tour['data']['visits']) >= $tour['stations']];
+        return $info + [
+            'station' => count($tour['data']['visits']), 'stations' => $tour['stations'], 'last' => count($tour['data']['visits']) >= $tour['stations'],
+            'world' => self::worldAward($repo, $bandId),
+            'played' => count(self::played($repo->db, $repo->labelId)[$bandId] ?? []),
+        ];
+    }
+
+    /** In welchen Ländern die Bands eines Labels schon auf Tournee gespielt haben (Band-ID => Länder). */
+    public static function played(Db $db, int $labelId): array
+    {
+        $out = [];
+        foreach ($db->all('SELECT band_id, data FROM tours WHERE label_id = ?', [$labelId]) as $row) {
+            foreach ((json_decode($row['data'], true) ?: [])['visits'] ?? [] as $v) {
+                $out[(int) $row['band_id']][$v['country']] = true;
+            }
+        }
+        return array_map('array_keys', $out);
+    }
+
+    /** In allen Ländern gespielt: einmal je Band eine besondere Auszeichnung für den Proberaum. Liefert true, wenn sie gerade dazukam. */
+    private static function worldAward(Repo $repo, int $bandId): bool
+    {
+        $played = self::played($repo->db, $repo->labelId)[$bandId] ?? [];
+        if (count(array_intersect($played, array_keys(Catalog::COUNTRIES))) < count(Catalog::COUNTRIES)
+            || $repo->db->value("SELECT id FROM awards WHERE band_id = ? AND kind = 'world'", [$bandId]) !== null) {
+            return false;
+        }
+        $repo->db->insert('awards', [
+            'label_id' => $repo->labelId, 'band_id' => $bandId, 'kind' => 'world', 'place' => 1,
+            'title' => sprintf('Weltenbummler: in allen %d Ländern gespielt', count(Catalog::COUNTRIES)), 'created_at' => Clock::now(),
+        ]);
+        $repo->log('tour', sprintf('%s hat in allen %d Ländern gespielt! Dafür steht jetzt ein goldener Globus im Proberaum.', $repo->db->value('SELECT name FROM bands WHERE id = ?', [$bandId]) ?? 'Die Band', count(Catalog::COUNTRIES)), $bandId);
+        return true;
     }
 
     /** Wieder zu Hause: Die Tournee hat die Band zusammengeschweißt. */

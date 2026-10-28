@@ -2893,3 +2893,31 @@ test('Battle: nur Bands, keine Solokünstler', function () {
     checkApiError(fn () => $p->post('battleEnter', ['bandId' => $solo['id']]), 'keine Solokünstler');
     checkEquals([], array_values(array_filter($state['battle']['next']['options'], static fn ($o) => $o['bandId'] === $solo['id'])), 'nicht in der Auswahl');
 });
+
+test('Tournee: Auftritte auf der Bühne des Landes; wer in allen Ländern gespielt hat, bekommt den Weltenbummler-Globus', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Globus');
+    $band = foundBand($p);
+    makeRecord($db, $p, $band['id'], 'Weltkarte', 3);
+    $db->exec("UPDATE musicians SET personality = '[\"rampensau\"]' WHERE band_id = ?", [$band['id']]);
+    $db->exec('UPDATE labels SET money = 20000');
+    $start = $p->post('tourStart', ['bandId' => $band['id'], 'stations' => 3]);
+    Clock::set($start['activity']['endsAt'] + 1);
+    $p->get('state');
+    $gig = $p->post('tourShow', ['bandId' => $band['id']])['activity'];
+    $country = bandById($p->get('state'), $band['id'])['tour']['country'];
+    checkEquals('tour-' . $country, $gig['venue'], 'Bühne des Landes');
+    // Alle anderen Länder hat die Band schon auf früheren Tourneen gespielt.
+    $labelId = (int) $p->get('state')['label']['id'];
+    $others = array_values(array_diff(array_keys(Catalog::COUNTRIES), [$country]));
+    $db->insert('tours', ['label_id' => $labelId, 'band_id' => $band['id'], 'state' => 'ended', 'stations' => count($others), 'country' => null, 'deadline' => 0, 'started_at' => 1, 'ended_at' => 2,
+        'data' => json_encode(['legs' => [], 'visits' => array_map(static fn ($c) => ['country' => $c, 'match' => false, 'fame' => 1, 'money' => 1, 'meter' => 50], $others)])]);
+    checkEquals(count($others), count(bandById($p->get('state'), $band['id'])['toured']));
+    Clock::set($gig['endsAt'] + 1);
+    $state = $p->get('state');
+    $res = array_values(array_filter($state['results'], static fn ($r) => $r['type'] === 'tourgig'))[0]['result'];
+    check($res['tour']['world'], 'Globus');
+    checkEquals(count(Catalog::COUNTRIES), $res['tour']['played']);
+    checkEquals(['world'], array_column(bandById($state, $band['id'])['awards'], 'kind'));
+    checkEquals(1, (int) $db->value("SELECT COUNT(*) FROM awards WHERE kind = 'world'"), 'nur einmal');
+});

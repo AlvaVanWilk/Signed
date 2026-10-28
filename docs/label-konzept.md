@@ -286,8 +286,9 @@ wird ausgewürfelt, und das nächste Ziel erst, wenn man weiterreist (mehr Mitfi
 lange, bei der Ankunft kommt eine Meldung („ist in Tokio angekommen“), den Auftritt startet man selbst, danach „Weiterreisen“ oder „Nach
 Hause“. Jedes Land hat ein Lieblings-Genre; ob die Band es spielt, ist Glück und macht den Abend besonders gut. Die Bandseite zeigt statt
 des Proberaums eine Weltkarte mit der Route (das Flugzeug fliegt mit), die Stationen mit Ergebnis und die Knöpfe. Auftritte haben die Bühne
-des Ortes nach Ruhm. Eine Tournee ist gut für die Beziehungen: Am Ende verstehen sich alle besser. Offen: ob Bühnenbilder je Land
-(Wahrzeichen im Hintergrund) gewünscht sind.
+des Ortes nach Ruhm. Eine Tournee ist gut für die Beziehungen: Am Ende verstehen sich alle besser. Jedes Land hat eine eigene, klischeehafte
+Bühne (Frankreich: Bistro mit Baguettes und Eiffelturm, Japan: Fuji, Torii und Kirschblüten …). Wer mit einer Band in allen Ländern gespielt
+hat, bekommt einen goldenen Globus für den Proberaum.
 
 ### Promo-Tour (gebaut)
 

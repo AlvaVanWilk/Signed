@@ -12,7 +12,7 @@ import { crowdSvg, stageSvg } from '../stage.js';
 import { studioBlock } from './recording.js';
 import { trophy } from './battle.js';
 import { poster } from './festival.js';
-import { tourHint, tourPanel } from '../tour.js';
+import { globe, tourHint, tourPanel } from '../tour.js';
 
 /** Label-Ebene: Band-Leiste links und die ruhige Bandseite. Stimmung als Punkt und Wort (grün, gelb, rot). */
 
@@ -458,11 +458,11 @@ function managerPicker(bandId) {
   });
 }
 
-/** Pokale und Festival-Plakate der Band stehen im Proberaum (die neuesten vorn, höchstens fünf). */
+/** Pokale, Festival-Plakate und der Weltenbummler-Globus stehen im Proberaum (die neuesten vorn, höchstens fünf). */
 function trophies(b) {
   const list = (b.awards ?? []).slice(-5);
-  return list.length ? `<div class="lb-trophies">${list.map((a) => (a.kind === 'festival'
-    ? `<span title="${esc(a.title)}">${poster()}</span>`
+  return list.length ? `<div class="lb-trophies">${list.map((a) => (a.kind === 'festival' || a.kind === 'world'
+    ? `<span title="${esc(a.title)}">${a.kind === 'world' ? globe() : poster()}</span>`
     : `<span title="${esc(a.title)}: ${a.place === 1 ? 'Sieger' : `Platz ${a.place}`}">${trophy(a.place)}</span>`)).join('')}</div>` : '';
 }
 

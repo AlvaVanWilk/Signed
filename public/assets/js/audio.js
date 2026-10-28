@@ -419,7 +419,8 @@ export function playApplause(strength, delay = 0, venue = null) {
   const c = getAudio();
   if (!c) return;
   const s = Math.max(0, Math.min(1, strength));
-  const name = s < 0.15 ? 'klein' : APPLAUSE[venue] ?? 'klein';
+  // Auf Tournee (tour-fr …): Applaus wie im Club.
+  const name = s < 0.15 ? 'klein' : APPLAUSE[venue] ?? (venue?.startsWith('tour-') ? 'club' : 'klein');
   const at = c.currentTime + 0.05 + delay;
   applauseBuffer(c, name).then((buf) => {
     if (!buf) {

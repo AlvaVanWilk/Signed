@@ -1,96 +1,61 @@
-# Der Kern von Signed
+# Der Kern von Signed – Regeln und Formeln
 
-> **Umbau (Label-Ebene), Stand Testversion:** Das **Zusammenspiel** (0–100, wuchs durch Proben, Auftritte, Aufnahmen; Höchstwert nach Genre-Linie) und die **Chemie** (Wachstum × 0,5–1,5) gibt es nicht mehr.
-> Stattdessen zählt der **Zusammenhalt** aus den Beziehungen der Mitglieder (−10…+10): `0,5 × Durchschnitt + 0,5 × schwächste Beziehung` (`Mood::togetherness`).
-> Er geht als Wert 0–100 (`50 + 5 × Zusammenhalt`; Solokünstler 100) mit derselben Formel `0,7 + 0,3 × Wert/100` in den Sound ein (`Mood::cohesionValue`, Zwischenspeicher `bands.cohesion`, nachgeführt von `Mood::syncCohesion`).
-> Kein Genre-Höchstwert mehr (der Genre-Bonus auf den Sound bleibt), keine Abzüge für Ein-/Austritt und Rollenwechsel – das übernehmen die Beziehungen (wer neu ist, ist ein Fremder = 0).
-> Neue Bands starten bei Beziehungen 0, also Zusammenhalt-Wert 50 (Sound × 0,85 statt vorher × 0,7). Die folgenden Abschnitte beschreiben noch den alten Stand.
+Stand: Label-Spiel in der Testversion. Währung: Groove Coins (₲). Alle Zahlen stehen in [`src/Game/Balance.php`](../src/Game/Balance.php),
+feste Daten in [`src/Game/Catalog.php`](../src/Game/Catalog.php); sie sind Startwerte zum Nachjustieren. Das Konzept dazu (was und warum) steht in
+[`label-konzept.md`](label-konzept.md), was aus dem alten Spiel herausgenommen wurde, in [`ausgelagert-musikerspiel.md`](ausgelagert-musikerspiel.md).
+Ändern sich Formeln, wird diese Datei mitgepflegt.
 
-Stand: vierte Runde (Läden mit Auswahl, Konto, neue Karten). Währung: Groove Coins (₲). Grundlage ist das Claude-Doc „Signed – Spielkonzept“.
-Alle Zahlen stehen in [`src/Game/Balance.php`](../src/Game/Balance.php) und sind Startwerte zum Nachjustieren.
+## Umfang
 
-> **Umbau:** Signed wird gerade auf die Label-Ebene umgebaut (Bands mit Eigenleben, Stimmung, Beziehungen). Das neue Konzept steht in
-> [`label-konzept.md`](label-konzept.md), was ins Musikerspiel auswandert in [`ausgelagert-musikerspiel.md`](ausgelagert-musikerspiel.md).
-> Diese Datei beschreibt weiter das echte Spiel, bis der Umbau fertig ist.
-
-## Was spielbar ist
-
-Der Kernkreislauf: **Musiker und Instrumente finden → Bands zusammenstellen → auftreten und Platten produzieren → Geld + Ruhm → stöbern.**
-
-| Bereich | Umfang im Kern |
+| Bereich | Umfang |
 |---|---|
-| Label | Konto mit Labelname, 2.000 ₲ Startkapital und ein Scout-Gutschein (keine Musiker zu Beginn) |
-| Läden | Talent-Scout (5 Musiker mit Können-Stufe 1, einer unterschreibt) und sechs Läden, in denen man mehrere Karten sieht und eine mitnimmt (siehe unten) |
-| Konto | Klick aufs Geld: Tantiemen pro Tag, Platten in den Charts, Kontoauszug |
-| Musiker | Einmalig, zufällig erzeugt: 1–2 Instrumente, Können, Bekanntheit, Genre-Symbole, Fähigkeiten (an die Können-Stufe gebunden), Charakterzüge, „Ungewöhnlich“, Profilbild. Favoriten ohne Band stehen in der zweiten Menüzeile |
-| Instrumente | 44 Modelle (11 Arten × 4 Seltenheiten); jedes Exemplar weicht pro Wert um bis zu ±12 vom Modell ab; frei tauschbar |
-| Manager | Stufe 1–5, 1–2 Fähigkeiten, eine Band oder bis zu 4 Solokünstler; nur mit Manager sieht man Wünsche, Gründe der Stimmung und Charakterzüge |
-| Bands | Bis zu 8 Bands (freigeschaltet über Label-Ruhm), Genre ergibt sich aus der Besetzung, Sound, Zusammenspiel, Chemie, Ruhm |
-| Aktivitäten | Band: Bandprobe, Band-Promo, Straßenmusik, Open Stage, Gig (erst mit Platte), Platte (Studio und Produzent wählen, läuft über Zeit). Einzeln: Solo-Probe (Rhythmus oder Tonhöhe), Promo-Mission. Ohne Band: Jam-Café (Mitmusiker für die erste Band), Straßenmusik |
-| Live | Live-Ticker mit Publikumsleiste für alle Auftritte |
-| Charts | Gemeinsame Album-Charts aller Spieler mit täglichen Tantiemen, dazu eine Label-Gesamtliste |
-| Einführung und Hilfe | Kurze Tour beim ersten Mal (5 Schritte, ein Satz je Schritt, auch für Kinder), danach die Hilfeseite (?) für alle, die tiefer einsteigen wollen |
-| Wechselbörse | Musiker ohne Band für 2 Tage anbieten; verbindliche Gebote, Mindestpreis aus den Werten |
-| Namen | Zufallsnamen für Bands und Platten; Bandnamen sind im ganzen Spiel eindeutig. Musiker: 236 Vornamen, 253 Nachnamen, ein Nachname kommt im eigenen Label nur einmal vor (solange noch freie da sind) |
-
-### Bewusst noch nicht drin
-
-Battle of the Bands, Tournee, Festival, Sonderevents (Interview, Charity), Remaster, Produzenten, ausgeschriebene Gigs, Roadies, Gastmusiker, Contest im ESC-Stil, Aufnahmen für alle Genres und Stufen.
-Die Manager-Fähigkeiten **Tourplaner** und **Netzwerker** werden schon verteilt, wirken aber erst mit
-Tournee bzw. ausgeschriebenen Gigs (im Spiel ausgegraut markiert).
+| Label | Name, 2.000 ₲ Startkapital, keine Musiker zu Beginn; Konto mit Kontoauszug (Klick aufs Geld), Tantiemen laufen sichtbar mit |
+| Posteingang | Kassetten (Musiker und Bands), Briefe (Interviews, Scout-Berichte), Bewerbungen (Praktikum, Assistenz, Scout, Manager, Lehrkraft, Coach) |
+| Musiker | zufällig erzeugt: 1–2 Instrumente, Können, Bekanntheit, Genres, Spieltechnik, Charakterzüge (erst verborgen), Wohlbefinden, Aussehen |
+| Bands | ohne Obergrenze; jeder unter Vertrag ist in einer Band oder Solokünstler; Genre aus der Besetzung; Proberaum je Band |
+| Anordnungen | Proben, Auftritt buchen, Aufnehmen, Promo-Tour, Auszeit, Tournee; Interviews einzelner Musiker |
+| Fördern | Kurs des Tages, Privatlehrer, Songwriting-Coach, Instrumente (Music Store), Proberaum |
+| Jede Woche | Festival (Mittwoch), Battle of the Bands (Samstag) |
+| Erfolg | Album-Charts aller Labels, Rangliste, Auszeichnungen, WikiSignia |
+| Einführung und Hilfe | sechs Schritte beim ersten Mal, Hilfe nach Themen (?); alte Labels sehen einmal „Was ist neu?“ |
+| Namen | Zufallsnamen für Bands und Platten; Bandnamen sind im ganzen Spiel eindeutig (geschützt, solange sie Ruhm haben) |
 
 ## Regeln und Formeln
 
 ### Musiker
 
-- Start-Können je Seltenheit: gewöhnlich 5–30, selten 15–42, episch 25–52, legendär 35–58. Aus Läden kommt also höchstens Können-Stufe 1 und keine Bekanntheit.
-- 20 % spielen zwei Instrumente. Dann gilt: Hauptinstrument × 0,85, Zweitinstrument × 0,55–0,8.
-  Jede Probe verbessert nur das geübte Instrument (geteilter Können-Topf).
-- „Ungewöhnlich“ (2 %): Das Lieblingsgenre passt nicht zum Klischee des Instruments. Bringt mehr Ruhm.
-- Zwei Leitern, unabhängig voneinander:
-  - **Können-Stufe** 0–3 nach dem besten Instrument: Stufe 1 ab 35, 2 ab 60, 3 ab 85. Keine Erfahrungspunkte –
-    wer übt und spielt, steigt auf. Die Stufe bestimmt Rahmenfarbe der Karte (grau, bronze, silber, gold).
-  - **Bekanntheits-Stufe** 0–3 nach Ruhm: ab 20, 120, 600. Sie lässt die Karte stärker leuchten (ohne Animation).
-  - Beide auf 3: **Legende**.
-  - Namen der Können-Stufen: Anfänger, Fortgeschritten, Profi, Virtuose.
-    Bekanntheits-Stufen: Unbekannt, Lokal bekannt, Szenegröße, Star.
-  - Auf der Karte: Kartenfarbe = Können-Stufe (grau, grün, blau, lila; Legende in Regenbogenfarben), Funkeln und
-    Schein = Bekanntheits-Stufe (statisch, ohne Animation). Darunter die beiden wichtigen Werte in gleicher Form:
-    Können pro Instrument als 10 Kästchen und Bekanntheit als 10 Sternchen – jeweils der Weg zur nächsten Stufe,
-    in der Farbe der aktuellen Stufe, dahinter die Stufe als Zahl. In Texten steht der Titel („ist an der Gitarre jetzt Profi“). Lieblingsgenres als farbige Abzeichen oben rechts; der Bildhintergrund
-    ist schräg in die Farben aller Lieblingsgenres geteilt.
-- Jedes Genre hat eine feste Farbe und ein Symbol – auf Karten, an Bands (Menü, Seitenleiste, Bandseite) und in
-  der Genre-Auswahl.
-- Fähigkeiten: eine pro Können-Stufe. Bei Stufe 1 und 2 kommt eine zufällige dazu, bei Stufe 3 wählt man aus drei.
-  Talent (Können +50 % schneller), Ausstrahlung (Promo bringt 50 % mehr Bekanntheit, etwas mehr Ruhm), Charisma (mehr Ruhm),
-  Nervenstark (verspielt sich live seltener), Absolutes Gehör (großzügigeres Timing), Entertainer (früher Bühnentier),
-  Studiofuchs (grüner Bereich am Mischpult +4 %) und die Spezialtechniken passend zum Instrument.
+- Start-Können je Seltenheit: gewöhnlich 5–30, selten 15–42, episch 25–52, legendär 35–58.
+- 20 % spielen zwei Instrumente: Hauptinstrument × 0,85, Zweitinstrument × 0,55–0,8. Proben verbessern das gespielte Instrument.
+- „Ungewöhnlich“ (2 %): Das Lieblingsgenre passt nicht zum Klischee des Instruments; bringt mehr Bekanntheit (+0,3 Anteil).
+- **Können-Stufe** 0–3 nach dem besten Instrument: ab 35, 60, 85 (Anfänger, Fortgeschritten, Profi, Virtuose). Sie bestimmt, welche
+  Instrumente er spielen darf (grau, grün, blau, gold).
+- **Bekanntheits-Stufe** 0–3 nach Bekanntheit: ab 20, 120, 600 (Unbekannt, Lokal bekannt, Szenegröße, Star).
+- **Lernkurve** für alle Können-Gewinne außer Kursen und Privatlehrern: (1 − Können/110)^2,5.
+- **Spieltechnik:** genau eine (84, `Catalog::ABILITIES`), passend zu Instrument und gemochten Genres.
+- **Charakterzüge** und ihre Zahlen: `Balance::TRAITS`, Tabelle in `label-konzept.md`.
+- Jedes Genre hat eine feste Farbe und ein Symbol.
 
 ### Sound
 
 ```
-Beitrag    = Können × (1 + Instrumentbonus), ohne eigenes Instrument × 0,5
-Instrument = Klang/100 × 0,5 × min(1, Können / (100 − Spielbarkeit))²   (darunter entfaltet es sich deutlich weniger,
-             ein einfaches Instrument ist für Anfänger oft besser als ein gutes)
-Sound      = (0,75 × Durchschnitt + 0,25 × schwächster Beitrag) × Genre (gemischt 0,8 / Genre-Band 1,15 / Hybrid 1,25 / Crossover 1,3)
-             × (1 + 0,05 × weitere Instrumentenarten, höchstens +20 %)
-             × (1 + 0,05 × Mitglieder über 2)            (volle Bühne: 7 Mitglieder × 1,25)
-             × (0,7 + 0,3 × Zusammenspiel/100)             (Hybrid bis 120: × 1,06)
+Beitrag  = Können × (1 + Klang-Bonus des Instruments)        ohne eigenes Instrument × 0,5
+Sound    = (0,75 × Durchschnitt + 0,25 × schwächster Beitrag)
+           × Genre (gemischt 0,8 / Genre-Band 1,15 / Hybrid 1,25 / Crossover 1,3; Genre geteilt, Besetzung fehlt: 1,0)
+           × (1 + 0,04 × Spieltechniken im Genre der Band, höchstens zwei je Musiker)
+           × (1 + 0,05 × weitere Instrumentenarten, höchstens +20 %)
+           × (1 + 0,05 × Mitglieder über 2)
+           × (0,7 + 0,3 × Zusammenhalt/100)
 ```
 
-Ein schwacher Musiker zieht den Sound runter. Große Bands klingen dafür voller: Sieben Musiker mit fünf Instrumentenarten
-sind bis zu 50 % stärker als ein Duo (`MEMBER_SOUND_BONUS`). Dazu bekommen sie mehr Gage (siehe Auftritte).
+Ein schwacher Musiker zieht den Sound runter; große Bands klingen voller (sieben Musiker mit fünf Instrumentenarten bis zu 50 % mehr als ein Duo).
+Solokünstler: kein Genre-Bonus außer halb für Pop und Elektro, Zusammenhalt 100.
 
 ### Genre einer Band
 
-- Beim Gründen wählt man kein Genre. Eine Band ist erst einmal einfach eine Band.
-- **Genre-Band** (z. B. „Rockband“): Alle Mitglieder mögen das Genre **und** die Besetzung passt. Sound × 1,15.
-- **Hybrid** (z. B. „Punk-Rock-Band“): Genre-Band, und für ein zweites Genre gilt dasselbe – alle mögen es **und**
-  seine Besetzung passt auch. Sound × 1,25. Name: zweites Genre vor dem Bandgenre. Mehr Genres brauchen meist mehr
-  Instrumente, also größere Bands (früher reichte für das zweite Genre, dass alle es mögen).
-- **Crossover** (z. B. „Rock-Crossover-Band“): Hybrid, und dasselbe gilt sogar für ein drittes Genre (samt Besetzung). Sound × 1,3,
-  Zusammenspiel wie Hybrid (bis 120). Sehr selten (nur rund 3 % der Musiker haben drei Genres) – ein Sammelziel.
-- Besetzungs-Bedingungen (gezählt wird das Instrument, das jemand in der Band spielt):
+- Man wählt kein Genre; es ergibt sich aus Mitgliedern und Besetzung (gezählt wird das Instrument, das jemand in der Band spielt).
+- **Genre-Band** (z. B. „Rockband“): Alle mögen das Genre **und** die Besetzung passt. **Hybrid** (z. B. „Punk-Rock-Band“): dasselbe für ein
+  zweites Genre. **Crossover**: sogar für ein drittes (selten, ein Sammelziel).
+- Besetzung je Genre:
 
 | Genre | braucht |
 |---|---|
@@ -104,283 +69,79 @@ sind bis zu 50 % stärker als ein Duo (`MEMBER_SOUND_BONUS`). Dazu bekommen sie 
 | Folk | Gitarre und Geige oder Flöte |
 
 - Kommen mehrere Genres in Frage, bleibt die Band bei ihrem bisherigen; sonst gilt die Reihenfolge oben.
-- Teilen alle ein Genre, aber die Besetzung dafür fehlt noch (z. B. zwei Folk-Musiker ohne Geige oder Flöte): **kein Abzug und kein Bonus** (Sound × 1,0). Erst die Besetzung bringt den Genre-Bonus.
-- Ohne gemeinsames Genre (**gemischte Band**) spielt die Musik im Genre, das die meisten Mitglieder mögen – und keiner
-  versteht so recht, was der andere macht: Sound × 0,8.
-- Zusammenspiel je nach Linie (`COHESION_BY_GENRE`): gemischt höchstens 70 (halb so schnell), Genre-Band 100,
-  Hybrid 120. Verliert eine Band ihre Linie, sinkt das Zusammenspiel auf den neuen Höchstwert.
-- Bewusst kein eigener Verkaufs- oder Ruhm-Bonus fürs Genre: Der bessere Sound wirkt schon auf Ruhm, Platten und Charts.
-- Wechsel kommen in die Chronik; beim Aufnehmen zeigt das Spiel vorher, ob die Band ihr Genre verliert oder gewinnt.
-- **Band-Plätze:** bis zu 8 Bands – die ersten beiden sofort, weitere ab 50, 150, 450, 1.350, 4.050 und 12.150 Label-Ruhm (jeweils das Dreifache). Genres dürfen sich wiederholen.
-- **Namensänderung:** kostet nie Geld. Mit eigener Laufbahn (Auftritte oder Platten) geht der Ruhm am alten Namen verloren, und die Platten bleiben beim alten Namen (siehe „Ehemalige Bands“).
+- Ohne gemeinsames Genre (**gemischte Band**): Sound × 0,8. Kein eigener Verkaufs- oder Ruhm-Bonus fürs Genre.
+- Wechsel kommen in die Chronik; beim Zusammentun zeigt das Spiel vorher, was herauskommt.
+- **Namen:** Umbenennen kostet nie Geld; mit Laufbahn geht der Ruhm am alten Namen verloren. Verbundener Name („und die“) behält 50 % des Ruhms
+  beider Namen. Ein Name bleibt geschützt, wenn er am Ende mindestens 20 Ruhm hatte.
 
-### Zusammenspiel und Chemie
+### Beziehungen und Zusammenhalt
 
-- Wächst pro Lied auf der Bühne (1,2 × Chemie) und pro Studio-Lied (2 × Trefferquote × Chemie).
-- Chemie 0,5–1,5: Reibung (Diva+Diva, Rampensau+Rampensau, Perfektionist+Chaot, Ehrgeizig+Gelassen) −0,15,
-  ein Ruhepol halbiert das; Teamplayer +0,04 pro Paar, Partytier+Partytier +0,06.
-- Höchstwert des Zusammenspiels ist immer 100; Chemie bremst nur das Wachstum (× Chemie). Die Chemie-Kachel nennt, wer sich reibt und wer hilft.
-- Nach der Freigabe (erster Auftritt) kostet: neues Mitglied −5, Instrumentwechsel −5, Rauswurf −30.
-  Wer aufs Instrument von vorher zurückwechselt, ist wieder eingespielt: Der Wechsel-Abzug kommt zurück (`bands.slot_return`).
-  Vor dem Wechsel zeigt das Spiel den Sound danach.
+- Beziehung je Paar −10 bis +10, Start 0 (als Band unterschrieben: 4). Gemeinsame Erlebnisse ziehen sie ein Stück zum **Zielwert**
+  `10 × Passung + 3` (`Mood::fit`, `Balance::RELATION`): Probe 0,12, Auftritt 0,10, Aufnahme 0,08, Promo-Tour 0,05, Auszeit 0,08, Battle 0,10,
+  Festival 0,12, Tournee-Auftritt 0,12, ganze Tournee 0,35 (Anteil des Weges). Getrennt driften sie mit 0,2 je Stunde auf 0.
+- **Passung:** je Reibungspaar −0,5 (Ausgeglichene halbieren), Teamplayer +0,25, zwei Gesellige +0,3, gemeinsame Genres −0,3 / +0,1 / +0,3 / +0,4,
+  Können-Abstand über 30 −0,2, über 50 −0,4; zwischen −1 und +1.
+- **Zusammenhalt** = 0,5 × Durchschnitt + 0,5 × schwächste Beziehung; als Wert 0–100: `50 + 5 × Zusammenhalt` (Solokünstler 100).
+  Neue Bands starten bei 50 (Sound × 0,85).
+
+### Wohlbefinden und Bedürfnisse
+
+- Wohlbefinden (Start 60) läuft auf ein Ziel zu (Halbwert 12 Stunden, `Balance::MOOD`); grün ab 60, gelb ab 35, sonst rot.
+  Die Band ist so gestimmt wie ihr Unzufriedenster; fürs Songschreiben zählen 70 % Unzufriedenster, 30 % Durchschnitt.
+- Ziel = 60 + Beziehungen (×3 je Punkt Durchschnitt) + Können-Abstand + Genre der Band (passt +6, passt nicht −8, gemischt −4) + Instrument
+  (keins −6, zu schwach −3 je Stufe, passend +2; Diven doppelt) − Songstau (ab 12 Songs 1,5 je Song, höchstens 18) − Miesepeter − Unruhe + Proberaum.
+- **Reaktionen:** Was der Charakter mag, hebt sofort, was er nicht mag, drückt (`Catalog::LIKES`, `Balance::MOOD['reactStep']`).
+- **Unerfüllte Bedürfnisse wachsen** (`Balance::NEEDS`): Wer nicht grün ist, wartet auf seinen Wunsch; nach 2 Std. Schonzeit −0,4 je Stunde,
+  bis die Band etwas macht, das er mag. Auf ein passendes Instrument warten: nach 4 Std. −0,3 je Stunde (Diven ×2). Ohne Bühne (Extrovertierte 6,
+  Gesellige 5, ab 8 Std.) und ohne Platte (Ehrgeizige 6, ab 48 Std.) wächst der Abzug je Stunde.
+- **Offline** rechnet die Stimmung bis zum ersten Rot und bleibt dann stehen, auch die Wartezeiten. **Geduld** (nur online im Roten): 30 Minuten,
+  dann verlässt die Band das Label.
+
+### Songs
+
+- Tempo = Grundtempo nach Stimmung (grün 1 Song je Stunde, gelb 0,5, rot 0) × (Σ 0,25 × Charakter-Faktor je Mitglied)^1,5
+  (Kreativ ×3, Impulsiv ×1,6, Perfektionistisch ×0,6, Technisch 0; `Balance::SONGWRITING`).
+- Höchstens 24 Songs; ab 12 Stau (siehe oben). Songwriting-Coach: ×1,5 / ×1,75 / ×2 für einen Tag.
 
 ### Ruhm
 
-- Begriffe: Ein Musiker hat **Bekanntheit**, eine Band hat **Ruhm**.
-- Bandruhm = Ruhm des Bandnamens + Summe der Bekanntheit aller Mitglieder. Von jedem Ruhmgewinn der Band
-  bleiben 25 % am Bandnamen hängen, 75 % werden Bekanntheit der Mitglieder. Wer geht, nimmt seine Bekanntheit
-  mit; der Name behält seinen Teil. Eine Rückwirkung (Ruhm erhöht zusätzlich Bekanntheit) gibt es nicht.
-- Ruhmgewinn eines Auftritts = Grund-Ruhm des Ortes pro Lied × Soundfaktor × Publikum × Zufall (0,9–1,1).
-  - Soundfaktor = Sound / 30 (zwischen 0,2 und 3).
-  - Publikum = 0,4 + 1,2 × Publikumsleiste/100.
-- Einzelanteil = Gewinn / Mitglieder × (0,8 + Boni für Ausstrahlung, Charisma,
-  Ungewöhnlich und Instrument-Design). Die Summe der Einzelanteile wird gleichmäßig auf alle verteilt.
+- Ein Musiker hat **Bekanntheit**, eine Band hat **Ruhm** = Ruhm am Namen + Bekanntheit aller Mitglieder.
+- Von jedem Ruhmgewinn der Band bleiben 25 % am Namen, 75 % werden Bekanntheit der Mitglieder: Einzelanteil = Gewinn / Mitglieder ×
+  (0,8 + 0,3 Ungewöhnlich + bei Auftritten Charakter (Extrovertiert +0,2, Gesellig +0,15) und Publikumsmagnet); die Summe wird gleich verteilt.
+- Keine Bremse und keine Rückwirkung (Ruhm erhöht nicht zusätzlich Bekanntheit).
+- **Label-Ruhm** = √(Σ Bandruhm²) (`BandCalc::labelFame`).
+- Jede Bekanntheit wird je Band und Tag mitgeschrieben (`fame_days`, für die Festival-Bühnen).
+
+### Proben
+
+- Offen, bis einer keine Lust mehr hat: Grundwert 60 Minuten × Charakter (`Catalog::LUST`) × Proberaum; Mindestdauer 1 Minute.
+  Gewinne je 15 Minuten (`Balance::REHEARSAL`): Können 4,0 × Lernkurve × Talent (Technisch ×1,25, Kreativ ×0,85) × Proberaum
+  (×1,08 / 1,16 / 1,25), etwas mehr unter Besseren; Beziehungen wie oben; Wohlbefinden je Charakter, Proberaum +1 / +2,5 / +4.
+- Alles wird laufend gutgeschrieben; „Probe beenden“ behält den Fortschritt.
 
 ### Auftritte
 
-| | Lieder | Geld | Ruhm pro Lied | Besonderheit |
-|---|---|---|---|---|
-| Straßenmusik | 3 | Notgroschen: 20–45 ₲ in den Hut, nur solange das Label keine EP (390 ₲) bezahlen kann | 0,06 × (1 − Ruhm/150), mindestens 10 %; Erwartung 25 | auch einzeln ohne Band |
-| Bandprobe | 2 | – | – | Zusammenspiel × 2,5; Können 0,05 pro Lied für jedes Mitglied (Lernkurve wie unten) – eine Solo-Probe bringt einem Musiker 5- bis 15-mal so viel; beides steht im Spiel an den Knöpfen |
-| Open Stage | 2 | – | 0,18 × (1 − Ruhm/120) | 7 % Manager-Karte, sonst 15 % Fan-Karte (+1–2 Ruhm) |
-| Gig | 1 bis Maximum | Gage des Ortes pro Lied, vorher bekannt | je nach Ort | erst mit Platte |
-
-Orte nach Bandruhm: Kneipe (ab 0), Club (30), Konzertsaal (150), Halle (600), Arena (2.500).
-Gage + 10 % für jedes Mitglied über 2 (`MEMBER_GAGE_BONUS`, 7 Mitglieder + 50 %): Große Bands zahlen so ihre Instrumente und Kurse.
-Grund-Ruhm pro Lied: 0,25 / 0,5 / 1 / 2 / 4.
-Das Stadion bleibt der Tournee vorbehalten.
-
-- Ein Gig hat mindestens 3 Lieder, höchstens so viele, wie die Band produziert hat, und ohne Manager höchstens 3.
-- Frisches Material: Jeder Gig seit der letzten Platte senkt Gage und Ruhm um 8 %, höchstens auf 45 %. Eine neue Platte
-  macht die Gigs wieder voll. Eine Platte der Band in den Top 10 bringt + 40 % (Platz 1) bis + 4 % (Platz 10).
-  Ein Manager erlaubt 3 + ⌈Stufe × 1,4⌉ Lieder (Stufe 5: 10 Lieder = 4 Minuten).
-- Verhandler: +8 % Gage pro Stufe. PR-Profi: +8 % Ruhm pro Stufe. Scout: weniger gewöhnliche Karten in Läden.
-  Managt einer mehrere Bands, wird seine Stufe durch die Zahl der Bands geteilt.
-- Publikumsleiste: startet bei 0 – das Publikum muss erst überzeugt werden. Im ersten Lied rückt sie pro Abschnitt
-  um 40 % Richtung 50 + 0,6 × (Gleichgewicht der Band − 50). Im Browser gleitet sie fließend und wackelt ständig
-  ein wenig (rein optisch).
-- Jedes Lied hat 4 Abschnitte; in jedem kann jeder Musiker patzen
-  (Chance 24 % minus 0,26 % pro Können-Punkt) oder glänzen (steigt mit Können, Spezialtechnik und Entertainer),
-  jeweils ±7–13 Punkte. Dazu pro Abschnitt Grundstimmung, Vergleich Sound zu Erwartung des Ortes und Zufall;
-  ab dem zweiten Lied rückt die Leiste jedes Mal 8 % Richtung Mitte. Schwache Bands landen im Schnitt bei etwa 30 %, starke bei etwa 85 %.
-- **Fan will einsteigen** (`FanMusician`, `Balance::FAN_MUSICIAN`): Nach einem Gig mit Publikum im Schnitt ab 75 % wartet mit 1,5 %
-  ein Fan am Bühnenausgang – höchstens einmal pro Woche und Label (Gigs gibt es viele). Er mag das Genre der Band, spielt ein
-  Instrument, das ihr fehlt (passend zum Genre bevorzugt), verträgt sich mit allen und kann höchstens 90 % des Bandschnitts.
-  Er kommt kostenlos ins Label; in die Band holt man ihn per Knopf (normale Regeln, Zusammenspiel −5).
-  Seltenheit nach Bühne: Kneipe 90/10/0/0 % … Arena 30/40/22/8 % (gewöhnlich/selten/episch/legendär).
-
-### Battle of the Bands (Umbau)
-
-Jeden **Samstag um 16 Uhr** (deutsche Zeit) für alle Labels (`Balance::BATTLE`, `Battle`, `Events`). Anmeldung die ganze Woche, höchstens
-**2 Bands je Label** und 32 insgesamt; nur Bands mit mindestens 2 Musikern (keine Solokünstler), keine Computer-Bands, unter 2 Anmeldungen
-fällt es aus. **Online sein muss niemand:** Der Server spielt das Battle aus, das Ergebnis kommt beim nächsten Öffnen. Eine angemeldete Band
-kann nur vorher nichts anfangen, was über den Beginn hinaus dauern würde (Auftritt, Probe, Promo, Auszeit, Studio, Tournee, Kurs, Interview
-eines Mitglieds); das wird mit Hinweis abgelehnt.
-
-- **Ablauf wie bei einer WM:** 2 Bands spielen nur das Finale, 3–5 eine Gruppe (die ersten zwei ins Finale, 3. und 4. um Platz 3),
-  6–11 zwei Gruppen, 12–23 vier, 24–32 acht. In der Gruppe jeder gegen jeden, die ersten zwei kommen weiter (Erster gegen Zweiten der
-  Nachbargruppe), dann K.-o. bis zum Finale; die Verlierer des Halbfinales spielen zugleich um Platz 3. Tabelle: Siege, dann Punkte-Unterschied, dann Punkte.
-- **Bands eines Labels** kommen in verschiedene Gruppen; treffen sie in der ersten K.-o.-Runde aufeinander, wird mit einem anderen Spiel getauscht,
-  wenn das geht (nur bei einer einzigen Gruppe geht es nicht anders).
-- **Ein Spiel:** jede Band 2 Lieder (je 24 s), dann 12 s Jury; alle 5 Minuten eine Runde (8 Bands: 5 Runden, gut 20 Minuten; höchstens 9 Runden).
-  Punkte = Sound × Laune × Tagesform, gerundet. **Laune** = 1 + (Stimmung der Band − 60) × 0,0025 (Stimmung 100: +10 %, 20: −10 %).
-  **Tagesform** zufällig 0,8–1,2 je Spiel. Ruhm, Proben und Klassen zählen nicht. Doppelter Sound gewinnt immer, 10 % mehr Sound meistens.
-- Ausgelost und ausgespielt wird beim Beginn (bei der ersten Anfrage danach); gezeigt wird nach der Uhr, Runde für Runde. Die Ansage
-  (Lieder, Glanzmomente, Patzer, Publikum) folgt der Tagesform. Alle Bands bleiben bis zum Schluss dort, damit die Uhr nicht verrät, wie weit sie kommen.
-- **Belohnung** (am Ende): Ruhm 1,5 je Spiel + 1,5 je Sieg + nach Platz 20 / 12 / 7 / 4 (fest, nicht nach Ruhm), verteilt wie bei Gigs;
-  Preisgeld 600 / 300 / 150 / 80 ₲; Stimmung +12 / +6 / +4 für die ersten drei; Pokal in Gold, Silber, Bronze (steht im Proberaum);
-  Chart-Schub wie bei Gigs je gespieltes Lied; Beziehungen wachsen wie bei einem Gig (`RELATION['bond']['battle']`).
-  Wer ehrgeizig, eine Rampensau oder eine Diva ist, mag das Battle, Gelassene nicht (`Catalog::LIKES`). Alle Labels bekommen die Nachricht, wer gewonnen hat.
-- Zum Tempo: Der Sieger einer Achterrunde bekommt gut 30 Ruhm (etwa acht Club-Gigs), einmal je Woche; für kleine Bands ein großer Schritt,
-  für große vor allem Pokal und Preisgeld. Weil der Gewinn fest ist, verstärkt Ruhm ihn nicht.
-
-### Festival (Umbau)
-
-Jeden **Mittwoch um 17 Uhr**, Bewerbung bis **Mittwoch 12 Uhr** (`Balance::FESTIVAL`, `Festival`). Jedes Festival sucht ein **Genre**
-(aus der Woche berechnet, nie zweimal hintereinander dasselbe; Name nach `Catalog::FESTIVALS`). Bewerben können sich nur Bands mit diesem
-Genre (auch als zweites oder drittes Genre), jedes Label mit so vielen, wie es will. Bis zum Beginn muss die Band zurück sein (wie beim Battle).
-
-- **Plätze:** Hauptbühne 2, Nebenbühne 3, Zeltbühne 3. Sind es mehr Bewerbungen, entscheidet das Los (gezeigt als „der Veranstalter hat sich
-  für andere Bands entschieden“). Wer nicht mehr passt (Genre gewechselt, Band aufgelöst), fällt raus.
-- **Bühnen nach der Bekanntheit der letzten 7 Tage** (`fame_days`, jede Bekanntheit je Band und Tag mitgeschrieben, auch vom Festival):
-  die meiste spielt als **Headliner** zuletzt auf der Hauptbühne, dann der Reihe nach Hauptbühne, Nebenbühne, Zeltbühne (auf jeder
-  Bühne die Bessere später). Das letzte Festival liegt schon außerhalb der 7 Tage, und das Genre wechselt jede Woche.
-- Auftritte alle 10 Minuten, auf allen Bühnen zugleich, alle enden zur selben Zeit; mit wenigen Bands geht es gleich zu Beginn los.
-  Das Line-up hängt vom Anmeldeschluss bis zum Beginn aus; alle Labels bekommen die Nachricht, wer Headliner ist.
-- **Ein Auftritt** wird beim Beginn wie ein Gig berechnet (Publikumsleiste, Ticker, „Zuschauen“) und zu seiner Zeit gezeigt.
-  Die Band ist vom Beginn des Festivals bis zum Ende ihres Auftritts dort.
-
-| Bühne | Lieder | Ruhm je Lied | Gage | Erwartung | Fan-Chance wie |
-|---|---|---|---|---|---|
-| Hauptbühne | 6 | 5,0 | 300 ₲ | 45 | Arena |
-| Nebenbühne | 5 | 3,0 | 150 ₲ | 35 | Halle |
-| Zeltbühne | 4 | 1,8 | 80 ₲ | 25 | Konzertsaal |
-
-  Ruhm = Σ Lieder (Ruhm je Lied × Sound-Faktor × Publikum × 0,9–1,1) × (1 + PR-Profi), wie bei Gigs. Bei Sound 30 und mittlerem Publikum
-  bringt die Hauptbühne rund 30 Ruhm (etwa acht Club-Gigs), die Zeltbühne rund 7. Dazu: Chart-Schub je Lied, Beziehungen wie bei einem Gig
-  (`RELATION['bond']['festival']`), die Lieder zählen für den Album-Zyklus, mit 20 % ein Fan, der mitspielen will (ab Publikum 75 %, sonst wie bei Gigs).
-- **Danach:** Ein Medium eine Stufe größer als sonst fragt nach einem Interview (im Posteingang). Der **Headliner** bekommt ein Plakat für den Proberaum.
-  Ehrgeizige, Chaoten, Rampensäue, Partytiere und Divas mögen Festivals, Gelassene nicht (`Catalog::LIKES`).
-
-### Tournee (Umbau)
-
-Neue Anordnung auf der Bandseite (`Balance::TOUR`, `Tours`), erst mit einer Platte. Man wählt nur die Länge (3, 5 oder 7 Stationen);
-**jedes Ziel wird ausgewürfelt** (echte Länder, `Catalog::COUNTRIES`, keins doppelt) und erst bekannt, wenn es weitergeht.
-
-- **Ablauf, alles per Klick:** Flug zum Ziel (Reisezeit 30 Min. + 0,6 s je km: London etwa 40 Min., Tokio 2 Std., Sydney 3 Std.) →
-  Meldung „angekommen“ (auch in den Nachrichten) → **Auftritt starten** → danach **Weiterreisen** (nächstes Ziel auswürfeln) oder
-  **Nach Hause**. Nach der letzten Station bleibt nur der Heimflug. Wer zwei Tage nicht weitermacht, fliegt von selbst heim.
-  Die Band kann während der ganzen Tournee nichts anderes machen; wer für Battle oder Festival angemeldet ist, kann nicht los.
-- **Kosten:** je Strecke Mitglieder × (15 + 0,01 ₲ je km), bei vier Musikern etwa 80 ₲ (Amsterdam) bis 700 ₲ (Sydney); der Heimflug ist frei.
-  Reicht das Geld nicht, bleibt das ausgewürfelte Ziel stehen (später nochmal oder nach Hause).
-- **Ein Auftritt** wie ein Gig am Ort nach Ruhm mit ganzer Setlist, aber ohne Abnutzung (im Ausland kennt niemand die Lieder) und mit
-  neuem Publikum: Ruhm × 2, Gage × 1,25. **Lieblings-Genre** des Landes (England Rock, Irland Folk, Frankreich Pop, Spanien Folk,
-  Niederlande Elektro, Schweden Elektro, Norwegen Metal, Finnland Metal, USA Hip-Hop, Kanada Punk, Brasilien Jazz, Südafrika Jazz,
-  Japan Pop, Australien Rock): Spielt die Band es (auch als zweites oder drittes Genre), noch einmal Ruhm × 1,5 und Gage × 1,5,
-  und das Publikum ist leichter zu begeistern (Erwartung × 0,85). Das ist Glück, weil man das Ziel nicht wählt.
-- **Bühne des Landes** (`stage-world.js`, als `tour-fr` …): klischeehaft, z. B. Frankreich mit Bistro, Baguettes und Eiffelturm, England mit
-  Big Ben und Telefonzelle, Japan mit Fuji, Torii und Kirschblüten. Größe und Gage richten sich trotzdem nach dem Ort nach Ruhm.
-- **Weltenbummler:** Hat eine Band (über alle Tourneen) in allen 14 Ländern gespielt, steht ein goldener Globus in ihrem Proberaum
-  (einmal je Band). Die Tournee zeigt, wie viele Länder es schon sind.
-- **Beziehungen:** Jeder Auftritt wirkt wie ein Gig (`RELATION['bond']['tourgig']`), am Ende die ganze Tournee (`['tour']`) und
-  zusätzlich ein fester Schub von +0,6 je gespielte Station (höchstens +3) auf jede Beziehung, auch über den Zielwert hinaus:
-  Das gemeinsame Abenteuer schweißt zusammen. Mit der Zeit rücken gemeinsame Erlebnisse die Beziehung wieder Richtung Charakter.
-  Ehrgeizige, Chaoten, Rampensäue und Partytiere mögen Tourneen, Gelassene und Ruhige nicht (`Catalog::LIKES`).
-
-### Auszeichnungen (Umbau)
-
-Nur echte Pokale (`Awards`, `Balance::AWARDS`), alle im Proberaum der Band (Schallplatten, Pässe und Plakate an der Wand, Pokale und Globus
-auf dem Boden) und als Liste auf der Bandseite und in WikiSignia. Neue werden einmal mit einem Fenster gefeiert.
-- **Verkaufte Stück** je Platte = Chartpunkt-Stunden × 100 (nur solange sie chartet und Tantiemen bringt). **Goldene Schallplatte** ab 100.000,
-  **Platin** ab 250.000, **Diamant** ab 1 Million (je Platte einmal). Eine Platte mit 30 Punkten schafft etwa Gold, mit 75 Platin,
-  Diamant nur die besten (um 300 Punkte). Beim Umbau werden die bisherigen Verkäufe geschätzt (ohne Schub) und die Auszeichnungen ohne Feier vergeben.
-- **Platz 1 der Charts** (je Platte, nur mit Konkurrenz aus mindestens 3 Labels), **Große Halle** und **Arena** (erster Auftritt dort, je Band;
-  auf Tournee zählt die Größe des Ortes).
-- Dazu: Battle-Pokale (Platz 1 bis 3), Festival-Plakat (Headliner), Weltenbummler-Globus (alle Länder). Kleinkram wie „Erster Gig“ gibt es nicht mehr.
-
-### Übergang alter Labels (Umbau)
-
-Einmalig beim Umbau der Datenbank (Schritt 53, `Transition`, Zahlen `Balance::TRANSITION`). Label, Geld, Bands, Platten, Instrumente und Manager bleiben.
-- **Wechselbörse** zu: Angebotene Musiker bleiben beim Label, Gebote gehen zurück aufs Konto.
-- **Alte Karten und Gutscheine** werden zu Geld: Fan-Karte 100 ₲ je Ruhmpunkt, Scout-Gutschein und offenes Scout-Angebot je 1.200 ₲ (so viel wie ein
-  guter Scout heute), ungeöffnete Packs zum Kaufpreis. Offene Jam-Angebote verfallen.
-- **Laufende Aktionen** rechnet das neue Spiel ab, sobald sie fertig sind. Alte Proben und Jam-Treffen werden gleich mit ihrem schon berechneten
-  Können-Gewinn abgerechnet; Karten-Funde fallen weg; alte Ergebnisse erscheinen nicht noch einmal.
-- **Beziehungen** aus der gemeinsamen Bandzeit: Zielwert der Passung × (1 − e^(−Tage / 7)), gezählt ab Gründung oder späterer Unterschrift
-  (nach einer Woche etwa zwei Drittel, nach zwei Wochen 86 %).
-- **Kartei:** Sind es mehr als 5 Musiker ohne Band, kommen sie beiseite. Beim ersten Login sucht man bis zu 5 aus, die als Solokünstler bleiben;
-  die übrigen verlassen das Label (wie Entlassene, sie bleiben in WikiSignia). Ihre Instrumente liegen im Lager.
-- Beim ersten Login: „Was ist neu?“ in sechs Schritten mit der Übersicht, was der Umbau gebracht hat, statt der Einführung für Neue.
-- In der Testversion (Datenbank schon im Umbau) gilt das nur für Labels mit altem Kram (Karten, Packs, Börse, Musiker alter Herkunft), und zur Wahl
-  stehen nur Musiker alter Herkunft; wer aus dem Posteingang oder vom Scout kam, bleibt.
-
-### Talent-Scout
-
-- 5 Musiker (70 % episch, 30 % legendär), alle mit Können-Stufe 1. Einer unterschreibt, die anderen verfallen.
-  Der erste Musiker eines Labels wird automatisch Favorit.
-- Gutscheine: 1 zum Label-Start, 1 für die erste Platte des Labels und 1 für Platz 1 der Album-Charts –
-  Letzteres erst, wenn mindestens 3 Labels Platten in den Charts haben (sonst wäre Platz 1 geschenkt).
-- Ohne Gutschein: 3.000 ₲, höchstens einmal pro Woche.
-
-### Minispiele
-
-Ein Lied dauert 24 Sekunden: 12 Takte 4/4 (oder 16 Takte 3/4) bei 120 BPM – alle Genres im selben Tempo und derselben Tonart, damit sich alle Spuren mischen lassen. Bewertet wird in Perfekt / Gut / Daneben; Trefferquote = (Perfekt + 0,6 × Gut) / Anzahl.
-
-**Etüden (Solo-Probe, alle Instrumente):** Statt der Aufnahme spielt man eine Übung, die das Spiel aus typischen
-Genre-Bausteinen erzeugt (`Styles`: Akkordfolgen, Grooves, Bass-, Begleit- und Melodie-Rhythmen je Genre; `Etude`).
-Eigenes Tempo, Taktart (Folk 3/4) und Tonart, Swing bei Jazz und Hip-Hop, Synthesizer-Begleitung (Schlagzeug und Bass ohne die eigene Rolle, Akkorde immer; Bass eine Oktave höher, damit Tablet-Lautsprecher ihn spielen).
-Muster tragen Wichtigkeiten (9 = Gerüst … 1 = Verzierung, zusätzlich durch die Taktposition gedeckelt). Das Können legt
-die Notendichte fest (`Balance::ETUDE_RATE`, Noten pro Sekunde je Rolle von Können 0 bis 100, dazwischen nach Können^1,5);
-genommen werden die wichtigsten Noten. So ist jede Etüde bei gleichem Können gleich schwer, egal welches Muster, Tempo oder
-Genre gezogen wurde (vorher schwankte die Dichte bis zum Vierfachen). Gehaltene Töne klingen auch so lange. Alles Zufällige hängt an einer Nummer: dieselbe Etüde wird mit mehr Können
-voller, bleibt aber dieselbe (Grundlage fürs spätere Notizbuch und Songwriting). Probe: `probe-etuede.html`.
-Gesang und Geige spielen die Etüde im Tonhöhen-Spiel (Steuerung unverändert), Rap im Hip-Hop im Rhythmus-Spiel. Vor großen
-Sprüngen (ab 3 Stufen) endet der Ton früher (0,07 s pro Stufe), damit Zeit zum Hinübergleiten bleibt – in Etüden und in
-den Gesangsspuren der Aufnahmen (`Music::melodyChart`, für Studio-Aufnahmen).
-
-- **Rhythmus** (Solo-Probe für alle außer Gesang und Geige): vier Spuren, Tasten D F J K oder Tippen.
-  Die Noten kommen aus der Aufnahme (noten.json) der eigenen Spur: Schlagzeug nur Bassdrum (links) und Snare (rechts),
-  die Hi-Hat bleibt im Klang; andere Instrumente Spur nach Tonhöhe (tief links), Akkorde als zwei Noten
-  zugleich (tiefster und höchster Ton), Töne ab 1,5 Schlägen werden gehalten (bis kurz vor dem nächsten Anschlag). Haltenote: ab 85 % gehalten
-  zählt die Wertung des Anschlags, ab 40 % „Gut“, sonst „Daneben“.
-  Die Schwierigkeit steckt in der Spur der Stufe. Bei Treffern hört man die eigene Spur, bei Fehlern wird sie leise.
-  Man übt allein: Dazu tickt nur ein Metronom. Ohne Aufnahme: Zufallsnoten, Dichte 0,25–0,55 je nach Können. Zeitfenster Perfekt 60–75 ms, Gut 135–185 ms, Absolutes Gehör +20 ms.
-- **Tonhöhe** (Solo-Probe für Gesang und Geige): Gedrückt halten lässt den Ton steigen, Loslassen sinken.
-  Melodie aus der Aufnahme, Tonleiter ab ihrem tiefsten Ton. Gesteuert wird mit Halten, nicht mit der Stimme.
-  Die echte Spur ist zu hören, solange man den Ton trifft; daneben wird sie leise und man hört den eigenen, falschen Ton.
-  Dazu tickt ein Metronom.
-  Wie schnell der Ton steigt, richtet sich nach den Sprüngen der Melodie (0,5–1 Tonleiter pro Sekunde).
-  Jeder Ton der Melodie zählt als Perfekt ab 70 % der Zeit im richtigen Bereich, als Gut ab 40 %.
-  Der Bereich ist ±7–13 % der Tonleiter, mit Absolutem Gehör +3 %.
-- **Mischpult** (Studio): Die Band spielt, die Pegel gleiten ständig – ein Zufallspfad, der zur Mitte zurückstrebt.
-  Neuer Zielpunkt alle 0,7–1,4 Sekunden, Schritt 0,05–0,18; je schwächer der Musiker, desto öfter und weiter.
-  Bis zu 4 Musiker haben eigene Spuren; größere Bands werden zu Gruppen (Rhythmus, Harmonie, Melodie) mit
-  dem durchschnittlichen Können zusammengefasst. Jede Spur hat 6 Abschnitte à 4 Sekunden (2 Takte), bewertet wie oben.
-  Der grüne Bereich ist ±11–19 %, je nach Sound der Band.
-  Ein Regler folgt der Bewegung des Fingers, nicht seiner Position: Festhalten allein hält die Spur nicht im Bereich.
-- **Master-Mix** (letzte Aufnahme einer Platte): Die ganze Band läuft durch einen Klangregler mit Bässen (250 Hz),
-  Mitten (1 kHz) und Höhen (4 kHz). Jeder Regler hat eine richtige Stellung (15–85 %); Abweichung klingt mit 24 dB
-  pro voller Reglerlänge daneben. Eine Lampe pro Regler: grün im Bereich (±11–19 % wie am Mischpult), gelb bis zum
-  2,2-fachen, sonst rot – ohne Richtung. 4 Abschnitte à 6 Sekunden; nach der Hälfte verschiebt sich jede Stellung
-  um 15–35 %. Bewertet pro Regler und Abschnitt wie am Mischpult (12 Wertungen).
-- **Tageskurse:** Jeden Tag ein Instrument und eine Kursart, für alle Spieler gleich (Instrument reihum, nie zweimal
-  hintereinander; mit Gastdozent). Kursart zufällig: Kurs (50 %, 10 Min., +3 Können), Workshop (35 %, 30 Min., +5),
-  Meisterklasse (15 %, 60 Min., +8). Angeboten in drei Schwierigkeiten – Anfänger, Fortgeschrittene, Profis (Stufe 0,
-  1, 2+) –, jeder Musiker nur in seiner. Gleicher Zuwachs für alle, ohne Lernkurve und ohne Stufen-Bremse; Preis =
-  Grundpreis (80 / 150 / 300 ₲) × 1 / 3 / 8 je Schwierigkeit. Jeder Musiker einmal pro Tag, auch ohne Band; läuft
-  offline; Zurückholen gibt das Geld zurück. Ein Musiker hat etwa jeden zehnten Tag sein Instrument: im Schnitt +4,5
-  Können, eine Stufe allein durch Kurse in rund zwei Monaten.
-- Allein üben lassen (statt Minispiel): 10 Minuten, läuft auch offline, bringt ¼ einer perfekten Solo-Probe. Wer selbst
-  spielt, bekommt je nach Treffern bis zum Vierfachen. Beim Platte-Aufnehmen gibt es diese Wahl nicht.
-- Solo-Probe: Können + 0,8 × Trefferquote^1,5 × Talent × Lernkurve; auf Stufe 0 (unter 35) × 3 –
-  eine perfekte Probe bringt dann +1,7 (bei Können 15) bis +0,95 (bei 34). Von 15 auf 35 sind es bei 90 % Treffern
-  rund 19 Proben (~13 Minuten), danach normales Tempo (alter Stand, mit der inzwischen entfernten Stufen-Bremse).
-- Lernkurve (alle Können-Gewinne): (1 − Können/110)^2,5. Je besser jemand ist, desto langsamer geht es.
-
-### Bedürfnisse (Umbau)
-
-- Das Wohlbefinden läuft auf ein Ziel zu (Halbwert über `Balance::MOOD['tau']`, 12 Std.); das Ziel ergibt sich aus den Gründen (Beziehungen,
-  Genre, Können-Abstand, Instrument, Songstau, Miesepeter, Unruhe).
-- **Unerfüllte Bedürfnisse wachsen** (`Balance::NEEDS`): Wer nicht grün ist, wartet auf seinen Wunsch; nach 2 Std. Schonzeit −0,4 je Stunde,
-  bis die Band etwas macht, das er mag (Mood::react setzt `wish_wait` zurück). Auf ein passendes Instrument warten: nach 4 Std. −0,3 je Stunde
-  (Diven ×2). Ohne Bühne (Rampensau 6, Partytier 5 ab 8 Std.) und ohne Platte (Ehrgeizige 6 ab 48 Std.) wächst der Abzug je Stunde um 4 % bzw.
-  1,5 % des Grundwerts (`TRAITS` restless/stagnant `grow`). Ein Auftritt, der offline zu Ende ging, setzt die Unruhe ab seinem Ende zurück.
-- Offline rechnet die Stimmung bis zum ersten Rot und bleibt dann stehen, auch die Wartezeiten.
-
-### Tempo
-
-**Umbau (Label-Ebene):** Die **Bandprobe** ist jetzt die Hauptquelle für Können und läuft **ohne Stufen-Bremse** (nur die Lernkurve bremst).
-Die Probe ist offen und wird laufend gutgeschrieben; Gewinne gelten je 15 Minuten Probe (`Balance::REHEARSAL`: `seconds` 900 als Bezugszeit, `skill` 4,0, `cohesion` 5,0; `lust` 3600 s Grundwert bis jemand genug hat).
-Rechnung ab Können 15 (ohne Talent), in Probenzeit: Stufe 1 nach rund 2,5 Stunden, Stufe 2 nach rund 9, Stufe 3 nach rund 36 Stunden.
-Die Solo-Probe und das „Allein üben“ der Musikerseite gehören nicht mehr zu Signed (siehe `ausgelagert-musikerspiel.md`); die Beschreibung darunter gilt für den alten Stand.
-
-**Keine Stufen-Bremse mehr** (Umbau): Die alte Bremse (`LEVEL_PACE`: ab Stufe 1 wirkten Können- und Bekanntheitsgewinne nur noch zu 25 %,
-ab Stufe 2 zu 3 %) ist ganz entfernt, auch für Bekanntheit aus Auftritten, Promo, Charts und Platten und für Können aus dem Studio.
-Das Tempo soll sich aus gut abgestimmten Gewinnen, Kosten, steigenden Schwellen (Bekanntheit 20 / 120 / 600, Können 35 / 60 / 85),
-dem Anspruch der Bands und der Lernkurve ergeben. Was sich aufschaukelt, ist ein Fehler in den Formeln und wird dort behoben.
-**Noch zu prüfen** (Durchspiel-Prüfung): Größere Orte bringen mehr Ruhm je Lied und werden mit mehr Ruhm erreichbar; ohne Bremse muss
-die Rechnung zeigen, dass das nicht davonläuft.
-**Tageskurse:** teuer und je Musiker nur einmal am Tag, dafür ohne Lernkurve. Es gibt einen am Tag (`Balance::COURSE['perDay']`);
-die Woche steht auf dem Schwarzen Brett, so kann man planen.
-**Songs** (Umbau): Das Tempo hängt an den Mitgliedern, (Summe der Beiträge)^1,5 mit 0,25 je Mitglied mal Charakter-Faktor (`Balance::SONGWRITING`, `Balance::TRAITS['write']`).
-Eine Vierer-Band schreibt wie bisher, Solokünstler achtmal langsamer. Bands sind so der schnellere Weg nach oben; Solo lohnt sich nur kreativ, mit Pop/Elektro oder egozentrisch.
-Der Beitrag hängt am Charakter (Kreativ ×3, Impulsiv ×1,6, Perfektionistisch ×0,6, Technisch 0; siehe label-konzept.md, Charakterzüge). Technische lernen beim Proben ×1,25.
-**Große Bands** sind ein bewusster Weg nach oben: mehr Sound (+5 % je Mitglied über 2) und mehr Gage (+10 % je Mitglied über 2) – sie kosten mehr Zeit und Geld, dafür kommen sie schneller zu größeren Bühnen.
-**Fans** großer Bühnen sind ein weiterer, kleiner Weg: In Halle und Arena kommen auch epische und legendäre Musiker, so gut wie fast die Band.
-**Für neue Inhalte** (Tourneen und Co.): eigene, gut abgestimmte Gewinne, die zum übrigen Tempo passen; keine Bremse und keine Ausnahme davon.
-**Interviews** (Posteingang) öffnen den Weg zur Bekanntheit: Jede Anfrage bringt einen festen Anteil (8–14 %, je Medium) des Weges von der eigenen
-Bekanntheitsstufe zur nächsten (`Balance::INTERVIEW`, `Catalog::INTERVIEW_MEDIA`). Wie oft Anfragen kommen, hängt nur an der
-eigenen Bekanntheit: je Tag 0,1 + 0,05 × √Bekanntheit (unbekannt etwa alle zehn Tage eine, Bekanntheit 120 etwa 0,65, 600 etwa 1,3), höchstens
-1 + Stufe zugleich offen; sie liegen vier Tage. Für Unbekannte ist das also kaum ein Weg (erst Auftritte und Platten), ab Stufe 1 schafft man mit
-allen Anfragen eine Stufe in grob zwei bis vier Wochen, weiter oben schneller, weil mehr kommen; Auftritte und Platten kommen dazu.
-**Privatunterricht** öffnet den Weg beim Können: +8 / +12 / +16 in zwei Tagen ohne Lernkurve, für einen Musiker (bis Können 55 / 80 / 100).
-Bei Können 70 entspricht +16 etwa zwölf Stunden Proben; für Anfänger lohnt er sich kaum, weil die Proben dort schnell sind (`Balance::TEACHER`).
+- **Orte** nach Bandruhm (Anspruch): Kneipe (ab 0), Club (30), Konzertsaal (150), Halle (600), Arena (2.500). Buchbar vom kleinsten bis zwei
+  Stufen über dem Anspruch. Grund-Gage je Lied 30 / 70 / 160 / 380 / 900 ₲, Grund-Ruhm je Lied 0,25 / 0,5 / 1 / 2 / 4, Erwartung 15 / 28 / 42 / 58 / 75.
+- **Kosten** 20 / 90 / 350 / 1.100 / 3.200 ₲ (Solokünstler ×1,5, Pop ×1,2), **Länge** 3 / 4 / 5 / 7 / 9 Songs (aufgenommene und geschriebene zählen).
+- **Gage** = Grund-Gage × Songs × Frische × (1 + 10 % je Mitglied über 2) × (1 + Verhandler) × **Füllgrad** × (0,7 + 0,3 × Leistung)
+  (beim Buchen mit der Mitte des Ortes gerechnet).
+  Füllgrad = Sound gegen Erwartung × Bekanntheit gegen Ortsgröße ((Ruhm + 10) / (Mindestruhm + 10)), mindestens 5 %.
+- **Frische:** Jeder Auftritt seit der letzten Platte senkt Gage und Ruhm um 8 %, höchstens auf 45 %; eine neue Platte macht wieder voll.
+- **Bezahlt wird hinterher** aus der Gage; vorher nur, was selbst der schlechteste Abend nicht einspielt (`Gigs::deposit`).
+- **Ruhm** = Σ Lieder (Grund-Ruhm × Soundfaktor × Publikum × 0,9–1,1) × Frische × (1 + PR-Profi); Soundfaktor = Sound / 30 (0,2 bis 3),
+  Publikum = 0,4 + 1,2 × Publikumsleiste/100.
+- **Anspruch:** Ort darunter −6 Wohlbefinden, darüber +4 (Ehrgeizige, Diven, Extrovertierte ×1,7).
+- **Publikumsleiste:** startet bei 0; im ersten Lied rückt sie je Abschnitt 40 % Richtung 50 + 0,6 × (Gleichgewicht − 50). Jedes Lied hat
+  4 Abschnitte; jeder Musiker kann patzen (24 % minus 0,26 % je Können-Punkt) oder glänzen (mit Können, Technik, Charakter, Showstück),
+  je ±7–13 Punkte. Ab dem zweiten Lied rückt sie jedes Mal 8 % Richtung Mitte. Schwache Bands landen bei etwa 30 %, starke bei etwa 85 %.
+- **Applaus:** echte Aufnahme je Ortsgröße, lauter und länger, je begeisterter.
+- Manager: Verhandler +8 % Gage, PR-Profi +8 % Ruhm je Stufe (× Passung).
 
 ### Platte
 
-- 3 (EP) bis 12 Lieder (LP) **aus dem Song-Vorrat** der Band (geschriebene Songs werden verbraucht). Keine Minispiele:
-  Die Band ist 5 Minuten je Lied im Studio (`Balance::RECORD_SECONDS_PER_SONG`, eine Aktivität „record“), dann erscheint die Platte.
-- Das Label wählt **Studio** und **Produzent** (`Balance::STUDIOS`, `Balance::PRODUCERS`):
+- 3 (EP) bis 12 Lieder (LP) **aus dem Song-Vorrat**; die Band ist 5 Minuten je Lied im Studio, dann erscheint die Platte.
+- **Studio** und **Produzent** (`Balance::STUDIOS`, `Balance::PRODUCERS`):
 
   | Studio | Qualität | Preis je Lied |
   |---|---|---|
@@ -397,218 +158,255 @@ Bei Können 70 entspricht +16 etwa zwölf Stunden Proben; für Anfänger lohnt e
   | Diamond Dee | +0,24 | 1.500 ₲ | Legendäre Studio |
   | Ruben Stille (Legende) | +0,30 | 2.500 ₲ | jedes Studio |
 
-  Qualität = 0,35 + Studio + Produzent + 0,04 je Perfektionist + goldene Studio-Instrumente, höchstens 1; ab 0,95 **perfekt** (× 1,5).
-  Jeder Produzent hilft auch in einem schlechteren Studio. Ruben Stille nimmt nur Bands ab Sound 45, alle sind mit ihm
-  entspannt (+6 Wohlbefinden).
-- **Anspruch:** Ruhm-Stufe der Band gegen Produktionsniveau (Mittel aus Studio-Stufe und Produzenten-Stufe, gerundet).
-  Je Stufe darunter −6 Wohlbefinden (Egozentrische und Perfektionistische × 1,5), je Stufe darüber +3.
-- Der Dialog zeigt für jede Wahl Kosten, Qualität und den erwarteten Ertrag: Erstverkauf plus Tantiemen, solange sie chartet
-  (Summe des Chart-Verlaufs über 7 Tage; untere Schätzung 40 %). Teure Produzenten lohnen sich erst für starke, bekannte Bands.
-- **Cover:** Das Grafikbüro legt drei Entwürfe vor (Motiv, Farben, Stil, Anordnung), neue kosten 25 ₲. Wer es gestaltet, kostet dazu und hebt den
-  Erstverkauf: Kunststudentin 20 ₲ (+0 %), Agentur 150 ₲ (+3 %), Star-Designerin 600 ₲ (+6 %). Ein Bandlogo, das schon auf einer früheren Platte war, +3 %.
-  Erstverkauf × (1 + Designer + Logo); Tantiemen und Chartpunkte bleiben unberührt.
-- Fertig: Können 0,12 × Lieder × Qualität für alle Mitglieder, Zusammenspiel und Beziehungen wie nach einer Anordnung.
-- Fertig: Erstverkauf = Lieder × 60 ₲ × (0,3 + Qualität²) × LP-Bonus × Perfekt-Bonus × Verkäufe,
-  Ruhm = Lieder × 0,6 × Soundfaktor × (0,3 + Qualität^1,5) × LP-Bonus × Perfekt-Bonus.
-  - LP-Bonus: +4 % pro Lied über 3. Perfekt (Qualität ab 0,95): × 1,5. Verkäufe: 1 + Bandruhm/400, höchstens × 5.
-- **Album-Zyklus** (`Balance::RECORD_CYCLE`, `Studio::cycle`): Vor der nächsten Platte spielt die Band die letzte
-  **3-mal komplett live** (3 × Lieder der Platte, gezählt werden Lieder auf Gigs) und macht **3 Band-Promos** (je 10 Minuten,
-  laufen auch offline; abgebrochene zählen nicht). Die Promos kosten jede Platte gleich viel Zeit, damit kurze EPs nicht viel
-  schneller sind. Das Label gibt das nächste Album erst danach frei; der Knopf „Aufnehmen“ zeigt, was noch fehlt.
-  (Früher: 5 Gigs; davor 2 Lieder live pro Plattenlied – kurze EPs fluteten die Charts.)
+  Qualität = 0,35 + Studio + Produzent + 0,04 je Perfektionist + Studio-Legende (Instrument) + Coach, höchstens 1; ab 0,95 **perfekt** (× 1,5).
+  Ruben Stille nimmt nur Bands ab Sound 45, alle sind mit ihm entspannt (+6 Wohlbefinden).
+- **Anspruch:** Ruhm-Stufe gegen Produktionsniveau; je Stufe darunter −6 (Egozentrische und Perfektionistische × 1,5), je Stufe darüber +3.
+- **Cover:** drei Entwürfe, neue kosten 25 ₲. Gestaltung: Kunststudentin 20 ₲ (+0 %), Agentur 150 ₲ (+3 %), Star-Designerin 600 ₲ (+6 %);
+  Bandlogo ab der zweiten Platte +3 %. Erstverkauf × (1 + Gestaltung + Logo).
+- **Fertig:** Können 0,12 × Lieder × Qualität für alle, Beziehungen wie nach einer Anordnung.
+  Erstverkauf = Lieder × 60 ₲ × (0,3 + Qualität²) × LP-Bonus × Perfekt × (1 + Bandruhm/400, höchstens × 5) × Egozentrische/Kultobjekt;
+  Ruhm = Lieder × 0,6 × Soundfaktor × (0,3 + Qualität^1,5) × LP-Bonus × Perfekt. LP-Bonus +4 % je Lied über 3.
+- **Album-Zyklus** (`Balance::RECORD_CYCLE`): Vor der nächsten Platte spielt die Band die letzte 3-mal komplett live (gezählte Lieder) und
+  macht 3 Promo-Touren. Der Knopf „Aufnehmen“ zeigt, was noch fehlt.
 
-### Album-Charts
+### Album-Charts und Tantiemen
 
-- Chartpunkte = 100 × Qualität² × Soundfaktor × Format × Perfekt (× 1,3) – nur die Platte selbst, **ohne Bandruhm**.
-  (Früher × bis zu 3 durch Bandruhm: Ruhm brachte Plätze, Plätze brachten Ruhm – wer oben war, blieb oben.)
-  Format: EP × 0,6, LP (ab 7 Liedern) × 1 + 4 % pro Lied über 7.
-- Die Charts rechnen in Stunden. Punkte jetzt = Chartpunkte × Verlauf + Schub. Verlauf: Einstieg mit den vollen Punkten
-  (so viele, wie beim Fertigstellen angezeigt), dann verliert jede Platte jede Stunde 3 % (`CHART_DECAY`):
-  nach einem Tag 48 %, nach zwei 23 %, nach drei 11 %. Für jede Platte gleich; von selbst steigt keine, nur durch Schub.
-  (Früher: Einstieg mit 65 %, Höhepunkt nach 8 Stunden, dann fallend – wirkte wie verlorene Punkte.)
-  Eine starke Platte kann gegen schwache Konkurrenz direkt auf Platz 1 einsteigen.
-  Weil jede Platte ihren eigenen Verlauf hat, überholen sich Platten; es gibt Bewegung.
-- Schub für die neueste Platte der Band (immer, auch wenn sie gerade nicht chartet), als Aufschlag auf ihre Punkte:
-  Gig +2,5 % pro gespieltes Lied (egal wo, egal wie gut), Band-Promo +10 %, Promo-Mission eines Mitglieds +4 %.
-  Höchstens +60 %, halbiert sich alle 3 Stunden. Prozent statt fester Punkte: Wer gleich viel spielt, bekommt denselben
-  Aufschlag – das Verhältnis zweier Platten bleibt, der Schub belohnt nur Fleiß. Die Schere schließt die Zeit (3 % pro Stunde).
-  (Früher hing der Gig-Schub an der Größe des Ortes – große Bands zogen davon.)
-- Unter 1 Punkt verkauft sich eine Platte nicht mehr, nach 7 Tagen zählt sie nicht mehr. Die Charts zeigen die Top 10 groß und darunter kompakt bis Platz 100 (`CHART_LIST`); jede Platte zählt, ohne Deckel pro Band oder Label.
-  Für den Platz selbst gibt es nur den Scout-Gutschein für Platz 1 und Nachrichten. Eine Band spielt und bewirbt immer ihre **neueste** Platte
-  (`Charts::promoted`), ältere fallen so von selbst; sie wieder zu spielen kommt später mit dem Remaster.
-- Die Plätze werden alle 3 Stunden neu vergeben (Chartwoche) – sofort, wenn eine Platte erscheint oder Schub bekommt.
-  Dazwischen bleiben sie stehen. „Vorher“ ist der Platz zu Beginn der Chartwoche; dazu Trend (▲ ▼ – NEU),
-  Stunden in den Charts und bester Platz. Nachrichten: Einstieg in die Top 10, Platz 1 (mit Feier), aus den Top 10 gefallen.
-- Tantiemen laufen ständig (sekundengenau abgerechnet, Bruchteile werden aufgehoben): pro Punkt und Stunde 0,6 ₲ und
-  0,0125 Ruhm – nur nach Punkten, ohne Platz-Bonus (die Punkte sind schon die Platzierung; früher × bis zu 2 für
-  Platz 1, das war doppelt gezählt). Ruhm an die aktuellen Mitglieder.
-  Eine Platte mit 60 Punkten bringt über ihre Chartzeit etwa 1.200 ₲.
-  Das Geld zählt im Browser sichtbar mit; im Kontoauszug eine Zeile pro Platte und Tag.
-- Platten ohne Chartplatz verkaufen sich in ihrer ersten Woche trotzdem: Tantiemen nach Punkten wie alle.
-- Katalog: Jede Platte verkauft sich für immer ein wenig – 0,01 ₲ pro Stunde und Chartpunkt (Startwert), zusätzlich
-  zu den Charts. 60 Punkte ≈ 14 ₲ am Tag. Klein gegen Gigs, aber es sammelt sich mit vielen Platten; das 5-Gig-Limit
-  zwischen zwei Platten verhindert, dass man das mit EP-Fluten ausnutzt.
+- Chartpunkte = 100 × Qualität² × Soundfaktor × Format × Perfekt (× 1,3) × Hitmaschine – nur die Platte selbst, **ohne Bandruhm**.
+  Format: EP × 0,6, LP (ab 7 Liedern) × 1 + 4 % je Lied über 7.
+- Punkte jetzt = Chartpunkte × Verlauf + Schub. Verlauf: −3 % je Stunde (nach einem Tag 48 %, nach drei 11 %). Schub für die neueste Platte
+  der Band: Auftritt +2,5 % je Lied, Promo-Tour +10 %, Interview +4 %; höchstens +60 %, halbiert sich alle 3 Stunden.
+- Plätze werden alle 3 Stunden neu vergeben (sofort bei neuer Platte oder Schub); Trend, Stunden in den Charts, bester Platz.
+  Top 10 groß, darunter bis Platz 100. Unter 1 Punkt oder nach 7 Tagen zählt eine Platte nicht mehr.
+- **Tantiemen** laufen ständig, solange die Platte höchstens auf Platz 50 steht: je Punkt und Stunde 0,6 ₲ und 0,0125 Ruhm (an die aktuellen
+  Mitglieder). Eine Platte mit 60 Punkten bringt über ihre Chartzeit etwa 1.200 ₲. Dazu verkauft jede Platte für immer ein wenig (Katalog:
+  0,01 ₲ je Stunde und Chartpunkt).
+- **Verkaufte Stück** = Chartpunkt-Stunden × 100 (für Gold, Platin, Diamant).
+- Rangliste: Labels nach Label-Ruhm, dazu Bands.
 
-### Promo
+### Promo-Tour und Interviews
 
-- Promo-Mission (ein Musiker): 10 Minuten, läuft offline. Bekanntheit + 0,12–0,3 × Ausstrahlung-Faktor / (1 + Bekanntheit/40).
-- Band-Promo: 10 Minuten, jedes Mitglied bringt 0,1–0,25 nach derselben Formel; verteilt wie Auftrittsruhm.
-- Beide lassen sich jederzeit abbrechen („Zurückholen“): sofort wieder frei, keine Bekanntheit, kein Chart-Schub.
-- **Interview** (Anfrage im Posteingang, Umbau): Annehmen schickt den Musiker weg (15 / 20 / 30 / 45 Minuten je Bekanntheitsstufe 0–3).
-  Gewinn = Anteil des Mediums × Weg zur nächsten Stufe (Stufe 0: 20, Stufe 1: 100, Stufe 2: 480, Stufe 3: 600), ohne Bremse; dazu der kleine
-  Chart-Schub der Promo-Mission. Rampensau und Diva mögen Interviews, Teamplayer nicht (Wohlbefinden wie bei Anordnungen).
+- **Promo-Tour** (Band oder Solokünstler): 10 Minuten, jedes Mitglied bringt 0,1–0,25 Bekanntheit / (1 + Bekanntheit/40); Chart-Schub +10 %;
+  zählt für den Album-Zyklus. Abbrechen geht, bringt dann nichts.
+- **Interview** (Anfrage im Posteingang): Annehmen schickt den Musiker weg (15 / 20 / 30 / 45 Minuten je Bekanntheitsstufe).
+  Gewinn = Anteil des Mediums (8–14 %) × Weg zur nächsten Stufe (Stufe 0: 20, 1: 100, 2: 480, 3: 600), ohne Bremse; Netzwerker +10 % je Stufe.
+  Anfragen je Tag: 0,1 + 0,05 × √Bekanntheit, höchstens 1 + Stufe zugleich offen, sie liegen vier Tage.
 
-### Jam-Café
+### Kurse, Privatlehrer, Coach
 
-Nur für Musiker ohne Band, 2 Lieder, beliebig oft – bis jemand eine Band gründet: Gastgeber und neuer Musiker sind dann
-markiert (`musicians.jam_at`) und können nie wieder ins Jam-Café. Sonst könnte man gründen, auflösen, wieder jammen und
-so gratis Musiker sammeln. Löst man eine Band auf, die nur aus solchen Musikern besteht, warnt das Spiel. Im Publikum sitzen Musiker: Erwartung 35 (Straßenmusik 25,
-Open Stage 12). Danach stellen sich 3 Musiker vor, die zum Gastgeber passen. Wie gut sie sind, hängt von der
-Session ab (Publikumsleiste 0 → 100 %): Seltenheit von 85/14/1 % auf 35/45/20 % (gewöhnlich/selten/episch),
-Mindest-Können von 5 auf 26.
-- jeder spielt ein anderes Instrument, das der Gastgeber nicht spielt, und teilt ein Genre mit ihm,
-- kein Charakterzug reibt sich mit dem Gastgeber; ist er Partytier, ist der neue es oft auch,
-- alle haben Können-Stufe 0 (höhere Stufen gibt es nur über den Talent-Scout).
+- **Kurs des Tages:** jeden Tag ein Instrument (reihum, nie zweimal hintereinander) und eine Kursart, für alle gleich: Kurs (50 %, 10 Min.,
+  +3 Können), Workshop (35 %, 30 Min., +5), Meisterklasse (15 %, 60 Min., +8). Drei Schwierigkeiten (Stufe 0, 1, 2+), jeder nur in seiner;
+  Preis = Grundpreis (80 / 150 / 300 ₲) × 1 / 3 / 8. Ohne Lernkurve. Jeder Musiker einmal am Tag; Zurückholen gibt das Geld zurück.
+- **Privatlehrer:** 300 / 900 / 2.500 ₲, 2 Tage, +8 / +12 / +16 Können ohne Lernkurve (passendes Genre ×1,3), nur bis 55 / 80 / 100.
+- **Songwriting-Coach:** 400 / 1.200 / 3.000 ₲, 1 Tag für eine Band, Songs ×1,5 / ×1,75 / ×2, Plattenqualität +4 / +8 / +12 % (anteilig).
 
-Einer wird ausgewählt und gründet mit dem Gastgeber eine Band in einem gemeinsamen Genre. Damit ist das
-Jam-Café für den Gastgeber vorbei. Lehnt man alle ab, verfällt die Auswahl und man kann wieder jammen. Ins Jam-Café kann man nur, wenn ein Band-Platz frei ist.
+### Auszeit
 
-### Wechselbörse
+Ausflug 1 Std. (+8, 20 ₲ je Mitglied), Wochenende 4 Std. (+16, 60 ₲), Urlaub 12 Std. (+28, 150 ₲); Gemütliche und Ausgeglichene ×1,5,
+Ehrgeizige ×0,5 (`Balance::RETREAT`). Keine Songs in der Zeit; geht auch bei Rot.
 
-- Ein Musiker ohne Band kommt für 2 Tage an die Börse. Solange ist er gesperrt (keine Band, keine Aktivitäten),
-  seine Instrumente bleiben beim Label.
-- Mindestpreis = Marktwert = 170 + 0,8 × Können² + 5 × Bekanntheit + 300 × (Können-Stufe + Bekanntheits-Stufe)
-  + 100 × Fähigkeiten, auf 10 gerundet. Beispiele: Anfänger (Können 15) etwa 300 ₲, Scout-Musiker (Können 35–45) etwa 1.600–2.300 ₲.
-- Gebote sind verbindlich: Das Geld wird beim Bieten zurückgelegt, wer überboten wird, bekommt es sofort zurück.
-  Überbieten um mindestens 5 % (mindestens 10 ₲). Wer vorn liegt und erhöht, legt nur die Differenz dazu.
-- Ein Gebot in den letzten 10 Minuten verlängert die Frist auf 10 Minuten.
-- Am Ende geht der Musiker an das höchste Gebot. Der Verkäufer kann vorher zuschlagen; zurückziehen kann er nur,
-  solange niemand geboten hat. Ohne Gebot bleibt der Musiker beim Label.
+### Battle of the Bands
 
-### Instrumente
+Jeden **Samstag um 16 Uhr** (deutsche Zeit) für alle Labels (`Balance::BATTLE`, `Battle`, `Events`). Anmeldung die ganze Woche, höchstens
+**2 Bands je Label** und 32 insgesamt; nur Bands mit mindestens 2 Musikern (keine Solokünstler), keine Computer-Bands, unter 2 Anmeldungen
+fällt es aus. **Online sein muss niemand:** Der Server spielt das Battle aus, das Ergebnis kommt beim nächsten Öffnen. Eine angemeldete Band
+kann vorher nichts anfangen, was über den Beginn hinaus dauern würde (Auftritt, Probe, Promo, Auszeit, Studio, Tournee, Kurs, Interview
+eines Mitglieds); das wird mit Hinweis abgelehnt.
 
-- **Güteklassen** (`Gear`): gewöhnlich 0 (grau), selten 1 (grün), episch 2 (blau), legendär 3 (gold) – dieselben Farben wie die Können-Stufen.
-  Spielen darf ein Musiker nur Instrumente bis zu seiner Können-Stufe am jeweiligen Instrument (grün ab 35, blau ab 60, gold ab 85).
-  Kaufen darf das Label alles; beim Anlegen steht, wie viel Können noch fehlt. Ist eins aus alter Zeit zu gut, zählt es wie eins ohne Boni.
+- **Ablauf wie bei einer WM:** 2 Bands spielen nur das Finale, 3–5 eine Gruppe (die ersten zwei ins Finale, 3. und 4. um Platz 3),
+  6–11 zwei Gruppen, 12–23 vier, 24–32 acht. In der Gruppe jeder gegen jeden, die ersten zwei kommen weiter (Erster gegen Zweiten der
+  Nachbargruppe), dann K.-o. bis zum Finale; die Verlierer des Halbfinales spielen zugleich um Platz 3. Tabelle: Siege, dann Punkte-Unterschied, dann Punkte.
+- **Bands eines Labels** kommen in verschiedene Gruppen; treffen sie in der ersten K.-o.-Runde aufeinander, wird mit einem anderen Spiel getauscht,
+  wenn das geht (nur bei einer einzigen Gruppe geht es nicht anders).
+- **Ein Spiel:** jede Band 2 Lieder (je 24 s), dann 12 s Jury; alle 5 Minuten eine Runde (8 Bands: 5 Runden, gut 20 Minuten; höchstens 9 Runden).
+  Punkte = Sound × Laune × Tagesform, gerundet. **Laune** = 1 + (Stimmung der Band − 60) × 0,0025 (Stimmung 100: +10 %, 20: −10 %).
+  **Tagesform** zufällig 0,8–1,2 je Spiel. Ruhm, Proben und Klassen zählen nicht. Doppelter Sound gewinnt immer, 10 % mehr Sound meistens.
+- Ausgelost und ausgespielt wird beim Beginn (bei der ersten Anfrage danach); gezeigt wird nach der Uhr, Runde für Runde. Die Ansage
+  (Lieder, Glanzmomente, Patzer, Publikum) folgt der Tagesform. Alle Bands bleiben bis zum Schluss dort, damit die Uhr nicht verrät, wie weit sie kommen.
+- **Belohnung** (am Ende): Ruhm 1,5 je Spiel + 1,5 je Sieg + nach Platz 20 / 12 / 7 / 4 (fest, nicht nach Ruhm), verteilt wie bei Auftritten;
+  Preisgeld 600 / 300 / 150 / 80 ₲; Stimmung +12 / +6 / +4 für die ersten drei; Pokal in Gold, Silber, Bronze (steht im Proberaum);
+  Chart-Schub wie bei Auftritten je gespieltes Lied; Beziehungen wie bei einem Auftritt.
+  Ehrgeizige, Extrovertierte und Egozentrische mögen das Battle, Gemütliche nicht. Alle Labels bekommen die Nachricht, wer gewonnen hat.
+- Zum Tempo: Der Sieger einer Achterrunde bekommt gut 30 Ruhm (etwa acht Club-Auftritte), einmal je Woche; für kleine Bands ein großer Schritt,
+  für große vor allem Pokal und Preisgeld. Weil der Gewinn fest ist, verstärkt Ruhm ihn nicht.
+
+### Festival
+
+Jeden **Mittwoch um 17 Uhr**, Bewerbung bis **Mittwoch 12 Uhr** (`Balance::FESTIVAL`, `Festival`). Jedes Festival sucht ein **Genre**
+(aus der Woche berechnet, nie zweimal hintereinander dasselbe; Name nach `Catalog::FESTIVALS`). Bewerben können sich nur Bands mit diesem
+Genre (auch als zweites oder drittes Genre), jedes Label mit so vielen, wie es will. Bis zum Beginn muss die Band zurück sein (wie beim Battle).
+
+- **Plätze:** Hauptbühne 2, Nebenbühne 3, Zeltbühne 3. Sind es mehr Bewerbungen, entscheidet das Los (gezeigt als „der Veranstalter hat sich
+  für andere Bands entschieden“). Wer nicht mehr passt (Genre gewechselt, Band aufgelöst), fällt raus.
+- **Bühnen nach der Bekanntheit der letzten 7 Tage** (`fame_days`, auch die vom Festival selbst): die meiste spielt als **Headliner** zuletzt auf
+  der Hauptbühne, dann der Reihe nach Hauptbühne, Nebenbühne, Zeltbühne (auf jeder Bühne die Bessere später). Das letzte Festival liegt schon
+  außerhalb der 7 Tage, und das Genre wechselt jede Woche.
+- Auftritte alle 10 Minuten, auf allen Bühnen zugleich, alle enden zur selben Zeit; mit wenigen Bands geht es gleich zu Beginn los.
+  Das Line-up hängt vom Anmeldeschluss bis zum Beginn aus; alle Labels bekommen die Nachricht, wer Headliner ist.
+- **Ein Auftritt** wird beim Beginn wie ein Auftritt im Club berechnet (Publikumsleiste, Ticker, „Zuschauen“) und zu seiner Zeit gezeigt.
+  Die Band ist vom Beginn des Festivals bis zum Ende ihres Auftritts dort.
+
+| Bühne | Lieder | Ruhm je Lied | Gage | Erwartung |
+|---|---|---|---|---|
+| Hauptbühne | 6 | 5,0 | 300 ₲ | 45 |
+| Nebenbühne | 5 | 3,0 | 150 ₲ | 35 |
+| Zeltbühne | 4 | 1,8 | 80 ₲ | 25 |
+
+  Ruhm = Σ Lieder (Ruhm je Lied × Soundfaktor × Publikum × 0,9–1,1) × (1 + PR-Profi). Bei Sound 30 und mittlerem Publikum bringt die
+  Hauptbühne rund 30 Ruhm (etwa acht Club-Auftritte), die Zeltbühne rund 7. Dazu Chart-Schub je Lied, Beziehungen, die Lieder zählen für den
+  Album-Zyklus.
+- **Danach:** Ein Medium eine Stufe größer als sonst fragt nach einem Interview. Der **Headliner** bekommt ein Plakat für den Proberaum.
+  Ehrgeizige, Impulsive, Extrovertierte, Gesellige und Egozentrische mögen Festivals, Gemütliche nicht.
+
+### Tournee
+
+Anordnung auf der Bandseite (`Balance::TOUR`, `Tours`), erst mit einer Platte. Man wählt nur die Länge (3, 5 oder 7 Stationen);
+**jedes Ziel wird ausgewürfelt** (echte Länder, `Catalog::COUNTRIES`, keins doppelt) und erst bekannt, wenn es weitergeht.
+
+- **Ablauf, alles per Klick:** Flug zum Ziel (Reisezeit 30 Min. + 0,6 s je km: London etwa 40 Min., Tokio 2 Std., Sydney 3 Std.) →
+  Meldung „angekommen“ → **Auftritt starten** → danach **Weiterreisen** oder **Nach Hause**. Nach der letzten Station bleibt nur der Heimflug.
+  Wer zwei Tage nicht weitermacht, fliegt von selbst heim. Die Band kann während der Tournee nichts anderes machen; wer für Battle oder
+  Festival angemeldet ist, kann nicht los.
+- **Kosten:** je Strecke Mitglieder × (15 + 0,01 ₲ je km), bei vier Musikern etwa 80 ₲ (Amsterdam) bis 700 ₲ (Sydney); der Heimflug ist frei.
+  Reicht das Geld nicht, bleibt das ausgewürfelte Ziel stehen.
+- **Ein Auftritt** wie im Ort nach Ruhm mit ganzer Setlist, aber ohne Abnutzung (im Ausland kennt niemand die Lieder): Ruhm × 2, Gage × 1,25.
+  **Lieblings-Genre** des Landes (England Rock, Irland Folk, Frankreich Pop, Spanien Folk, Niederlande Elektro, Schweden Elektro, Norwegen Metal,
+  Finnland Metal, USA Hip-Hop, Kanada Punk, Brasilien Jazz, Südafrika Jazz, Japan Pop, Australien Rock): Spielt die Band es, noch einmal
+  Ruhm × 1,5 und Gage × 1,5, und das Publikum ist leichter zu begeistern (Erwartung × 0,85).
+- **Bühne des Landes** (`stage-world.js`, als `tour-fr` …): klischeehaft; Größe und Gage richten sich trotzdem nach dem Ort nach Ruhm.
+- **Weltenbummler:** Hat eine Band (über alle Tourneen) in allen 14 Ländern gespielt, steht ein goldener Globus in ihrem Proberaum.
+- **Beziehungen:** Jeder Auftritt wie ein Auftritt, am Ende die ganze Tournee und zusätzlich ein fester Schub von +0,6 je gespielte Station
+  (höchstens +3) auf jede Beziehung, auch über den Zielwert hinaus. Ehrgeizige, Impulsive, Extrovertierte und Gesellige mögen Tourneen,
+  Gemütliche und Ausgeglichene nicht.
+
+### Auszeichnungen
+
+Nur echte Pokale (`Awards`, `Balance::AWARDS`), alle im Proberaum der Band (Schallplatten, Pässe und Plakate an der Wand, Pokale und Globus
+auf dem Boden) und als Liste auf der Bandseite und in WikiSignia. Neue werden einmal mit einem Fenster gefeiert.
+- **Goldene Schallplatte** ab 100.000 verkauften Stück, **Platin** ab 250.000, **Diamant** ab 1 Million (je Platte einmal). Eine Platte mit
+  30 Punkten schafft etwa Gold, mit 75 Platin, Diamant nur die besten (um 300 Punkte). Beim Umbau werden die bisherigen Verkäufe geschätzt
+  (ohne Schub) und die Auszeichnungen ohne Feier vergeben.
+- **Platz 1 der Charts** (je Platte, nur mit Konkurrenz aus mindestens 3 Labels), **Große Halle** und **Arena** (erster Auftritt dort, je Band;
+  auf Tournee zählt die Größe des Ortes).
+- Dazu: Battle-Pokale (Platz 1 bis 3), Festival-Plakat (Headliner), Weltenbummler-Globus (alle Länder).
+
+### Posteingang und Leute
+
+- Raten je Tag = Start + Zuwachs × √Label-Ruhm (Tabelle in `label-konzept.md`), zufällig verteilt (`Post::nextArrival`); alles liegt vier Tage.
+  Anteil guter Kassetten 5 % bis 25 % (bis Label-Ruhm 5.000); Güte der Bewerber = Ruhm / (Ruhm + 300).
+- **Unterschriftsprämie** = (40 + 0,05 × Können² + 1,5 × Bekanntheit) × (1 + 12 % × versteckter Wert); wer bei einer Band zurückbleibt,
+  kränkt die anderen (Wohlbefinden −20, Teamplayer ×1,6, Ehrgeizige ×0,5).
+- Arbeit je Stück (gleich für einen selbst, Praktikum und Assistenz): Umschlag 2 s, Kassette anhören 5 s, Brief lesen 5 s, einsortieren 1 s.
+  Assistenz holt offline höchstens vier Tage nach.
+- Praktikum 50 ₲ für 7 Tage, übernehmen 400 ₲; Assistenz 400 ₲; Scout 400 / 1.200 / 3.000 ₲ (6 / 5 / 4 Std., 2 / 3 / 3 Talente, Können bis
+  34 / 44 / 54); Manager 300 / 3.000 / 10.000 ₲ (Stärke 1 / 3 / 5, Passung ×0,4 bis ×1,45).
+
+### Instrumente und Music Store
+
+- **Güteklassen** (`Gear`): gewöhnlich (grau), selten (grün), episch (blau), legendär (gold) – dieselben Farben wie die Können-Stufen.
+  Spielen darf ein Musiker nur Instrumente bis zu seiner Können-Stufe am jeweiligen Instrument. Kaufen darf das Label alles; beim Anlegen steht,
+  wie viel Können noch fehlt.
 - Ohne eigenes Instrument zählt ein Musiker im Sound nur halb (× 0,5); ein graues Instrument hebt das auf, mehr nicht.
 - **Boni** je Klasse (`Balance::GEAR_BONUS`), innerhalb ihrer Spanne gewürfelt:
-  grün (ab selten) einer von Ausdauer beim Proben (+10–45 %) oder Lernhilfe (+5–24 % Können je Probe und Platte);
-  blau (ab episch) Klang: Sound des Musikers +20–35 % (episch) bzw. +35–50 % (legendär);
-  gold (legendär) eins von: Publikumsmagnet (Ruhm-Anteil bei Auftritten +0,15–0,35), Kultobjekt (Erstverkauf +10–25 %),
+  grün einer von Ausdauer beim Proben (+10–45 %) oder Lernhilfe (+5–24 % Können je Probe und Platte);
+  blau Klang: Sound des Musikers +20–35 % (episch) bzw. +35–50 % (legendär);
+  gold eins von: Publikumsmagnet (Ruhm-Anteil bei Auftritten +0,15–0,35), Kultobjekt (Erstverkauf +10–25 %),
   Studio-Legende (Plattenqualität +0,03–0,06), Showstück (live +3–6 % Glanzchance), Hitmaschine (Chartpunkte +10–25 %).
-- Preis und Verkaufswert × 0,8 bis × 1,3 nach Güte innerhalb der Klasse. Verkauf: 25 / 80 / 260 / 750 ₲ je Seltenheit.
-- Ältere Instrumente bekommen ihre Boni aus Klang, Spielbarkeit, Design und Extras abgeleitet (`Gear::legacy`).
-- Aussehen je Klasse (`gearart.js`, alle Instrumente; Gitarre, E-Gitarre, Bass, Schlagzeug, E-Drums, Synthesizer, Klavier, Mikro,
-  Saxophon, Trompete, Geige, Flöte, Turntables): grau schlicht und flach; grün natürliche Hölzer (Ahorn, Kirsche, Nussbaum, Mahagoni,
-  Esche, Olive, Honig) bzw. Metalle (Messing, Rotmessing, Silber, Altmessing, Bronze), fest je Instrument gelost, mit Chrom;
-  blau farbig lackiert mit Gold. Gold sieht nach seiner Fähigkeit aus: Publikumsmagnet nachtblau mit goldenen Ranken und warmem
-  Leuchten, Showstück Galaxie mit Strass und Funkeln, Studio-Legende elfenbein mit feinen Goldlinien und Plakette, Kultobjekt
-  geschnitztes dunkles Holz mit Perlen und Feder (Glücksbringer), Hitmaschine poliertes Gold mit Rillen wie eine goldene Schallplatte.
-- Die Instrumentenarten kommen so oft wie die Musiker, die sie spielen (gleiche Gewichte).
+- Preis und Verkaufswert × 0,8 bis × 1,3 nach Güte innerhalb der Klasse. Verkauf: 25 / 80 / 260 / 750 ₲ je Klasse.
+- Ältere Instrumente bekommen ihre Boni aus ihren alten Werten (`Gear::legacy`).
+- **Music Store:** Grundausstattung (jedes graue Modell, immer, 40 ₲); Angebot des Tages für alle gleich, wechselt um 4 Uhr UTC: drei Fächer,
+  meist grün, mit 35 % eins blau, mit 13 % zusätzlich ein goldenes im Schaufenster; Preise 320 / 1.500 / 5.200 ₲ × Güte; jedes Angebot einmal je Label.
+- Aussehen je Klasse (`gearart.js`): grau schlicht; grün natürliche Hölzer bzw. Metalle; blau farbig lackiert mit Gold; Gold sieht nach seiner
+  Fähigkeit aus (Publikumsmagnet nachtblau mit goldenen Ranken, Showstück Galaxie mit Strass, Studio-Legende elfenbein mit Goldlinien,
+  Kultobjekt geschnitztes Holz mit Perlen und Feder, Hitmaschine poliertes Gold mit Rillen).
 
-### Läden
+### Proberaum
 
-Man bezahlt, sieht mehrere verdeckte Karten, deckt sie auf und nimmt **eine** mit. Solange eine Auswahl offen ist,
-gibt es keinen neuen Laden. Chancen: gewöhnlich / selten / episch / legendär.
+Bruchbude → Aufgeräumter Keller (400 ₲) → Gemütlicher Proberaum (1.200 ₲) → Profi-Proberaum (3.000 ₲) (`Balance::ROOM`): Können je Probe
+×1,08 / 1,16 / 1,25, Ausdauer ×1,15 / 1,3 / 1,5, Wohlbefinden +1 / +2,5 / +4 je 15 Minuten Probe. Jeder Solokünstler hat seine eigene Übungsecke.
 
-| Laden | Preis | Karten | Was | Chancen |
-|---|---|---|---|---|
-| Trödelmarkt | 120 ₲ | 4 | 70 % Instrumente, 24 % Musiker, 6 % Manager | 86 / 11 / 2,5 / 0,5 |
-| Schwarzes Brett | 200 ₲ | 4 | Musiker | 68 / 26 / 5 / 1 |
-| Second-Hand-Laden | 350 ₲ | 4 | Instrumente | 50 / 38 / 10 / 2 |
-| Music Store | 800 ₲ | 4 | Instrumente, manchmal mit Tipp | 10 / 55 / 30 / 5 |
-| Backstage-Pass | 1.500 ₲ | 4 | 2 Musiker, 1 Manager, 1 Instrument | 0 / 55 / 35 / 10 |
-| Meisterwerkstatt | 2.400 ₲ | 3 | Instrument nach Wahl | 0 / 0 / 75 / 25 |
+### Übergang alter Labels
 
-Instrumente sind zufällig. Im Music Store hat der Verkäufer mit 25 % Chance einen Tipp: Eine der Karten ist ein Instrument für einen Musiker, der noch keins hat (Bandmitglieder zuerst), und ist so markiert.
+Einmalig beim Umbau der Datenbank (Schritt 53, `Transition`, Zahlen `Balance::TRANSITION`). Label, Geld, Bands, Platten, Instrumente und Manager bleiben.
+- **Wechselbörse** zu: Angebotene Musiker bleiben beim Label, Gebote gehen zurück aufs Konto.
+- **Alte Karten und Gutscheine** werden zu Geld: Fan-Karte 100 ₲ je Ruhmpunkt, Scout-Gutschein und offenes Scout-Angebot je 1.200 ₲ (so viel wie ein
+  guter Scout heute), ungeöffnete Packs zum Kaufpreis. Offene Jam-Angebote verfallen.
+- **Laufende Aktionen** rechnet das neue Spiel ab, sobald sie fertig sind. Alte Proben und Jam-Treffen werden gleich mit ihrem schon berechneten
+  Können-Gewinn abgerechnet; Karten-Funde fallen weg; alte Ergebnisse erscheinen nicht noch einmal.
+- **Beziehungen** aus der gemeinsamen Bandzeit: Zielwert der Passung × (1 − e^(−Tage / 7)), gezählt ab Gründung oder späterer Unterschrift
+  (nach einer Woche etwa zwei Drittel, nach zwei Wochen 86 %).
+- **Kartei:** Sind es mehr als 5 Musiker ohne Band, kommen sie beiseite. Beim ersten Login sucht man bis zu 5 aus, die als Solokünstler bleiben;
+  die übrigen verlassen das Label (wie Entlassene, sie bleiben in WikiSignia). Ihre Instrumente liegen im Lager.
+- Beim ersten Login: „Was ist neu?“ in sechs Schritten mit der Übersicht, was der Umbau gebracht hat, statt der Einführung für Neue.
+- In der Testversion (Datenbank schon im Umbau) gilt das nur für Labels mit altem Kram (Karten, Packs, Börse, Musiker alter Herkunft), und zur Wahl
+  stehen nur Musiker alter Herkunft; wer aus dem Posteingang oder vom Scout kam, bleibt.
+
+### Tempo
+
+**Keine Stufen-Bremse.** Die alte Bremse (`LEVEL_PACE`) ist ganz entfernt. Das Tempo ergibt sich aus gut abgestimmten Gewinnen, Kosten,
+steigenden Schwellen (Bekanntheit 20 / 120 / 600, Können 35 / 60 / 85), dem Anspruch der Bands und der Lernkurve. Was sich aufschaukelt,
+ist ein Fehler in den Formeln und wird dort behoben. Neue Inhalte bekommen eigene, gut abgestimmte Gewinne; keine Bremse und keine Ausnahme.
+
+- **Können:** Die Bandprobe ist die Hauptquelle. Ab Können 15 (ohne Talent), in Probenzeit: Stufe 1 nach rund 2,5 Stunden, Stufe 2 nach rund 9,
+  Stufe 3 nach rund 36 Stunden. Kurse: teuer, je Musiker einmal am Tag, ohne Lernkurve; ein Musiker hat etwa jeden zehnten Tag sein Instrument
+  (im Schnitt +4,5, eine Stufe allein durch Kurse in rund zwei Monaten). Privatlehrer lohnen sich vor allem für Bessere (bei Können 70 sind +16
+  etwa zwölf Stunden Proben).
+- **Bekanntheit:** Auftritte (größere Orte bringen mehr je Lied, werden aber erst mit Ruhm erreichbar und kosten mehr), Festivals (fest je Bühne),
+  Battle (fest nach Platz), Tournee (Ausland ×2), Charts (nach Punkten), Interviews (Anteil des Weges zur nächsten Stufe: ab Stufe 1 schafft man
+  mit allen Anfragen eine Stufe in grob zwei bis vier Wochen).
+- **Songs:** Vierer-Band ein Song je Stunde, Solokünstler achtmal langsamer; Bands sind der schnellere Weg, Solo lohnt sich nur kreativ, mit Pop/Elektro
+  oder egozentrisch.
+- **Große Bands** sind ein bewusster Weg nach oben: mehr Sound (+5 % je Mitglied über 2) und mehr Gage (+10 %), dafür mehr Kosten und Aufmerksamkeit.
+- **Noch zu prüfen** (Durchspiel-Prüfung am Ende): dass größere Orte, Tourneen und Festivals ohne Bremse nicht davonlaufen; dass alle Stufen mit
+  Einsatz erreichbar sind; wie lange ein neues Label bis Halle und Arena braucht. Die alte Rechnung „Platten und Gigs im Gleichgewicht“ stammt
+  aus dem alten Spiel und wird dabei neu gemacht.
+
+### Wer wirkt auf wen (ohne Kreisläufe)
+
+Grundsatz: Ruhm darf nie den eigenen Zuwachs verstärken. Sonst schaukelt sich etwas auf.
+
+- **Chartplatz** ← Chartpunkte (Qualität, Sound, Länge, perfekt) × Verlauf (−3 %/Std.) × Schub (Auftritte, Promo, Interviews). Ruhm wirkt hier nicht.
+- **Chartplatz →** nur Nachrichten und die Auszeichnung „Platz 1“. Geld und Ruhm kommen aus den Punkten, nicht aus dem Platz.
+- **Ruhm** ← Auftritte (je nach Ort), Platten, Charts (nach Punkten), Promo-Tour, Interviews, Battle und Festival (fest), Tournee.
+- **Ruhm →** Auftrittsort (die Leiter nach oben), Erstverkauf einer Platte (Geld), Anspruch (kostet), Label-Ruhm (mehr Post, bessere Bewerber).
+  Der Ort ist der einzige Ruhm-zu-Ruhm-Weg – gewollt, mit festen Stufen und steigenden Kosten.
+- **Bekanntheit der Woche →** Festival-Bühne. Gedämpft, weil das Genre jede Woche wechselt.
+- **Geld →** Instrumente, Kurse, Lehrer, Proberaum → Können und Sound → bessere Platten. Ein langsamer, gewollter Weg.
+- **Bandgröße →** Sound und Gage; die Bekanntheit eines Auftritts wird geteilt (in großen Bands wird der Einzelne langsamer bekannt).
+
+### Nachrichten
+
+Wer mindestens 15 Minuten nicht im Spiel war, bekommt beim nächsten Aufruf die Neuigkeiten aus der Chronik: Charts, Aufstiege, Charakterzüge,
+Battle, Festival, Tournee, Auszeichnungen (`Balance::NEWS_KINDS`).
 
 ## Musik
 
 - Aufnahmen aus Logic Pro: je Genre und Stufe ein Ordner `public/assets/music/<genre>-<stufe>/` mit einer MP3 pro Spur
   (z. B. `gitarre-elektrisch.mp3`, `gesang.mp3`) und `noten.json` (Noten aus der MIDI-Datei).
-  Alle Spuren: 120 BPM, 12 Takte = 24 Sekunden, gleiche Tonart.
+  Alle Spuren: 120 BPM, 12 Takte = 24 Sekunden, gleiche Tonart, damit sich alles mischen lässt.
 - Einlesen lokal mit `php tools/musik-import.php pop-0 datei.mid spur.wav …` (braucht ffmpeg). Lautheit je Rolle:
   Gesang −17 LUFS, Bass und Schlagzeug −19, Keyboard und Turntables −21, Bläser/Geige/Flöte −22, Gitarre −23.
-- Jeder Musiker spielt die Spur seines Instruments, seiner Stufe und eines Genres: das Genre der Band, sonst eines
-  seiner Lieblingsgenres. Akustisch oder elektrisch richtet sich nach seinem Instrument.
-- Gesang gibt es mit Frauen- und Männerstimme (`gesang-weiblich`, `gesang-maennlich`): Musikerinnen singen mit der
-  Frauenstimme, Musiker mit der Männerstimme, diverse je nach Karte. Beide teilen sich die Noten der MIDI-Spur „gesang“.
-  Die MIDI-Spur kann aus echtem Gesang kommen (Logic: Flex Pitch → MIDI-Spur); sehr kurze Töne (unter 0,15 s) zählen
-  nicht, ineinander gebundene Töne enden, wo der nächste beginnt.
-- Rap: In Hip-Hop wird gerappt (`Catalog::RAP_GENRES`). Gesang übt dort im Rhythmus-Spiel – man tippt die Silben
-  im Takt (Noten aus derselben MIDI-Spur wie Pop). Vorhanden: Pop 0 komplett, Rock 0 (Schlagzeug, Bass, Keyboard),
-  Hip-Hop 0 (Schlagzeug, Bass, Gesang), Elektro 0 (Schlagzeug, E-Piano, Turntables, Gesang; Gesang und E-Piano mit den Noten von Pop,
-  Männerstimme aus Pop).
-- Spur ohne MIDI (Elektro-Turntables): Die Noten fürs Rhythmus-Spiel kommen aus der Aufnahme selbst – Anschläge erkannt
-  (Spektral-Fluss), aufs Achtel gerundet, die Spur im Spiel nach Klangfarbe (hell/dunkel) verteilt.
-  Stufe 0 bekommt nur Einzeltöne (Doppeltöne im Abstand bis ½ Schlag zusammengefasst), Stufe 1 (`elektro-1`) die schwerere Fassung.
-- Tonhöhen-Spiel (Gesang, Geige): Nach einem Sprung zählt der Anfang des neuen Tons erst, wenn man ihn bei normalem Tempo
-  erreichen kann (Weg ÷ Tempo minus Pause, plus 0,12 s, höchstens der halbe Ton) – weite Sprünge sind so schaffbar.
+- Jeder Musiker spielt die Spur seines Instruments, seiner Stufe und eines Genres: das Genre der Band, sonst eines seiner Lieblingsgenres.
+  Akustisch oder elektrisch richtet sich nach seinem Instrument (`Catalog::soundsElectric`): Manche Genres verlangen es (Metal: Gitarre und Bass,
+  Elektro: Keyboard, Schlagzeug und Bass immer elektrisch); ohne eigenes Instrument die Gewohnheit des Genres. Wer kein Instrument hat, bleibt stumm.
+- Gesang mit Frauen- und Männerstimme (`gesang-weiblich`, `gesang-maennlich`), diverse je nach Figur; beide teilen sich die Noten der MIDI-Spur.
+  In Hip-Hop wird gerappt (`Catalog::RAP_GENRES`). Vorhanden: Pop 0 komplett, Rock 0 (Schlagzeug, Bass, Keyboard), Hip-Hop 0 (Schlagzeug, Bass,
+  Gesang), Elektro 0 (Schlagzeug, E-Piano, Turntables, Gesang).
 - Fehlt eine Spur, nimmt das Spiel die nächste Stufe, dann die andere Variante, dann Pop. Gibt es gar keine, bleibt der Synthesizer.
-- Elektrisch oder akustisch (`Catalog::soundsElectric`): Manche Genres verlangen es (Metal: Gitarre und Bass, Elektro: Keyboard,
-  Schlagzeug und Bass immer elektrisch). Sonst zählt das eigene Instrument; ohne eigenes Instrument die Gewohnheit des Genres
-  (Jazz und Folk akustisch, die übrigen elektrisch).
-- Zu hören am Mischpult (jeder Regler steuert seine Spuren), bei der Solo-Probe (nur die eigene Spur) und in der Live-Ansicht von Auftritten.
-- Spielen zwei Mitglieder dasselbe Instrument (z. B. zwei Gitarren im Metal), nimmt der zweite die Aufnahme eines anderen
-  Genres (erst Pop, dann Rock, dann die übrigen) in der Variante, die eigentlich klingen würde (Metal: Pop-E-Gitarre).
-  Übersprungen werden Aufnahmen mit (fast) denselben Noten (`Music::parts`: Rhythmus ≥ 90 % und Töne ≥ 50 % gleich,
-  z. B. Metal- und Rock-Gitarre) – man hört nie zweimal denselben Part, solange es einen anderen gibt. Gesang zählt je Stimme.
+- Spielen zwei Mitglieder dasselbe Instrument, nimmt der zweite die Aufnahme eines anderen Genres; übersprungen werden Aufnahmen mit (fast)
+  denselben Noten (`Music::parts`) – man hört nie zweimal denselben Part, solange es einen anderen gibt.
+- Zu hören bei Proben (Bandseite) und Auftritten (Live-Ansicht); dazu echter Applaus je Ortsgröße (`public/assets/sfx/`).
 
-### Platten und Gigs im Gleichgewicht
+## Vorläufige Entscheidungen
 
-Rechnung pro Stunde Spielzeit (Gig = 3 Lieder ≈ 1,5 Minuten, Plattenlied ≈ 1 Minute, Qualität 75 %, EP alle 4 Gigs):
-
-| Band | nur Gigs | Platten + Gigs (sofort + Tantiemen) |
-|---|---|---|
-| Anfänger (Sound 12) | ~1.500 ₲ | ~850 + ~2.100 ₲ |
-| Mittel (Sound 30, Ruhm 100) | ~3.600 ₲ | ~4.400 + ~6.200 ₲ |
-| Gut (Sound 55, Ruhm 600) | ~19.500 ₲ | ~31.500 + ~20.800 ₲ |
-
-Nur Gigs lohnt sich immer weniger (das Publikum kennt die Lieder), nur Platten geht nicht (Live-Pflicht vor der nächsten).
-Platten bringen über die Charts mehr, Gigs schieben die Platte an.
-
-### Wer wirkt auf wen (ohne Kreisläufe)
-
-Grundsatz: Ruhm darf nie den eigenen Ruhm-Zuwachs über den Chartplatz verstärken. Sonst schaukelt sich Platz 1 auf.
-
-- **Chartplatz** ← Chartpunkte (Qualität, Sound, Länge, perfekt) × Verlauf (−3 %/Std.) × Schub (Gigs, Promo).
-  Ruhm wirkt hier nicht.
-- **Chartplatz →** nur der Scout-Gutschein für Platz 1 und Nachrichten. Geld und Ruhm kommen aus den Punkten, nicht aus dem Platz.
-- **Ruhm** ← Gigs (je nach Ort), Platten, Charts (nach Punkten), Promo, Straßenmusik/Open Stage (mit Ruhm abnehmend).
-- **Ruhm →** Auftrittsort (die Leiter nach oben: mehr Gage und Ruhm pro Lied), Erstverkauf einer Platte (Geld),
-  Bandplätze (Label-Ruhm), Marktwert. Der Ort ist der einzige Ruhm-zu-Ruhm-Weg – gewollt, mit festen Stufen.
-- **Geld →** Instrumente, Kurse → Können und Sound → bessere Platten. Ein langsamer, gewollter Weg.
-- **Bandgröße →** Sound (+5 % je Mitglied über 2) und Gage (+10 %). Die Bekanntheit eines Gigs wird geteilt:
-  In großen Bands wird der Einzelne langsamer bekannt, die Band als Ganzes nicht.
-
-### Nachrichten
-
-Backstage-News: Wer mindestens 15 Minuten nicht im Spiel war, bekommt beim nächsten Aufruf die Neuigkeiten aus der
-Chronik: Charts, Wechselbörse, Scout-Gutscheine, Aufstiege.
-
-## Vorläufige Entscheidungen zu offenen Fragen
-
-Diese Punkte sind im Konzept offen. Für den Kern habe ich sie so festgelegt; alles lässt sich ändern.
-
-- **Instrumente:** Keyboard und Synthesizer sind ein Instrument (Keyboard). Gitarren, Schlagzeuge und Keyboards gibt es akustisch und elektrisch; das merkt sich nur das Spiel, um später die passende Spur zu spielen.
-- **Besetzung:** Jedes Mitglied spielt in der Band genau ein Instrument. Ein Sänger mit Gitarre zählt
-  als Gitarrist, wenn er in der Band Gitarre spielt. Höchstens 7 Mitglieder (damit jede Genre-Kombination möglich ist; Metal + Jazz + Hip-Hop braucht 7).
-- **Straßenmusik:** etwas Ruhm; Geld nur als Notgroschen (Hut, 20–45 ₲ je nach Auftritt), solange das Geld nicht für die
-  kleinste Platte reicht – so kommt niemand in eine Sackgasse (ca. 10 Auftritte bis zur EP). Läden, Scout, Börse und
-  Umbenennen warnen, bevor das Geld unter die kleinste Platte fällt, solange noch keine Band Gigs spielen kann.
-- **Open Stage:** lohnt sich ab 120 Ruhm nicht mehr.
-- **Platte:** Die letzte Platte erst live spielen (2 Lieder pro Plattenlied), dann die nächste. Ja, der Sound bestimmt, wie fehlerverzeihend das Minispiel ist.
-- **Charts:** statt einer Liste pro Genre gibt es gemeinsame Album-Charts; die Label-Gesamtliste zählt den Ruhm aller eigenen Bands.
-- **Ruhm verfällt nicht** (vorerst).
-- **Präsenz** ist vorerst raus, um es einfach zu halten (der Wert steht noch in der Datenbank, zählt aber nicht).
-- **Ob man bei Gigs mitspielt:** vorerst nicht, man schaut im Live-Ticker zu.
+- **Instrumente:** Keyboard und Synthesizer sind ein Instrument (Keyboard). Gitarren, Schlagzeuge und Keyboards gibt es akustisch und elektrisch.
+- **Besetzung:** Jedes Mitglied spielt in der Band genau ein Instrument. Höchstens 7 Mitglieder (damit jede Genre-Kombination möglich ist;
+  Metal + Jazz + Hip-Hop braucht 7).
+- **Charts:** gemeinsame Album-Charts aller Labels statt einer Liste pro Genre; die Label-Rangliste zählt den Label-Ruhm.
+- **Ruhm verfällt nicht** (vorerst). **Präsenz** zählt nicht (der Wert steht noch in der Datenbank).
+- **Bei Auftritten spielt man nicht mit**, man schaut im Live-Ticker zu.
 
 ## Bekannte Grenzen
 
-- Das Ergebnis des Minispiels kommt aus dem Browser. Der Server prüft nur, ob es plausibel ist
-  (Notenzahl, Mindestdauer). Für ein Hobbyspiel unter Bekannten reicht das; gegen gezieltes Schummeln nicht.
-- Bisher gibt es nur Pop Stufe 0 als Aufnahme; alle anderen Genres und Stufen spielen sie mit.
-- Bluetooth-Kopfhörer: Verzögerung pro Gerät einstellbar (im Minispiel „Ton kommt zu spät?“): Man tippt 12 Klicks
-  im Sekundentakt mit, die mittlere Verspätung (ohne die ersten 3) wird gespeichert. Rhythmus- und Tonhöhen-Spiel
-  verschieben Bild und Wertung darum. Ohne Einstellung gilt, was der Browser als Ausgabeverzögerung meldet.
+- Aufnahmen gibt es erst für wenige Genres und Stufen; die übrigen spielen die nächste passende mit.
 - Noch keine Bremse gegen Passwort-Raten beim Login.
+- Nicht getestet auf dem iPad (Berühren, Ziehen, Klang); das kommt vor dem Veröffentlichen.

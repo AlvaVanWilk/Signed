@@ -1,8 +1,9 @@
 # Signed – Hinweise für Claude Code
 
-Musik-Spiel auf Label-Ebene (Web-App). Konzept: Claude-Doc „Signed – Spielkonzept“. Umfang und Formeln des heutigen Spiels: `docs/kern.md`.
-**Im Umbau:** Neues Konzept in `docs/label-konzept.md` (Bands mit Eigenleben, Stimmung, Beziehungen), Ausgelagertes in `docs/ausgelagert-musikerspiel.md`.
-Es wird nur in der Testversion gebaut; `main` (das echte Spiel) bleibt unverändert, bis der Umbau fertig ist und Sandra „veröffentlichen“ sagt.
+Musik-Spiel auf Label-Ebene (Web-App): Bands mit Eigenleben, Stimmung, Beziehungen. Konzept, Offenes und Geparktes: `docs/label-konzept.md`.
+Regeln und Formeln: `docs/kern.md`. Was herausgenommen wurde (Minispiele, Packs, Börse …): `docs/ausgelagert-musikerspiel.md`.
+**Im Umbau:** Es wird nur in der Testversion gebaut; `main` (das echte Spiel) bleibt unverändert, bis der Umbau fertig ist und Sandra
+„veröffentlichen“ sagt. Alte Labels bekommen beim Umbau einen einmaligen Übergang (`Transition`, Schema-Schritt 53).
 
 ## Rahmen
 

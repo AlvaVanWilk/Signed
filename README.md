@@ -1,17 +1,19 @@
 # Signed
 
-Ein Musik-Sammelkartenspiel im Browser: Du bist ein Label, öffnest Packs mit einmaligen Musikern,
-gründest Bands, produzierst Platten, spielst Gigs und kämpfst mit anderen Labels um die Charts.
+Ein Musik-Spiel im Browser: Du führst ein Plattenlabel. Musiker schicken Kassetten, du nimmst sie unter Vertrag,
+stellst Bands zusammen und sagst ihnen, was sie tun: proben, auftreten, Platten aufnehmen, auf Tournee gehen.
+Die Bands haben ein Eigenleben, mit Stimmung, Wünschen und Beziehungen. Jede Woche gibt es ein Festival und das
+Battle of the Bands, und alle Labels spielen um dieselben Charts.
 
-Das Spielkonzept steht im Claude-Doc „Signed – Spielkonzept“. Was davon schon gebaut ist und nach
-welchen Formeln das Spiel rechnet, steht in [docs/kern.md](docs/kern.md).
+Das Konzept steht in [docs/label-konzept.md](docs/label-konzept.md), die Regeln und Formeln in
+[docs/kern.md](docs/kern.md). Ursprung ist das Claude-Doc „Signed – Spielkonzept“.
 
 ## Technik
 
 - **Server:** PHP 8.1 oder neuer, ohne Framework und ohne Composer-Pakete.
 - **Datenbank:** SQLite (Standard, eine Datei) oder MySQL/MariaDB.
-- **Browser:** HTML, CSS und JavaScript-Module ohne Build-Schritt. Die Musik im Minispiel ist vorerst
-  ein Platzhalter aus dem Browser-Synthesizer.
+- **Browser:** HTML, CSS und JavaScript-Module ohne Build-Schritt. Musik: echte Aufnahmen je Genre und Stufe
+  (`public/assets/music/`), wo noch keine da sind, der Browser-Synthesizer.
 
 Damit läuft das Spiel auf praktisch jedem gewöhnlichen Webspace.
 
@@ -59,5 +61,7 @@ public/            Webroot: index.html, api.php, assets/ (CSS, JS, Bilder)
 src/               PHP: API, Datenbank, Sitzung
 src/Game/          Spielregeln: Balance (alle Zahlen), Catalog (feste Daten), Generator, BandCalc, …
 tests/             Test-Runner und Tests
-docs/kern.md       Umfang des Kerns, Formeln und vorläufige Entscheidungen
+docs/kern.md       Umfang, Regeln und Formeln
+docs/label-konzept.md        Konzept des Label-Spiels, Offenes und Geparktes
+docs/ausgelagert-musikerspiel.md   was aus Signed herausgenommen wurde
 ```

@@ -850,3 +850,19 @@ test('Festival: Genre und Name je Woche für alle gleich, nie zweimal hintereina
     }
     checkEquals(count(Catalog::GENRES), count($seen), 'alle Genres kommen vor');
 });
+
+test('Tournee: echte Entfernungen, weite Reisen dauern länger und kosten mehr, der Heimflug ist frei', function () {
+    $t = Signed\Game\Tours::class;
+    $london = $t::km('home', 'gb');
+    check($london > 800 && $london < 1100, 'Berlin–London: ' . round($london));
+    check(abs($t::km('jp', 'au') - $t::km('au', 'jp')) < 1e-6, 'hin wie zurück');
+    check($t::km('home', 'au') > 15000, 'Australien ist weit');
+    check($t::travelSeconds($t::km('home', 'au')) > 2.5 * $t::travelSeconds($london), 'weite Reise dauert');
+    check($t::legCost($t::km('home', 'jp'), 4) > 3 * $t::legCost($london, 4), 'weite Reise kostet');
+    check($t::legCost($london, 6) > $t::legCost($london, 3), 'mehr Mitglieder, mehr Tickets');
+    foreach (Catalog::COUNTRIES as $key => $c) {
+        check(isset(Catalog::GENRES[$c['genre']]), "$key: Genre gibt es");
+    }
+    // Jedes Genre wird in mindestens einem Land geliebt.
+    checkEquals([], array_values(array_diff(array_keys(Catalog::GENRES), array_column(Catalog::COUNTRIES, 'genre'))));
+});

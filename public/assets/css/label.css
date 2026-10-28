@@ -1312,7 +1312,7 @@ body { background: radial-gradient(1100px 520px at 50% -12%, rgba(255, 181, 71, 
 @keyframes lb-wishbob { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, -3px); } }
 @media (prefers-reduced-motion: reduce) { .lb-wishdot { animation: none; } }
 /* Anordnungen als Schallplatten mit farbigem Etikett */
-.lb-acts { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin: 4px 0 18px; }
+.lb-acts { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; margin: 4px 0 18px; }
 .lb-acts .lb-act { --lc: #2ec4b6; display: grid; grid-template-columns: none; justify-items: center; align-content: start; gap: 4px; padding: 6px 4px; border: 0; border-radius: 12px; background: none; box-shadow: none; text-align: center; overflow: visible; }
 .lb-acts .lb-act::before { display: none; }
 .lb-acts .lb-act.t-record { --lc: #ffb547; } .lb-acts .lb-act.t-gig { --lc: #ff6f91; } .lb-acts .lb-act.t-bandpromo { --lc: #8fa8ff; } .lb-acts .lb-act.t-retreat { --lc: #6fd08c; }
@@ -1522,3 +1522,32 @@ body { background: radial-gradient(1100px 520px at 50% -12%, rgba(255, 181, 71, 
 .fe-state { font-size: .74rem; color: var(--muted); } .fe-state.live { color: var(--accent); font-weight: 700; }
 .lb-trophies .poster { filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .45)); }
 .lb-room.lb-venue.v-zelt { --fb: calc(var(--u) * 80); }
+
+/* ---------- Tournee ---------- */
+.lb-act.t-tour { --tc: var(--tone-blue); } .lb-acts .lb-act.t-tour { --lc: #6fc3e8; }
+.tr-panel { margin-bottom: 14px; padding: 14px 16px 16px; border-radius: var(--radius); background: var(--panel); border: 1px solid var(--line); }
+.tr-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+.tr-head h2 { margin: 0; }
+.tr-count { font-size: .8rem; font-weight: 700; color: var(--accent-2); background: rgba(255, 181, 71, .1); border-radius: 999px; padding: 3px 10px; white-space: nowrap; }
+.tr-map { display: block; width: 100%; height: auto; border-radius: var(--radius-sm); margin-bottom: 10px; }
+.tr-route { fill: none; stroke: #ffd27a; stroke-width: 2; stroke-linecap: round; opacity: .8; }
+.tr-route.flying { stroke-dasharray: 6 6; opacity: .95; animation: tr-dash 1.2s linear infinite; }
+@keyframes tr-dash { to { stroke-dashoffset: -12; } }
+.tr-pin circle { fill: #7d8aa3; stroke: #18263d; stroke-width: 1; }
+.tr-pin.done circle { fill: #3ddc97; }
+.tr-pin.here circle { fill: #ffb547; stroke: #fff; stroke-width: 1.4; }
+.tr-pin text { font: 700 13px system-ui, sans-serif; fill: #f3eefc; paint-order: stroke; stroke: #18263d; stroke-width: 3px; }
+.tr-home path { fill: #f3eefc; stroke: #18263d; stroke-width: 1; }
+.tr-status { margin: 4px 0 6px; font-size: 1.02rem; }
+.tr-btns { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+.tr-short { padding: 8px 12px; border-radius: 8px; background: rgba(255, 96, 96, .1); }
+.tr-visits { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 4px; font-size: .86rem; }
+.tr-visits li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; padding: 6px 10px; border-radius: 8px; background: var(--panel-2); }
+.tr-visits li > span:first-child { min-width: 130px; } .tr-visits small { color: var(--muted); }
+.tr-genre { color: var(--muted); } .tr-genre.hit { color: var(--ok); font-weight: 700; }
+.tr-genre .genre-icon, .tr-roll-after .genre-icon, .result-modal .genre-icon { width: 14px; height: 14px; vertical-align: -2px; margin-right: 3px; fill: currentColor; }
+.tr-roll { display: flex; align-items: center; gap: 14px; margin: 14px 0; }
+.tr-die { font-size: 2.6rem; line-height: 1; }
+.tr-roll-name { font-size: 1.5rem; }
+.tr-roll-name.landed { color: var(--accent-2); animation: tr-land .4s ease-out; }
+@keyframes tr-land { from { transform: scale(1.25); } }

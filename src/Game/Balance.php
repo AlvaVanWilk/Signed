@@ -158,7 +158,7 @@ final class Balance
      */
     public const RELATION = [
         'max' => 10.0, 'scale' => 10.0, 'base' => 3.0, 'drift' => 0.2,
-        'bond' => ['rehearsal' => 0.12, 'gig' => 0.10, 'record' => 0.08, 'bandpromo' => 0.05, 'retreat' => 0.08, 'battle' => 0.10, 'festival' => 0.12],
+        'bond' => ['rehearsal' => 0.12, 'gig' => 0.10, 'record' => 0.08, 'bandpromo' => 0.05, 'retreat' => 0.08, 'battle' => 0.10, 'festival' => 0.12, 'tourgig' => 0.12, 'tour' => 0.35],
         'clash' => -0.5, 'teamplayer' => 0.25, 'party' => 0.3,
         'genres' => [0 => -0.3, 1 => 0.1, 2 => 0.3, 3 => 0.4], 'gapFrom' => 30, 'gapBig' => 50, 'gapPenalty' => [-0.2, -0.4],
     ];
@@ -740,9 +740,28 @@ final class Balance
             'tent' => ['name' => 'Zeltbühne', 'slots' => 3, 'songs' => 4, 'fame' => 1.8, 'money' => 80, 'expect' => 25, 'venue' => 'zelt', 'fanVenue' => 'saal'],
         ],
     ];
+    /**
+     * Tournee (Tours): `lengths` Stationen zur Wahl; jedes Ziel wird ausgewürfelt (echte Länder, Catalog::COUNTRIES, keins doppelt).
+     * Reisezeit = base + Entfernung × perKm (Sekunden), Reisekosten je Strecke = Mitglieder × (perMember + Entfernung × perKmCost) ₲,
+     * der Heimflug ist frei. Ein Auftritt wie ein Gig am Ort nach Ruhm mit ganzer Setlist; im Ausland kennt noch niemand die Lieder
+     * (keine Abnutzung) und es kommt neues Publikum (`abroad`: mehr Ruhm und Gage als zu Hause). Mag das Land das Genre der Band
+     * (`match`): noch mehr Ruhm und Gage, das Publikum ist leichter zu begeistern.
+     * Zwischen den Stationen wartet die Band höchstens `wait` Sekunden auf das nächste Antippen, dann fliegt sie selbst nach Hause.
+     * Beziehungen: je Auftritt RELATION['bond']['tourgig'], am Ende ['tour'], dazu am Ende `lift` je gespielte Station obendrauf
+     * (höchstens `liftMax`): Das gemeinsame Abenteuer schweißt zusammen, auch wer sich sonst eher reibt.
+     */
+    public const TOUR = [
+        'lengths' => [3, 5, 7],
+        'travel' => ['base' => 1800, 'perKm' => 0.6],
+        'cost' => ['perMember' => 15, 'perKm' => 0.01],
+        'abroad' => ['fame' => 2.0, 'money' => 1.25],
+        'match' => ['fame' => 1.5, 'money' => 1.5, 'expect' => 0.85],
+        'wait' => 2 * 86400,
+        'lift' => 0.6, 'liftMax' => 3.0,
+    ];
     /** Nachrichten beim Wiederkommen: nach so langer Pause, diese Arten aus der Chronik. */
     public const NEWS_AWAY = 900;
-    public const NEWS_KINDS = ['chart1', 'chart', 'transfer', 'scout', 'level', 'fame', 'fanjoin', 'trait', 'event'];
+    public const NEWS_KINDS = ['chart1', 'chart', 'transfer', 'scout', 'level', 'fame', 'fanjoin', 'trait', 'event', 'tour'];
     public const CHART_DECAY = 0.03;
     public const CHART_MAX_AGE = 7 * 86400;
     /**

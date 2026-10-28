@@ -217,15 +217,15 @@ final class Catalog
      * Jeder Charakter mag mindestens eine Anordnung, damit eine rote Band immer einen Ausweg hat.
      */
     public const LIKES = [
-        'ehrgeizig' => ['rehearsal' => 1, 'record' => 1, 'gig' => 1, 'busking' => -1, 'battle' => 1, 'festival' => 1],
-        'gelassen' => ['record' => 1, 'gig' => -1, 'busking' => -1, 'battle' => -1, 'festival' => -1],
+        'ehrgeizig' => ['rehearsal' => 1, 'record' => 1, 'gig' => 1, 'busking' => -1, 'battle' => 1, 'festival' => 1, 'tour' => 1],
+        'gelassen' => ['record' => 1, 'gig' => -1, 'busking' => -1, 'battle' => -1, 'festival' => -1, 'tour' => -1],
         'perfektionist' => ['rehearsal' => 1, 'record' => 1, 'busking' => -1, 'openstage' => -1],
-        'chaot' => ['gig' => 1, 'openstage' => 1, 'busking' => 1, 'rehearsal' => -1, 'festival' => 1],
-        'rampensau' => ['gig' => 1, 'openstage' => 1, 'busking' => 1, 'interview' => 1, 'battle' => 1, 'festival' => 1],
+        'chaot' => ['gig' => 1, 'openstage' => 1, 'busking' => 1, 'rehearsal' => -1, 'festival' => 1, 'tour' => 1],
+        'rampensau' => ['gig' => 1, 'openstage' => 1, 'busking' => 1, 'interview' => 1, 'battle' => 1, 'festival' => 1, 'tour' => 1],
         'diva' => ['gig' => 1, 'record' => 1, 'busking' => -1, 'openstage' => -1, 'interview' => 1, 'battle' => 1, 'festival' => 1],
         'teamplayer' => ['rehearsal' => 1, 'record' => 1, 'interview' => -1],
-        'ruhepol' => ['rehearsal' => 1, 'record' => 1],
-        'partytier' => ['gig' => 1, 'openstage' => 1, 'busking' => 1, 'rehearsal' => -1, 'festival' => 1],
+        'ruhepol' => ['rehearsal' => 1, 'record' => 1, 'tour' => -1],
+        'partytier' => ['gig' => 1, 'openstage' => 1, 'busking' => 1, 'rehearsal' => -1, 'festival' => 1, 'tour' => 1],
         'kreativ' => ['record' => 1, 'openstage' => 1, 'rehearsal' => -1],
         'technisch' => ['rehearsal' => 1, 'record' => 1],
     ];
@@ -277,6 +277,26 @@ final class Catalog
         'manager' => '%2$s kennt %1$s inzwischen gut.',
     ];
     /** Anordnungen im Satz („Lust auf …“). */
+    /** Länder für Tourneen (Tours): Stadt, Lieblings-Genre des Publikums, Lage (Breite, Länge) für Karte und Entfernung; `in`, wo „in …“ anders heißt. */
+    public const COUNTRIES = [
+        'gb' => ['name' => 'England', 'city' => 'London', 'genre' => 'rock', 'lat' => 51.5, 'lon' => -0.1],
+        'ie' => ['name' => 'Irland', 'city' => 'Dublin', 'genre' => 'folk', 'lat' => 53.3, 'lon' => -6.3],
+        'fr' => ['name' => 'Frankreich', 'city' => 'Paris', 'genre' => 'pop', 'lat' => 48.9, 'lon' => 2.4],
+        'es' => ['name' => 'Spanien', 'city' => 'Madrid', 'genre' => 'folk', 'lat' => 40.4, 'lon' => -3.7],
+        'nl' => ['name' => 'Niederlande', 'city' => 'Amsterdam', 'genre' => 'elektro', 'lat' => 52.4, 'lon' => 4.9, 'in' => 'in den Niederlanden'],
+        'se' => ['name' => 'Schweden', 'city' => 'Stockholm', 'genre' => 'elektro', 'lat' => 59.3, 'lon' => 18.1],
+        'no' => ['name' => 'Norwegen', 'city' => 'Oslo', 'genre' => 'metal', 'lat' => 59.9, 'lon' => 10.7],
+        'fi' => ['name' => 'Finnland', 'city' => 'Helsinki', 'genre' => 'metal', 'lat' => 60.2, 'lon' => 24.9],
+        'us' => ['name' => 'USA', 'city' => 'New York', 'genre' => 'hiphop', 'lat' => 40.7, 'lon' => -74.0, 'in' => 'in den USA'],
+        'ca' => ['name' => 'Kanada', 'city' => 'Toronto', 'genre' => 'punk', 'lat' => 43.7, 'lon' => -79.4],
+        'br' => ['name' => 'Brasilien', 'city' => 'Rio de Janeiro', 'genre' => 'jazz', 'lat' => -22.9, 'lon' => -43.2],
+        'za' => ['name' => 'Südafrika', 'city' => 'Kapstadt', 'genre' => 'jazz', 'lat' => -33.9, 'lon' => 18.4],
+        'jp' => ['name' => 'Japan', 'city' => 'Tokio', 'genre' => 'pop', 'lat' => 35.7, 'lon' => 139.7],
+        'au' => ['name' => 'Australien', 'city' => 'Sydney', 'genre' => 'rock', 'lat' => -33.9, 'lon' => 151.2],
+    ];
+    /** Von hier geht jede Tournee los, und hierhin kommt die Band zurück. */
+    public const HOME = ['name' => 'Deutschland', 'city' => 'Berlin', 'lat' => 52.5, 'lon' => 13.4];
+
     /** Festivals je Genre (Balance::FESTIVAL): Name nach Woche. */
     public const FESTIVALS = [
         'rock' => ['Rock am Deich', 'Riff im Park', 'Gitarrensommer'],
@@ -291,7 +311,7 @@ final class Catalog
 
     public const TRAIT_REVEAL_ORDERS = [
         'rehearsal' => 'die Probe', 'gig' => 'den Auftritt', 'record' => 'die Aufnahme', 'busking' => 'Straßenmusik', 'openstage' => 'die offene Bühne', 'interview' => 'das Interview',
-        'battle' => 'das Battle', 'festival' => 'das Festival',
+        'battle' => 'das Battle', 'festival' => 'das Festival', 'tour' => 'die Tournee',
     ];
 
     /** Wie lange ein Charakter bei der Probe Lust hat, als Faktor auf Balance::REHEARSAL['lust'] (bei zwei Eigenschaften der Mittelwert). */

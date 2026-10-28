@@ -431,6 +431,8 @@ final class Activities
                     $row['type'] === 'interview' => Inbox::settle($repo, $row, $data),
                     $row['type'] === 'rehearsal' => self::applyRehearsal($repo, $row),
                     $row['type'] === 'record' => Studio::settle($repo, $row, $data),
+                    $row['type'] === Tours::TRAVEL => Tours::arrived($repo, $row, $data),
+                    $row['type'] === Tours::HOME => Tours::homeArrived($repo, $row, $data),
                     $row['type'] === 'practice', $row['type'] === 'course' => self::applyPractice($repo, $row, $data),
                     $row['band_id'] === null => self::applySolo($repo, $row, $data),
                     default => self::applyBand($repo, $row, $data),
@@ -465,7 +467,8 @@ final class Activities
         Charts::boost($repo, $bandId, (float) ($reward['chartBoost'] ?? 0));
         // Gemeinsam erlebt: Die Beziehungen der Mitglieder wachsen (je nach Passung).
         Mood::bond($repo, $repo->members($bandId), $row['type']);
-        Mood::react($repo, $repo->members($bandId), $row['type']);
+        // Ein Auftritt auf Tournee gefällt, wem Auftritte gefallen.
+        Mood::react($repo, $repo->members($bandId), $row['type'] === Tours::GIG ? 'gig' : $row['type']);
         // Auszeit: erholt zurück
         foreach ($reward['wellbeing'] ?? [] as $id => $gain) {
             $w = $db->value('SELECT wellbeing FROM musicians WHERE id = ? AND band_id = ?', [(int) $id, $bandId]);
@@ -507,6 +510,10 @@ final class Activities
                 if ($band['gigs_played'] === 0) {
                     $repo->log('gig', sprintf('%s spielt den ersten richtigen Gig.', $band['name']), $bandId);
                 }
+            } elseif ($row['type'] === Tours::GIG) {
+                // Auf Tournee: ein Gig, aber im Ausland kennt noch niemand die Lieder (keine Abnutzung).
+                $updates['gigs_played'] = $band['gigs_played'] + 1;
+                $updates['live_songs'] = $band['live_songs'] + (int) ($data['songs'] ?? 0);
             } elseif ($row['type'] === Festival::KIND) {
                 // Auch das Festival zählt für den Album-Zyklus.
                 $updates['live_songs'] = $band['live_songs'] + (int) ($data['songs'] ?? 0);
@@ -538,6 +545,9 @@ final class Activities
                 $db->insert('items', ['label_id' => $repo->labelId, 'kind' => 'fan', 'value' => (float) $drop['value'], 'created_at' => Clock::now()]);
                 $result['drops'][] = ['kind' => 'fan', 'value' => $drop['value']];
             }
+        }
+        if ($row['type'] === Tours::GIG && isset($reward['tour'])) {
+            $result['tour'] = Tours::afterGig($repo, $bandId, $reward['tour'], $result);
         }
         return $result;
     }

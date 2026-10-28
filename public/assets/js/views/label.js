@@ -12,6 +12,7 @@ import { crowdSvg, stageSvg } from '../stage.js';
 import { studioBlock } from './recording.js';
 import { trophy } from './battle.js';
 import { poster } from './festival.js';
+import { tourHint, tourPanel } from '../tour.js';
 
 /** Label-Ebene: Band-Leiste links und die ruhige Bandseite. Stimmung als Punkt und Wort (grün, gelb, rot). */
 
@@ -159,6 +160,7 @@ const ICON = {
   gig: '<svg viewBox="0 0 32 32"><rect x="12" y="4" width="8" height="15" rx="4"/><path d="M8 15 a8 8 0 0 0 16 0 M16 23 V28 M11 28 H21"/></svg>',
   promo: '<svg viewBox="0 0 32 32"><path d="M5 13 V19 H10 L22 26 V6 L10 13 Z"/><path d="M26 11 a6 6 0 0 1 0 10"/></svg>',
   retreat: '<svg viewBox="0 0 32 32"><path d="M6 26 H26"/><path d="M16 26 V10"/><path d="M5 12 a11 7 0 0 1 22 0 Z"/></svg>',
+  tour: '<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="11"/><path d="M5 16 H27 M16 5 C10.5 10 10.5 22 16 27 M16 5 C21.5 10 21.5 22 16 27"/></svg>',
 };
 
 /** Auszeit: Was sie kostet und bringt (die günstigste Wahl). */
@@ -522,7 +524,7 @@ function act(b, members, type, section, title, text, icon, warn = false, busy = 
   // Ohne Unterseite: Die Anordnung startet gleich (Proben).
   if (!section) {
     const why = busy ? (blocker(b, members)?.text ?? (members.length === 1 ? 'Gerade beschäftigt.' : 'Die Band ist gerade beschäftigt.')) : '';
-    return `<button class="lb-act t-${type} ${busy ? 'idle' : ''} ${warn ? 'warn' : ''}" data-act="${{ gig: 'gigAsk', rehearsal: 'rehearseAsk', record: 'recordAsk', bandpromo: 'promoAsk', retreat: 'retreatAsk' }[type]}" data-id="${b.id}" ${off(why)}>${disc}<b>${title}</b>${busy ? `<small>${members.length === 1 ? 'Gerade beschäftigt.' : 'Die Band ist gerade beschäftigt.'}</small>` : hint}</button>`;
+    return `<button class="lb-act t-${type} ${busy ? 'idle' : ''} ${warn ? 'warn' : ''}" data-act="${{ gig: 'gigAsk', rehearsal: 'rehearseAsk', record: 'recordAsk', bandpromo: 'promoAsk', retreat: 'retreatAsk', tour: 'tourAsk' }[type]}" data-id="${b.id}" ${off(why)}>${disc}<b>${title}</b>${busy ? `<small>${members.length === 1 ? 'Gerade beschäftigt.' : 'Die Band ist gerade beschäftigt.'}</small>` : hint}</button>`;
   }
   return `<a class="lb-act t-${type} ${warn ? 'warn' : ''}" href="#/band/${b.id}/${section}">${disc}<b>${title}</b>${hint}</a>`;
 }
@@ -748,24 +750,25 @@ export function page(route) {
   const members = b.memberIds.map(musicianById).filter(Boolean);
   const solo = members.length === 1;
   const running = runningFor(b.id);
-  const notice = ['rehearsal', 'gig', 'record', 'festival'].includes(running?.type) ? '' : blockerNotice(b, members);
+  const notice = ['rehearsal', 'gig', 'record', 'festival', 'tourgig'].includes(running?.type) || b.tour ? '' : blockerNotice(b, members);
   const free = cat().rules.maxMembers - members.length;
   const base = `#/band/${b.id}`;
   const courses = courseTiles(members);
   const course = courses ? `<details class="lb-more"><summary>Kurse des Tages</summary><div class="lb-course">${courses}</div></details>` : '';
   return `
     <h1 class="sr-only">${esc(b.name)}</h1>
-    ${running?.type === 'rehearsal' ? liveBlock(b, members, running) : ['gig', 'festival'].includes(running?.type) ? gigBlock(b, members, running) : running?.type === 'record' ? studioBlock(b, members, running, { soundOn: music?.actId === running.id }) : bandScene(b, members)}
+    ${running?.type === 'rehearsal' ? liveBlock(b, members, running) : ['gig', 'festival', 'tourgig'].includes(running?.type) ? gigBlock(b, members, running) : b.tour ? tourPanel(b) : running?.type === 'record' ? studioBlock(b, members, running, { soundOn: music?.actId === running.id }) : bandScene(b, members)}
     ${notice}
     ${eventNotice(b)}
     ${tutorNotice(b, members)}
-    ${['rehearsal', 'gig', 'record', 'festival'].includes(running?.type) ? wishBlock(b, members) : ''}
+    ${['rehearsal', 'gig', 'record', 'festival', 'tourgig'].includes(running?.type) || b.tour ? wishBlock(b, members) : ''}
     <div class="lb-acts">
       ${act(b, members, 'rehearsal', null, 'Proben', `bis zu ${mins(b.options.rehearsal.seconds)} · Können ${gainRange(members.map((m) => m.gains?.rehearsal ?? 0))} je ${mins(cat().rules.rehearsalSeconds)}`, ICON.rehearse, false, !!blocker(b, members))}
       ${act(b, members, 'record', null, 'Aufnehmen', recordHint(b), ICON.record, b.mood.songs >= 12, !!blocker(b, members))}
       ${act(b, members, 'gig', null, 'Auftritt buchen', 'Orte, Kosten und Gewinn sehen', ICON.gig, false, !!blocker(b, members))}
       ${act(b, members, 'bandpromo', null, 'Promo-Tour', promoHint(b), ICON.promo, false, !!blocker(b, members))}
       ${act(b, members, 'retreat', null, 'Auszeit', retreatHint(b), ICON.retreat, false, !!blocker(b, members))}
+      ${act(b, members, 'tour', null, 'Tournee', tourHint(b), ICON.tour, false, !!blocker(b, members))}
     </div>
     ${course}
     ${managerBlock(b)}

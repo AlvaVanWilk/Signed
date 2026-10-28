@@ -12,6 +12,7 @@ import * as auth from './views/auth.js';
 import * as board from './views/board.js';
 import * as battle from './views/battle.js';
 import * as festival from './views/festival.js';
+import * as tour from './tour.js';
 import * as bands from './views/bands.js';
 import * as label from './views/label.js';
 import * as charts from './views/charts.js';
@@ -319,6 +320,8 @@ function resultHtml(r) {
       ${r.type === 'practice' ? '<p class="muted small">Selbst mitspielen bringt bis zum Vierfachen.</p>' : ''}`;
   }
   if (r.type === 'battle') return battleResultHtml(r);
+  if (r.type === 'tourtravel') return tour.arrivalHtml(r);
+  if (r.type === 'tour') return tour.homeHtml(r);
   if (r.type === 'interview') {
     const m = musicianById(r.musicianId);
     return `
@@ -366,6 +369,7 @@ function resultHtml(r) {
     ${levelUpBanners(res.levelUps)}
     ${res.venueUp ? `<div class="banner">⭐ Neue Stufe! Ab jetzt spielt die Band Gigs in: <b>${esc(res.venueUp)}</b>.</div>` : ''}
     ${res.festival ? festivalExtras(res.festival) : ''}
+    ${res.tour ? tour.gigExtras(res) : ''}
     ${drops}`;
 }
 
@@ -446,7 +450,9 @@ function showResults() {
     wide: !!jamOffer,
     html: `${safeResultHtml(r)}<div class="dialog-actions">${jamOffer
       ? `<button class="btn ghost" data-act="jamDecline" data-offer="${jamOffer.id}">Alle ablehnen</button><button class="btn" data-close>Später</button>`
-      : `${r.type === 'practice' && musicianById(r.musicianId) ? '<button class="btn" data-again>Nochmal üben</button>' : ''}<button class="btn primary" data-close>Weiter</button>`}</div>`,
+      : r.type === 'tourtravel' ? tour.arrivalActions(r)
+        : r.type === 'tourgig' && tour.gigActions(r) ? tour.gigActions(r)
+          : `${r.type === 'practice' && musicianById(r.musicianId) ? '<button class="btn" data-again>Nochmal üben</button>' : ''}<button class="btn primary" data-close>Weiter</button>`}</div>`,
     onClose: () => {
       resultModal = null;
       app.state.results = app.state.results.filter((x) => x.id !== r.id);
@@ -456,7 +462,9 @@ function showResults() {
       if (Object.keys(app.ui.awayFrom ?? {}).length) rerender();
     },
   });
-  resultModal.body.querySelector('[data-close]').addEventListener('click', () => resultModal?.close());
+  resultModal.body.addEventListener('click', (e) => {
+    if (e.target.closest('[data-close]')) resultModal?.close();
+  });
   // Allein geübt: gleich noch eine Runde mit demselben Instrument.
   resultModal.body.querySelector('[data-again]')?.addEventListener('click', async () => {
     const m = musicianById(r.musicianId);
@@ -583,6 +591,7 @@ setInterval(() => {
   const live = app.state.running.some((a) => a.type === 'rehearsal');
   label.tickLive();
   battle.tick();
+  tour.tick();
   // Battle und Festival: zur nächsten Runde, zum nächsten Ergebnis, zum Anmeldeschluss und zum Beginn neu fragen.
   const wake = Math.min(app.state.battle?.wakeAt ?? Infinity, app.state.festival?.wakeAt ?? Infinity);
   if (Number.isFinite(wake) && wake + 0.5 <= serverNow() && Date.now() - lastWake > 2000) {

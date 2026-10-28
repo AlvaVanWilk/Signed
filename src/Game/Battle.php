@@ -62,6 +62,9 @@ final class Battle
                 return sprintf('%s ist dann noch unterwegs.', $m['first_name']);
             }
         }
+        if (Tours::active($repo->db, $band['id']) !== null) {
+            return sprintf('%s ist auf Tournee.', Bands::who($members));
+        }
         $refuser = Mood::refuser($members, self::KIND);
         if ($refuser !== null) {
             return sprintf('%s hat auf ein Battle gerade keine Lust.', $refuser['first_name']);

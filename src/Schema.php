@@ -629,6 +629,23 @@ final class Schema
                 ){OPTS}',
                 'CREATE INDEX fame_days_band ON fame_days (band_id, day)',
             ],
+            // 51: Tourneen: je Band höchstens eine laufende; Stationen, Strecken und Ergebnisse als JSON
+            [
+                'CREATE TABLE tours (
+                    id {PK},
+                    label_id INTEGER NOT NULL,
+                    band_id INTEGER NOT NULL,
+                    state VARCHAR(10) NOT NULL,
+                    stations INTEGER NOT NULL,
+                    country VARCHAR(4) NULL,
+                    deadline INTEGER NOT NULL DEFAULT 0,
+                    started_at INTEGER NOT NULL,
+                    ended_at INTEGER NULL,
+                    data TEXT NOT NULL
+                ){OPTS}',
+                'CREATE INDEX tours_band ON tours (band_id, state)',
+                'CREATE INDEX tours_label ON tours (label_id, state)',
+            ],
         ];
     }
 }

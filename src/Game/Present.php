@@ -141,6 +141,10 @@ final class Present
         return [
             'rarities' => Catalog::RARITIES,
             'genres' => Catalog::GENRES,
+            // Tournee: Länder mit Lieblings-Genre und Lage, dazu der Heimatort
+            'countries' => Catalog::COUNTRIES,
+            'home' => Catalog::HOME,
+            'tour' => ['lengths' => Balance::TOUR['lengths'], 'wait' => Balance::TOUR['wait'], 'match' => Balance::TOUR['match'], 'cost' => Balance::TOUR['cost'], 'travel' => Balance::TOUR['travel']],
             'instruments' => array_map(
                 static fn ($i) => ['name' => $i['name'], 'at' => $i['at'], 'icon' => $i['icon'], 'genres' => $i['genres'], 'techniques' => $i['techniques']],
                 Catalog::INSTRUMENTS

@@ -2799,3 +2799,88 @@ test('Festival: Melden sich mehr Bands als Plätze, entscheidet das Los', functi
     checkEquals(2, (int) $db->value("SELECT COUNT(*) FROM event_entries WHERE status = 'rejected'"));
     check((int) $db->value("SELECT COUNT(*) FROM history WHERE text LIKE '%für andere Bands entschieden%'") === 2, 'Absage vom Veranstalter');
 });
+
+test('Tournee: Ziel ausgewürfelt, Ankunft melden, Auftritt erst auf Klick, weiter oder heim; die Band wächst zusammen', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Reisend');
+    $band = foundBand($p);
+    checkApiError(fn () => $p->post('tourStart', ['bandId' => $band['id'], 'stations' => 3]), 'Platte');
+    makeRecord($db, $p, $band['id'], 'Fernweh', 4);
+    $db->exec("UPDATE musicians SET personality = '[\"rampensau\"]' WHERE band_id = ?", [$band['id']]);
+    $db->exec('UPDATE labels SET money = 20000');
+    checkApiError(fn () => $p->post('tourStart', ['bandId' => $band['id'], 'stations' => 4]), 'So lang');
+    $relation = static fn () => (float) $db->value('SELECT AVG(value) FROM relations WHERE a_id IN (SELECT id FROM musicians WHERE band_id = ?)', [$band['id']]);
+    $before = $relation();
+    $res = $p->post('tourStart', ['bandId' => $band['id'], 'stations' => 2 + 1]);
+    checkEquals('tourtravel', $res['activity']['type']);
+    $tour = bandById($res['state'], $band['id'])['tour'];
+    checkEquals('travel', $tour['state']);
+    $first = $tour['country'];
+    check(isset(Catalog::COUNTRIES[$first]), 'echtes Land');
+    check($res['state']['label']['money'] < 20000, 'Flug bezahlt');
+    checkApiError(fn () => $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'rehearsal']), 'beschäftigt');
+    checkApiError(fn () => $p->post('tourShow', ['bandId' => $band['id']]), 'nicht bereit');
+
+    for ($station = 1; $station <= 3; $station++) {
+        // Angekommen: Meldung; gespielt wird erst auf Klick.
+        Clock::set($res['activity']['endsAt'] + 1);
+        $state = $p->get('state');
+        $arrived = array_values(array_filter($state['results'], static fn ($r) => $r['type'] === 'tourtravel'));
+        check(count($arrived) === 1 && $arrived[0]['result']['station'] === $station, "angekommen an Station $station");
+        $p->post('activityAck', ['activityId' => $arrived[0]['id']]);
+        checkEquals('arrived', bandById($state, $band['id'])['tour']['state']);
+        check((bool) $db->value("SELECT id FROM history WHERE kind = 'tour' AND text LIKE '%angekommen%'"), 'Meldung');
+        Clock::advance(600);
+        checkEquals('arrived', bandById($p->get('state'), $band['id'])['tour']['state'], 'wartet auf den Klick');
+        $gig = $p->post('tourShow', ['bandId' => $band['id']])['activity'];
+        checkEquals('tourgig', $gig['type']);
+        check(count($gig['timeline']) > 5, 'mit Ticker');
+        Clock::set($gig['endsAt'] + 1);
+        $state = $p->get('state');
+        $played = array_values(array_filter($state['results'], static fn ($r) => $r['type'] === 'tourgig'))[0];
+        check($played['result']['fame'] > 0 && $played['result']['money'] > 0, 'Ruhm und Gage');
+        checkEquals($station, $played['result']['tour']['station']);
+        $p->post('activityAck', ['activityId' => $played['id']]);
+        $tour = bandById($state, $band['id'])['tour'];
+        checkEquals('after', $tour['state']);
+        if ($station < 3) {
+            $next = $p->post('tourNext', ['bandId' => $band['id']]);
+            check(!$next['short'] && !in_array($next['roll'], array_column($tour['legs'], 'to'), true), 'neues Ziel, keins doppelt');
+            $res = ['activity' => $next['activity']];
+        }
+    }
+    checkApiError(fn () => $p->post('tourNext', ['bandId' => $band['id']]), 'letzte Station');
+    $home = $p->post('tourHome', ['bandId' => $band['id']])['activity'];
+    checkEquals('tour', $home['type']);
+    Clock::set($home['endsAt'] + 1);
+    $state = $p->get('state');
+    $back = array_values(array_filter($state['results'], static fn ($r) => $r['type'] === 'tour'))[0]['result'];
+    checkEquals(3, count($back['visits']));
+    check($back['spent'] > 0 && $back['earned'] > 0, 'Kosten und Einnahmen');
+    checkEquals(null, bandById($state, $band['id'])['tour'], 'Tournee vorbei');
+    check($relation() > $before, 'die Band ist zusammengewachsen');
+    $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'rehearsal']);
+});
+
+test('Tournee: Wer zu lange nicht weitermacht, fliegt von selbst heim; mit Anmeldung zum Battle geht es nicht los', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Wartet');
+    $band = foundBand($p);
+    makeRecord($db, $p, $band['id'], 'Koffer', 3);
+    $db->exec("UPDATE musicians SET personality = '[\"rampensau\"]' WHERE band_id = ?", [$band['id']]);
+    $db->exec('UPDATE labels SET money = 20000');
+    $p->post('battleEnter', ['bandId' => $band['id']]);
+    checkApiError(fn () => $p->post('tourStart', ['bandId' => $band['id'], 'stations' => 3]), 'angemeldet');
+    $p->post('battleWithdraw', ['bandId' => $band['id']]);
+    $res = $p->post('tourStart', ['bandId' => $band['id'], 'stations' => 3]);
+    check(str_contains((string) bandById($p->get('state'), $band['id'])['tour']['state'], 'travel'));
+    checkApiError(fn () => $p->post('battleEnter', ['bandId' => $band['id']]), 'Tournee');
+    Clock::set($res['activity']['endsAt'] + 1);
+    $p->get('state');
+    Clock::advance(Balance::TOUR['wait'] + 60);
+    $state = $p->get('state');
+    checkEquals('home', bandById($state, $band['id'])['tour']['state'], 'fliegt von selbst heim');
+    check((bool) $db->value("SELECT id FROM history WHERE text LIKE '%zu lange gewartet%'"), 'Meldung');
+    Clock::advance(4 * 3600);
+    checkEquals(null, bandById($p->get('state'), $band['id'])['tour']);
+});

@@ -12,6 +12,7 @@ use Signed\Game\Bands;
 use Signed\Game\Battle;
 use Signed\Game\Events;
 use Signed\Game\Festival;
+use Signed\Game\Tours;
 use Signed\Game\Catalog;
 use Signed\Game\Charts;
 use Signed\Game\Courses;
@@ -118,6 +119,10 @@ final class Api
         'battleWithdraw' => ['POST', true],
         'festivalEnter' => ['POST', true],
         'festivalWithdraw' => ['POST', true],
+        'tourStart' => ['POST', true],
+        'tourShow' => ['POST', true],
+        'tourNext' => ['POST', true],
+        'tourHome' => ['POST', true],
         'soloStart' => ['POST', true],
         'jamPick' => ['POST', true],
         'coverRedraw' => ['POST', true],
@@ -640,6 +645,29 @@ final class Api
     {
         Festival::withdraw($repo, self::int($in, 'bandId'));
         return ['state' => State::build($repo)];
+    }
+
+    private function tourStart(array $in, Repo $repo): array
+    {
+        $activity = Tours::start($repo, self::int($in, 'bandId'), self::int($in, 'stations'));
+        return ['activity' => $activity, 'state' => State::build($repo)];
+    }
+
+    private function tourShow(array $in, Repo $repo): array
+    {
+        $activity = Tours::show($repo, self::int($in, 'bandId'));
+        return ['activity' => $activity, 'state' => State::build($repo)];
+    }
+
+    private function tourNext(array $in, Repo $repo): array
+    {
+        return Tours::next($repo, self::int($in, 'bandId')) + ['state' => State::build($repo)];
+    }
+
+    private function tourHome(array $in, Repo $repo): array
+    {
+        $activity = Tours::home($repo, self::int($in, 'bandId'));
+        return ['activity' => $activity, 'state' => State::build($repo)];
     }
 
     private function practiceAuto(array $in, Repo $repo): array

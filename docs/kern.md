@@ -220,6 +220,27 @@ Genre (auch als zweites oder drittes Genre), jedes Label mit so vielen, wie es w
 - **Danach:** Ein Medium eine Stufe größer als sonst fragt nach einem Interview (im Posteingang). Der **Headliner** bekommt ein Plakat für den Proberaum.
   Ehrgeizige, Chaoten, Rampensäue, Partytiere und Divas mögen Festivals, Gelassene nicht (`Catalog::LIKES`).
 
+### Tournee (Umbau)
+
+Neue Anordnung auf der Bandseite (`Balance::TOUR`, `Tours`), erst mit einer Platte. Man wählt nur die Länge (3, 5 oder 7 Stationen);
+**jedes Ziel wird ausgewürfelt** (echte Länder, `Catalog::COUNTRIES`, keins doppelt) und erst bekannt, wenn es weitergeht.
+
+- **Ablauf, alles per Klick:** Flug zum Ziel (Reisezeit 30 Min. + 0,6 s je km: London etwa 40 Min., Tokio 2 Std., Sydney 3 Std.) →
+  Meldung „angekommen“ (auch in den Nachrichten) → **Auftritt starten** → danach **Weiterreisen** (nächstes Ziel auswürfeln) oder
+  **Nach Hause**. Nach der letzten Station bleibt nur der Heimflug. Wer zwei Tage nicht weitermacht, fliegt von selbst heim.
+  Die Band kann während der ganzen Tournee nichts anderes machen; wer für Battle oder Festival angemeldet ist, kann nicht los.
+- **Kosten:** je Strecke Mitglieder × (15 + 0,01 ₲ je km), bei vier Musikern etwa 80 ₲ (Amsterdam) bis 700 ₲ (Sydney); der Heimflug ist frei.
+  Reicht das Geld nicht, bleibt das ausgewürfelte Ziel stehen (später nochmal oder nach Hause).
+- **Ein Auftritt** wie ein Gig am Ort nach Ruhm mit ganzer Setlist, aber ohne Abnutzung (im Ausland kennt niemand die Lieder) und mit
+  neuem Publikum: Ruhm × 2, Gage × 1,25. **Lieblings-Genre** des Landes (England Rock, Irland Folk, Frankreich Pop, Spanien Folk,
+  Niederlande Elektro, Schweden Elektro, Norwegen Metal, Finnland Metal, USA Hip-Hop, Kanada Punk, Brasilien Jazz, Südafrika Jazz,
+  Japan Pop, Australien Rock): Spielt die Band es (auch als zweites oder drittes Genre), noch einmal Ruhm × 1,5 und Gage × 1,5,
+  und das Publikum ist leichter zu begeistern (Erwartung × 0,85). Das ist Glück, weil man das Ziel nicht wählt.
+- **Beziehungen:** Jeder Auftritt wirkt wie ein Gig (`RELATION['bond']['tourgig']`), am Ende die ganze Tournee (`['tour']`) und
+  zusätzlich ein fester Schub von +0,6 je gespielte Station (höchstens +3) auf jede Beziehung, auch über den Zielwert hinaus:
+  Das gemeinsame Abenteuer schweißt zusammen. Mit der Zeit rücken gemeinsame Erlebnisse die Beziehung wieder Richtung Charakter.
+  Ehrgeizige, Chaoten, Rampensäue und Partytiere mögen Tourneen, Gelassene und Ruhige nicht (`Catalog::LIKES`).
+
 ### Talent-Scout
 
 - 5 Musiker (70 % episch, 30 % legendär), alle mit Können-Stufe 1. Einer unterschreibt, die anderen verfallen.

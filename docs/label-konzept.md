@@ -279,6 +279,16 @@ in der Spanne der Tagesform; Ruhm, Proben und eine Wahl „sicher/riskant“ gib
 Proberaum mit „Zuschauen“); danach gibt es Platz, Preisgeld, Ruhm und für die ersten drei einen Pokal, der im Proberaum steht.
 Offen: ob Solokünstler mitmachen dürfen (heute ja, sie sind im Spiel auch „Bands“), und ob 16 Uhr passt.
 
+### Tournee (gebaut)
+
+Eine Band geht auf Tournee durch echte Länder (Zahlen in `kern.md`). Man wählt nur, wie lang (3, 5 oder 7 Stationen); wohin es geht,
+wird ausgewürfelt, und das nächste Ziel erst, wenn man weiterreist (mehr Mitfiebern). Nichts läuft im Hintergrund ab: Die Reise dauert
+lange, bei der Ankunft kommt eine Meldung („ist in Tokio angekommen“), den Auftritt startet man selbst, danach „Weiterreisen“ oder „Nach
+Hause“. Jedes Land hat ein Lieblings-Genre; ob die Band es spielt, ist Glück und macht den Abend besonders gut. Die Bandseite zeigt statt
+des Proberaums eine Weltkarte mit der Route (das Flugzeug fliegt mit), die Stationen mit Ergebnis und die Knöpfe. Auftritte haben die Bühne
+des Ortes nach Ruhm. Eine Tournee ist gut für die Beziehungen: Am Ende verstehen sich alle besser. Offen: ob Bühnenbilder je Land
+(Wahrzeichen im Hintergrund) gewünscht sind.
+
 ### Promo-Tour (gebaut)
 
 Die einzelne Promo-Mission ist weg (dafür gibt es Interview-Anfragen). Die **Promo-Tour** der ganzen Band (oder des Solokünstlers) ist eine

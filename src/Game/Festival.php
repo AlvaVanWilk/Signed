@@ -68,7 +68,7 @@ final class Festival
     // ---------- Bewerben ----------
 
     /** Was gegen eine Bewerbung spricht, sonst null. */
-    public static function blocker(array $band, array $members, array $event): ?string
+    public static function blocker(array $band, array $members, array $event, ?Db $db = null): ?string
     {
         $theme = self::theme($event['week']);
         if (count($members) < Balance::MIN_MEMBERS) {
@@ -85,6 +85,9 @@ final class Festival
             if ($m['busy_until'] > (int) $event['starts_at']) {
                 return sprintf('%s ist dann noch unterwegs.', $m['first_name']);
             }
+        }
+        if ($db !== null && Tours::active($db, $band['id']) !== null) {
+            return sprintf('%s ist auf Tournee.', Bands::who($members));
         }
         $refuser = Mood::refuser($members, self::KIND);
         if ($refuser !== null) {
@@ -106,7 +109,7 @@ final class Festival
             if ($db->value("SELECT id FROM event_entries WHERE event_id = ? AND band_id = ? AND status = 'in'", [(int) $event['id'], $bandId]) !== null) {
                 throw new ApiError('Die Band hat sich schon beworben.');
             }
-            $blocker = self::blocker($band, $repo->members($bandId), $event);
+            $blocker = self::blocker($band, $repo->members($bandId), $event, $db);
             if ($blocker !== null) {
                 throw new ApiError($blocker);
             }
@@ -334,7 +337,7 @@ final class Festival
         foreach ($bands as $band) {
             $in = in_array($band['id'], $entered, true);
             $options[] = [
-                'bandId' => $band['id'], 'entered' => $in, 'blocked' => $in ? null : self::blocker($band, $members[$band['id']] ?? [], $next),
+                'bandId' => $band['id'], 'entered' => $in, 'blocked' => $in ? null : self::blocker($band, $members[$band['id']] ?? [], $next, $db),
                 'gain' => self::weekGain($db, $band['id'], $now),
             ];
         }

@@ -116,6 +116,31 @@ final class Mood
     }
 
     /**
+     * Ein großes gemeinsames Erlebnis (Tournee): Jede Beziehung steigt um $amount, auch über den Zielwert hinaus (höchstens bis zum Maximum).
+     * Mit der Zeit rücken gemeinsame Erlebnisse sie wieder auf den Zielwert zu (bond), der Charakter zählt also auf Dauer.
+     */
+    public static function lift(Repo $repo, array $members, float $amount, ?int $now = null): void
+    {
+        $now ??= Clock::now();
+        if (count($members) < 2 || $amount <= 0) {
+            return;
+        }
+        $current = self::relations($repo, $members, $now);
+        $members = array_values($members);
+        foreach ($members as $i => $x) {
+            foreach (array_slice($members, $i + 1) as $y) {
+                [$a, $b] = self::key($x['id'], $y['id']);
+                $value = min(Balance::RELATION['max'], ($current["$a-$b"] ?? 0.0) + $amount);
+                $repo->db->exec('DELETE FROM relations WHERE a_id = ? AND b_id = ?', [$a, $b]);
+                $repo->db->insert('relations', ['label_id' => $repo->labelId, 'a_id' => $a, 'b_id' => $b, 'value' => round($value, 4), 'at' => $now]);
+            }
+        }
+        if ($members[0]['band_id'] !== null) {
+            self::syncCohesion($repo, (int) $members[0]['band_id']);
+        }
+    }
+
+    /**
      * Zusammenhalt der Band aus ihren Beziehungen (−10…+10): je zur Hälfte Durchschnitt und schwächste Beziehung.
      * @param array<string, float> $relations "a-b" => Wert; leer bei einem Solokünstler
      * @return array{avg: float, min: float, value: float}|null

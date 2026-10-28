@@ -471,6 +471,7 @@ button.card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
 .auth { min-height: 100vh; display: grid; grid-template-columns: 1.2fr 1fr; gap: 40px; align-items: center; max-width: 1000px; margin: 0 auto; padding: 32px 24px; }
 .tagline { font-size: 1.3rem; margin-top: 4px; }
 .auth-points { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 10px; color: var(--muted); font-size: 1.05rem; }
+.auth-points li { display: flex; align-items: center; gap: 10px; }
 .auth-box .tabs { margin-bottom: 18px; }
 
 /* ---------- Schmale Bildschirme ---------- */
@@ -990,14 +991,19 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 
 /* Tour und Hilfe */
 .tour { display: grid; justify-items: center; gap: 10px; text-align: center; padding: 8px 4px; }
-.tour-icon { font-size: 84px; line-height: 1; animation: celebrate-pop 0.5s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
+.tour-icon { display: grid; place-items: center; width: 104px; height: 104px; border-radius: 50%; background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); animation: celebrate-pop 0.5s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
+.tour-svg { width: 60px; height: 60px; }
+.tour p { max-width: 30em; }
+.tour-btns { display: flex; gap: 8px; justify-content: center; }
 .tour h2 { margin: 0; font-size: 1.6rem; }
 .tour p { margin: 0; font-size: 1.15rem; }
 .tour-dots { display: flex; gap: 6px; margin: 4px 0 6px; }
 .tour-dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--line); }
 .tour-dots i.on { background: var(--accent); }
 .help-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
-.help-topic h2 { font-size: 1.1rem; margin: 0 0 6px; }
+.help-group { font-size: 1rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 22px 0 8px; }
+.help-topic h3 { display: flex; align-items: center; gap: 8px; font-size: 1.1rem; margin: 0 0 6px; }
+.help-ico { width: 24px; height: 24px; flex: none; color: var(--accent); }
 .help-topic p { margin: 0; line-height: 1.5; }
 .help-btn { font-weight: 800; min-width: 34px; text-align: center; }
 

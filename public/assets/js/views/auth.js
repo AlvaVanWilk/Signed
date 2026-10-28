@@ -1,7 +1,7 @@
 import { api } from '../api.js';
 import { app, defineActions, refresh } from '../core.js';
 import { esc, money, openModal, toast } from '../ui.js';
-import { claimTour, openTour } from './help.js';
+import { claimTour, icon, openTour } from './help.js';
 
 export function render() {
   const tab = app.ui.authTab || 'register';
@@ -11,9 +11,9 @@ export function render() {
         <h1 class="logo big">Signed</h1>
         <p class="tagline">Gründe dein Label. Entdecke Musiker. Mach sie berühmt.</p>
         <ul class="auth-points">
-          <li>🎴 Öffne Packs voller einmaliger Musiker</li>
-          <li>🎸 Stell Bands zusammen und produziere Platten</li>
-          <li>🏆 Spiel dich gegen andere Labels in die Charts</li>
+          <li>${icon('post')}Hör dir Kassetten an und nimm Musiker unter Vertrag</li>
+          <li>${icon('band')}Gründe Bands, lass sie proben, auftreten und Platten aufnehmen</li>
+          <li>${icon('award')}Festivals, Battles, Tourneen um die Welt und Goldene Schallplatten</li>
         </ul>
       </div>
       <div class="auth-box panel">

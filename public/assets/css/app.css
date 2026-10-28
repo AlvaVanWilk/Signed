@@ -1066,9 +1066,13 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 @keyframes fig-key { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(2.5px); } }
 @media (prefers-reduced-motion: reduce) { .fig * { animation: none !important; } }
 .fig-horn { animation: fig-nod calc(var(--beat) * 2) ease-in-out infinite; }
+/* Geige: Der Arm bewegt sich nur wenig, der Bogen gleitet längs über die Saiten (nicht quer, sonst schlägt er auf die Geige). */
 .fig-bow { animation: fig-bow calc(var(--beat) / 2) ease-in-out infinite alternate; }
-.fig-scratch { animation: fig-bow calc(var(--beat) / 2) ease-in-out infinite alternate; }
-@keyframes fig-bow { from { transform: rotate(-9deg); } to { transform: rotate(7deg); } }
+.fig-bow-slide { animation: fig-bow-slide calc(var(--beat) / 2) ease-in-out infinite alternate; }
+@keyframes fig-bow { from { transform: rotate(-2deg); } to { transform: rotate(2deg); } }
+@keyframes fig-bow-slide { from { transform: translate(-6px, -2.9px); } to { transform: translate(6px, 2.9px); } }
+.fig-scratch { animation: fig-scratch calc(var(--beat) / 2) ease-in-out infinite alternate; }
+@keyframes fig-scratch { from { transform: rotate(-9deg); } to { transform: rotate(7deg); } }
 /* Bühne: Publikum tobt – die Band springt; pausiert (z. B. bis „Anhören“) steht sie still und blinzelt nur. */
 .fig-stage { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-end; gap: 2px; padding: 18px 10px 8px; margin-bottom: 14px; border-radius: var(--radius);
   background: radial-gradient(ellipse at 50% 0%, rgba(255, 214, 120, 0.22), transparent 60%), linear-gradient(180deg, #241b33, #15111e 72%, #3a2a1f 72%, #2a1e16); }

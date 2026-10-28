@@ -468,7 +468,7 @@ const POSES = {
       <g class="fig-play">${VIOLIN(p, fin)}
         ${arm('M45 80 Q30 78 26 58', [26, 58], skin, shirt)}
         ${pivot(75, 80, 'fig-bow', `${arm('M75 80 Q78 72 62 70', [62, 70], skin, shirt)}
-          <path d="M44 60 L86 80" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>`)}</g>
+          <g class="fig-bow-slide"><path d="M44 60 L86 80" stroke="${INK}" stroke-width="2" stroke-linecap="round"/></g>`)}</g>
       <g class="fig-rest">
         <g transform="translate(41 103) rotate(70) translate(-23 -59.5)">${VIOLIN(p, fin)}</g>
         ${arm('M45 80 Q39 92 41 103', [41, 103], skin, shirt)}

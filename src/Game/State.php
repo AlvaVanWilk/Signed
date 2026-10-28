@@ -296,6 +296,8 @@ final class State
             'battle' => Battle::present($repo, $bands, $members, $now),
             // Neue Auszeichnungen, die der Browser einmal feiert
             'awardsNew' => Awards::fresh($db, $repo->labelId),
+            // Einmal nach dem Umbau: „Was ist neu?“ und die Wahl aus der Kartei
+            'transition' => Transition::present($repo),
             'festival' => Festival::present($repo, $bands, $members, $now),
             'jamOffers' => (new Jam($repo))->open(),
             'market' => (new Transfers($repo))->market(),

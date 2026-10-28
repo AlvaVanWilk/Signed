@@ -609,33 +609,18 @@ Wir reduzieren stark und schauen dann, was wirklich fehlt.
 
 ## Übergang für bestehende Labels
 
-**Stand der Prüfung (noch nicht entschieden, wird nach dem Fertigbauen geprüft):** Ein mit dem Code von `main` durchgespieltes Label
-(zwei Bands, Platte, Auftritte, Karten, Instrumente, Manager, Fan-Karte, Katalog, Wechselbörse, laufender Auftritt) lässt sich mit der neuen
-Version öffnen: alle Umbauschritte der Datenbank laufen durch, alle Seiten öffnen ohne Fehler. Alte Instrumente werden schon umgerechnet
-(Seltenheit → Farbklasse, Boni aus den alten Werten, `Gear::legacy`). Ein Neuanfang ist technisch also **nicht nötig**; Vorschlag statt der
-Einsendungen unten: **weiterspielen mit einem einmaligen Umbau** (Wechselbörse zurück, alte Karten und Gutscheine in Geld, alte laufende
-Aktivitäten abrechnen, Beziehungen aus der gemeinsamen Bandzeit, Tour „Was ist neu?“) und einer **Saison-Rangliste**, die nur zählt, was nach
-dem Übergang dazukommt. Offen und erst mit der fertigen App zu prüfen: ob alter Ruhm, altes Geld und alte (goldene) Instrumente einen
-unfairen Vorsprung geben (Durchspiel-Prüfung im neuen Spiel, dazu die echten Werte aus einer Sicherung, nur Ruhm, Geld und Instrumente).
-Die Rangliste der Labels rechnet inzwischen wie das übrige Spiel (große Bands zählen stärker, `BandCalc::labelFame`).
+**Gebaut (Testversion), entschieden:** Bestehende Labels spielen weiter, mit einem einmaligen Umbau (Einzelheiten und Zahlen in `kern.md`,
+Abschnitt „Übergang alter Labels“): Wechselbörse zu (Musiker und Gebote zurück), alte Karten und Gutscheine in Geld, alte laufende Aktionen
+abgerechnet, Beziehungen aus der gemeinsamen Bandzeit, Kartei beiseite mit der Wahl von bis zu fünf Musikern, die bleiben, und beim ersten Login
+„Was ist neu?“. Geprüft mit einem Label, das mit dem Code von `main` durchgespielt wurde (zwei Bands, Platte, Auftritte, Karten, Instrumente, Manager,
+Fan-Karte, Kartei, Börse mit Gebot, ungeöffnetes Pack, laufender Auftritt, laufende Probe, Üben).
 
-Ursprünglicher Plan:
+**Offen:** Eine **Saison-Rangliste**, die nur zählt, was nach dem Übergang dazukommt (Sandra ist noch nicht sicher). Und bei der Durchspiel-Prüfung
+am Ende: ob alter Ruhm, altes Geld und alte (goldene) Instrumente einen unfairen Vorsprung geben (dazu die echten Werte aus einer Sicherung,
+nur Ruhm, Geld und Instrumente, nur mit Sandras Erlaubnis).
 
-Beim ersten Login nach dem Umbau (Saison 2) bleiben **Labelname und Konto**, alles andere fängt neu an (Ruhm, Platten, Charts, Lager, Katalog). Die alten Bands kommen **als Einsendungen zurück**:
-
-- **Jede alte Band kommt als normale Einsendung** ins Haus (ein Umschlag wie alle anderen), mit **denselben Regeln**: sie läuft nach **4 Tagen** ab (steht darauf), man kann sie wegwerfen, aufnehmen,
-  ganz oder einzelne Mitglieder. Die **Frist beginnt mit dem ersten Login nach dem Umbau**, nicht schon beim Umbau (damit niemand sie verpasst); ein kurzer Willkommenshinweis weist darauf hin.
-  Es gibt keinen besonderen Aufbewahrungsort. Unterschied: Sie **unterschreiben kostenlos** (beim Öffnen ein Hinweis: „Diese Band würde gern bei dir bleiben und unterschreibt kostenlos“) und bekommen eine **besondere Animation**.
-  Das kostenlose Unterschreiben ist der Bonus für alte Spieler und passt zum knappen Startkapital.
-- Sie behalten **Namen, Mitglieder, Aussehen, Charakter und Können**, starten aber **ohne Ruhm, Bekanntheit und Platten** und mit einem einfachen Standard-Instrument je Musiker.
-  Ein besonderer Chronik-Eintrag erinnert an die alte Zeit.
-- **Beziehungen** werden nicht nur aus dem Zusammenspiel berechnet: Die **gemeinsame Bandzeit** zählt (aus der Chronik: wer ist wann beigetreten, Gründungsmitglieder seit der Gründung)
-  und der **Charakter** (Passung, auch Genre und Können-Abstand). Startwert eines Paares = Zielwert der Passung × Anteil, der sich mit der gemeinsamen Zeit füllt.
-- **Startkapital:** wie ein neues Label, bei früher Erfolgreichen etwas mehr (Vorschlag: nach Platz in der Bestenliste ein kleiner Aufschlag).
-- Ohne Wechselbörse gibt es kein „Auflösen und teuer verkaufen“. Es gibt keine Ruhmeshalle der vorigen Saison und keine Bandplätze, die man freischalten müsste.
-
-**Kartei (entschieden):** Die Kartei gibt es im neuen Spiel nicht. Einzelne Musiker aus der Kartei, die in keiner Band spielen, werden beim
-Übergang gelöscht. Vielleicht bekommt man das Angebot, bis zu fünf von ihnen zu behalten (als Einsendung); alle anzubieten wäre zu viel.
+Verworfen wurde der ursprüngliche Plan (Saison 2: alles fängt neu an, die alten Bands kommen als Einsendungen zurück): Technisch ist ein Neuanfang
+nicht nötig, und Sandra hat sich für das Weiterspielen mit Umbau entschieden.
 
 ## Wer wirkt auf wen (nur stabilisierende Kreisläufe)
 

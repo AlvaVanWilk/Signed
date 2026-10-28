@@ -25,6 +25,8 @@ const ICON = {
   festival: '<path d="M3 20 L12 5 L21 20 Z"/><path d="M12 5 V2.5 M12 20 V14 M9.5 20 L12 14 L14.5 20"/>',
   tour: '<circle cx="12" cy="12" r="9"/><path d="M3 12 H21 M12 3 C8 7 8 17 12 21 M12 3 C16 7 16 17 12 21"/>',
   award: '<circle cx="12" cy="9" r="6"/><path d="M8.5 13.8 L7 21.5 L12 19 L17 21.5 L15.5 13.8"/><path d="M12 6 l1 2 2.2.3 -1.6 1.5 .4 2.2 -2-1.1 -2 1.1 .4-2.2 -1.6-1.5 2.2-.3 Z"/>',
+  gift: '<rect x="3.5" y="9" width="17" height="11.5" rx="1.5"/><path d="M2.5 9 H21.5 V6.5 H2.5 Z M12 6.5 V20.5"/><path d="M12 6.5 C10.5 3 7 3 7.5 5 C8 6.5 12 6.5 12 6.5 C12 6.5 16 6.5 16.5 5 C17 3 13.5 3 12 6.5 Z"/>',
+  update: '<path d="M20 12 a8 8 0 1 1 -2.3 -5.7"/><path d="M20 4 V8.5 H15.5"/>',
   charts: '<path d="M4 20 V12 M10 20 V6 M16 20 V9 M3 20.5 H21"/><path d="M16 9 l2.5-4.5"/>',
 };
 export const icon = (key, cls = 'help-ico') => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${ICON[key]}</svg>`;
@@ -59,20 +61,29 @@ export function maybeStartTour() {
 
 /** onDone läuft nach dem letzten Schritt (z. B. die Begrüßung eines neuen Labels). */
 export function openTour(onDone = null) {
+  openSlides(TOUR, { onDone, footer: '<p class="small muted">Mehr wissen? <a href="#/hilfe" data-tour-close>Zur Hilfe</a> (das Fragezeichen oben)</p>' });
+}
+
+/**
+ * Schritte nacheinander zeigen: [Bild, Titel, Text oder Liste von Absätzen]. footer steht unter dem letzten Schritt,
+ * onDone läuft nach „Los geht’s!“. Nicht wegklickbar (dismissable = false), wenn es danach weitergehen muss.
+ */
+export function openSlides(slides, { onDone = null, footer = '', dismissable = true } = {}) {
   let step = 0;
   const modal = openModal({
     className: 'tour-modal',
+    dismissable,
     render: () => {
-      const [key, title, text] = TOUR[step];
-      const last = step === TOUR.length - 1;
+      const [key, title, text] = slides[step];
+      const last = step === slides.length - 1;
       return `
         <div class="tour">
           <div class="tour-icon">${icon(key, 'tour-svg')}</div>
           <h2>${esc(title)}</h2>
-          <p>${esc(text)}</p>
-          <div class="tour-dots">${TOUR.map((_, i) => `<i class="${i === step ? 'on' : ''}"></i>`).join('')}</div>
+          ${(Array.isArray(text) ? text : [text]).map((t) => `<p>${esc(t)}</p>`).join('')}
+          <div class="tour-dots">${slides.map((_, i) => `<i class="${i === step ? 'on' : ''}"></i>`).join('')}</div>
           <div class="tour-btns">${step ? '<button class="btn ghost" data-tour-back>Zurück</button>' : ''}<button class="btn primary big" data-tour-next>${last ? 'Los geht’s!' : 'Weiter'}</button></div>
-          ${last ? '<p class="small muted">Mehr wissen? <a href="#/hilfe" data-tour-close>Zur Hilfe</a> (das Fragezeichen oben)</p>' : ''}
+          ${last ? footer : ''}
         </div>`;
     },
   });
@@ -84,7 +95,7 @@ export function openTour(onDone = null) {
       return;
     }
     if (!e.target.closest('[data-tour-next]')) return;
-    if (step === TOUR.length - 1) {
+    if (step === slides.length - 1) {
       modal.close();
       onDone?.();
       return;
@@ -115,7 +126,7 @@ function topics() {
     ]],
     ['Was die Band macht', [
       ['orders', 'Proben', `Proben ist der wichtigste Weg, besser zu werden. Die Probe läuft, bis jemand keine Lust mehr hat; das hängt vom Charakter ab. Ein besserer <b>Proberaum</b> bringt mehr und hält länger.`],
-      ['gig', 'Auftritte', 'Unter „Auftritt buchen“ siehst du die Orte, die zur Bekanntheit der Band passen, mit Kosten und Gage. Größere Orte brauchen mehr Songs. <b>Straßenmusik</b> und <b>offene Bühne</b> gehen immer. Je besser der Sound und je besser das Publikum mitgeht, desto mehr Ruhm und Gage. Spielt ihr oft dieselben Lieder, lässt das nach; eine neue Platte macht die Auftritte wieder voll.'],
+      ['gig', 'Auftritte', 'Unter „Auftritt buchen“ siehst du die Orte, die zur Bekanntheit der Band passen, mit Kosten und Gage. Größere Orte brauchen mehr Songs. Je besser der Sound und je besser das Publikum mitgeht, desto mehr Ruhm und Gage. Spielt ihr oft dieselben Lieder, lässt das nach; eine neue Platte macht die Auftritte wieder voll.'],
       ['record', 'Platten', `Die Band schreibt ganz von selbst laufend neue Songs, kreative Musiker schneller. Für eine Platte braucht die Band fertige Songs (mindestens ${n(r.recordMinSongs)}). Du wählst Studio, Produzent und Cover: Bessere kosten mehr und machen die Platte besser. Danach steigt sie in die Charts ein und bringt Geld, solange sie sich verkauft. Auftritte und Promo schieben sie an.`],
       ['promo', 'Promo, Interviews, Auszeit', 'Eine <b>Promo-Tour</b> macht die Band bekannter und schiebt die neueste Platte an. <b>Interviews</b> kommen als Anfrage in den Posteingang. Eine <b>Auszeit</b> (Ausflug, Wochenende, Urlaub) lässt die Band ausruhen, danach geht es allen besser.'],
       ['store', 'Instrumente', 'Ohne eigenes Instrument zählt ein Musiker nur halb. Im <b>Music Store</b> gibt es jeden Tag andere Instrumente in Grau, Grün, Blau und Gold; ein besseres darf erst spielen, wer das Können dafür hat. Freie Instrumente liegen im Lager, und dort steht auch, wem sie helfen würden.'],

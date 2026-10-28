@@ -18,6 +18,7 @@ import * as bands from './views/bands.js';
 import * as label from './views/label.js';
 import * as charts from './views/charts.js';
 import * as help from './views/help.js';
+import { maybeShowTransition } from './views/transition.js';
 import { trendBadge } from './views/charts.js';
 import { playApplause, playCoin } from './audio.js';
 import * as market from './views/market.js';
@@ -208,7 +209,9 @@ function render() {
   showResults();
   // Neue Auszeichnungen feiern, wenn keine Ergebnisse mehr offen sind.
   if (!app.state?.results.length) celebrateAwards();
-  help.maybeStartTour();
+  // Labels aus dem alten Spiel sehen einmal „Was ist neu?“ statt der Einführung.
+  if (app.state.transition) maybeShowTransition();
+  else help.maybeStartTour();
   if (route.name === 'charts' && !app.charts) charts.loadCharts();
   if (route.name === 'wiki') wiki.ensure();
   if (route.name === 'store') store.enter();

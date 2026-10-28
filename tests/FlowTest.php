@@ -2969,3 +2969,88 @@ test('Auszeichnungen beim Umbau: bisherige Verkäufe werden geschätzt, die Ausz
     checkEquals(['gold', 'platinum', 'number1'], array_column($db->all('SELECT kind FROM awards WHERE record_id = ? ORDER BY id', [$id]), 'kind'));
     checkEquals([], $p->get('state')['awardsNew'], 'keine Feier');
 });
+
+test('Übergang alter Labels: Börse zu, Karten in Geld, alte Aktionen abgerechnet, Beziehungen aus der Bandzeit, Kartei zur Wahl', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Altlabel');
+    $band = foundBand($p);
+    $bidder = registerPlayer($db, 'Bieter');
+    $L = (int) $p->get('state')['label']['id'];
+    $B = (int) $bidder->get('state')['label']['id'];
+    $repo = new Signed\Game\Repo($db, $L);
+    // Wie im alten Spiel: Band seit zwei Wochen, Kartei mit sieben Musikern, einer davon an der Börse mit Gebot
+    $db->exec('UPDATE bands SET created_at = ? WHERE id = ?', [Clock::now() - 14 * 86400, $band['id']]);
+    $db->exec('UPDATE musicians SET created_at = ? WHERE band_id = ?', [Clock::now() - 20 * 86400, $band['id']]);
+    $db->exec('DELETE FROM relations');
+    $pool = [];
+    foreach (['guitar', 'bass', 'drums', 'vocals', 'keys', 'sax', 'violin'] as $instrument) {
+        $pool[] = $repo->insertMusician(Signed\Game\Generator::musician('common', ['instrument' => $instrument, 'genre' => 'rock', 'single' => true]), 'aushang');
+    }
+    $p->get('state');
+    $db->insert('transfers', ['label_id' => $L, 'musician_id' => $pool[0], 'min_price' => 200, 'best_amount' => 900, 'best_label_id' => $B, 'bids' => 1, 'status' => 'open', 'created_at' => Clock::now(), 'ends_at' => Clock::now() + 86400]);
+    $db->exec('UPDATE labels SET scout_vouchers = 1 WHERE id = ?', [$L]);
+    $db->exec('UPDATE labels SET scout_vouchers = 0 WHERE id = ?', [$B]);
+    $db->insert('items', ['label_id' => $L, 'kind' => 'fan', 'value' => 2.0, 'created_at' => Clock::now()]);
+    $db->insert('pack_offers', ['label_id' => $L, 'pack' => 'aushang', 'cards' => '[]', 'status' => 'open', 'created_at' => Clock::now()]);
+    $members = $repo->members($band['id']);
+    $db->insert('activities', ['label_id' => $L, 'band_id' => $band['id'], 'type' => 'gig', 'started_at' => Clock::now() - 7200, 'ends_at' => Clock::now() - 7000, 'settled' => 1, 'seen' => 0, 'data' => '{}']);
+    $db->insert('activities', ['label_id' => $L, 'band_id' => $band['id'], 'type' => 'rehearsal', 'started_at' => Clock::now() - 60, 'ends_at' => Clock::now() + 600, 'settled' => 0, 'seen' => 0,
+        'data' => json_encode(['title' => 'Bandprobe', 'reward' => ['skill' => [$members[0]['id'] => 0.5], 'cohesion' => 5]])]);
+    $skillBefore = (float) $db->value('SELECT skill1 FROM musicians WHERE id = ?', [$members[0]['id']]);
+    $money = (int) $db->value('SELECT money FROM labels WHERE id = ?', [$L]);
+    $bidderMoney = (int) $db->value('SELECT money FROM labels WHERE id = ?', [$B]);
+
+    Signed\Game\Transition::prepare($db, 22);
+
+    checkEquals('withdrawn', $db->value('SELECT status FROM transfers WHERE musician_id = ?', [$pool[0]]));
+    checkEquals($bidderMoney + 900, (int) $db->value('SELECT money FROM labels WHERE id = ?', [$B]), 'Gebot zurück');
+    $c = Balance::TRANSITION;
+    checkEquals($money + (int) round(2 * $c['fanFame']) + $c['voucher'] + Balance::PACKS['aushang']['price'], (int) $db->value('SELECT money FROM labels WHERE id = ?', [$L]), 'Karten und Gutscheine in Geld');
+    checkEquals(0, (int) $db->value('SELECT COUNT(*) FROM items WHERE label_id = ?', [$L]));
+    checkEquals(0, (int) $db->value("SELECT COUNT(*) FROM activities WHERE label_id = ? AND seen = 0", [$L]), 'alte Ergebnisse nicht noch einmal');
+    check(abs((float) $db->value('SELECT skill1 FROM musicians WHERE id = ?', [$members[0]['id']]) - $skillBefore - 0.5) < 0.001, 'alte Probe abgerechnet');
+    // Beziehungen: Zielwert der Passung × (1 − e^(−2)) nach zwei Wochen
+    $rel = $db->all('SELECT a_id, b_id, value FROM relations');
+    checkEquals(3, count($rel));
+    $byId = array_column($members, null, 'id');
+    foreach ($rel as $r) {
+        $target = Signed\Game\Mood::relationTarget(Signed\Game\Mood::fit($byId[(int) $r['a_id']], $byId[(int) $r['b_id']]));
+        check(abs((float) $r['value'] - $target * (1 - exp(-2))) < 0.01, "Beziehung {$r['value']} zu Ziel $target");
+    }
+
+    $state = $p->get('state');
+    checkEquals(3, count($state['musicians']), 'Kartei ist beiseite');
+    checkEquals(7, count($state['transition']['pool']));
+    checkEquals(1, $state['transition']['market']);
+    checkApiError(fn () => $p->post('transitionDone', ['keep' => array_slice($pool, 0, 6)]), 'höchstens');
+    checkApiError(fn () => $p->post('transitionDone', ['keep' => [$members[0]['id']]]), 'nicht zur Wahl');
+    $state = $p->post('transitionDone', ['keep' => [$pool[0], $pool[3]]])['state'];
+    checkEquals(null, $state['transition']);
+    checkEquals(5, count($state['musicians']), 'zwei behalten');
+    checkEquals(5, (int) $db->value("SELECT COUNT(*) FROM alumni WHERE label_id = ? AND reason = 'released'", [$L]), 'die übrigen gehen (WikiSignia)');
+    checkEquals(null, $p->get('state')['transition']);
+
+    // Wenige Musiker ohne Band: niemand muss gehen
+    $state = $bidder->get('state');
+    checkEquals([], $state['transition']['pool']);
+    checkEquals(3, count($state['musicians']));
+    checkEquals(null, $bidder->post('transitionDone', ['keep' => []])['state']['transition']);
+});
+
+test('Übergang in der Testversion: nur Labels mit altem Kram, neue Künstler bleiben', function () {
+    $db = freshDb();
+    $new = registerPlayer($db, 'Neuling');
+    $db->exec("UPDATE musicians SET origin = 'submission'");
+    $old = registerPlayer($db, 'Altkram');
+    $repo = new Signed\Game\Repo($db, (int) $old->get('state')['label']['id']);
+    foreach (range(1, 6) as $i) {
+        $repo->insertMusician(Signed\Game\Generator::musician('common', ['instrument' => 'guitar', 'genre' => 'rock', 'single' => true]), 'aushang');
+    }
+    $signed = (int) $db->value('SELECT MIN(id) FROM musicians WHERE label_id = ?', [$repo->labelId]);
+    $db->exec("UPDATE musicians SET origin = 'submission' WHERE id = ?", [$signed]);
+    Signed\Game\Transition::prepare($db, 52);
+    checkEquals(null, $new->get('state')['transition'], 'neues Label unberührt');
+    $state = $old->get('state');
+    checkEquals(8, count($state['transition']['pool']), 'nur alte Herkunft zur Wahl');
+    checkEquals([$signed], array_column($state['musicians'], 'id'), 'wer aus dem Posteingang kam, bleibt');
+});

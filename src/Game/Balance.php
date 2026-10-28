@@ -765,6 +765,12 @@ final class Balance
      * Charts::payRoyalties). Goldene, Platin- und Diamant-Schallplatte ab `records` Stück, je Platte einmal. Dazu Platz 1 der Charts
      * (je Platte) und der erste Auftritt in einer Halle bzw. Arena (je Band).
      */
+    /**
+     * Übergang alter Labels (einmalig, Transition): Fan-Karten werden zu `fanFame` ₲ je Ruhmpunkt, jeder Scout-Gutschein und jedes offene
+     * Scout-Angebot zu `voucher` ₲ (so viel wie ein guter Scout heute), ungeöffnete Packs zum Kaufpreis. Beziehungen aus gemeinsamer Bandzeit:
+     * Zielwert der Passung × (1 − e^(−Tage / `bondDays`)), nach einer Woche also etwa zwei Drittel. Aus der Kartei bleiben bis zu `keep` Musiker.
+     */
+    public const TRANSITION = ['fanFame' => 100, 'voucher' => 1200, 'bondDays' => 7.0, 'keep' => 5];
     public const AWARDS = ['copies' => 100, 'records' => ['gold' => 100000, 'platinum' => 250000, 'diamond' => 1000000]];
     /** Nachrichten beim Wiederkommen: nach so langer Pause, diese Arten aus der Chronik. */
     public const NEWS_AWAY = 900;

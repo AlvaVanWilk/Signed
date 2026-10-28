@@ -38,6 +38,7 @@ use Signed\Game\Wiki;
 use Signed\Game\Styles;
 use Signed\Game\Studio;
 use Signed\Game\Transfers;
+use Signed\Game\Transition;
 
 /**
  * Nimmt Aktionen aus dem Browser entgegen. Jede verändernde Aktion liefert den neuen Spielstand mit,
@@ -125,6 +126,7 @@ final class Api
         'tourNext' => ['POST', true],
         'tourHome' => ['POST', true],
         'awardSeen' => ['POST', true],
+        'transitionDone' => ['POST', true],
         'soloStart' => ['POST', true],
         'jamPick' => ['POST', true],
         'coverRedraw' => ['POST', true],
@@ -677,6 +679,14 @@ final class Api
     {
         Awards::seen($repo, self::int($in, 'awardId'));
         return [];
+    }
+
+    /** Nach „Was ist neu?“: die gewählten Musiker aus der Kartei behalten (höchstens Balance::TRANSITION['keep']). */
+    private function transitionDone(array $in, Repo $repo): array
+    {
+        $keep = array_map('intval', is_array($in['keep'] ?? null) ? $in['keep'] : []);
+        Transition::finish($repo, $keep);
+        return ['state' => State::build($repo)];
     }
 
     private function practiceAuto(array $in, Repo $repo): array

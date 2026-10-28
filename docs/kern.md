@@ -258,6 +258,22 @@ auf dem Boden) und als Liste auf der Bandseite und in WikiSignia. Neue werden ei
   auf Tournee zählt die Größe des Ortes).
 - Dazu: Battle-Pokale (Platz 1 bis 3), Festival-Plakat (Headliner), Weltenbummler-Globus (alle Länder). Kleinkram wie „Erster Gig“ gibt es nicht mehr.
 
+### Übergang alter Labels (Umbau)
+
+Einmalig beim Umbau der Datenbank (Schritt 53, `Transition`, Zahlen `Balance::TRANSITION`). Label, Geld, Bands, Platten, Instrumente und Manager bleiben.
+- **Wechselbörse** zu: Angebotene Musiker bleiben beim Label, Gebote gehen zurück aufs Konto.
+- **Alte Karten und Gutscheine** werden zu Geld: Fan-Karte 100 ₲ je Ruhmpunkt, Scout-Gutschein und offenes Scout-Angebot je 1.200 ₲ (so viel wie ein
+  guter Scout heute), ungeöffnete Packs zum Kaufpreis. Offene Jam-Angebote verfallen.
+- **Laufende Aktionen** rechnet das neue Spiel ab, sobald sie fertig sind. Alte Proben und Jam-Treffen werden gleich mit ihrem schon berechneten
+  Können-Gewinn abgerechnet; Karten-Funde fallen weg; alte Ergebnisse erscheinen nicht noch einmal.
+- **Beziehungen** aus der gemeinsamen Bandzeit: Zielwert der Passung × (1 − e^(−Tage / 7)), gezählt ab Gründung oder späterer Unterschrift
+  (nach einer Woche etwa zwei Drittel, nach zwei Wochen 86 %).
+- **Kartei:** Sind es mehr als 5 Musiker ohne Band, kommen sie beiseite. Beim ersten Login sucht man bis zu 5 aus, die als Solokünstler bleiben;
+  die übrigen verlassen das Label (wie Entlassene, sie bleiben in WikiSignia). Ihre Instrumente liegen im Lager.
+- Beim ersten Login: „Was ist neu?“ in sechs Schritten mit der Übersicht, was der Umbau gebracht hat, statt der Einführung für Neue.
+- In der Testversion (Datenbank schon im Umbau) gilt das nur für Labels mit altem Kram (Karten, Packs, Börse, Musiker alter Herkunft), und zur Wahl
+  stehen nur Musiker alter Herkunft; wer aus dem Posteingang oder vom Scout kam, bleibt.
+
 ### Talent-Scout
 
 - 5 Musiker (70 % episch, 30 % legendär), alle mit Können-Stufe 1. Einer unterschreibt, die anderen verfallen.

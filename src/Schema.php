@@ -34,9 +34,13 @@ final class Schema
         return (int) ($db->value("SELECT v FROM meta WHERE k = 'schema'") ?? 0);
     }
 
+    /** Stand der Datenbank, bevor die laufenden Umbauschritte begannen (für den Übergang alter Labels). */
+    private static int $from = 0;
+
     private static function apply(Db $db): void
     {
         $current = self::version($db);
+        self::$from = $current;
         foreach (self::migrations() as $index => $statements) {
             $version = $index + 1;
             if ($version <= $current) {
@@ -653,6 +657,12 @@ final class Schema
                 'ALTER TABLE awards ADD COLUMN record_id INTEGER NULL',
                 'ALTER TABLE awards ADD COLUMN seen INTEGER NOT NULL DEFAULT 1',
                 static fn (Db $db) => \Signed\Game\Awards::backfill($db),
+            ],
+            // 53: Übergang alter Labels: Wechselbörse zu, Karten und Gutscheine in Geld, Beziehungen aus der Bandzeit, Kartei beiseite;
+            // was passiert ist, zeigt der Browser einmal als „Was ist neu?“ (labels.transition, danach leer)
+            [
+                'ALTER TABLE labels ADD COLUMN transition TEXT NULL',
+                static fn (Db $db) => \Signed\Game\Transition::prepare($db, self::$from),
             ],
         ];
     }

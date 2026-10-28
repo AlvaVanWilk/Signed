@@ -1292,3 +1292,18 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 
 /* Menü: legendäres Instrument im Music Store */
 .nav-gold { color: #f2c14e; text-shadow: 0 0 8px rgba(242, 193, 78, .8); }
+
+/* Übergang alter Labels: Wahl aus der Kartei */
+.tr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; margin-top: 12px; max-height: 55vh; overflow-y: auto; padding: 2px; }
+.tr-card { display: flex; align-items: center; gap: 10px; text-align: left; padding: 8px 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); color: inherit; font: inherit; cursor: pointer; }
+.tr-card:hover { border-color: color-mix(in srgb, var(--accent) 50%, var(--line)); }
+.tr-card.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--panel)); }
+.tr-face { width: 52px; height: 52px; flex: none; border-radius: 50%; overflow: hidden; background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.tr-face svg { width: 100%; height: 100%; }
+.tr-info { display: grid; gap: 2px; min-width: 0; flex: 1; }
+.tr-info b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tr-ins { display: flex; align-items: center; gap: 5px; font-size: .9rem; }
+.tr-ins svg { width: 18px; height: 18px; }
+.tr-check { width: 22px; height: 22px; flex: none; border-radius: 50%; border: 1px solid var(--line); display: grid; place-items: center; color: var(--bg, #111); font-weight: 800; font-size: .8rem; }
+.tr-card.on .tr-check { background: var(--accent); border-color: var(--accent); }
+.tr-modal .dialog-actions { align-items: center; justify-content: space-between; }

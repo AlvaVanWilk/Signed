@@ -91,6 +91,12 @@ final class State
 
         $bandsOut = [];
         $bandRelations = [];
+        $registrations = Events::registrations($db, $repo->labelId);
+        // Pokale (Battle of the Bands, Festival) je Band
+        $awards = [];
+        foreach ($db->all('SELECT band_id, kind, place, title FROM awards WHERE label_id = ? ORDER BY id', [$repo->labelId]) as $row) {
+            $awards[(int) $row['band_id']][] = ['kind' => $row['kind'], 'place' => (int) $row['place'], 'title' => $row['title']];
+        }
         foreach ($bands as $band) {
             $bandRelations[$band['id']] = Mood::relations($repo, $members[$band['id']] ?? [], $now);
             $list = $members[$band['id']] ?? [];
@@ -164,6 +170,9 @@ final class State
                     'wishes' => $managed ? $wishes : array_values(array_filter($wishes, static fn ($w) => $w['level'] === 'red')),
                 ],
                 'managed' => $managed,
+                // Angemeldet für Veranstaltungen (Battle): dann muss die Band pünktlich da sein.
+                'events' => $registrations[$band['id']] ?? [],
+                'awards' => $awards[$band['id']] ?? [],
                 'managerNotes' => $managed ? Managers::notes($band, $list, $gearMap, $bandRelations[$band['id']] ?? [], $wishes, Mood::idleHours($repo, $band, $now)[0]) : [],
                 'cohesion' => round($band['cohesion'], 1),
                 'maxCohesion' => BandCalc::maxCohesion($identity),
@@ -276,6 +285,7 @@ final class State
             'tutors' => (new Tutors($repo))->present($now),
             'courses' => (new Courses($repo))->status($musicians),
             'board' => ['week' => Courses::week($now)],
+            'battle' => Battle::present($repo, $bands, $members, $now),
             'jamOffers' => (new Jam($repo))->open(),
             'market' => (new Transfers($repo))->market(),
             'packOffer' => $packOffer,

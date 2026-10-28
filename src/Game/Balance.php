@@ -158,7 +158,7 @@ final class Balance
      */
     public const RELATION = [
         'max' => 10.0, 'scale' => 10.0, 'base' => 3.0, 'drift' => 0.2,
-        'bond' => ['rehearsal' => 0.12, 'gig' => 0.10, 'record' => 0.08, 'bandpromo' => 0.05, 'retreat' => 0.08],
+        'bond' => ['rehearsal' => 0.12, 'gig' => 0.10, 'record' => 0.08, 'bandpromo' => 0.05, 'retreat' => 0.08, 'battle' => 0.10],
         'clash' => -0.5, 'teamplayer' => 0.25, 'party' => 0.3,
         'genres' => [0 => -0.3, 1 => 0.1, 2 => 0.3, 3 => 0.4], 'gapFrom' => 30, 'gapBig' => 50, 'gapPenalty' => [-0.2, -0.4],
     ];
@@ -703,9 +703,29 @@ final class Balance
      * Die Plätze werden alle CHART_INTERVAL Sekunden neu vergeben – oder sofort, wenn eine Platte einsteigt oder Schub bekommt.
      */
     public const CHART_INTERVAL = 3 * 3600;
+    /**
+     * Battle of the Bands: jeden Samstag (`weekday`, ISO: 1 = Montag) um `time` deutscher Zeit, Anmeldung die ganze Woche davor,
+     * höchstens `perLabel` Bands je Label und `max` insgesamt; unter `min` fällt es aus. Keine Computer-Bands.
+     * Ablauf wie bei einer WM: Gruppen (jeder gegen jeden), dann K.-o.-Runden. Alle `round` Sekunden eine Runde; in einem Spiel spielt
+     * jede Band `songs` Lieder, danach berät die Jury `jury` Sekunden.
+     * Wer gewinnt: Sound × Laune × Tagesform. Laune = 1 + (Stimmung − mood.at) × mood.per; Tagesform zufällig zwischen 1 − luck und 1 + luck.
+     * Ruhm, Proben und Klassen spielen keine Rolle.
+     * Belohnung: Ruhm je Spiel und je Sieg, dazu nach Platz (`fame`); Preisgeld nach Platz (`money`); Freude nach Platz (`cheer`,
+     * Wohlbefinden); Pokale für die ersten drei.
+     */
+    public const BATTLE = [
+        'weekday' => 6, 'time' => [16, 0],
+        'perLabel' => 2, 'min' => 2, 'max' => 32,
+        'round' => 300, 'songs' => 2, 'jury' => 12,
+        'luck' => 0.2,
+        'mood' => ['at' => 60, 'per' => 0.0025],
+        'fame' => ['match' => 1.5, 'win' => 1.5, 'place' => [1 => 20, 2 => 12, 3 => 7, 4 => 4]],
+        'money' => [1 => 600, 2 => 300, 3 => 150, 4 => 80],
+        'cheer' => [1 => 12, 2 => 6, 3 => 4],
+    ];
     /** Nachrichten beim Wiederkommen: nach so langer Pause, diese Arten aus der Chronik. */
     public const NEWS_AWAY = 900;
-    public const NEWS_KINDS = ['chart1', 'chart', 'transfer', 'scout', 'level', 'fame', 'fanjoin', 'trait'];
+    public const NEWS_KINDS = ['chart1', 'chart', 'transfer', 'scout', 'level', 'fame', 'fanjoin', 'trait', 'event'];
     public const CHART_DECAY = 0.03;
     public const CHART_MAX_AGE = 7 * 86400;
     /**

@@ -1421,3 +1421,73 @@ body { background: radial-gradient(1100px 520px at 50% -12%, rgba(255, 181, 71, 
 .fig-stage.depth .fig-member > .lb-lv em { font-size: .8rem; }
 .fig-stage.depth .fig-member > .lb-lv.lb-nogear { white-space: nowrap; }
 .fig-stage.depth .fig-member > .lb-lv.lb-nogear .lb-prog { display: none; }
+
+/* ---------- Battle of the Bands ---------- */
+.bt-panel { margin-bottom: 16px; }
+.bt-cap { margin: 18px 0 8px; font-size: .78rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.bt-team { display: inline-flex; align-items: center; gap: 3px; min-width: 0; }
+.bt-team .genre-icon { width: 14px; height: 14px; flex: none; fill: currentColor; opacity: .75; }
+.bt-team.mine { color: var(--accent-2); font-weight: 700; }
+.bt-team.open { color: var(--muted); font-style: italic; font-weight: 400; }
+.bt-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 12px; }
+.bt-group { background: var(--panel-2); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 12px 12px; }
+.bt-group h3 { margin: 0 0 6px; }
+.bt-table { width: 100%; border-collapse: collapse; font-size: .84rem; margin-bottom: 8px; }
+.bt-table th { text-align: left; font-size: .7rem; color: var(--muted); font-weight: 600; padding: 2px 4px; }
+.bt-table td { padding: 4px; border-top: 1px solid var(--line); }
+.bt-table td:nth-child(n+3), .bt-table th:nth-child(n+3) { text-align: right; font-variant-numeric: tabular-nums; }
+.bt-table tr.through td:first-child { color: var(--accent); font-weight: 700; }
+.bt-table tr.mine td { background: rgba(255, 181, 71, .07); }
+.bt-games { display: grid; gap: 4px; }
+.bt-match { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; padding: 5px 8px; border-radius: 8px;
+  background: rgba(255, 255, 255, .03); border: 1px solid transparent; font-size: .84rem; }
+.bt-match.mine { background: rgba(255, 181, 71, .08); }
+.bt-match.live { border-color: var(--accent); }
+.bt-side { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bt-side.right { text-align: right; }
+.bt-side .bt-team { display: inline; } .bt-side .bt-team .genre-icon { vertical-align: -2px; margin-right: 2px; }
+.bt-side.won { font-weight: 700; }
+.bt-side.lost { opacity: .6; }
+.bt-score { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bt-live { font-size: .72rem; font-weight: 700; color: #08201c; background: var(--accent); border-radius: 999px; padding: 1px 8px; }
+.bt-at { font-size: .74rem; color: var(--muted); white-space: nowrap; }
+.bt-bracket { display: grid; grid-template-columns: repeat(var(--cols), minmax(220px, 1fr)); gap: 12px; overflow-x: auto; padding-bottom: 4px; }
+.bt-col { display: grid; gap: 6px; align-content: center; }
+.bt-col h3 { margin: 0 0 2px; } .bt-col h3 small { text-transform: none; letter-spacing: 0; font-weight: 400; }
+.bt-third { margin: 6px 0 0; font-size: .74rem; color: var(--muted); }
+.bt-stage { margin: 6px 0 12px; padding: 14px 16px; border-radius: var(--radius-sm); background: linear-gradient(180deg, rgba(46, 196, 182, .10), rgba(46, 196, 182, .02)); border: 1px solid rgba(46, 196, 182, .35); }
+.bt-stage h2 { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.bt-lines { list-style: none; margin: 8px 0; padding: 0; display: grid; gap: 3px; font-size: .9rem; }
+.bt-line { padding: 2px 10px; border-left: 3px solid var(--line); animation: bt-in .35s ease-out; }
+.bt-line.side-a { border-left-color: #6e8bff; } .bt-line.side-b { border-left-color: #e0866b; }
+.bt-line.song { font-weight: 600; }
+.bt-line.hl { color: var(--ok); } .bt-line.miss { color: #ff8f8f; } .bt-line.crowd { color: var(--muted); font-style: italic; }
+.bt-line.jury { border-left-color: var(--accent-2); color: var(--accent-2); font-weight: 700; }
+@keyframes bt-in { from { opacity: 0; transform: translateY(4px); } }
+.bt-next { margin: 4px 0 8px; padding: 8px 12px; border-radius: 8px; background: rgba(255, 181, 71, .08); }
+.bt-podium { display: flex; flex-wrap: wrap; gap: 10px; margin: 4px 0 12px; }
+.bt-place { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: var(--radius-sm); background: var(--panel-2); border: 1px solid var(--line); }
+.bt-place .trophy { width: 34px; height: 34px; }
+.bt-place.p1 .trophy { width: 44px; height: 44px; }
+.bt-place span { display: grid; } .bt-place small { color: var(--muted); font-size: .74rem; }
+.bt-place.mine { border-color: var(--accent-2); }
+.bt-entry-list { display: grid; gap: 6px; margin: 8px 0 4px; }
+.bt-entry { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 8px 12px; border-radius: 8px; background: var(--panel-2); border: 1px solid var(--line); }
+.bt-entry > span:first-child { display: grid; margin-right: auto; } .bt-entry small { color: var(--muted); }
+.bt-entry.in { border-color: var(--ok); }
+.bt-in { font-size: .76rem; font-weight: 700; color: var(--ok); }
+.bt-entries { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.bt-entries li { padding: 3px 10px; border-radius: 999px; background: var(--panel-2); border: 1px solid var(--line); font-size: .82rem; }
+.bt-entries li small { color: var(--muted); }
+.bt-entries li.mine { border-color: var(--accent-2); }
+.bt-rules { margin-top: 8px; font-size: .88rem; } .bt-rules summary { cursor: pointer; color: var(--accent-2); }
+.bt-rules p { margin: 6px 0; color: var(--muted); }
+.bb-ico .trophy { width: 24px; height: 24px; }
+.bb-event { background: #f3ecd9; }
+.lb-trophies { position: absolute; left: 3%; bottom: 7%; z-index: 1; display: flex; gap: 2px; pointer-events: auto; }
+.lb-trophies .trophy { width: calc(var(--u, 1px) * 34); height: calc(var(--u, 1px) * 34); min-width: 18px; min-height: 18px; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .45)); }
+.lb-away-note .btn { margin-top: 6px; justify-self: center; }
+@media (max-width: 700px) {
+  .bt-bracket { grid-template-columns: 1fr; }
+  .bt-groups { grid-template-columns: 1fr; }
+}

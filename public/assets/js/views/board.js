@@ -1,10 +1,11 @@
 import { instrumentIcon } from '../cards.js';
 import { app, bandById, isBusy, musicianById } from '../core.js';
 import { duration, esc, fmt0, money } from '../ui.js';
+import { trophy } from './battle.js';
 
 /**
  * Schwarzes Brett: was für alle gilt, nicht nur für dein Label. Heute die Kurse des Tages (mit „hinschicken“), dazu die Vorschau auf die Woche.
- * Später kommen hier Veranstaltungen für alle hin (Festivals, Wettbewerbe), zu denen man sich anmeldet.
+ * Unten hängen die Veranstaltungen für alle (Battle of the Bands), zu denen man Bands anmeldet.
  */
 
 const DAY = new Intl.DateTimeFormat('de-DE', { weekday: 'long', day: 'numeric', month: 'numeric', timeZone: 'Europe/Berlin' });
@@ -31,6 +32,24 @@ function weekDay(d, i) {
     <div class="bb-mini"><span class="bb-ico sm">${instrumentIcon(c.instrument)}</span><span><b>${esc(c.prefix)}-${esc(c.name)}</b><small>+${fmt0(c.gain)} Können · ab ${money(c.prices[0])}</small></span></div>`).join('')}</div>`;
 }
 
+/** Zettel zum Battle of the Bands: wann, wer dabei ist, und ob es gerade läuft. */
+function battleNote(n) {
+  const bt = app.state.battle;
+  if (!bt) return '';
+  const cur = bt.current;
+  const running = cur?.state === 'running';
+  const mine = bt.next.entries.filter((e) => e.mine).map((e) => e.name);
+  const winner = cur?.state === 'done' ? cur.places.find((p) => p.place === 1) : null;
+  const count = bt.next.entries.length;
+  return `<article class="bb-note bb-event" style="${tilt(n)}">
+    <span class="bb-pin"></span>
+    <div class="bb-head"><span class="bb-ico">${trophy(1)}</span><div><b>Battle of the Bands</b><small>${running ? 'Läuft gerade!' : `${esc(bt.next.when)}`}</small></div></div>
+    ${running ? '<p class="bb-gain">Jetzt zuschauen, wie es steht.</p>' : `<p class="bb-done">${count ? `${count} ${count === 1 ? 'Band' : 'Bands'} angemeldet` : 'Noch keine Anmeldung'}${mine.length ? `, dabei: ${esc(mine.join(', '))}` : ''}</p>`}
+    ${winner ? `<p class="bb-done">Letzter Sieger: <b>${esc(cur.teams[winner.id]?.name ?? '')}</b></p>` : ''}
+    <a class="btn small primary" href="#/battle">${running ? 'Zuschauen' : 'Ansehen und anmelden'}</a>
+  </article>`;
+}
+
 export function render() {
   const s = app.state;
   return `
@@ -42,6 +61,6 @@ export function render() {
       <h2 class="bb-cap">Die nächsten Tage</h2>
       <div class="bb-week">${(s.board?.week ?? []).map(weekDay).join('')}</div>
       <h2 class="bb-cap">Veranstaltungen</h2>
-      <p class="bb-empty">Gerade ist nichts angeschlagen.</p>
+      <div class="bb-notes">${battleNote(1)}</div>
     </section>`;
 }

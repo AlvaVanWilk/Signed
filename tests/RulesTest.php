@@ -758,3 +758,79 @@ test('Bedürfnisse wachsen: Wer lange auf seinen Wunsch, ein Instrument oder die
     $later = $t($a, $band + ['stageIdle' => $r['hours'] + 25]);
     check(abs(($at - $later) - 6.0 * $r['grow'] * 25) < 1e-9, 'Unruhe wächst mit jeder Stunde');
 });
+
+test('Battle of the Bands: Jede Teilnehmerzahl ergibt ein vollständiges Turnier; Bands eines Labels in verschiedenen Gruppen', function () {
+    $roundsFor = [];
+    foreach (range(2, 32) as $n) {
+        $teams = [];
+        for ($i = 1; $i <= $n; $i++) {
+            // Je zwei Bands gehören zu einem Label.
+            $teams[$i] = ['id' => $i, 'labelId' => intdiv($i + 1, 2), 'strength' => 20.0 + $i];
+        }
+        $plan = Signed\Game\Battle::play($teams);
+        $roundsFor[$n] = count($plan['rounds']);
+        foreach (array_keys($plan['rounds']) as $r) {
+            $playing = [];
+            foreach ($plan['matches'] as $m) {
+                if ($m['r'] === $r) {
+                    check(!in_array($m['a'], $playing, true) && !in_array($m['b'], $playing, true), "$n Bands: niemand spielt zweimal in Runde $r");
+                    $playing[] = $m['a'];
+                    $playing[] = $m['b'];
+                }
+            }
+        }
+        $places = array_count_values(array_filter(array_column($plan['results'], 'place')));
+        checkEquals(1, $places[1] ?? 0, "$n Bands: ein Sieger");
+        checkEquals(1, $places[2] ?? 0, "$n Bands: ein Zweiter");
+        if ($n >= 3) {
+            checkEquals(1, $places[3] ?? 0, "$n Bands: ein Dritter");
+        }
+        checkEquals($n, count($plan['results']));
+        if ($plan['groups']) {
+            $all = array_merge(...$plan['groups']);
+            sort($all);
+            checkEquals(range(1, $n), $all, "$n Bands: alle ausgelost");
+            $sizes = array_map('count', $plan['groups']);
+            check(max($sizes) - min($sizes) <= 1 && min($sizes) >= 3 || count($sizes) === 1, "$n Bands: Gruppen gleich groß");
+            foreach ($plan['groups'] as $g => $ids) {
+                $labels = array_map(static fn ($id) => $teams[$id]['labelId'], $ids);
+                if (count($plan['groups']) > 1) {
+                    checkEquals(count($labels), count(array_unique($labels)), "$n Bands: ein Label je Gruppe nur einmal");
+                }
+                // Jeder gegen jeden genau einmal
+                $pairs = [];
+                foreach ($plan['matches'] as $m) {
+                    if ($m['k'] === 'group' && $m['g'] === $g) {
+                        $pair = [min($m['a'], $m['b']), max($m['a'], $m['b'])];
+                        check(!in_array($pair, $pairs, true), 'kein Spiel doppelt');
+                        $pairs[] = $pair;
+                    }
+                }
+                checkEquals(count($ids) * (count($ids) - 1) / 2, count($pairs), "$n Bands: jeder gegen jeden");
+            }
+        }
+    }
+    // Kurz bei wenigen Bands: 2 = nur das Finale, 4 = drei Gruppenspiele und Finale, 8 = drei Gruppenspiele, Halbfinale, Finale
+    checkEquals(1, $roundsFor[2]);
+    checkEquals(4, $roundsFor[4]);
+    checkEquals(5, $roundsFor[8]);
+    check(max($roundsFor) <= 9, 'höchstens neun Runden');
+});
+
+test('Battle: Sound und Laune entscheiden, der Zufall nur innerhalb der Tagesform; Ruhm zählt nicht', function () {
+    $wins = static function (float $a, float $b): int {
+        $n = 0;
+        for ($i = 0; $i < 300; $i++) {
+            $plan = Signed\Game\Battle::play([1 => ['id' => 1, 'labelId' => 1, 'strength' => $a], 2 => ['id' => 2, 'labelId' => 2, 'strength' => $b]]);
+            $n += $plan['results'][1]['place'] === 1 ? 1 : 0;
+        }
+        return $n;
+    };
+    // Doppelt so stark gewinnt immer (die Tagesform reicht nicht so weit), knapp stärker meistens, aber nicht immer.
+    checkEquals(300, $wins(50.0, 25.0));
+    $close = $wins(30.0, 27.0);
+    check($close > 150 && $close < 300, 'knapp: ' . $close);
+    check(Signed\Game\Battle::moodFactor(100.0) > Signed\Game\Battle::moodFactor(60.0), 'gute Laune hilft');
+    checkEquals(1.0, Signed\Game\Battle::moodFactor((float) Balance::BATTLE['mood']['at']));
+    check(Signed\Game\Battle::moodFactor(10.0) < 0.9, 'schlechte Laune schadet');
+});

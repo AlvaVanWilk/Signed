@@ -169,6 +169,29 @@ Das Stadion bleibt der Tournee vorbehalten.
   Er kommt kostenlos ins Label; in die Band holt man ihn per Knopf (normale Regeln, Zusammenspiel −5).
   Seltenheit nach Bühne: Kneipe 90/10/0/0 % … Arena 30/40/22/8 % (gewöhnlich/selten/episch/legendär).
 
+### Battle of the Bands (Umbau)
+
+Jeden **Samstag um 16 Uhr** (deutsche Zeit) für alle Labels (`Balance::BATTLE`, `Battle`, `Events`). Anmeldung die ganze Woche, höchstens
+**2 Bands je Label** und 32 insgesamt; keine Computer-Bands, unter 2 Anmeldungen fällt es aus. Angemeldete Bands müssen pünktlich da sein:
+Alles, was über den Beginn hinaus dauern würde (Auftritt, Probe, Promo, Auszeit, Studio, Kurs, Interview eines Mitglieds), wird abgelehnt.
+
+- **Ablauf wie bei einer WM:** 2 Bands spielen nur das Finale, 3–5 eine Gruppe (die ersten zwei ins Finale, 3. und 4. um Platz 3),
+  6–11 zwei Gruppen, 12–23 vier, 24–32 acht. In der Gruppe jeder gegen jeden, die ersten zwei kommen weiter (Erster gegen Zweiten der
+  Nachbargruppe), dann K.-o. bis zum Finale; die Verlierer des Halbfinales spielen zugleich um Platz 3. Tabelle: Siege, dann Punkte-Unterschied, dann Punkte.
+- **Bands eines Labels** kommen in verschiedene Gruppen; treffen sie in der ersten K.-o.-Runde aufeinander, wird mit einem anderen Spiel getauscht,
+  wenn das geht (nur bei einer einzigen Gruppe geht es nicht anders).
+- **Ein Spiel:** jede Band 2 Lieder (je 24 s), dann 12 s Jury; alle 5 Minuten eine Runde (8 Bands: 5 Runden, gut 20 Minuten; höchstens 9 Runden).
+  Punkte = Sound × Laune × Tagesform, gerundet. **Laune** = 1 + (Stimmung der Band − 60) × 0,0025 (Stimmung 100: +10 %, 20: −10 %).
+  **Tagesform** zufällig 0,8–1,2 je Spiel. Ruhm, Proben und Klassen zählen nicht. Doppelter Sound gewinnt immer, 10 % mehr Sound meistens.
+- Ausgelost und ausgespielt wird beim Beginn (bei der ersten Anfrage danach); gezeigt wird nach der Uhr, Runde für Runde. Die Ansage
+  (Lieder, Glanzmomente, Patzer, Publikum) folgt der Tagesform. Alle Bands bleiben bis zum Schluss dort, damit die Uhr nicht verrät, wie weit sie kommen.
+- **Belohnung** (am Ende): Ruhm 1,5 je Spiel + 1,5 je Sieg + nach Platz 20 / 12 / 7 / 4 (fest, nicht nach Ruhm), verteilt wie bei Gigs;
+  Preisgeld 600 / 300 / 150 / 80 ₲; Stimmung +12 / +6 / +4 für die ersten drei; Pokal in Gold, Silber, Bronze (steht im Proberaum);
+  Chart-Schub wie bei Gigs je gespieltes Lied; Beziehungen wachsen wie bei einem Gig (`RELATION['bond']['battle']`).
+  Wer ehrgeizig, eine Rampensau oder eine Diva ist, mag das Battle, Gelassene nicht (`Catalog::LIKES`). Alle Labels bekommen die Nachricht, wer gewonnen hat.
+- Zum Tempo: Der Sieger einer Achterrunde bekommt gut 30 Ruhm (etwa acht Club-Gigs), einmal je Woche; für kleine Bands ein großer Schritt,
+  für große vor allem Pokal und Preisgeld. Weil der Gewinn fest ist, verstärkt Ruhm ihn nicht.
+
 ### Talent-Scout
 
 - 5 Musiker (70 % episch, 30 % legendär), alle mit Können-Stufe 1. Einer unterschreibt, die anderen verfallen.

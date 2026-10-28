@@ -182,6 +182,7 @@ final class Courses
             $title = sprintf('%s-%s für %s', $course['prefix'], $course['name'], Balance::COURSE['levels'][$level]);
             $this->repo->spend($price, sprintf('%s: %s', $title, $m['first_name']));
             $endsAt = $now + $course['seconds'];
+            Events::assertFree($db, $m['band_id'], $endsAt);
             if ($db->exec('UPDATE musicians SET busy_until = ? WHERE id = ? AND busy_until <= ?', [$endsAt, $m['id'], $now]) === 0) {
                 throw new ApiError(sprintf('%s ist gerade beschäftigt.', $m['first_name']));
             }

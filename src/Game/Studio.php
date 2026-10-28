@@ -204,6 +204,7 @@ final class Studio
             }
             $quality = min(1.0, self::quality($members, $gear, $studio, $producer) + Tutors::recordBonus($band, $songs));
             $endsAt = $now + $songs * Balance::RECORD_SECONDS_PER_SONG;
+            Events::assertFree($db, $bandId, $endsAt);
             // Die gecoachten Songs sind damit verbraucht; ohne sie gibt es auch keinen Zuschlag mehr.
             $coached = max(0.0, $band['coached_songs'] - $songs);
             if ($db->exec('UPDATE bands SET busy_until = ?, released = 1, songs_written = songs_written - ?, coached_songs = ?, coach_bonus = ? WHERE id = ? AND busy_until <= ?', [$endsAt, $songs, $coached, $coached > 0 ? $band['coach_bonus'] : 0.0, $bandId, $now]) === 0) {

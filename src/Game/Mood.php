@@ -240,7 +240,7 @@ final class Mood
     public static function reactions(array $members): array
     {
         $out = [];
-        foreach (['rehearsal' => 'rehearsal', 'gig' => 'gig', 'record' => 'record'] as $key => $type) {
+        foreach (['rehearsal' => 'rehearsal', 'gig' => 'gig', 'record' => 'record', 'battle' => 'battle'] as $key => $type) {
             $out[$key] = [
                 // Nur nach Zügen, die das Label schon kennt
                 'like' => array_values(array_map(static fn ($m) => $m['id'], array_filter($members, static fn ($m) => self::liking(Traits::known($m), $type) > 0))),

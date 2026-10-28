@@ -155,6 +155,7 @@ final class Activities
             }
 
             $endsAt = $now + ($rehearsal !== null ? $duration : $songs * Balance::SONG_SECONDS);
+            Events::assertFree($db, $bandId, $endsAt);
             $claimed = $db->exec('UPDATE bands SET busy_until = ?, released = 1 WHERE id = ? AND busy_until <= ?', [$endsAt, $bandId, $now]);
             if ($claimed === 0) {
                 throw new ApiError(Bands::who($members) . ' ist gerade beschäftigt.');
@@ -254,6 +255,7 @@ final class Activities
             $type = $slot === 2 ? $m['instr2'] : $m['instr1'];
             $gain = BandCalc::practiceGain($m, $slot, 1.0, $this->repo->gearByMusician()[$m['id']][$type] ?? null) * Balance::AUTO_PRACTICE['share'];
             $endsAt = $now + Balance::AUTO_PRACTICE['seconds'];
+            Events::assertFree($db, $m['band_id'], $endsAt);
             if ($db->exec('UPDATE musicians SET busy_until = ? WHERE id = ? AND busy_until <= ?', [$endsAt, $musicianId, $now]) === 0) {
                 throw new ApiError(sprintf('%s ist gerade beschäftigt.', $m['first_name']));
             }
@@ -278,6 +280,7 @@ final class Activities
                 throw new ApiError(sprintf('Die Band von %s ist gerade beschäftigt.', $m['first_name']));
             }
             $endsAt = $now + Balance::PROMO_SECONDS;
+            Events::assertFree($db, $m['band_id'], $endsAt);
             $claimed = $db->exec('UPDATE musicians SET busy_until = ? WHERE id = ? AND busy_until <= ?', [$endsAt, $musicianId, $now]);
             if ($claimed === 0) {
                 throw new ApiError(sprintf('%s ist gerade beschäftigt.', $m['first_name']));
@@ -310,6 +313,7 @@ final class Activities
                 throw new ApiError($blocker);
             }
             $endsAt = $now + $cfg['seconds'];
+            Events::assertFree($db, $bandId, $endsAt);
             if ($db->exec('UPDATE bands SET busy_until = ? WHERE id = ? AND busy_until <= ?', [$endsAt, $bandId, $now]) === 0) {
                 throw new ApiError(Bands::who($members) . ' ist gerade beschäftigt.');
             }
@@ -341,6 +345,7 @@ final class Activities
             }
             $cfg = Balance::BAND_PROMO;
             $endsAt = $now + $cfg['seconds'];
+            Events::assertFree($db, $bandId, $endsAt);
             if ($db->exec('UPDATE bands SET busy_until = ? WHERE id = ? AND busy_until <= ?', [$endsAt, $bandId, $now]) === 0) {
                 throw new ApiError(Bands::who($members) . ' ist gerade beschäftigt.');
             }
@@ -448,7 +453,7 @@ final class Activities
         $db = $repo->db;
         $reward = $data['reward'];
         $bandId = (int) $row['band_id'];
-        $repo->earn((int) ($reward['money'] ?? 0), sprintf('Gage: %s', $data['title']));
+        $repo->earn((int) ($reward['money'] ?? 0), sprintf($row['type'] === Battle::KIND ? 'Preisgeld: %s' : 'Gage: %s', $data['title']));
         $bill = min((int) ($reward['bill'] ?? 0), (int) ($reward['money'] ?? 0));
         $repo->spend($bill, sprintf('Rechnung: %s', $data['title']));
         $fameGain = $repo->addBandFame($bandId, $reward['fameGains'] ?? []);
@@ -480,7 +485,12 @@ final class Activities
             'levelUps' => self::applySkill($repo, $reward['skill'] ?? []),
             // Können je Mitglied (Bandprobe), damit das Ergebnis zeigt, was sie gebracht hat.
             'skill' => array_values(array_map(static fn ($g) => (float) $g, $reward['skill'] ?? [])),
+            // Battle of the Bands: Platz, Siege, Spiele
+            'battle' => $reward['battle'] ?? null,
         ];
+        if (isset($reward['battle'])) {
+            Battle::settled($repo, $bandId, $reward['battle']);
+        }
 
         $bandRow = $db->one('SELECT * FROM bands WHERE id = ?', [$bandId]);
         if ($bandRow !== null && !in_array($row['type'], ['bandpromo', 'retreat'], true)) {
@@ -578,6 +588,12 @@ final class Activities
         }
         [$low, $high] = Balance::BUSKING_HAT;
         return (int) round($low + ($high - $low) * max(0.0, min(1.0, ($perf - 0.4) / 1.2)));
+    }
+
+    /** Aktion einer Band anlegen, die anderswo geplant wurde (z. B. Battle of the Bands). */
+    public function insertBand(int $bandId, string $type, int $startedAt, int $endsAt, array $data): array
+    {
+        return $this->insert($bandId, null, $type, $startedAt, $endsAt, $data);
     }
 
     /** Aktion eines einzelnen Musikers anlegen (z. B. Tageskurs). */

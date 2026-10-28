@@ -217,12 +217,12 @@ final class Catalog
      * Jeder Charakter mag mindestens eine Anordnung, damit eine rote Band immer einen Ausweg hat.
      */
     public const LIKES = [
-        'ehrgeizig' => ['rehearsal' => 1, 'record' => 1, 'gig' => 1, 'busking' => -1],
-        'gelassen' => ['record' => 1, 'gig' => -1, 'busking' => -1],
+        'ehrgeizig' => ['rehearsal' => 1, 'record' => 1, 'gig' => 1, 'busking' => -1, 'battle' => 1],
+        'gelassen' => ['record' => 1, 'gig' => -1, 'busking' => -1, 'battle' => -1],
         'perfektionist' => ['rehearsal' => 1, 'record' => 1, 'busking' => -1, 'openstage' => -1],
         'chaot' => ['gig' => 1, 'openstage' => 1, 'busking' => 1, 'rehearsal' => -1],
-        'rampensau' => ['gig' => 1, 'openstage' => 1, 'busking' => 1, 'interview' => 1],
-        'diva' => ['gig' => 1, 'record' => 1, 'busking' => -1, 'openstage' => -1, 'interview' => 1],
+        'rampensau' => ['gig' => 1, 'openstage' => 1, 'busking' => 1, 'interview' => 1, 'battle' => 1],
+        'diva' => ['gig' => 1, 'record' => 1, 'busking' => -1, 'openstage' => -1, 'interview' => 1, 'battle' => 1],
         'teamplayer' => ['rehearsal' => 1, 'record' => 1, 'interview' => -1],
         'ruhepol' => ['rehearsal' => 1, 'record' => 1],
         'partytier' => ['gig' => 1, 'openstage' => 1, 'busking' => 1, 'rehearsal' => -1],
@@ -279,6 +279,7 @@ final class Catalog
     /** Anordnungen im Satz („Lust auf …“). */
     public const TRAIT_REVEAL_ORDERS = [
         'rehearsal' => 'die Probe', 'gig' => 'den Auftritt', 'record' => 'die Aufnahme', 'busking' => 'Straßenmusik', 'openstage' => 'die offene Bühne', 'interview' => 'das Interview',
+        'battle' => 'das Battle',
     ];
 
     /** Wie lange ein Charakter bei der Probe Lust hat, als Faktor auf Balance::REHEARSAL['lust'] (bei zwei Eigenschaften der Mittelwert). */

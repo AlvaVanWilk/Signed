@@ -10,6 +10,7 @@ import './sidefit.js';
 import './glitter.js';
 import * as auth from './views/auth.js';
 import * as board from './views/board.js';
+import * as battle from './views/battle.js';
 import * as bands from './views/bands.js';
 import * as label from './views/label.js';
 import * as charts from './views/charts.js';
@@ -41,6 +42,7 @@ const VIEWS = {
   '': () => overview.render(),
   einsendungen: () => submissions.render(),
   brett: () => board.render(),
+  battle: () => battle.render(),
   packs: () => packs.render(),
   store: () => store.render(),
   lager: () => storage.render(),
@@ -167,7 +169,7 @@ function layout(content, route) {
   return `
     <header class="topbar">
       <a class="logo" href="#/">Signed</a>
-      <nav class="nav">${NAV.map(([key, label]) => `<a href="#/${key}" class="${key === active ? 'active' : ''}">${label}${key === 'boerse' ? marketBadge(active === 'boerse') : ''}${key === 'einsendungen' ? inboxBadge(s) : ''}${key === 'store' && s.store?.gold ? ' <span class="nav-gold" title="Heute ein legendäres Instrument im Angebot">★</span>' : ''}</a>`).join('')}</nav>
+      <nav class="nav">${NAV.map(([key, label]) => `<a href="#/${key}" class="${key === active || (key === 'brett' && active === 'battle') ? 'active' : ''}">${label}${key === 'brett' && s.battle?.current?.state === 'running' ? ' <span class="nav-badge new" title="Das Battle of the Bands läuft">live</span>' : ''}${key === 'boerse' ? marketBadge(active === 'boerse') : ''}${key === 'einsendungen' ? inboxBadge(s) : ''}${key === 'store' && s.store?.gold ? ' <span class="nav-gold" title="Heute ein legendäres Instrument im Angebot">★</span>' : ''}</a>`).join('')}</nav>
       <div class="label-info">
         <span class="label-name" title="Dein Label">${esc(s.label.name)}</span>
         <button class="money-pill" data-act="openFinance" data-live-money title="Konto und Einnahmen">${money(liveMoney())}</button>
@@ -314,6 +316,7 @@ function resultHtml(r) {
       ${levelUpBanners(res.levelUps)}
       ${r.type === 'practice' ? '<p class="muted small">Selbst mitspielen bringt bis zum Vierfachen.</p>' : ''}`;
   }
+  if (r.type === 'battle') return battleResultHtml(r);
   if (r.type === 'interview') {
     const m = musicianById(r.musicianId);
     return `
@@ -362,6 +365,41 @@ function resultHtml(r) {
     ${res.venueUp ? `<div class="banner">⭐ Neue Stufe! Ab jetzt spielt die Band Gigs in: <b>${esc(res.venueUp)}</b>.</div>` : ''}
     ${drops}`;
 }
+
+/** Battle of the Bands vorbei: Platz, Pokal, Preisgeld, Ruhm. */
+function battleResultHtml(r) {
+  const res = r.result;
+  const info = res.battle ?? {};
+  const band = bandById(r.bandId);
+  const name = esc(band?.name ?? '');
+  const head = info.place === 1 ? 'Gewonnen!' : info.place ? `Platz ${info.place}` : 'Ausgeschieden';
+  const text = info.place === 1
+    ? `${name} hat das Battle of the Bands gewonnen. Der goldene Pokal steht jetzt im Proberaum.`
+    : info.place && info.place <= 3
+      ? `${name} ist auf Platz ${info.place} von ${info.of} Bands gekommen. Dafür gibt es einen Pokal in ${info.place === 2 ? 'Silber' : 'Bronze'}.`
+      : info.place
+        ? `${name} ist auf Platz ${info.place} von ${info.of} Bands gekommen.`
+        : `${name} ist ${esc(BATTLE_OUT[info.reached] ?? BATTLE_OUT.group)}. Dabei waren ${info.of} Bands.`;
+  return `
+    <div class="eyebrow">Battle of the Bands · ${name}</div>
+    <h2>${head}</h2>
+    <p class="muted">${text}</p>
+    <div class="reward-grid">
+      ${reward('Spiele gewonnen', `${info.wins ?? 0} von ${info.played ?? 0}`)}
+      ${res.money ? reward('Preisgeld', `+${money(0)}`, { to: res.money, kind: 'money' }) : ''}
+      ${res.fame ? reward('Ruhm', `+${fmtGain(0)}`, { to: res.fame, kind: 'fame' }) : ''}
+      ${res.mood ? reward('Stimmung', `+${fmt0(res.mood)}`) : ''}
+    </div>
+    ${levelUpBanners(res.levelUps)}
+    ${res.venueUp ? `<div class="banner">Neue Stufe! Ab jetzt spielt die Band Gigs in: <b>${esc(res.venueUp)}</b>.</div>` : ''}`;
+}
+
+const BATTLE_OUT = {
+  group: 'in der Gruppe ausgeschieden',
+  r16: 'im Achtelfinale ausgeschieden',
+  qf: 'im Viertelfinale ausgeschieden',
+  sf: 'im Halbfinale ausgeschieden',
+};
 
 /** Fan will einsteigen: Er ist schon im Label; in die Band holt man ihn mit einem Tipp, solange Platz ist. */
 function fanDrop(d, band) {
@@ -527,6 +565,7 @@ document.addEventListener('visibilitychange', () => {
 });
 
 let lastAutoRefresh = 0;
+let lastWake = 0;
 let lastTapeRefresh = 0;
 setInterval(() => {
   if (!app.state) return;
@@ -534,6 +573,13 @@ setInterval(() => {
   // Eine laufende Probe wird alle paar Sekunden gutgeschrieben: So steigen Können und Stufen wirklich in dem Moment, in dem es passiert.
   const live = app.state.running.some((a) => a.type === 'rehearsal');
   label.tickLive();
+  battle.tick();
+  // Battle of the Bands: zur nächsten Runde, zum nächsten Ergebnis und zum Beginn neu fragen.
+  const wake = app.state.battle?.wakeAt;
+  if (wake && wake + 0.5 <= serverNow() && Date.now() - lastWake > 2000) {
+    lastWake = Date.now();
+    refresh({ quiet: true });
+  }
   const due = app.state.running.some((a) => a.endsAt <= serverNow());
   // Eine gesichtete Kassette soll sich sofort öffnen: kurz nach dem Ablauf (mit Reserve für die Uhr) schnell und wiederholt nachfragen.
   const now0 = serverNow();

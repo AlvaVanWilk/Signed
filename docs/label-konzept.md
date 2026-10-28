@@ -257,7 +257,17 @@ Aufnahme zeigt die Bandseite das Studio (`studio.js`) mit dem Produzenten hinter
 ### Schwarzes Brett (gebaut)
 
 Eigener Menüpunkt für alles, was **für alle Spieler gleich** ist: heute die Kurse des Tages (mit „hinschicken“), dazu die Kurse der nächsten
-sechs Tage. Später kommen hier **Veranstaltungen** hin (Festivals, Battle of the Bands), zu denen man sich anmeldet; sie landen nicht im Posteingang.
+sechs Tage. Darunter hängen die **Veranstaltungen** (Battle of the Bands), zu denen man sich anmeldet; sie landen nicht im Posteingang.
+
+### Battle of the Bands (gebaut)
+
+Jeden Samstag um 16 Uhr, für alle Labels, mit fester Uhrzeit (Zahlen in `kern.md`). Anmeldung die ganze Woche auf der Battle-Seite (vom
+Schwarzen Brett aus), bis zu zwei Bands je Label, keine Computer-Bands. Ablauf wie bei einer WM: Gruppen, dann K.-o. bis zum Finale; die
+Übersicht zeigt Gruppentabellen, alle Spiele mit Uhrzeit und den K.-o.-Baum, dazu das Spiel, das gerade auf der Bühne ist (mit Ansage) und
+wann die eigene Band als Nächstes spielt. Bands eines Labels werden möglichst getrennt. Es entscheiden **Sound und Laune**, der Zufall nur
+in der Spanne der Tagesform; Ruhm, Proben und eine Wahl „sicher/riskant“ gibt es nicht. Während des Battles ist die Band weg (Zettel im
+Proberaum mit „Zuschauen“); danach gibt es Platz, Preisgeld, Ruhm und für die ersten drei einen Pokal, der im Proberaum steht.
+Offen: ob Solokünstler mitmachen dürfen (heute ja, sie sind im Spiel auch „Bands“), und ob 16 Uhr passt.
 
 ### Promo-Tour (gebaut)
 
@@ -561,7 +571,7 @@ die Genre-Farben nur für Genre. Keine Seltenheits-Farben, keine Smileys, Köpfe
 ### Auszeichnungen
 
 Deutlich weniger als bisher, nur **echte Pokale**: zum Beispiel Goldene Schallplatte, Platin-Schallplatte, Platz 1 der Charts, Große Bühne (Halle/Arena),
-später „Battle of the Bands“ gewonnen. Kleinkram wie „Erster Gig“ fällt weg und steht höchstens in der Chronik.
+„Battle of the Bands“ Platz 1 bis 3 (gebaut: Pokal in Gold, Silber oder Bronze, steht im Proberaum). Kleinkram wie „Erster Gig“ fällt weg und steht höchstens in der Chronik.
 
 ## Bleibt und geht
 
@@ -602,6 +612,9 @@ Beim ersten Login nach dem Umbau (Saison 2) bleiben **Labelname und Konto**, all
   und der **Charakter** (Passung, auch Genre und Können-Abstand). Startwert eines Paares = Zielwert der Passung × Anteil, der sich mit der gemeinsamen Zeit füllt.
 - **Startkapital:** wie ein neues Label, bei früher Erfolgreichen etwas mehr (Vorschlag: nach Platz in der Bestenliste ein kleiner Aufschlag).
 - Ohne Wechselbörse gibt es kein „Auflösen und teuer verkaufen“. Es gibt keine Ruhmeshalle der vorigen Saison und keine Bandplätze, die man freischalten müsste.
+
+**Kartei (entschieden):** Die Kartei gibt es im neuen Spiel nicht. Einzelne Musiker aus der Kartei, die in keiner Band spielen, werden beim
+Übergang gelöscht. Vielleicht bekommt man das Angebot, bis zu fünf von ihnen zu behalten (als Einsendung); alle anzubieten wäre zu viel.
 
 ## Wer wirkt auf wen (nur stabilisierende Kreisläufe)
 

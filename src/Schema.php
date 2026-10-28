@@ -583,6 +583,41 @@ final class Schema
                 'ALTER TABLE musicians ADD COLUMN wish_wait REAL NULL',
                 'ALTER TABLE musicians ADD COLUMN gear_wait REAL NULL',
             ],
+            // 49: Veranstaltungen für alle Labels (Battle of the Bands, Festival): je Art und Woche eine, mit Anmeldungen und Pokalen
+            [
+                'CREATE TABLE events (
+                    id {PK},
+                    kind VARCHAR(16) NOT NULL,
+                    week VARCHAR(10) NOT NULL,
+                    starts_at INTEGER NOT NULL,
+                    ends_at INTEGER NOT NULL DEFAULT 0,
+                    state VARCHAR(10) NOT NULL DEFAULT \'open\',
+                    data TEXT NULL
+                ){OPTS}',
+                'CREATE UNIQUE INDEX events_week ON events (kind, week)',
+                'CREATE INDEX events_state ON events (state, starts_at)',
+                'CREATE TABLE event_entries (
+                    id {PK},
+                    event_id INTEGER NOT NULL,
+                    label_id INTEGER NOT NULL,
+                    band_id INTEGER NOT NULL,
+                    status VARCHAR(10) NOT NULL DEFAULT \'in\',
+                    place INTEGER NULL,
+                    created_at INTEGER NOT NULL
+                ){OPTS}',
+                'CREATE UNIQUE INDEX event_entries_band ON event_entries (event_id, band_id)',
+                'CREATE INDEX event_entries_label ON event_entries (label_id)',
+                'CREATE TABLE awards (
+                    id {PK},
+                    label_id INTEGER NOT NULL,
+                    band_id INTEGER NOT NULL,
+                    kind VARCHAR(16) NOT NULL,
+                    place INTEGER NOT NULL,
+                    title VARCHAR(120) NOT NULL,
+                    created_at INTEGER NOT NULL
+                ){OPTS}',
+                'CREATE INDEX awards_band ON awards (band_id)',
+            ],
         ];
     }
 }

@@ -9,6 +9,8 @@ use Signed\Game\Assistant;
 use Signed\Game\Inbox;
 use Signed\Game\Balance;
 use Signed\Game\Bands;
+use Signed\Game\Battle;
+use Signed\Game\Events;
 use Signed\Game\Catalog;
 use Signed\Game\Charts;
 use Signed\Game\Courses;
@@ -111,6 +113,8 @@ final class Api
         'scoutReportSign' => ['POST', true],
         'practiceAuto' => ['POST', true],
         'courseAttend' => ['POST', true],
+        'battleEnter' => ['POST', true],
+        'battleWithdraw' => ['POST', true],
         'soloStart' => ['POST', true],
         'jamPick' => ['POST', true],
         'coverRedraw' => ['POST', true],
@@ -158,6 +162,8 @@ final class Api
             throw $e;
         }
         Backup::daily($this->db);
+        // Veranstaltungen für alle (Battle of the Bands): beginnen und abschließen, bevor Aktionen gutgeschrieben werden.
+        Events::tick($this->db, Clock::now());
         Activities::settleDue($this->db, $labelId);
         Activities::advanceRunning($this->db, $labelId);
         Charts::payRoyalties($this->db, $labelId);
@@ -607,6 +613,18 @@ final class Api
     {
         $activity = (new Courses($repo))->attend(self::int($in, 'musicianId'), isset($in['course']) && is_numeric($in['course']) ? (int) $in['course'] : null);
         return ['activity' => $activity, 'state' => State::build($repo)];
+    }
+
+    private function battleEnter(array $in, Repo $repo): array
+    {
+        Battle::enter($repo, self::int($in, 'bandId'));
+        return ['state' => State::build($repo)];
+    }
+
+    private function battleWithdraw(array $in, Repo $repo): array
+    {
+        Battle::withdraw($repo, self::int($in, 'bandId'));
+        return ['state' => State::build($repo)];
     }
 
     private function practiceAuto(array $in, Repo $repo): array

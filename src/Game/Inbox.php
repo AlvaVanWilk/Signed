@@ -290,6 +290,7 @@ final class Inbox
                 throw new ApiError(sprintf('%s ist gerade unterwegs. Die Anfrage wartet noch.', $m['first_name']));
             }
             $endsAt = $now + Balance::INTERVIEW['seconds'][min(3, (int) $d['level'])];
+            Events::assertFree($db, $m['band_id'], $endsAt);
             if ($db->exec('UPDATE musicians SET busy_until = ? WHERE id = ? AND busy_until <= ?', [$endsAt, $m['id'], $now]) === 0) {
                 throw new ApiError(sprintf('%s ist gerade unterwegs.', $m['first_name']));
             }

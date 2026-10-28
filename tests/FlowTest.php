@@ -2634,3 +2634,73 @@ test('Bedürfnisse: Die Wartezeit läuft nur, solange er nicht grün ist; was er
     $p->get('state');
     checkEquals(5.0, (float) $db->value('SELECT wish_wait FROM musicians WHERE id = ?', [$id]), 'offline im Roten keine Wartezeit dazu');
 });
+
+test('Battle of the Bands: anmelden, pünktlich da sein, am Samstag auslosen, Runde für Runde zeigen, danach Preisgeld und Pokal', function () {
+    $db = freshDb();
+    $a = registerPlayer($db, 'Battler');
+    $bandA = foundBand($a, 'Laute Lieder');
+    $b = registerPlayer($db, 'Gegner');
+    $bandB = foundBand($b, 'Leise Lieder');
+    $next = $a->get('state')['battle']['next'];
+    check($next['startsAt'] > Clock::now(), 'liegt in der Zukunft');
+    check(str_starts_with($next['when'], 'Samstag'), $next['when']);
+    $a->post('battleEnter', ['bandId' => $bandA['id']]);
+    checkApiError(fn () => $a->post('battleEnter', ['bandId' => $bandA['id']]), 'schon angemeldet');
+    checkApiError(fn () => $b->post('battleEnter', ['bandId' => $bandA['id']]), 'gibt es nicht');
+    // Höchstens zwei Bands je Label
+    $repoA = new Signed\Game\Repo($db, (int) $a->get('state')['label']['id']);
+    $event = Signed\Game\Battle::next($db, Clock::now());
+    $two = [['label_id' => $repoA->labelId], ['label_id' => $repoA->labelId]];
+    check(str_contains((string) Signed\Game\Battle::blocker($repoA, $repoA->band($bandA['id']), $repoA->members($bandA['id']), $event, $two), 'höchstens 2'), 'Grenze je Label');
+    // Wer angemeldet ist, muss bis zum Beginn zurück sein.
+    Clock::set($next['startsAt'] - 600);
+    $db->exec('UPDATE labels SET money = 5000');
+    checkApiError(fn () => $a->post('bandRetreat', ['bandId' => $bandA['id'], 'option' => 'ausflug']), 'angemeldet');
+    checkEquals([['kind' => 'battle', 'startsAt' => $next['startsAt']]], bandById($a->get('state'), $bandA['id'])['events']);
+    $b->post('battleEnter', ['bandId' => $bandB['id']]);
+    $b->post('battleWithdraw', ['bandId' => $bandB['id']]);
+    $b->post('battleEnter', ['bandId' => $bandB['id']]);
+    checkEquals(2, count($b->get('state')['battle']['next']['entries']));
+
+    // Los geht's: zwei Bands spielen gleich das Finale.
+    Clock::set($next['startsAt'] + 5);
+    $state = $a->get('state');
+    $cur = $state['battle']['current'];
+    checkEquals('running', $cur['state']);
+    checkEquals(1, count($cur['rounds']));
+    checkEquals('Finale', $cur['rounds'][0]['name']);
+    check(count($cur['live']) === 1 && count($cur['live'][0]['lines']) >= 5, 'das Finale läuft mit Ansage');
+    check(!isset($cur['rounds'][0]['matches'][0]['pa']), 'das Ergebnis ist noch geheim');
+    check(bandById($state, $bandA['id'])['busyUntil'] >= $cur['endsAt'], 'die Band ist beim Battle');
+    check($state['battle']['next']['startsAt'] >= $next['startsAt'] + 6 * 86400, 'Anmeldung für nächste Woche offen');
+    checkApiError(fn () => $a->post('activityStart', ['bandId' => $bandA['id'], 'type' => 'rehearsal']), 'beschäftigt');
+
+    // Vorbei: Platz, Preisgeld, Pokal; alle Labels erfahren den Sieger.
+    $money = (int) $db->value('SELECT money FROM labels WHERE id = ?', [$repoA->labelId]);
+    Clock::set($cur['endsAt'] + 2);
+    $state = $a->get('state');
+    $cur = $state['battle']['current'];
+    checkEquals('done', $cur['state']);
+    checkEquals([1, 2], array_column($cur['places'], 'place'));
+    $res = array_values(array_filter($state['results'], static fn ($r) => $r['type'] === 'battle'))[0]['result'];
+    $place = $res['battle']['place'];
+    checkEquals($place, $cur['places'][0]['id'] === $bandA['id'] ? 1 : 2);
+    checkEquals($money + Balance::BATTLE['money'][$place], (int) $state['label']['money'], 'Preisgeld');
+    check($res['fame'] > 0, 'Ruhm');
+    checkEquals(1, (int) $db->value("SELECT COUNT(*) FROM awards WHERE band_id = ? AND place = ?", [$bandA['id'], $place]), 'Pokal');
+    $labelB = (int) $b->get('state')['label']['id'];
+    check((int) $db->value("SELECT COUNT(*) FROM history WHERE label_id = ? AND kind = 'event' AND text LIKE '%gewinnt%'", [$labelB]) === 1, 'Nachricht an alle');
+});
+
+test('Battle: Mit nur einer Band fällt es aus; wer nicht antreten kann, fliegt raus', function () {
+    $db = freshDb();
+    $a = registerPlayer($db, 'Allein');
+    $band = foundBand($a);
+    $next = $a->get('state')['battle']['next'];
+    $a->post('battleEnter', ['bandId' => $band['id']]);
+    Clock::set($next['startsAt'] + 1);
+    $cur = $a->get('state')['battle']['current'];
+    checkEquals('cancelled', $cur['state']);
+    check((int) $db->value("SELECT COUNT(*) FROM history WHERE kind = 'event' AND text LIKE '%fällt diesmal aus%'") === 1, 'Bescheid');
+    checkEquals(0, (int) $db->value("SELECT COUNT(*) FROM activities WHERE type = 'battle'"));
+});

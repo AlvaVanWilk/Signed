@@ -456,7 +456,8 @@ final class Activities
         $repo->earn((int) ($reward['money'] ?? 0), sprintf($row['type'] === Battle::KIND ? 'Preisgeld: %s' : 'Gage: %s', $data['title']));
         $bill = min((int) ($reward['bill'] ?? 0), (int) ($reward['money'] ?? 0));
         $repo->spend($bill, sprintf('Rechnung: %s', $data['title']));
-        $fameGain = $repo->addBandFame($bandId, $reward['fameGains'] ?? []);
+        // Festival-Ruhm zählt nicht als „in dieser Woche gesammelt“ (sonst bekäme dieselbe Band immer wieder die Hauptbühne).
+        $fameGain = $repo->addBandFame($bandId, $reward['fameGains'] ?? [], $row['type'] !== Festival::KIND);
         if ($row['type'] === 'bandpromo') {
             // Album-Zyklus: Band-Promo zählt (abgebrochene kommen hier nicht an).
             $db->exec('UPDATE bands SET band_promos = band_promos + 1 WHERE id = ?', [$bandId]);
@@ -487,6 +488,8 @@ final class Activities
             'skill' => array_values(array_map(static fn ($g) => (float) $g, $reward['skill'] ?? [])),
             // Battle of the Bands: Platz, Siege, Spiele
             'battle' => $reward['battle'] ?? null,
+            // Festival: Bühne, Headliner, Interview-Anfrage danach
+            'festival' => isset($reward['festival']) ? Festival::settled($repo, $bandId, $reward['festival']) : null,
         ];
         if (isset($reward['battle'])) {
             Battle::settled($repo, $bandId, $reward['battle']);
@@ -504,6 +507,9 @@ final class Activities
                 if ($band['gigs_played'] === 0) {
                     $repo->log('gig', sprintf('%s spielt den ersten richtigen Gig.', $band['name']), $bandId);
                 }
+            } elseif ($row['type'] === Festival::KIND) {
+                // Auch das Festival zählt für den Album-Zyklus.
+                $updates['live_songs'] = $band['live_songs'] + (int) ($data['songs'] ?? 0);
             }
             if ($updates) {
                 $db->update('bands', $updates, ['id' => $bandId]);

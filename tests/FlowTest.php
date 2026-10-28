@@ -2656,7 +2656,7 @@ test('Battle of the Bands: anmelden, pünktlich da sein, am Samstag auslosen, Ru
     Clock::set($next['startsAt'] - 600);
     $db->exec('UPDATE labels SET money = 5000');
     checkApiError(fn () => $a->post('bandRetreat', ['bandId' => $bandA['id'], 'option' => 'ausflug']), 'angemeldet');
-    checkEquals([['kind' => 'battle', 'startsAt' => $next['startsAt']]], bandById($a->get('state'), $bandA['id'])['events']);
+    checkEquals([['kind' => 'battle', 'startsAt' => $next['startsAt'], 'accepted' => false]], bandById($a->get('state'), $bandA['id'])['events']);
     $b->post('battleEnter', ['bandId' => $bandB['id']]);
     $b->post('battleWithdraw', ['bandId' => $bandB['id']]);
     $b->post('battleEnter', ['bandId' => $bandB['id']]);
@@ -2703,4 +2703,99 @@ test('Battle: Mit nur einer Band fällt es aus; wer nicht antreten kann, fliegt 
     checkEquals('cancelled', $cur['state']);
     check((int) $db->value("SELECT COUNT(*) FROM history WHERE kind = 'event' AND text LIKE '%fällt diesmal aus%'") === 1, 'Bescheid');
     checkEquals(0, (int) $db->value("SELECT COUNT(*) FROM activities WHERE type = 'battle'"));
+});
+
+/** Eine Band, die genau dieses Genre spielt (Besetzung nach Catalog::GENRE_LINEUP, mindestens zwei Musiker). */
+function genreBand(Signed\Db $db, Player $p, string $genre, string $name): int
+{
+    $repo = new Signed\Game\Repo($db, (int) $p->get('state')['label']['id']);
+    $instruments = [];
+    foreach (Catalog::GENRE_LINEUP[$genre] as [$options, $need]) {
+        array_push($instruments, ...array_fill(0, $need, $options[0]));
+    }
+    if (count($instruments) < 2) {
+        $instruments[] = 'drums';
+    }
+    $ids = array_map(static fn ($i) => $repo->insertMusician(Signed\Game\Generator::musician('common', ['instrument' => $i, 'genre' => $genre, 'single' => true]), 'test'), $instruments);
+    return $p->post('bandCreate', ['name' => $name, 'members' => array_map(static fn ($id) => ['id' => $id, 'slot' => 1], $ids)])['bandId'];
+}
+
+test('Festival: nur das Genre der Woche, Bühnen nach der Bekanntheit der Woche, Headliner zuletzt; Festival-Ruhm zählt nicht für die nächste Woche', function () {
+    $db = freshDb();
+    $a = registerPlayer($db, 'Festa');
+    $b = registerPlayer($db, 'Festb');
+    $next = $a->get('state')['festival']['next'];
+    $genre = $next['genre'];
+    check(str_starts_with($next['when'], 'Mittwoch') && str_starts_with($next['closeWhen'], 'Mittwoch'), $next['when']);
+    check($next['closesAt'] < $next['startsAt'], 'Anmeldeschluss vor dem Beginn');
+    $other = array_values(array_filter(array_keys(Catalog::GENRES), static fn ($g) => $g !== $genre))[0];
+    $small = genreBand($db, $a, $genre, 'Kleine Fische');
+    $wrong = genreBand($db, $a, $other, 'Falsches Genre');
+    $big = genreBand($db, $b, $genre, 'Große Nummer');
+    checkApiError(fn () => $a->post('festivalEnter', ['bandId' => $wrong]), 'sucht');
+    $a->post('festivalEnter', ['bandId' => $small]);
+    $b->post('festivalEnter', ['bandId' => $big]);
+    checkApiError(fn () => $b->post('festivalEnter', ['bandId' => $big]), 'schon beworben');
+    // In der Woche gesammelte Bekanntheit: Die große Band hat mehr.
+    $repoA = new Signed\Game\Repo($db, (int) $a->get('state')['label']['id']);
+    $repoB = new Signed\Game\Repo($db, (int) $b->get('state')['label']['id']);
+    $repoB->addBandFame($big, array_fill_keys(array_column($repoB->members($big), 'id'), 10.0));
+    $repoA->addBandFame($small, array_fill_keys(array_column($repoA->members($small), 'id'), 2.0));
+    check(Signed\Game\Festival::weekGain($db, $big, Clock::now()) > Signed\Game\Festival::weekGain($db, $small, Clock::now()), 'Wochen-Bekanntheit');
+    $db->exec('UPDATE labels SET money = 5000');
+    // Zum Beginn (nicht zum Anmeldeschluss) muss die Band zurück sein.
+    Clock::set($next['closesAt'] - 600);
+    checkApiError(fn () => $a->post('bandRetreat', ['bandId' => $small, 'option' => 'urlaub']), 'Festival');
+
+    // Anmeldeschluss: Das Line-up hängt aus.
+    Clock::set($next['closesAt'] + 5);
+    $cur = $a->get('state')['festival']['current'];
+    checkEquals('lineup', $cur['state']);
+    $main = $cur['stages'][0];
+    checkEquals('Hauptbühne', $main['name']);
+    checkEquals([$small, $big], array_column($main['acts'], 'bandId'), 'Headliner zuletzt');
+    check($main['acts'][1]['headliner'], 'die große Band ist Headliner');
+    checkEquals($next['startsAt'], $main['acts'][0]['at'], 'wenige Bands: es geht gleich los');
+    check($a->get('state')['festival']['next']['startsAt'] > $next['startsAt'], 'Bewerbung für nächste Woche offen');
+    Clock::set($next['startsAt'] - 1800);
+    checkApiError(fn () => $a->post('bandRetreat', ['bandId' => $small, 'option' => 'ausflug']), 'Festival');
+
+    // Beginn: Die erste Band spielt, die zweite ist schon dort.
+    Clock::set($next['startsAt'] + 2);
+    $state = $a->get('state');
+    $act = array_values(array_filter($state['running'], static fn ($r) => $r['type'] === 'festival'));
+    check(count($act) === 1 && $act[0]['bandId'] === $small && count($act[0]['timeline']) > 5, 'Auftritt läuft mit Ticker');
+    checkEquals('openair', $act[0]['venue']);
+    $stateB = $b->get('state');
+    checkEquals([], array_values(array_filter($stateB['running'], static fn ($r) => $r['type'] === 'festival')), 'der Headliner spielt noch nicht');
+    check(bandById($stateB, $big)['busyUntil'] > Clock::now(), 'ist aber schon auf dem Festival');
+
+    // Vorbei: Ruhm, Gage, Interview-Anfrage; Festival-Ruhm zählt nicht zur Wochen-Bekanntheit; Plakat für den Headliner.
+    $weekBefore = Signed\Game\Festival::weekGain($db, $big, Clock::now());
+    Clock::set((int) $cur['endsAt'] + 2);
+    $res = array_values(array_filter($a->get('state')['results'], static fn ($r) => $r['type'] === 'festival'))[0]['result'];
+    check($res['fame'] > 0 && $res['money'] === Balance::FESTIVAL['stages']['main']['money'], 'Ruhm und Gage');
+    check(!empty($res['festival']['interview']['medium']), 'Interview-Anfrage');
+    check((int) $db->value("SELECT COUNT(*) FROM mail WHERE label_id = ? AND kind = 'interview' AND data LIKE ?", [$repoA->labelId, '%' . $res['festival']['interview']['medium'] . '%']) >= 1, 'Anfrage im Posteingang');
+    $b->get('state');
+    checkEquals($weekBefore, Signed\Game\Festival::weekGain($db, $big, Clock::now()), 'Festival-Ruhm zählt nicht');
+    checkEquals(1, (int) $db->value("SELECT COUNT(*) FROM awards WHERE band_id = ? AND kind = 'festival'", [$big]), 'Plakat');
+    checkEquals('done', $a->get('state')['festival']['current']['state']);
+});
+
+test('Festival: Melden sich mehr Bands als Plätze, entscheidet das Los', function () {
+    $db = freshDb();
+    $a = registerPlayer($db, 'Viele');
+    $next = $a->get('state')['festival']['next'];
+    $slots = Signed\Game\Festival::slots();
+    $ids = [];
+    for ($i = 0; $i < $slots + 2; $i++) {
+        $ids[] = genreBand($db, $a, $next['genre'], "Bewerber $i");
+        $a->post('festivalEnter', ['bandId' => end($ids)]);
+    }
+    Clock::set($next['closesAt'] + 1);
+    $cur = $a->get('state')['festival']['current'];
+    checkEquals($slots, array_sum(array_map(static fn ($s) => count($s['acts']), $cur['stages'])));
+    checkEquals(2, (int) $db->value("SELECT COUNT(*) FROM event_entries WHERE status = 'rejected'"));
+    check((int) $db->value("SELECT COUNT(*) FROM history WHERE text LIKE '%für andere Bands entschieden%'") === 2, 'Absage vom Veranstalter');
 });

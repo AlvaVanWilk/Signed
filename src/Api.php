@@ -11,6 +11,7 @@ use Signed\Game\Balance;
 use Signed\Game\Bands;
 use Signed\Game\Battle;
 use Signed\Game\Events;
+use Signed\Game\Festival;
 use Signed\Game\Catalog;
 use Signed\Game\Charts;
 use Signed\Game\Courses;
@@ -115,6 +116,8 @@ final class Api
         'courseAttend' => ['POST', true],
         'battleEnter' => ['POST', true],
         'battleWithdraw' => ['POST', true],
+        'festivalEnter' => ['POST', true],
+        'festivalWithdraw' => ['POST', true],
         'soloStart' => ['POST', true],
         'jamPick' => ['POST', true],
         'coverRedraw' => ['POST', true],
@@ -162,7 +165,7 @@ final class Api
             throw $e;
         }
         Backup::daily($this->db);
-        // Veranstaltungen für alle (Battle of the Bands): beginnen und abschließen, bevor Aktionen gutgeschrieben werden.
+        // Veranstaltungen für alle (Battle of the Bands, Festival): beginnen und abschließen, bevor Aktionen gutgeschrieben werden.
         Events::tick($this->db, Clock::now());
         Activities::settleDue($this->db, $labelId);
         Activities::advanceRunning($this->db, $labelId);
@@ -624,6 +627,18 @@ final class Api
     private function battleWithdraw(array $in, Repo $repo): array
     {
         Battle::withdraw($repo, self::int($in, 'bandId'));
+        return ['state' => State::build($repo)];
+    }
+
+    private function festivalEnter(array $in, Repo $repo): array
+    {
+        Festival::enter($repo, self::int($in, 'bandId'));
+        return ['state' => State::build($repo)];
+    }
+
+    private function festivalWithdraw(array $in, Repo $repo): array
+    {
+        Festival::withdraw($repo, self::int($in, 'bandId'));
         return ['state' => State::build($repo)];
     }
 

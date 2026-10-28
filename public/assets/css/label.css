@@ -1491,3 +1491,34 @@ body { background: radial-gradient(1100px 520px at 50% -12%, rgba(255, 181, 71, 
   .bt-bracket { grid-template-columns: 1fr; }
   .bt-groups { grid-template-columns: 1fr; }
 }
+
+/* ---------- Festival ---------- */
+.fe-panel { margin-bottom: 16px; }
+.fe-panel h2 small { font-size: .9rem; font-weight: 500; }
+.fe-panel h2 .genre-icon, .fe-sub .genre-icon, .fe-band .genre-icon, .bt-entry .genre-icon { width: 15px; height: 15px; vertical-align: -2px; margin-right: 3px; fill: currentColor; opacity: .8; }
+.fe-poster { margin-bottom: 16px; padding: 20px 22px 18px; border-radius: var(--radius); border: 1px solid var(--line);
+  background: radial-gradient(circle at 50% -30%, rgba(255, 255, 255, .10), transparent 60%), linear-gradient(180deg, #221d33, #17131f); }
+@supports (color: color-mix(in srgb, red 50%, blue)) {
+  .fe-poster { border-color: color-mix(in srgb, var(--g) 45%, var(--line));
+    background: radial-gradient(circle at 50% -30%, color-mix(in srgb, var(--g) 32%, transparent), transparent 62%), linear-gradient(180deg, #221d33, #17131f); }
+}
+.fe-name { margin: 2px 0 2px; font-size: 2rem; letter-spacing: -.01em; }
+.fe-sub { margin: 0 0 12px; color: var(--muted); }
+.fe-mine { margin: 0 0 10px; padding: 8px 12px; border-radius: 8px; background: rgba(255, 181, 71, .09); }
+.fe-stages { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.fe-stage { background: rgba(0, 0, 0, .22); border: 1px solid rgba(255, 255, 255, .06); border-radius: var(--radius-sm); padding: 10px 12px 12px; }
+.fe-stage h3 { margin: 0 0 6px; }
+.fe-stage ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.fe-act { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: baseline; padding: 6px 8px; border-radius: 8px; border-left: 3px solid transparent; }
+.fe-act > .fe-state, .fe-act > .btn { grid-column: 2; justify-self: start; }
+.fe-time { font-size: .78rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fe-band { display: grid; min-width: 0; }
+.fe-band b { overflow-wrap: anywhere; }
+.fe-band small { color: var(--muted); font-size: .74rem; }
+.fe-act.head .fe-band b { font-size: 1.2rem; }
+.fe-tag { font-size: .66rem !important; letter-spacing: .1em; text-transform: uppercase; color: var(--accent-2) !important; font-weight: 700; }
+.fe-act.mine .fe-band b { color: var(--accent-2); }
+.fe-act.live { border-left-color: var(--accent); background: rgba(46, 196, 182, .07); }
+.fe-state { font-size: .74rem; color: var(--muted); } .fe-state.live { color: var(--accent); font-weight: 700; }
+.lb-trophies .poster { filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .45)); }
+.lb-room.lb-venue.v-zelt { --fb: calc(var(--u) * 80); }

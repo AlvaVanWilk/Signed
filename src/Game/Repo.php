@@ -83,10 +83,11 @@ final class Repo
 
     /**
      * Ruhm für eine Band: Ein Teil bleibt am Bandnamen hängen, der Rest wird Bekanntheit der Mitglieder.
+     * $week = false: zählt nicht als „in dieser Woche gesammelt“ (Festival, damit es sich nicht selbst verstärkt).
      * @param array<int, float> $gains Musiker-ID => Gewinn
      * @return float der ganze Gewinn
      */
-    public function addBandFame(int $bandId, array $gains): float
+    public function addBandFame(int $bandId, array $gains, bool $week = true): float
     {
         $total = array_sum($gains);
         if ($total <= 0) {
@@ -95,26 +96,42 @@ final class Repo
         $own = $total * Balance::BAND_FAME_SHARE;
         $this->db->exec('UPDATE bands SET fame_own = fame_own + ? WHERE id = ? AND label_id = ?', [$own, $bandId, $this->labelId]);
         foreach ($gains as $musicianId => $gain) {
-            $own += $this->addMusicianFame((int) $musicianId, $gain * (1 - Balance::BAND_FAME_SHARE));
+            $own += $this->addMusicianFame((int) $musicianId, $gain * (1 - Balance::BAND_FAME_SHARE), false);
+        }
+        if ($week) {
+            $this->noteFame($bandId, $own);
         }
         return $own;
     }
 
     /** Bekanntheit für einen Musiker (ohne Bremse: Wie schnell es geht, regeln die Gewinne selbst). Liefert den Gewinn. */
-    public function addMusicianFame(int $musicianId, float $gain): float
+    public function addMusicianFame(int $musicianId, float $gain, bool $week = true): float
     {
-        $fame = $this->db->value('SELECT fame FROM musicians WHERE id = ? AND label_id = ?', [$musicianId, $this->labelId]);
-        if ($fame === null || $gain <= 0) {
+        $m = $this->db->one('SELECT fame, band_id FROM musicians WHERE id = ? AND label_id = ?', [$musicianId, $this->labelId]);
+        if ($m === null || $gain <= 0) {
             return 0.0;
         }
-        $before = Levels::forFame((float) $fame);
+        $fame = (float) $m['fame'];
+        $before = Levels::forFame($fame);
         $this->db->exec('UPDATE musicians SET fame = fame + ? WHERE id = ? AND label_id = ?', [$gain, $musicianId, $this->labelId]);
-        $after = Levels::forFame((float) $fame + $gain);
+        $after = Levels::forFame($fame + $gain);
         if ($after > $before) {
-            $m = $this->db->one('SELECT first_name, last_name, band_id FROM musicians WHERE id = ?', [$musicianId]);
-            $this->log('level', sprintf('%s %s ist jetzt %s.', $m['first_name'], $m['last_name'], Catalog::FAME_NAMES[$after]), $m['band_id'] === null ? null : (int) $m['band_id'], $musicianId);
+            $n = $this->db->one('SELECT first_name, last_name FROM musicians WHERE id = ?', [$musicianId]);
+            $this->log('level', sprintf('%s %s ist jetzt %s.', $n['first_name'], $n['last_name'], Catalog::FAME_NAMES[$after]), $m['band_id'] === null ? null : (int) $m['band_id'], $musicianId);
+        }
+        if ($week && $m['band_id'] !== null) {
+            $this->noteFame((int) $m['band_id'], $gain);
         }
         return $gain;
+    }
+
+    /** Bekanntheit je Band und Tag mitschreiben (für das Festival: Wer hat in der letzten Woche am meisten gesammelt?). */
+    private function noteFame(int $bandId, float $gain): void
+    {
+        $day = Courses::day();
+        if ($this->db->exec('UPDATE fame_days SET gain = gain + ? WHERE band_id = ? AND day = ?', [$gain, $bandId, $day]) === 0) {
+            $this->db->insert('fame_days', ['band_id' => $bandId, 'day' => $day, 'gain' => $gain]);
+        }
     }
 
     /** Label-Ruhm: aus dem Ruhm aller eigenen Bands, große zählen stärker (BandCalc::labelFame). */

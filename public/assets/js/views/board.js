@@ -1,11 +1,12 @@
 import { instrumentIcon } from '../cards.js';
-import { app, bandById, isBusy, musicianById } from '../core.js';
+import { app, bandById, cat, isBusy, musicianById } from '../core.js';
 import { duration, esc, fmt0, money } from '../ui.js';
 import { trophy } from './battle.js';
+import { poster } from './festival.js';
 
 /**
  * Schwarzes Brett: was für alle gilt, nicht nur für dein Label. Heute die Kurse des Tages (mit „hinschicken“), dazu die Vorschau auf die Woche.
- * Unten hängen die Veranstaltungen für alle (Battle of the Bands), zu denen man Bands anmeldet.
+ * Unten hängen die Veranstaltungen für alle (Festival, Battle of the Bands), zu denen man Bands anmeldet.
  */
 
 const DAY = new Intl.DateTimeFormat('de-DE', { weekday: 'long', day: 'numeric', month: 'numeric', timeZone: 'Europe/Berlin' });
@@ -50,6 +51,23 @@ function battleNote(n) {
   </article>`;
 }
 
+/** Zettel zum Festival: welches Genre gesucht wird, bis wann man sich bewirbt, und das Line-up. */
+function festivalNote(n) {
+  const f = app.state.festival;
+  if (!f) return '';
+  const cur = f.current;
+  const show = cur && ['lineup', 'running'].includes(cur.state) ? cur : null;
+  const genre = cat().genres[f.next.genre]?.name ?? '';
+  const head = show?.stages[0]?.acts.find((a) => a.headliner);
+  const mine = f.next.entries.filter((e) => e.mine).map((e) => e.name);
+  return `<article class="bb-note bb-event" style="${tilt(n)}">
+    <span class="bb-pin"></span>
+    <div class="bb-head"><span class="bb-ico">${poster()}</span><div><b>${esc(show ? show.name : f.next.name)}</b><small>${show ? (show.state === 'running' ? 'Läuft gerade!' : esc(show.when)) : `Festival · ${esc(f.next.when)}`}</small></div></div>
+    ${show ? `<p class="bb-done">${head ? `Headliner: <b>${esc(head.name)}</b>` : ''}</p>` : `<p class="bb-gain">Gesucht: ${esc(genre)}-Bands</p><p class="bb-done">Bewerben bis ${esc(f.next.closeWhen)}${mine.length ? `, beworben: ${esc(mine.join(', '))}` : ''}</p>`}
+    <a class="btn small primary" href="#/festival">${show ? 'Zum Line-up' : 'Ansehen und bewerben'}</a>
+  </article>`;
+}
+
 export function render() {
   const s = app.state;
   return `
@@ -61,6 +79,6 @@ export function render() {
       <h2 class="bb-cap">Die nächsten Tage</h2>
       <div class="bb-week">${(s.board?.week ?? []).map(weekDay).join('')}</div>
       <h2 class="bb-cap">Veranstaltungen</h2>
-      <div class="bb-notes">${battleNote(1)}</div>
+      <div class="bb-notes">${festivalNote(0)}${battleNote(1)}</div>
     </section>`;
 }

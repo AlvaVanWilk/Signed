@@ -229,7 +229,8 @@ final class State
             ];
         }
 
-        $running = $db->all('SELECT * FROM activities WHERE label_id = ? AND settled = 0 ORDER BY ends_at', [$repo->labelId]);
+        // Was schon begonnen hat (ein Festival-Auftritt steht vorher fest, beginnt aber erst zu seiner Zeit).
+        $running = $db->all('SELECT * FROM activities WHERE label_id = ? AND settled = 0 AND started_at <= ? ORDER BY ends_at', [$repo->labelId, $now]);
         $results = $db->all('SELECT * FROM activities WHERE label_id = ? AND settled = 1 AND seen = 0 ORDER BY ends_at', [$repo->labelId]);
         $history = $db->all('SELECT id, band_id, musician_id, kind, text, created_at FROM history WHERE label_id = ? ORDER BY id DESC LIMIT 80', [$repo->labelId]);
         $items = $db->all('SELECT id, kind, value FROM items WHERE label_id = ? ORDER BY id', [$repo->labelId]);
@@ -286,6 +287,7 @@ final class State
             'courses' => (new Courses($repo))->status($musicians),
             'board' => ['week' => Courses::week($now)],
             'battle' => Battle::present($repo, $bands, $members, $now),
+            'festival' => Festival::present($repo, $bands, $members, $now),
             'jamOffers' => (new Jam($repo))->open(),
             'market' => (new Transfers($repo))->market(),
             'packOffer' => $packOffer,

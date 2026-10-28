@@ -11,6 +11,7 @@ import { crowdMeter, venueArt } from '../venues.js';
 import { crowdSvg, stageSvg } from '../stage.js';
 import { studioBlock } from './recording.js';
 import { trophy } from './battle.js';
+import { poster } from './festival.js';
 
 /** Label-Ebene: Band-Leiste links und die ruhige Bandseite. Stimmung als Punkt und Wort (grün, gelb, rot). */
 
@@ -293,7 +294,7 @@ function wishBubble(b, members, w) {
 const CASE = '<svg viewBox="0 0 30 26" aria-hidden="true"><path d="M10 6 V3 H20 V6" fill="none" stroke="#1d1a2a" stroke-width="2.4"/><rect x="2" y="6" width="26" height="18" rx="3" fill="#c0623a" stroke="#1d1a2a" stroke-width="2"/><path d="M2 12 H28" stroke="#1d1a2a" stroke-width="1.4" opacity=".5"/><rect x="8" y="6" width="3" height="18" fill="#e8c35a"/><rect x="19" y="6" width="3" height="18" fill="#e8c35a"/></svg>';
 
 /** Was jemand beim Gehen trägt: zum Auftritt sein Instrument (in Tasche oder Koffer), in die Auszeit einen Koffer, zur Promo nichts. */
-const carryFor = (m, type) => (type === 'retreat' ? 'case' : ['gig', 'battle'].includes(type) ? carryOf(hasGear(m) ? playedInstrument(m) : 'none') : null);
+const carryFor = (m, type) => (type === 'retreat' ? 'case' : ['gig', 'battle', 'festival'].includes(type) ? carryOf(hasGear(m) ? playedInstrument(m) : 'none') : null);
 /** Die Figur von der Seite, die beim Gehen über der Vorderansicht liegt (left: schaut nach links). */
 const sideOf = (m, carry, left = false) => walker(m.look, { carry, mood: m.personality?.[0] ?? null, left });
 
@@ -359,15 +360,21 @@ function bandScene(b, members) {
   const wish = (b.mood.wishes ?? [])[0];
   // Unterwegs (Auszeit, Promo-Tour): Der Raum ist leer, ein Zettel sagt, wann sie zurück sind. Danach kommen sie von rechts wieder herein.
   const running = runningFor(b.id);
-  const away = running && ['retreat', 'bandpromo', 'battle'].includes(running.type) ? running : null;
+  // Auf dem Festival, aber noch nicht dran: Die Band wartet dort auf ihren Auftritt.
+  const fest = !running ? festivalWait(b) : null;
+  const away = running && ['retreat', 'bandpromo', 'battle'].includes(running.type) ? running : fest;
   app.ui.awayFrom ??= {};
-  if (away || running?.type === 'gig') app.ui.awayFrom[b.id] = running.type;
+  if (away || ['gig', 'festival'].includes(running?.type)) app.ui.awayFrom[b.id] = away?.type ?? running.type;
   // Wieder herein erst, wenn das Ergebnis-Fenster zu ist (sonst liefen sie unsichtbar dahinter).
   const waiting = (app.state.results ?? []).some((r) => r.bandId === b.id);
   const back = !running && !waiting && app.ui.awayFrom[b.id] && !matchMedia('(prefers-reduced-motion: reduce)').matches ? app.ui.awayFrom[b.id] : null;
   if (!running && !waiting) delete app.ui.awayFrom[b.id];
-  const awayTitle = away?.type === 'retreat' ? `${esc(away.title.split(':')[0])}!` : away?.type === 'battle' ? 'Beim Battle of the Bands!' : 'Auf Promo-Tour!';
-  const note = away ? `<div class="lb-away-note"><b>${awayTitle}</b><small>${solo ? esc(whoOf(b)) : 'Die Band'} ist zurück in <span data-until="${away.endsAt}"></span></small>${away.type === 'battle' ? '<a class="btn small" href="#/battle">Zuschauen</a>' : ''}</div>` : '';
+  const awayTitle = away?.type === 'retreat' ? `${esc(away.title.split(':')[0])}!` : away?.type === 'battle' ? 'Beim Battle of the Bands!' : away?.type === 'festival' ? 'Auf dem Festival!' : 'Auf Promo-Tour!';
+  const awayText = away?.type === 'festival'
+    ? `Auftritt um ${clockOf(away.at)} auf der ${esc(away.stage)} (in <span data-until="${away.at}"></span>)`
+    : `${solo ? esc(whoOf(b)) : 'Die Band'} ist zurück in <span data-until="${away?.endsAt}"></span>`;
+  const awayLink = away?.type === 'battle' ? '<a class="btn small" href="#/battle">Zuschauen</a>' : away?.type === 'festival' ? '<a class="btn small" href="#/festival">Zum Line-up</a>' : '';
+  const note = away ? `<div class="lb-away-note"><b>${awayTitle}</b><small>${awayText}</small>${awayLink}</div>` : '';
   const tag = `${solo ? 'Solo' : esc(b.title ?? 'Band')} · ${genresOf(b).length ? sortedGenres(genresOf(b)).map((g) => esc(genreName(g))).join(' · ') : 'gemischt'}`;
   return `
     <section class="lb-scene" data-band="${b.id}">
@@ -449,18 +456,48 @@ function managerPicker(bandId) {
   });
 }
 
-/** Pokale der Band stehen im Proberaum (die neuesten vorn, höchstens fünf). */
+/** Pokale und Festival-Plakate der Band stehen im Proberaum (die neuesten vorn, höchstens fünf). */
 function trophies(b) {
   const list = (b.awards ?? []).slice(-5);
-  return list.length ? `<div class="lb-trophies">${list.map((a) => `<span title="${esc(a.title)}: ${a.place === 1 ? 'Sieger' : `Platz ${a.place}`}">${trophy(a.place)}</span>`).join('')}</div>` : '';
+  return list.length ? `<div class="lb-trophies">${list.map((a) => (a.kind === 'festival'
+    ? `<span title="${esc(a.title)}">${poster()}</span>`
+    : `<span title="${esc(a.title)}: ${a.place === 1 ? 'Sieger' : `Platz ${a.place}`}">${trophy(a.place)}</span>`)).join('')}</div>` : '';
 }
 
-/** Angemeldet für eine Veranstaltung (Battle): Bis dahin muss die Band zurück sein. */
+const CLOCK = new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' });
+const clockOf = (t) => `${CLOCK.format(new Date(t * 1000))} Uhr`;
+
+/** Der Auftritt der Band beim laufenden Festival, wenn sie schon dort ist, aber noch nicht spielt. */
+function festivalWait(b) {
+  const cur = app.state.festival?.current;
+  if (cur?.state !== 'running' || !isBusy(b.busyUntil)) return null;
+  const now = serverNow();
+  for (const s of cur.stages) {
+    const a = s.acts.find((x) => x.bandId === b.id && x.at > now);
+    if (a) return { type: 'festival', at: a.at, stage: s.name, endsAt: a.endsAt };
+  }
+  return null;
+}
+
+/** Angemeldet für eine Veranstaltung (Battle, Festival): Bis dahin muss die Band zurück sein. */
 function eventNotice(b) {
-  const e = (b.events ?? [])[0];
-  if (!e || e.kind !== 'battle') return '';
-  const when = app.state.battle?.next?.startsAt === e.startsAt ? app.state.battle.next.when : '';
-  return `<div class="lb-tutor"><div>Angemeldet zum <a href="#/battle">Battle of the Bands</a>${when ? ` (${esc(when)})` : ''}. Bis dahin muss ${b.memberIds.length === 1 ? esc(whoOf(b)) : 'die Band'} zurück sein.</div></div>`;
+  return (b.events ?? []).map((e) => {
+    const who = b.memberIds.length === 1 ? esc(whoOf(b)) : 'die Band';
+    if (e.kind === 'battle') {
+      const when = app.state.battle?.next?.startsAt === e.startsAt ? app.state.battle.next.when : '';
+      return `<div class="lb-tutor"><div>Angemeldet zum <a href="#/battle">Battle of the Bands</a>${when ? ` (${esc(when)})` : ''}. Bis dahin muss ${who} zurück sein.</div></div>`;
+    }
+    if (e.kind === 'festival') {
+      const f = app.state.festival;
+      if (e.accepted) {
+        const s = f?.current?.stages.find((x) => x.acts.some((a) => a.bandId === b.id));
+        const a = s?.acts.find((x) => x.bandId === b.id);
+        return `<div class="lb-tutor"><div>Beim Festival <a href="#/festival">„${esc(f?.current?.name ?? '')}“</a> dabei${a ? `: ${esc(s.name)}, ${clockOf(a.at)}` : ''}. Zum Beginn (${esc(f?.current?.when ?? '')}) muss ${who} dort sein.</div></div>`;
+      }
+      return `<div class="lb-tutor"><div>Beworben für das Festival <a href="#/festival">„${esc(f?.next?.name ?? '')}“</a> (${esc(f?.next?.when ?? '')}). Bis zum Beginn muss ${who} zurück sein.</div></div>`;
+    }
+    return '';
+  }).join('');
 }
 
 /** Gebuchter Coach oder Lehrer: kurz auf der Bandseite, damit man sieht, dass gerade jemand hilft. */
@@ -711,18 +748,18 @@ export function page(route) {
   const members = b.memberIds.map(musicianById).filter(Boolean);
   const solo = members.length === 1;
   const running = runningFor(b.id);
-  const notice = ['rehearsal', 'gig', 'record'].includes(running?.type) ? '' : blockerNotice(b, members);
+  const notice = ['rehearsal', 'gig', 'record', 'festival'].includes(running?.type) ? '' : blockerNotice(b, members);
   const free = cat().rules.maxMembers - members.length;
   const base = `#/band/${b.id}`;
   const courses = courseTiles(members);
   const course = courses ? `<details class="lb-more"><summary>Kurse des Tages</summary><div class="lb-course">${courses}</div></details>` : '';
   return `
     <h1 class="sr-only">${esc(b.name)}</h1>
-    ${running?.type === 'rehearsal' ? liveBlock(b, members, running) : running?.type === 'gig' ? gigBlock(b, members, running) : running?.type === 'record' ? studioBlock(b, members, running, { soundOn: music?.actId === running.id }) : bandScene(b, members)}
+    ${running?.type === 'rehearsal' ? liveBlock(b, members, running) : ['gig', 'festival'].includes(running?.type) ? gigBlock(b, members, running) : running?.type === 'record' ? studioBlock(b, members, running, { soundOn: music?.actId === running.id }) : bandScene(b, members)}
     ${notice}
     ${eventNotice(b)}
     ${tutorNotice(b, members)}
-    ${['rehearsal', 'gig', 'record'].includes(running?.type) ? wishBlock(b, members) : ''}
+    ${['rehearsal', 'gig', 'record', 'festival'].includes(running?.type) ? wishBlock(b, members) : ''}
     <div class="lb-acts">
       ${act(b, members, 'rehearsal', null, 'Proben', `bis zu ${mins(b.options.rehearsal.seconds)} · Können ${gainRange(members.map((m) => m.gains?.rehearsal ?? 0))} je ${mins(cat().rules.rehearsalSeconds)}`, ICON.rehearse, false, !!blocker(b, members))}
       ${act(b, members, 'record', null, 'Aufnehmen', recordHint(b), ICON.record, b.mood.songs >= 12, !!blocker(b, members))}

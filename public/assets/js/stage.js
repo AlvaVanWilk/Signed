@@ -113,17 +113,51 @@ const SCENES = {
     ${platform('#2b2d52', '#151933')}
     ${Array.from({ length: 30 }, (_, i) => `<circle cx="${i * 32 + 16}" cy="${TOP + 5}" r="3" fill="#ffe9a8" opacity="${i % 2 ? 0.9 : 0.5}"/>`).join('')}
     <ellipse cx="480" cy="${TOP + 2}" rx="300" ry="12" fill="#ffe9a8" opacity="0.08"/>`,
+
+  // Festival unter freiem Himmel: Abendhimmel über Hügeln, Bühnendach auf Traversen, Wimpel, Leinwand, Boxentürme.
+  openair: (r) => `
+    <defs><linearGradient id="oa-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b2150"/><stop offset="0.55" stop-color="#5a4377"/><stop offset="1" stop-color="#e58f5b"/></linearGradient></defs>
+    <rect width="${W}" height="${H}" fill="url(#oa-sky)"/>
+    ${Array.from({ length: 18 }, () => `<circle cx="${(r() * W).toFixed(0)}" cy="${(r() * 70).toFixed(0)}" r="${(0.8 + r() * 1.2).toFixed(1)}" fill="#fff" opacity="${(0.3 + r() * 0.4).toFixed(2)}"/>`).join('')}
+    <path d="M0 196 Q120 160 260 182 T560 176 T820 170 T${W} 186 V${TOP} H0 Z" fill="#2c3050"/>
+    <path d="M0 212 Q200 190 420 206 T${W} 204 V${TOP} H0 Z" fill="#232742"/>
+    <rect x="150" y="62" width="660" height="${TOP - 62}" fill="#15131f"/>
+    ${beam(300, 64, 210, 420, '#f2c14e', 0.12)}${beam(660, 64, 540, 750, '#ff8fc0', 0.12)}${beam(480, 64, 400, 560, '#9fd0ff', 0.1)}
+    ${box(370, 84, 220, 104, '#2b6fd6', 6)}
+    <path d="M392 160 Q440 110 482 146 Q528 100 572 152" fill="none" stroke="#fff" stroke-width="4" opacity="0.45"/>
+    ${gloss('M382 94 H480', 3, 0.25)}
+    ${[112, 808].map((x) => `${box(x, 34, 40, TOP - 34, '#3b4256', 3)}${Array.from({ length: 7 }, (_, i) => `<path d="M${x + 4} ${44 + i * 28} L${x + 36} ${58 + i * 28} M${x + 36} ${44 + i * 28} L${x + 4} ${58 + i * 28}" stroke="#5a6480" stroke-width="2"/>`).join('')}`).join('')}
+    <path d="M96 30 H864 L836 62 H124 Z" fill="#242131" ${st(3)}/>
+    <path d="M130 46 H830" stroke="#4a5268" stroke-width="6" stroke-dasharray="12 8"/>
+    ${[200, 270, 340, 620, 690, 760].map((x, i) => lamp(x, 70, i % 2 ? '#bfe9ff' : '#ffe9a8')).join('')}
+    <path d="M124 62 Q480 104 836 62" fill="none" stroke="${INK}" stroke-width="1.6"/>
+    ${Array.from({ length: 16 }, (_, i) => { const x = 150 + i * 42; const y = 62 + Math.sin(((x - 124) / 712) * Math.PI) * 21; return `<path d="M${x} ${y.toFixed(1)} l16 1 l-8 16 Z" fill="${['#f2c14e', '#ff6f91', '#4fd1ff', '#7bd389'][i % 4]}" ${st(1.4)}/>`; }).join('')}
+    ${speaker(18, 120, 76, 116)}${speaker(866, 120, 76, 116)}
+    ${platform('#3a3448', '#211d2c')}
+    ${Array.from({ length: 22 }, (_, i) => `<circle cx="${i * 44 + 22}" cy="${TOP + 5}" r="2.6" fill="#ffe9a8" opacity="${i % 2 ? 0.85 : 0.45}"/>`).join('')}`,
+
+  // Zeltbühne: gestreifte Plane bis zur Spitze, zwei Masten, Lichterkette, Holzbühne.
+  zelt: () => `
+    <rect width="${W}" height="${H}" fill="#2e2130"/>
+    ${Array.from({ length: 12 }, (_, i) => `<path d="M480 -60 L${i * 80} ${TOP} H${i * 80 + 80} Z" fill="${i % 2 ? '#a13f3c' : '#d9ccb4'}" opacity="0.92"/>`).join('')}
+    <path d="M0 0 H${W} V${TOP} H0 Z" fill="#1a1020" opacity="0.38"/>
+    <ellipse cx="480" cy="140" rx="300" ry="120" fill="#f2c14e" opacity="0.1"/>
+    ${[296, 664].map((x) => `${box(x - 7, 10, 14, TOP - 10, '#7a5636', 3, 2.4)}${gloss(`M${x - 2} 20 V${TOP - 10}`, 2, 0.18)}`).join('')}
+    ${[[0, 70, 300, 50], [296, 50, 664, 50], [664, 50, W, 70]].map(([x1, y1, x2, y2]) => { const mid = (x1 + x2) / 2; return `<path d="M${x1} ${y1} Q${mid} ${y1 + 46} ${x2} ${y2}" fill="none" stroke="${INK}" stroke-width="1.6"/>${Array.from({ length: 7 }, (_, i) => { const t = (i + 0.5) / 7; const x = (1 - t) * (1 - t) * x1 + 2 * (1 - t) * t * mid + t * t * x2; const y = (1 - t) * (1 - t) * y1 + 2 * (1 - t) * t * (y1 + 46) + t * t * y2; return `<circle cx="${x.toFixed(0)}" cy="${(y + 4).toFixed(0)}" r="4" fill="${['#ffd27a', '#ff9ab8', '#9fd0ff'][(i + x1) % 3]}" opacity="0.9"/>`; }).join('')}`; }).join('')}
+    ${speaker(40, 140, 66, 96)}${speaker(854, 140, 66, 96)}
+    ${platform('#a07448', '#6e4c2c', 0, W, 12)}
+    ${Array.from({ length: 12 }, (_, i) => `<path d="M${i * 80 + 40} ${TOP + 12} V${H}" stroke="#5e3e22" stroke-width="2"/>`).join('')}`,
 };
 
-/** Bühne eines Orts als SVG-Text. key: kneipe, club, saal, halle, arena; seed hält Kleinigkeiten fest. */
+/** Bühne eines Orts als SVG-Text. key: kneipe, club, saal, halle, arena, openair (Festival), zelt (Festival); seed hält Kleinigkeiten fest. */
 export function stageSvg(key, seed = 1) {
   const scene = SCENES[key] ?? SCENES.kneipe;
   return `<svg class="lb-stageart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMax slice" aria-hidden="true">${scene(rng(seed))}</svg>`;
 }
 
-const COUNT = { kneipe: 5, club: 9, saal: 11, halle: 14, arena: 16 };
+const COUNT = { kneipe: 5, club: 9, saal: 11, halle: 14, arena: 16, openair: 18, zelt: 11 };
 /** Licht von der Bühne, das die Köpfe oben anstrahlt. */
-const RIM = { kneipe: '#ffd27a', club: '#ff8fc0', saal: '#ffe9c0', halle: '#9fd0ff', arena: '#ffd27a' };
+const RIM = { kneipe: '#ffd27a', club: '#ff8fc0', saal: '#ffe9c0', halle: '#9fd0ff', arena: '#ffd27a', openair: '#ffc98f', zelt: '#ffd27a' };
 
 /** Ein Mensch von hinten als Silhouette: Kopf mit Frisur, Hals, Schultern; dazu ein Lichtsaum oben. */
 function person(x, y, k, r, color, rim, { hand = false, phone = false } = {}) {
@@ -165,7 +199,7 @@ export function crowdSvg(key, seed = 1) {
   const r = rng(seed + 31);
   const n = COUNT[key] ?? 6;
   const rim = RIM[key] ?? RIM.kneipe;
-  const big = key === 'halle' || key === 'arena';
+  const big = key === 'halle' || key === 'arena' || key === 'openair';
   let out = '';
   for (const [row, k, color, yBase, count] of [[0, 0.74, '#2a2238', 52, Math.round(n * 1.15)], [1, 1, '#120e1a', 72, n]]) {
     const step = W / count;

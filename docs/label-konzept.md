@@ -257,7 +257,17 @@ Aufnahme zeigt die Bandseite das Studio (`studio.js`) mit dem Produzenten hinter
 ### Schwarzes Brett (gebaut)
 
 Eigener Menüpunkt für alles, was **für alle Spieler gleich** ist: heute die Kurse des Tages (mit „hinschicken“), dazu die Kurse der nächsten
-sechs Tage. Darunter hängen die **Veranstaltungen** (Battle of the Bands), zu denen man sich anmeldet; sie landen nicht im Posteingang.
+sechs Tage. Darunter hängen die **Veranstaltungen** (Festival, Battle of the Bands), zu denen man sich anmeldet; sie landen nicht im Posteingang.
+
+### Festival (gebaut)
+
+Jeden Mittwoch (Zahlen in `kern.md`). Jedes Festival hat ein Lieblings-Genre und nimmt nur Bands dieses Genres (auch Hybrid-Bands mit dem
+Genre). Man kann alle passenden Bands bewerben; gibt es mehr Bewerbungen als Plätze, wird insgeheim gelost, offiziell entscheidet der
+Veranstalter. Die Bühne (Haupt-, Neben-, Zeltbühne) richtet sich nach der Bekanntheit, die die Band in der letzten Woche gesammelt hat
+(eine Momentaufnahme); wer am meisten hat, spielt als Headliner zuletzt auf der Hauptbühne. Die Seite zeigt das Plakat mit Bühnen und
+Zeiten, wer gerade spielt (mit „Zuschauen“, eigene Bühnenbilder: Open Air und Zelt) und darunter die Bewerbung fürs nächste Festival.
+Belohnung: ein großer Bekanntheits-Schub, eher kleine Gage, danach eine Interview-Anfrage von einem größeren Medium, für den Headliner ein
+Plakat im Proberaum, vielleicht ein Fan, der mitspielen will. Offen: ob 17 Uhr und Anmeldeschluss 12 Uhr passen.
 
 ### Battle of the Bands (gebaut)
 

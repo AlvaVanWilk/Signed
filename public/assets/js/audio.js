@@ -394,7 +394,7 @@ export function scheduleBacking({ genre, bpm, start, duration, drums = true, bas
  * Echte Applaus-Aufnahmen (frei verwendbar, mit ffmpeg gekürzt, ausgeblendet und gleich laut gemacht), je nach Größe des Ortes:
  * wenig Publikum (Kneipe, Straße, Offene Bühne), Club (auch Konzertsaal), große Halle (auch Arena). Lautstärke je Aufnahme dazu.
  */
-const APPLAUSE = { kneipe: 'klein', club: 'club', saal: 'club', halle: 'halle', arena: 'halle' };
+const APPLAUSE = { kneipe: 'klein', club: 'club', saal: 'club', halle: 'halle', arena: 'halle', openair: 'halle', zelt: 'club' };
 const APPLAUSE_GAIN = { klein: 0.6, club: 0.8, halle: 0.95 };
 const applauseBuffers = {};
 

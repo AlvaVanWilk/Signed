@@ -834,3 +834,19 @@ test('Battle: Sound und Laune entscheiden, der Zufall nur innerhalb der Tagesfor
     checkEquals(1.0, Signed\Game\Battle::moodFactor((float) Balance::BATTLE['mood']['at']));
     check(Signed\Game\Battle::moodFactor(10.0) < 0.9, 'schlechte Laune schadet');
 });
+
+test('Festival: Genre und Name je Woche für alle gleich, nie zweimal hintereinander dasselbe Genre, mit der Zeit alle Genres', function () {
+    $seen = [];
+    $prev = null;
+    $t = 1_800_000_000;
+    for ($w = 0; $w < 80; $w++) {
+        $week = Signed\Game\Events::week($t + $w * 7 * 86400);
+        $theme = Signed\Game\Festival::theme($week);
+        checkEquals($theme, Signed\Game\Festival::theme($week), 'gleich für alle');
+        check($theme['genre'] !== $prev, "nicht zweimal hintereinander ($week)");
+        check(in_array($theme['name'], Catalog::FESTIVALS[$theme['genre']], true));
+        $prev = $theme['genre'];
+        $seen[$theme['genre']] = true;
+    }
+    checkEquals(count(Catalog::GENRES), count($seen), 'alle Genres kommen vor');
+});

@@ -192,6 +192,34 @@ Alles, was über den Beginn hinaus dauern würde (Auftritt, Probe, Promo, Auszei
 - Zum Tempo: Der Sieger einer Achterrunde bekommt gut 30 Ruhm (etwa acht Club-Gigs), einmal je Woche; für kleine Bands ein großer Schritt,
   für große vor allem Pokal und Preisgeld. Weil der Gewinn fest ist, verstärkt Ruhm ihn nicht.
 
+### Festival (Umbau)
+
+Jeden **Mittwoch um 17 Uhr**, Bewerbung bis **Mittwoch 12 Uhr** (`Balance::FESTIVAL`, `Festival`). Jedes Festival sucht ein **Genre**
+(aus der Woche berechnet, nie zweimal hintereinander dasselbe; Name nach `Catalog::FESTIVALS`). Bewerben können sich nur Bands mit diesem
+Genre (auch als zweites oder drittes Genre), jedes Label mit so vielen, wie es will. Bis zum Beginn muss die Band zurück sein (wie beim Battle).
+
+- **Plätze:** Hauptbühne 2, Nebenbühne 3, Zeltbühne 3. Sind es mehr Bewerbungen, entscheidet das Los (gezeigt als „der Veranstalter hat sich
+  für andere Bands entschieden“). Wer nicht mehr passt (Genre gewechselt, Band aufgelöst), fällt raus.
+- **Bühnen nach der Bekanntheit der letzten 7 Tage** (`fame_days`, jede Bekanntheit je Band und Tag mitgeschrieben): die meiste spielt als
+  **Headliner** zuletzt auf der Hauptbühne, dann der Reihe nach Hauptbühne, Nebenbühne, Zeltbühne (auf jeder Bühne die Bessere später).
+  **Festival-Ruhm zählt dabei nicht mit**, sonst bekäme dieselbe Band immer wieder die Hauptbühne.
+- Auftritte alle 10 Minuten, auf allen Bühnen zugleich, alle enden zur selben Zeit; mit wenigen Bands geht es gleich zu Beginn los.
+  Das Line-up hängt vom Anmeldeschluss bis zum Beginn aus; alle Labels bekommen die Nachricht, wer Headliner ist.
+- **Ein Auftritt** wird beim Beginn wie ein Gig berechnet (Publikumsleiste, Ticker, „Zuschauen“) und zu seiner Zeit gezeigt.
+  Die Band ist vom Beginn des Festivals bis zum Ende ihres Auftritts dort.
+
+| Bühne | Lieder | Ruhm je Lied | Gage | Erwartung | Fan-Chance wie |
+|---|---|---|---|---|---|
+| Hauptbühne | 6 | 5,0 | 300 ₲ | 45 | Arena |
+| Nebenbühne | 5 | 3,0 | 150 ₲ | 35 | Halle |
+| Zeltbühne | 4 | 1,8 | 80 ₲ | 25 | Konzertsaal |
+
+  Ruhm = Σ Lieder (Ruhm je Lied × Sound-Faktor × Publikum × 0,9–1,1) × (1 + PR-Profi), wie bei Gigs. Bei Sound 30 und mittlerem Publikum
+  bringt die Hauptbühne rund 30 Ruhm (etwa acht Club-Gigs), die Zeltbühne rund 7. Dazu: Chart-Schub je Lied, Beziehungen wie bei einem Gig
+  (`RELATION['bond']['festival']`), die Lieder zählen für den Album-Zyklus, mit 20 % ein Fan, der mitspielen will (ab Publikum 75 %, sonst wie bei Gigs).
+- **Danach:** Ein Medium eine Stufe größer als sonst fragt nach einem Interview (im Posteingang). Der **Headliner** bekommt ein Plakat für den Proberaum.
+  Ehrgeizige, Chaoten, Rampensäue, Partytiere und Divas mögen Festivals, Gelassene nicht (`Catalog::LIKES`).
+
 ### Talent-Scout
 
 - 5 Musiker (70 % episch, 30 % legendär), alle mit Können-Stufe 1. Einer unterschreibt, die anderen verfallen.

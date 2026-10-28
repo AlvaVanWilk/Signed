@@ -618,6 +618,17 @@ final class Schema
                 ){OPTS}',
                 'CREATE INDEX awards_band ON awards (band_id)',
             ],
+            // 50: Festival: Anmeldeschluss vor dem Beginn; gesammelte Bekanntheit je Band und Tag (wer kommt auf die Hauptbühne)
+            [
+                'ALTER TABLE events ADD COLUMN closes_at INTEGER NOT NULL DEFAULT 0',
+                'CREATE TABLE fame_days (
+                    id {PK},
+                    band_id INTEGER NOT NULL,
+                    day VARCHAR(10) NOT NULL,
+                    gain REAL NOT NULL DEFAULT 0
+                ){OPTS}',
+                'CREATE INDEX fame_days_band ON fame_days (band_id, day)',
+            ],
         ];
     }
 }

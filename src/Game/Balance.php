@@ -158,7 +158,7 @@ final class Balance
      */
     public const RELATION = [
         'max' => 10.0, 'scale' => 10.0, 'base' => 3.0, 'drift' => 0.2,
-        'bond' => ['rehearsal' => 0.12, 'gig' => 0.10, 'record' => 0.08, 'bandpromo' => 0.05, 'retreat' => 0.08, 'battle' => 0.10],
+        'bond' => ['rehearsal' => 0.12, 'gig' => 0.10, 'record' => 0.08, 'bandpromo' => 0.05, 'retreat' => 0.08, 'battle' => 0.10, 'festival' => 0.12],
         'clash' => -0.5, 'teamplayer' => 0.25, 'party' => 0.3,
         'genres' => [0 => -0.3, 1 => 0.1, 2 => 0.3, 3 => 0.4], 'gapFrom' => 30, 'gapBig' => 50, 'gapPenalty' => [-0.2, -0.4],
     ];
@@ -722,6 +722,23 @@ final class Balance
         'fame' => ['match' => 1.5, 'win' => 1.5, 'place' => [1 => 20, 2 => 12, 3 => 7, 4 => 4]],
         'money' => [1 => 600, 2 => 300, 3 => 150, 4 => 80],
         'cheer' => [1 => 12, 2 => 6, 3 => 4],
+    ];
+    /**
+     * Festival: jeden Mittwoch (`weekday`) um `time`, Anmeldeschluss am selben Tag um `close` (deutsche Zeit). Jedes Festival sucht ein
+     * Genre (aus der Woche berechnet, nie zweimal hintereinander dasselbe, Catalog::FESTIVALS); genommen werden nur Bands mit diesem Genre
+     * (auch hybrid). Jedes Label darf alle passenden Bands anmelden. Plätze je Bühne (`slots`); melden sich mehr an, entscheidet das Los.
+     * Wer auf welche Bühne kommt, entscheidet die Bekanntheit, die die Band in den letzten `days` Tagen gesammelt hat (Festival-Ruhm zählt
+     * dabei nicht mit): die meiste spielt als Headliner zuletzt auf der Hauptbühne. Auftritte alle `gap` Sekunden, auf allen Bühnen zugleich.
+     * Je Bühne: Lieder, Ruhm je Lied (× Sound wie bei Gigs, × Publikum), Gage, Erwartung des Publikums, Bild der Bühne und Fan-Chance (`fanVenue`).
+     * Danach fragt ein größeres Medium nach einem Interview; der Headliner bekommt ein Plakat für den Proberaum.
+     */
+    public const FESTIVAL = [
+        'weekday' => 3, 'time' => [17, 0], 'close' => [12, 0], 'days' => 7, 'gap' => 600, 'fanChance' => 0.2,
+        'stages' => [
+            'main' => ['name' => 'Hauptbühne', 'slots' => 2, 'songs' => 6, 'fame' => 5.0, 'money' => 300, 'expect' => 45, 'venue' => 'openair', 'fanVenue' => 'arena'],
+            'side' => ['name' => 'Nebenbühne', 'slots' => 3, 'songs' => 5, 'fame' => 3.0, 'money' => 150, 'expect' => 35, 'venue' => 'openair', 'fanVenue' => 'halle'],
+            'tent' => ['name' => 'Zeltbühne', 'slots' => 3, 'songs' => 4, 'fame' => 1.8, 'money' => 80, 'expect' => 25, 'venue' => 'zelt', 'fanVenue' => 'saal'],
+        ],
     ];
     /** Nachrichten beim Wiederkommen: nach so langer Pause, diese Arten aus der Chronik. */
     public const NEWS_AWAY = 900;

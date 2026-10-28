@@ -11,6 +11,7 @@ import './glitter.js';
 import * as auth from './views/auth.js';
 import * as board from './views/board.js';
 import * as battle from './views/battle.js';
+import * as festival from './views/festival.js';
 import * as bands from './views/bands.js';
 import * as label from './views/label.js';
 import * as charts from './views/charts.js';
@@ -43,6 +44,7 @@ const VIEWS = {
   einsendungen: () => submissions.render(),
   brett: () => board.render(),
   battle: () => battle.render(),
+  festival: () => festival.render(),
   packs: () => packs.render(),
   store: () => store.render(),
   lager: () => storage.render(),
@@ -169,7 +171,7 @@ function layout(content, route) {
   return `
     <header class="topbar">
       <a class="logo" href="#/">Signed</a>
-      <nav class="nav">${NAV.map(([key, label]) => `<a href="#/${key}" class="${key === active || (key === 'brett' && active === 'battle') ? 'active' : ''}">${label}${key === 'brett' && s.battle?.current?.state === 'running' ? ' <span class="nav-badge new" title="Das Battle of the Bands läuft">live</span>' : ''}${key === 'boerse' ? marketBadge(active === 'boerse') : ''}${key === 'einsendungen' ? inboxBadge(s) : ''}${key === 'store' && s.store?.gold ? ' <span class="nav-gold" title="Heute ein legendäres Instrument im Angebot">★</span>' : ''}</a>`).join('')}</nav>
+      <nav class="nav">${NAV.map(([key, label]) => `<a href="#/${key}" class="${key === active || (key === 'brett' && ['battle', 'festival'].includes(active)) ? 'active' : ''}">${label}${key === 'brett' && (s.battle?.current?.state === 'running' || s.festival?.current?.state === 'running') ? ' <span class="nav-badge new" title="Gerade läuft eine Veranstaltung">live</span>' : ''}${key === 'boerse' ? marketBadge(active === 'boerse') : ''}${key === 'einsendungen' ? inboxBadge(s) : ''}${key === 'store' && s.store?.gold ? ' <span class="nav-gold" title="Heute ein legendäres Instrument im Angebot">★</span>' : ''}</a>`).join('')}</nav>
       <div class="label-info">
         <span class="label-name" title="Dein Label">${esc(s.label.name)}</span>
         <button class="money-pill" data-act="openFinance" data-live-money title="Konto und Einnahmen">${money(liveMoney())}</button>
@@ -363,7 +365,14 @@ function resultHtml(r) {
     </div>
     ${levelUpBanners(res.levelUps)}
     ${res.venueUp ? `<div class="banner">⭐ Neue Stufe! Ab jetzt spielt die Band Gigs in: <b>${esc(res.venueUp)}</b>.</div>` : ''}
+    ${res.festival ? festivalExtras(res.festival) : ''}
     ${drops}`;
+}
+
+/** Nach dem Festival: Headliner-Plakat und die Interview-Anfrage. */
+function festivalExtras(f) {
+  return `${f.headliner ? `<div class="banner">Ihr wart der Headliner von „${esc(f.name)}“! Das Plakat hängt jetzt im Proberaum.</div>` : ''}
+    ${f.interview ? `<div class="banner">Nach dem Auftritt hat ${esc(f.interview.medium)} angefragt: ein Interview mit ${esc(f.interview.who)}. Die Anfrage liegt im Posteingang.</div>` : ''}`;
 }
 
 /** Battle of the Bands vorbei: Platz, Pokal, Preisgeld, Ruhm. */
@@ -574,9 +583,9 @@ setInterval(() => {
   const live = app.state.running.some((a) => a.type === 'rehearsal');
   label.tickLive();
   battle.tick();
-  // Battle of the Bands: zur nächsten Runde, zum nächsten Ergebnis und zum Beginn neu fragen.
-  const wake = app.state.battle?.wakeAt;
-  if (wake && wake + 0.5 <= serverNow() && Date.now() - lastWake > 2000) {
+  // Battle und Festival: zur nächsten Runde, zum nächsten Ergebnis, zum Anmeldeschluss und zum Beginn neu fragen.
+  const wake = Math.min(app.state.battle?.wakeAt ?? Infinity, app.state.festival?.wakeAt ?? Infinity);
+  if (Number.isFinite(wake) && wake + 0.5 <= serverNow() && Date.now() - lastWake > 2000) {
     lastWake = Date.now();
     refresh({ quiet: true });
   }

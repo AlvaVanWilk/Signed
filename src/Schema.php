@@ -646,6 +646,14 @@ final class Schema
                 'CREATE INDEX tours_band ON tours (band_id, state)',
                 'CREATE INDEX tours_label ON tours (label_id, state)',
             ],
+            // 52: Auszeichnungen: verkaufte Stück je Platte (Gold, Platin, Diamant), Auszeichnung je Platte, noch nicht gefeiert;
+            // bisherige Platten bekommen geschätzte Verkäufe und ihre Auszeichnungen (ohne Feier)
+            [
+                'ALTER TABLE records ADD COLUMN sold REAL NOT NULL DEFAULT 0',
+                'ALTER TABLE awards ADD COLUMN record_id INTEGER NULL',
+                'ALTER TABLE awards ADD COLUMN seen INTEGER NOT NULL DEFAULT 1',
+                static fn (Db $db) => \Signed\Game\Awards::backfill($db),
+            ],
         ];
     }
 }

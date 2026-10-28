@@ -2921,3 +2921,51 @@ test('Tournee: Auftritte auf der Bühne des Landes; wer in allen Ländern gespie
     checkEquals(['world'], array_column(bandById($state, $band['id'])['awards'], 'kind'));
     checkEquals(1, (int) $db->value("SELECT COUNT(*) FROM awards WHERE kind = 'world'"), 'nur einmal');
 });
+
+test('Auszeichnungen: verkaufte Platten bringen Gold und Platin (einmal je Platte), große Bühnen und Platz 1; neue werden einmal gefeiert', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Gold');
+    $band = foundBand($p);
+    $made = makeRecord($db, $p, $band['id'], 'Goldkehlchen', 3);
+    $recordId = (int) $db->value('SELECT id FROM records WHERE band_id = ?', [$band['id']]);
+    $db->exec('UPDATE records SET chart_points = 200 WHERE id = ?', [$recordId]);
+    Clock::advance(12 * 3600);
+    $state = $p->get('state');
+    $sold = bandById($state, $band['id'])['discography'][0]['sold'];
+    check($sold >= Balance::AWARDS['records']['gold'], 'verkauft: ' . $sold);
+    $kinds = array_column($state['awardsNew'], 'kind');
+    check(in_array('gold', $kinds, true), 'Gold neu');
+    $p->get('state');
+    checkEquals(1, (int) $db->value("SELECT COUNT(*) FROM awards WHERE kind = 'gold' AND record_id = ?", [$recordId]), 'nur einmal');
+    foreach ($state['awardsNew'] as $a) {
+        $p->post('awardSeen', ['awardId' => $a['id']]);
+    }
+    checkEquals([], $p->get('state')['awardsNew'], 'gefeiert');
+    check((bool) $db->value("SELECT id FROM history WHERE kind = 'award' AND text LIKE '%Goldene Schallplatte%'"), 'Chronik');
+
+    // Große Bühne und Platz 1 direkt
+    $repo = new Signed\Game\Repo($db, (int) $state['label']['id']);
+    Signed\Game\Awards::bigStage($repo, $band['id'], 'halle');
+    Signed\Game\Awards::bigStage($repo, $band['id'], 'halle');
+    Signed\Game\Awards::bigStage($repo, $band['id'], 'club');
+    checkEquals(1, (int) $db->value("SELECT COUNT(*) FROM awards WHERE kind = 'hall'"));
+    Signed\Game\Charts::markTop($db, [['rank' => 1, 'topped' => false, 'labelId' => $repo->labelId, 'bandId' => $band['id'], 'recordId' => $recordId, 'title' => 'Goldkehlchen']]);
+    checkEquals(0, (int) $db->value("SELECT COUNT(*) FROM awards WHERE kind = 'number1'"), 'ohne Konkurrenz kein Platz 1');
+    $albums = [['rank' => 1, 'topped' => false, 'labelId' => $repo->labelId, 'bandId' => $band['id'], 'recordId' => $recordId, 'title' => 'Goldkehlchen'], ['rank' => 2, 'labelId' => 900], ['rank' => 3, 'labelId' => 901]];
+    Signed\Game\Charts::markTop($db, $albums);
+    checkEquals(1, (int) $db->value("SELECT COUNT(*) FROM awards WHERE kind = 'number1'"));
+});
+
+test('Auszeichnungen beim Umbau: bisherige Verkäufe werden geschätzt, die Auszeichnungen gibt es ohne Feier', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Altgold');
+    $band = foundBand($p);
+    makeRecord($db, $p, $band['id'], 'Alter Hit', 3);
+    $id = (int) $db->value('SELECT id FROM records WHERE band_id = ?', [$band['id']]);
+    $db->exec('UPDATE records SET chart_points = 100, finished_at = ?, royalties_until = ?, topped = 1, sold = 0 WHERE id = ?', [Clock::now() - 30 * 86400, Clock::now(), $id]);
+    Signed\Game\Awards::backfill($db);
+    $sold = (float) $db->value('SELECT sold FROM records WHERE id = ?', [$id]);
+    check($sold > 300000 && $sold < 340000, 'geschätzt: ' . $sold);
+    checkEquals(['gold', 'platinum', 'number1'], array_column($db->all('SELECT kind FROM awards WHERE record_id = ? ORDER BY id', [$id]), 'kind'));
+    checkEquals([], $p->get('state')['awardsNew'], 'keine Feier');
+});

@@ -247,6 +247,17 @@ Neue Anordnung auf der Bandseite (`Balance::TOUR`, `Tours`), erst mit einer Plat
   Das gemeinsame Abenteuer schweißt zusammen. Mit der Zeit rücken gemeinsame Erlebnisse die Beziehung wieder Richtung Charakter.
   Ehrgeizige, Chaoten, Rampensäue und Partytiere mögen Tourneen, Gelassene und Ruhige nicht (`Catalog::LIKES`).
 
+### Auszeichnungen (Umbau)
+
+Nur echte Pokale (`Awards`, `Balance::AWARDS`), alle im Proberaum der Band (Schallplatten, Pässe und Plakate an der Wand, Pokale und Globus
+auf dem Boden) und als Liste auf der Bandseite und in WikiSignia. Neue werden einmal mit einem Fenster gefeiert.
+- **Verkaufte Stück** je Platte = Chartpunkt-Stunden × 100 (nur solange sie chartet und Tantiemen bringt). **Goldene Schallplatte** ab 100.000,
+  **Platin** ab 250.000, **Diamant** ab 1 Million (je Platte einmal). Eine Platte mit 30 Punkten schafft etwa Gold, mit 75 Platin,
+  Diamant nur die besten (um 300 Punkte). Beim Umbau werden die bisherigen Verkäufe geschätzt (ohne Schub) und die Auszeichnungen ohne Feier vergeben.
+- **Platz 1 der Charts** (je Platte, nur mit Konkurrenz aus mindestens 3 Labels), **Große Halle** und **Arena** (erster Auftritt dort, je Band;
+  auf Tournee zählt die Größe des Ortes).
+- Dazu: Battle-Pokale (Platz 1 bis 3), Festival-Plakat (Headliner), Weltenbummler-Globus (alle Länder). Kleinkram wie „Erster Gig“ gibt es nicht mehr.
+
 ### Talent-Scout
 
 - 5 Musiker (70 % episch, 30 % legendär), alle mit Können-Stufe 1. Einer unterschreibt, die anderen verfallen.

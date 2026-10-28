@@ -10,9 +10,8 @@ import { roomSvg } from '../room.js';
 import { crowdMeter, venueArt } from '../venues.js';
 import { crowdSvg, stageSvg } from '../stage.js';
 import { studioBlock } from './recording.js';
-import { trophy } from './battle.js';
-import { poster } from './festival.js';
-import { globe, tourHint, tourPanel } from '../tour.js';
+import { tourHint, tourPanel } from '../tour.js';
+import { awardList, roomAwards } from '../awards.js';
 
 /** Label-Ebene: Band-Leiste links und die ruhige Bandseite. Stimmung als Punkt und Wort (grün, gelb, rot). */
 
@@ -389,7 +388,7 @@ function bandScene(b, members) {
     // Beim Zurückkommen von der Seite (nach links laufend, mit Koffer oder Instrument); danach wieder von vorn (CSS).
     below: (m) => (back ? sideOf(m, carryFor(m, back), true) : '') + (wish && wish.musicianId === m.id && !back ? wishBubble(b, members, wish) : ''),
   })}
-        ${trophies(b)}
+        ${roomAwards(b)}
         ${mgr ? `<button class="lb-mgrfig fig-stage idle" data-act="managerPick" data-id="${b.id}" title="${esc(mgr.firstName)} ${esc(mgr.lastName)}, Manager · antippen zum Ändern" aria-label="Manager ${esc(mgr.firstName)}"><span class="fig-member">${figure(mgr.look, 'none', { bored: false })}<i class="lb-clip"></i></span></button>` : ''}
         <span class="lb-scene-tag">${tag}${solo ? '' : `<button class="icon-btn" data-act="bandRename" data-id="${b.id}" title="Umbenennen" aria-label="Umbenennen">✎</button>`}</span>
       </div>
@@ -456,14 +455,6 @@ function managerPicker(bandId) {
       toast(id ? `${managerById(id).firstName} kümmert sich jetzt um ${b.name}.` : 'Manager abgezogen.', 'ok');
     }
   });
-}
-
-/** Pokale, Festival-Plakate und der Weltenbummler-Globus stehen im Proberaum (die neuesten vorn, höchstens fünf). */
-function trophies(b) {
-  const list = (b.awards ?? []).slice(-5);
-  return list.length ? `<div class="lb-trophies">${list.map((a) => (a.kind === 'festival' || a.kind === 'world'
-    ? `<span title="${esc(a.title)}">${a.kind === 'world' ? globe() : poster()}</span>`
-    : `<span title="${esc(a.title)}: ${a.place === 1 ? 'Sieger' : `Platz ${a.place}`}">${trophy(a.place)}</span>`)).join('')}</div>` : '';
 }
 
 const CLOCK = new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' });
@@ -778,6 +769,7 @@ export function page(route) {
       ${free > 0 ? `<button class="lb-addm" data-act="together" data-id="${b.id}">${solo ? '+ mit anderen zusammentun' : '+ mit Musiker(n) zusammentun'}</button>` : ''}
     </div>
     ${genreSection(b, members)}
+    ${b.awards?.length ? `<h2 class="lb-cap lb-sec">Auszeichnungen</h2>${awardList(b.awards)}` : ''}
     <h2 class="lb-cap lb-sec">Werte</h2>
     <div class="lb-sum">
       <div data-act="bandStatInfo" data-key="sound" data-id="${b.id}" data-flash="sound-${b.id}"><small>Sound</small><b>${fmt1(b.sound)}</b></div>

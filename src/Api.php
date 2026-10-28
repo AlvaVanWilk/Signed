@@ -6,6 +6,7 @@ namespace Signed;
 use Signed\Clock;
 use Signed\Game\Activities;
 use Signed\Game\Assistant;
+use Signed\Game\Awards;
 use Signed\Game\Inbox;
 use Signed\Game\Balance;
 use Signed\Game\Bands;
@@ -123,6 +124,7 @@ final class Api
         'tourShow' => ['POST', true],
         'tourNext' => ['POST', true],
         'tourHome' => ['POST', true],
+        'awardSeen' => ['POST', true],
         'soloStart' => ['POST', true],
         'jamPick' => ['POST', true],
         'coverRedraw' => ['POST', true],
@@ -668,6 +670,13 @@ final class Api
     {
         $activity = Tours::home($repo, self::int($in, 'bandId'));
         return ['activity' => $activity, 'state' => State::build($repo)];
+    }
+
+    /** Eine neue Auszeichnung wurde gefeiert (Fenster zu). */
+    private function awardSeen(array $in, Repo $repo): array
+    {
+        Awards::seen($repo, self::int($in, 'awardId'));
+        return [];
     }
 
     private function practiceAuto(array $in, Repo $repo): array

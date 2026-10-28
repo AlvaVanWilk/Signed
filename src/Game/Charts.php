@@ -187,16 +187,24 @@ final class Charts
         return $db->exec('UPDATE meta SET v = ? WHERE k = ? AND v = ?', [$to, $name, $from]) > 0;
     }
 
+    /** Platz 1 wird einmal vermerkt (Meilenstein, WikiSignia, Auszeichnung) – aber nur, wenn es Konkurrenz gibt. */
+    public static function markTop(Db $db, array $albums): void
+    {
+        $competitors = count(array_unique(array_column($albums, 'labelId')));
+        if (!$albums || $albums[0]['rank'] !== 1 || $albums[0]['topped'] || $competitors < Balance::CHART_TOP_MIN_LABELS) {
+            return;
+        }
+        $top = $albums[0];
+        if ($db->exec('UPDATE records SET topped = 1 WHERE id = ? AND topped = 0', [$top['recordId']]) === 1 && $top['bandId'] !== null) {
+            Awards::numberOne(new Repo($db, $top['labelId']), $top['bandId'], $top['recordId'], $top['title']);
+        }
+    }
+
     public static function build(Db $db, int $labelId): array
     {
         $albums = self::albums($db, $labelId);
 
-        // Platz 1 wird einmal vermerkt (Meilenstein, WikiSignia) – aber nur, wenn es Konkurrenz gibt.
-        $competitors = count(array_unique(array_column($albums, 'labelId')));
-        if ($albums && $albums[0]['rank'] === 1 && !$albums[0]['topped'] && $competitors >= Balance::CHART_TOP_MIN_LABELS) {
-            $top = $albums[0];
-            $db->exec('UPDATE records SET topped = 1 WHERE id = ? AND topped = 0', [$top['recordId']]);
-        }
+        self::markTop($db, $albums);
         foreach ($albums as &$album) {
             unset($album['topped'], $album['labelId']);
         }
@@ -251,7 +259,7 @@ final class Charts
     {
         $now = Clock::now();
         $rows = $db->all(
-            "SELECT id, band_id, title, chart_points, finished_at, boost, boost_at, rank_last, royalties_until, royalty_carry FROM records
+            "SELECT id, band_id, title, chart_points, finished_at, boost, boost_at, rank_last, royalties_until, royalty_carry, sold FROM records
              WHERE label_id = ? AND status = 'done' AND chart_points > 0 AND royalties_until < ? AND finished_at >= ?
                AND (rank_last IS NULL OR rank_last <= ?)",
             [$labelId, $now, $now - Balance::CHART_MAX_AGE - self::HOUR, Balance::ROYALTY_RANKS]
@@ -270,8 +278,13 @@ final class Charts
                 }
                 $money = $pointHours * Balance::ROYALTY_MONEY + (float) $row['royalty_carry'];
                 $paid = (int) floor($money);
-                $db->update('records', ['royalty_carry' => $money - $paid], ['id' => (int) $row['id']]);
+                // Verkaufte Stück (für Gold, Platin, Diamant)
+                $sold = (float) $row['sold'] + $pointHours * Balance::AWARDS['copies'];
+                $db->update('records', ['royalty_carry' => $money - $paid, 'sold' => round($sold)], ['id' => (int) $row['id']]);
                 $repo = new Repo($db, $labelId);
+                if ($row['band_id'] !== null) {
+                    Awards::sales($repo, (int) $row['band_id'], (int) $row['id'], $row['title'], (float) $row['sold'], $sold);
+                }
                 $repo->earnDaily($paid, sprintf('Tantiemen „%s“', $row['title']));
                 $members = $row['band_id'] === null ? [] : $repo->members((int) $row['band_id']);
                 if ($members) {

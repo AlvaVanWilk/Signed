@@ -59,6 +59,7 @@ final class State
         }
 
         $albums = Charts::albums($db, $repo->labelId);
+        Charts::markTop($db, $albums);
         $chartEntry = array_column($albums, null, 'recordId');
         $discography = [];
         $promoted = [];
@@ -69,6 +70,8 @@ final class State
             $results = json_decode($row['song_results'], true) ?: [];
             $entry = $chartEntry[(int) $row['id']] ?? null;
             $discography[(int) $row['band_id']][] = [
+                // Verkaufte Stück (Gold ab 100.000, siehe Balance::AWARDS)
+                'sold' => (int) $row['sold'],
                 'id' => (int) $row['id'],
                 'promotable' => (float) $row['chart_points'] > 0 && (int) $row['finished_at'] >= Clock::now() - Balance::CHART_MAX_AGE,
                 'promoted' => ($promoted[(int) $row['band_id']] ?? 0) === (int) $row['id'],
@@ -95,11 +98,8 @@ final class State
         $registrations = Events::registrations($db, $repo->labelId);
         $tours = Tours::present($repo, $members);
         $played = Tours::played($db, $repo->labelId);
-        // Pokale (Battle of the Bands, Festival) je Band
-        $awards = [];
-        foreach ($db->all('SELECT band_id, kind, place, title FROM awards WHERE label_id = ? ORDER BY id', [$repo->labelId]) as $row) {
-            $awards[(int) $row['band_id']][] = ['kind' => $row['kind'], 'place' => (int) $row['place'], 'title' => $row['title']];
-        }
+        // Auszeichnungen je Band (Schallplatten, Platz 1, große Bühnen, Battle, Festival, Globus)
+        $awards = Awards::byBand($db, $repo->labelId);
         foreach ($bands as $band) {
             $bandRelations[$band['id']] = Mood::relations($repo, $members[$band['id']] ?? [], $now);
             $list = $members[$band['id']] ?? [];
@@ -294,6 +294,8 @@ final class State
             'courses' => (new Courses($repo))->status($musicians),
             'board' => ['week' => Courses::week($now)],
             'battle' => Battle::present($repo, $bands, $members, $now),
+            // Neue Auszeichnungen, die der Browser einmal feiert
+            'awardsNew' => Awards::fresh($db, $repo->labelId),
             'festival' => Festival::present($repo, $bands, $members, $now),
             'jamOffers' => (new Jam($repo))->open(),
             'market' => (new Transfers($repo))->market(),

@@ -176,9 +176,10 @@ final class Wiki
             }
         }
         $records = [];
-        foreach ($db->all("SELECT title, songs_total, perfect, chart_points, rank_best, topped, finished_at FROM records WHERE band_id = ? AND status = 'done' ORDER BY finished_at DESC", [$id]) as $r) {
+        foreach ($db->all("SELECT title, songs_total, perfect, chart_points, rank_best, topped, finished_at, sold FROM records WHERE band_id = ? AND status = 'done' ORDER BY finished_at DESC", [$id]) as $r) {
             $records[] = [
                 'title' => $r['title'],
+                'sold' => (int) $r['sold'],
                 'format' => (int) $r['songs_total'] >= Balance::CHART_LP_SONGS ? 'LP' : 'EP',
                 'perfect' => (bool) $r['perfect'],
                 'peak' => round((float) $r['chart_points'], 1),
@@ -204,6 +205,7 @@ final class Wiki
             'members' => array_map(static fn ($m) => self::summary($m), $members),
             'formerMembers' => self::summaries($db, array_keys($former)),
             'records' => $records,
+            'awards' => Awards::forBand($db, $id),
             'events' => array_map(static fn ($e) => ['kind' => $e['kind'], 'text' => $e['text'], 'createdAt' => (int) $e['created_at']], array_slice($events, -60)),
         ];
     }

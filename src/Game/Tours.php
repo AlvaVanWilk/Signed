@@ -181,6 +181,7 @@ final class Tours
                     'chartBoost' => round($songs * Balance::CHART_GIG_BOOST, 3),
                     // Bühne des Landes (stage-world.js); Größe und Gage richten sich trotzdem nach dem Ort nach Ruhm.
                     'venue' => 'tour-' . $tour['country'],
+                    'size' => $venue['key'],
                     'meter' => $sim['meter'],
                     'drops' => $drops,
                     'tour' => ['id' => $tour['id'], 'country' => $tour['country'], 'match' => $match],

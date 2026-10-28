@@ -5,6 +5,7 @@ import { openLive } from '../live.js';
 import { coverHtml, startPractice } from '../play.js';
 import { assignGear, soundChange } from '../gear.js';
 import { trendBadge } from './charts.js';
+import { awardList } from '../awards.js';
 import { playedInstrument, stage } from '../figure.js';
 import { bandStems, stemUrl } from '../music.js';
 import { bar, confirmDialog, duration, esc, fmt0, fmt1, fmt2, fmtGain, money, openModal, percent, promptDialog, timeAgo, toast } from '../ui.js';
@@ -496,28 +497,10 @@ function chronicle(b) {
     </section>`;
 }
 
-/** Auszeichnungen ergeben sich aus dem, was die Band erreicht hat. */
-export function bandAwards(b) {
-  const list = [];
-  if (b.gigsPlayed > 0) list.push(['🎤', 'Erster Gig', `${b.gigsPlayed} Gigs gespielt`]);
-  if (b.records > 0) list.push(['💿', 'Erste Platte', `${b.records} ${b.records === 1 ? 'Platte' : 'Platten'}`]);
-  for (const r of b.discography) {
-    if (r.perfect) list.push(['✨', 'Perfekte Platte', `„${r.title}“`]);
-    if (r.peak >= 400) list.push(['💽', 'Platin-Schallplatte', `„${r.title}“`]);
-    else if (r.peak >= 150) list.push(['🥇', 'Goldene Schallplatte', `„${r.title}“`]);
-    if (r.topped) list.push(['🏆', 'Platz 1 der Charts', `„${r.title}“`]);
-  }
-  if (['halle', 'arena'].includes(b.options.gig.venueKey)) list.push(['🏟️', 'Große Bühne', b.options.gig.venue]);
-  return list;
-}
-
 function awards(b) {
-  const list = bandAwards(b);
   return `
     ${head('Auszeichnungen', b)}
-    ${list.length ? `<div class="award-grid">${list.map(([icon, title, sub]) => `
-      <div class="award"><span class="award-icon">${icon}</span><b>${esc(title)}</b><span class="muted small">${esc(sub)}</span></div>`).join('')}</div>`
-      : '<div class="empty">Noch keine Auszeichnungen.</div>'}`;
+    ${awardList(b.awards)}`;
 }
 
 // ---------- Auswahl-Dialoge ----------

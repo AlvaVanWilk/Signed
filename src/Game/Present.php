@@ -143,6 +143,8 @@ final class Present
             'genres' => Catalog::GENRES,
             // Tournee: Länder mit Lieblings-Genre und Lage, dazu der Heimatort
             'countries' => Catalog::COUNTRIES,
+            // Verkaufte Stück für Gold, Platin, Diamant
+            'awards' => Balance::AWARDS,
             'home' => Catalog::HOME,
             'tour' => ['lengths' => Balance::TOUR['lengths'], 'wait' => Balance::TOUR['wait'], 'match' => Balance::TOUR['match'], 'cost' => Balance::TOUR['cost'], 'travel' => Balance::TOUR['travel']],
             'instruments' => array_map(

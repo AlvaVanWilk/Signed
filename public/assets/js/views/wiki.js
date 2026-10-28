@@ -1,8 +1,8 @@
 import { api } from '../api.js';
 import { abilityInfo, genreName, instrumentName, photo } from '../cards.js';
 import { app, cat, defineActions, rerender } from '../core.js';
-import { esc, fmt1, toast } from '../ui.js';
-import { bandAwards } from './bands.js';
+import { esc, fmt0, fmt1, toast } from '../ui.js';
+import { awardList } from '../awards.js';
 
 /**
  * WikiSignia: Artikel zu jeder Band und jedem Künstler („Signie“), die dem Label einmal angehörten, auch zu ehemaligen.
@@ -116,8 +116,7 @@ function bandPage(b) {
   const lead = former
     ? `<b>${esc(b.name)}</b> war eine Band des Labels und bestand vom ${day(b.foundedAt)} bis zum ${day(b.endedAt)}. ${esc(b.name)} ${esc(b.note ?? 'wurde beendet')}.`
     : `<b>${esc(b.name)}</b> ist ${b.title ? `eine ${esc(b.title)}` : 'eine Band'} mit ${b.members.length} ${b.members.length === 1 ? 'Mitglied' : 'Mitgliedern'}, gegründet am ${day(b.foundedAt)}.`;
-  const awards = bandAwards({ gigsPlayed: b.gigsPlayed, records: b.recordCount, discography: b.records, options: { gig: { venueKey: '' } } });
-  const records = b.records.map((r) => `<li><b>„${esc(r.title)}“</b> <small class="muted">${r.format}${r.perfect ? ' · perfekt' : ''} · ${r.best ? `bester Platz ${r.best}` : 'nie in den Charts'}</small></li>`).join('');
+  const records = b.records.map((r) => `<li><b>„${esc(r.title)}“</b> <small class="muted">${r.format}${r.perfect ? ' · perfekt' : ''} · ${r.best ? `bester Platz ${r.best}` : 'nie in den Charts'}${r.sold ? ` · ${fmt0(r.sold)} verkauft` : ''}</small></li>`).join('');
   return `
     <div class="wk-article">
       <aside class="wk-box"><h3>${esc(b.name)}</h3><table>
@@ -135,7 +134,7 @@ function bandPage(b) {
       ${b.members.length ? `<h2>Mitglieder</h2><ul class="wk-people">${b.members.map(person).join('')}</ul>` : ''}
       ${b.formerMembers.length ? `<h2>${former ? 'Mitglieder' : 'Ehemalige Mitglieder'}</h2><ul class="wk-people">${b.formerMembers.map(person).join('')}</ul>` : ''}
       ${records ? `<h2>Diskografie</h2><ul class="wk-list">${records}</ul>` : ''}
-      ${awards.length ? `<h2>Auszeichnungen</h2><div class="ch-awards">${awards.map(([icon, title, sub]) => `<span class="ch-award" title="${esc(sub)}">${icon} ${esc(title)}</span>`).join('')}</div>` : ''}
+      ${b.awards?.length ? `<h2>Auszeichnungen</h2>${awardList(b.awards)}` : ''}
       ${b.events.length ? `<h2>Geschichte</h2>${timeline(b.events)}` : ''}
     </div>`;
 }

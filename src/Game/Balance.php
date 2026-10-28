@@ -760,9 +760,15 @@ final class Balance
         'wait' => 2 * 86400,
         'lift' => 0.6, 'liftMax' => 3.0,
     ];
+    /**
+     * Auszeichnungen (Awards): Verkäufe einer Platte = Chartpunkt-Stunden × `copies` Stück (nur solange sie chartet und Tantiemen bringt,
+     * Charts::payRoyalties). Goldene, Platin- und Diamant-Schallplatte ab `records` Stück, je Platte einmal. Dazu Platz 1 der Charts
+     * (je Platte) und der erste Auftritt in einer Halle bzw. Arena (je Band).
+     */
+    public const AWARDS = ['copies' => 100, 'records' => ['gold' => 100000, 'platinum' => 250000, 'diamond' => 1000000]];
     /** Nachrichten beim Wiederkommen: nach so langer Pause, diese Arten aus der Chronik. */
     public const NEWS_AWAY = 900;
-    public const NEWS_KINDS = ['chart1', 'chart', 'transfer', 'scout', 'level', 'fame', 'fanjoin', 'trait', 'event', 'tour'];
+    public const NEWS_KINDS = ['chart1', 'chart', 'transfer', 'scout', 'level', 'fame', 'fanjoin', 'trait', 'event', 'tour', 'award'];
     public const CHART_DECAY = 0.03;
     public const CHART_MAX_AGE = 7 * 86400;
     /**

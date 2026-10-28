@@ -277,6 +277,12 @@ function chronicle(s) {
 
 // ---------- Plattenregal ----------
 
+/** „ · Gold“, wenn eine Platte so oft verkauft wurde (Schwellen aus Balance::AWARDS). */
+function soldLevel(sold) {
+  const t = cat().awards.records;
+  return sold >= t.diamond ? ' · Diamant' : sold >= t.platinum ? ' · Platin' : sold >= t.gold ? ' · Gold' : '';
+}
+
 function shelf(s) {
   const records = s.bands.flatMap((b) => b.discography.map((r) => ({ ...r, band: b }))).sort((a, b) => b.id - a.id);
   const trend = (r) => (!r.rank ? '' : r.prev == null ? '<i class="up">neu</i>' : r.prev > r.rank ? '<i class="up">↑</i>' : r.prev < r.rank ? '<i class="down">↓</i>' : '<i>→</i>');
@@ -288,6 +294,7 @@ function shelf(s) {
           ${coverHtml(r.cover, { band: r.band.name, title: r.title })}
           <b>„${esc(r.title)}“</b><small class="muted">${esc(r.band.name)} · ${r.format}</small>
           <span class="ov-rank ${r.rank ? 'on' : ''}">${r.rank ? `Platz ${r.rank} ${trend(r)}` : r.topped ? 'war auf Platz 1' : 'nicht in den Charts'}</span>
+          ${r.sold ? `<small class="ov-sold">${fmt0(r.sold)} verkauft${soldLevel(r.sold)}</small>` : ''}
         </a>`).join('')}</div>`
         : '<p class="muted">Noch keine Platte. Die erste nimmst du auf der Seite einer Band auf, sobald genug Songs geschrieben sind.</p>'}
     </section>`;

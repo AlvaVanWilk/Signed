@@ -545,6 +545,10 @@ final class Activities
                 $result['drops'][] = ['kind' => 'fan', 'value' => $drop['value']];
             }
         }
+        // Erster Auftritt in einer Halle oder Arena (auf Tournee zählt die Größe des Ortes, nicht die Länder-Bühne)
+        if (in_array($row['type'], ['gig', Tours::GIG], true)) {
+            Awards::bigStage($repo, $bandId, (string) ($reward['size'] ?? $reward['venue'] ?? ''));
+        }
         if ($row['type'] === Tours::GIG && isset($reward['tour'])) {
             $result['tour'] = Tours::afterGig($repo, $bandId, $reward['tour'], $result);
         }

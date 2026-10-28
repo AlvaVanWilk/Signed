@@ -13,6 +13,7 @@ import * as board from './views/board.js';
 import * as battle from './views/battle.js';
 import * as festival from './views/festival.js';
 import * as tour from './tour.js';
+import { celebrateAwards } from './awards.js';
 import * as bands from './views/bands.js';
 import * as label from './views/label.js';
 import * as charts from './views/charts.js';
@@ -205,6 +206,8 @@ function render() {
   });
   updateCountdowns();
   showResults();
+  // Neue Auszeichnungen feiern, wenn keine Ergebnisse mehr offen sind.
+  if (!app.state?.results.length) celebrateAwards();
   help.maybeStartTour();
   if (route.name === 'charts' && !app.charts) charts.loadCharts();
   if (route.name === 'wiki') wiki.ensure();
@@ -457,7 +460,7 @@ function showResults() {
       resultModal = null;
       app.state.results = app.state.results.filter((x) => x.id !== r.id);
       api('activityAck', { activityId: r.id }).catch(() => {});
-      setTimeout(showResults, 250);
+      setTimeout(() => (app.state.results.length ? showResults() : celebrateAwards()), 250);
       // Kommt eine Band zurück (Auftritt, Auszeit, Promo), läuft sie jetzt sichtbar in den Raum.
       if (Object.keys(app.ui.awayFrom ?? {}).length) rerender();
     },

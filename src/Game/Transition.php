@@ -212,7 +212,8 @@ final class Transition
         foreach (self::poolRows($repo->db, $t['pool'] ?? []) as $row) {
             $pool[] = Present::musician(Repo::hydrateMusician($row));
         }
-        return ['market' => (int) ($t['market'] ?? 0), 'money' => (int) ($t['money'] ?? 0), 'pool' => $pool, 'keep' => Balance::TRANSITION['keep']];
+        // `core`: Übergang ins neue Spiel mit Fans und Hype (CoreTransition), sonst null
+        return ['market' => (int) ($t['market'] ?? 0), 'money' => (int) ($t['money'] ?? 0), 'pool' => $pool, 'keep' => Balance::TRANSITION['keep'], 'core' => $t['core'] ?? null, 'old' => isset($t['pool']) || isset($t['market'])];
     }
 
     /**

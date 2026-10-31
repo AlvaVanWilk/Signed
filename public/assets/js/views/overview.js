@@ -53,8 +53,12 @@ function head(s) {
     <section class="ov-head">
       <div><div class="eyebrow">Dein Label</div><h1>${esc(s.label.name)}</h1>${founded ? `<small class="muted">gegründet am ${founded} · <a href="#/wiki/label/${s.label.id}">in der WikiSignia</a></small>` : ''}</div>
       <div class="ov-stats">
-        ${stat('Geld', `<span data-live-money>${money(liveMoney())}</span>`, s.finance.moneyPerHour ? `+${fmtGain(s.finance.moneyPerHour / 60)} ₲ pro Minute aus Platten` : 'Platten bringen laufend Geld')}
-        ${stat('Label-Ruhm', fmt1(s.label.fame ?? fame), s.finance.famePerHour ? `+${fmtGain(s.finance.famePerHour)} pro Std. aus den Charts` : 'große Bands zählen mehr')}
+        ${s.core
+    // Neuer Kern: Geld aus Platten je Stunde, Fans aller Bands statt Label-Ruhm
+    ? stat('Geld', `<span data-live-money>${money(liveMoney())}</span>`, s.finance.moneyPerHour ? `+${fmt0(s.finance.moneyPerHour)} ₲ pro Stunde aus Platten` : 'Platten und Auftritte bringen Geld')
+      + stat('Fans', fmt0(s.label.fans ?? 0), 'alle Bands zusammen')
+    : stat('Geld', `<span data-live-money>${money(liveMoney())}</span>`, s.finance.moneyPerHour ? `+${fmtGain(s.finance.moneyPerHour / 60)} ₲ pro Minute aus Platten` : 'Platten bringen laufend Geld')
+      + stat('Label-Ruhm', fmt1(s.label.fame ?? fame), s.finance.famePerHour ? `+${fmtGain(s.finance.famePerHour)} pro Std. aus den Charts` : 'große Bands zählen mehr')}
         ${stat('In den Charts', charting.length ? fmt0(charting.length) : '–', best ? `bester Platz: ${best}` : 'noch keine Platte drin')}
         ${stat('Künstler', fmt0(s.musicians.length), s.bands.length ? `in ${s.bands.length} ${s.bands.length === 1 ? 'Band' : 'Bands'}` : 'noch niemand unter Vertrag')}
       </div>
@@ -73,7 +77,7 @@ function firstSteps(s) {
     { done: s.bands.some((b) => b.managed), text: 'Einen Manager einstellen: Er sagt dir, was deine Künstler brauchen', href: '#/einsendungen' },
     { done: s.gear.some((g) => g.musicianId), text: 'Im Music Store ein Instrument kaufen', href: '#/store' },
     { done: s.bands.some((b) => b.cohesion > 0 || b.gigsPlayed > 0 || b.records > 0), text: 'Zum ersten Mal proben', href: firstBand ? `#/band/${firstBand.id}` : '#/einsendungen' },
-    { done: s.bands.some((b) => b.gigsPlayed > 0), text: 'Den ersten Auftritt buchen', href: firstBand ? `#/band/${firstBand.id}` : '' },
+    { done: s.bands.some((b) => b.gigsPlayed > 0), text: s.core ? 'Zum ersten Mal auftreten' : 'Den ersten Auftritt buchen', href: firstBand ? `#/band/${firstBand.id}` : '' },
     { done: s.bands.some((b) => b.records > 0), text: 'Die erste Platte aufnehmen', href: firstBand ? `#/band/${firstBand.id}` : '' },
     { done: (s.scouts ?? []).length > 0, text: 'Einen Scout einstellen und auf Talentsuche schicken', href: '#/einsendungen' },
   ];

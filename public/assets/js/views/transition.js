@@ -17,6 +17,15 @@ const NEWS = [
   ['week', 'Jede Woche ist was los', 'Mittwochs gibt es ein Festival, samstags das Battle of the Bands. Wer bekannt genug ist, geht mit Bus oder Flugzeug auf Tournee. Dazu Auszeichnungen im Proberaum.'],
 ];
 
+/** Übergang ins neue Spiel mit Fans und Hype (State.transition.core). */
+const CORE_NEWS = [
+  ['band', 'Fans statt Ruhm', 'Der Erfolg einer Band sind jetzt ihre Fans. Fans kaufen Platten, kommen zu Auftritten und erzählen es weiter. Alle Bands fangen bei 0 Fans an, so erleben alle das neue Spiel von vorn.'],
+  ['charts', 'Hype', 'Jede neue Platte bringt Hype: Je besser sie ist, desto mehr. Mit viel Hype kaufen viele die Platte, und viele kommen zu Auftritten. Jeden Tag ist der Hype halb so groß. Anfragen, Festival und Battle geben einen Schub.'],
+  ['gig', 'Auftreten', 'Es gibt nur noch einen Knopf: Auftreten. Das Spiel nimmt den passenden Ort, Kosten gibt es keine, das Label verdient an jedem Zuschauer. Gleich noch einmal auftreten bringt weniger Leute; nach einem Tag Pause kommen wieder alle.'],
+  ['record', 'Platten', 'Ein Album hat 12 Songs, jeder Song hat seine eigene Qualität. Die Qualität der Platte kommt aus Sound, Songs, Produktion und Stimmung. Die Charts zählen die Verkäufe der letzten 24 Stunden.'],
+  ['course', 'Können', 'Können wird jetzt größer gezählt: Fortgeschritten ab 100, Profi ab 400, Virtuose ab 1.600. Wer vorher Profi war, ist es auch jetzt. Eine Probe am Tag hält den Sound auf der Höhe.'],
+];
+
 let open = false;
 let waiting = null;
 
@@ -35,7 +44,8 @@ export function maybeShowTransition() {
   open = true;
   // Wer aus dem alten Spiel kommt, braucht die Einführung für Neue nicht mehr.
   claimTour();
-  openSlides([...NEWS, ['gift', 'Dein Umbau', summary(t)]], {
+  const news = t.core ? [...(t.old ? NEWS : []), ...CORE_NEWS] : NEWS;
+  openSlides([...news, ['gift', 'Dein Umbau', summary(t)]], {
     dismissable: false,
     onDone: () => (t.pool.length ? choosePool(t) : finish([])),
   });
@@ -43,6 +53,17 @@ export function maybeShowTransition() {
 
 function summary(t) {
   const lines = [];
+  if (t.core) {
+    const c = t.core;
+    const g = c.gear;
+    lines.push(`Jedes Label startet mit ${money(c.start)}${c.money ? ` (vorher ${money(c.money)})` : ''}.`);
+    if (g.swapped) lines.push(g.swapped === 1 ? 'Ein Instrument war besser, als der Musiker es spielen darf: Der Music Store hat es in seine Farbe umgetauscht.' : `${g.swapped} Instrumente waren besser, als ihre Musiker sie spielen dürfen: Der Music Store hat sie umgetauscht.`);
+    if (g.expired) lines.push(`Was im Lager lag, ist weg (${g.expired === 1 ? 'ein Instrument' : `${g.expired} Instrumente`}). Jeder Musiker behält sein eigenes.`);
+    if (g.given) lines.push(g.given === 1 ? 'Ein Musiker ohne Instrument hat eins bekommen.' : `${g.given} Musiker ohne Instrument haben eins bekommen.`);
+    if (c.fame?.length) lines.push(`Der alte Ruhm steht als Erinnerung in der Chronik (${c.fame.map((f) => `${f.band}: ${f.fame}`).join(', ')}).`);
+    lines.push('Können und Beziehungen sind geblieben.');
+    if (!t.old) return lines;
+  }
   if (t.money > 0) lines.push(`Für alte Karten und Gutscheine bekommst du ${money(t.money)}.`);
   if (t.market > 0) lines.push(t.market === 1 ? 'Ein Musiker von der Wechselbörse ist zurück bei dir.' : `${t.market} Musiker von der Wechselbörse sind zurück bei dir.`);
   lines.push('Wer schon lange zusammen spielt, kennt sich gut: Die Beziehungen in deinen Bands sind schon da.');

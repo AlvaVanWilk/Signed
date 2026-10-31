@@ -344,6 +344,10 @@ final class Activities
             if ($blocker !== null) {
                 throw new ApiError($blocker);
             }
+            // Neuer Kern: Die Auszeit ist der Ausweg aus dem Roten und wird nur dann angeboten (drei Knöpfe: Proben, Aufnehmen, Auftreten).
+            if (BandCore::$live && !array_filter($members, static fn ($m) => Mood::level((float) $m['wellbeing']) === 'red')) {
+                throw new ApiError('Eine Auszeit gibt es, wenn jemand in der Band unzufrieden (rot) ist.');
+            }
             Tours::assertHome($db, $bandId);
             $endsAt = $now + $cfg['seconds'];
             Events::assertFree($db, $bandId, $endsAt);

@@ -804,7 +804,7 @@ export function page(route) {
     ? act(b, members, 'gig', null, 'Auftreten', coreGigHint(b), ICON.gig, false, !!blocker(b, members), away('Unterwegs spielt ihr die Städte der Tournee (oben).'))
     : act(b, members, 'gig', null, 'Auftritt buchen', gigHint(b), ICON.gig, false, !!blocker(b, members), away('Unterwegs spielt ihr die Städte der Tournee (oben).'))}
       ${coreOn() ? '' : act(b, members, 'bandpromo', null, 'Promo-Tour', promoHint(b), ICON.promo, false, !!blocker(b, members), away('Eine Promo-Tour geht erst wieder zu Hause.'))}
-      ${act(b, members, 'retreat', null, 'Auszeit', retreatHint(b), ICON.retreat, false, !!blocker(b, members), away('Eine Auszeit gibt es erst wieder zu Hause.'))}
+      ${!coreOn() || b.mood.level === 'red' ? act(b, members, 'retreat', null, 'Auszeit', retreatHint(b), ICON.retreat, coreOn(), !!blocker(b, members), away('Eine Auszeit gibt es erst wieder zu Hause.')) : ''}
     </div>
     ${coreOn() ? writeModeRow(b) : ''}
     ${course}

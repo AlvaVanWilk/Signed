@@ -143,7 +143,7 @@ dann muss das Label abwägen: Geld gegen Stimmung.
 ### Stimmung der Band
 
 - **Ampel** nach dem unzufriedensten Mitglied: grün nur, wenn alle zufrieden sind; gelb, wenn jemand angespannt ist; rot, wenn jemand sehr unzufrieden ist.
-- **Rot sperrt**, was ein roter Musiker nicht mag; jede Eigenschaft mag mindestens eine Anordnung, es gibt also immer einen Ausweg. Eine Auszeit geht immer.
+- **Rot sperrt**, was ein roter Musiker nicht mag; jede Eigenschaft mag mindestens eine Anordnung, es gibt also immer einen Ausweg. Eine Auszeit geht immer (im neuen Kern gibt es sie nur dann: sobald jemand rot ist).
 - **Rot friert ein:** keine Songs, keine weitere Verschlechterung, solange man offline ist. Eine Band geht nie, während man schläft.
 - **Geduld** (nur online): Bleibt eine Band online im Roten, läuft ihre Geduld ab (30 Minuten Spielzeit, Warnungen bei 2/3 und 1/3); danach
   verlässt sie das Label. Was die Stimmung hebt, hält die Geduld an.
@@ -167,7 +167,7 @@ Auf der Bandseite als Schallplatten mit farbigem Etikett; jede fragt vorher nach
 | **Auftritt buchen** | Gage, Ruhm, Bekanntheit; Ort mit Kosten und Gewinn-Schätzung; Reiter „Tournee“ | genug Songs; Ort unter dem Anspruch ärgert |
 | **Aufnehmen** | Songs → Platte; Studio, Produzent, Cover | genug Songs; Studio unter dem Anspruch ärgert |
 | **Promo-Tour** | etwas Ruhm, schiebt die neueste Platte an | 10 Minuten, jederzeit |
-| **Auszeit** | hebt die Stimmung, Beziehungen wachsen etwas | Ausflug / Wochenende / Urlaub, geht auch bei Rot |
+| **Auszeit** | hebt die Stimmung, Beziehungen wachsen etwas | Ausflug / Wochenende / Urlaub, geht auch bei Rot; im neuen Kern nur bei Rot |
 
 ### Proben
 

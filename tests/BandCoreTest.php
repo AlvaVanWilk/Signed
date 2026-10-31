@@ -421,6 +421,15 @@ test('Kern im Spiel: Kassetten wachsen mit den Fans (500 / 5.000 / 50.000 Fans w
     check($s->demoSuccess() > 10 * $s->success(), 'Der Ruhm-Gegenwert der Musiker wäre viel kleiner');
 });
 
+test('Kern im Spiel: Die Auszeit gibt es nur, wenn jemand in der Band rot ist', function () {
+    [$db, $p, $repo, $band] = coreLabel();
+    checkApiError(fn () => $p->post('bandRetreat', ['bandId' => $band['id'], 'option' => 'ausflug']), 'unzufrieden');
+    $first = array_values($repo->members($band['id']))[0];
+    $db->exec('UPDATE musicians SET wellbeing = ? WHERE id = ?', [Signed\Game\Balance::MOOD['yellow'] - 5, $first['id']]);
+    $res = $p->post('bandRetreat', ['bandId' => $band['id'], 'option' => 'ausflug']);
+    check(bandById($res['state'], $band['id'])['busyUntil'] > Clock::now(), 'Mit einem Roten geht die Band in die Auszeit');
+});
+
 test('Kern im Spiel: Tournee ab 5.000 Fans mit dem Bus; Auftritte wie zu Hause, nur mit Halle; Welttournee geparkt', function () {
     [$db, $p, $repo, $band] = coreLabel();
     $db->exec('UPDATE labels SET money = 400000');

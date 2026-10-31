@@ -372,7 +372,8 @@ Solokünstler: kein Genre-Bonus außer halb für Pop und Elektro, Zusammenhalt 1
 ### Auszeit
 
 Ausflug 1 Std. (+8, 20 ₲ je Mitglied), Wochenende 4 Std. (+16, 60 ₲), Urlaub 12 Std. (+28, 150 ₲); Gemütliche und Ausgeglichene ×1,5,
-Ehrgeizige ×0,5 (`Balance::RETREAT`). Keine Songs in der Zeit; geht auch bei Rot.
+Ehrgeizige ×0,5 (`Balance::RETREAT`). Keine Songs in der Zeit; geht auch bei Rot. Im neuen Kern gibt es sie nur, wenn jemand in der Band
+rot ist: Dann erscheint der vierte Knopf, sonst stehen auf der Bandseite nur Proben, Aufnehmen und Auftreten (Sandra, 28.10.).
 
 ### Battle of the Bands
 

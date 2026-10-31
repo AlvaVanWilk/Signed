@@ -88,11 +88,11 @@ final class BandCore
     }
 
     /** Neue Platte erscheint (beim Fertigwerden im Studio); die vorige läuft von selbst aus. */
-    public static function release(Repo $repo, array $band, int $recordId, float $quality, ?int $at = null): array
+    public static function release(Repo $repo, array $band, int $recordId, float $quality, ?int $at = null, int $songs = Balance::CORE_ALBUM_SONGS): array
     {
         $at ??= Clock::now();
         $career = self::settle($repo, $band, $at);
-        $career = Career::release($career, $at, $quality);
+        $career = Career::release($career, $at, $quality, $songs);
         $career['records'][count($career['records']) - 1]['id'] = $recordId;
         return self::save($repo, $band, $career, []);
     }

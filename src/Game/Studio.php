@@ -197,23 +197,35 @@ final class Studio
         return ['stage' => $stage, 'sound' => round($sound, 3), 'songs' => round($songShare, 3), 'mood' => round($mood, 3), 'levels' => $levels];
     }
 
+    /** Neuer Kern: Studio und Produzent für ein Album mit so vielen Liedern (der Preis gilt für 12, anteilig je Lied). */
+    public static function coreFee(int $level, int $songs): int
+    {
+        return (int) round(Balance::CORE_MONEY['production'][$level] * $songs / Balance::CORE_ALBUM_SONGS);
+    }
+
     /** Neuer Kern: alles für den Aufnahme-Dialog – Songs im Vorrat (beste vorausgewählt), Qualität je Produktionsstufe, was fehlt. */
     public function coreOptions(int $bandId): array
     {
         $band = $this->repo->band($bandId);
         $members = $this->repo->members($bandId);
         $stock = SongStock::stock($this->repo->db, $bandId);
+        // Vorauswahl: die besten 12 (oder alle, wenn es weniger sind); wählen lassen sich 10 bis 16
         $picked = array_slice($stock, 0, Balance::CORE_ALBUM_SONGS);
+        [$min, $max] = Balance::CORE_ALBUM_RANGE;
         $blocker = self::blocker($band, count($members), $this->repo->openRecord($bandId));
-        if ($blocker === null && count($stock) < Balance::CORE_ALBUM_SONGS) {
-            $blocker = sprintf('Für ein Album braucht %s %d Songs (%d von %d).', Bands::who($members, true), Balance::CORE_ALBUM_SONGS, count($stock), Balance::CORE_ALBUM_SONGS);
+        if ($blocker === null && count($stock) < $min) {
+            $blocker = sprintf('Für ein Album braucht %s mindestens %d Songs (%d von %d).', Bands::who($members, true), $min, count($stock), $min);
         }
         return [
             'core' => true,
             'songs' => $stock,
             'picked' => array_column($picked, 'id'),
             'album' => Balance::CORE_ALBUM_SONGS,
-            'seconds' => Balance::CORE_ALBUM_SONGS * Balance::RECORD_SECONDS_PER_SONG,
+            'albumMin' => $min,
+            'albumMax' => $max,
+            'price' => Balance::CORE_SALES['price'],
+            'perSong' => Balance::RECORD_SECONDS_PER_SONG,
+            'seconds' => count($picked) * Balance::RECORD_SECONDS_PER_SONG,
             'blocker' => $blocker,
             'quality' => self::coreQuality($this->repo, $band, $members, $this->repo->gearByMusician(), array_column($picked, 'quality')),
             // Damit der Dialog Q neu rechnen kann, wenn andere Songs ausgewählt werden
@@ -258,17 +270,17 @@ final class Studio
             $studio = Balance::STUDIOS[$production['studio']];
             $p = Balance::PRODUCERS[$production['producer']];
             // Gutschein vom Battle: Die Produktion, die zur Ruhmstufe passt, kostet nichts.
+            $count = count($songs);
             $voucher = $level === $parts['stage'] ? Prizes::production($this->repo, $bandId) : null;
             if ($voucher !== null) {
                 $db->exec('DELETE FROM prizes WHERE id = ?', [$voucher]);
             } else {
-                $this->repo->spend(Balance::CORE_MONEY['production'][$level], sprintf('Studio: %s mit %s', $studio['name'], $p['name']));
+                $this->repo->spend(self::coreFee($level, $count), sprintf('Studio: %s mit %s (%d Lieder)', $studio['name'], $p['name'], $count));
             }
             $this->repo->spend(Balance::COVER_DESIGNERS[$designer]['fee'], sprintf('Cover: %s', Balance::COVER_DESIGNERS[$designer]['name']));
             if ($band['logo'] === null && $newLogo !== null) {
                 $db->update('bands', ['logo' => json_encode($newLogo)], ['id' => $bandId]);
             }
-            $count = Balance::CORE_ALBUM_SONGS;
             $endsAt = $now + $count * Balance::RECORD_SECONDS_PER_SONG;
             Events::assertFree($db, $bandId, $endsAt);
             if ($db->exec('UPDATE bands SET busy_until = ?, released = 1, songs_written = ? WHERE id = ? AND busy_until <= ?', [$endsAt, max(0.0, $band['songs_written'] - $count), $bandId, $now]) === 0) {
@@ -512,7 +524,7 @@ final class Studio
         $now = Clock::now();
         $db->exec('UPDATE bands SET records = records + 1, songs_recorded = songs_recorded + ?, perfect_records = perfect_records + ? WHERE id = ?', [$songs, $perfect ? 1 : 0, $band['id']]);
         $db->update('records', ['status' => 'done', 'songs_done' => $songs, 'perfect' => $perfect ? 1 : 0, 'finished_at' => $now], ['id' => $record['id']]);
-        $career = BandCore::release($this->repo, $band, $record['id'], $quality * 100, $now);
+        $career = BandCore::release($this->repo, $band, $record['id'], $quality * 100, $now, (int) $record['songs_total']);
         // Sofort in den Charts (nicht erst zur nächsten Minute)
         Charts::markDirty($db);
         $released = Core\Career::newest($career);

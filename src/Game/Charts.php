@@ -652,7 +652,6 @@ final class Charts
      */
     private static function coreIncome(Db $db, int $labelId, array $albums): array
     {
-        $price = Balance::CORE_SALES['price'];
         $ranks = array_column(array_filter($albums, static fn ($a) => $a['own']), null, 'recordId');
         $bands = [];
         $records = [];
@@ -663,6 +662,7 @@ final class Charts
             [$labelId]
         ) as $row) {
             $core = json_decode((string) $row['core'], true) ?: [];
+            $price = Core\Sales::price((int) ($core['songs'] ?? Balance::CORE_ALBUM_SONGS));
             $hype = (float) ($core['soldRate'] ?? 0) * $price / 24;
             $cat = (float) ($core['catalogRate'] ?? 0) * $price / 24;
             $total += $hype + $cat;

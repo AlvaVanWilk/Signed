@@ -156,13 +156,13 @@ function coreQuality(data, level) {
   return { songs, production, q: 100 * (w.sound * data.quality.sound + w.songs * songs + w.production * production + w.mood * data.quality.mood) };
 }
 
-/** Neuer Kern: Aufnahme-Dialog mit Produktionsstufe, 12 Songs aus dem Vorrat, Qualität in vier Teilen, Titel und Cover. */
+/** Neuer Kern: Aufnahme-Dialog mit Produktionsstufe, 10 bis 16 Songs aus dem Vorrat, Qualität in vier Teilen, Titel und Cover. */
 function coreDialogHtml(b, data) {
   if (data.blocker) {
     return `
       <div class="lb-cap">Aufnehmen</div><h2>${esc(b.name)}</h2>
       <p>${esc(data.blocker)}</p>
-      <p class="muted">Songs entstehen von selbst, solange ${esc(who(b, true))} gut gelaunt ist. Ein Album hat immer ${data.album} Songs.</p>
+      <p class="muted">Songs entstehen von selbst, solange ${esc(who(b, true))} gut gelaunt ist. Ein Album hat ${data.albumMin} bis ${data.albumMax} Songs.</p>
       <div class="dialog-actions"><button class="btn primary" data-close>Okay</button></div>`;
   }
   const lv = data.quality.levels;
@@ -170,9 +170,15 @@ function coreDialogHtml(b, data) {
   const designer = cat().rules.coverDesigners[pick.designer];
   // Gutschein vom Battle: Die Produktion, die zur Ruhmstufe passt, kostet nichts
   const free = (o) => data.voucher && o.fits;
-  const cost = (free(lv[pick.level]) ? 0 : lv[pick.level].cost) + designer.fee;
-  const full = pick.songIds.length === data.album;
-  const why = !full ? `Bitte genau ${data.album} Songs auswählen (${pick.songIds.length} gewählt).`
+  // Studio, Hype und Preis gelten für 12 Lieder und ändern sich anteilig mit der Länge des Albums.
+  const n = pick.songIds.length;
+  const share = n / data.album;
+  const fee = (o) => Math.round(o.cost * share);
+  const cost = (free(lv[pick.level]) ? 0 : fee(lv[pick.level])) + designer.fee;
+  const full = n >= data.albumMin && n <= data.albumMax;
+  const hype = Math.min(100, (cur.q * cur.q) / 100 * share);
+  const price = (data.price * share).toLocaleString('de-DE', { maximumFractionDigits: 2 });
+  const why = !full ? `Bitte ${data.albumMin} bis ${data.albumMax} Songs auswählen (${n} gewählt).`
     : app.state.label.money < cost ? `Dafür fehlen noch ${money(cost - app.state.label.money)}.`
       : pick.title.trim() === '' ? 'Die Platte braucht einen Titel.' : '';
   const gap = lv[pick.level].claim;
@@ -180,10 +186,10 @@ function coreDialogHtml(b, data) {
   const part = (label, x) => `<div><span>${label}</span><b>${percent(x)}</b><i class="rc-bar"><i style="width:${Math.round(x * 100)}%"></i></i></div>`;
   return `
     <div class="lb-cap">Aufnehmen</div><h2>${esc(b.name)} geht ins Studio</h2>
-    <h3 class="rc-h">Songs <small class="muted">${pick.songIds.length} von ${data.album} gewählt · ${data.songs.length} im Vorrat · dauert ${duration(data.seconds)}</small></h3>
+    <h3 class="rc-h">Songs <small class="muted">${n} gewählt (${data.albumMin} bis ${data.albumMax}) · ${data.songs.length} im Vorrat · dauert ${n * data.perSong >= 3600 ? duration(n * data.perSong) : `${Math.round((n * data.perSong) / 60)} Min.`}</small></h3>
     <div class="rc-songs">${data.songs.map((x, i) => `<button class="rc-song ${pick.songIds.includes(x.id) ? 'on' : ''}" data-r="song" data-v="${x.id}" title="Song ${i + 1}: Qualität ${fmt0(x.quality)}">
       <i style="--q:${Math.round(x.quality)}"></i><b>${fmt0(x.quality)}</b></button>`).join('')}</div>
-    <p class="muted small">Jeder Song hat seine eigene Qualität. Ins Album geht der Durchschnitt der ausgewählten.</p>
+    <p class="muted small">Jeder Song hat seine eigene Qualität. Ins Album geht der Durchschnitt der ausgewählten. Mehr Lieder bringen mehr Hype und mehr Geld je verkaufter Platte, kosten aber mehr im Studio und mehr Songs. Mit weniger Liedern nimmst du nur die besten.</p>
 
     <h3 class="rc-h">Produktion</h3>
     <div class="rc-cards">${lv.map((o) => {
@@ -196,15 +202,15 @@ function coreDialogHtml(b, data) {
     }
     return `<button class="rc-card rc-prod ${pick.level === o.level ? 'on' : ''} ${o.fits ? 'fits' : ''}" data-r="level" data-v="${o.level}">
         <span class="rc-pic">${producerFigure(o.level === 3 ? 'legend' : ['mo', 'roxy', 'diamond'][o.level])}</span>
-        <b>${esc(o.studio)}</b><small>mit ${esc(o.producer)}</small><small>${free(o) ? 'umsonst (Gutschein vom Battle)' : money(o.cost)} · Q ${fmt0(q)}${q >= data.perfectFrom ? ' · perfekt' : ''}</small>${o.fits ? '<em class="rc-fits">passt zur Ruhmstufe</em>' : ''}</button>`;
+        <b>${esc(o.studio)}</b><small>mit ${esc(o.producer)}</small><small>${free(o) ? 'umsonst (Gutschein vom Battle)' : money(fee(o))} · Q ${fmt0(q)}${q >= data.perfectFrom ? ' · perfekt' : ''}</small>${o.fits ? '<em class="rc-fits">passt zur Ruhmstufe</em>' : ''}</button>`;
   }).join('')}</div>
 
     <div class="rc-sum rc-parts">
       ${part('Sound', data.quality.sound)}${part('Songs', cur.songs)}${part('Produktion', cur.production)}${part('Stimmung', data.quality.mood)}
-      <div><span>Qualität</span><b>${fmt0(cur.q)}${cur.q >= data.perfectFrom ? ' · perfekt' : ''}</b><small>40 % Sound, 25 % Songs, 20 % Produktion, 15 % Stimmung</small></div>
+      <div><span>Qualität</span><b>${fmt0(cur.q)}${cur.q >= data.perfectFrom ? ' · perfekt' : ''}</b><small>${Math.round(data.weights.sound * 100)} % Sound, ${Math.round(data.weights.songs * 100)} % Songs, ${Math.round(data.weights.production * 100)} % Produktion, ${Math.round(data.weights.mood * 100)} % Stimmung</small></div>
     </div>
     <p class="rc-claim ${claimCls}">${esc(claimText)}${pick.level === 3 ? ' Mit Ruben Stille sind alle ganz entspannt.' : ''}</p>
-    <p class="muted small">Wenn die Platte erscheint, beginnt ihr Hype: Je besser sie ist, desto mehr kaufen sie und desto mehr kommen zu Auftritten.</p>
+    <p class="muted small">Wenn die Platte erscheint, beginnt ihr Hype: etwa ${fmt0(hype)} (je besser und je mehr Lieder, desto mehr). Je mehr Hype, desto mehr kaufen sie und desto mehr kommen zu Auftritten. Im Laden kostet sie ${price} ₲.</p>
 
     ${coverSection(b, data)}
 
@@ -360,8 +366,8 @@ async function coreRecordAsk(bandId) {
       case 'song': {
         const id = Number(v);
         if (pick.songIds.includes(id)) pick.songIds = pick.songIds.filter((x) => x !== id);
-        else if (pick.songIds.length < data.album) pick.songIds.push(id);
-        else toast(`Ein Album hat ${data.album} Songs. Nimm erst einen anderen heraus.`, 'info');
+        else if (pick.songIds.length < data.albumMax) pick.songIds.push(id);
+        else toast(`Ein Album hat höchstens ${data.albumMax} Songs. Nimm erst einen anderen heraus.`, 'info');
         break;
       }
       case 'level':

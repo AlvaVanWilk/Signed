@@ -425,6 +425,8 @@ Der Code der rausgenommenen Teile ist noch da (nicht erreichbar) und wird am End
   (Beziehungen wachsen schneller), Bühnentechnik (größere Orte füllen sich leichter). Jede Art braucht einen eigenen Zweck und Wunsch.
 - **Klangprofil:** Die Band spielt manchmal zwei Versionen vor, das Label wählt; daraus entsteht ihr Klang (aus den vorhandenen Bausteinen in `Styles`).
 - Entlassen mit einem Teil der Prämie zurück; einen geschützten Bandnamen wiederbeleben.
+- **EPs** (3–9 Songs, ohne Hype, nicht in den Charts, keine Goldene Schallplatte; nur Verkäufe an die Fans): erst einmal nicht. Alben gehen
+  ab 10 Songs, und schwache Songs lassen sich ablehnen. Kommt später wieder, wenn Bands oft mit zu wenigen Songs dastehen.
 
 **Am Ende, wenn alles fertig ist**
 - **Fairness- und Durchspiel-Prüfung:** alle Stufen mit Einsatz erreichbar, kein Aufschaukeln; ob alter Ruhm, altes Geld und alte goldene

@@ -17,6 +17,12 @@ final class Hype
         return min(Balance::CORE_HYPE['max'], $quality * $quality / 100);
     }
 
+    /** Hype beim Erscheinen eines Albums mit $songs Liedern: × Songs / 12, höchstens 100. */
+    public static function release(float $quality, int $songs = Balance::CORE_ALBUM_SONGS): float
+    {
+        return min(Balance::CORE_HYPE['max'], self::start($quality) * $songs / Balance::CORE_ALBUM_SONGS);
+    }
+
     /** Faktor je Tag: perfekte Platten klingen langsamer ab. */
     public static function decay(float $quality): float
     {

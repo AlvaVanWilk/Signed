@@ -560,9 +560,9 @@ function act(b, members, type, section, title, text, icon, warn = false, busy = 
 /** Kurzer Hinweis am Knopf „Aufnehmen“: Songs im Vorrat, oder was zur Freigabe des nächsten Albums noch fehlt. */
 function recordHint(b) {
   if (coreOn()) {
-    // Neuer Kern: Ein Album hat immer 12 Songs; kein Album-Zyklus mehr
+    // Neuer Kern: Ein Album hat 10 bis 16 Songs; kein Album-Zyklus mehr
     const songs = b.mood.songs;
-    return songs >= 12 ? `${songs} Songs im Vorrat · 12 für ein Album` : `${songs} von 12 Songs für ein Album`;
+    return songs >= 10 ? `${songs} Songs im Vorrat · 10 bis 16 für ein Album` : `${songs} von 10 Songs für ein Album`;
   }
   const c = b.record.cycle;
   if (c && !c.done) {
@@ -799,7 +799,7 @@ export function page(route) {
     ${['rehearsal', 'gig', 'record', 'festival', 'tourgig'].includes(running?.type) ? wishBlock(b, members) : ''}
     <div class="lb-acts">
       ${act(b, members, 'rehearsal', null, 'Proben', `bis zu ${mins(b.options.rehearsal.seconds)} · Können ${gainRange(members.map((m) => m.gains?.rehearsal ?? 0))} je ${mins(cat().rules.rehearsalSeconds)}`, ICON.rehearse, false, !!blocker(b, members))}
-      ${act(b, members, 'record', null, 'Aufnehmen', recordHint(b), ICON.record, b.mood.songs >= 12, !!blocker(b, members), away('Aufnehmen geht nur zu Hause im Studio.'))}
+      ${act(b, members, 'record', null, 'Aufnehmen', recordHint(b), ICON.record, b.mood.songs >= (coreOn() ? 10 : 12), !!blocker(b, members), away('Aufnehmen geht nur zu Hause im Studio.'))}
       ${coreOn()
     ? act(b, members, 'gig', null, 'Auftreten', coreGigHint(b), ICON.gig, false, !!blocker(b, members), away('Unterwegs spielt ihr die Städte der Tournee (oben).'))
     : act(b, members, 'gig', null, 'Auftritt buchen', gigHint(b), ICON.gig, false, !!blocker(b, members), away('Unterwegs spielt ihr die Städte der Tournee (oben).'))}

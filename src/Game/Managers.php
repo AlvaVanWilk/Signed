@@ -125,8 +125,10 @@ final class Managers
             $out[] = ['level' => 2, 'text' => sprintf('%s stand schon lange nicht mehr auf der Bühne.', $band['name']), 'musicianId' => null, 'action' => 'gig'];
         }
         $songs = (int) floor($band['songs_written']);
-        $cycle = Studio::cycle($band);
-        if ($songs >= Balance::RECORD_MIN_SONGS && $songs < Balance::MOOD['stau']['from'] && ($cycle === null || $cycle['done'])) {
+        // Neuer Kern: ein Album ab 10 Songs, ohne Album-Zyklus
+        $cycle = BandCore::$live ? null : Studio::cycle($band);
+        $min = BandCore::$live ? Balance::CORE_ALBUM_RANGE[0] : Balance::RECORD_MIN_SONGS;
+        if ($songs >= $min && $songs < Balance::MOOD['stau']['from'] && ($cycle === null || $cycle['done'])) {
             $out[] = ['level' => 2, 'text' => sprintf('%s ist bereit fürs Studio (%d Songs).', $band['name'], $songs), 'musicianId' => null, 'action' => 'record'];
         }
         usort($out, static fn ($x, $y) => $x['level'] <=> $y['level']);

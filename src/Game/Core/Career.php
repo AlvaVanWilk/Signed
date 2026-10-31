@@ -57,8 +57,8 @@ final class Career
                 $career['records'][$i] = $record;
                 $career['sold'] += $sold;
                 $career['catalogSold'] += $catalog;
-                $career['earned']['records'] += Sales::money($sold);
-                $career['earned']['catalog'] += Sales::money($catalog);
+                $career['earned']['records'] += Sales::money($sold, $record['songs'] ?? Balance::CORE_ALBUM_SONGS);
+                $career['earned']['catalog'] += Sales::money($catalog, $record['songs'] ?? Balance::CORE_ALBUM_SONGS);
                 $career['fans'] = Fans::grow($career['fans'], $gained, $career['kind']);
             }
             $career['settledAt'] = max($career['settledAt'], $next);
@@ -88,11 +88,11 @@ final class Career
         }
     }
 
-    /** Neue Platte erscheint; die vorige läuft von selbst aus. */
-    public static function release(array $career, int $at, float $quality): array
+    /** Neue Platte erscheint (mit $songs Liedern); die vorige läuft von selbst aus. */
+    public static function release(array $career, int $at, float $quality, int $songs = Balance::CORE_ALBUM_SONGS): array
     {
         $career = self::settle($career, $at);
-        $career['records'][] = Sales::release($career['fans'], $quality, $at);
+        $career['records'][] = Sales::release($career['fans'], $quality, $at, $songs);
         return $career;
     }
 

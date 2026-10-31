@@ -27,15 +27,16 @@ final class Sales
         return min(1.0, $c['buyBase'] * ($quality / $c['buyRef']) ** 2);
     }
 
-    /** Zustand beim Erscheinen; die Werte des ersten Tages stehen sofort fest. */
-    public static function release(float $fans, float $quality, int $at): array
+    /** Zustand beim Erscheinen; die Werte des ersten Tages stehen sofort fest. $songs: Lieder auf dem Album (Hype und Preis anteilig). */
+    public static function release(float $fans, float $quality, int $at, int $songs = Balance::CORE_ALBUM_SONGS): array
     {
         return self::plan([
             'quality' => $quality,
+            'songs' => $songs,
             'releasedAt' => $at,
             'f0' => $fans,
             'pool' => Fans::pool($fans),
-            'hype' => Hype::start($quality),
+            'hype' => Hype::release($quality, $songs),
             'boosts' => 0,
             'buyers' => 0.0,
             'gained' => 0.0,
@@ -155,10 +156,16 @@ final class Sales
         return $fans * Balance::CORE_CATALOG['rate'] * $quality / 100 * 0.5 ** ($day / 7);
     }
 
-    /** Geld fürs Label (je verkaufter Platte, auch aus dem Katalog). */
-    public static function money(float $sold): float
+    /** Geld fürs Label (je verkaufter Platte, auch aus dem Katalog): Preis für 12 Lieder, anteilig nach der Länge des Albums. */
+    public static function money(float $sold, int $songs = Balance::CORE_ALBUM_SONGS): float
     {
-        return $sold * Balance::CORE_SALES['price'];
+        return $sold * self::price($songs);
+    }
+
+    /** Preis einer Platte mit so vielen Liedern (10 ₲ für 12 Lieder). */
+    public static function price(int $songs = Balance::CORE_ALBUM_SONGS): float
+    {
+        return Balance::CORE_SALES['price'] * $songs / Balance::CORE_ALBUM_SONGS;
     }
 
     /** Werte eines Tages festlegen: nK = (p + q × F0 / M) × A × (M − F0 − B − C), nB = U × r. */

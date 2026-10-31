@@ -54,8 +54,9 @@ final class SongStock
     {
         $ids = array_values(array_unique(array_map('intval', $ids)));
         $byId = array_column(self::stock($db, $bandId), 'quality', 'id');
-        if (count($ids) !== Balance::CORE_ALBUM_SONGS) {
-            throw new \Signed\ApiError(sprintf('Ein Album hat %d Songs.', Balance::CORE_ALBUM_SONGS));
+        [$min, $max] = Balance::CORE_ALBUM_RANGE;
+        if (count($ids) < $min || count($ids) > $max) {
+            throw new \Signed\ApiError(sprintf('Ein Album hat %d bis %d Songs.', $min, $max));
         }
         foreach ($ids as $id) {
             if (!isset($byId[$id])) {

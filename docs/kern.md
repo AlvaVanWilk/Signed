@@ -48,7 +48,7 @@ Chartpunkte, den Album-Zyklus, die Promo-Tour, Straßenmusik, Open Stage und Fan
 
 ### Hype
 
-- Beim Erscheinen: Hype = Q² / 100 (Q = Qualität 0–100). Jeden Tag × 0,5, eine perfekte Platte (ab Q 95) × 0,55.
+- Beim Erscheinen: Hype = Q² / 100 × Lieder / 12, höchstens 100 (Q = Qualität 0–100). Jeden Tag × 0,5, eine perfekte Platte (ab Q 95) × 0,55.
 - Schübe (Anfragen, Festival-Bühne, Battle-Platz) heben den Hype der neuesten Platte sofort; jeder weitere Schub für dieselbe Platte zählt
   halb so viel; höchstens 100.
 - Flamme: lodert ab 85, rot ab 55, schwach ab 25, Glut ab 5.
@@ -63,7 +63,7 @@ A   = Hype / 100
 nK  = (p + q × F0 / M) × A × (M − F0 − B − C)    entdecken die Platte (B = bisherige Käufer, C = neue Fans dieser Platte)
 nB  = U × r                                       Fans, die kaufen (U = Fans, die noch kaufen wollen; beim Erscheinen F0 × aQ)
 aQ  = min(1; 0,64 × (Q / 80)²)
-V   = nK + nB verkauft, 10 ₲ je Stück; k × nK werden Fans
+V   = nK + nB verkauft, 10 ₲ je Stück bei 12 Liedern (anteilig: 10 Lieder 8,33 ₲, 16 Lieder 13,33 ₲); k × nK werden Fans
 p = 0,0015 · q = 0,06 · r = 0,5 · k = 0,6
 ```
 
@@ -107,13 +107,21 @@ Verdienst         = Zuschauer × 5 / 6 / 9 / 12 ₲ nach Ruhmstufe
 
 ### Platte aufnehmen
 
-- Ein Album hat immer **12 Songs** aus dem Vorrat; die Band ist 5 Minuten je Lied im Studio. Kein Album-Zyklus, kein Erstverkauf:
-  Erst wenn die Studiozeit um ist, erscheint die Platte und ihr Hype beginnt.
+- Ein Album hat **10 bis 16 Songs** aus dem Vorrat (vorausgewählt: die besten 12); die Band ist 5 Minuten je Lied im Studio. Kein
+  Album-Zyklus, kein Erstverkauf: Erst wenn die Studiozeit um ist, erscheint die Platte und ihr Hype beginnt.
+- **Länge:** Hype beim Erscheinen, Preis je Platte und Studiokosten gelten für 12 Lieder und ändern sich anteilig (× Lieder / 12; Hype
+  höchstens 100). So ist jedes Lied gleich viel wert, egal wie lang das Album ist. Ohne diese Regel wären 10 Lieder immer am besten: Jede
+  Platte startet den Hype neu, und die Fans kaufen jede Platte (nachgerechnet: Viererband, 500 Fans, 8 Wochen, Platte sobald genug Songs da:
+  10 Lieder 143.000 ₲ und 3.000 Fans, 16 Lieder 65.000 ₲ und 2.010 Fans). Mit der Regel: 10 Lieder 102.000 ₲ und 2.540 Fans, 12 Lieder
+  103.000 ₲ und 2.520, 16 Lieder 108.000 ₲ und 2.510 (je abzüglich Studio). Wer oft spielt, kann kürzere Alben öfter bringen (frischer Hype,
+  bei 5.000 Fans etwa 15 % mehr Geld aus Auftritten); wer einmal je Woche spielt, nutzt mit 16 Liedern alle Songs (mit 10 läuft der Vorrat
+  voll: 52.000 statt 99.000 ₲). Schwache Songs wegzulassen hebt Q nur wenig (ein Song 20 Punkte schwächer kostet bei 12 Liedern 0,4 Punkte);
+  es lohnt sich vor allem, um über 95 zu kommen (perfekt).
 - **Qualität** Q = 100 × (0,40 × S + 0,25 × W + 0,20 × P + 0,15 × E), ab 95 perfekt:
   S = min(1; Sound / Erwartung der Ruhmstufe 150 / 1.500 / 10.000 / 45.000), W = Durchschnitt der Songs / 100,
   P = Produktionsstufe / Ruhmstufe (höchstens 1, bei Stufe 0 immer 1), E = min(1; Wohlbefinden / 60).
   So kann jede Band in jeder Phase perfekt aufnehmen. Die Erwartung ist so gewählt, dass eine Zweierband mit einer Probe am Tag mithält.
-- **Produktion** (Studio und Produzent zusammen): 0 Garage mit Mo Beats 300 ₲, 1 Tonstudio mit Roxy Reverb 2.000 ₲,
+- **Produktion** (Studio und Produzent zusammen, Preise für 12 Lieder, anteilig je Lied): 0 Garage mit Mo Beats 300 ₲, 1 Tonstudio mit Roxy Reverb 2.000 ₲,
   2 Profi-Studio mit Diamond Dee 8.000 ₲, 3 Legendäres Studio mit Ruben Stille 30.000 ₲. Wie Bühnen und Tournee gibt es die besseren
   Studios erst ab der passenden Ruhmstufe: Tonstudio ab 500 Fans, Profi-Studio ab 5.000, Legendäres Studio ab 50.000. Darunter ärgert sich
   die Band; mit Ruben Stille sind alle entspannt.

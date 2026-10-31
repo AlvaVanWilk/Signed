@@ -983,7 +983,12 @@ final class Balance
      */
     public const CORE_PRODUCTION = [0 => ['studio' => 0, 'producer' => 'mo'], 1 => ['studio' => 1, 'producer' => 'roxy'], 2 => ['studio' => 2, 'producer' => 'diamond'], 3 => ['studio' => 3, 'producer' => 'legend']];
     /** Ein Album hat immer so viele Songs; im Vorrat liegen höchstens MOOD['songCap']. */
+    /**
+     * Ein Album hat 10 bis 16 Songs (CORE_ALBUM_RANGE). Hype beim Erscheinen, Preis je Platte und Studio gelten für CORE_ALBUM_SONGS
+     * und ändern sich anteilig (× Songs / 12): So ist jedes Lied gleich viel wert, egal wie lang die Platte ist.
+     */
     public const CORE_ALBUM_SONGS = 12;
+    public const CORE_ALBUM_RANGE = [10, 16];
     /** Geld: Startgeld, Produktion je Stufe (= Ruhmstufe), Instrumente je Farbe (grau, grün, blau, gold). */
     public const CORE_MONEY = ['start' => 5000, 'production' => [0 => 300, 1 => 2000, 2 => 8000, 3 => 30000], 'gear' => [0 => 100, 1 => 1500, 2 => 8000, 3 => 40000]];
     /** Bedürfnisse tauchen jederzeit auf, wachsen aber nur alle `stepHours` Stunden um so viel, wie heute in dieser Zeit dazukommt. */

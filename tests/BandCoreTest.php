@@ -216,17 +216,18 @@ test('Kern im Spiel: Charts jede Minute neu, eine neue Platte steht sofort drin;
     checkEquals(1, (int) $db->value("SELECT COUNT(*) FROM history WHERE label_id = ? AND kind = 'chart1'", [$rb->labelId]), 'Platz 1 in der Chronik zur vollen Stunde');
 });
 
-test('Kern im Spiel: Aufnehmen mit 12 Songs und einer Produktionsstufe, danach beginnt der Hype', function () {
+test('Kern im Spiel: Aufnehmen mit 10 bis 16 Songs und einer Produktionsstufe, danach beginnt der Hype', function () {
     [$db, $p, $repo, $band] = coreLabel();
     $opts = $p->post('recordOptions', ['bandId' => $band['id']]);
-    check(str_contains((string) $opts['blocker'], '12 Songs'), 'Ohne 12 Songs geht es nicht: ' . $opts['blocker']);
+    check(str_contains((string) $opts['blocker'], 'mindestens 10 Songs'), 'Ohne 10 Songs geht es nicht: ' . $opts['blocker']);
     for ($i = 0; $i < 14; $i++) {
         $db->insert('songs', ['label_id' => $repo->labelId, 'band_id' => $band['id'], 'quality' => 50 + $i * 3, 'record_id' => null, 'created_at' => Clock::now()]);
     }
     $db->exec('UPDATE bands SET songs_written = 14.5 WHERE id = ?', [$band['id']]);
     $opts = $p->post('recordOptions', ['bandId' => $band['id']]);
     checkEquals(null, $opts['blocker']);
-    checkEquals(12, count($opts['picked']));
+    checkEquals(12, count($opts['picked']), 'Vorauswahl: die besten 12');
+    checkEquals([10, 16], [$opts['albumMin'], $opts['albumMax']]);
     checkEquals([300, 2000, 8000, 30000], array_column($opts['quality']['levels'], 'cost'));
     $best = array_slice(array_map(static fn ($i) => 50 + $i * 3, range(13, 0, -1)), 0, 12);
     coreNear(array_sum($best) / 12 / 100, $opts['quality']['songs'], 1e-6, 'Songs: Durchschnitt der besten 12');
@@ -235,20 +236,47 @@ test('Kern im Spiel: Aufnehmen mit 12 Songs und einer Produktionsstufe, danach b
     checkEquals([0, 500, 5000, 50000], array_column($opts['quality']['levels'], 'from'));
     checkApiError(fn () => $p->post('recordStart', ['bandId' => $band['id'], 'title' => 'Zu früh', 'level' => 1, 'songIds' => $opts['picked'], 'cover' => $opts['covers'][0]]), 'erst ab 500 Fans');
     $money = (int) $db->value('SELECT money FROM labels WHERE id = ?', [$repo->labelId]);
-    $p->post('recordStart', ['bandId' => $band['id'], 'title' => 'Neuland', 'level' => 0, 'songIds' => $opts['picked'], 'cover' => $opts['covers'][0]]);
-    checkEquals($money - 300 - Signed\Game\Balance::COVER_DESIGNERS['student']['fee'], (int) $db->value('SELECT money FROM labels WHERE id = ?', [$repo->labelId]));
-    checkEquals(2, (int) $db->value('SELECT COUNT(*) FROM songs WHERE band_id = ? AND record_id IS NULL', [$band['id']]), 'Zwei Songs bleiben im Vorrat');
-    coreNear(2.5, (float) $db->value('SELECT songs_written FROM bands WHERE id = ?', [$band['id']]));
-    Clock::advance(12 * Signed\Game\Balance::RECORD_SECONDS_PER_SONG + 2);
+    $ten = array_slice($opts['picked'], 0, 10);
+    $all = array_column(Signed\Game\SongStock::stock($db, $band['id']), 'id');
+    checkApiError(fn () => $p->post('recordStart', ['bandId' => $band['id'], 'title' => 'Zu kurz', 'level' => 0, 'songIds' => array_slice($ten, 0, 9), 'cover' => $opts['covers'][0]]), '10 bis 16');
+    checkEquals(14, count($all));
+    // Zehn Songs: Studio anteilig (300 ₲ für 12 → 250 ₲), zehnmal 5 Minuten
+    $p->post('recordStart', ['bandId' => $band['id'], 'title' => 'Neuland', 'level' => 0, 'songIds' => $ten, 'cover' => $opts['covers'][0]]);
+    checkEquals($money - 250 - Signed\Game\Balance::COVER_DESIGNERS['student']['fee'], (int) $db->value('SELECT money FROM labels WHERE id = ?', [$repo->labelId]), 'Studio je Lied');
+    checkEquals(4, (int) $db->value('SELECT COUNT(*) FROM songs WHERE band_id = ? AND record_id IS NULL', [$band['id']]), 'Vier Songs bleiben im Vorrat');
+    coreNear(4.5, (float) $db->value('SELECT songs_written FROM bands WHERE id = ?', [$band['id']]));
+    Clock::advance(10 * Signed\Game\Balance::RECORD_SECONDS_PER_SONG + 2);
     $state = $p->get('state');
     $done = array_values(array_filter($state['results'], static fn ($r) => $r['type'] === 'record'))[0]['result'];
     check($done['core'] && $done['hype'] > 0, 'Die Platte erscheint mit Hype');
     $record = $db->one("SELECT * FROM records WHERE band_id = ? AND title = 'Neuland'", [$band['id']]);
     checkEquals('done', $record['status']);
     checkEquals(1, (int) $record['core_active']);
-    coreNear((float) $done['quality'] * 100, json_decode($record['core'], true)['quality'], 1e-6, 'Kern rechnet mit derselben Qualität');
+    $core = json_decode($record['core'], true);
+    coreNear((float) $done['quality'] * 100, $core['quality'], 1e-6, 'Kern rechnet mit derselben Qualität');
+    checkEquals(10, (int) $record['songs_total']);
+    checkEquals(10, (int) $core['songs']);
+    coreNear(min(100.0, $core['quality'] ** 2 / 100 * 10 / 12), Signed\Game\Core\Hype::release($core['quality'], 10), 1e-9);
     checkEquals(0, (int) $db->value('SELECT COUNT(*) FROM ledger WHERE label_id = ? AND text LIKE ?', [$repo->labelId, 'Erstverkauf%']), 'Kein Erstverkauf mehr');
     check(bandById($state, $band['id'])['core']['record'] !== null, 'Spielstand zeigt die neue Platte');
+});
+
+test('Kern im Spiel: Albumlänge – Hype, Preis und Studio anteilig (je Lied gleich viel wert), 12 Lieder wie bisher', function () {
+    $c = Signed\Game\Balance::CORE_SALES;
+    coreNear(10.0, Signed\Game\Core\Sales::price(12), 1e-9, '12 Lieder: 10 ₲');
+    coreNear(10.0 * 10 / 12, Signed\Game\Core\Sales::price(10), 1e-9);
+    coreNear(10.0 * 16 / 12, Signed\Game\Core\Sales::price(16), 1e-9);
+    checkEquals(2000, Signed\Game\Studio::coreFee(1, 12));
+    checkEquals(2667, Signed\Game\Studio::coreFee(1, 16));
+    coreNear(64.0, Signed\Game\Core\Hype::release(80, 12), 1e-9, '12 Lieder wie bisher');
+    coreNear(64.0 * 16 / 12, Signed\Game\Core\Hype::release(80, 16), 1e-9);
+    checkEquals(100.0, Signed\Game\Core\Hype::release(95, 16), 'Höchstens 100');
+    // Gleiche Band, gleiche Qualität: 16 Lieder bringen mehr Hype und mehr ₲ je Stück als 10
+    $t0 = 1_800_000_000;
+    $long = Career::settle(Career::release(Career::start(5000, 'genre', $t0), $t0, 80, 16), $t0 + 7 * 86400);
+    $short = Career::settle(Career::release(Career::start(5000, 'genre', $t0), $t0, 80, 10), $t0 + 7 * 86400);
+    check($long['sold'] > $short['sold'], 'Mehr Hype, mehr Käufer');
+    coreNear($long['earned']['records'], $long['sold'] * $c['price'] * 16 / 12, 1e-6, 'Preis je Stück nach der Länge');
 });
 
 test('Kern im Spiel: Das Label lehnt Songs ab – Platz für neue, nur aus dem eigenen Vorrat', function () {

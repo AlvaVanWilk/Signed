@@ -123,7 +123,7 @@ final class CoreTransition
     }
 
     /** Ein Modell dieser Art in dieser Farbe (0 grau … 3 gold); elektrisch oder akustisch wie das alte, wenn es das gibt. */
-    private static function model(string $type, int $tier, ?bool $electric = null): string
+    public static function model(string $type, int $tier, ?bool $electric = null): string
     {
         $rarity = array_search($tier, Gear::TIER, true) ?: 'common';
         $fits = array_keys(array_filter(Catalog::GEAR, static fn ($g) => $g['type'] === $type && $g['rarity'] === $rarity));

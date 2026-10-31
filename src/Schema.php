@@ -701,6 +701,18 @@ final class Schema
             [
                 "ALTER TABLE bands ADD COLUMN write_mode VARCHAR(8) NOT NULL DEFAULT 'normal'",
             ],
+            // 57: Neuer Kern: Preise vom Battle – die offene Wahl des Siegers (`choice`: Geld oder Wochenpreis) und Gutscheine daraus (`voucher`)
+            [
+                'CREATE TABLE prizes (
+                    id {PK},
+                    label_id INTEGER NOT NULL,
+                    band_id INTEGER NULL,
+                    kind VARCHAR(8) NOT NULL,
+                    prize VARCHAR(24) NOT NULL,
+                    created_at INTEGER NOT NULL
+                ){OPTS}',
+                'CREATE INDEX prizes_label ON prizes (label_id)',
+            ],
         ];
     }
 }

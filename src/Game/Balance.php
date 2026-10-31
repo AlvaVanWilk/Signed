@@ -919,6 +919,8 @@ final class Balance
         // Wie oft Anfragen kommen (je Musiker in einer Band mit Platte und Tag): start + root × √(Fans der Band / per); welche Art wie oft
         'requestRate' => ['start' => 0.1, 'root' => 0.05, 'per' => 100.0],
         'requestWeights' => ['interview' => 4, 'photos' => 2, 'article' => 2, 'report' => 1, 'ad' => 1],
+        // Anfragen nach einem Konzert (Inbox::eventRequest): ausverkauft oder eine tolle Show (Publikumsleiste ab `shineFrom`), je mit dieser Chance
+        'afterGig' => ['soldOut' => 0.25, 'shine' => 0.25, 'shineFrom' => 90.0],
     ];
     /**
      * Tournee im neuen Kern: Mit dem Bus (Europa) ab Ruhmstufe 2, mit dem Flugzeug (die anderen Kontinente) ab Stufe 3; die Welttournee ist
@@ -926,8 +928,15 @@ final class Balance
      * gibt es TOUR['match'] mehr Geld (`money`) und neue Fans (`fame`).
      */
     public const CORE_TOUR = ['stage' => ['bus' => 2, 'plane' => 3], 'parked' => ['welt']];
-    /** Battle-Preise: Geld nach Platz (4 = im Halbfinale ausgeschieden); der Sieger wählt `winner` ₲ oder den Wochenpreis. */
-    public const CORE_BATTLE_PRIZES = ['money' => [2 => 6000, 3 => 3000, 4 => 1500], 'winner' => 12000, 'weekly' => ['blue_instrument', 'free_production', 'room_upgrade', 'coach_days' => 3]];
+    /**
+     * Battle-Preise: Geld nach Platz (4 = im Halbfinale ausgeschieden); der Sieger wählt `winner` ₲ oder den Wochenpreis (Prizes), der jede Woche
+     * wechselt: ein Instrument der Farbe `tier` nach Wahl, eine Aufnahme umsonst (Produktion der Ruhmstufe), der Proberaum eine Stufe besser,
+     * ein Songwriting-Coach der Stufe `tier` für `days` Tage.
+     */
+    public const CORE_BATTLE_PRIZES = [
+        'money' => [2 => 6000, 3 => 3000, 4 => 1500], 'winner' => 12000,
+        'weekly' => ['blue_instrument' => ['tier' => 2], 'free_production' => [], 'room_upgrade' => [], 'coach_days' => ['tier' => 3, 'days' => 3]],
+    ];
     /**
      * Fans bei Änderungen an der Band. Austritt: Gewicht 1, `strong` für die Charakterzüge in `strongTraits` oder mit Künstlername; von seinem
      * Anteil an den Fans geht `follow` mit, `quit` hört ganz auf. Zusammentun: die größere plus `mergeSmall` der kleineren. Umbenennen: `rename` gehen.

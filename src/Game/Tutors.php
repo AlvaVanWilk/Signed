@@ -43,8 +43,8 @@ final class Tutors
         return null;
     }
 
-    /** Buchen: Lehrer für einen Musiker, Coach für eine Band. Bezahlt wird in Inbox::hire. */
-    public function book(array $job, int $target): void
+    /** Buchen: Lehrer für einen Musiker, Coach für eine Band. Bezahlt wird in Inbox::hire. $seconds: andere Dauer (Preis vom Battle). */
+    public function book(array $job, int $target, ?int $seconds = null): void
     {
         $now = Clock::now();
         $person = ['first_name' => $job['first_name'], 'last_name' => $job['last_name'], 'look' => $job['look']];
@@ -70,7 +70,7 @@ final class Tutors
                 }
             }
             $tier = Balance::COACH['tiers'][(int) $job['tier']];
-            $data = $person + ['bandId' => $band['id'], 'speed' => $tier['speed'], 'quality' => $tier['quality'], 'from' => $now, 'until' => $now + $tier['seconds']];
+            $data = $person + ['bandId' => $band['id'], 'speed' => $tier['speed'], 'quality' => $tier['quality'], 'from' => $now, 'until' => $now + ($seconds ?? $tier['seconds'])];
             // Bis zum Ende ist der Zuschlag fest; er gilt für die Songs, die in dieser Zeit entstehen.
             $this->repo->db->update('bands', ['coach_bonus' => max($band['coach_bonus'], $tier['quality'])], ['id' => $band['id']]);
             $this->repo->log('staff', sprintf('%s %s hilft %s beim Songschreiben.', $job['first_name'], $job['last_name'], $band['name']), $band['id']);

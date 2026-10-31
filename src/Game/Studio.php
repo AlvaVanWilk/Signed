@@ -217,6 +217,8 @@ final class Studio
             'weights' => Balance::CORE_QUALITY['weights'],
             'perfectFrom' => Balance::CORE_QUALITY['perfect'],
             'logo' => $band['logo'],
+            // Gutschein vom Battle: Die Produktion, die zur Ruhmstufe passt, kostet nichts
+            'voucher' => Prizes::production($this->repo, $bandId) !== null,
         ];
     }
 
@@ -249,7 +251,13 @@ final class Studio
             $quality = $parts['levels'][$level]['quality'];
             $studio = Balance::STUDIOS[$production['studio']];
             $p = Balance::PRODUCERS[$production['producer']];
-            $this->repo->spend(Balance::CORE_MONEY['production'][$level], sprintf('Studio: %s mit %s', $studio['name'], $p['name']));
+            // Gutschein vom Battle: Die Produktion, die zur Ruhmstufe passt, kostet nichts.
+            $voucher = $level === $parts['stage'] ? Prizes::production($this->repo, $bandId) : null;
+            if ($voucher !== null) {
+                $db->exec('DELETE FROM prizes WHERE id = ?', [$voucher]);
+            } else {
+                $this->repo->spend(Balance::CORE_MONEY['production'][$level], sprintf('Studio: %s mit %s', $studio['name'], $p['name']));
+            }
             $this->repo->spend(Balance::COVER_DESIGNERS[$designer]['fee'], sprintf('Cover: %s', Balance::COVER_DESIGNERS[$designer]['name']));
             if ($band['logo'] === null && $newLogo !== null) {
                 $db->update('bands', ['logo' => json_encode($newLogo)], ['id' => $bandId]);

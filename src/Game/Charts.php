@@ -199,7 +199,11 @@ final class Charts
         }
         $top = $albums[0];
         if ($db->exec('UPDATE records SET topped = 1 WHERE id = ? AND topped = 0', [$top['recordId']]) === 1 && $top['bandId'] !== null) {
-            Awards::numberOne(new Repo($db, $top['labelId']), $top['bandId'], $top['recordId'], $top['title']);
+            $repo = new Repo($db, $top['labelId']);
+            Awards::numberOne($repo, $top['bandId'], $top['recordId'], $top['title']);
+            if (BandCore::$live) {
+                Inbox::eventRequest($repo, $top['bandId'], sprintf('weil „%s“ auf Platz 1 der Charts steht', $top['title']));
+            }
         }
     }
 

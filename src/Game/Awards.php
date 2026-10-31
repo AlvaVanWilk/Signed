@@ -42,6 +42,10 @@ final class Awards
                 $band = $repo->db->value('SELECT name FROM bands WHERE id = ?', [$bandId]) ?? '';
                 self::give($repo, $bandId, $kind, sprintf('%s: „%s“', $name, $title),
                     sprintf('„%s“ von %s hat sich %s Mal verkauft: %s!', $title, $band, number_format($copies, 0, ',', '.'), $name), $recordId);
+                if (BandCore::$live) {
+                    $dative = ['gold' => 'Goldenen Schallplatte', 'platinum' => 'Platin-Schallplatte', 'diamond' => 'Diamant-Schallplatte'][$kind];
+                    Inbox::eventRequest($repo, $bandId, sprintf('nach der %s für „%s“', $dative, $title));
+                }
             }
         }
     }

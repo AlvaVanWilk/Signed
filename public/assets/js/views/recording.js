@@ -168,7 +168,9 @@ function coreDialogHtml(b, data) {
   const lv = data.quality.levels;
   const cur = coreQuality(data, pick.level);
   const designer = cat().rules.coverDesigners[pick.designer];
-  const cost = lv[pick.level].cost + designer.fee;
+  // Gutschein vom Battle: Die Produktion, die zur Ruhmstufe passt, kostet nichts
+  const free = (o) => data.voucher && o.fits;
+  const cost = (free(lv[pick.level]) ? 0 : lv[pick.level].cost) + designer.fee;
   const full = pick.songIds.length === data.album;
   const why = !full ? `Bitte genau ${data.album} Songs auswählen (${pick.songIds.length} gewählt).`
     : app.state.label.money < cost ? `Dafür fehlen noch ${money(cost - app.state.label.money)}.`
@@ -188,7 +190,7 @@ function coreDialogHtml(b, data) {
     const q = coreQuality(data, o.level).q;
     return `<button class="rc-card rc-prod ${pick.level === o.level ? 'on' : ''} ${o.fits ? 'fits' : ''}" data-r="level" data-v="${o.level}">
         <span class="rc-pic">${producerFigure(o.level === 3 ? 'legend' : ['mo', 'roxy', 'diamond'][o.level])}</span>
-        <b>${esc(o.studio)}</b><small>mit ${esc(o.producer)}</small><small>${money(o.cost)} · Q ${fmt0(q)}${q >= data.perfectFrom ? ' · perfekt' : ''}</small>${o.fits ? '<em class="rc-fits">passt zur Ruhmstufe</em>' : ''}</button>`;
+        <b>${esc(o.studio)}</b><small>mit ${esc(o.producer)}</small><small>${free(o) ? 'umsonst (Gutschein vom Battle)' : money(o.cost)} · Q ${fmt0(q)}${q >= data.perfectFrom ? ' · perfekt' : ''}</small>${o.fits ? '<em class="rc-fits">passt zur Ruhmstufe</em>' : ''}</button>`;
   }).join('')}</div>
 
     <div class="rc-sum rc-parts">

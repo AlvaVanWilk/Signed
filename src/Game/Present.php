@@ -167,8 +167,9 @@ final class Present
             'genreLineup' => Catalog::GENRE_LINEUP,
             // Neuer Kern: Ruhmstufen nach Fans (die Grenzen entsprechen sich, siehe BandCore::fameEquivalent)
             'fameNames' => BandCore::$live ? Balance::CORE_STAGE_NAMES : Catalog::FAME_NAMES,
-            // Neuer Kern: Arten von Anfragen (Interview, Fotoserie, Artikel, Reportage, Werbung)
+            // Neuer Kern: Arten von Anfragen (Interview, Fotoserie, Artikel, Reportage, Werbung); Wochenpreise beim Battle
             'requests' => Catalog::REQUESTS,
+            'battlePrizes' => Catalog::BATTLE_PRIZES,
             'personalities' => Catalog::PERSONALITIES,
             'staffRoles' => Catalog::STAFF_ROLES,
             'logoFonts' => Catalog::LOGO_FONTS,
@@ -184,7 +185,7 @@ final class Present
             'packs' => $packs,
             'rules' => [
                 'buskingHat' => Balance::BUSKING_HAT,
-                'startMoney' => Balance::START_MONEY,
+                'startMoney' => BandCore::$live ? Balance::CORE_MONEY['start'] : Balance::START_MONEY,
                 'songSeconds' => Balance::SONG_SECONDS,
                 'minMembers' => Balance::MIN_MEMBERS,
                 'maxMembers' => Balance::MAX_MEMBERS,

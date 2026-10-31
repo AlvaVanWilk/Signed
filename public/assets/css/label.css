@@ -1624,3 +1624,7 @@ body { background: radial-gradient(1100px 520px at 50% -12%, rgba(255, 181, 71, 
 .cf-write { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 12px 0 4px; }
 .cf-write .tabs { margin: 0; }
 .cf-write > small.muted { flex-basis: 100%; }
+.ov-prize-pick { display: inline-flex; flex-wrap: wrap; gap: 6px; margin: 4px 6px 4px 0; vertical-align: middle; }
+.ov-prizes li small.muted, .bt-prize small.muted { display: block; }
+.bt-weekly { padding: 8px 12px; border-radius: 10px; background: var(--panel-2); border: 1px solid var(--line); }
+.bt-weekly small { display: block; margin-top: 2px; }

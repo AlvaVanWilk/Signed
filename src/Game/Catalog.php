@@ -447,6 +447,13 @@ final class Catalog
         'netzwerker' => ['name' => 'Netzwerker', 'desc' => 'Interviews seiner Musiker bringen mehr Bekanntheit.', 'active' => true],
         'vermittler' => ['name' => 'Vermittler', 'desc' => 'Wenn seiner Band etwas nicht gefällt, ärgert sie sich weniger.', 'active' => true],
     ];
+    /** Neuer Kern: Wochenpreise beim Battle (Prizes); `name` im Satz („Der Wochenpreis: …“), `title` kurz. */
+    public const BATTLE_PRIZES = [
+        'blue_instrument' => ['title' => 'Blaues Instrument', 'name' => 'ein blaues Instrument nach Wahl', 'desc' => 'Ein blaues Instrument nach Wahl. Es wartet als Gutschein, bis ihr es aussucht.'],
+        'free_production' => ['title' => 'Aufnahme umsonst', 'name' => 'eine Aufnahme umsonst', 'desc' => 'Die nächste Platte der Band im Studio, das zu ihrer Ruhmstufe passt, kostet nichts.'],
+        'room_upgrade' => ['title' => 'Besserer Proberaum', 'name' => 'der Proberaum eine Stufe besser', 'desc' => 'Der Proberaum der Band wird eine Stufe besser.'],
+        'coach_days' => ['title' => 'Song-Coach', 'name' => 'ein Song-Coach für drei Tage', 'desc' => 'Drei Tage lang hilft ein Songwriting-Coach: Die Band schreibt schneller und bessere Songs.'],
+    ];
     /** Neuer Kern (Fans und Hype): was diese Fähigkeiten dort bewirken. */
     public const MANAGER_SKILLS_CORE = [
         'verhandler' => ['desc' => 'Das Label verdient mehr an jedem Zuschauer seiner Bands.'],

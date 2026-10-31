@@ -1,4 +1,4 @@
-import { app, bandById, defineActions, mutate, serverNow } from '../core.js';
+import { app, bandById, cat, defineActions, mutate, serverNow } from '../core.js';
 import { genreGlyph } from '../cards.js';
 import { esc, fmt0, fmt1, money, off } from '../ui.js';
 
@@ -119,6 +119,7 @@ function signup(battle) {
   return `<section class="panel bt-panel">
     <div class="eyebrow">Anmeldung</div>
     <h2>${esc(n.when)}</h2>
+    ${n.weekly ? `<p class="bt-weekly">Wochenpreis: <b>${esc(cat().battlePrizes[n.weekly]?.title ?? '')}</b> · Der Sieger wählt ihn oder ${money(battle.rules.prizes[1])}. <small class="muted">${esc(cat().battlePrizes[n.weekly]?.desc ?? '')}</small></p>` : ''}
     <p class="muted">Jedes Label darf bis zu ${n.perLabel} Bands anmelden, nur Bands (keine Solokünstler). Online sein muss dafür niemand: Das Battle läuft auch so, das Ergebnis kommt beim nächsten Öffnen. Nur kann eine angemeldete Band vorher nichts anfangen, was bis über den Beginn hinaus dauert.</p>
     ${own.length ? `<div class="bt-entry-list">${own.map((o) => `
       <div class="bt-entry ${o.entered ? 'in' : ''}">

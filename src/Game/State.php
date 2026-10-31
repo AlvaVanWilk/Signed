@@ -307,6 +307,8 @@ final class State
             'awardsNew' => Awards::fresh($db, $repo->labelId),
             // Einmal nach dem Umbau: „Was ist neu?“ und die Wahl aus der Kartei
             'transition' => Transition::present($repo),
+            // Neuer Kern: Preise vom Battle (offene Wahl, Gutscheine)
+            'prizes' => BandCore::$live ? Prizes::present($repo) : [],
             'festival' => Festival::present($repo, $bands, $members, $now),
             'jamOffers' => (new Jam($repo))->open(),
             'market' => (new Transfers($repo))->market(),

@@ -230,6 +230,28 @@ final class Inbox
     }
 
     /** Ein Brief kommt an; von außen im Umschlag, eigene Post (Scout-Bericht, Test) gleich offen. */
+    /**
+     * Neuer Kern: Anfrage nach einem Ereignis (Festival, Battle-Platz, Platz 1, Goldene Schallplatte, ausverkauftes Konzert, tolle Show), mit
+     * Bezug darauf im Brief und von einem Medium eine Stufe größer als sonst. Nur für Bands mit Platte, denn der Schub gilt ihrer neuesten.
+     * @return array{medium: string, who: string}|null
+     */
+    public static function eventRequest(Repo $repo, int $bandId, string $reason): ?array
+    {
+        $records = $repo->db->value('SELECT records FROM bands WHERE id = ? AND label_id = ?', [$bandId, $repo->labelId]);
+        $members = $repo->members($bandId);
+        if ($records === null || (int) $records < 1 || !$members) {
+            return null;
+        }
+        $m = Rng::pick($members);
+        $level = BandCore::stage($repo->db, $bandId);
+        $medium = Rng::pick(Catalog::INTERVIEW_MEDIA[min(3, $level + 1)]);
+        (new self($repo))->store('interview', [
+            'musicianId' => $m['id'], 'level' => $level, 'medium' => $medium['name'], 'share' => $medium['share'],
+            'request' => (string) Rng::weighted(Balance::CORE_EVENTS['requestWeights']), 'reason' => $reason,
+        ], Clock::now(), Balance::POST['ttl']);
+        return ['medium' => $medium['name'], 'who' => $m['stage_name'] ?? $m['first_name']];
+    }
+
     public function store(string $kind, array $data, int $at, int $ttl, bool $unpacked = false): void
     {
         $this->repo->db->insert('mail', [

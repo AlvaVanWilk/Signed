@@ -27,6 +27,7 @@ use Signed\Game\Names;
 use Signed\Game\Packs;
 use Signed\Game\Post;
 use Signed\Game\Present;
+use Signed\Game\Prizes;
 use Signed\Game\Repo;
 use Signed\Game\Scout;
 use Signed\Game\Scouting;
@@ -82,6 +83,8 @@ final class Api
         'bandSetSlot' => ['POST', true],
         'bandSetManager' => ['POST', true],
         'bandWriteMode' => ['POST', true],
+        'prizeChoose' => ['POST', true],
+        'prizeRedeem' => ['POST', true],
         'bandDisband' => ['POST', true],
         'gearAssign' => ['POST', true],
         'gearSell' => ['POST', true],
@@ -228,7 +231,8 @@ final class Api
                 'password_hash' => password_hash($password, PASSWORD_DEFAULT),
                 'name' => $labelName,
                 'name_key' => $nameKey,
-                'money' => Balance::START_MONEY,
+                // Neuer Kern: Startgeld für die erste Produktion und einfache Instrumente
+                'money' => BandCore::$live ? Balance::CORE_MONEY['start'] : Balance::START_MONEY,
                 'scout_vouchers' => Balance::SCOUT_START_VOUCHERS,
                 'created_at' => Clock::now(),
                 'last_seen' => Clock::now(),
@@ -445,6 +449,18 @@ final class Api
     private function bandWriteMode(array $in, Repo $repo): array
     {
         (new Bands($repo))->setWriteMode(self::int($in, 'bandId'), self::str($in, 'mode'));
+        return ['state' => State::build($repo)];
+    }
+
+    private function prizeChoose(array $in, Repo $repo): array
+    {
+        (new Prizes($repo))->choose(self::int($in, 'prizeId'), self::str($in, 'pick'));
+        return ['state' => State::build($repo)];
+    }
+
+    private function prizeRedeem(array $in, Repo $repo): array
+    {
+        (new Prizes($repo))->redeem(self::int($in, 'prizeId'), self::str($in, 'type'));
         return ['state' => State::build($repo)];
     }
 

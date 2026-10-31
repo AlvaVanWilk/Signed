@@ -213,8 +213,9 @@ final class Battle
             $members = $repo->members($id);
             $fame = BandCore::$live ? 0.0 : $c['fame']['match'] * $r['played'] + $c['fame']['win'] * $r['wins'] + ($c['fame']['place'][$r['place']] ?? 0);
             $cheer = $c['cheer'][$r['place']] ?? 0;
-            // Neuer Kern: Preise nach Platz (der Sieger bekommt das Preisgeld), je gespieltes Spiel Zuschauer, Schub nach Platz
-            $money = BandCore::$live ? Core\Events::battleMoney((int) ($r['place'] ?? 0)) : ($c['money'][$r['place']] ?? 0);
+            // Neuer Kern: Preise nach Platz, je gespieltes Spiel Zuschauer, Schub nach Platz; der Sieger wählt später Geld oder den Wochenpreis
+            $winner = BandCore::$live && ($r['place'] ?? null) === 1;
+            $money = $winner ? 0 : (BandCore::$live ? Core\Events::battleMoney((int) ($r['place'] ?? 0)) : ($c['money'][$r['place']] ?? 0));
             (new Activities($repo))->insertBand($id, self::KIND, $start, $endsAt, [
                 'title' => $title,
                 'songs' => 0,
@@ -229,6 +230,7 @@ final class Battle
                         // Ohne Live-Ticker zählt die Laune der Band als Live-Qualität
                         'live' => min(100.0, (float) $t['mood']),
                     ] : null,
+                    'prize' => $winner ? Prizes::weekly($start) : null,
                     // Applaus wie in einer großen Halle
                     'venue' => 'halle',
                     'battle' => $r + ['event' => $eventId, 'of' => count($teams), 'day' => self::day($start)],
@@ -271,6 +273,9 @@ final class Battle
             ]);
         }
         $repo->log('event', sprintf('%s beim Battle of the Bands: %s.', $name, self::placeText($info)), $bandId);
+        if (BandCore::$live && $place !== null && $place <= 3) {
+            Inbox::eventRequest($repo, $bandId, $place === 1 ? 'nach dem Sieg beim Battle of the Bands' : sprintf('nach Platz %d beim Battle of the Bands', $place));
+        }
     }
 
     /** „gewonnen“, „Platz 3“, „im Viertelfinale ausgeschieden“ … */
@@ -552,6 +557,8 @@ final class Battle
             'next' => [
                 'startsAt' => (int) $next['starts_at'],
                 'when' => Events::when((int) $next['starts_at']),
+                // Neuer Kern: Wochenpreis auf dem Plakat (der Sieger wählt ihn oder das Preisgeld)
+                'weekly' => BandCore::$live ? Prizes::weekly((int) $next['starts_at']) : null,
                 'max' => Balance::BATTLE['max'],
                 'perLabel' => Balance::BATTLE['perLabel'],
                 'entries' => array_map(static fn ($e) => [

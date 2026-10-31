@@ -253,12 +253,66 @@ test('Kern im Spiel: Battle zahlt die neuen Preise, Zuschauer bringen Fans, der 
     $resB = array_values(array_filter($b->get('state')['results'], static fn ($r) => $r['type'] === 'battle'))[0]['result'];
     $won = $resA['battle']['place'] === 1 ? [$resA, $moneyA, $repoA] : [$resB, $moneyB, $repoB];
     $lost = $resA['battle']['place'] === 1 ? [$resB, $moneyB, $repoB] : [$resA, $moneyA, $repoA];
-    checkEquals($won[1] + 12000, (int) $db->value('SELECT money FROM labels WHERE id = ?', [$won[2]->labelId]), 'Sieger: 12.000 ₲');
     checkEquals($lost[1] + 6000, (int) $db->value('SELECT money FROM labels WHERE id = ?', [$lost[2]->labelId]), 'Platz 2: 6.000 ₲');
+    // Der Sieger wählt: Preisgeld oder der Wochenpreis, der schon auf dem Plakat stand
+    checkEquals($won[1], (int) $db->value('SELECT money FROM labels WHERE id = ?', [$won[2]->labelId]), 'Sieger: erst die Wahl');
+    checkEquals(Signed\Game\Prizes::weekly((int) $next['startsAt']), $won[0]['prize']['weekly']);
+    checkEquals($next['weekly'], $won[0]['prize']['weekly'], 'Wochenpreis wie auf dem Plakat');
+    $winner = $won[2]->labelId === $repoA->labelId ? $a : $b;
+    $prizes = $winner->get('state')['prizes'];
+    checkEquals('choice', $prizes[0]['kind']);
+    checkApiError(fn () => $winner->post('prizeChoose', ['prizeId' => $prizes[0]['id'], 'pick' => 'beides']), 'gibt es nicht');
+    $winner->post('prizeChoose', ['prizeId' => $prizes[0]['id'], 'pick' => 'money']);
+    checkEquals($won[1] + 12000, (int) $db->value('SELECT money FROM labels WHERE id = ?', [$won[2]->labelId]), 'Sieger: 12.000 ₲');
+    checkEquals([], $winner->get('state')['prizes'], 'Gewählt ist gewählt');
     check($resA['fans'] > 0 && $resB['fans'] > 0, 'Zuschauer bringen neue Fans');
     checkEquals(0.0, (float) $resA['fame'], 'Kein Ruhm mehr');
     $hypeAfter = BandCore::view($db, $repoA->band($bandA['id']), $repoA->members($bandA['id']))['hype'];
     check($hypeAfter > $hypeBefore, "Schub nach Platz: $hypeBefore → $hypeAfter");
+});
+
+test('Kern im Spiel: Wochenpreise vom Battle – blaues Instrument als Gutschein, Aufnahme umsonst, besserer Proberaum, Song-Coach', function () {
+    [$db, $p, $repo, $band] = coreLabel();
+    $offer = static fn (string $prize) => Signed\Game\Prizes::offer($repo, $band['id'], $prize);
+    // Jede Woche ein Wochenpreis, für alle gleich
+    $keys = [];
+    for ($w = 0; $w < 12; $w++) {
+        $keys[Signed\Game\Prizes::weekly(Clock::now() + $w * 7 * 86400)] = true;
+    }
+    check(count($keys) >= 3, 'Der Wochenpreis wechselt');
+    // Proberaum
+    $room = (int) $db->value('SELECT room FROM bands WHERE id = ?', [$band['id']]);
+    $p->post('prizeChoose', ['prizeId' => $offer('room_upgrade'), 'pick' => 'weekly']);
+    checkEquals($room + 1, (int) $db->value('SELECT room FROM bands WHERE id = ?', [$band['id']]), 'Proberaum eine Stufe besser');
+    // Song-Coach für drei Tage
+    $p->post('prizeChoose', ['prizeId' => $offer('coach_days'), 'pick' => 'weekly']);
+    $coach = json_decode((string) $db->value("SELECT data FROM staff WHERE role = 'coach' AND label_id = ?", [$repo->labelId]), true);
+    checkEquals($band['id'], (int) $coach['bandId']);
+    checkEquals(3 * 86400, (int) $coach['until'] - (int) $coach['from'], 'drei Tage');
+    // Blaues Instrument: Gutschein, dann aussuchen
+    $p->post('prizeChoose', ['prizeId' => $offer('blue_instrument'), 'pick' => 'weekly']);
+    $voucher = array_values(array_filter($p->get('state')['prizes'], static fn ($x) => $x['prize'] === 'blue_instrument'))[0];
+    checkEquals('voucher', $voucher['kind']);
+    $gear = (int) $db->value('SELECT COUNT(*) FROM gear WHERE label_id = ?', [$repo->labelId]);
+    checkApiError(fn () => $p->post('prizeRedeem', ['prizeId' => $voucher['id'], 'type' => 'kazoo']), 'gibt es nicht');
+    $p->post('prizeRedeem', ['prizeId' => $voucher['id'], 'type' => 'guitar']);
+    checkEquals($gear + 1, (int) $db->value('SELECT COUNT(*) FROM gear WHERE label_id = ?', [$repo->labelId]));
+    $model = (string) $db->value('SELECT model FROM gear WHERE label_id = ? ORDER BY id DESC LIMIT 1', [$repo->labelId]);
+    checkEquals(2, Signed\Game\Gear::modelTier($model), 'blau');
+    checkEquals('guitar', Signed\Game\Catalog::GEAR[$model]['type']);
+    // Aufnahme umsonst: Gutschein der Band, gilt für die Produktion ihrer Ruhmstufe
+    $p->post('prizeChoose', ['prizeId' => $offer('free_production'), 'pick' => 'weekly']);
+    checkEquals(true, $p->post('recordOptions', ['bandId' => $band['id']])['voucher'] ?? null);
+    for ($i = 0; $i < 12; $i++) {
+        $db->insert('songs', ['label_id' => $repo->labelId, 'band_id' => $band['id'], 'quality' => 70, 'record_id' => null, 'created_at' => Clock::now()]);
+    }
+    $db->exec('UPDATE bands SET songs_written = 12 WHERE id = ?', [$band['id']]);
+    Clock::advance(3 * 86400 + 60);
+    $opts = $p->post('recordOptions', ['bandId' => $band['id']]);
+    $money = (int) $db->value('SELECT money FROM labels WHERE id = ?', [$repo->labelId]);
+    $p->post('recordStart', ['bandId' => $band['id'], 'title' => 'Gewonnen', 'level' => 0, 'songIds' => $opts['picked'], 'cover' => $opts['covers'][0]]);
+    checkEquals($money - Signed\Game\Balance::COVER_DESIGNERS['student']['fee'], (int) $db->value('SELECT money FROM labels WHERE id = ?', [$repo->labelId]), 'Studio umsonst, nur das Cover kostet');
+    checkEquals(null, Signed\Game\Prizes::production($repo, $band['id']), 'Gutschein eingelöst');
 });
 
 test('Kern im Spiel: Festival-Bühnen nach Fans, Zuschauer bringen Fans, die Bühne einen Hype-Schub', function () {
@@ -378,6 +432,23 @@ test('Kern im Spiel: Tournee ab 5.000 Fans mit dem Bus; Auftritte wie zu Hause, 
     }
     // Ruhm gibt es nicht mehr; die Bekanntheit der Musiker folgt den Fans der Band
     checkEquals(round(3 * BandCore::fameEquivalent(BandCore::fans($db, $band['id'])), 1), round((float) $db->value('SELECT SUM(fame) FROM musicians WHERE band_id = ?', [$band['id']]), 1));
+});
+
+test('Kern im Spiel: Anfragen nach Ereignissen – Goldene Schallplatte, Platz 1, Battle-Platz, mit Bezug im Brief; ohne Platte keine', function () {
+    [$db, $p, $repo, $band] = coreLabel();
+    $requests = static fn () => array_values(array_filter($p->get('state')['mail'], static fn ($m) => ($m['request'] ?? null) !== null));
+    unpackAll($db);
+    checkEquals(null, Signed\Game\Inbox::eventRequest($repo, $band['id'], 'nach dem Test'), 'Ohne Platte keine Anfrage');
+    $id = coreRelease($repo, $repo->band($band['id']), 80);
+    $db->exec('UPDATE bands SET records = 1 WHERE id = ?', [$band['id']]);
+    Signed\Game\Awards::sales($repo, $band['id'], $id, 'Erste', 4990.0, 5010.0);
+    Signed\Game\Battle::settled($repo, $band['id'], ['place' => 2, 'day' => '1.1.2027']);
+    Signed\Game\Battle::settled($repo, $band['id'], ['place' => 5, 'day' => '1.1.2027']);
+    unpackAll($db);
+    $reasons = array_column($requests(), 'reason');
+    check(in_array('nach der Goldenen Schallplatte für „Erste“', $reasons, true), 'Gold: ' . implode(' | ', $reasons));
+    check(in_array('nach Platz 2 beim Battle of the Bands', $reasons, true), 'Battle-Platz');
+    checkEquals(2, count($reasons), 'Platz 5 bringt keine Anfrage');
 });
 
 test('Kern im Spiel: Austritt, Zusammentun und Umbenennen nach den Fan-Regeln', function () {

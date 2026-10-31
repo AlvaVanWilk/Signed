@@ -539,6 +539,10 @@ final class Activities
         if (isset($reward['battle'])) {
             Battle::settled($repo, $bandId, $reward['battle']);
         }
+        if (!empty($reward['prize']) && BandCore::$live) {
+            // Neuer Kern: Der Sieger wählt Preisgeld oder Wochenpreis (Prizes)
+            $result['prize'] = ['id' => Prizes::offer($repo, $bandId, (string) $reward['prize']), 'weekly' => $reward['prize'], 'money' => Balance::CORE_BATTLE_PRIZES['winner']];
+        }
         if (isset($reward['coreEvent']) && ($eventBand = $db->one('SELECT * FROM bands WHERE id = ?', [$bandId])) !== null) {
             // Neuer Kern: Festival-Bühne oder Battle – neue Fans aus den Zuschauern, danach der Schub für die neueste Platte
             $e = $reward['coreEvent'];
@@ -556,6 +560,16 @@ final class Activities
             if ($stage > Fans::stage($fansBefore)) {
                 $result['stageUp'] = Balance::CORE_STAGE_NAMES[$stage];
                 $repo->log('fame', sprintf('%s ist jetzt %s.', $coreBand['name'], Balance::CORE_STAGE_NAMES[$stage]), $bandId);
+            }
+            // Ausverkauft oder eine tolle Show: Manchmal fragt danach jemand an.
+            $after = Balance::CORE_EVENTS['afterGig'];
+            $soldOut = (float) $reward['core']['demand'] >= (float) $reward['core']['size'];
+            $shine = (float) ($reward['meter'] ?? 0) >= $after['shineFrom'];
+            if (($soldOut && Rng::chance($after['soldOut'])) || ($shine && Rng::chance($after['shine']))) {
+                $request = Inbox::eventRequest($repo, $bandId, $soldOut ? 'nach dem ausverkauften Konzert' : 'nach dem tollen Auftritt');
+                if ($request !== null) {
+                    $result['request'] = $request;
+                }
             }
         }
 

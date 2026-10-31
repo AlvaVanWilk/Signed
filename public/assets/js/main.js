@@ -388,6 +388,7 @@ function resultHtml(r) {
     ${levelUpBanners(res.levelUps)}
     ${res.venueUp ? `<div class="banner">⭐ Neue Stufe! Ab jetzt spielt die Band Gigs in: <b>${esc(res.venueUp)}</b>.</div>` : ''}
     ${res.stageUp ? `<div class="banner">⭐ Neue Ruhmstufe: <b>${esc(res.stageUp)}</b>! Ab jetzt passen mehr Leute in die Orte, und das Label verdient mehr je Zuschauer.</div>` : ''}
+    ${res.request ? `<div class="banner">Nach dem Auftritt hat ${esc(res.request.medium)} angefragt, bei ${esc(res.request.who)}. Die Anfrage liegt im Posteingang.</div>` : ''}
     ${res.festival ? festivalExtras(res.festival) : ''}
     ${res.tour ? tour.gigExtras(res) : ''}
     ${drops}`;
@@ -424,8 +425,18 @@ function battleResultHtml(r) {
       ${res.fame ? reward('Ruhm', `+${fmtGain(0)}`, { to: res.fame, kind: 'fame' }) : ''}
       ${res.mood ? reward('Stimmung', `+${fmt0(res.mood)}`) : ''}
     </div>
+    ${res.prize && app.state.prizes?.some((p) => p.id === res.prize.id) ? prizeChoice(res.prize) : ''}
     ${levelUpBanners(res.levelUps)}
     ${res.venueUp ? `<div class="banner">Neue Stufe! Ab jetzt spielt die Band Gigs in: <b>${esc(res.venueUp)}</b>.</div>` : ''}`;
+}
+
+/** Neuer Kern: Der Sieger wählt Preisgeld oder Wochenpreis (geht auch später auf der Übersicht). */
+function prizeChoice(p) {
+  const n = cat().battlePrizes?.[p.weekly] ?? { title: p.weekly, desc: '' };
+  return `<div class="banner bt-prize"><b>Euer Preis:</b> ${money(p.money)} oder ${esc(n.name ?? n.title)}. ${esc(n.desc)}
+    <span class="ov-prize-pick"><button class="btn small primary" data-act="prizeChoose" data-id="${p.id}" data-pick="money">${money(p.money)} nehmen</button>
+    <button class="btn small" data-act="prizeChoose" data-id="${p.id}" data-pick="weekly">${esc(n.title)} nehmen</button></span>
+    <small class="muted">Ihr könnt auch später wählen, auf der Übersicht.</small></div>`;
 }
 
 const BATTLE_OUT = {
@@ -561,6 +572,12 @@ defineActions({
     app.state = null;
     app.charts = null;
     rerender();
+  },
+  async prizeChoose({ id, pick }) {
+    if (await mutate('prizeChoose', { prizeId: Number(id), pick })) {
+      toast(pick === 'money' ? 'Das Preisgeld ist auf dem Konto.' : 'Der Wochenpreis gehört euch.', 'ok');
+      resultModal?.close();
+    }
   },
   openFinance() {
     openModal({ wide: true, className: 'finance-modal', render: financeHtml });

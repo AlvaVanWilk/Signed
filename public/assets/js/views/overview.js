@@ -1,8 +1,8 @@
 import { instrumentIcon, instrumentName, photo } from '../cards.js';
-import { app, bandById, cat, isBusy, liveMoney, managerById, musicianById, serverNow } from '../core.js';
+import { app, bandById, cat, defineActions, isBusy, liveMoney, managerById, musicianById, mutate, serverNow } from '../core.js';
 import { coverHtml } from '../play.js';
 import { INTERN_JOBS } from '../office.js';
-import { esc, fmt0, fmt1, fmtGain, money, timeAgo } from '../ui.js';
+import { esc, fmt0, fmt1, fmtGain, money, timeAgo, toast } from '../ui.js';
 
 /**
  * Übersicht = das Büro des Labels. Oben die Zahlen, darunter (am Anfang) die ersten Schritte, dann was gerade läuft und was das Büro notiert hat,
@@ -27,6 +27,7 @@ export function render() {
   const s = app.state;
   return `
     ${head(s)}
+    ${prizes(s)}
     ${firstSteps(s)}
     <div class="ov-grid">
       <div class="ov-col">
@@ -41,6 +42,38 @@ export function render() {
     </div>
     ${shelf(s)}`;
 }
+
+// ---------- Preise vom Battle (neuer Kern) ----------
+
+/** Offene Wahl des Siegers (Preisgeld oder Wochenpreis) und Gutscheine daraus. */
+function prizes(s) {
+  const list = s.prizes ?? [];
+  if (!list.length) return '';
+  const info = (p) => cat().battlePrizes?.[p.prize] ?? { title: p.prize, desc: '' };
+  const bandName = (p) => esc(p.bandId ? bandById(p.bandId)?.name ?? 'Eine frühere Band' : '');
+  const row = (p) => {
+    const n = info(p);
+    if (p.kind === 'choice') {
+      return `<li><b>${bandName(p)}</b> hat das Battle of the Bands gewonnen. Ihr dürft wählen:
+        <span class="ov-prize-pick"><button class="btn small primary" data-act="prizeChoose" data-id="${p.id}" data-pick="money">${money(p.money)}</button>
+        <button class="btn small" data-act="prizeChoose" data-id="${p.id}" data-pick="weekly" title="${esc(n.desc)}">${esc(n.title)}</button></span>
+        <small class="muted">${esc(n.desc)}</small></li>`;
+    }
+    if (p.prize === 'blue_instrument') {
+      return `<li>Gutschein: <b>${esc(n.title)}</b>. Es kommt ins Lager, sobald ihr es aussucht.
+        <select data-change="prizeRedeem" data-id="${p.id}"><option value="">Instrument aussuchen …</option>${Object.keys(cat().instruments).map((t) => `<option value="${t}">${esc(instrumentName(t))}</option>`).join('')}</select></li>`;
+    }
+    return `<li>Gutschein für <b>${bandName(p)}</b>: ${esc(n.desc)}</li>`;
+  };
+  return `<section class="ov-panel ov-prizes"><h2>Preise vom Battle</h2><ul class="ov-notes">${list.map(row).join('')}</ul></section>`;
+}
+
+defineActions({
+  async prizeRedeem(value, el) {
+    if (!value) return;
+    if (await mutate('prizeRedeem', { prizeId: Number(el.dataset.id), type: value })) toast(`Das blaue Instrument (${instrumentName(value)}) liegt jetzt im Lager.`, 'ok');
+  },
+});
 
 // ---------- Kopf: Name und Zahlen ----------
 

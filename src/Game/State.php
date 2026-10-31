@@ -170,7 +170,11 @@ final class State
                     'relations' => (object) ($managed ? $bandRelations[$band['id']] ?? [] : array_filter($bandRelations[$band['id']] ?? [], static fn ($v) => $v <= Balance::MANAGER_STAFF['notes']['fight'])),
                     'togetherness' => $managed ? Mood::togetherness($bandRelations[$band['id']] ?? []) : null,
                     // Songs je Stunde, gerade jetzt (nach Mitgliedern und ihrem Charakter; 0 bei Rot, Auftritt, Promo; langsamer beim Proben, schneller bei bester Laune)
-                    'songRate' => round(Mood::songRate(Mood::bandMood(array_column($list, 'wellbeing'))) * Mood::crewFactor($list)
+                    // Neuer Kern: wie Mood::settle rechnet (Core\Songs je Tag nach Songschreibern, Regler, Genre der Band, Stimmung, Coach)
+                    'songRate' => round((BandCore::$live
+                        ? Core\Songs::perDay(Core\Songs::writers($list), $band['write_mode'] ?? 'normal', Mood::bandMood(array_column($list, 'wellbeing'))['level'], 'idle', BandCore::kind($band, $list)) / 24
+                            * Tutors::coaching($repo, $band['id'], $now - 60, $now)[0]
+                        : Mood::songRate(Mood::bandMood(array_column($list, 'wellbeing'))) * Mood::crewFactor($list))
                         * Mood::activityFactor($db->value('SELECT type FROM activities WHERE band_id = ? AND settled = 0 AND started_at <= ? AND ends_at > ? ORDER BY id DESC LIMIT 1', [$band['id'], $now, $now])), 3),
                     'reactions' => Mood::reactions($list),
                     // Warum jemand gut oder schlecht drauf ist: Ziel des Wohlbefindens und die Gründe dafür (je Musiker).

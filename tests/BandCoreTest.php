@@ -673,6 +673,15 @@ test('Kern im Spiel: Können wird im neuen Maß gezeigt, Proben bringt 50 je Stu
     coreNear($before + 50, Signed\Game\Core\Skill::fromLegacy(Signed\Game\Core\Skill::toLegacy($before + 50)), 1e-9, 'Umrechnung hin und zurück');
 });
 
+test('Kern im Spiel: Die Künstlerleiste zeigt das Songtempo, mit dem wirklich geschrieben wird', function () {
+    [$db, $p, $repo, $band] = coreLabel();
+    $db->exec('UPDATE musicians SET wellbeing = 80 WHERE band_id = ?', [$band['id']]);
+    $members = array_values($repo->members($band['id']));
+    $expected = Signed\Game\Core\Songs::perDay(Signed\Game\Core\Songs::writers($members), $band['write_mode'] ?? 'normal', 'green', 'idle', BandCore::kind($repo->band($band['id']), $members)) / 24;
+    coreNear(round($expected, 3), (float) bandById($p->get('state'), $band['id'])['mood']['songRate'], 1e-9, 'Songs je Stunde wie im neuen Kern');
+    check($expected * 24 < 5, 'Ein paar Songs am Tag, nicht zehn');
+});
+
 test('Kern im Spiel: Kurse geben Können im neuen Maß je Schwierigkeit, angezeigt wie gutgeschrieben', function () {
     [$db, $p] = coreLabel();
     $course = Signed\Game\Courses::today();

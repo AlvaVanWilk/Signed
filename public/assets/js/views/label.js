@@ -114,7 +114,8 @@ function tile(b, selected) {
     ? `${b.title ?? genreName(bonusGenres[0])} · Sound +${Math.round((b.genreBonus - 1) * 100)} %`
     : solo ? 'Kein Genre-Bonus · solo nur Pop, Elektro' : 'Kein Genre-Bonus';
   const plaque = `<span class="plq ${bonusGenres.length ? 'on' : ''}" ${tip(plaqueTip)}>${bonusGenres.map((g) => `<i class="tex t-${g}"></i>`).join('')}</span>`;
-  const songsText = b.mood.songRate > 0 ? `~${String(Math.round(b.mood.songRate * 10) / 10).replace('.', ',')} Songs / Stunde` : 'Schreibt gerade nicht';
+  // Songs je Tag (der Server rechnet je Stunde): wie viele gerade dazukommen würden
+  const songsText = b.mood.songRate > 0 ? `~${String(Math.round(b.mood.songRate * 24 * 10) / 10).replace('.', ',')} Songs am Tag` : 'Schreibt gerade nicht';
   return `
     <a href="#/band/${b.id}" data-nav="b${b.id}" draggable="false" class="lb-bt ${selected ? 'sel' : ''} ${away ? 'busy' : ''} ${b.mood.level === 'red' ? 'frozen' : ''}">
       ${plaque}

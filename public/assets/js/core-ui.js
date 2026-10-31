@@ -1,6 +1,7 @@
-import { app, mutate, musicianById } from './core.js';
+import { app, bandById, mutate, musicianById } from './core.js';
 import { esc, fmt0, money, openModal } from './ui.js';
 import { crowdMeter, venueArt } from './venues.js';
+import { startTour, tourTab } from './tour.js';
 
 /**
  * Neuer Kern im Browser (Fans und Hype statt Ruhm, Gage und Tantiemen). Der Server meldet mit state.core, ob er schon so rechnet;
@@ -63,18 +64,52 @@ function why(b) {
   return lines;
 }
 
-/** Auftreten: ein Fenster mit dem, was kommt, und einem Knopf. Den Ort wählt das Spiel. */
+/** Auftreten: ein Fenster mit dem, was kommt, und einem Knopf. Den Ort wählt das Spiel. Ab der ersten Tournee gibt es den Reiter Tournee. */
 export function openGig(b) {
-  const c = b.core;
-  if (!c) return;
-  const g = c.gig;
+  if (!b.core) return;
+  const touring = (b.tours ?? []).some((o) => o.reached) || b.vehicles?.bus || b.vehicles?.plane;
+  let tab = touring ? (app.ui.gigTab ?? 'local') : 'local';
+  const modal = openModal({
+    wide: true,
+    render: () => `
+      <h2>${tab === 'tour' ? 'Auf Tournee' : 'Auftreten'}</h2>
+      ${touring ? `<div class="tabs gg-tabs"><button class="tab ${tab === 'local' ? 'active' : ''}" data-tab="local">Hier spielen</button><button class="tab ${tab === 'tour' ? 'active' : ''}" data-tab="tour">Tournee</button></div>` : ''}
+      ${tab === 'tour' ? tourTab(bandById(b.id) ?? b) : localGig(bandById(b.id) ?? b)}`,
+  });
+  modal.body.addEventListener('click', async (e) => {
+    const tabBtn = e.target.closest('[data-tab]');
+    if (tabBtn) {
+      tab = tabBtn.dataset.tab;
+      app.ui.gigTab = tab;
+      modal.refresh();
+      return;
+    }
+    if (e.target.closest('[data-close]')) {
+      modal.close();
+      return;
+    }
+    const region = e.target.closest('[data-region]');
+    if (region) {
+      if (region.getAttribute('aria-disabled') === 'true') return;
+      modal.close();
+      await startTour(b, region.dataset.region, Number(region.dataset.len ?? 0));
+      return;
+    }
+    const go = e.target.closest('[data-go]');
+    if (!go) return;
+    go.disabled = true;
+    if (await mutate('activityStart', { bandId: b.id, type: 'gig' })) modal.close();
+    else go.disabled = false;
+  });
+}
+
+/** Reiter „Hier spielen“: Ort, Zuschauer, Verdienst und warum. */
+function localGig(b) {
+  const g = b.core.gig;
   const r = b.mood.reactions?.gig ?? { like: [], dislike: [] };
   const names = (ids) => ids.map((id) => musicianById(id)?.firstName).filter(Boolean).join(', ');
   const full = g.demand > g.size;
-  const modal = openModal({
-    wide: true,
-    html: `
-      <h2>Auftreten</h2>
+  return `
       <div class="gg-row cf-gig">
         <div class="gg-art">${venueArt(g.venue)}</div>
         <div class="gg-main">
@@ -86,14 +121,7 @@ export function openGig(b) {
         </div>
         <div class="gg-side"><small>rund</small><b>${money(g.earnings)}</b><small>wie viele neue Fans es werden, hängt von der Show ab</small></div>
       </div>
-      <div class="dialog-actions"><button class="btn ghost" data-close>Lieber nicht</button><button class="btn primary" data-go>Auftreten</button></div>`,
-  });
-  modal.body.querySelector('[data-close]').addEventListener('click', () => modal.close());
-  modal.body.querySelector('[data-go]').addEventListener('click', async (e) => {
-    e.currentTarget.disabled = true;
-    if (await mutate('activityStart', { bandId: b.id, type: 'gig' })) modal.close();
-    else e.currentTarget.disabled = false;
-  });
+      <div class="dialog-actions"><button class="btn ghost" data-close>Lieber nicht</button><button class="btn primary" data-go>Auftreten</button></div>`;
 }
 
 /** Erklärung zu Fans und Hype (Antippen der Kachel). */

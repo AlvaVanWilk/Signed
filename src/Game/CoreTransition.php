@@ -21,6 +21,8 @@ final class CoreTransition
         $now = Clock::now();
         // Die alten Charts enden; neue Plätze gibt es nur für Platten des neuen Kerns.
         $db->exec('UPDATE records SET rank_last = NULL, rank_prev = NULL WHERE core IS NULL');
+        // Laufende Tourneen enden, die Bands sind wieder zu Hause (Tourneen gibt es im neuen Kern erst ab 5.000 Fans).
+        $db->exec("UPDATE tours SET state = 'ended', ended_at = ? WHERE state <> 'ended'", [$now]);
         foreach ($db->all('SELECT id, money, transition FROM labels ORDER BY id') as $row) {
             $repo = new Repo($db, (int) $row['id']);
             $summary = ['money' => (int) $row['money'], 'start' => Balance::CORE_MONEY['start'], 'fame' => [], 'gear' => ['kept' => 0, 'swapped' => 0, 'expired' => 0, 'given' => 0]];

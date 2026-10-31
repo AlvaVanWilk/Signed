@@ -920,6 +920,12 @@ final class Balance
         'requestRate' => ['start' => 0.1, 'root' => 0.05, 'per' => 100.0],
         'requestWeights' => ['interview' => 4, 'photos' => 2, 'article' => 2, 'report' => 1, 'ad' => 1],
     ];
+    /**
+     * Tournee im neuen Kern: Mit dem Bus (Europa) ab Ruhmstufe 2, mit dem Flugzeug (die anderen Kontinente) ab Stufe 3; die Welttournee ist
+     * geparkt. Auftritte rechnen wie zu Hause (Fans, Hype, Frische), nur gibt es Halle und Arena; passt das Lieblingsgenre des Landes,
+     * gibt es TOUR['match'] mehr Geld (`money`) und neue Fans (`fame`).
+     */
+    public const CORE_TOUR = ['stage' => ['bus' => 2, 'plane' => 3], 'parked' => ['welt']];
     /** Battle-Preise: Geld nach Platz (4 = im Halbfinale ausgeschieden); der Sieger wählt `winner` ₲ oder den Wochenpreis. */
     public const CORE_BATTLE_PRIZES = ['money' => [2 => 6000, 3 => 3000, 4 => 1500], 'winner' => 12000, 'weekly' => ['blue_instrument', 'free_production', 'room_upgrade', 'coach_days' => 3]];
     /**

@@ -127,8 +127,11 @@ final class Tours
         foreach (Balance::TOUR['regions'] as $key => $r) {
             $countries = self::countriesOf($key);
             $owned = (int) $band[$r['vehicle']];
-            $why = null;
-            if ($fame < $r['fame']) {
+            $why = BandCore::$live ? self::coreBlocked($key, $band) : null;
+            $reached = BandCore::$live ? $why === null : $fame >= $r['fame'];
+            if ($why !== null) {
+                // Neuer Kern: Ruhmstufe nach Fans (siehe coreBlocked)
+            } elseif ($fame < $r['fame'] && !BandCore::$live) {
                 $why = sprintf('Für die %s braucht die Band %s Ruhm (hat %s).', $r['name'], number_format($r['fame'], 0, ',', '.'), number_format($fame, 0, ',', '.'));
             } elseif ($owned < 1) {
                 $why = $r['vehicle'] === 'bus' ? 'Dafür braucht die Band einen Bus.' : 'Dafür braucht die Band ein Flugzeug.';
@@ -137,10 +140,35 @@ final class Tours
                 'key' => $key, 'name' => $r['name'], 'fame' => $r['fame'], 'vehicle' => $r['vehicle'], 'owned' => $owned,
                 'lengths' => $r['lengths'], 'countries' => $countries, 'stadium' => !empty($r['stadium']),
                 'cities' => !empty($r['stadium']) ? count($countries) : array_sum(array_map(static fn ($c) => count(Catalog::COUNTRIES[$c]['cities']), $countries)),
-                'reached' => $fame >= $r['fame'], 'blocked' => $why,
+                'reached' => $reached, 'blocked' => $why,
+                // Neuer Kern: ab so vielen Fans (null: geparkt)
+                'fans' => BandCore::$live ? self::coreFans($key) : null,
             ];
         }
         return $out;
+    }
+
+    /** Neuer Kern: ab wie vielen Fans eine Tournee dieser Region geht (null: geparkt). */
+    private static function coreFans(string $region): ?int
+    {
+        if (in_array($region, Balance::CORE_TOUR['parked'], true)) {
+            return null;
+        }
+        return Balance::CORE_STAGES[Balance::CORE_TOUR['stage'][Balance::TOUR['regions'][$region]['vehicle']]];
+    }
+
+    /** Neuer Kern: warum die Band diese Tournee noch nicht machen kann (null: sie kann). */
+    private static function coreBlocked(string $region, array $band): ?string
+    {
+        $need = self::coreFans($region);
+        if ($need === null) {
+            return sprintf('Die %s kommt später.', Balance::TOUR['regions'][$region]['name']);
+        }
+        $fans = (float) $band['fans'];
+        if ($fans < $need) {
+            return sprintf('Für die %s braucht die Band %s Fans (hat %s).', Balance::TOUR['regions'][$region]['name'], number_format($need, 0, ',', '.'), number_format($fans, 0, ',', '.'));
+        }
+        return null;
     }
 
     /** Ist die Band auf Tournee? Dann geht, was nur zu Hause geht, nicht (Text für die Ablehnung, sonst null). */
@@ -188,8 +216,15 @@ final class Tours
             if ($next === null) {
                 throw new ApiError($kind === 'bus' ? 'Der Bus ist schon voll ausgebaut.' : 'Das Flugzeug ist schon voll ausgebaut.');
             }
+            if (BandCore::$live) {
+                // Neuer Kern: erst ab der Ruhmstufe der ersten Tournee damit
+                $need = Balance::CORE_STAGES[Balance::CORE_TOUR['stage'][$kind]];
+                if (BandCore::fans($repo->db, $bandId) < $need) {
+                    throw new ApiError(sprintf('%s lohnt sich erst ab %s Fans: Vorher geht die Band damit nicht auf Tournee.', $kind === 'bus' ? 'Ein Bus' : 'Ein Flugzeug', number_format($need, 0, ',', '.')));
+                }
+            }
             $need = min(array_column(array_filter(Balance::TOUR['regions'], static fn ($r) => $r['vehicle'] === $kind), 'fame'));
-            if (BandCalc::bandFame($band, $members) < $need) {
+            if (!BandCore::$live && BandCalc::bandFame($band, $members) < $need) {
                 throw new ApiError(sprintf('%s lohnt sich erst ab %s Ruhm: Vorher ist die Band für Tourneen damit nicht bekannt genug.', $kind === 'bus' ? 'Ein Bus' : 'Ein Flugzeug', number_format($need, 0, ',', '.')));
             }
             $repo->spend($next['cost'], sprintf('%s für %s', $next['name'], $band['name']));
@@ -277,6 +312,9 @@ final class Tours
             $abroad = Balance::TOUR['abroad'];
             $country = self::place($tour['country']);
             $match = self::match($tour['country'], $band, $members);
+            if (BandCore::$live) {
+                return self::coreShow($repo, $tour, $band, $members, $gear, $sound, $manager, $level, $city, $country, $match, $now);
+            }
             $venue = self::venue($tour, BandCalc::bandFame($band, $members));
             $songs = min($venue['songs'], Gigs::songsAvailable($band));
             if ($songs < Balance::GIG_MIN_SONGS) {
@@ -313,6 +351,43 @@ final class Tours
                 ],
             ]);
         });
+    }
+
+    /**
+     * Neuer Kern: Auftritt auf Tournee wie zu Hause (Fans, Hype, Frische, Ort wählt das Spiel), nur mit Halle und Arena. Passt das
+     * Lieblingsgenre des Landes, gibt es mehr Geld und mehr neue Fans; Manager wie zu Hause.
+     */
+    private static function coreShow(Repo $repo, array $tour, array $band, array $members, array $gear, float $sound, ?array $manager, float $level, string $city, array $country, bool $match, int $now): array
+    {
+        $db = $repo->db;
+        $c = Balance::TOUR['match'];
+        $preview = BandCore::preview($repo, $band, true, $now);
+        $songs = Balance::GIG_BOOKING['songs'][$preview['venue']] ?? Balance::GIG_MIN_SONGS;
+        $expect = Balance::CORE_SOUND_EXPECT[BandCore::stage($db, $band['id'])] * ($match ? $c['expect'] : 1.0);
+        $sim = Performance::simulate(array_map(static fn ($m) => Activities::player($m, $gear), $members), $sound, $expect, $songs);
+        $gig = BandCore::startGig($repo, $band, $sim['meter'], true, $now);
+        $gage = (int) round($gig['earnings'] * (1 + BandCalc::managerBonus($manager, $level, 'verhandler', Balance::NEGOTIATOR_BONUS)) * ($match ? $c['money'] : 1.0));
+        $newFans = $gig['newFans'] * (1 + BandCalc::managerBonus($manager, $level, 'prprofi', Balance::PR_BONUS)) * ($match ? $c['fame'] : 1.0);
+        $endsAt = $now + $songs * Balance::SONG_SECONDS;
+        $db->exec('UPDATE bands SET busy_until = ?, released = 1 WHERE id = ?', [$endsAt, $band['id']]);
+        $tour['state'] = 'show';
+        self::save($db, $tour);
+        return (new Activities($repo))->insertBand($band['id'], self::GIG, $now, $endsAt, [
+            'title' => sprintf('Tournee: %s, %s (%s)', $city, $country['name'], Balance::CORE_VENUES[$gig['venue']]['name']),
+            'songs' => $songs,
+            'timeline' => $sim['timeline'],
+            'reward' => [
+                'money' => $gage,
+                'fameGains' => [],
+                'chartBoost' => 0,
+                'venue' => 'tour-' . $tour['country'],
+                'size' => $gig['venue'],
+                'meter' => $sim['meter'],
+                'drops' => [],
+                'core' => ['tickets' => round($gig['tickets'], 2), 'size' => $gig['size'], 'newFans' => round($newFans, 2), 'demand' => round($gig['demand'], 2)],
+                'tour' => ['id' => $tour['id'], 'country' => $tour['country'], 'city' => $city, 'match' => $match, 'first' => !self::playedHere($tour)],
+            ],
+        ]);
     }
 
     /** Ort eines Auftritts: der Ort nach Ruhm (bis zur Arena), mit Länge in Songs; auf der Welttournee ab Stadion-Ruhm das Stadion. */
@@ -451,7 +526,9 @@ final class Tours
             return $info;
         }
         $city = $info['city'] ?? self::place($info['country'])['city'];
-        $tour['data']['visits'][] = ['country' => $info['country'], 'city' => $city, 'match' => (bool) $info['match'], 'fame' => $result['fame'], 'money' => $result['money'], 'meter' => $result['meter']];
+        $tour['data']['visits'][] = ['country' => $info['country'], 'city' => $city, 'match' => (bool) $info['match'], 'fame' => $result['fame'] ?? 0, 'money' => $result['money'], 'meter' => $result['meter'],
+            // Neuer Kern: neue Fans und Zuschauer statt Ruhm
+            'fans' => $result['fans'] ?? null, 'tickets' => $result['tickets'] ?? null];
         $tour['data']['earned'] += (int) $result['money'];
         $left = array_values(array_diff(self::citiesOf($tour, $info['country']), self::playedHere($tour)));
         $tour['state'] = $left ? 'arrived' : 'after';
@@ -521,6 +598,7 @@ final class Tours
             'region' => $tour['data']['region'],
             'visits' => $visits,
             'fame' => round(array_sum(array_column($visits, 'fame')), 2),
+            'fans' => BandCore::$live ? round(array_sum(array_map(static fn ($v) => (float) ($v['fans'] ?? 0), $visits)), 1) : null,
             'earned' => (int) $tour['data']['earned'],
             'spent' => (int) $tour['data']['spent'],
             'together' => count($members) > 1,

@@ -2,6 +2,7 @@ import { app, bandById, cat, defineActions, mutate, navigate, serverNow } from '
 import { genreGlyph } from './cards.js';
 import { closeAllModals, confirmDialog, duration, esc, fmt0, fmt1, fmtGain, money, off, openModal, percent } from './ui.js';
 import { BUS_GLYPH } from './vehicle.js';
+import { coreOn } from './core-ui.js';
 
 /**
  * Tournee in Stufen: Karte mit der Route (Europa herangezoomt, Bus oder Flugzeug fährt mit), was die Band gerade macht (unterwegs,
@@ -151,7 +152,7 @@ export function matchText(country, match) {
   const g = genreName(place(country).genre);
   const where = inCountry(country);
   return match
-    ? `${where} lieben sie ${g}. Und genau das spielt ihr! Das werden besondere Abende: mehr Ruhm und mehr Gage.`
+    ? `${where} lieben sie ${g}. Und genau das spielt ihr! Das werden besondere Abende: ${coreOn() ? 'mehr neue Fans und mehr Geld' : 'mehr Ruhm und mehr Gage'}.`
     : `${where} lieben sie ${g}. Das spielt ihr nicht: Die Leute sind neugierig, aber so richtig begeistert wären sie bei ${g}.`;
 }
 
@@ -191,7 +192,7 @@ export function tourPanel(b) {
       ${t.state === 'arrived' ? `<div class="tr-btns"><button class="btn primary" data-act="tourShow" data-id="${b.id}">Auftritt in ${esc(nextCity ?? '')} starten</button>${go(false)}</div>${wait}` : ''}`;
   } else if (t.state === 'after') {
     const roll = t.roll ? place(t.roll.country) : null;
-    status = `<p class="tr-status">${esc(c.name)} ist geschafft${lastVisit ? `: zuletzt ${esc(lastVisit.city ?? c.city)} mit +${fmtGain(lastVisit.fame)} Ruhm, +${money(lastVisit.money)}` : ''}.</p>
+    status = `<p class="tr-status">${esc(c.name)} ist geschafft${lastVisit ? `: zuletzt ${esc(lastVisit.city ?? c.city)} mit ${visitGain(lastVisit)}, +${money(lastVisit.money)}` : ''}.</p>
       ${cityList(t)}
       ${roll ? `<p class="tr-short">Ausgewürfelt: <b>${esc(roll.name)}</b>. Die Reise kostet ${money(t.roll.cost)}, dafür fehlt noch Geld. Verdient erst mehr oder reist nach Hause.</p>` : ''}
       <div class="tr-btns">${go(true)}</div>
@@ -209,13 +210,16 @@ export function tourPanel(b) {
   </section>`;
 }
 
+/** Was ein Auftritt auf Tournee gebracht hat: neue Fans (neuer Kern) oder Ruhm. */
+const visitGain = (v) => (v.fans != null ? `+${fmt0(v.fans)} Fans` : `+${fmtGain(v.fame)} Ruhm`);
+
 function visitList(visits) {
   if (!visits.length) return '';
   return `<ol class="tr-visits">${visits.map((v) => {
     const c = place(v.country);
     return `<li><span><b>${esc(v.city ?? c.city)}</b> <small>${esc(c.name)}</small></span>
       <span class="tr-genre ${v.match ? 'hit' : ''}">${genreGlyph(c.genre)}${v.match ? 'euer Genre' : esc(genreName(c.genre))}</span>
-      <span class="tr-nums"><span>+${fmtGain(v.fame)} Ruhm</span><span>+${money(v.money)}</span>${v.meter !== null && v.meter !== undefined ? `<span class="muted">Publikum ${percent(v.meter / 100)}</span>` : ''}</span></li>`;
+      <span class="tr-nums"><span>${visitGain(v)}</span><span>+${money(v.money)}</span>${v.meter !== null && v.meter !== undefined ? `<span class="muted">Publikum ${percent(v.meter / 100)}</span>` : ''}</span></li>`;
   }).join('')}</ol>`;
 }
 
@@ -287,15 +291,17 @@ export function tourTab(b) {
     return `<div class="tt-card ${o.blocked ? 'locked' : ''}">
       <div class="tt-icon">${o.vehicle === 'bus' ? '<svg viewBox="-12 -8 24 16">' + BUS_GLYPH + '</svg>' : `<svg viewBox="-12 -8 24 16">${PLANE}</svg>`}</div>
       <div class="tt-main"><b>${esc(o.name)}</b>
-        <small>${o.countries.length} Länder · ${o.cities} ${o.stadium ? 'größte Städte' : 'Städte'} · ab ${fmt0(o.fame)} Ruhm · mit ${o.vehicle === 'bus' ? 'dem Bus' : 'dem Flugzeug'}</small>
-        ${o.stadium ? `<small class="muted">In großen Arenen, ab ${fmt0(cat().tour.stadium.minFame)} Ruhm im Stadion.</small>` : ''}
+        <small>${o.countries.length} Länder · ${o.cities} ${o.stadium ? 'größte Städte' : 'Städte'} · ${coreOn() ? (o.fans != null ? `ab ${fmt0(o.fans)} Fans` : 'kommt später') : `ab ${fmt0(o.fame)} Ruhm`} · mit ${o.vehicle === 'bus' ? 'dem Bus' : 'dem Flugzeug'}</small>
+        ${o.stadium && !coreOn() ? `<small class="muted">In großen Arenen, ab ${fmt0(cat().tour.stadium.minFame)} Ruhm im Stadion.</small>` : ''}
         <small class="muted">${esc(o.countries.map((k) => cat().countries[k].name).join(', '))}</small>
         ${fans.length && !o.blocked ? `<small class="good">Euer Genre lieben sie in: ${esc(fans.join(', '))}</small>` : ''}
         ${o.blocked ? `<small class="bad">${esc(o.blocked)}</small>` : ''}</div>
       <div class="tt-go">${go}</div>
     </div>`;
   };
-  return `<p class="muted small">Auf Tournee spielt die Band in jeder Stadt eines Landes einmal; welches Land als Nächstes kommt, wird ausgewürfelt. Im Ausland kennt noch niemand die Lieder: Es gibt mehr Ruhm und mehr Gage als zu Hause. Unterwegs lebt die Band im ${esc(by(regions.find((o) => !o.blocked)?.vehicle ?? 'bus'))}, probt dort und gibt Interviews. Aufnehmen, Auszeit und Auftritte zu Hause gehen erst wieder danach.</p>
+  return `<p class="muted small">Auf Tournee spielt die Band in jeder Stadt eines Landes einmal; welches Land als Nächstes kommt, wird ausgewürfelt. ${coreOn()
+    ? 'Es geht wie zu Hause, nur passen in Hallen und Arenen viel mehr Leute. Wer gleich noch einmal auftritt, hat auch hier weniger Publikum; nach einem Tag Pause kommen wieder alle.'
+    : 'Im Ausland kennt noch niemand die Lieder: Es gibt mehr Ruhm und mehr Gage als zu Hause.'} Unterwegs lebt die Band im ${esc(by(regions.find((o) => !o.blocked)?.vehicle ?? 'bus'))}, probt dort und gibt Interviews. Aufnehmen, Auszeit und Auftritte zu Hause gehen erst wieder danach.</p>
     ${vehicleRows(b)}
     <div class="tt-list">${regions.map(card).join('')}</div>`;
 }
@@ -303,12 +309,17 @@ export function tourTab(b) {
 /** Ab welchem Ruhm es ein Fahrzeug braucht (die erste Tournee damit). */
 export const vehicleFame = (kind) => Math.min(...Object.values(cat().tour.regions).filter((r) => r.vehicle === kind).map((r) => r.fame));
 
+/** Neuer Kern: Ist die Band bekannt genug für ein Fahrzeug (die erste Tournee damit, nach Fans)? */
+const vehicleReached = (b, kind) => (coreOn()
+  ? (b.tours ?? []).some((o) => o.vehicle === kind && o.fans != null && (b.core?.fans ?? 0) >= o.fans)
+  : b.fame >= vehicleFame(kind));
+
 /** Bus und Flugzeug der Band: was sie haben, was es bringt, und der nächste Ausbau (erst, wenn die Band bekannt genug ist). */
 export function vehicleRows(b) {
   const pc = (x) => `${x >= 1 ? '+' : '−'}${Math.abs(Math.round((x - 1) * 100))} %`;
   return ['bus', 'plane'].map((kind) => {
     const level = b.vehicles?.[kind] ?? 0;
-    if (!level && b.fame < vehicleFame(kind)) return '';
+    if (!level && !vehicleReached(b, kind)) return '';
     const levels = cat().vehicles[kind];
     const now = level ? levels[level - 1] : null;
     const next = levels[level] ?? null;
@@ -422,8 +433,8 @@ export function homeHtml(r) {
     <h2>${esc(b?.name ?? '')} ist wieder zu Hause</h2>
     ${visitList(res.visits ?? [])}
     <div class="reward-grid">
-      <div class="reward"><span>Ruhm</span><b>+${fmt1(res.fame ?? 0)}</b></div>
-      <div class="reward reward-money"><span>Gagen</span><b>+${money(res.earned ?? 0)}</b></div>
+      ${res.fans != null ? `<div class="reward"><span>Neue Fans</span><b>+${fmt0(res.fans)}</b></div>` : `<div class="reward"><span>Ruhm</span><b>+${fmt1(res.fame ?? 0)}</b></div>`}
+      <div class="reward reward-money"><span>${res.fans != null ? 'Verdient' : 'Gagen'}</span><b>+${money(res.earned ?? 0)}</b></div>
       <div class="reward"><span>Reisen</span><b>−${money(res.spent ?? 0)}</b></div>
     </div>
     <p class="muted">${hits ? `${hits} ${hits === 1 ? 'Land liebte' : 'Länder liebten'} euer Genre. ` : ''}${res.together ? 'Die Tournee hat die Band zusammengeschweißt: Alle verstehen sich jetzt besser.' : ''}</p>`;

@@ -335,6 +335,51 @@ test('Kern im Spiel: Anfragen statt Interviews – erst mit Platte, Hype-Schub f
     check(BandCore::view($db, $band, $repo->members($band['id']))['hype'] > $hype - 0.5, 'Schub für die neueste Platte');
 });
 
+test('Kern im Spiel: Tournee ab 5.000 Fans mit dem Bus; Auftritte wie zu Hause, nur mit Halle; Welttournee geparkt', function () {
+    [$db, $p, $repo, $band] = coreLabel();
+    $db->exec('UPDATE labels SET money = 400000');
+    $db->exec('UPDATE bands SET fans = 4000, records = 1 WHERE id = ?', [$band['id']]);
+    coreRelease($repo, $repo->band($band['id']), 90);
+    $start = static fn () => $p->post('tourStart', ['bandId' => $band['id'], 'region' => 'europa', 'stations' => 3]);
+    checkApiError($start, 'Fans');
+    checkApiError(fn () => $p->post('vehicleBuy', ['bandId' => $band['id'], 'kind' => 'bus']), 'lohnt sich erst');
+    $db->exec('UPDATE bands SET fans = 20000 WHERE id = ?', [$band['id']]);
+    checkApiError($start, 'Bus');
+    $p->post('vehicleBuy', ['bandId' => $band['id'], 'kind' => 'bus']);
+    checkApiError(fn () => $p->post('vehicleBuy', ['bandId' => $band['id'], 'kind' => 'plane']), 'lohnt sich erst');
+    $options = array_column(bandById($p->get('state'), $band['id'])['tours'], null, 'key');
+    check($options['europa']['reached'] && $options['europa']['blocked'] === null, 'Europa geht ab 5.000 Fans');
+    checkEquals(5000, $options['europa']['fans']);
+    check(str_contains((string) $options['nordamerika']['blocked'], '50.000 Fans'), 'Übersee erst als Superstar');
+    check(str_contains((string) $options['welt']['blocked'], 'später'), 'Welttournee geparkt');
+    $res = $start();
+    Clock::set($res['activity']['endsAt'] + 1);
+    $p->get('state');
+    $gig = $p->post('tourShow', ['bandId' => $band['id']])['activity'];
+    $data = json_decode((string) $db->value('SELECT data FROM activities WHERE id = ?', [$gig['id']]), true);
+    $core = $data['reward']['core'];
+    checkEquals('halle', $data['reward']['size'], 'Mehr Leute, als in den größten Club passen: Halle');
+    check($core['tickets'] > 1500, 'Mehr als 1.500 Zuschauer');
+    $factor = $data['reward']['tour']['match'] ? Signed\Game\Balance::TOUR['match']['money'] : 1.0;
+    coreNear($core['tickets'] * Signed\Game\Balance::CORE_EARNINGS[2] * $factor, (float) $data['reward']['money'], 1.0, 'Verdienst je Zuschauer wie zu Hause');
+    $fans = BandCore::fans($db, $band['id']);
+    Clock::set($gig['endsAt'] + 1);
+    $state = $p->get('state');
+    check(BandCore::fans($db, $band['id']) >= $fans, 'Neue Fans nach dem Auftritt (bis zum Dach)');
+    $played = array_values(array_filter($state['results'], static fn ($r) => $r['type'] === 'tourgig'))[0]['result'];
+    check($played['tickets'] > 1500 && $played['money'] > 0, 'Ergebnis mit Zuschauern und Geld');
+    $tour = bandById($state, $band['id'])['tour'];
+    checkEquals(1, count($tour['visits']));
+    checkEquals((int) round($core['tickets']), $tour['visits'][0]['tickets']);
+    if ($played['tour']['next'] !== null) {
+        $next = $p->post('tourShow', ['bandId' => $band['id']])['activity'];
+        $again = json_decode((string) $db->value('SELECT data FROM activities WHERE id = ?', [$next['id']]), true)['reward']['core'];
+        check($again['demand'] < 0.6 * $core['demand'], 'Frische gilt auch auf Tournee: gleich danach kommen weniger');
+    }
+    // Ruhm gibt es nicht mehr; die Bekanntheit der Musiker folgt den Fans der Band
+    checkEquals(round(3 * BandCore::fameEquivalent(BandCore::fans($db, $band['id'])), 1), round((float) $db->value('SELECT SUM(fame) FROM musicians WHERE band_id = ?', [$band['id']]), 1));
+});
+
 test('Kern im Spiel: Austritt, Zusammentun und Umbenennen nach den Fan-Regeln', function () {
     [$db, $p, $repo, $band] = coreLabel();
     $db->exec('UPDATE bands SET fans = 9000 WHERE id = ?', [$band['id']]);
@@ -411,7 +456,11 @@ test('Kern im Spiel: Übergang – 0 Fans, neues Startgeld, eigenes Instrument i
     $goldId = $repo->insertGear($gold);
     $db->exec('UPDATE gear SET musician_id = ? WHERE id = ?', [$a['id'], $goldId]);
     $repo->insertGear(array_key_first(Signed\Game\Catalog::GEAR));
+    $db->insert('items', ['label_id' => $repo->labelId, 'kind' => 'fan', 'value' => 8.0, 'created_at' => Clock::now()]);
+    $tourId = $db->insert('tours', ['label_id' => $repo->labelId, 'band_id' => $band['id'], 'state' => 'arrived', 'stations' => 3, 'country' => 'fr', 'deadline' => 0, 'started_at' => Clock::now(), 'data' => '{}']);
     Signed\Game\CoreTransition::run($db);
+    checkEquals(0, (int) $db->value('SELECT COUNT(*) FROM items WHERE label_id = ?', [$repo->labelId]), 'Fan-Karten verfallen');
+    checkEquals('ended', $db->value('SELECT state FROM tours WHERE id = ?', [$tourId]), 'Laufende Tourneen enden');
     checkEquals(5000, (int) $db->value('SELECT money FROM labels WHERE id = ?', [$repo->labelId]));
     checkEquals(0.0, BandCore::fans($db, $band['id']));
     checkEquals(2, Signed\Game\Gear::modelTier((string) $db->value('SELECT model FROM gear WHERE id = ?', [$goldId])), 'Gold wird Blau');
@@ -427,4 +476,5 @@ test('Kern im Spiel: Übergang – 0 Fans, neues Startgeld, eigenes Instrument i
     $summary = json_decode((string) $db->value('SELECT transition FROM labels WHERE id = ?', [$repo->labelId]), true)['core'];
     checkEquals(123456, $summary['money']);
     checkEquals(['kept' => 0, 'swapped' => 1, 'expired' => 1, 'given' => 2], $summary['gear']);
+    checkEquals(1, $summary['cards']);
 });

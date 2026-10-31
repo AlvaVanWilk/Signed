@@ -12,11 +12,11 @@ use Signed\Game\Core\Sales;
 /**
  * Bindeglied zwischen dem neuen Kern (src/Game/Core) und der Datenbank: lädt den Stand einer Band (Fans, Frische, laufende Platten),
  * rechnet ihn bis jetzt weiter, bucht Geld, Verkäufe und Chart-Stunden und speichert ihn wieder.
- * Läuft nur, wenn der Schalter an ist; bis der Umbau fertig ist, rechnet das Spiel wie bisher (siehe docs/kern-einbau.md).
+ * Läuft nur, wenn der Schalter an ist (in der Testversion an, siehe docs/kern-einbau.md); mit Schalter aus rechnet das Spiel wie bisher.
  */
 final class BandCore
 {
-    /** Schalter für den Umbau. Aus: das bisherige Spiel (Testversion unverändert). An: Fans und Hype. */
+    /** Schalter für den Umbau. An (public/api.php, Testversion): Fans und Hype. Aus: das bisherige Spiel (Standard, so prüfen es die alten Tests). */
     public static bool $live = false;
 
     /** Art der Band fürs Dach: gemischt, Genre, Hybrid, Crossover; Solokünstler mit Pop oder Elektro wie Genre, mit beidem wie Hybrid. */

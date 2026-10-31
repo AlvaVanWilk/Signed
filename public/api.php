@@ -40,9 +40,9 @@ try {
     }
 
     $db = Db::fromConfig();
+    // Neuer Kern (Fans und Hype statt Ruhm) ist eingeschaltet, schon vor der Umstellung der Datenbank (Schema-Schritt 58, CoreTransition).
+    Signed\Game\BandCore::$live = true;
     Schema::migrate($db);
-    // Neuer Kern zum Ausprobieren auf dem eigenen Rechner (config.php: 'core' => true); auf dem Webspace steht das nicht drin.
-    Signed\Game\BandCore::$live = Signed\Game\BandCore::$live || (bool) Config::get('core', false);
     $result = (new Api($db, new HttpSession()))->handle($method, $action, $input);
     $respond(200, ['ok' => true] + $result);
 } catch (ApiError $e) {

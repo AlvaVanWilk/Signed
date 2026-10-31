@@ -511,6 +511,44 @@ test('Kern im Spiel: Können wird im neuen Maß gezeigt, Proben bringt 50 je Stu
     coreNear($before + 50, Signed\Game\Core\Skill::fromLegacy(Signed\Game\Core\Skill::toLegacy($before + 50)), 1e-9, 'Umrechnung hin und zurück');
 });
 
+test('Kern im Spiel: Umschalten mit einem alten Spielstand (Platten in den Charts, Lager, Ruhm) – danach läuft alles, zweimal umschalten ändert nichts', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Altlabel');
+    $band = foundBand($p, 'Alte Hasen');
+    $db->exec('UPDATE labels SET money = 50000');
+    // Altes Spiel: Platte in den Charts, Auftritt mit Gage und Ruhm, Instrument im Lager
+    makeRecord($db, $p, $band['id'], 'Damals', 4);
+    $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'gig', 'songs' => 3]);
+    Clock::advance(3600);
+    $state = $p->get('state');
+    check((float) $db->value('SELECT SUM(fame) FROM musicians WHERE band_id = ?', [$band['id']]) > 0, 'Altes Spiel: Ruhm');
+    $labelId = (int) $state['label']['id'];
+    $db->exec('UPDATE musicians SET fame = fame + 10 WHERE band_id = ?', [$band['id']]);
+    (new Repo($db, $labelId))->insertGear(array_key_first(Signed\Game\Catalog::GEAR));
+    // Umschalten wie auf dem Server: Schalter an, dann der Schritt
+    BandCore::$live = true;
+    Signed\Game\CoreTransition::run($db);
+    $money = (int) $db->value('SELECT money FROM labels WHERE id = ?', [$labelId]);
+    checkEquals(5000, $money);
+    Signed\Game\CoreTransition::run($db);
+    checkEquals(5000, (int) $db->value('SELECT money FROM labels WHERE id = ?', [$labelId]), 'Zweimal umschalten ändert nichts');
+    checkEquals(1, (int) $db->value("SELECT COUNT(*) FROM history WHERE band_id = ? AND text LIKE 'Vor dem Umbau: % Ruhm.'", [$band['id']]), 'Erinnerung nur einmal');
+    $state = $p->get('state');
+    check($state['core'] === true && $state['transition']['core'] !== null, 'Was ist neu?');
+    checkEquals(0.0, (float) bandById($state, $band['id'])['core']['fans']);
+    $p->post('transitionDone', ['keep' => []]);
+    checkEquals(null, $p->get('state')['transition']);
+    // Danach: auftreten, Charts, Aufnahme-Fenster
+    $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'gig']);
+    Clock::advance(3600);
+    $state = $p->get('state');
+    check(BandCore::fans($db, $band['id']) > 0, 'Erste Fans nach dem Umschalten');
+    $charts = $p->get('charts');
+    check($charts['core'] === true, 'Charts im neuen Kern');
+    checkEquals([], array_values(array_filter($charts['albums'], static fn ($a) => $a['title'] === 'Damals')), 'Alte Platten sind aus den Charts');
+    $p->post('recordOptions', ['bandId' => $band['id']]);
+});
+
 test('Kern im Spiel: Übergang – 0 Fans, neues Startgeld, eigenes Instrument in passender Farbe, Lager verfällt, alter Ruhm als Erinnerung', function () {
     [$db, $p, $repo, $band] = coreLabel();
     $members = array_values($repo->members($band['id']));

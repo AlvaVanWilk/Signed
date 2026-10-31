@@ -24,19 +24,33 @@ final class CoreTransition
         // Laufende Tourneen enden, die Bands sind wieder zu Hause (Tourneen gibt es im neuen Kern erst ab 5.000 Fans).
         $db->exec("UPDATE tours SET state = 'ended', ended_at = ? WHERE state <> 'ended'", [$now]);
         foreach ($db->all('SELECT id, money, transition FROM labels ORDER BY id') as $row) {
-            $repo = new Repo($db, (int) $row['id']);
-            $summary = ['money' => (int) $row['money'], 'start' => Balance::CORE_MONEY['start'], 'fame' => [], 'gear' => ['kept' => 0, 'swapped' => 0, 'expired' => 0, 'given' => 0]];
-            foreach ($repo->bands() as $band) {
-                $summary['fame'] = array_merge($summary['fame'], self::band($repo, $band, $now));
-            }
-            self::musicians($repo);
-            self::money($repo, (int) $row['money']);
-            $summary['gear'] = self::gear($repo);
-            // Fan-Karten brachten Ruhm; den gibt es nicht mehr.
-            $summary['cards'] = $db->exec("DELETE FROM items WHERE label_id = ? AND kind = 'fan'", [$repo->labelId]);
             $old = json_decode((string) ($row['transition'] ?? ''), true) ?: [];
-            $db->update('labels', ['transition' => json_encode($old + ['core' => $summary], JSON_UNESCAPED_UNICODE)], ['id' => $repo->labelId]);
+            if (isset($old['core'])) {
+                // Schon umgestellt (der Schritt lief schon einmal an)
+                continue;
+            }
+            try {
+                // Jedes Label für sich: Geht bei einem etwas schief, bleibt es, wie es war, und die anderen werden trotzdem umgestellt.
+                $db->transaction(static fn () => self::label($db, $row, $old, $now));
+            } catch (\Throwable $e) {
+                error_log(sprintf('[signed] CoreTransition, Label %d: %s', (int) $row['id'], $e));
+            }
         }
+    }
+
+    private static function label(Db $db, array $row, array $old, int $now): void
+    {
+        $repo = new Repo($db, (int) $row['id']);
+        $summary = ['money' => (int) $row['money'], 'start' => Balance::CORE_MONEY['start'], 'fame' => [], 'gear' => ['kept' => 0, 'swapped' => 0, 'expired' => 0, 'given' => 0]];
+        foreach ($repo->bands() as $band) {
+            $summary['fame'] = array_merge($summary['fame'], self::band($repo, $band, $now));
+        }
+        self::musicians($repo);
+        self::money($repo, (int) $row['money']);
+        $summary['gear'] = self::gear($repo);
+        // Fan-Karten brachten Ruhm; den gibt es nicht mehr.
+        $summary['cards'] = $db->exec("DELETE FROM items WHERE label_id = ? AND kind = 'fan'", [$repo->labelId]);
+        $db->update('labels', ['transition' => json_encode($old + ['core' => $summary], JSON_UNESCAPED_UNICODE)], ['id' => $repo->labelId]);
     }
 
     /** Eine Band: Erinnerung an den alten Ruhm, 0 Fans, Songs im Vorrat mit Qualität. */

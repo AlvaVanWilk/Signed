@@ -55,7 +55,7 @@ export function writeModeRow(b) {
 function why(b) {
   const c = b.core;
   const lines = [];
-  if (!c.record) lines.push('Noch keine Platte: Es kommen nur ein paar Neugierige. Mit einer neuen Platte kommen viel mehr.');
+  if (!c.record) lines.push(`${b.records > 0 ? 'Noch keine neue Platte' : 'Noch keine Platte'}: Es kommen nur ein paar Neugierige. Mit einer neuen Platte kommen viel mehr.`);
   else if (c.hype >= 25) lines.push(`Die neueste Platte ist frisch (Hype ${fmt0(c.hype)}): Viele wollen ${b.memberIds.length === 1 ? 'den Auftritt' : 'die Band'} sehen.`);
   else if (c.hype >= 5) lines.push(`Der Hype der neuesten Platte lässt nach (${fmt0(c.hype)}). Eine neue Platte oder eine Anfrage bringt wieder mehr Leute.`);
   else lines.push('Die neueste Platte ist schon älter: ohne Hype kommen vor allem die treuen Fans.');

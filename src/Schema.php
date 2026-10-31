@@ -713,6 +713,11 @@ final class Schema
                 ){OPTS}',
                 'CREATE INDEX prizes_label ON prizes (label_id)',
             ],
+            // 58: Neuer Kern eingeschaltet (public/api.php): alle Spielstände einmal umstellen – 0 Fans, neues Startgeld, Instrumente in der Farbe
+            // der Können-Stufe, Lager und Fan-Karten verfallen, Tourneen enden, alter Ruhm als Erinnerung; „Was ist neu?“ über labels.transition
+            [
+                static fn (Db $db) => \Signed\Game\CoreTransition::run($db),
+            ],
         ];
     }
 }

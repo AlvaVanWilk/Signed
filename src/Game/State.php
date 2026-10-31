@@ -79,7 +79,8 @@ final class State
                 'cover' => (json_decode((string) ($row['cover'] ?? ''), true) ?: [])['spec'] ?? null,
                 'songs' => (int) $row['songs_total'],
                 'format' => (int) $row['songs_total'] >= Balance::CHART_LP_SONGS ? 'LP' : 'EP',
-                'quality' => $results ? round(array_sum(array_column($results, 'accuracy')) / count($results), 3) : 0,
+                // Neuer Kern: Qualität steht beim Aufnehmen fest (records.quality, 0–1)
+                'quality' => $row['core'] !== null ? round((float) ($row['quality'] ?? 0), 3) : ($results ? round(array_sum(array_column($results, 'accuracy')) / count($results), 3) : 0),
                 'perfect' => (bool) $row['perfect'],
                 'charting' => $entry !== null,
                 'peak' => round((float) $row['chart_points'], 1),

@@ -20,6 +20,158 @@ feste Daten in [`src/Game/Catalog.php`](../src/Game/Catalog.php); sie sind Start
 | Einführung und Hilfe | sechs Schritte beim ersten Mal, Hilfe nach Themen (?); alte Labels sehen einmal „Was ist neu?“ |
 | Namen | Zufallsnamen für Bands und Platten; Bandnamen sind im ganzen Spiel eindeutig (geschützt, solange sie Ruhm haben) |
 
+Im **neuen Kern** (Testversion) gilt der nächste Abschnitt: 5.000 ₲ Startgeld, „Auftreten“ statt „Auftritt buchen“, Anfragen statt Interviews
+und Promo-Tour, Plattenverkäufe statt Tantiemen, Fans statt Ruhm. Die übrigen Abschnitte gelten weiter, außer wo sie als „altes Spiel“ markiert sind.
+
+## Neuer Kern: Fans und Hype
+
+Gilt in der Testversion (Schalter `BandCore::$live`, eingeschaltet in `public/api.php`; die Test-Spielstände wurden einmal mit Schema-Schritt 58
+umgestellt). `main` rechnet bis zur Veröffentlichung nach den alten Regeln weiter unten. Rechenwerk ohne Datenbank: `src/Game/Core`
+(getestet in `tests/CoreTest.php`); eingebaut über `src/Game/BandCore.php` (Speichern, Weiterrechnen bei jedem Aufruf, Chart-Stunden),
+getestet in `tests/BandCoreTest.php`. Alle Zahlen: `Balance::CORE_*`. Hype und Plattenverkäufe rechnen je echtem Tag ab dem Erscheinen
+der Platte, Konzerte einzeln je Auftritt. Er ersetzt Ruhm, Bekanntheit, Label-Ruhm, Gage-Rechnung, die alte Frische, Tantiemen,
+Chartpunkte, den Album-Zyklus, die Promo-Tour, Straßenmusik, Open Stage und Fan-Karten.
+
+### Fans und Ruhmstufe
+
+- Der Erfolg einer Band sind ihre **Fans**. Ruhmstufe (Sterne): 0 Unbekannt, 1 Lokal bekannt ab 500, 2 Berühmt ab 5.000, 3 Superstar ab 50.000.
+- **Dach** nach Art der Band: gemischt 4.999, Genre-Band 50.000, Hybrid 75.000, Crossover 90.000; Solokünstler mit Pop oder Elektro wie eine
+  Genre-Band, mit beidem wie ein Hybrid, andere Solokünstler 4.999. Wer darüber liegt (etwa nach einem Wechsel), behält seine Fans, wächst aber nicht weiter.
+- **Rechen-Pool** einer Platte, beim Erscheinen fest: M = max(50.000, F0 + 10.000), F0 = Fans beim Erscheinen.
+- Neue Fans kommen aus Plattenverkäufen, Konzerten, Festival und Battle. Neu Unterschriebene bringen keine Bekanntheit mit (0 Fans).
+- Die Bekanntheit eines Musikers ist der Ruhm-Gegenwert der Fans seiner Band (`BandCore::fameEquivalent`: 500 / 5.000 / 50.000 Fans ↔ 20 / 120 / 600,
+  dazwischen gleichmäßig); damit rechnen Regeln, die noch die alte Skala brauchen (Einsendungen, Bewerbungen, Künstlername, Marktwert).
+- Bestenlisten: Labels nach allen Fans zusammen; Künstler als Fan-Lieblinge (Fans) und Sound-Monster (Sound).
+
+### Hype
+
+- Beim Erscheinen: Hype = Q² / 100 (Q = Qualität 0–100). Jeden Tag × 0,5, eine perfekte Platte (ab Q 95) × 0,55.
+- Schübe (Anfragen, Festival-Bühne, Battle-Platz) heben den Hype der neuesten Platte sofort; jeder weitere Schub für dieselbe Platte zählt
+  halb so viel; höchstens 100.
+- Flamme: lodert ab 85, rot ab 55, schwach ab 25, Glut ab 5.
+
+### Plattenverkäufe
+
+Zu Beginn jedes Tages einer Platte stehen die Werte fest und fließen gleichmäßig über den Tag. Ein Schub wirkt sofort für den Rest des Tages;
+neue Fans aus Konzerten und Ereignissen kaufen ab dem nächsten Tag.
+
+```
+A   = Hype / 100
+nK  = (p + q × F0 / M) × A × (M − F0 − B − C)    entdecken die Platte (B = bisherige Käufer, C = neue Fans dieser Platte)
+nB  = U × r                                       Fans, die kaufen (U = Fans, die noch kaufen wollen; beim Erscheinen F0 × aQ)
+aQ  = min(1; 0,64 × (Q / 80)²)
+V   = nK + nB verkauft, 10 ₲ je Stück; k × nK werden Fans
+p = 0,0015 · q = 0,06 · r = 0,5 · k = 0,6
+```
+
+- Die neueste Platte läuft, bis sie an einem Tag durch den Hype weniger als ein Stück verkauft; danach nur noch **Katalog**:
+  Fans × 0,012 × Q / 100 × 0,5^(Tag / 7) je Tag, bis unter 0,01.
+- **Charts:** Verkäufe durch den Hype in den letzten 24 Stunden, jede volle Stunde neu sortiert (`chart_hours`).
+- **Gold, Platin, Diamant:** 5.000 / 20.000 / 50.000 verkauft (Hype und Katalog zusammen).
+
+### Konzerte („Auftreten“)
+
+Es gibt einen Knopf. Den Ort wählt das Spiel, Kosten gibt es keine, das Label verdient je Zuschauer. Wie oft die Band auftritt, entscheidet der Spieler.
+
+```
+Fans, die kommen  = Fans × (b + c × A)                                b = 0,02 · c = 0,3
+Neugierige        = (M − Fans) × (n0 + n × A × (1 + w × F0 / M))     n0 = 0,0005 · n = 0,003 · w = 20
+Nachfrage         = (Fans, die kommen + Neugierige) × Frische
+Ort               = die kleinste Größe, in die alle passen; sonst die größte erlaubte (ausverkauft)
+Zuschauer         = min(Nachfrage; Plätze)
+Neue Fans         = Neugierige × Frische × Zuschauer / Nachfrage × u × L / 100     u = 0,3 · L = Publikumsleiste am Ende
+Verdienst         = Zuschauer × 5 / 6 / 9 / 12 ₲ nach Ruhmstufe
+```
+
+- Ohne Platte: A = 0, F0 = Fans, M aus den Fans (eine ganz neue Band hat 25 Neugierige).
+- **Frische:** Nach jedem Auftritt halb so groß, erholt sich gleichmäßig in 24 Stunden.
+- **Orte:** Kneipe 60 / 150 / 300 (ab Stufe 0), Club 500 / 1.000 / 1.500 (ab Stufe 1); nur auf Tournee Halle 3.000 / 5.000 / 8.000 (ab Stufe 2)
+  und Arena 10.000 / 15.000 / 20.000 (ab Stufe 3). Länge 3 / 4 / 7 / 9 Lieder.
+- Die Publikumsleiste rechnet mit der Sound-Erwartung der Ruhmstufe: 150 / 1.500 / 10.000 / 45.000.
+- **Manager:** Verhandler +8 % Verdienst, PR-Profi +8 % neue Fans je Stufe (× Passung).
+- Ausverkauft oder eine tolle Show (Publikumsleiste ab 90): je mit 25 % eine Anfrage danach.
+
+### Tournee
+
+- Europa mit dem Bus ab 5.000 Fans, die übrigen Kontinente mit dem Flugzeug ab 50.000 Fans; die Welttournee ist geparkt. Bus oder Flugzeug
+  gibt es erst ab dieser Stufe.
+- Auftritte rechnen wie zu Hause (Fans, Hype, Frische), dazu Halle und Arena. Liebt das Land das Genre der Band: Verdienst und neue Fans × 1,5,
+  Erwartung × 0,85. Reisen, Länder und Städte wie bisher.
+
+### Platte aufnehmen
+
+- Ein Album hat immer **12 Songs** aus dem Vorrat; die Band ist 5 Minuten je Lied im Studio. Kein Album-Zyklus, kein Erstverkauf:
+  Erst wenn die Studiozeit um ist, erscheint die Platte und ihr Hype beginnt.
+- **Qualität** Q = 100 × (0,40 × S + 0,25 × W + 0,20 × P + 0,15 × E), ab 95 perfekt:
+  S = min(1; Sound / Erwartung der Ruhmstufe 150 / 1.500 / 10.000 / 45.000), W = Durchschnitt der Songs / 100,
+  P = Produktionsstufe / Ruhmstufe (höchstens 1, bei Stufe 0 immer 1), E = min(1; Wohlbefinden / 60).
+  So kann jede Band in jeder Phase perfekt aufnehmen. Die Erwartung ist so gewählt, dass eine Zweierband mit einer Probe am Tag mithält.
+- **Produktion** (Studio und Produzent zusammen): 0 Garage mit Mo Beats 300 ₲, 1 Tonstudio mit Roxy Reverb 2.000 ₲,
+  2 Profi-Studio mit Diamond Dee 8.000 ₲, 3 Legendäres Studio mit Ruben Stille 30.000 ₲. Unter der Ruhmstufe ärgert sich die Band,
+  darüber freut sie sich; mit Ruben Stille sind alle entspannt.
+
+### Songs
+
+- Jeder Song kommt einzeln mit eigener Qualität in den Vorrat (`songs`).
+- Songs je Tag = 1,2 × (1 + 1,2 × (n − 1) / (n + 1)) × Regler × Stimmung × Tätigkeit × Genre × Coach.
+  n = Songschreiber (je Mitglied 1, Kreativ 1,5, Chaot 1,2, Perfektionist 0,8, Technisch 0); Regler schnell 1,5 / normal 1 / sorgfältig 0,67;
+  Stimmung grün 1 / gelb 0,5 / rot 0; Tätigkeit im Studio und beim Auftritt 0, beim Proben 0,6, sonst 1; Genre-Band 1 / Hybrid 0,85 /
+  Crossover und gemischt 0,7; Coach 1,5 / 1,75 / 2.
+- Songqualität = 50 + 25 × K + Regler (schnell −20, sorgfältig +20) + Coach (5 / 10 / 15) ± 10 Zufall, 0–100;
+  K = Anteil der Songschreiber mit Perfektionist (zählt 1) oder Kreativ (0,5).
+
+### Können
+
+- Neues Maß, nach oben offen: Fortgeschritten ab 100, Profi ab 400, Virtuose ab 1.600. Proben bringt 50 je Probestunde (× Talent, × Lernbonus
+  des Instruments), ohne Lernkurve.
+- Gespeichert bleibt die alte Skala; gezeigt und für den Sound gerechnet wird `Core\Skill::fromLegacy` (0 / 35 / 60 / 85 / 100 ↔ 0 / 100 / 400 / 1.600 / 2.320).
+
+### Bedürfnisse
+
+- Sie dürfen jederzeit auftauchen; das Auftauchen kostet nichts. Sie wachsen nur alle 24 Stunden, um so viel, wie heute in 24 Stunden
+  dazukommt (`Core\Needs`). So muss niemand zu einer bestimmten Stunde da sein.
+
+### Ereignisse und Anfragen
+
+- **Festival:** die Bands mit den meisten Fans auf die Hauptbühne. Zuschauer Hauptbühne 20.000, Nebenbühne 8.000, Zeltbühne 2.000;
+  Schub +10 / +6 / +3; Geld wie bisher. Neue Fans = Zuschauer × (1 − Fans / M) × 0,02 × L / 100.
+- **Battle:** je gespieltes Spiel 2.000 Zuschauer (neue Fans wie beim Festival, L = Laune der Band); Schub Platz 1 / 2 / 3: +15 / +10 / +6.
+  Preise: Platz 2 6.000 ₲, Platz 3 3.000 ₲, Platz 4 1.500 ₲. Der Sieger wählt 12.000 ₲ oder den **Wochenpreis**, der vorher auf dem Plakat
+  steht und jede Woche wechselt: ein blaues Instrument nach Wahl (Gutschein), eine Aufnahme umsonst im Studio, das zur Ruhmstufe passt
+  (Gutschein der Band), der Proberaum eine Stufe besser oder ein Songwriting-Coach (Stufe 3) für drei Tage (`Prizes`, Tabelle `prizes`).
+- **Anfragen** (statt Interviews und Promo-Tour), nur für Bands mit Platte: Interview +2 (15 Min.), Fotoserie +3 (20 Min.), Artikel +4 (15 Min.),
+  Reportage +6 (30 Min.), Werbung +1 (20 Min.) und so viele ₲, wie die Band Fans hat. Je Musiker und Tag 0,1 + 0,05 × √(Fans / 100);
+  Arten im Verhältnis 4 / 2 / 2 / 1 / 1. Netzwerker +10 % Schub je Stufe. Dazu Anfragen nach Ereignissen, mit Bezug im Brief: Festival,
+  Battle Platz 1 bis 3, Platz 1 der Charts, Gold / Platin / Diamant, ausverkauftes Konzert und tolle Show (je 25 %).
+
+### Band ändern
+
+- **Austritt:** Gewicht je Musiker 1, doppelt mit Rampensau, Diva, Partytier oder Künstlernamen. Von seinem Anteil an den Fans geht die
+  Hälfte mit (er macht solo weiter), ein Fünftel hört ganz auf.
+- **Zusammentun:** die größere Band plus die Hälfte der kleineren. **Umbenennen:** ein Zehntel der Fans geht. **Auflösen:** Jeder nimmt seinen Anteil mit.
+
+### Geld
+
+- Startgeld 5.000 ₲ (neue Labels und beim Übergang). Einnahmen: Konzerte, Plattenverkäufe (auch Katalog), Werbung, Festival, Battle.
+  Instrumente nach Farbe ab 100 / 1.500 / 8.000 / 40.000 ₲.
+
+### Übergang (einmal beim Umschalten)
+
+- Alle Bands fangen bei 0 Fans an; Können und Beziehungen bleiben. Jedes Label hat 5.000 ₲, altes Geld wird nicht umgerechnet.
+- Jeder Musiker behält sein eigenes Instrument, höchstens in der Farbe seiner Können-Stufe (ein besseres tauscht der Music Store um);
+  was im Lager liegt, verfällt; wer keins hat, bekommt eins (grau, ab Stufe 1 grün). Fan-Karten verfallen, laufende Tourneen enden.
+- Der alte Ruhm bleibt als Erinnerung in der Chronik; Songs im Vorrat bekommen ihre Qualität. „Was ist neu?“ zeigt alles einmal (`CoreTransition`).
+
+### Tempo (neuer Kern)
+
+- Keine Bremse; das Tempo kommt aus den Formeln. Mit lauter perfekten Platten und einem Auftritt am Tag wird eine Zweierband nach etwa
+  70 Wochen Superstar, mit Festival und Battle jede Woche nach etwa 61, mit zwei Auftritten am Tag nach etwa 60 bzw. 53. Mit Q 80 und einem
+  Auftritt am Tag nach etwa 103 Wochen (mit Festival und Battle 85). Wer nur gute Platten veröffentlicht, braucht etwa 138 Wochen.
+  Proben: jeden Tag 70 Wochen, jeden zweiten Tag 74, jeden vierten 86. Nachgerechnet in `tests/CoreTest.php` (Laufbahn-Tempo).
+- Ruhm verstärkt nie den eigenen Zuwachs: Jeder Schub hängt an seiner Platte und verklingt mit ihr, der Pool begrenzt die Neugierigen,
+  die Frische begrenzt viele Auftritte hintereinander.
+- Noch nicht eingerechnet: neue Leute auf Tournee; das prüft das Durchspielen.
+
 ## Regeln und Formeln
 
 ### Musiker
@@ -99,11 +251,15 @@ Solokünstler: kein Genre-Bonus außer halb für Pop und Elektro, Zusammenhalt 1
 
 ### Songs
 
+*Altes Spiel (`main` bis zur Veröffentlichung); im neuen Kern siehe „Neuer Kern: Fans und Hype“.*
+
 - Tempo = Grundtempo nach Stimmung (grün 1 Song je Stunde, gelb 0,5, rot 0) × (Σ 0,25 × Charakter-Faktor je Mitglied)^1,5
   (Kreativ ×3, Impulsiv ×1,6, Perfektionistisch ×0,6, Technisch 0; `Balance::SONGWRITING`).
 - Höchstens 24 Songs; ab 12 Stau (siehe oben). Songwriting-Coach: ×1,5 / ×1,75 / ×2 für einen Tag.
 
 ### Ruhm
+
+*Altes Spiel (`main` bis zur Veröffentlichung); im neuen Kern siehe „Neuer Kern: Fans und Hype“.*
 
 - Ein Musiker hat **Bekanntheit**, eine Band hat **Ruhm** = Ruhm am Namen + Bekanntheit aller Mitglieder.
 - Von jedem Ruhmgewinn der Band bleiben 25 % am Namen, 75 % werden Bekanntheit der Mitglieder: Einzelanteil = Gewinn / Mitglieder ×
@@ -120,6 +276,8 @@ Solokünstler: kein Genre-Bonus außer halb für Pop und Elektro, Zusammenhalt 1
 - Alles wird laufend gutgeschrieben; „Probe beenden“ behält den Fortschritt.
 
 ### Auftritte
+
+*Altes Spiel (`main` bis zur Veröffentlichung); im neuen Kern siehe „Neuer Kern: Fans und Hype“.*
 
 - **Orte** nach Bandruhm (Anspruch): Kneipe (ab 0), Club (30), Konzertsaal (150), Halle (600), Arena (2.500). Zu Hause buchbar vom kleinsten
   bis zwei Stufen über dem Anspruch, höchstens die Halle: Die **Arena gibt es nur auf Tournee** (`'tour' => true`). Grund-Gage je Lied 30 / 70 / 160 / 380 / 900 ₲, Grund-Ruhm je Lied 0,25 / 0,5 / 1 / 2 / 4, Erwartung 15 / 28 / 42 / 58 / 75.
@@ -139,6 +297,8 @@ Solokünstler: kein Genre-Bonus außer halb für Pop und Elektro, Zusammenhalt 1
 - Manager: Verhandler +8 % Gage, PR-Profi +8 % Ruhm je Stufe (× Passung).
 
 ### Platte
+
+*Altes Spiel (`main` bis zur Veröffentlichung); im neuen Kern siehe „Neuer Kern: Fans und Hype“.*
 
 - 3 (EP) bis 12 Lieder (LP) **aus dem Song-Vorrat**; die Band ist 5 Minuten je Lied im Studio, dann erscheint die Platte.
 - **Studio** und **Produzent** (`Balance::STUDIOS`, `Balance::PRODUCERS`):
@@ -171,6 +331,8 @@ Solokünstler: kein Genre-Bonus außer halb für Pop und Elektro, Zusammenhalt 1
 
 ### Album-Charts und Tantiemen
 
+*Altes Spiel (`main` bis zur Veröffentlichung); im neuen Kern siehe „Neuer Kern: Fans und Hype“.*
+
 - Chartpunkte = 100 × Qualität² × Soundfaktor × Format × Perfekt (× 1,3) × Hitmaschine – nur die Platte selbst, **ohne Bandruhm**.
   Format: EP × 0,6, LP (ab 7 Liedern) × 1 + 4 % je Lied über 7.
 - Punkte jetzt = Chartpunkte × Verlauf + Schub. Verlauf: −3 % je Stunde (nach einem Tag 48 %, nach drei 11 %). Schub für die neueste Platte
@@ -184,6 +346,8 @@ Solokünstler: kein Genre-Bonus außer halb für Pop und Elektro, Zusammenhalt 1
 - Rangliste: Labels nach Label-Ruhm, dazu Bands.
 
 ### Promo-Tour und Interviews
+
+*Altes Spiel (`main` bis zur Veröffentlichung); im neuen Kern siehe „Neuer Kern: Fans und Hype“.*
 
 - **Promo-Tour** (Band oder Solokünstler): 10 Minuten, jedes Mitglied bringt 0,1–0,25 Bekanntheit / (1 + Bekanntheit/40); Chart-Schub +10 %;
   zählt für den Album-Zyklus. Abbrechen geht, bringt dann nichts.
@@ -206,6 +370,8 @@ Ausflug 1 Std. (+8, 20 ₲ je Mitglied), Wochenende 4 Std. (+16, 60 ₲), Urlaub
 Ehrgeizige ×0,5 (`Balance::RETREAT`). Keine Songs in der Zeit; geht auch bei Rot.
 
 ### Battle of the Bands
+
+*Altes Spiel (`main` bis zur Veröffentlichung); im neuen Kern siehe „Neuer Kern: Fans und Hype“.*
 
 Jeden **Samstag um 16 Uhr** (deutsche Zeit) für alle Labels (`Balance::BATTLE`, `Battle`, `Events`). Anmeldung die ganze Woche, höchstens
 **2 Bands je Label** und 32 insgesamt; nur Bands mit mindestens 2 Musikern (keine Solokünstler), keine Computer-Bands, unter 2 Anmeldungen
@@ -231,6 +397,8 @@ eines Mitglieds); das wird mit Hinweis abgelehnt.
   für große vor allem Pokal und Preisgeld. Weil der Gewinn fest ist, verstärkt Ruhm ihn nicht.
 
 ### Festival
+
+*Altes Spiel (`main` bis zur Veröffentlichung); im neuen Kern siehe „Neuer Kern: Fans und Hype“.*
 
 Jeden **Mittwoch um 17 Uhr**, Bewerbung bis **Mittwoch 12 Uhr** (`Balance::FESTIVAL`, `Festival`). Jedes Festival sucht ein **Genre**
 (aus der Woche berechnet, nie zweimal hintereinander dasselbe; Name nach `Catalog::FESTIVALS`). Bewerben können sich nur Bands mit diesem
@@ -259,6 +427,8 @@ Genre (auch als zweites oder drittes Genre), jedes Label mit so vielen, wie es w
   Ehrgeizige, Impulsive, Extrovertierte, Gesellige und Egozentrische mögen Festivals, Gemütliche nicht.
 
 ### Tournee
+
+*Altes Spiel (`main` bis zur Veröffentlichung); im neuen Kern siehe „Neuer Kern: Fans und Hype“.*
 
 Die zweite Stufe der Auftritte (`Balance::TOUR`, `Balance::VEHICLES`, `Tours`): Im Fenster **Auftritt buchen** gibt es zwei Reiter,
 „Hier spielen“ (Kneipe bis Halle) und „Tournee“. Proberaum (zu Hause) → Bus (Europa) → Flugzeug (Übersee und Welt).
@@ -324,6 +494,8 @@ Der Bus ist im Fahren ein Fenster mit vorbeiziehender Landschaft, im Land mit St
 
 ### Auszeichnungen
 
+*Altes Spiel (`main` bis zur Veröffentlichung); im neuen Kern siehe „Neuer Kern: Fans und Hype“.*
+
 Nur echte Pokale (`Awards`, `Balance::AWARDS`), alle im Proberaum der Band (Schallplatten, Pässe und Plakate an der Wand, Pokale und Globus
 auf dem Boden) und als Liste auf der Bandseite und in WikiSignia. Neue werden einmal mit einem Fenster gefeiert.
 - **Goldene Schallplatte** ab 100.000 verkauften Stück, **Platin** ab 250.000, **Diamant** ab 1 Million (je Platte einmal). Eine Platte mit
@@ -370,6 +542,8 @@ Bruchbude → Aufgeräumter Keller (400 ₲) → Gemütlicher Proberaum (1.200 �
 
 ### Übergang alter Labels
 
+*Altes Spiel (`main` bis zur Veröffentlichung); im neuen Kern siehe „Neuer Kern: Fans und Hype“.*
+
 Einmalig beim Umbau der Datenbank (Schritt 53, `Transition`, Zahlen `Balance::TRANSITION`). Label, Geld, Bands, Platten, Instrumente und Manager bleiben.
 - **Wechselbörse** zu: Angebotene Musiker bleiben beim Label, Gebote gehen zurück aufs Konto.
 - **Alte Karten und Gutscheine** werden zu Geld: Fan-Karte 100 ₲ je Ruhmpunkt, Scout-Gutschein und offenes Scout-Angebot je 1.200 ₲ (so viel wie ein
@@ -385,6 +559,8 @@ Einmalig beim Umbau der Datenbank (Schritt 53, `Transition`, Zahlen `Balance::TR
   stehen nur Musiker alter Herkunft; wer aus dem Posteingang oder vom Scout kam, bleibt.
 
 ### Tempo
+
+*Altes Spiel (`main` bis zur Veröffentlichung); im neuen Kern siehe „Neuer Kern: Fans und Hype“.*
 
 **Keine Stufen-Bremse.** Die alte Bremse (`LEVEL_PACE`) ist ganz entfernt. Das Tempo ergibt sich aus gut abgestimmten Gewinnen, Kosten,
 steigenden Schwellen (Bekanntheit 20 / 120 / 600, Können 35 / 60 / 85), dem Anspruch der Bands und der Lernkurve. Was sich aufschaukelt,

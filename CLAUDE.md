@@ -2,9 +2,10 @@
 
 Musik-Spiel auf Label-Ebene (Web-App): Bands mit Eigenleben, Stimmung, Beziehungen. Konzept, Offenes und Geparktes: `docs/label-konzept.md`.
 Regeln und Formeln: `docs/kern.md`. Was herausgenommen wurde (Minispiele, Packs, Börse …): `docs/ausgelagert-musikerspiel.md`.
-Neuer Kern (Fans und Hype statt Ruhm): Rechenwerk in `src/Game/Core`, getestet, noch nicht eingebaut; Checkliste `docs/kern-einbau.md`.
+Neuer Kern (Fans und Hype statt Ruhm): eingebaut und in der Testversion eingeschaltet (`BandCore::$live` in `public/api.php`); Regeln in
+`docs/kern.md` (Abschnitt „Neuer Kern“), Stand und Offenes in `docs/kern-einbau.md`. Die Tests laufen mit Schalter aus, außer `tests/BandCoreTest.php`.
 **Im Umbau:** Es wird nur in der Testversion gebaut; `main` (das echte Spiel) bleibt unverändert, bis der Umbau fertig ist und Sandra
-„veröffentlichen“ sagt. Alte Labels bekommen beim Umbau einen einmaligen Übergang (`Transition`, Schema-Schritt 53).
+„veröffentlichen“ sagt. Alte Labels bekommen beim Umbau einen einmaligen Übergang (`Transition`, Schema-Schritt 53, und für den neuen Kern `CoreTransition`, Schema-Schritt 58).
 
 ## Rahmen
 

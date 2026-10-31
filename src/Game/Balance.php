@@ -842,4 +842,111 @@ final class Balance
      */
     public const CATALOG_MONEY = 0.01;
     public const ROYALTY_FAME = 0.0125;
+
+    // ---------- Neuer Kern (Fans, Hype, Verkäufe, Konzerte) ----------
+    // Rechenwerk in src/Game/Core, noch nicht ins Spiel eingebaut. Herleitung und Beschlüsse: Dokument „Signed – Rechenwege“.
+    // Zeit: „Tag“ meint immer einen echten Tag, gezählt ab dem Erscheinen der neuesten Platte.
+
+    /** Ruhmstufen nach Fans (ab so vielen Fans; Stufe = Zahl der Sterne). */
+    public const CORE_STAGES = [0 => 0, 1 => 500, 2 => 5000, 3 => 50000];
+    /** Dach: höchstens so viele Fans je Art der Band (Solokünstler mit Pop oder Elektro zählen als Genre, mit beidem als Hybrid). */
+    public const CORE_ROOF = ['mixed' => 4999, 'genre' => 50000, 'hybrid' => 75000, 'crossover' => 90000];
+    /** Rechen-Pool beim Erscheinen einer Platte: max(`base`, Fans + `above`). */
+    public const CORE_POOL = ['base' => 50000, 'above' => 10000];
+    /**
+     * Hype einer Platte: beim Erscheinen Q × Q / 100, danach je Tag mal `decay` (perfekte Platten ab `perfect` mal `decayPerfect`).
+     * Schübe durch Ereignisse: jeder weitere für dieselbe Platte zählt `halve`-mal so viel wie der vorige, höchstens bis `max`.
+     * Flammen in den Charts ab diesem Hype (sonst keine).
+     */
+    public const CORE_HYPE = [
+        'decay' => 0.5, 'decayPerfect' => 0.55, 'perfect' => 95.0, 'halve' => 0.5, 'max' => 100.0,
+        'flames' => ['blaze' => 85, 'red' => 55, 'weak' => 25, 'ember' => 5],
+    ];
+    /**
+     * Verkauf je Tag (Sandras Modell): p Grundentdeckung, q Mundpropaganda (aus den Fans beim Erscheinen), k Anteil der Käufer, die Fans werden,
+     * r Anteil der kaufwilligen Fans, die an einem Tag kaufen. Kaufanteil der Fans nach Qualität: min(1, buyBase × (Q / buyRef)²).
+     * Ausgelaufen, wenn an einem Tag weniger als `endBelow` verkauft werden. Das Label bekommt `price` ₲ je Platte.
+     */
+    public const CORE_SALES = ['p' => 0.0015, 'q' => 0.06, 'k' => 0.6, 'r' => 0.5, 'buyBase' => 0.64, 'buyRef' => 80.0, 'endBelow' => 1.0, 'price' => 10];
+    /** Katalog je Tag = Fans × `rate` × Q / 100 × 0,5 hoch (Alter in Wochen); zählt für Gold und Platin. Unter `endBelow` je Tag hört das Rechnen auf. */
+    public const CORE_CATALOG = ['rate' => 0.012, 'endBelow' => 0.01];
+    /**
+     * Konzert (je Auftritt, Sandras Formel): Fans × (b + c × A) kommen, dazu Neugierige (Pool − Fans) × (n0 + n × A × (1 + w × F0 / Pool)).
+     * Von den Neugierigen im Saal werden u × Live-Qualität / 100 Fans. Frische: nach jedem Auftritt mal `freshAfter`, dann in `freshHours` Stunden
+     * gleichmäßig wieder ganz.
+     */
+    public const CORE_CONCERT = ['b' => 0.02, 'c' => 0.3, 'n' => 0.003, 'n0' => 0.0005, 'w' => 20.0, 'u' => 0.3, 'freshAfter' => 0.5, 'freshHours' => 24.0];
+    /**
+     * Sound-Erwartung je Ruhmstufe; Sound-Anteil einer Platte = min(1, Sound / Erwartung). So viel Sound hat eine Zweierband (Genre-Band,
+     * zwei Instrumentenarten, je eine passende Spieltechnik, Zusammenhalt 100), wenn beide auf der nächsten Können-Stufe ankommen
+     * (100 / 400 / 1.600, für Stufe 3 viermal so viel: 6.400) und deren Instrument spielen. Wer etwa eine halbe Stunde am Tag probt, hält Schritt.
+     */
+    public const CORE_SOUND_EXPECT = [0 => 130.0, 1 => 660.0, 2 => 3000.0, 3 => 12000.0];
+    /**
+     * Können: Stufen ab `levels`, `perHour` je echte Probestunde, ohne Lernkurve, nach oben offen.
+     * Übergang alter Musiker: altes Können (0–100) → neues an derselben Stelle der Stufe, zwischen den Punkten gleichmäßig.
+     */
+    public const CORE_SKILL = ['levels' => [100, 400, 1600], 'perHour' => 50.0, 'legacy' => [0 => 0.0, 35 => 100.0, 60 => 400.0, 85 => 1600.0, 100 => 2320.0]];
+    /** So viel ₲ verdient das Label je Zuschauer, nach Ruhmstufe der Band (Kosten gibt es keine). */
+    public const CORE_EARNINGS = [0 => 5, 1 => 6, 2 => 9, 3 => 12];
+    /** Orte zu Hause: ab Ruhmstufe, Größen (Plätze). Halle und Arena nur auf Tournee. Das Spiel nimmt die kleinste Größe, in die alle passen. */
+    public const CORE_VENUES = [
+        'kneipe' => ['stage' => 0, 'sizes' => [60, 150, 300]],
+        'club' => ['stage' => 1, 'sizes' => [500, 1000, 1500]],
+        'halle' => ['stage' => 2, 'sizes' => [3000, 5000, 8000], 'tour' => true],
+        'arena' => ['stage' => 3, 'sizes' => [10000, 15000, 20000], 'tour' => true],
+    ];
+    /**
+     * Ereignisse: Zuschauer, Anteil der Neugierigen, die bei perfekter Show Fans werden, und Hype-Schub. Battle: je gespieltes Spiel, Schub nach Platz.
+     * Anfragen: Dauer in Sekunden und Schub; Werbung bringt dazu `adPerFan` ₲ je Fan.
+     */
+    public const CORE_EVENTS = [
+        'festival' => ['main' => ['audience' => 20000, 'boost' => 10.0], 'side' => ['audience' => 8000, 'boost' => 6.0], 'tent' => ['audience' => 2000, 'boost' => 3.0]],
+        'battle' => ['audience' => 2000, 'boost' => [1 => 15.0, 2 => 10.0, 3 => 6.0]],
+        'share' => 0.02,
+        'requests' => [
+            'interview' => ['seconds' => 900, 'boost' => 2.0],
+            'photos' => ['seconds' => 1200, 'boost' => 3.0],
+            'article' => ['seconds' => 900, 'boost' => 4.0],
+            'report' => ['seconds' => 1800, 'boost' => 6.0],
+            'ad' => ['seconds' => 1200, 'boost' => 1.0],
+        ],
+        'adPerFan' => 1.0,
+    ];
+    /** Battle-Preise: Geld nach Platz (4 = im Halbfinale ausgeschieden); der Sieger wählt `winner` ₲ oder den Wochenpreis. */
+    public const CORE_BATTLE_PRIZES = ['money' => [2 => 6000, 3 => 3000, 4 => 1500], 'winner' => 12000, 'weekly' => ['blue_instrument', 'free_production', 'room_upgrade', 'coach_days' => 3]];
+    /**
+     * Fans bei Änderungen an der Band. Austritt: Gewicht 1, `strong` für die Charakterzüge in `strongTraits` oder mit Künstlername; von seinem
+     * Anteil an den Fans geht `follow` mit, `quit` hört ganz auf. Zusammentun: die größere plus `mergeSmall` der kleineren. Umbenennen: `rename` gehen.
+     */
+    public const CORE_FAN_MOVES = ['strong' => 2.0, 'strongTraits' => ['rampensau', 'diva', 'partytier'], 'follow' => 0.5, 'quit' => 0.2, 'mergeSmall' => 0.5, 'rename' => 0.1];
+    /**
+     * Qualität einer Platte: Q = 100 × (Gewichte Sound, Songs, Produktion, Stimmung). Stimmung voll ab `moodFull` Wohlbefinden. Perfekt ab `perfect`.
+     * Songqualität: base + creative × kreative Kraft K + Regler + Coach + Zufall (± random), begrenzt auf 0–100.
+     */
+    public const CORE_QUALITY = [
+        'weights' => ['sound' => 0.40, 'songs' => 0.25, 'production' => 0.20, 'mood' => 0.15],
+        'moodFull' => 60.0, 'perfect' => 95.0,
+        'song' => [
+            'base' => 50.0, 'creative' => 25.0, 'slider' => ['fast' => -20.0, 'normal' => 0.0, 'careful' => 20.0], 'coach' => [1 => 5.0, 2 => 10.0, 3 => 15.0], 'random' => 10.0,
+            // kreative Kraft K: Anteil der Songschreiber mit diesen Zügen (Perfektionisten schreiben langsam, aber die besten Songs)
+            'creativeTraits' => ['perfektionist' => 1.0, 'kreativ' => 0.5],
+        ],
+    ];
+    /**
+     * Songs je Tag = base × (1 + spread × (n − 1) / (n + 1)) × Regler × Stimmung × Tätigkeit × Genre × Coach; n = Songschreiber, nach Charakter gewichtet.
+     */
+    public const CORE_SONGWRITING = [
+        'base' => 1.2, 'spread' => 1.2,
+        'writers' => ['kreativ' => 1.5, 'chaot' => 1.2, 'perfektionist' => 0.8, 'technisch' => 0.0],
+        'slider' => ['fast' => 1.5, 'normal' => 1.0, 'careful' => 0.67],
+        'mood' => ['green' => 1.0, 'yellow' => 0.5, 'red' => 0.0],
+        'activity' => ['record' => 0.0, 'gig' => 0.0, 'rehearsal' => 0.6, 'idle' => 1.0],
+        'genre' => ['genre' => 1.0, 'hybrid' => 0.85, 'crossover' => 0.7, 'mixed' => 0.7],
+        'coach' => [1 => 1.5, 2 => 1.75, 3 => 2.0],
+    ];
+    /** Geld: Startgeld, Produktion je Stufe (= Ruhmstufe), Instrumente je Farbe (grau, grün, blau, gold). */
+    public const CORE_MONEY = ['start' => 5000, 'production' => [0 => 300, 1 => 2000, 2 => 8000, 3 => 30000], 'gear' => [0 => 100, 1 => 1500, 2 => 8000, 3 => 40000]];
+    /** Bedürfnisse tauchen jederzeit auf, wachsen aber nur alle `stepHours` Stunden um so viel, wie heute in dieser Zeit dazukommt. */
+    public const CORE_NEEDS = ['stepHours' => 24];
 }

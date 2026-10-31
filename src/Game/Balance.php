@@ -270,9 +270,10 @@ final class Balance
      */
     public const SCOUT_STAFF = [
         'tiers' => [
-            1 => ['price' => 400, 'seconds' => 6 * 3600, 'candidates' => 2, 'skill' => [15, 34], 'from' => 0.0],
-            2 => ['price' => 1200, 'seconds' => 5 * 3600, 'candidates' => 3, 'skill' => [22, 44], 'from' => 0.25],
-            3 => ['price' => 3000, 'seconds' => 4 * 3600, 'candidates' => 3, 'skill' => [32, 54], 'from' => 0.55],
+            // Unterwegs 2 / 1½ / 1 Stunden, also 2 / 1½ / 1 Signie-Days (vorher 6 / 5 / 4 – zu lang zum Spielen)
+            1 => ['price' => 400, 'seconds' => 2 * 3600, 'candidates' => 2, 'skill' => [15, 34], 'from' => 0.0],
+            2 => ['price' => 1200, 'seconds' => 5400, 'candidates' => 3, 'skill' => [22, 44], 'from' => 0.25],
+            3 => ['price' => 3000, 'seconds' => 3600, 'candidates' => 3, 'skill' => [32, 54], 'from' => 0.55],
         ],
         'ttl' => 4 * 86400,
     ];
@@ -855,6 +856,8 @@ final class Balance
 
     /** Ruhmstufen nach Fans (ab so vielen Fans; Stufe = Zahl der Sterne). */
     public const CORE_STAGES = [0 => 0, 1 => 500, 2 => 5000, 3 => 50000];
+    /** Kassetten im neuen Kern: so viele Fans zählen wie ein Punkt Label-Ruhm (500 / 5.000 / 50.000 Fans ≙ 100 / 1.000 / 10.000). */
+    public const CORE_DEMO_FANS = 5.0;
     /** Dach: höchstens so viele Fans je Art der Band (Solokünstler mit Pop oder Elektro zählen als Genre, mit beidem als Hybrid). */
     public const CORE_ROOF = ['mixed' => 4999, 'genre' => 50000, 'hybrid' => 75000, 'crossover' => 90000];
     /** Rechen-Pool beim Erscheinen einer Platte: max(`base`, Fans + `above`). */

@@ -40,7 +40,10 @@ Chartpunkte, den Album-Zyklus, die Promo-Tour, Straßenmusik, Open Stage und Fan
 - **Rechen-Pool** einer Platte, beim Erscheinen fest: M = max(50.000, F0 + 10.000), F0 = Fans beim Erscheinen.
 - Neue Fans kommen aus Plattenverkäufen, Konzerten, Festival und Battle. Neu Unterschriebene bringen keine Bekanntheit mit (0 Fans).
 - Die Bekanntheit eines Musikers ist der Ruhm-Gegenwert der Fans seiner Band (`BandCore::fameEquivalent`: 500 / 5.000 / 50.000 Fans ↔ 20 / 120 / 600,
-  dazwischen gleichmäßig); damit rechnen Regeln, die noch die alte Skala brauchen (Einsendungen, Bewerbungen, Künstlername, Marktwert).
+  dazwischen gleichmäßig); damit rechnen Regeln, die noch die alte Skala brauchen (Bewerbungen, Künstlername, Marktwert).
+- **Kassetten** rechnen mit den Fans: je Band Fans / 5 als Label-Ruhm (`Balance::CORE_DEMO_FANS`, zusammengenommen wie der Label-Ruhm), also
+  500 / 5.000 / 50.000 Fans wie Label-Ruhm 100 / 1.000 / 10.000. Damit kommen bei 0 / 500 / 5.000 / 50.000 Fans etwa 24 / 42 / 81 / 204
+  Kassetten am Tag (1 / knapp 2 / gut 3 / gut 8 je Stunde), gute 5 % bis 25 % (ab 25.000 Fans).
 - Bestenlisten: Labels nach allen Fans zusammen; Künstler als Fan-Lieblinge (Fans) und Sound-Monster (Sound).
 
 ### Hype
@@ -510,12 +513,13 @@ auf dem Boden) und als Liste auf der Bandseite und in WikiSignia. Neue werden ei
 ### Posteingang und Leute
 
 - Raten je Tag = Start + Zuwachs × √Label-Ruhm (Tabelle in `label-konzept.md`), zufällig verteilt (`Post::nextArrival`); alles liegt vier Tage.
-  Anteil guter Kassetten 5 % bis 25 % (bis Label-Ruhm 5.000); Güte der Bewerber = Ruhm / (Ruhm + 300).
+  Anteil guter Kassetten 5 % bis 25 % (bis Label-Ruhm 5.000); Güte der Bewerber = Ruhm / (Ruhm + 300). Im neuen Kern zählen für die
+  Kassetten die Fans (Abschnitt „Fans und Ruhmstufe“).
 - **Unterschriftsprämie** = (40 + 0,05 × Können² + 1,5 × Bekanntheit) × (1 + 12 % × versteckter Wert); wer bei einer Band zurückbleibt,
   kränkt die anderen (Wohlbefinden −20, Teamplayer ×1,6, Ehrgeizige ×0,5).
 - Arbeit je Stück (gleich für einen selbst, Praktikum und Assistenz): Umschlag 2 s, Kassette anhören 5 s, Brief lesen 5 s, einsortieren 1 s.
   Assistenz holt offline höchstens vier Tage nach.
-- Praktikum 50 ₲ für 7 Tage, übernehmen 400 ₲; Assistenz 400 ₲; Scout 400 / 1.200 / 3.000 ₲ (6 / 5 / 4 Std., 2 / 3 / 3 Talente, Können bis
+- Praktikum 50 ₲ für 7 Tage, übernehmen 400 ₲; Assistenz 400 ₲; Scout 400 / 1.200 / 3.000 ₲ (2 / 1½ / 1 Std., 2 / 3 / 3 Talente, Können bis
   34 / 44 / 54); Manager 300 / 3.000 / 10.000 ₲ (Stärke 1 / 3 / 5, Passung ×0,4 bis ×1,45).
 
 ### Instrumente und Music Store

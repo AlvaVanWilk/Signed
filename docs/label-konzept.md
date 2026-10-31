@@ -285,6 +285,8 @@ Alles liegt im **Eingang**; in die Fächer kommt es, wenn jemand sortiert. Von H
 | Lehrkraft         |  0,08 |    0,01 |  0,18 |  0,40 |    1,1 |
 | Coach             |  0,05 |   0,009 |  0,14 |  0,33 |    0,95 |
 
+Im neuen Kern zählen für die Kassetten die Fans des Labels: 500 / 5.000 / 50.000 Fans wie Label-Ruhm 100 / 1.000 / 10.000 (je Band Fans / 5).
+
 Mit dem Erfolg steigt der Anteil guter Kassetten (5 % bis 25 %), und die Bewerber werden besser (Güte = Ruhm / (Ruhm + 300)). Hat eine Band
 Erfolg, bewerben sich mehr Musiker mit ähnlichen Genres. Interview-Anfragen richten sich nur nach dem einzelnen Musiker.
 
@@ -306,7 +308,7 @@ Erfolg, bewerben sich mehr Musiker mit ähnlichen Genres. Interview-Anfragen ric
   eine **einmalige Unterschriftsprämie** fürs ganze Leben (`40 + 0,05 × Können² + 1,5 × Bekanntheit`, mal versteckter Wert). Von einer Band kann
   man alle oder **einzelne** nehmen; wer zurückbleibt, zieht enttäuscht weiter, und wer kommt, ist gekränkt (Wohlbefinden startet niedriger).
   Mitglieder einer Band kennen sich schon.
-- **Scout** (Bewerbung, 400 / 1.200 / 3.000 ₲): losschicken mit Genre und/oder Instrument, nach 6 / 5 / 4 Stunden liegt ein **Bericht** mit 2 / 3 / 3
+- **Scout** (Bewerbung, 400 / 1.200 / 3.000 ₲): losschicken mit Genre und/oder Instrument, nach 2 / 1½ / 1 Stunden liegt ein **Bericht** mit 2 / 3 / 3
   Talenten im Posteingang (unbekannt, Können bis 34 / 44 / 54). Man blättert durch und unterschreibt beliebig viele. Der Scout steht unter der
   Künstlerleiste.
 - **Entlassen** (Musikerseite): nur wer in keiner Band mit anderen spielt und gerade frei ist; er verlässt das Label für immer und bleibt in der

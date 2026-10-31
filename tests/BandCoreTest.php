@@ -408,6 +408,19 @@ test('Kern im Spiel: Ein altes Interview gilt als Interview-Anfrage, die Test-Br
     }
 });
 
+test('Kern im Spiel: Kassetten wachsen mit den Fans (500 / 5.000 / 50.000 Fans wie Label-Ruhm 100 / 1.000 / 10.000)', function () {
+    [$db, $p, $repo, $band] = coreLabel();
+    $s = new Signed\Game\Submissions($repo);
+    checkEquals(0.0, $s->demoSuccess(), 'Ohne Fans');
+    coreNear(24.0, Signed\Game\Submissions::perDay($s->demoSuccess()), 1e-9, 'Neues Label: eine je Stunde');
+    $db->exec('UPDATE bands SET fans = 5000 WHERE id = ?', [$band['id']]);
+    coreNear(1000.0, $s->demoSuccess(), 0.1, '5.000 Fans zählen wie Label-Ruhm 1.000');
+    coreNear(24 + 1.8 * sqrt(1000), Signed\Game\Submissions::perDay($s->demoSuccess()), 0.1, 'Gut 80 Kassetten am Tag');
+    $db->exec('UPDATE bands SET fans = 50000 WHERE id = ?', [$band['id']]);
+    coreNear(0.25, Signed\Game\Submissions::goodShare($s->demoSuccess()), 1e-9, 'Ganz oben ist jede vierte gut');
+    check($s->demoSuccess() > 10 * $s->success(), 'Der Ruhm-Gegenwert der Musiker wäre viel kleiner');
+});
+
 test('Kern im Spiel: Tournee ab 5.000 Fans mit dem Bus; Auftritte wie zu Hause, nur mit Halle; Welttournee geparkt', function () {
     [$db, $p, $repo, $band] = coreLabel();
     $db->exec('UPDATE labels SET money = 400000');

@@ -99,6 +99,19 @@ final class Submissions
         return $this->repo->labelFame();
     }
 
+    /**
+     * Erfolg für die Kassetten (wie viele kommen, wie viele gute dabei sind): Label-Ruhm; im neuen Kern die Fans jeder Band / CORE_DEMO_FANS,
+     * zusammengenommen wie beim Label-Ruhm. 500 / 5.000 / 50.000 Fans zählen wie Label-Ruhm 100 / 1.000 / 10.000 (Tabelle in label-konzept.md).
+     * Der Ruhm-Gegenwert (BandCore::fameEquivalent) wäre dafür viel zu klein: Er steht für die Bekanntheit eines Musikers, nicht einer ganzen Band.
+     */
+    public function demoSuccess(): float
+    {
+        if (!BandCore::$live) {
+            return $this->success();
+        }
+        return BandCalc::labelFame(array_map(static fn ($b) => (float) ($b['fans'] ?? 0) / Balance::CORE_DEMO_FANS, $this->repo->bands()));
+    }
+
     /** Neue Einsendungen für die vergangene Zeit; zu Beginn der Willkommens-Stapel (drei brauchbare, zwei Mist). */
     public function topUp(int $now): void
     {
@@ -118,7 +131,7 @@ final class Submissions
             return;
         }
         $db->exec('DELETE FROM submissions WHERE label_id = ? AND expires_at <= ?', [$this->repo->labelId, $now]);
-        $erfolg = $this->success();
+        $erfolg = $this->demoSuccess();
         $mean = 86400 / self::perDay($erfolg);
         $good = self::goodShare($erfolg);
         // submit_at ist der Zeitpunkt der nächsten Kassette; die Abstände sind zufällig (man weiß nie genau, wann etwas kommt).

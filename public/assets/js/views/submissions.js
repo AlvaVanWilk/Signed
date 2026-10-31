@@ -223,7 +223,7 @@ function ordered(list) {
 const days = (sec) => (sec >= 86400 ? `${Math.round(sec / 86400)} ${Math.round(sec / 86400) === 1 ? 'Tag' : 'Tage'}` : mins(sec));
 const fmtFactor = (f) => `${String(Math.round(f * 100) / 100).replace('.', ',')}-mal`;
 const instrumentAt = (type) => cat().instruments[type]?.at ?? '';
-const mins = (sec) => (sec >= 3600 ? `${Math.round(sec / 360) / 10} Std.` : `${Math.round(sec / 60)} Min.`);
+const mins = (sec) => (sec >= 3600 ? `${(Math.round(sec / 360) / 10).toLocaleString('de-DE')} Std.` : `${Math.round(sec / 60)} Min.`);
 const roleName = (m) => cat().staffRoles[m.role]?.tiers[m.tier] ?? '';
 const fmtFame = (v) => (v >= 10 ? Math.round(v) : Math.round(v * 10) / 10).toLocaleString('de-DE');
 

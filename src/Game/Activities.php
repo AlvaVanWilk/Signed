@@ -7,6 +7,7 @@ use Signed\ApiError;
 use Signed\Clock;
 use Signed\Db;
 use Signed\Rng;
+use Signed\Game\Core\Fans;
 
 /**
  * Automatische und passive Aktionen von Bands und einzelnen Musikern: Straßenmusik, Open Stage, Gigs,
@@ -67,6 +68,7 @@ final class Activities
             $venueKey = null;
             $gage = 0;
             $skill = [];
+            $coreGig = null;
 
             $rehearsal = null;
             if ($type === 'rehearsal') {
@@ -89,6 +91,15 @@ final class Activities
                     $fameBase = $cfg['fame'] * BandCalc::falloff($fame, $cfg['falloff']);
                     $expect = $cfg['expect'];
                     $title = 'Open Stage: ' . Rng::pick(Catalog::OPEN_STAGES);
+                } elseif ($type === 'gig' && BandCore::$live) {
+                    // Neuer Kern: nur „Auftreten“. Das Spiel nimmt die kleinste Größe, in die alle passen; keine Kosten,
+                    // das Label verdient je Zuschauer. Wie gut die Show ist, entscheidet nur, wie viele neue Fans es werden.
+                    $coreGig = BandCore::preview($this->repo, $band);
+                    $venueKey = $coreGig['venue'];
+                    $songs = Balance::GIG_BOOKING['songs'][$venueKey];
+                    $fameBase = 0.0;
+                    $expect = Balance::CORE_SOUND_EXPECT[Fans::stage(BandCore::fans($db, $bandId))];
+                    $title = sprintf('Auftritt: %s (%s)', Rng::pick(Catalog::VENUE_NAMES[$venueKey]), Balance::CORE_VENUES[$venueKey]['name']);
                 } elseif ($venue !== null) {
                     // Auftritt buchen: fester Ort mit Kosten; die Gage hängt am Abend (siehe Gigs::gage)
                     $options = array_column(Gigs::options($this->repo, $band, $members)['options'], null, 'key');
@@ -131,6 +142,11 @@ final class Activities
                     $title = sprintf('Gig: %s (%s)', Rng::pick(Catalog::VENUE_NAMES[$venue['key']]), $venue['name']);
                 }
                 $sim = Performance::simulate(array_map(static fn ($m) => self::player($m, $gear), $members), $sound, (float) $expect, $songs);
+                if ($coreGig !== null) {
+                    // Live-Qualität = Publikumsleiste am Ende des Live-Tickers
+                    $coreGig = BandCore::startGig($this->repo, $band, $sim['meter']);
+                    $gage = (int) round($coreGig['earnings']);
+                }
                 if ($type === 'busking') {
                     $gage = self::hat($this->repo, $sim['perf']);
                 }
@@ -178,8 +194,12 @@ final class Activities
                     'meter' => $sim['meter'],
                     'drops' => $drops,
                     'venue' => $venueKey,
-                    // Jedes gespielte Lied schiebt die neueste Platte in den Charts an – egal wo.
-                    'chartBoost' => $type === 'gig' ? round($songs * Balance::CHART_GIG_BOOST, 3) : 0,
+                    // Jedes gespielte Lied schiebt die neueste Platte in den Charts an – egal wo (nur im bisherigen Spiel).
+                    'chartBoost' => $type === 'gig' && $coreGig === null ? round($songs * Balance::CHART_GIG_BOOST, 3) : 0,
+                    // Neuer Kern: Zuschauer, Ortsgröße und neue Fans (gutgeschrieben nach dem Auftritt)
+                    'core' => $coreGig === null ? null : [
+                        'tickets' => round($coreGig['tickets'], 2), 'size' => $coreGig['size'], 'newFans' => $coreGig['newFans'], 'demand' => round($coreGig['demand'], 2),
+                    ],
                 ],
             ]);
         });
@@ -461,7 +481,11 @@ final class Activities
         $db = $repo->db;
         $reward = $data['reward'];
         $bandId = (int) $row['band_id'];
-        $repo->earn((int) ($reward['money'] ?? 0), sprintf($row['type'] === Battle::KIND ? 'Preisgeld: %s' : 'Gage: %s', $data['title']));
+        $repo->earn((int) ($reward['money'] ?? 0), sprintf(match (true) {
+            $row['type'] === Battle::KIND => 'Preisgeld: %s',
+            isset($reward['core']) => '%s',
+            default => 'Gage: %s',
+        }, $data['title']));
         $bill = min((int) ($reward['bill'] ?? 0), (int) ($reward['money'] ?? 0));
         $repo->spend($bill, sprintf('Rechnung: %s', $data['title']));
         $fameGain = $repo->addBandFame($bandId, $reward['fameGains'] ?? []);
@@ -504,6 +528,20 @@ final class Activities
         if (isset($reward['battle'])) {
             Battle::settled($repo, $bandId, $reward['battle']);
         }
+        if (isset($reward['core']) && ($coreBand = $db->one('SELECT * FROM bands WHERE id = ?', [$bandId])) !== null) {
+            // Neuer Kern: neue Fans nach dem Auftritt; steigt die Band dabei eine Ruhmstufe auf, feiert das Ergebnis es
+            $fansBefore = BandCore::fans($db, $bandId);
+            BandCore::finishGig($repo, Repo::hydrateBand($coreBand), (float) $reward['core']['newFans'], (int) $row['ends_at']);
+            $fansAfter = BandCore::fans($db, $bandId);
+            $result['fans'] = round($fansAfter - $fansBefore, 1);
+            $result['tickets'] = (int) round($reward['core']['tickets']);
+            $result['size'] = $reward['core']['size'];
+            $stage = Fans::stage($fansAfter);
+            if ($stage > Fans::stage($fansBefore)) {
+                $result['stageUp'] = Balance::CORE_STAGE_NAMES[$stage];
+                $repo->log('fame', sprintf('%s ist jetzt %s.', $coreBand['name'], Balance::CORE_STAGE_NAMES[$stage]), $bandId);
+            }
+        }
 
         $bandRow = $db->one('SELECT * FROM bands WHERE id = ?', [$bandId]);
         if ($bandRow !== null && !in_array($row['type'], ['bandpromo', 'retreat'], true)) {
@@ -532,7 +570,7 @@ final class Activities
             $fameNow = (float) $db->value('SELECT COALESCE(SUM(fame), 0) FROM musicians WHERE band_id = ?', [$bandId]);
             $before = BandCalc::venue($fameNow - $fameGain);
             $after = BandCalc::venue($fameNow);
-            if ($after['key'] !== $before['key']) {
+            if ($after['key'] !== $before['key'] && !BandCore::$live) {
                 $result['venueUp'] = $after['name'];
                 $repo->log('fame', sprintf('%s ist bekannt genug für Gigs der Stufe %s.', $band['name'], $after['name']), $bandId);
             }

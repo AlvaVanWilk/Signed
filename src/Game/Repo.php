@@ -433,6 +433,7 @@ final class Repo
             'plane' => (int) ($r['plane'] ?? 0),
             'fame_own' => (float) $r['fame_own'],
             'songs_written' => (float) ($r['songs_written'] ?? 0),
+            'write_mode' => (string) ($r['write_mode'] ?? 'normal'),
             'coached_songs' => (float) ($r['coached_songs'] ?? 0),
             'coach_bonus' => (float) ($r['coach_bonus'] ?? 0),
             'logo' => json_decode((string) ($r['logo'] ?? ''), true) ?: null,

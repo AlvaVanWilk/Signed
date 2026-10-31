@@ -147,6 +147,47 @@ final class BandCore
         return $money;
     }
 
+    /**
+     * Was der Spielstand über den Kern einer Band zeigt (rechnet nur im Speicher weiter, speichert nichts): Fans, Ruhmstufe, Dach,
+     * Hype und Flamme der neuesten Platte, Frische und was ein Auftritt jetzt brächte (für den Knopf und das i daneben).
+     */
+    public static function view(Db $db, array $band, array $members, ?int $now = null): array
+    {
+        $now ??= Clock::now();
+        $career = Career::settle(self::load($db, $band, self::kind($band, $members)), $now);
+        $preview = Career::preview($career, $now);
+        $record = Career::newest($career);
+        $hype = Career::hype($career);
+        $stage = Fans::stage($career['fans']);
+        return [
+            'fans' => round($career['fans'], 1),
+            'stage' => $stage,
+            'stageName' => Balance::CORE_STAGE_NAMES[$stage],
+            'next' => Balance::CORE_STAGES[$stage + 1] ?? null,
+            'kind' => $career['kind'],
+            'roof' => Fans::roof($career['kind']),
+            'hype' => round($hype, 1),
+            'flame' => Core\Hype::flame($hype),
+            'fresh' => round(Core\Concert::freshness($career['fresh'], $career['lastGig'], $now), 3),
+            'gig' => [
+                'tickets' => (int) round($preview['tickets']),
+                'demand' => (int) round($preview['demand']),
+                'earnings' => (int) round($preview['earnings']),
+                'venue' => $preview['venue'],
+                'venueName' => Balance::CORE_VENUES[$preview['venue']]['name'],
+                'size' => $preview['size'],
+                'perVisitor' => Core\Concert::earningsPerVisitor($stage),
+            ],
+            'record' => $record === null ? null : [
+                'id' => $record['id'] ?? null,
+                'quality' => round($record['quality'], 1),
+                'day' => $record['day'],
+                'soldToday' => (int) round($record['soldRate']),
+                'sold' => (int) round($record['sold'] + $record['catalogSold']),
+            ],
+        ];
+    }
+
     /** Fans einer Band (aus der Datenbank, ohne weiterzurechnen). */
     public static function fans(Db $db, int $bandId): float
     {

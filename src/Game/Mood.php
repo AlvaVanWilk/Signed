@@ -373,7 +373,18 @@ final class Mood
     public static function activityFactor(?string $type): float
     {
         $c = Balance::MOOD['songsActivity'];
+        if (BandCore::$live && $type !== null) {
+            // Neuer Kern: beim Aufnehmen und Auftreten ruht das Schreiben, beim Proben geht es langsamer weiter
+            $core = Balance::CORE_SONGWRITING['activity'];
+            return in_array($type, $c['stop'], true) ? $core['gig'] : ($core[$type] ?? $core['idle']);
+        }
         return $type === null ? 1.0 : (in_array($type, $c['stop'], true) ? 0.0 : ($type === 'rehearsal' ? $c['rehearsal'] : 1.0));
+    }
+
+    /** Songs je Stunde nach der Stimmung der Band (vor allen anderen Faktoren). Neuer Kern: grün voll, gelb halb, rot nichts. */
+    private static function writeRate(array $mood): float
+    {
+        return BandCore::$live ? Balance::CORE_SONGWRITING['mood'][$mood['level']] : self::songRate($mood);
     }
 
     /** Mittlerer Faktor aufs Songschreiben zwischen zwei Zeitpunkten (nach den Aktivitäten der Band in dieser Zeit). */
@@ -594,7 +605,10 @@ final class Mood
                 'wish' => array_column($members, 'wish_wait', 'id'), 'gear' => array_column($members, 'gear_wait', 'id')];
             $onlineSpan = min($online, $span);
             [$coachSpeed, $coachShare, $coachQuality] = Tutors::coaching($repo, $band['id'], $now - $span, $now);
-            $factor = self::writeFactor($repo, $band['id'], $now - $span, $now) * self::crewFactor($members) * $coachSpeed;
+            $factor = self::writeFactor($repo, $band['id'], $now - $span, $now) * $coachSpeed * (BandCore::$live
+                // Neuer Kern: Songs je Tag nach der Zahl der wirklichen Songschreiber, Regler und Genre (Core\Songs), hier je Stunde
+                ? Core\Songs::perDay(Core\Songs::writers($members), $band['write_mode'], 'green', 'idle', BandCore::kind($band, $members)) / 24
+                : self::crewFactor($members));
             $state = self::run($state, $members, $band, $relations, $now - $span, $span - $onlineSpan, true, $factor);
             $state = self::run($state, $members, $band, $relations, $now - $onlineSpan, $onlineSpan, false, $factor);
             $after = self::bandMood($state['w']);
@@ -616,6 +630,10 @@ final class Mood
                 $update['coached_songs'] = round(min($state['songs'], $band['coached_songs'] + max(0.0, $state['songs'] - $band['songs_written']) * $coachShare), 4);
             }
             $repo->db->update('bands', $update, ['id' => $band['id']]);
+            if (BandCore::$live) {
+                // Jeder fertige Song kommt mit eigener Qualität in den Vorrat
+                SongStock::write($repo, $band, $members, (int) floor($state['songs']) - (int) floor($band['songs_written']), $coachQuality);
+            }
             Traits::settleBand($repo, $band, $members, (float) $band['songs_written'], $state['songs'], $now);
         }
     }
@@ -681,7 +699,7 @@ final class Mood
             $seconds -= $dt;
             $t += $dt;
             $hours = $dt / 3600;
-            $state['songs'] = min((float) $c['songCap'], $state['songs'] + self::songRate(self::bandMood($state['w'])) * $writeFactor * $hours);
+            $state['songs'] = min((float) $c['songCap'], $state['songs'] + self::writeRate(self::bandMood($state['w'])) * $writeFactor * $hours);
             // Die Zeit läuft: lange ohne Bühne und Platte, und wer auf seinen Wunsch oder ein Instrument wartet, wartet länger.
             $band['stageIdle'] = self::hoursSince($band['stageTimes'] ?? [], $t);
             $band['recordIdle'] = self::hoursSince($band['recordTimes'] ?? [], $t);

@@ -893,11 +893,13 @@ final class Balance
     public const CORE_EARNINGS = [0 => 5, 1 => 6, 2 => 9, 3 => 12];
     /** Orte zu Hause: ab Ruhmstufe, Größen (Plätze). Halle und Arena nur auf Tournee. Das Spiel nimmt die kleinste Größe, in die alle passen. */
     public const CORE_VENUES = [
-        'kneipe' => ['stage' => 0, 'sizes' => [60, 150, 300]],
-        'club' => ['stage' => 1, 'sizes' => [500, 1000, 1500]],
-        'halle' => ['stage' => 2, 'sizes' => [3000, 5000, 8000], 'tour' => true],
-        'arena' => ['stage' => 3, 'sizes' => [10000, 15000, 20000], 'tour' => true],
+        'kneipe' => ['name' => 'Kneipe', 'stage' => 0, 'sizes' => [60, 150, 300]],
+        'club' => ['name' => 'Club', 'stage' => 1, 'sizes' => [500, 1000, 1500]],
+        'halle' => ['name' => 'Halle', 'stage' => 2, 'sizes' => [3000, 5000, 8000], 'tour' => true],
+        'arena' => ['name' => 'Arena', 'stage' => 3, 'sizes' => [10000, 15000, 20000], 'tour' => true],
     ];
+    /** Namen der Ruhmstufen (Sterne = Stufe). */
+    public const CORE_STAGE_NAMES = [0 => 'Unbekannt', 1 => 'Lokal bekannt', 2 => 'Berühmt', 3 => 'Superstar'];
     /**
      * Ereignisse: Zuschauer, Anteil der Neugierigen, die bei perfekter Show Fans werden, und Hype-Schub. Battle: je gespieltes Spiel, Schub nach Platz.
      * Anfragen: Dauer in Sekunden und Schub; Werbung bringt dazu `adPerFan` ₲ je Fan.
@@ -947,6 +949,13 @@ final class Balance
         'genre' => ['genre' => 1.0, 'hybrid' => 0.85, 'crossover' => 0.7, 'mixed' => 0.7],
         'coach' => [1 => 1.5, 2 => 1.75, 3 => 2.0],
     ];
+    /**
+     * Produktion je Stufe (passend = Ruhmstufe): Studio (Index in STUDIOS) und Produzent (Schlüssel in PRODUCERS); jede Stufe hat ihren eigenen
+     * Produzenten. Mit Ruben Stille sind alle entspannt (PRODUCERS['legend']['mood']). Preise in CORE_MONEY['production'].
+     */
+    public const CORE_PRODUCTION = [0 => ['studio' => 0, 'producer' => 'mo'], 1 => ['studio' => 1, 'producer' => 'roxy'], 2 => ['studio' => 2, 'producer' => 'diamond'], 3 => ['studio' => 3, 'producer' => 'legend']];
+    /** Ein Album hat immer so viele Songs; im Vorrat liegen höchstens MOOD['songCap']. */
+    public const CORE_ALBUM_SONGS = 12;
     /** Geld: Startgeld, Produktion je Stufe (= Ruhmstufe), Instrumente je Farbe (grau, grün, blau, gold). */
     public const CORE_MONEY = ['start' => 5000, 'production' => [0 => 300, 1 => 2000, 2 => 8000, 3 => 30000], 'gear' => [0 => 100, 1 => 1500, 2 => 8000, 3 => 40000]];
     /** Bedürfnisse tauchen jederzeit auf, wachsen aber nur alle `stepHours` Stunden um so viel, wie heute in dieser Zeit dazukommt. */

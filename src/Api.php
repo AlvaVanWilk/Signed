@@ -831,6 +831,19 @@ final class Api
 
     private function recordStart(array $in, Repo $repo): array
     {
+        if (BandCore::$live) {
+            // Neuer Kern: Produktionsstufe 0–3 und genau 12 ausgewählte Songs
+            $activity = (new Studio($repo))->coreStart(
+                self::int($in, 'bandId'),
+                self::str($in, 'title'),
+                self::int($in, 'level'),
+                array_map('intval', is_array($in['songIds'] ?? null) ? $in['songIds'] : []),
+                is_array($in['cover'] ?? null) ? $in['cover'] : [],
+                (string) ($in['designer'] ?? 'student'),
+                $in['logo'] ?? null
+            );
+            return ['activity' => $activity, 'state' => State::build($repo)];
+        }
         $activity = (new Studio($repo))->start(
             self::int($in, 'bandId'),
             self::str($in, 'title'),
@@ -847,7 +860,9 @@ final class Api
     /** Für den Aufnahme-Dialog: alle Studios und Produzenten mit Kosten und Schätzung, dazu drei Cover-Entwürfe. */
     private function recordOptions(array $in, Repo $repo): array
     {
-        return (new Studio($repo))->options(self::int($in, 'bandId'), self::int($in, 'songs')) + (empty($in['noCovers']) ? ['covers' => Cover::drafts()] : []);
+        $studio = new Studio($repo);
+        $options = BandCore::$live ? $studio->coreOptions(self::int($in, 'bandId')) : $studio->options(self::int($in, 'bandId'), self::int($in, 'songs'));
+        return $options + (empty($in['noCovers']) ? ['covers' => Cover::drafts()] : []);
     }
 
     private function coverRedraw(array $in, Repo $repo): array

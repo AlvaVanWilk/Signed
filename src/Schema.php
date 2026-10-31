@@ -697,6 +697,10 @@ final class Schema
                 ){OPTS}',
                 'CREATE INDEX chart_hours_hour ON chart_hours (hour)',
             ],
+            // 56: Neuer Kern: Regler fürs Songschreiben je Band (schnell, normal, sorgfältig)
+            [
+                "ALTER TABLE bands ADD COLUMN write_mode VARCHAR(8) NOT NULL DEFAULT 'normal'",
+            ],
         ];
     }
 }

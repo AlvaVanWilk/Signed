@@ -108,3 +108,77 @@ test('Kern im Spiel: Ältere Platten laufen aus und verkaufen nur noch über den
     BandCore::settleLabel($repo);
     checkEquals(0, (int) $db->value('SELECT core_active FROM records WHERE id = ?', [$first]), 'Nach Monaten ganz fertig');
 });
+
+test('Kern im Spiel: Auftreten über die Schnittstelle – ein Knopf, kein Ort, keine Kosten, ohne Platte geht es auch', function () {
+    [$db, $p, $repo, $band] = coreLabel();
+    $state = $p->get('state');
+    check($state['core'] === true, 'Spielstand meldet den neuen Kern');
+    $view = bandById($state, $band['id'])['core'];
+    checkEquals(0.0, (float) $view['fans']);
+    checkEquals('kneipe', $view['gig']['venue']);
+    checkEquals(25, $view['gig']['tickets'], 'Neue Band ohne Platte: 25 Neugierige');
+    checkEquals(125, $view['gig']['earnings']);
+    $money = (int) $db->value('SELECT money FROM labels WHERE id = ?', [$repo->labelId]);
+    $res = $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'gig']);
+    checkEquals($money, (int) $db->value('SELECT money FROM labels WHERE id = ?', [$repo->labelId]), 'Keine Kosten vorab');
+    $activity = $db->one("SELECT * FROM activities WHERE band_id = ? AND type = 'gig' ORDER BY id DESC LIMIT 1", [$band['id']]);
+    $data = json_decode($activity['data'], true);
+    checkEquals(125, $data['reward']['money']);
+    check($data['reward']['core']['newFans'] > 0, 'Aus Neugierigen werden Fans');
+    Clock::advance((int) $activity['ends_at'] - Clock::now() + 1);
+    $state = $p->get('state');
+    checkEquals($money + 125, (int) $db->value('SELECT money FROM labels WHERE id = ?', [$repo->labelId]), 'Verdienst nach dem Auftritt');
+    $result = array_values(array_filter($state['results'], static fn ($r) => $r['type'] === 'gig'))[0]['result'];
+    checkEquals(25, $result['tickets']);
+    check($result['fans'] > 0 && BandCore::fans($db, $band['id']) > 0, 'Neue Fans gutgeschrieben');
+    coreNear(0.5 + 1 / 24 * (Clock::now() - (int) $activity['started_at']) / 3600, bandById($state, $band['id'])['core']['fresh'], 1e-3, 'Frische erholt sich');
+});
+
+test('Kern im Spiel: Songs entstehen einzeln mit eigener Qualität, im Tempo der neuen Formel', function () {
+    [$db, $p, $repo, $band] = coreLabel();
+    $p->get('state');
+    $db->exec('UPDATE musicians SET wellbeing = 90 WHERE band_id = ?', [$band['id']]);
+    Clock::advance(24 * 3600);
+    $p->get('state');
+    $written = (float) $db->value('SELECT songs_written FROM bands WHERE id = ?', [$band['id']]);
+    $members = $repo->members($band['id']);
+    $expected = Signed\Game\Core\Songs::perDay(Signed\Game\Core\Songs::writers($members), 'normal', 'green', 'idle', BandCore::kind($band, $members));
+    check($written > 0.5 * $expected && $written <= $expected + 1e-6, "An einem Tag $written Songs (höchstens $expected)");
+    $rows = $db->all('SELECT quality FROM songs WHERE band_id = ?', [$band['id']]);
+    checkEquals((int) floor($written), count($rows), 'Jeder fertige Song liegt einzeln im Vorrat');
+    foreach ($rows as $r) {
+        check((float) $r['quality'] >= 0 && (float) $r['quality'] <= 100, 'Qualität 0–100');
+    }
+});
+
+test('Kern im Spiel: Aufnehmen mit 12 Songs und einer Produktionsstufe, danach beginnt der Hype', function () {
+    [$db, $p, $repo, $band] = coreLabel();
+    $opts = $p->post('recordOptions', ['bandId' => $band['id']]);
+    check(str_contains((string) $opts['blocker'], '12 Songs'), 'Ohne 12 Songs geht es nicht: ' . $opts['blocker']);
+    for ($i = 0; $i < 14; $i++) {
+        $db->insert('songs', ['label_id' => $repo->labelId, 'band_id' => $band['id'], 'quality' => 50 + $i * 3, 'record_id' => null, 'created_at' => Clock::now()]);
+    }
+    $db->exec('UPDATE bands SET songs_written = 14.5 WHERE id = ?', [$band['id']]);
+    $opts = $p->post('recordOptions', ['bandId' => $band['id']]);
+    checkEquals(null, $opts['blocker']);
+    checkEquals(12, count($opts['picked']));
+    checkEquals([300, 2000, 8000, 30000], array_column($opts['quality']['levels'], 'cost'));
+    $best = array_slice(array_map(static fn ($i) => 50 + $i * 3, range(13, 0, -1)), 0, 12);
+    coreNear(array_sum($best) / 12 / 100, $opts['quality']['songs'], 1e-6, 'Songs: Durchschnitt der besten 12');
+    checkEquals(1.0, (float) $opts['quality']['levels'][0]['production'], 'Bei Ruhmstufe 0 ist die Garage passend');
+    $money = (int) $db->value('SELECT money FROM labels WHERE id = ?', [$repo->labelId]);
+    $p->post('recordStart', ['bandId' => $band['id'], 'title' => 'Neuland', 'level' => 0, 'songIds' => $opts['picked'], 'cover' => $opts['covers'][0]]);
+    checkEquals($money - 300 - Signed\Game\Balance::COVER_DESIGNERS['student']['fee'], (int) $db->value('SELECT money FROM labels WHERE id = ?', [$repo->labelId]));
+    checkEquals(2, (int) $db->value('SELECT COUNT(*) FROM songs WHERE band_id = ? AND record_id IS NULL', [$band['id']]), 'Zwei Songs bleiben im Vorrat');
+    coreNear(2.5, (float) $db->value('SELECT songs_written FROM bands WHERE id = ?', [$band['id']]));
+    Clock::advance(12 * Signed\Game\Balance::RECORD_SECONDS_PER_SONG + 2);
+    $state = $p->get('state');
+    $done = array_values(array_filter($state['results'], static fn ($r) => $r['type'] === 'record'))[0]['result'];
+    check($done['core'] && $done['hype'] > 0, 'Die Platte erscheint mit Hype');
+    $record = $db->one("SELECT * FROM records WHERE band_id = ? AND title = 'Neuland'", [$band['id']]);
+    checkEquals('done', $record['status']);
+    checkEquals(1, (int) $record['core_active']);
+    coreNear((float) $done['quality'] * 100, json_decode($record['core'], true)['quality'], 1e-6, 'Kern rechnet mit derselben Qualität');
+    checkEquals(0, (int) $db->value('SELECT COUNT(*) FROM ledger WHERE label_id = ? AND text LIKE ?', [$repo->labelId, 'Erstverkauf%']), 'Kein Erstverkauf mehr');
+    check(bandById($state, $band['id'])['core']['record'] !== null, 'Spielstand zeigt die neue Platte');
+});

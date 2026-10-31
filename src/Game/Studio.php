@@ -27,7 +27,8 @@ final class Studio
         if ($memberCount < Balance::MIN_MEMBERS) {
             return sprintf('Die Band braucht mindestens %d Musiker.', Balance::MIN_MEMBERS);
         }
-        $cycle = self::cycle($band);
+        // Neuer Kern: kein Album-Zyklus mehr, nur die Songs zählen
+        $cycle = BandCore::$live ? null : self::cycle($band);
         if ($cycle !== null && !$cycle['done']) {
             return 'Das Label gibt ein neues Album erst frei, wenn das letzte live gespielt und beworben ist.';
         }
@@ -163,6 +164,140 @@ final class Studio
         ];
     }
 
+    /**
+     * Neuer Kern: die vier Teile der Qualität für diese Band jetzt (Sound gegen die Erwartung der Ruhmstufe, Songs, Produktion, Stimmung)
+     * und Q je Produktionsstufe. $songs: Qualitäten der ausgewählten Songs.
+     * @return array{stage: int, sound: float, songs: float, mood: float, levels: list<array>}
+     */
+    public static function coreQuality(Repo $repo, array $band, array $members, array $gear, array $songs): array
+    {
+        $stage = Core\Fans::stage(BandCore::fans($repo->db, $band['id']));
+        $sound = Core\Quality::soundShare(BandCalc::bandSound($band, $members, $gear), $stage);
+        $songShare = Core\Quality::songsShare($songs);
+        $mood = Core\Quality::moodShare(array_column($members, 'wellbeing'));
+        $levels = [];
+        foreach (Balance::CORE_PRODUCTION as $level => $p) {
+            $production = Core\Quality::productionShare($level, $stage);
+            $q = Core\Quality::album($sound, $songShare, $production, $mood);
+            $levels[] = [
+                'level' => $level,
+                'studio' => Balance::STUDIOS[$p['studio']]['name'],
+                'producer' => Balance::PRODUCERS[$p['producer']]['name'],
+                'cost' => Balance::CORE_MONEY['production'][$level],
+                'production' => round($production, 3),
+                'quality' => round($q, 1),
+                'perfect' => Core\Quality::isPerfect($q),
+                'fits' => $level === $stage,
+                'claim' => $level - $stage,
+            ];
+        }
+        return ['stage' => $stage, 'sound' => round($sound, 3), 'songs' => round($songShare, 3), 'mood' => round($mood, 3), 'levels' => $levels];
+    }
+
+    /** Neuer Kern: alles für den Aufnahme-Dialog – Songs im Vorrat (beste vorausgewählt), Qualität je Produktionsstufe, was fehlt. */
+    public function coreOptions(int $bandId): array
+    {
+        $band = $this->repo->band($bandId);
+        $members = $this->repo->members($bandId);
+        $stock = SongStock::stock($this->repo->db, $bandId);
+        $picked = array_slice($stock, 0, Balance::CORE_ALBUM_SONGS);
+        $blocker = self::blocker($band, count($members), $this->repo->openRecord($bandId));
+        if ($blocker === null && count($stock) < Balance::CORE_ALBUM_SONGS) {
+            $blocker = sprintf('Für ein Album braucht %s %d Songs (%d von %d).', Bands::who($members, true), Balance::CORE_ALBUM_SONGS, count($stock), Balance::CORE_ALBUM_SONGS);
+        }
+        return [
+            'core' => true,
+            'songs' => $stock,
+            'picked' => array_column($picked, 'id'),
+            'album' => Balance::CORE_ALBUM_SONGS,
+            'seconds' => Balance::CORE_ALBUM_SONGS * Balance::RECORD_SECONDS_PER_SONG,
+            'blocker' => $blocker,
+            'quality' => self::coreQuality($this->repo, $band, $members, $this->repo->gearByMusician(), array_column($picked, 'quality')),
+            'logo' => $band['logo'],
+        ];
+    }
+
+    /**
+     * Neuer Kern: Aufnahme starten mit einer Produktionsstufe (0–3) und 12 ausgewählten Songs. Die Qualität steht beim Start fest;
+     * die Platte erscheint, wenn die Studiozeit um ist (dann beginnt ihr Hype).
+     * @param list<int> $songIds
+     */
+    public function coreStart(int $bandId, string $title, int $level, array $songIds, array $cover, string $designer = 'student', mixed $logo = null): array
+    {
+        $title = Bands::cleanName($title, 'Der Plattentitel', 60);
+        $production = Balance::CORE_PRODUCTION[$level] ?? throw new ApiError('Diese Produktion gibt es nicht.');
+        $newLogo = Cover::logo($logo);
+        $db = $this->repo->db;
+        return $db->transaction(function () use ($db, $bandId, $title, $level, $production, $songIds, $cover, $designer, $newLogo): array {
+            $now = Clock::now();
+            $band = $this->repo->band($bandId);
+            $spec = Cover::validate($cover, $designer, $band['logo'] ?? $newLogo);
+            $members = $this->repo->members($bandId);
+            $blocker = self::blocker($band, count($members), $this->repo->openRecord($bandId)) ?? Activities::blocker($band, $members, $now) ?? Tours::away($db, $bandId);
+            if ($blocker !== null) {
+                throw new ApiError($blocker);
+            }
+            $refuser = Mood::refuser($members, 'record');
+            if ($refuser !== null) {
+                throw new ApiError($refuser['first_name'] . ' hat darauf gerade keine Lust. Eine Anordnung, die der Band gefällt, hebt zuerst die Stimmung.');
+            }
+            $songs = SongStock::pick($db, $bandId, $songIds);
+            $parts = self::coreQuality($this->repo, $band, $members, $this->repo->gearByMusician(), $songs);
+            $quality = $parts['levels'][$level]['quality'];
+            $studio = Balance::STUDIOS[$production['studio']];
+            $p = Balance::PRODUCERS[$production['producer']];
+            $this->repo->spend(Balance::CORE_MONEY['production'][$level], sprintf('Studio: %s mit %s', $studio['name'], $p['name']));
+            $this->repo->spend(Balance::COVER_DESIGNERS[$designer]['fee'], sprintf('Cover: %s', Balance::COVER_DESIGNERS[$designer]['name']));
+            if ($band['logo'] === null && $newLogo !== null) {
+                $db->update('bands', ['logo' => json_encode($newLogo)], ['id' => $bandId]);
+            }
+            $count = Balance::CORE_ALBUM_SONGS;
+            $endsAt = $now + $count * Balance::RECORD_SECONDS_PER_SONG;
+            Events::assertFree($db, $bandId, $endsAt);
+            if ($db->exec('UPDATE bands SET busy_until = ?, released = 1, songs_written = ? WHERE id = ? AND busy_until <= ?', [$endsAt, max(0.0, $band['songs_written'] - $count), $bandId, $now]) === 0) {
+                throw new ApiError(Bands::who($members) . ' ist gerade beschäftigt.');
+            }
+            // Anspruch: Produktion unter der Ruhmstufe ärgert, darüber freut; mit Ruben Stille sind alle entspannt.
+            $gap = $level - $parts['stage'];
+            $c = Balance::RECORD_CLAIM;
+            foreach ($members as $m) {
+                $delta = ($gap < 0 ? $gap * $c['down'] * Mood::traitMax($m, $c['picky'], 1.0) : $gap * $c['up']) + ($p['mood'] ?? 0.0);
+                if ($delta != 0.0) {
+                    $db->update('musicians', ['wellbeing' => round(max(0.0, min(100.0, $m['wellbeing'] + $delta)), 3)], ['id' => $m['id']]);
+                }
+            }
+            $recordId = $db->insert('records', [
+                'label_id' => $this->repo->labelId,
+                'band_id' => $bandId,
+                'title' => $title,
+                'songs_total' => $count,
+                'songs_done' => 0,
+                'song_results' => '[]',
+                'status' => 'open',
+                'cover' => json_encode(['spec' => $spec, 'sales' => 0.0]),
+                'studio' => $studio['key'],
+                'producer' => $production['producer'],
+                'quality' => round($quality / 100, 4),
+                'created_at' => $now,
+            ]);
+            SongStock::assign($db, $bandId, $songIds, $recordId);
+            $this->repo->log('record', sprintf('%s geht ins %s mit %s: „%s“.', $band['name'], $studio['name'], $p['name'], $title), $bandId);
+            $id = $db->insert('activities', [
+                'label_id' => $this->repo->labelId,
+                'band_id' => $bandId,
+                'musician_id' => null,
+                'type' => 'record',
+                'started_at' => $now,
+                'ends_at' => $endsAt,
+                'data' => json_encode([
+                    'title' => sprintf('„%s“', $title), 'recordId' => $recordId, 'studio' => $production['studio'], 'producer' => $production['producer'],
+                    'songs' => $count, 'quality' => round($quality / 100, 3), 'core' => ['level' => $level, 'parts' => $parts],
+                ], JSON_UNESCAPED_UNICODE),
+            ]);
+            return Present::activity($db->one('SELECT * FROM activities WHERE id = ?', [$id]));
+        });
+    }
+
     /** Aufnahme starten: Geld, Songs aus dem Vorrat, Band ins Studio. Die Platte erscheint, wenn die Zeit um ist. */
     public function start(int $bandId, string $title, int $songs, int $studio, string $producer, array $cover, string $designer = 'student', mixed $logo = null): array
     {
@@ -262,6 +397,9 @@ final class Studio
     /** Platte fertig: Können, Erstverkauf, Ruhm, Charts. */
     public function complete(array $record, array $band, array $members, array $gear): array
     {
+        if (BandCore::$live) {
+            return $this->coreComplete($record, $band, $members, $gear);
+        }
         $db = $this->repo->db;
         $songs = $record['songs_total'];
         $quality = (float) ($record['quality'] ?? Balance::RECORD_QUALITY_BASE);
@@ -330,6 +468,57 @@ final class Studio
             'fame' => $fameGain,
             'cover' => $record['cover']['spec'] ?? null,
             'producer' => $record['producer'] ?? 'none',
+            'studio' => $record['studio'] ?? 'garage',
+            'levelUps' => $levelUps,
+        ];
+    }
+
+    /** Neuer Kern: Platte fertig – Können aus dem Studio, dann erscheint sie und ihr Hype beginnt (kein Erstverkauf, kein Ruhm, keine Chartpunkte). */
+    private function coreComplete(array $record, array $band, array $members, array $gear): array
+    {
+        $db = $this->repo->db;
+        $songs = $record['songs_total'];
+        $quality = (float) ($record['quality'] ?? 0.5);
+        $perfect = Core\Quality::isPerfect($quality * 100);
+        $levelUps = [];
+        foreach ($members as $m) {
+            $gain = BandCalc::trainingGain($m, Balance::RECORD_SONG_SKILL * $songs * $quality, null, BandCalc::gearOf($m, $gear));
+            $column = $m['band_slot'] === 2 && $m['instr2'] !== null ? 'skill2' : 'skill1';
+            $db->update('musicians', [$column => min((float) Balance::MAX_STAT, BandCalc::skill($m) + $gain)], ['id' => $m['id']]);
+            $levelUp = Levels::check($this->repo, $m['id']);
+            if ($levelUp !== null) {
+                $levelUps[] = $levelUp;
+            }
+        }
+        Mood::bond($this->repo, $members, 'record');
+        Mood::react($this->repo, $this->repo->members($band['id']), 'record');
+        $now = Clock::now();
+        $db->exec('UPDATE bands SET records = records + 1, songs_recorded = songs_recorded + ?, perfect_records = perfect_records + ? WHERE id = ?', [$songs, $perfect ? 1 : 0, $band['id']]);
+        $db->update('records', ['status' => 'done', 'songs_done' => $songs, 'perfect' => $perfect ? 1 : 0, 'finished_at' => $now], ['id' => $record['id']]);
+        $career = BandCore::release($this->repo, $band, $record['id'], $quality * 100, $now);
+        $released = Core\Career::newest($career);
+        $format = $songs >= Balance::CHART_LP_SONGS ? 'LP' : 'EP';
+        $this->repo->log('record', sprintf('%s veröffentlicht „%s“%s', $band['name'], $record['title'], $perfect ? ' – eine perfekte Platte!' : '.'), $band['id']);
+        foreach ($members as $m) {
+            $line = count($members) === 1
+                ? sprintf('%s nimmt „%s“ auf.', Bands::fullName($m), $record['title'])
+                : sprintf('%s nimmt mit %s „%s“ auf.', Bands::fullName($m), $band['name'], $record['title']);
+            $this->repo->log('record', mb_substr($line, 0, 250), $band['id'], $m['id']);
+        }
+        return [
+            'record' => true,
+            'core' => true,
+            'title' => $record['title'],
+            'format' => $format,
+            'songs' => $songs,
+            'quality' => round($quality, 3),
+            'perfect' => $perfect,
+            'hype' => round($released['hype'] ?? 0.0, 1),
+            'soldToday' => (int) round($released['soldRate'] ?? 0.0),
+            'money' => 0,
+            'fame' => 0,
+            'cover' => $record['cover']['spec'] ?? null,
+            'producer' => $record['producer'] ?? 'mo',
             'studio' => $record['studio'] ?? 'garage',
             'levelUps' => $levelUps,
         ];

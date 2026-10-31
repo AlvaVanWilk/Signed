@@ -155,6 +155,8 @@ final class State
                 'vehicles' => ['bus' => $band['bus'], 'plane' => $band['plane']],
                 'tours' => Tours::options($band, $list),
                 'sound' => $sound,
+                // Neuer Kern (nur mit Schalter): Fans, Ruhmstufe, Hype, Frische, was ein Auftritt jetzt brächte
+                'core' => BandCore::$live ? BandCore::view($db, $band, $list, $now) : null,
                 'slotPreview' => $slotPreview,
                 'slotReturn' => array_map('strval', array_keys($band['slot_return'])),
                 'fame' => $fame,
@@ -278,7 +280,11 @@ final class State
 
         return [
             'now' => $now,
-            'label' => $label + ['bandSlots' => Bands::slots(0.0), 'fame' => BandCalc::labelFame(array_column($bandsOut, 'fame'))],
+            'label' => $label + ['bandSlots' => Bands::slots(0.0), 'fame' => BandCalc::labelFame(array_column($bandsOut, 'fame'))]
+                // Neuer Kern: Label-Bestenliste zählt alle Fans aller Bands
+                + (BandCore::$live ? ['fans' => round(array_sum(array_map(static fn ($b) => $b['core']['fans'] ?? 0, $bandsOut)), 1)] : []),
+            // Schalter für den Umbau: Der Browser zeigt Fans und Hype statt Ruhm, Gage und Tantiemen
+            'core' => BandCore::$live,
             'scout' => (new Scout($repo))->status(),
             'submissions' => $submissions->list($now),
             'mail' => (new Inbox($repo))->list($now),

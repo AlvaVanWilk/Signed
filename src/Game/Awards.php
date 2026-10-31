@@ -36,7 +36,7 @@ final class Awards
     /** Verkäufe einer Platte sind gestiegen: Gold, Platin, Diamant, sobald die Schwelle erreicht ist. */
     public static function sales(Repo $repo, int $bandId, int $recordId, string $title, float $before, float $after): void
     {
-        foreach (Balance::AWARDS['records'] as $kind => $copies) {
+        foreach (BandCore::$live ? Balance::CORE_AWARDS : Balance::AWARDS['records'] as $kind => $copies) {
             if ($before < $copies && $after >= $copies) {
                 $name = self::RECORD_KINDS[$kind];
                 $band = $repo->db->value('SELECT name FROM bands WHERE id = ?', [$bandId]) ?? '';

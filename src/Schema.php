@@ -669,6 +669,34 @@ final class Schema
                 'ALTER TABLE bands ADD COLUMN bus INTEGER NOT NULL DEFAULT 0',
                 'ALTER TABLE bands ADD COLUMN plane INTEGER NOT NULL DEFAULT 0',
             ],
+            // 55: Neuer Kern (noch hinter dem Schalter BandCore::$live): Fans und Frische der Band, bis wann gerechnet ist, Geld-Reste;
+            // Zustand jeder Platte (JSON aus Core\Sales, solange sie noch verkauft); einzelne Songs mit Qualität; Verkäufe je Stunde für die Charts
+            [
+                'ALTER TABLE bands ADD COLUMN fans REAL NOT NULL DEFAULT 0',
+                'ALTER TABLE bands ADD COLUMN fresh REAL NOT NULL DEFAULT 1',
+                'ALTER TABLE bands ADD COLUMN last_gig_at INTEGER NULL',
+                'ALTER TABLE bands ADD COLUMN core_at INTEGER NOT NULL DEFAULT 0',
+                'ALTER TABLE bands ADD COLUMN money_carry REAL NOT NULL DEFAULT 0',
+                'ALTER TABLE records ADD COLUMN core TEXT NULL',
+                'ALTER TABLE records ADD COLUMN core_active INTEGER NOT NULL DEFAULT 0',
+                'CREATE INDEX records_core ON records (band_id, core_active)',
+                'CREATE TABLE songs (
+                    id {PK},
+                    label_id INTEGER NOT NULL,
+                    band_id INTEGER NOT NULL,
+                    quality REAL NOT NULL,
+                    record_id INTEGER NULL,
+                    created_at INTEGER NOT NULL
+                ){OPTS}',
+                'CREATE INDEX songs_band ON songs (band_id, record_id)',
+                'CREATE TABLE chart_hours (
+                    record_id INTEGER NOT NULL,
+                    hour INTEGER NOT NULL,
+                    sold REAL NOT NULL,
+                    PRIMARY KEY (record_id, hour)
+                ){OPTS}',
+                'CREATE INDEX chart_hours_hour ON chart_hours (hour)',
+            ],
         ];
     }
 }

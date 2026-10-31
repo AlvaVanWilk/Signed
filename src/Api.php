@@ -9,6 +9,7 @@ use Signed\Game\Assistant;
 use Signed\Game\Awards;
 use Signed\Game\Inbox;
 use Signed\Game\Balance;
+use Signed\Game\BandCore;
 use Signed\Game\Bands;
 use Signed\Game\Battle;
 use Signed\Game\Events;
@@ -179,7 +180,8 @@ final class Api
         Events::tick($this->db, Clock::now());
         Activities::settleDue($this->db, $labelId);
         Activities::advanceRunning($this->db, $labelId);
-        Charts::payRoyalties($this->db, $labelId);
+        // Neuer Kern (hinter dem Schalter): Plattenverkäufe, Katalog und neue Fans bis jetzt statt der alten Tantiemen
+        BandCore::$live ? BandCore::settleLabel($repo) : Charts::payRoyalties($this->db, $labelId);
         Transfers::settleDue($this->db);
         return $this->{$action}($in, $repo);
     }

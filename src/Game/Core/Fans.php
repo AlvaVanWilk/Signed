@@ -34,6 +34,12 @@ final class Fans
         return max(0.0, min($fans, (float) self::roof($kind)));
     }
 
+    /** Neue Fans bis zum Dach. Wer schon darüber ist (etwa nach einem Wechsel der Besetzung), behält seine Fans, wächst aber nicht weiter. */
+    public static function grow(float $fans, float $gain, string $kind): float
+    {
+        return max($fans, min($fans + $gain, (float) self::roof($kind)));
+    }
+
     /** Rechen-Pool, festgelegt beim Erscheinen einer Platte: nie weniger als 10.000 über den Fans. */
     public static function pool(float $fansAtRelease): float
     {

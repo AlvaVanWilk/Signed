@@ -41,6 +41,7 @@ function test(string $name, callable $fn): void
 {
     Tests::add($name, static function () use ($fn): void {
         Signed\Game\Bands::$autoSolo = true;
+        Signed\Game\BandCore::$live = false;
         $fn();
     });
 }

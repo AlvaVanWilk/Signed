@@ -10,19 +10,21 @@ use Signed\Game\Balance;
  * Vor jeder Handlung wird alles bis zu ihrem Zeitpunkt weitergerechnet (settle), alle Platten der Band im Gleichschritt, Tag für Tag.
  * Reines Rechenwerk ohne Datenbank; das Spiel speichert dieselben Werte. Noch nicht ins Spiel eingebaut (neuer Kern).
  *
- * Zustand: fans, kind (Art der Band fürs Dach), fresh und lastGig (Frische), records (Platten, neueste zuletzt), settledAt,
- * earned (Geld nach Herkunft: records, catalog, gigs, ads), sold und catalogSold (verkaufte Platten).
+ * Zustand: fans, kind (Art der Band fürs Dach), fresh und lastGig (Frische), records (Platten, neueste zuletzt), retired (Platten, die
+ * beim Weiterrechnen ganz fertig wurden; der Aufrufer speichert sie und leert die Liste), settledAt, earned (Geld nach Herkunft:
+ * records, catalog, gigs, ads), sold und catalogSold (verkaufte Platten).
  */
 final class Career
 {
     public static function start(float $fans, string $kind, int $at): array
     {
         return [
-            'fans' => Fans::capped($fans, $kind),
+            'fans' => max(0.0, $fans),
             'kind' => $kind,
             'fresh' => 1.0,
             'lastGig' => null,
             'records' => [],
+            'retired' => [],
             'settledAt' => $at,
             'earned' => ['records' => 0.0, 'catalog' => 0.0, 'gigs' => 0.0, 'ads' => 0.0],
             'sold' => 0.0,
@@ -57,7 +59,7 @@ final class Career
                 $career['catalogSold'] += $catalog;
                 $career['earned']['records'] += Sales::money($sold);
                 $career['earned']['catalog'] += Sales::money($catalog);
-                $career['fans'] = Fans::capped($career['fans'] + $gained, $career['kind']);
+                $career['fans'] = Fans::grow($career['fans'], $gained, $career['kind']);
             }
             $career['settledAt'] = max($career['settledAt'], $next);
             $crossed = false;
@@ -73,11 +75,13 @@ final class Career
                     $crossed = true;
                 }
             }
-            $career['records'] = array_values(array_filter(
-                $career['records'],
-                static fn ($r, $i) => $i === $last || !Sales::isRetired($r),
-                ARRAY_FILTER_USE_BOTH
-            ));
+            foreach ($career['records'] as $i => $record) {
+                if ($i !== $last && Sales::isRetired($record)) {
+                    $career['retired'][] = $record;
+                    unset($career['records'][$i]);
+                }
+            }
+            $career['records'] = array_values($career['records']);
             if (!$crossed) {
                 return $career;
             }
@@ -98,15 +102,32 @@ final class Career
      */
     public static function gig(array $career, int $at, float $live, bool $tour = false): array
     {
+        [$career, $result] = self::gigStart($career, $at, $live, $tour);
+        $career = self::gain($career, $result['newFans']);
+        $career['earned']['gigs'] += $result['earnings'];
+        return [$career, $result];
+    }
+
+    /**
+     * Beginn eines Auftritts: Zuschauer, Verdienst und neue Fans stehen fest, die Frische ist verbraucht. Neue Fans und Geld bucht das Spiel
+     * nach dem Auftritt (addFans, Geld ans Label); gig() macht beides auf einmal.
+     * @return array{0: array, 1: array} [Laufbahn, Ergebnis aus Concert::play]
+     */
+    public static function gigStart(array $career, int $at, float $live, bool $tour = false): array
+    {
         $career = self::settle($career, $at);
         [$hype, $f0, $pool] = self::context($career);
         $fresh = Concert::freshness($career['fresh'], $career['lastGig'], $at);
         $result = Concert::play($career['fans'], $hype, $f0, $pool, $fresh, $live, $tour);
-        $career = self::gain($career, $result['newFans']);
         $career['fresh'] = Concert::afterGig($fresh);
         $career['lastGig'] = $at;
-        $career['earned']['gigs'] += $result['earnings'];
         return [$career, $result];
+    }
+
+    /** Neue Fans jetzt gutschreiben (nach einem Auftritt): bis zum Dach, und was wirklich dazukommt, zählt für die neueste Platte. */
+    public static function addFans(array $career, int $at, float $fans): array
+    {
+        return self::gain(self::settle($career, $at), $fans);
     }
 
     /** Was ein Auftritt jetzt bringen würde (für den Knopf „Auftreten: etwa … Leute, rund … ₲“), ohne die Show. */
@@ -171,7 +192,7 @@ final class Career
     private static function gain(array $career, float $fans): array
     {
         $before = $career['fans'];
-        $career['fans'] = Fans::capped($before + $fans, $career['kind']);
+        $career['fans'] = Fans::grow($before, $fans, $career['kind']);
         $gained = $career['fans'] - $before;
         if ($career['records'] && $gained > 0) {
             $last = count($career['records']) - 1;

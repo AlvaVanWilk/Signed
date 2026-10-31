@@ -14,7 +14,8 @@ Regeln und Formeln: `docs/kern.md`. Was herausgenommen wurde (Minispiele, Packs,
   Wenn sich Formeln ändern, `docs/kern.md` mitpflegen.
 - Zeit: Tag, Stunde, Minute und Woche heißen immer echte Zeit. Zeit im Spiel heißt Signie-Day, Signie-Hour, Signie-Minute,
   Signie-Month und Signie-Year (1 Signie-Day = 1 echte Stunde, 1 Signie-Year = 1 echte Woche) und kommt in keiner Rechnung vor.
-  Der neue Kern (Hype, Verkäufe, Zuschauer, Fans) rechnet je echtem Tag. Jede Dauer gegenüber Sandra in echter Zeit nennen.
+  Der neue Kern rechnet Hype und Plattenverkäufe je echtem Tag, Konzerte einzeln je Auftritt. Jede Dauer gegenüber Sandra
+  in echter Zeit nennen.
 
 ## Architektur
 

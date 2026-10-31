@@ -561,7 +561,7 @@ final class Api
     private function scoutSend(array $in, Repo $repo): array
     {
         $pick = static fn ($v) => is_string($v) && $v !== '' ? $v : null;
-        (new Scouting($repo))->send(self::int($in, 'staffId'), $pick($in['genre'] ?? null), $pick($in['instrument'] ?? null));
+        (new Scouting($repo))->send(self::int($in, 'staffId'), $pick($in['genre'] ?? null), $pick($in['instrument'] ?? null), $pick($in['genre2'] ?? null));
         return ['state' => State::build($repo)];
     }
 

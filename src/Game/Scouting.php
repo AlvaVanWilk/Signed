@@ -32,11 +32,11 @@ final class Scouting
         return $row;
     }
 
-    /** Losschicken: Genre und Instrument (oder null = egal). */
-    public function send(int $staffId, ?string $genre, ?string $instrument): void
+    /** Losschicken: Genre, ab Stufe `genre2From` ein zweites Genre, und Instrument (oder null = egal). */
+    public function send(int $staffId, ?string $genre, ?string $instrument, ?string $genre2 = null): void
     {
         $db = $this->repo->db;
-        $db->transaction(function () use ($db, $staffId, $genre, $instrument): void {
+        $db->transaction(function () use ($db, $staffId, $genre, $instrument, $genre2): void {
             $row = $this->scout($staffId);
             $now = Clock::now();
             if ((int) $row['busy_until'] > $now || isset(json_decode($row['data'], true)['trip'])) {
@@ -48,9 +48,23 @@ final class Scouting
             if ($instrument !== null && !isset(Catalog::INSTRUMENTS[$instrument])) {
                 throw new ApiError('Unbekanntes Instrument.');
             }
+            if ($genre2 !== null) {
+                if ((int) $row['tier'] < Balance::SCOUT_STAFF['genre2From']) {
+                    throw new ApiError('Ein zweites Genre sucht erst ein besserer Scout.');
+                }
+                if ($genre === null) {
+                    throw new ApiError('Wähle zuerst ein Genre.');
+                }
+                if (!isset(Catalog::GENRES[$genre2])) {
+                    throw new ApiError('Unbekanntes Genre.');
+                }
+                if ($genre2 === $genre) {
+                    throw new ApiError('Das zweite Genre muss ein anderes sein.');
+                }
+            }
             $tier = Balance::SCOUT_STAFF['tiers'][(int) $row['tier']];
             $data = json_decode($row['data'], true);
-            $data['trip'] = ['genre' => $genre, 'instrument' => $instrument, 'startedAt' => $now];
+            $data['trip'] = ['genre' => $genre, 'genre2' => $genre2, 'instrument' => $instrument, 'startedAt' => $now];
             $db->exec('UPDATE staff SET busy_until = ?, data = ? WHERE id = ? AND busy_until <= ?', [$now + $tier['seconds'], json_encode($data, JSON_UNESCAPED_UNICODE), $staffId, $now]);
         });
     }
@@ -71,23 +85,31 @@ final class Scouting
             }
             $back = (int) $row['busy_until'];
             $tier = (int) $row['tier'];
-            $cards = self::find($tier, $trip['genre'], $trip['instrument'], $this->repo->names());
+            $cards = self::find($tier, $trip['genre'], $trip['instrument'], $this->repo->names(), $trip['genre2'] ?? null);
             (new Inbox($this->repo))->store('report', [
                 'staffId' => (int) $row['id'], 'tier' => $tier, 'name' => $data['first_name'], 'look' => $data['look'],
-                'genre' => $trip['genre'], 'instrument' => $trip['instrument'], 'cards' => $cards, 'signed' => [],
+                'genre' => $trip['genre'], 'genre2' => $trip['genre2'] ?? null, 'instrument' => $trip['instrument'], 'cards' => $cards, 'signed' => [],
             ], $back, Balance::SCOUT_STAFF['ttl'], true);
             $this->repo->log('scout', sprintf('%s ist zurück und stellt %d Talente vor.', $data['first_name'], count($cards)));
         }
     }
 
-    /** Talente nach Auftrag: unbekannt, Können im Bereich der Stufe des Scouts. */
-    public static function find(int $tier, ?string $genre, ?string $instrument, array $avoid = []): array
+    /**
+     * Talente nach Auftrag: unbekannt, Können im Bereich der Stufe des Scouts. Scouts finden öfter Talente mit mehreren Genres, je besser,
+     * desto öfter (`extraGenres` der Stufe). Mit zweitem Genre im Auftrag mag ein Talent beide mit der Chance `extraGenres[0]`, dazu
+     * vielleicht ein drittes (`extraGenres[1]`); sonst nur das erste.
+     */
+    public static function find(int $tier, ?string $genre, ?string $instrument, array $avoid = [], ?string $genre2 = null): array
     {
         $c = Balance::SCOUT_STAFF['tiers'][$tier];
         $cards = [];
         for ($i = 0; $i < $c['candidates']; $i++) {
-            // Scouts finden öfter Talente mit mehreren Genres, je besser, desto öfter (`extraGenres` der Stufe)
-            $opts = ['avoid' => $avoid, 'extraGenres' => $c['extraGenres']] + ($genre !== null ? ['genre' => $genre] : []) + ($instrument !== null ? ['instrument' => $instrument] : []);
+            $extra = $c['extraGenres'];
+            $both = [];
+            if ($genre !== null && $genre2 !== null) {
+                [$both, $extra] = Rng::chance($extra[0]) ? [['genre2' => $genre2], array_slice($extra, 1)] : [[], []];
+            }
+            $opts = ['avoid' => $avoid, 'extraGenres' => $extra] + $both + ($genre !== null ? ['genre' => $genre] : []) + ($instrument !== null ? ['instrument' => $instrument] : []);
             $card = Submissions::make(0, 0.0, $opts);
             $best = round(Rng::float(...$c['skill']), 1);
             $card['skill1'] = $best;
@@ -105,7 +127,7 @@ final class Scouting
     {
         $signed = $d['signed'] ?? [];
         return [
-            'scoutName' => $d['name'], 'look' => $d['look'], 'tier' => (int) $d['tier'], 'genre' => $d['genre'], 'instrument' => $d['instrument'],
+            'scoutName' => $d['name'], 'look' => $d['look'], 'tier' => (int) $d['tier'], 'genre' => $d['genre'], 'genre2' => $d['genre2'] ?? null, 'instrument' => $d['instrument'],
             'cards' => array_map(static fn ($c, $i) => Submissions::presentCard($c, -($mailId * 10 + $i + 1)) + ['index' => $i, 'signed' => in_array($i, $signed, true)], $d['cards'], array_keys($d['cards'])),
         ];
     }
@@ -141,8 +163,9 @@ final class Scouting
             return [
                 'id' => (int) $s['id'], 'tier' => (int) $s['tier'], 'firstName' => $d['first_name'], 'lastName' => $d['last_name'], 'look' => $d['look'],
                 'seconds' => $tier['seconds'], 'candidates' => $tier['candidates'], 'maxSkill' => round(Levels::shown((float) $tier['skill'][1]), 1),
-                'multiGenre' => $tier['extraGenres'][0],
-                'away' => isset($d['trip']) && (int) $s['busy_until'] > $now ? ['until' => (int) $s['busy_until'], 'genre' => $d['trip']['genre'], 'instrument' => $d['trip']['instrument']] : null,
+                'multiGenre' => $tier['extraGenres'][0], 'genre2' => (int) $s['tier'] >= Balance::SCOUT_STAFF['genre2From'],
+                'away' => isset($d['trip']) && (int) $s['busy_until'] > $now
+                    ? ['until' => (int) $s['busy_until'], 'genre' => $d['trip']['genre'], 'genre2' => $d['trip']['genre2'] ?? null, 'instrument' => $d['trip']['instrument']] : null,
             ];
         }, $this->staff());
     }

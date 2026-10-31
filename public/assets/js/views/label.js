@@ -1,5 +1,5 @@
 import { api } from '../api.js';
-import { abilityInfo, genreGlyph, hiddenTraits, genreName, gearModel, instrumentIcon, instrumentName, ownGear, photo, sortedGenres } from '../cards.js';
+import { abilityInfo, genreGlyph, hiddenTraits, genreName, gearModel, instrumentIcon, instrumentName, ownGear, photo, scoutTask, sortedGenres } from '../cards.js';
 import { actions, app, bandById, cat, defineActions, isBusy, managerBusy, managerById, mutate, musicianById, rerender, runningFor, serverNow } from '../core.js';
 import { closePopover, confirmDialog, duration, esc, fmt0, fmt1, fmtGain, money, off, openModal, popover, toast } from '../ui.js';
 import { getAudio } from '../audio.js';
@@ -129,7 +129,7 @@ function tile(b, selected) {
 /** Scout unter der Künstlerleiste: losschicken, sehen, wann er zurück ist, oder den Bericht ansehen. */
 function scoutCard(x) {
   const report = (app.state.mail ?? []).find((m) => m.kind === 'report' && m.scoutName === x.firstName && m.cards.some((c) => !c.signed));
-  const task = x.away ? [x.away.genre ? genreName(x.away.genre) : '', x.away.instrument ? instrumentName(x.away.instrument) : ''].filter(Boolean).join(' · ') || 'ohne Vorgabe' : '';
+  const task = x.away ? scoutTask(x.away) : '';
   return `<div class="lb-scout">
     <span class="lb-ph sm">${photo({ id: x.id, look: x.look })}</span>
     <span class="lb-scout-txt"><small class="lb-cap">Scout</small><b>${esc(x.firstName)}</b>

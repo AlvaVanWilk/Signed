@@ -14,7 +14,7 @@ final class Generator
     }
 
     /**
-     * @param array{instrument?: string, genre?: string, single?: bool, minSkill?: float, maxSkill?: float, avoid?: string[], getsAlongWith?: string[], extraGenres?: list<float>} $opts
+     * @param array{instrument?: string, genre?: string, genre2?: string, single?: bool, minSkill?: float, maxSkill?: float, avoid?: string[], getsAlongWith?: string[], extraGenres?: list<float>} $opts
      * @return array Musiker im Datenbankformat (JSON-Felder noch als Arrays)
      */
     public static function musician(string $rarity, array $opts = []): array
@@ -35,6 +35,10 @@ final class Generator
             $primary = Rng::pick($typical);
         }
         $genres = [$primary];
+        // Zweites Genre fest vorgegeben (Suchauftrag eines Scouts mit zwei Genres)
+        if (isset($opts['genre2']) && $opts['genre2'] !== $primary) {
+            $genres[] = $opts['genre2'];
+        }
         $pool = array_values(array_diff($typical, $genres));
         // Chance auf ein zweites, drittes … Genre; Kassetten und Scouts bringen ihre eigenen Werte mit
         foreach ($opts['extraGenres'] ?? Balance::EXTRA_GENRE_CHANCE as $chance) {

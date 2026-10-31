@@ -2193,6 +2193,46 @@ test('Genres: Kassetten haben fast immer ein Genre, Scouts finden öfter mehrere
     }
 });
 
+test('Scout: ab Stufe 2 mit zweitem Genre im Auftrag – die meisten Talente mögen beide, der einfache Scout kann das nicht', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Zweigenre');
+    $db->exec('UPDATE labels SET money = 100000');
+    $mail = $p->post('mailTest')['state']['mail'];
+    $job = static fn (int $tier) => array_values(array_filter($mail, static fn ($m) => $m['kind'] === 'job' && $m['role'] === 'scout' && $m['tier'] === $tier))[0];
+    $p->post('mailHire', ['mailId' => $job(1)['mailId']]);
+    $scouts = $p->post('mailHire', ['mailId' => $job(3)['mailId']])['state']['scouts'];
+    $tier = static fn (int $t) => array_values(array_filter($scouts, static fn ($x) => $x['tier'] === $t))[0];
+    [$simple, $best] = [$tier(1), $tier(3)];
+    checkEquals([false, true], [$simple['genre2'], $best['genre2']], 'Zweites Genre erst ab Stufe 2');
+    checkApiError(fn () => $p->post('scoutSend', ['staffId' => $simple['id'], 'genre' => 'rock', 'genre2' => 'pop']), 'besserer Scout');
+    checkApiError(fn () => $p->post('scoutSend', ['staffId' => $best['id'], 'genre2' => 'pop']), 'zuerst ein Genre');
+    checkApiError(fn () => $p->post('scoutSend', ['staffId' => $best['id'], 'genre' => 'rock', 'genre2' => 'rock']), 'anderes');
+    checkApiError(fn () => $p->post('scoutSend', ['staffId' => $best['id'], 'genre' => 'rock', 'genre2' => 'polka']), 'Genre');
+    $state = $p->post('scoutSend', ['staffId' => $best['id'], 'genre' => 'rock', 'genre2' => 'pop', 'instrument' => 'bass'])['state'];
+    $away = array_values(array_filter($state['scouts'], static fn ($x) => $x['id'] === $best['id']))[0]['away'];
+    checkEquals(['rock', 'pop', 'bass'], [$away['genre'], $away['genre2'], $away['instrument']]);
+    Clock::advance(Balance::SCOUT_STAFF['tiers'][3]['seconds'] + 5);
+    $report = array_values(array_filter($p->get('state')['mail'], static fn ($m) => $m['kind'] === 'report'))[0];
+    checkEquals(['rock', 'pop', 'bass'], [$report['genre'], $report['genre2'], $report['instrument']], 'Der Bericht nennt den Auftrag');
+    // Viele Ausflüge: Stufe 2 die meisten (70 %), Stufe 3 fast alle (85 %) mögen beide; wer Pop nicht mag, mag nur Rock
+    foreach ([2 => [0.62, 0.78], 3 => [0.77, 0.92]] as $t => [$lo, $hi]) {
+        $both = 0;
+        $n = 0;
+        for ($i = 0; $i < 600; $i++) {
+            foreach (Signed\Game\Scouting::find($t, 'rock', 'bass', [], 'pop') as $c) {
+                $n++;
+                check(in_array('rock', $c['genres'], true), 'mag Rock');
+                if (in_array('pop', $c['genres'], true)) {
+                    $both++;
+                } else {
+                    checkEquals(['rock'], $c['genres'], 'Ohne Pop nur Rock');
+                }
+            }
+        }
+        check($both / $n > $lo && $both / $n < $hi, "Stufe $t: Rock und Pop " . round($both / $n, 3));
+    }
+});
+
 test('Scout: bewirbt sich zu Beginn, mit Suchauftrag unterwegs, Bericht im Posteingang, beliebig viele unterschreiben', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Sucher');

@@ -546,6 +546,9 @@ auf dem Boden) und als Liste auf der Bandseite und in WikiSignia. Neue werden ei
   50 / 70 / 85 %, davon drei 5 / 17,5 / 34 % (`SCOUT_STAFF['tiers'][…]['extraGenres']`; zweites und drittes Genre aus den typischen Genres
   des Instruments). So führt der Weg zu Hybrid- und Crossover-Bands (höheres Dach) über Scouts. Der Brief und das Losschicken-Fenster sagen es
   in Worten („jedes zweite“, „die meisten“, „fast alle mit mehreren Genres“). Vorher galt für beide 35 % zweites, davon 8 % drittes Genre.
+- **Zweites Genre im Suchauftrag** (ab Scout-Stufe 2, `SCOUT_STAFF['genre2From']`): Die Talente mögen dann beide Genres mit 70 / 85 %
+  (`extraGenres[0]` der Stufe), sonst nur das erste; ein drittes Genre mit 25 / 40 %. Damit lässt sich eine Hybrid-Band gezielt suchen: Bei
+  „Rock und Pop · Bass“ bringt der beste Scout im Schnitt 2,5 passende Talente je Ausflug (vorher etwa 0,6).
 
 ### Instrumente und Music Store
 

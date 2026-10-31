@@ -83,6 +83,9 @@ export function ownIcon(m, type) {
 }
 export const playsElectric = (m, type) => ownGear(m, type).electric;
 export const genreName = (key) => cat().genres[key]?.name ?? key;
+
+/** Suchauftrag eines Scouts in Worten: „Rock und Pop · Bass“, ohne Vorgabe „ohne Vorgabe“. */
+export const scoutTask = (t) => [[t.genre, t.genre2].filter(Boolean).map((g) => genreName(g)).join(' und '), t.instrument ? instrumentName(t.instrument) : ''].filter(Boolean).join(' · ') || 'ohne Vorgabe';
 /** Genres immer in derselben Reihenfolge anzeigen (wie im Katalog: Pop, Rock, Metal …). */
 export const genreOrder = (key) => Object.keys(cat().genres).indexOf(key);
 export const sortedGenres = (genres) => [...genres].sort((a, b) => genreOrder(a) - genreOrder(b));

@@ -283,6 +283,9 @@ final class Balance
             3 => ['price' => 3000, 'seconds' => 3600, 'candidates' => 3, 'skill' => [32, 54], 'from' => 0.55, 'extraGenres' => [0.85, 0.40]],
         ],
         'ttl' => 4 * 86400,
+        // Ab dieser Stufe nimmt der Scout ein zweites Genre in den Suchauftrag: Talente mögen dann beide mit der Chance `extraGenres[0]`
+        // der Stufe (sonst nur das erste), ein drittes Genre mit `extraGenres[1]` (Sandra, 31.10.)
+        'genre2From' => 2,
     ];
     /**
      * Assistenz: einmalig bezahlt, alle gleich gut. Jede hat ein Arbeitsgebiet und arbeitet darin laufend, Stück für Stück, so schnell wie man

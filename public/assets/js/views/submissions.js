@@ -1,4 +1,4 @@
-import { genreGlyph, genreName, genreOrder, hiddenTraits, traitNames, instrumentIcon, instrumentName, photo, sortedGenres, withBand, withBandHtml } from '../cards.js';
+import { genreGlyph, genreName, genreOrder, hiddenTraits, traitNames, instrumentIcon, instrumentName, photo, scoutTask, sortedGenres, withBand, withBandHtml } from '../cards.js';
 import { api } from '../api.js';
 import { actions, app, bandById, cat, defineActions, isBusy, mutate, musicianById, rerender, serverNow } from '../core.js';
 import { confirmDialog, esc, fmt0, money, off, openModal, toast } from '../ui.js';
@@ -279,7 +279,7 @@ function jobLetter(m) {
 /** Bericht des Scouts: wer gefunden wurde, sieht man erst beim Ansehen (eins nach dem anderen). */
 function reportLetter(m) {
   const open = m.cards.filter((c) => !c.signed).length;
-  const task = [m.genre ? genreName(m.genre) : '', m.instrument ? instrumentName(m.instrument) : ''].filter(Boolean).join(' · ') || 'ohne Vorgabe';
+  const task = scoutTask(m);
   return `
     <article class="lb-letter report">
       <div class="lb-lt-head"><span class="lb-lt-kind">Bericht vom Scout</span></div>
@@ -404,7 +404,13 @@ export function render() {
 // ---------- Scout losschicken und Bericht ansehen ----------
 
 function scoutDialog(x) {
-  const pick = { genre: '', instrument: '' };
+  const pick = { genre: '', genre2: '', instrument: '' };
+  // Zweites Genre: erst ab einem besseren Scout; die Talente sollen dann beide mögen (die meisten bzw. fast alle tun es)
+  const second = () => (!x.genre2
+    ? '<p class="muted small">Ein zweites Genre, das die Talente auch mögen sollen, sucht erst ein besserer Scout.</p>'
+    : `<h3>Zweites Genre</h3>
+      <div class="lb-filter"><button class="${pick.genre2 === '' ? 'on' : ''}" data-pick="genre2" data-v="">Keins</button>${Object.keys(cat().genres).filter((g) => g !== pick.genre).map((g) => `<button class="${pick.genre2 === g ? 'on' : ''}" data-pick="genre2" data-v="${g}" ${off(pick.genre ? '' : 'Wähle zuerst oben ein Genre.')}>${esc(genreName(g))}</button>`).join('')}</div>
+      ${pick.genre2 ? `<p class="muted small">${x.multiGenre >= 0.8 ? 'Fast alle' : 'Die meisten'} Talente mögen dann beide Genres, die anderen nur ${esc(genreName(pick.genre))}.</p>` : ''}`);
   const modal = openModal({
     className: 'lb-rules-modal',
     render: () => `
@@ -413,6 +419,7 @@ function scoutDialog(x) {
       <p class="muted">${esc(x.firstName)} ist ${mins(x.seconds)} unterwegs (auch wenn du nicht spielst) und stellt dir dann ${x.candidates} Talente vor${x.multiGenre ? `, ${multiGenreText(x.multiGenre)}` : ''}. Du kannst so viele davon unterschreiben, wie du willst.</p>
       <h3>Genre</h3>
       <div class="lb-filter"><button class="${pick.genre === '' ? 'on' : ''}" data-pick="genre" data-v="">Egal</button>${Object.keys(cat().genres).map((g) => `<button class="${pick.genre === g ? 'on' : ''}" data-pick="genre" data-v="${g}">${esc(genreName(g))}</button>`).join('')}</div>
+      ${second()}
       <h3>Instrument</h3>
       <div class="lb-filter"><button class="${pick.instrument === '' ? 'on' : ''}" data-pick="instrument" data-v="">Egal</button>${Object.keys(cat().instruments).map((i) => `<button class="${pick.instrument === i ? 'on' : ''}" data-pick="instrument" data-v="${i}">${esc(instrumentName(i))}</button>`).join('')}</div>
       <div class="dialog-actions"><button class="btn ghost" data-close>Abbrechen</button><button class="btn primary" data-ok>Losschicken</button></div>`,
@@ -420,7 +427,10 @@ function scoutDialog(x) {
   modal.body.addEventListener('click', async (e) => {
     const b = e.target.closest('[data-pick]');
     if (b) {
+      // Gesperrt: Den Grund zeigt ui.js, ausgewählt wird nichts
+      if (b.getAttribute('aria-disabled') === 'true') return;
       pick[b.dataset.pick] = b.dataset.v;
+      if (b.dataset.pick === 'genre' && (pick.genre === '' || pick.genre === pick.genre2)) pick.genre2 = '';
       modal.refresh();
       return;
     }

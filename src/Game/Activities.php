@@ -779,16 +779,20 @@ final class Activities
         $gear = $repo->gearByMusician();
         $room = Rooms::here($repo, $repo->band($bandId), count($members));
         $gains = [];
+        $shown = [];
         foreach ($members as $m) {
-            $gains[$m['id']] = BandCalc::rehearsalGain($m, BandCalc::gearOf($m, $gear)) * $room['skill'] * $f;
+            $g = BandCalc::rehearsalGain($m, BandCalc::gearOf($m, $gear)) * $room['skill'] * $f;
+            // So zählt es der Spieler (Anzeige während der Probe und im Ergebnis); der Browser rechnet mit demselben Maß weiter
+            $shown[$m['id']] = $g;
             if (BandCore::$live) {
                 // Neuer Kern: Der Zuwachs zählt im neuen Können; gespeichert wird auf der alten Skala
                 $old = BandCalc::skill($m);
-                $gains[$m['id']] = Core\Skill::toLegacy(Core\Skill::fromLegacy($old) + $gains[$m['id']]) - $old;
+                $g = Core\Skill::toLegacy(Core\Skill::fromLegacy($old) + $g) - $old;
             }
+            $gains[$m['id']] = $g;
         }
         $credited = (array) $r['credited'];
-        foreach ($gains as $id => $g) {
+        foreach ($shown as $id => $g) {
             $credited[$id] = ($credited[$id] ?? 0.0) + $g;
         }
         $levelUps = self::applySkill($repo, $gains);

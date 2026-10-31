@@ -143,6 +143,8 @@ Verdienst         = Zuschauer × 5 / 6 / 9 / 12 ₲ nach Ruhmstufe
 - Neues Maß, nach oben offen: Fortgeschritten ab 100, Profi ab 400, Virtuose ab 1.600. Proben bringt 50 je Probestunde (× Talent, × Lernbonus
   des Instruments), ohne Lernkurve.
 - Gespeichert bleibt die alte Skala; gezeigt und für den Sound gerechnet wird `Core\Skill::fromLegacy` (0 / 35 / 60 / 85 / 100 ↔ 0 / 100 / 400 / 1.600 / 2.320).
+- Laufende Probe: Was bisher dazukam (`credited`, auch im Ergebnis), zählt im neuen Maß; nur der Speicher bekommt den umgerechneten Wert.
+  So rechnet der Browser zwischen zwei Spielständen mit demselben Maß weiter (vorher sprang die Zahl alle paar Sekunden zurück).
 
 ### Bedürfnisse
 

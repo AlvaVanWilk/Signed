@@ -672,6 +672,35 @@ test('Kern im Spiel: Können wird im neuen Maß gezeigt, Proben bringt 50 je Stu
     coreNear($before + 50, Signed\Game\Core\Skill::fromLegacy(Signed\Game\Core\Skill::toLegacy($before + 50)), 1e-9, 'Umrechnung hin und zurück');
 });
 
+test('Kern im Spiel: Die laufende Probe zählt im neuen Maß gleichmäßig hoch, so wie der Browser weiterrechnet', function () {
+    [$db, $p, $repo, $band] = coreLabel();
+    equipBand($p, $db, $band);
+    $id = (int) $db->value('SELECT id FROM musicians WHERE band_id = ? ORDER BY id LIMIT 1', [$band['id']]);
+    $db->exec('UPDATE musicians SET skill1 = 20 WHERE band_id = ?', [$band['id']]);
+    $shown = static fn (): float => Signed\Game\Levels::shown(Signed\Game\BandCalc::skill($repo->musician($id)));
+    $start = $shown();
+    $act = $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'rehearsal'])['activity'];
+    // So rechnet der Browser zwischen zwei Spielständen weiter: Zuwachs je Probe-Einheit aus dem Spielstand
+    $state = $p->get('state');
+    $rate = (float) array_values(array_filter($state['musicians'], static fn ($m) => $m['id'] === $id))[0]['gains']['rehearsal'];
+    check($rate > 0, 'Die Probe bringt etwas');
+    $credited = static function (array $state) use ($act, $id): float {
+        $run = array_values(array_filter($state['running'], static fn ($a) => $a['id'] === $act['id']))[0];
+        return (float) ((array) $run['rehearsal']['credited'])[$id];
+    };
+    Clock::advance(300);
+    $first = $credited($p->get('state'));
+    coreNear($rate * 300 / Signed\Game\Balance::REHEARSAL['seconds'], $first, 0.005, 'Nach 5 Minuten so viel, wie der Browser zeigt');
+    coreNear($shown() - $start, $first, 1e-6, 'Gutgeschrieben wird im neuen Maß (gespeichert auf der alten Skala)');
+    Clock::advance(300);
+    $second = $credited($p->get('state'));
+    coreNear(2 * $first, $second, 0.005, 'Gleichmäßig weiter, kein Zurückspringen');
+    $res = $p->post('rehearsalStop', ['activityId' => $act['id']]);
+    $result = $db->value('SELECT result FROM activities WHERE id = ?', [$act['id']]);
+    coreNear($shown() - $start, (float) json_decode($result, true)['skillBy'][$id], 0.001, 'Ergebnis im selben Maß');
+    checkEquals([], $res['state']['running']);
+});
+
 test('Kern im Spiel: Umschalten mit einem alten Spielstand (Platten in den Charts, Lager, Ruhm) – danach läuft alles, zweimal umschalten ändert nichts', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Altlabel');

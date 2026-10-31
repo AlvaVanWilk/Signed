@@ -12,6 +12,9 @@ Regeln und Formeln: `docs/kern.md`. Was herausgenommen wurde (Minispiele, Packs,
 - Spieltexte und Kommentare auf Deutsch, Bezeichner im Code auf Englisch.
 - Alle Spielzahlen gehören nach `src/Game/Balance.php`, feste Daten nach `src/Game/Catalog.php`.
   Wenn sich Formeln ändern, `docs/kern.md` mitpflegen.
+- Zeit: Tag, Stunde, Minute und Woche heißen immer echte Zeit. Zeit im Spiel heißt Signie-Day, Signie-Hour, Signie-Minute,
+  Signie-Month und Signie-Year (1 Signie-Day = 1 echte Stunde, 1 Signie-Year = 1 echte Woche) und kommt in keiner Rechnung vor.
+  Der neue Kern (Hype, Verkäufe, Zuschauer, Fans) rechnet je echtem Tag. Jede Dauer gegenüber Sandra in echter Zeit nennen.
 
 ## Architektur
 

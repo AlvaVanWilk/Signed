@@ -2,6 +2,7 @@
 
 Musik-Spiel auf Label-Ebene (Web-App): Bands mit Eigenleben, Stimmung, Beziehungen. Konzept, Offenes und Geparktes: `docs/label-konzept.md`.
 Regeln und Formeln: `docs/kern.md`. Was herausgenommen wurde (Minispiele, Packs, Börse …): `docs/ausgelagert-musikerspiel.md`.
+Neuer Kern (Fans und Hype statt Ruhm): Rechenwerk in `src/Game/Core`, getestet, noch nicht eingebaut; Checkliste `docs/kern-einbau.md`.
 **Im Umbau:** Es wird nur in der Testversion gebaut; `main` (das echte Spiel) bleibt unverändert, bis der Umbau fertig ist und Sandra
 „veröffentlichen“ sagt. Alte Labels bekommen beim Umbau einen einmaligen Übergang (`Transition`, Schema-Schritt 53).
 

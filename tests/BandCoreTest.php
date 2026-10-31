@@ -268,3 +268,31 @@ test('Kern im Spiel: Festival-Bühnen nach Fans, Zuschauer bringen Fans, die Bü
     check($res['fans'] > 0 && BandCore::fans($db, $big) > $fans, 'Neue Fans vom Festival');
     checkEquals(0.0, (float) $res['fame']);
 });
+
+test('Kern im Spiel: Anfragen statt Interviews – erst mit Platte, Hype-Schub für die neueste Platte, Werbung bringt Geld', function () {
+    [$db, $p, $repo, $band] = coreLabel();
+    $db->exec('UPDATE labels SET interview_at = ? WHERE id = ?', [Clock::now() - 86400, $repo->labelId]);
+    $p->get('state');
+    checkEquals(0, (int) $db->value("SELECT COUNT(*) FROM mail WHERE kind = 'interview'"), 'Ohne Platte keine Anfragen');
+    $db->exec('UPDATE bands SET fans = 4000 WHERE id = ?', [$band['id']]);
+    coreRelease($repo, $band, 80);
+    $db->exec('UPDATE labels SET interview_at = ? WHERE id = ?', [Clock::now() - 3 * 86400, $repo->labelId]);
+    $p->get('state');
+    unpackAll($db);
+    $requests = array_values(array_filter($p->get('state')['mail'], static fn ($m) => ($m['request'] ?? null) !== null));
+    check($requests !== [], 'Anfragen kommen');
+    foreach (array_keys(Signed\Game\Balance::CORE_EVENTS['requests']) as $kind) {
+        $db->insert('mail', ['label_id' => $repo->labelId, 'kind' => 'interview', 'created_at' => Clock::now(), 'expires_at' => Clock::now() + 86400, 'unpacked_at' => Clock::now(),
+            'data' => json_encode(['musicianId' => $repo->members($band['id'])[0]['id'], 'level' => 1, 'medium' => 'Stadtmagazin', 'share' => 0.1, 'request' => $kind])]);
+    }
+    $ad = array_values(array_filter($p->get('state')['mail'], static fn ($m) => ($m['request'] ?? null) === 'ad'))[0];
+    checkEquals(1200, $ad['seconds']);
+    $hype = BandCore::view($db, $band, $repo->members($band['id']))['hype'];
+    $money = (int) $db->value('SELECT money FROM labels WHERE id = ?', [$repo->labelId]);
+    $p->post('mailAccept', ['mailId' => $ad['mailId']]);
+    Clock::advance(1201);
+    $p->get('state');
+    $fans = BandCore::fans($db, $band['id']);
+    check((int) $db->value('SELECT money FROM labels WHERE id = ?', [$repo->labelId]) >= $money + (int) floor($fans) - 1, 'Werbung: so viele ₲, wie die Band Fans hat');
+    check(BandCore::view($db, $band, $repo->members($band['id']))['hype'] > $hype - 0.5, 'Schub für die neueste Platte');
+});

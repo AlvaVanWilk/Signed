@@ -305,9 +305,14 @@ final class Festival
         if ($members) {
             // Eine Stufe größer als sonst: Nach dem Festival kennt man die Band.
             $m = Rng::pick($members);
-            $level = Levels::forFame((float) $m['fame']);
+            $level = BandCore::$live ? BandCore::stage($repo->db, $bandId) : Levels::forFame((float) $m['fame']);
             $medium = Rng::pick(Catalog::INTERVIEW_MEDIA[min(3, $level + 1)]);
-            (new Inbox($repo))->store('interview', ['musicianId' => $m['id'], 'level' => $level, 'medium' => $medium['name'], 'share' => $medium['share']], Clock::now(), Balance::POST['ttl']);
+            $data = ['musicianId' => $m['id'], 'level' => $level, 'medium' => $medium['name'], 'share' => $medium['share']];
+            if (BandCore::$live) {
+                // Neuer Kern: eine Anfrage mit Bezug aufs Festival
+                $data += ['request' => (string) Rng::weighted(Balance::CORE_EVENTS['requestWeights']), 'reason' => sprintf('nach dem Festival „%s“', $info['name'])];
+            }
+            (new Inbox($repo))->store('interview', $data, Clock::now(), Balance::POST['ttl']);
             $info['interview'] = ['medium' => $medium['name'], 'who' => $m['stage_name'] ?? $m['first_name']];
         }
         $repo->log('event', sprintf('%s hat beim Festival „%s“ gespielt: %s%s.', $name, $info['name'], $info['stage'], !empty($info['headliner']) ? ', als Headliner' : ''), $bandId);

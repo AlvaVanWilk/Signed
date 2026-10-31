@@ -231,6 +231,15 @@ final class Catalog
     ];
 
     /** Wer bei Interview-Anfragen fragt, je Bekanntheitsstufe; share = Anteil des Weges zur nächsten Stufe (Balance::INTERVIEW). */
+    /** Anfragen im neuen Kern (Balance::CORE_EVENTS['requests']): Name und was der Musiker dort macht. */
+    public const REQUESTS = [
+        'interview' => ['name' => 'Interview', 'text' => 'Interview'],
+        'photos' => ['name' => 'Fotoserie', 'text' => 'Fotoserie'],
+        'article' => ['name' => 'Artikel', 'text' => 'Artikel über die Band'],
+        'report' => ['name' => 'Reportage', 'text' => 'Reportage'],
+        'ad' => ['name' => 'Werbung', 'text' => 'Werbung'],
+    ];
+
     public const INTERVIEW_MEDIA = [
         0 => [
             ['name' => 'Schülerzeitung „Pausenhof“', 'share' => 0.08], ['name' => 'Stadtteil-Blog „Um die Ecke“', 'share' => 0.10],

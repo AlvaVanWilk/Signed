@@ -57,13 +57,18 @@ final class Inbox
     /** Interview-Anfragen je Tag für diesen Musiker (nach seiner Bekanntheit). */
     public static function interviewRate(array $m): float
     {
+        if (BandCore::$live) {
+            // Neuer Kern: Anfragen erst, wenn die Band eine Platte hat; je mehr Fans, desto öfter
+            $c = Balance::CORE_EVENTS['requestRate'];
+            return $m['band_id'] === null || ($m['coreRecords'] ?? 0) === 0 ? 0.0 : Submissions::rate($c, ($m['coreFans'] ?? 0.0) / $c['per']);
+        }
         return Submissions::rate(Balance::INTERVIEW['perDay'], (float) $m['fame']);
     }
 
-    /** Wie viele Anfragen für ihn höchstens zugleich offen sind: 1 + Bekanntheitsstufe. */
+    /** Wie viele Anfragen für ihn höchstens zugleich offen sind: 1 + Bekanntheitsstufe (im neuen Kern: Ruhmstufe der Band). */
     public static function interviewMax(array $m): int
     {
-        return 1 + Levels::forFame((float) $m['fame']);
+        return 1 + (BandCore::$live ? Core\Fans::stage($m['coreFans'] ?? 0.0) : Levels::forFame((float) $m['fame']));
     }
 
     /**
@@ -75,10 +80,17 @@ final class Inbox
         $db = $this->repo->db;
         $c = Balance::INTERVIEW;
         $musicians = $this->repo->musicians();
+        if (BandCore::$live) {
+            foreach ($musicians as $i => $m) {
+                $musicians[$i]['coreFans'] = $m['band_id'] === null ? 0.0 : BandCore::fans($db, (int) $m['band_id']);
+                $musicians[$i]['coreRecords'] = $m['band_id'] === null ? 0 : (int) $db->value("SELECT COUNT(*) FROM records WHERE band_id = ? AND status = 'done'", [(int) $m['band_id']]);
+            }
+        }
         $rates = [];
         foreach ($musicians as $m) {
             $rates[$m['id']] = self::interviewRate($m);
         }
+        $rates = array_filter($rates, static fn ($r) => $r > 0);
         $mean = $rates ? 86400 / array_sum($rates) : 86400.0;
         $next = (int) $db->value('SELECT interview_at FROM labels WHERE id = ?', [$this->repo->labelId]);
         if ($next === 0 || !$musicians) {
@@ -107,7 +119,7 @@ final class Inbox
             }
             $m = $byId[(int) Rng::weighted($free)];
             $open[$m['id']] = ($open[$m['id']] ?? 0) + 1;
-            $level = Levels::forFame((float) $m['fame']);
+            $level = BandCore::$live ? Core\Fans::stage($m['coreFans']) : Levels::forFame((float) $m['fame']);
             // Nicht zweimal dasselbe Medium für denselben Musiker.
             $city = $m['band_id'] === null ? null : ($abroad[(int) $m['band_id']] ?? null);
             $list = $city === null ? Catalog::INTERVIEW_MEDIA[min(3, $level)]
@@ -115,7 +127,12 @@ final class Inbox
             $choices = array_values(array_filter($list, static fn ($x) => !in_array($x['name'], $media[$m['id']] ?? [], true)));
             $medium = Rng::pick($choices ?: $list);
             $media[$m['id']][] = $medium['name'];
-            $this->store('interview', ['musicianId' => $m['id'], 'level' => $level, 'medium' => $medium['name'], 'share' => $medium['share']], $next, Balance::POST['ttl']);
+            $data = ['musicianId' => $m['id'], 'level' => $level, 'medium' => $medium['name'], 'share' => $medium['share']];
+            if (BandCore::$live) {
+                // Neuer Kern: eine von fünf Anfragen (Interview, Fotoserie, Artikel, Reportage, Werbung)
+                $data['request'] = (string) Rng::weighted(Balance::CORE_EVENTS['requestWeights']);
+            }
+            $this->store('interview', $data, $next, Balance::POST['ttl']);
         }
         $db->update('labels', ['interview_at' => $next], ['id' => $this->repo->labelId]);
     }
@@ -248,6 +265,15 @@ final class Inbox
             $base['kind'] = $r['kind'];
             // Vom Büro gelesen: Dann steht es auf der Übersicht.
             $base['read'] = $r['read_at'] !== null && (int) $r['read_at'] <= $now;
+            if ($r['kind'] === 'interview' && isset($d['request'])) {
+                // Neuer Kern: Anfrage mit Art, Dauer und Hype-Schub für die neueste Platte
+                $req = Balance::CORE_EVENTS['requests'][$d['request']];
+                return $base + [
+                    'musicianId' => (int) $d['musicianId'], 'medium' => $d['medium'], 'level' => (int) $d['level'], 'request' => $d['request'],
+                    'requestName' => Catalog::REQUESTS[$d['request']]['name'], 'boost' => $req['boost'], 'seconds' => $req['seconds'], 'fame' => 0,
+                    'reason' => $d['reason'] ?? null,
+                ];
+            }
             if ($r['kind'] === 'interview') {
                 return $base + [
                     'musicianId' => (int) $d['musicianId'], 'medium' => $d['medium'], 'level' => (int) $d['level'],
@@ -297,12 +323,21 @@ final class Inbox
             if ($m['busy_until'] > $now || ($m['band_id'] !== null && $this->repo->band($m['band_id'])['busy_until'] > $now)) {
                 throw new ApiError(sprintf('%s ist gerade unterwegs. Die Anfrage wartet noch.', $m['first_name']));
             }
-            $endsAt = $now + Balance::INTERVIEW['seconds'][min(3, (int) $d['level'])];
+            $request = BandCore::$live ? ($d['request'] ?? 'interview') : null;
+            $endsAt = $now + ($request !== null ? Balance::CORE_EVENTS['requests'][$request]['seconds'] : Balance::INTERVIEW['seconds'][min(3, (int) $d['level'])]);
             Events::assertFree($db, $m['band_id'], $endsAt);
             if ($db->exec('UPDATE musicians SET busy_until = ? WHERE id = ? AND busy_until <= ?', [$endsAt, $m['id'], $now]) === 0) {
                 throw new ApiError(sprintf('%s ist gerade unterwegs.', $m['first_name']));
             }
             $db->exec('DELETE FROM mail WHERE id = ?', [$id]);
+            if ($request !== null) {
+                // Neuer Kern: kein Ruhm, sondern ein Hype-Schub für die neueste Platte der Band (Werbung bringt dazu Geld)
+                return (new Activities($this->repo))->insertSolo($m['id'], 'interview', $now, $endsAt, [
+                    'title' => sprintf('%s: %s bei %s', Catalog::REQUESTS[$request]['name'], Bands::fullName($m), $d['medium']),
+                    'songs' => 0,
+                    'reward' => ['request' => $request, 'boost' => Balance::CORE_EVENTS['requests'][$request]['boost'], 'medium' => $d['medium']],
+                ]);
+            }
             // Netzwerker: Ein Manager mit guten Kontakten holt mehr aus dem Interview.
             [$manager, $level] = Managers::of($this->repo, $m['band_id']);
             $gain = self::interviewGain($d) * (1 + BandCalc::managerBonus($manager, $level, 'netzwerker', Balance::MANAGER_STAFF['network']));
@@ -317,6 +352,9 @@ final class Inbox
     /** Gutschrift nach dem Interview (Activities::settleDue). */
     public static function settle(Repo $repo, array $row, array $data): array
     {
+        if (isset($data['reward']['request'])) {
+            return self::settleRequest($repo, $row, $data['reward']);
+        }
         $musicianId = (int) $row['musician_id'];
         $gain = $repo->addMusicianFame($musicianId, (float) ($data['reward']['fame'] ?? 0));
         $m = $repo->db->one('SELECT * FROM musicians WHERE id = ?', [$musicianId]);
@@ -329,6 +367,31 @@ final class Inbox
         Mood::react($repo, [Repo::hydrateMusician($m)], 'interview');
         $repo->log('interview', sprintf('%s %s war bei: %s.', $m['first_name'], $m['last_name'], $data['reward']['medium'] ?? 'Interview'), $m['band_id'] === null ? null : (int) $m['band_id'], $musicianId);
         return ['fame' => round($gain, 1), 'total' => round((float) $m['fame'], 1), 'medium' => $data['reward']['medium'] ?? ''];
+    }
+
+    /** Neuer Kern: Anfrage erledigt – Hype-Schub für die neueste Platte der Band; Werbung bringt so viele ₲, wie die Band Fans hat. */
+    private static function settleRequest(Repo $repo, array $row, array $reward): array
+    {
+        $musicianId = (int) $row['musician_id'];
+        $m = $repo->db->one('SELECT * FROM musicians WHERE id = ?', [$musicianId]);
+        if ($m === null) {
+            return ['fame' => 0, 'total' => 0];
+        }
+        $money = 0;
+        $band = $m['band_id'] === null ? null : $repo->db->one('SELECT * FROM bands WHERE id = ?', [(int) $m['band_id']]);
+        if ($band !== null) {
+            $band = Repo::hydrateBand($band);
+            $at = (int) $row['ends_at'];
+            if ($reward['request'] === 'ad') {
+                $money = BandCore::ad($repo, $band, $at);
+                $repo->earn($money, sprintf('Werbung: %s bei %s', Bands::fullName(Repo::hydrateMusician($m)), $reward['medium'] ?? ''));
+            } else {
+                BandCore::boost($repo, $band, (float) $reward['boost'], $at);
+            }
+        }
+        Mood::react($repo, [Repo::hydrateMusician($m)], 'interview');
+        $repo->log('interview', sprintf('%s %s: %s bei %s.', $m['first_name'], $m['last_name'], Catalog::REQUESTS[$reward['request']]['name'], $reward['medium'] ?? ''), $m['band_id'] === null ? null : (int) $m['band_id'], $musicianId);
+        return ['fame' => 0, 'total' => 0, 'medium' => $reward['medium'] ?? '', 'request' => $reward['request'], 'boost' => $reward['boost'], 'money' => $money];
     }
 
     /** Bewerbung annehmen: einmal bezahlen, dann gehört die Person zum Label. */

@@ -916,6 +916,9 @@ final class Balance
             'ad' => ['seconds' => 1200, 'boost' => 1.0],
         ],
         'adPerFan' => 1.0,
+        // Wie oft Anfragen kommen (je Musiker in einer Band mit Platte und Tag): start + root × √(Fans der Band / per); welche Art wie oft
+        'requestRate' => ['start' => 0.1, 'root' => 0.05, 'per' => 100.0],
+        'requestWeights' => ['interview' => 4, 'photos' => 2, 'article' => 2, 'report' => 1, 'ad' => 1],
     ];
     /** Battle-Preise: Geld nach Platz (4 = im Halbfinale ausgeschieden); der Sieger wählt `winner` ₲ oder den Wochenpreis. */
     public const CORE_BATTLE_PRIZES = ['money' => [2 => 6000, 3 => 3000, 4 => 1500], 'winner' => 12000, 'weekly' => ['blue_instrument', 'free_production', 'room_upgrade', 'coach_days' => 3]];

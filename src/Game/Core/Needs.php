@@ -19,22 +19,23 @@ final class Needs
     }
 
     /**
-     * Zuwachs je Stunde wie heute: geäußerter Wunsch (`wish`), Wunsch nach einem passenden Instrument (`gear`, Diven doppelt),
-     * Unruhe ohne Auftritt (`restless`, Extrovertierte und Gesellige; sonst 0).
+     * Zuwachs je Stunde wie heute: geäußerter Wunsch (`wish`), Wunsch nach einem passenden Instrument (`gear`, Egozentrische doppelt),
+     * Unruhe ohne Auftritt (`restless`: Extrovertierte, Gesellige) und ohne neue Platte (`stagnant`: Ehrgeizige); wen es nicht betrifft: 0.
      */
     public static function perHour(string $kind, array $musician): float
     {
         $traits = $musician['personality'] ?? [];
+        $most = static fn (array $table, float $none) => max([$none, ...array_map(static fn ($t) => $table[$t] ?? $none, $traits)]);
         return match ($kind) {
             'wish' => Balance::NEEDS['wish']['perHour'],
-            'gear' => Balance::NEEDS['gear']['perHour'] * max([1.0, ...array_map(static fn ($t) => Balance::MOOD['gear']['traits'][$t] ?? 1.0, $traits)]),
-            'restless' => Balance::TRAITS['restless']['grow'] * max([0.0, ...array_map(static fn ($t) => Balance::TRAITS['restless']['traits'][$t] ?? 0.0, $traits)]),
+            'gear' => Balance::NEEDS['gear']['perHour'] * $most(Balance::MOOD['gear']['traits'], 1.0),
+            'restless', 'stagnant' => Balance::TRAITS[$kind]['grow'] * $most(Balance::TRAITS[$kind]['traits'], 0.0),
         };
     }
 
-    /** Unruhe taucht nach so vielen Stunden ohne Auftritt auf. */
-    public static function isRestless(array $musician, float $hoursSinceGig): bool
+    /** Unruhe taucht auf: nach so vielen Stunden ohne Auftritt (`restless`) bzw. ohne neue Platte (`stagnant`), nur bei passendem Charakter. */
+    public static function appears(string $kind, array $musician, float $hoursIdle): bool
     {
-        return self::perHour('restless', $musician) > 0 && $hoursSinceGig >= Balance::TRAITS['restless']['hours'];
+        return self::perHour($kind, $musician) > 0 && $hoursIdle >= Balance::TRAITS[$kind]['hours'];
     }
 }

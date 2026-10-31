@@ -348,8 +348,11 @@ test('Neuer Kern: Bedürfnisse wachsen nur alle 24 Stunden', function () {
     coreNear(14.4, Needs::penalty(24, Needs::perHour('gear', ['personality' => ['diva']])), 1e-9, 'Diven nehmen das Instrument doppelt so wichtig');
     coreNear(5.76, Needs::penalty(24, Needs::perHour('restless', ['personality' => ['rampensau']])));
     coreNear(4.8, Needs::penalty(24, Needs::perHour('restless', ['personality' => ['partytier']])));
-    check(Needs::isRestless(['personality' => ['partytier']], 8) && !Needs::isRestless(['personality' => ['partytier']], 7.9), 'Unruhe nach 8 Stunden');
-    check(!Needs::isRestless($normal, 100), 'Gemütliche werden nicht unruhig');
+    check(Needs::appears('restless', ['personality' => ['partytier']], 8) && !Needs::appears('restless', ['personality' => ['partytier']], 7.9), 'Unruhe nach 8 Stunden');
+    check(!Needs::appears('restless', $normal, 100), 'Gemütliche werden nicht unruhig');
+    // Ehrgeizige wollen nach 48 Stunden eine neue Platte; auch das wächst nur alle 24 Stunden (6 × 0,015 × 24 = 2,16)
+    check(Needs::appears('stagnant', ['personality' => ['ehrgeizig']], 48) && !Needs::appears('stagnant', ['personality' => ['ehrgeizig']], 47), 'Neue Platte nach 48 Stunden');
+    coreNear(2.16, Needs::penalty(24, Needs::perHour('stagnant', ['personality' => ['ehrgeizig']])));
 });
 
 test('Neuer Kern: Können-Stufen und Übergang alter Musiker', function () {
@@ -394,4 +397,42 @@ test('Neuer Kern: Ruhm verstärkt den eigenen Zuwachs nicht, hinten raus bleibt 
     $small = coreWeek(5000, 95, [15])['fans'] - 5000;
     $big = coreWeek(45000, 95, [15])['fans'] - 45000;
     check($big < 3 * $small, "Neunmal so viele Fans bringen nicht neunmal so viele neue: $small und $big");
+});
+
+test('Neuer Kern: Zwischendurch weiterrechnen ändert nichts, Fans und Geld gehen nie zurück', function () {
+    // Zufällige Abfolge von Platten, Auftritten, Ereignissen und Schüben; dieselbe Abfolge einmal mit vielen Zwischenständen
+    $t0 = 1_800_000_000;
+    $actions = [];
+    $t = $t0;
+    for ($i = 0; $i < 300; $i++) {
+        $t += mt_rand(60, 30 * 3600);
+        $actions[] = [$t, mt_rand(0, 9)];
+    }
+    $run = static function (bool $peek) use ($actions, $t0): array {
+        $career = Career::start(200, 'genre', $t0);
+        $fans = $career['fans'];
+        $money = 0.0;
+        foreach ($actions as $n => [$at, $kind]) {
+            if ($peek) {
+                $career = Career::settle($career, $at - 1 - ($n % 7) * 600);
+            }
+            $career = match (true) {
+                $kind === 0 => Career::release($career, $at, 60 + ($n % 5) * 10),
+                $kind <= 5 => Career::gig($career, $at, 40.0 + ($n % 6) * 10)[0],
+                $kind <= 7 => Career::boost($career, $at, 2.0 + $n % 5),
+                $kind === 8 => Career::event($career, $at, 2000, 70.0, 3.0)[0],
+                default => Career::ad($career, $at),
+            };
+            check($career['fans'] >= $fans - 1e-9 && Career::money($career) >= $money - 1e-9, 'Fans und Geld gehen nicht zurück');
+            check(is_finite($career['fans']) && is_finite(Career::money($career)), 'Keine kaputten Zahlen');
+            [$fans, $money] = [$career['fans'], Career::money($career)];
+        }
+        return Career::settle($career, $actions[count($actions) - 1][0] + 30 * 86400);
+    };
+    $plain = $run(false);
+    $peeked = $run(true);
+    coreNear($plain['fans'], $peeked['fans'], 1e-9, 'Fans');
+    coreNear(Career::money($plain), Career::money($peeked), 1e-9, 'Geld');
+    coreNear($plain['sold'], $peeked['sold'], 1e-9, 'Verkauft');
+    check($plain['fans'] <= Fans::roof('genre'), 'Nie über dem Dach');
 });

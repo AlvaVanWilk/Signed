@@ -380,7 +380,7 @@ final class Api
 
     private function nameSuggest(array $in, Repo $repo): array
     {
-        return ['name' => ($in['kind'] ?? '') === 'band' ? Names::band($this->db) : Names::record()];
+        return ['name' => ($in['kind'] ?? '') === 'band' ? Names::band($this->db) : Names::record($this->db, $repo->labelId)];
     }
 
     private function gearSell(array $in, Repo $repo): array

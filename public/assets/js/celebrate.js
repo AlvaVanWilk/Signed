@@ -1,5 +1,5 @@
 import { cat, onStateChange } from './core.js';
-import { genreIcon } from './cards.js';
+import { genreIcon, withBand } from './cards.js';
 import { avatar } from './avatar.js';
 import { esc, fmt0, openModal, timeAgo, toast } from './ui.js';
 
@@ -59,7 +59,7 @@ function skillHtml(m) {
   const best = m.instruments.reduce((a, b) => (b.skill > a.skill ? b : a));
   return `
     <div class="celebrate-face lvl-${m.level}">${avatar(m.look)}</div>
-    <div class="celebrate-text">${esc(m.firstName)} ist ${esc(cat().instruments[best.type].at)} jetzt ${esc(cat().levelWords[m.level])}!</div>
+    <div class="celebrate-text">${esc(withBand(m))} ist ${esc(cat().instruments[best.type].at)} jetzt ${esc(cat().levelWords[m.level])}!</div>
     <div class="celebrate-sub">Kann jetzt ${['', 'seltene', 'epische', 'legendäre'][m.level] ?? ''} Instrumente spielen</div>`;
 }
 

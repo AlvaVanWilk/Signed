@@ -55,7 +55,7 @@ final class Traits
         if ($manager !== null && $why !== 'manager') {
             $reason = sprintf('%s erzählt: %s', $manager['first_name'], $reason);
         }
-        $repo->log('trait', sprintf('%s Jetzt weißt du: %s ist %s.', $reason, $m['first_name'], implode(' und ', $words)), $m['band_id'] ?? null, $m['id']);
+        $repo->log('trait', sprintf('%s Jetzt weißt du: %s ist %s.', $reason, Bands::withBand($repo->db, $m, $m['first_name']), implode(' und ', $words)), $m['band_id'] ?? null, $m['id']);
     }
 
     /** Nach einer Anordnung: Wer sie mochte oder nicht mochte, zeigt den Zug, der dafür sorgt. */

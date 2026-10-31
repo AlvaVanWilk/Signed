@@ -89,7 +89,7 @@ Verdienst         = Zuschauer × 5 / 6 / 9 / 12 ₲ nach Ruhmstufe
   und Arena 10.000 / 15.000 / 20.000 (ab Stufe 3). Länge 3 / 4 / 7 / 9 Lieder.
 - Die Publikumsleiste rechnet mit der Sound-Erwartung der Ruhmstufe: 150 / 1.500 / 10.000 / 45.000.
 - **Manager:** Verhandler +8 % Verdienst, PR-Profi +8 % neue Fans je Stufe (× Passung).
-- Ausverkauft oder eine tolle Show (Publikumsleiste ab 90): je mit 25 % eine Anfrage danach.
+- Ausverkauft oder eine tolle Show (Publikumsleiste ab 90): je mit 25 % eine Anfrage danach, je Band höchstens einmal in 24 Stunden.
 
 ### Tournee
 
@@ -140,9 +140,10 @@ Verdienst         = Zuschauer × 5 / 6 / 9 / 12 ₲ nach Ruhmstufe
   steht und jede Woche wechselt: ein blaues Instrument nach Wahl (Gutschein), eine Aufnahme umsonst im Studio, das zur Ruhmstufe passt
   (Gutschein der Band), der Proberaum eine Stufe besser oder ein Songwriting-Coach (Stufe 3) für drei Tage (`Prizes`, Tabelle `prizes`).
 - **Anfragen** (statt Interviews und Promo-Tour), nur für Bands mit Platte: Interview +2 (15 Min.), Fotoserie +3 (20 Min.), Artikel +4 (15 Min.),
-  Reportage +6 (30 Min.), Werbung +1 (20 Min.) und so viele ₲, wie die Band Fans hat. Je Musiker und Tag 0,1 + 0,05 × √(Fans / 100);
+  Reportage +6 (30 Min.), Werbung +1 (20 Min.) und so viele ₲, wie die Band Fans hat. Je Musiker und Tag 0,05 + 0,05 × √(Fans / 100);
   Arten im Verhältnis 4 / 2 / 2 / 1 / 1. Netzwerker +10 % Schub je Stufe. Dazu Anfragen nach Ereignissen, mit Bezug im Brief: Festival,
-  Battle Platz 1 bis 3, Platz 1 der Charts, Gold / Platin / Diamant, ausverkauftes Konzert und tolle Show (je 25 %).
+  Battle Platz 1 bis 3, Platz 1 der Charts, Gold / Platin / Diamant, ausverkauftes Konzert und tolle Show (je 25 %, je Band höchstens
+  einmal in 24 Stunden). So bleiben Kassetten das meiste im Posteingang.
 
 ### Band ändern
 

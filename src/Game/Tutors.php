@@ -61,7 +61,7 @@ final class Tutors
                 'musicianId' => $m['id'], 'slot' => $m['instr1'] === $job['instrument'] ? 1 : 2, 'instrument' => $job['instrument'], 'genre' => $job['genre'] ?? null,
                 'gain' => round($tier['gain'] * ($genreMatch ? $c['genreFactor'] : 1.0), 2), 'done' => 0.0, 'from' => $now, 'until' => $now + $tier['seconds'], 'at' => $now,
             ];
-            $this->repo->log('staff', sprintf('%s %s gibt %s %s Unterricht.', $job['first_name'], $job['last_name'], $m['first_name'], Catalog::INSTRUMENTS[$job['instrument']]['at']), $m['band_id'], $m['id']);
+            $this->repo->log('staff', sprintf('%s %s gibt %s %s Unterricht.', $job['first_name'], $job['last_name'], Bands::withBand($this->repo->db, $m, $m['first_name']), Catalog::INSTRUMENTS[$job['instrument']]['at']), $m['band_id'], $m['id']);
         } else {
             $band = $this->repo->band($target);
             foreach ($this->bookings('coach') as $b) {
@@ -106,7 +106,7 @@ final class Tutors
                 }
                 if ($now >= (int) $d['until']) {
                     $db->exec('DELETE FROM staff WHERE id = ?', [(int) $b['id']]);
-                    $this->repo->log('staff', sprintf('Der Unterricht von %s ist zu Ende: +%s Können %s.', $row['first_name'], str_replace('.', ',', (string) round((float) $d['done'], 1)), Catalog::INSTRUMENTS[$d['instrument']]['at']), $row['band_id'] === null ? null : (int) $row['band_id'], (int) $row['id']);
+                    $this->repo->log('staff', sprintf('Der Unterricht von %s ist zu Ende: +%s Können %s.', Bands::withBand($db, $row, $row['first_name']), str_replace('.', ',', (string) round((float) $d['done'], 1)), Catalog::INSTRUMENTS[$d['instrument']]['at']), $row['band_id'] === null ? null : (int) $row['band_id'], (int) $row['id']);
                 }
             } elseif ($now >= (int) $d['until']) {
                 $db->exec('DELETE FROM staff WHERE id = ?', [(int) $b['id']]);

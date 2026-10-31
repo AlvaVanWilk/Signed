@@ -789,6 +789,17 @@ final class Bands
         return ($m['stage_name'] ?? null) ?: self::fullName($m);
     }
 
+    /** „Enzo Müller von Testband“: mit der Band, wenn er in einer mit anderen spielt; Solokünstler nur mit Namen. $name: anderer Name (z. B. nur der Vorname). */
+    public static function withBand(Db $db, array $m, ?string $name = null): string
+    {
+        $name ??= self::fullName($m);
+        if (($m['band_id'] ?? null) === null) {
+            return $name;
+        }
+        $band = $db->one('SELECT b.name, (SELECT COUNT(*) FROM musicians WHERE band_id = b.id) AS members FROM bands b WHERE b.id = ?', [(int) $m['band_id']]);
+        return $band !== null && (int) $band['members'] > 1 ? sprintf('%s von %s', $name, $band['name']) : $name;
+    }
+
     private function idleBand(int $bandId): array
     {
         $band = $this->repo->band($bandId);

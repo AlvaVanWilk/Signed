@@ -89,6 +89,18 @@ export const sortedGenres = (genres) => [...genres].sort((a, b) => genreOrder(a)
 export const rarityName = (key) => cat().rarities[key]?.name ?? key;
 export const fullName = (p) => `${p.firstName} ${p.lastName}`;
 
+/** „Enzo von Testband“: mit der Band, wenn er in einer mit anderen spielt; Solokünstler nur mit Namen (Text, noch nicht escaped). */
+export function withBand(m, name = m?.stageName ?? m?.firstName ?? '') {
+  const band = m?.bandId ? bandById(m.bandId) : null;
+  return band && band.memberIds.length > 1 ? `${name} von ${band.name}` : name;
+}
+
+/** Dasselbe als HTML, Name und Band fett. */
+export function withBandHtml(m, name = m?.stageName ?? m?.firstName ?? '') {
+  const band = m?.bandId ? bandById(m.bandId) : null;
+  return band && band.memberIds.length > 1 ? `<b>${esc(name)}</b> von <b>${esc(band.name)}</b>` : `<b>${esc(name)}</b>`;
+}
+
 /** Noch unbekannte Charakterzüge: je einer ein „?“ (kennt nur ein Manager, oder man hört sie, wenn jemand richtig unzufrieden ist). */
 export const HIDDEN_TRAIT_TIP = 'Noch unbekannt: Diesen Charakterzug kennt nur ein Manager. Ohne Manager erfährst du ihn erst, wenn jemand richtig unzufrieden ist.';
 export function hiddenTraits(m, cls = 'lb-trait') {

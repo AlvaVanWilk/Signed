@@ -278,7 +278,7 @@ Alles liegt im **Eingang**; in die Fächer kommt es, wenn jemand sortiert. Von H
 | je Tag            | Start | Zuwachs | bei Label-Ruhm 100 | 1.000 | 10.000 |
 |-------------------|------:|--------:|------:|------:|-------:|
 | Kassetten         |     8 |     1,8 |    26 |    65 |    188 |
-| Praktikum         |   0,8 |   0,033 |   1,1 |   1,8 |    4,1 |
+| Praktikum         |   0,4 |    0,02 |   0,6 |   1,0 |    2,4 |
 | Manager           |   0,3 |   0,019 |   0,5 |   0,9 |    2,2 |
 | Scout             |   0,2 |   0,014 |   0,3 |   0,6 |    1,6 |
 | Assistenz         |  0,12 |   0,011 |  0,23 |  0,47 |    1,2 |

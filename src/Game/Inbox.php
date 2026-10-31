@@ -388,7 +388,7 @@ final class Inbox
             Charts::boost($repo, (int) $m['band_id'], Balance::CHART_PROMO_BOOST['solo']);
         }
         Mood::react($repo, [Repo::hydrateMusician($m)], 'interview');
-        $repo->log('interview', sprintf('%s %s war bei: %s.', $m['first_name'], $m['last_name'], $data['reward']['medium'] ?? 'Interview'), $m['band_id'] === null ? null : (int) $m['band_id'], $musicianId);
+        $repo->log('interview', sprintf('%s war bei: %s.', Bands::withBand($repo->db, $m), $data['reward']['medium'] ?? 'Interview'), $m['band_id'] === null ? null : (int) $m['band_id'], $musicianId);
         return ['fame' => round($gain, 1), 'total' => round((float) $m['fame'], 1), 'medium' => $data['reward']['medium'] ?? ''];
     }
 
@@ -413,7 +413,7 @@ final class Inbox
             }
         }
         Mood::react($repo, [Repo::hydrateMusician($m)], 'interview');
-        $repo->log('interview', sprintf('%s %s: %s bei %s.', $m['first_name'], $m['last_name'], Catalog::REQUESTS[$reward['request']]['name'], $reward['medium'] ?? ''), $m['band_id'] === null ? null : (int) $m['band_id'], $musicianId);
+        $repo->log('interview', sprintf('%s: %s bei %s.', Bands::withBand($repo->db, $m), Catalog::REQUESTS[$reward['request']]['name'], $reward['medium'] ?? ''), $m['band_id'] === null ? null : (int) $m['band_id'], $musicianId);
         return ['fame' => 0, 'total' => 0, 'medium' => $reward['medium'] ?? '', 'request' => $reward['request'], 'boost' => $reward['boost'], 'money' => $money];
     }
 

@@ -21,15 +21,35 @@ final class Names
         return self::bandCandidate() . ' ' . Rng::int(2, 99);
     }
 
-    public static function record(): string
+    /** Vorschlag für einen Plattentitel; mit $labelId keiner, den das Label schon hat. */
+    public static function record(?Db $db = null, ?int $labelId = null): string
+    {
+        $taken = $db === null || $labelId === null ? [] : array_map('mb_strtolower', array_column($db->all('SELECT title FROM records WHERE label_id = ?', [$labelId]), 'title'));
+        for ($i = 0; $i < 20; $i++) {
+            $title = self::recordCandidate();
+            if (!in_array(mb_strtolower($title), $taken, true)) {
+                return $title;
+            }
+        }
+        return $title;
+    }
+
+    private static function recordCandidate(): string
     {
         $w = Catalog::NAME_WORDS;
-        return match (Rng::int(0, 3)) {
-            0 => Generator::songTitle(),
-            1 => Rng::pick($w['adjectives']) . ' ' . Rng::pick($w['nouns']),
-            2 => sprintf('Nachts %s', Rng::pick($w['places'])),
-            default => sprintf('%s & %s', Rng::pick($w['nouns']), Rng::pick($w['nouns'])),
-        };
+        // Ein Wort wie „Neonherz“ oder eins der Muster
+        if (Rng::chance(0.3)) {
+            return Generator::songTitle();
+        }
+        $nouns = $w['nouns'];
+        $n = Rng::pick($nouns);
+        do {
+            $m = Rng::pick($nouns);
+        } while ($m === $n);
+        return strtr(Rng::pick($w['recordPatterns']), [
+            '%a' => Rng::pick($w['adjectives']), '%n' => $n, '%m' => $m, '%p' => Rng::pick($w['places']),
+            '%e' => Rng::pick($w['english']), '%E' => Rng::pick($w['englishPlural']),
+        ]);
     }
 
     /**

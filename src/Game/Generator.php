@@ -140,7 +140,12 @@ final class Generator
 
     public static function songTitle(): string
     {
-        return Rng::pick(Catalog::SONG_WORDS[0]) . Rng::pick(Catalog::SONG_WORDS[1]);
+        // Keine Doppelungen wie „Sturmsturm“ oder „Goldgold“
+        do {
+            $first = Rng::pick(Catalog::SONG_WORDS[0]);
+            $second = Rng::pick(Catalog::SONG_WORDS[1]);
+        } while (str_starts_with(mb_strtolower($first), $second) || str_starts_with($second, mb_strtolower($first)));
+        return $first . $second;
     }
 
     /** Profilbild: zufällig kombiniert, ohne ausgearbeitetes Gesicht. */

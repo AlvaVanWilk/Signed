@@ -101,7 +101,7 @@ final class Levels
         }
         $repo->db->update('musicians', ['level' => $level], ['id' => $musicianId]);
         $best = $m['instr2'] !== null && (float) $m['skill2'] > (float) $m['skill1'] ? $m['instr2'] : $m['instr1'];
-        $repo->log('level', sprintf('%s ist %s jetzt %s.', Bands::fullName($m), Catalog::INSTRUMENTS[$best]['at'], Catalog::LEVEL_WORDS[$level]), $m['band_id'], $musicianId);
+        $repo->log('level', sprintf('%s ist %s jetzt %s.', Bands::withBand($repo->db, $m), Catalog::INSTRUMENTS[$best]['at'], Catalog::LEVEL_WORDS[$level]), $m['band_id'], $musicianId);
         return ['musicianId' => $musicianId, 'name' => $m['first_name'], 'level' => $level, 'instrument' => $best, 'abilities' => [], 'choice' => null];
     }
 

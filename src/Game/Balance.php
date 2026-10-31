@@ -198,7 +198,7 @@ final class Balance
         'half' => 300.0, 'weights' => [3, 2, 1],
         // Je Beruf: Bewerbungen je Tag = start + root × √Erfolg (fließend, ohne Obergrenze).
         'rates' => [
-            'intern' => ['start' => 0.8, 'root' => 0.033],
+            'intern' => ['start' => 0.4, 'root' => 0.02],
             'manager' => ['start' => 0.3, 'root' => 0.019],
             'scout' => ['start' => 0.2, 'root' => 0.014],
             'assistant' => ['start' => 0.12, 'root' => 0.011],
@@ -917,10 +917,11 @@ final class Balance
         ],
         'adPerFan' => 1.0,
         // Wie oft Anfragen kommen (je Musiker in einer Band mit Platte und Tag): start + root × √(Fans der Band / per); welche Art wie oft
-        'requestRate' => ['start' => 0.1, 'root' => 0.05, 'per' => 100.0],
+        'requestRate' => ['start' => 0.05, 'root' => 0.05, 'per' => 100.0],
         'requestWeights' => ['interview' => 4, 'photos' => 2, 'article' => 2, 'report' => 1, 'ad' => 1],
-        // Anfragen nach einem Konzert (Inbox::eventRequest): ausverkauft oder eine tolle Show (Publikumsleiste ab `shineFrom`), je mit dieser Chance
-        'afterGig' => ['soldOut' => 0.25, 'shine' => 0.25, 'shineFrom' => 90.0],
+        // Anfragen nach einem Konzert (Inbox::eventRequest): ausverkauft oder eine tolle Show (Publikumsleiste ab `shineFrom`), je mit dieser Chance,
+        // je Band höchstens einmal in `hours` Stunden (sonst kommen bei vielen Auftritten mehr Anfragen als Kassetten)
+        'afterGig' => ['soldOut' => 0.25, 'shine' => 0.25, 'shineFrom' => 90.0, 'hours' => 24],
     ];
     /**
      * Tournee im neuen Kern: Mit dem Bus (Europa) ab Ruhmstufe 2, mit dem Flugzeug (die anderen Kontinente) ab Stufe 3; die Welttournee ist

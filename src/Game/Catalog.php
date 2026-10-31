@@ -649,9 +649,14 @@ final class Catalog
 
     public const SONG_WORDS = [
         ['Neon', 'Mitternachts', 'Asphalt', 'Großstadt', 'Sommer', 'Herzschlag', 'Sternen', 'Gold', 'Rost', 'Echo',
-            'Funken', 'Wolken', 'Kaffee', 'Beton', 'Nordlicht', 'Kirsch', 'Sturm', 'Glitzer', 'Rauch', 'Kellerkind'],
+            'Funken', 'Wolken', 'Kaffee', 'Beton', 'Nordlicht', 'Kirsch', 'Sturm', 'Glitzer', 'Rauch', 'Kellerkind',
+            'Regenbogen', 'Silber', 'Mond', 'Wüsten', 'Ozean', 'Feuer', 'Winter', 'Frühlings', 'Leucht', 'Kristall',
+            'Samt', 'Papier', 'Zucker', 'Gewitter', 'Sonnen', 'Disko', 'Radio', 'Insel', 'Himmels', 'Morgen',
+            'Abend', 'Dämmer', 'Feder', 'Lagerfeuer', 'Hafen', 'Karussell', 'Glücks', 'Schmetterlings', 'Meeres', 'Kometen'],
         ['herz', 'rausch', 'blues', 'fieber', 'lichter', 'regen', 'traum', 'tanz', 'nacht', 'flug', 'puls', 'gold',
-            'sirene', 'walzer', 'ballade', 'hymne', 'sehnsucht', 'zug', 'funk', 'fieberwahn'],
+            'sirene', 'walzer', 'ballade', 'hymne', 'sehnsucht', 'zug', 'funk', 'fieberwahn',
+            'liebe', 'welle', 'stern', 'schatten', 'lied', 'geflüster', 'boogie', 'feuer', 'himmel', 'wind',
+            'spiegel', 'melodie', 'rakete', 'sonate', 'zauber', 'kuss', 'lärm', 'staub', 'reise', 'party'],
     ];
 
     /** Bausteine für Zufallsnamen von Bands und Platten. */
@@ -665,9 +670,13 @@ final class Catalog
 
     public const NAME_WORDS = [
         'adjectives' => ['Wilde', 'Leise', 'Rostige', 'Goldene', 'Verlorene', 'Elektrische', 'Schlaflose', 'Kalte',
-            'Brennende', 'Neue', 'Letzte', 'Schöne', 'Laute', 'Blaue', 'Heimliche', 'Zerbrochene'],
+            'Brennende', 'Neue', 'Letzte', 'Schöne', 'Laute', 'Blaue', 'Heimliche', 'Zerbrochene',
+            'Kleine', 'Große', 'Fliegende', 'Tanzende', 'Singende', 'Leuchtende', 'Silberne', 'Bunte', 'Stille', 'Ferne',
+            'Helle', 'Dunkle', 'Warme', 'Süße', 'Freche', 'Mutige', 'Müde', 'Glückliche', 'Rote', 'Grüne', 'Ewige', 'Verrückte'],
         'nouns' => ['Herzen', 'Wölfe', 'Lichter', 'Funken', 'Sirenen', 'Wellen', 'Gespenster', 'Nächte', 'Träume',
-            'Raketen', 'Stimmen', 'Spiegel', 'Wolken', 'Geister', 'Löwen', 'Kometen'],
+            'Raketen', 'Stimmen', 'Spiegel', 'Wolken', 'Geister', 'Löwen', 'Kometen',
+            'Sterne', 'Vögel', 'Drachen', 'Tage', 'Lieder', 'Freunde', 'Helden', 'Inseln', 'Planeten', 'Engel', 'Füchse',
+            'Katzen', 'Schiffe', 'Städte', 'Farben', 'Blumen', 'Wege', 'Briefe', 'Monde', 'Fenster', 'Flügel', 'Gedanken'],
         'bandPlural' => ['Kellerkinder', 'Nachtfalter', 'Straßenkatzen', 'Mondscheinbrüder', 'Flutlichter',
             'Stadtneurotiker', 'Hinterhofhelden', 'Glücksritter', 'Dachbodenpiraten', 'Funkenflieger', 'Wellenreiter'],
         'english' => ['Neon', 'Velvet', 'Electric', 'Silent', 'Golden', 'Midnight', 'Broken', 'Wild', 'Paper', 'Crystal',
@@ -677,7 +686,12 @@ final class Catalog
         'prefixes' => ['Neon', 'Kupfer', 'Asphalt', 'Beton', 'Glitzer', 'Mitternachts', 'Nordlicht', 'Kirsch', 'Sturm'],
         'suffixes' => ['Kollektiv', 'Orchester', 'Express', 'Syndikat', 'Club', 'Projekt', 'Allstars', 'Brigade'],
         'places' => ['am Hafen', 'im Keller', 'auf dem Dach', 'in der Großstadt', 'unter Neonlicht', 'am Bahnhof',
-            'im Regen', 'am Meer'],
+            'im Regen', 'am Meer', 'im Wald', 'auf der Autobahn', 'im Treppenhaus', 'am See', 'im Park', 'auf dem Jahrmarkt',
+            'in der Wüste', 'am Strand', 'im Zug', 'auf dem Mond', 'unter Sternen', 'im Schnee', 'hinter den Bergen',
+            'am Ende der Straße', 'im Garten', 'über den Dächern', 'auf der Brücke', 'im Nebel'],
+        // Muster für Plattentitel (Names::record); %a Adjektiv, %n Nomen, %m zweites Nomen, %p Ort, %e/%E englisch
+        'recordPatterns' => ['%a %n', '%n & %m', 'Nachts %p', 'Lieder %p', 'Wenn %n tanzen', 'Die Nacht der %n', 'Mehr %n', 'Hundert %n',
+            'Alle meine %n', 'Wo die %n wohnen', '%e %E'],
     ];
 
     public const JAM_CAFES = ['Café Klangfarbe', 'Jazzkeller Blaue Note', 'Session im Hinterhof', 'Bar Zum Plattenspieler', 'Kulturcafé Kreuzton'];

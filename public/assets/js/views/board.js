@@ -1,4 +1,4 @@
-import { instrumentIcon } from '../cards.js';
+import { instrumentIcon, withBand } from '../cards.js';
 import { app, bandById, cat, isBusy, musicianById } from '../core.js';
 import { duration, esc, fmt0, money } from '../ui.js';
 import { trophy } from './battle.js';
@@ -22,8 +22,8 @@ function todayNote(c, n) {
     <p class="bb-gain">+${fmt0(c.gain)} Können</p>
     <ul class="bb-prices">${c.levels.map((l) => `<li>${esc(l.name)} <b>${money(l.price)}</b></li>`).join('')}</ul>
     ${list.length ? `<div class="bb-who">${list.map((x) => (x.visited
-      ? `<span class="bb-done">${esc(x.m.firstName)}: heute schon im Kurs</span>`
-      : `<button class="btn small primary" data-act="courseAttend" data-id="${x.m.id}" data-course="${c.index}" ${isBusy(x.m.busyUntil) || (x.m.bandId && isBusy(bandById(x.m.bandId)?.busyUntil)) ? 'disabled' : ''}>${esc(x.m.firstName)} hinschicken · ${money(c.levels[x.level].price)}</button>`)).join('')}</div>`
+      ? `<span class="bb-done">${esc(withBand(x.m))}: heute schon im Kurs</span>`
+      : `<button class="btn small primary" data-act="courseAttend" data-id="${x.m.id}" data-course="${c.index}" ${isBusy(x.m.busyUntil) || (x.m.bandId && isBusy(bandById(x.m.bandId)?.busyUntil)) ? 'disabled' : ''}>${esc(withBand(x.m))} hinschicken · ${money(c.levels[x.level].price)}</button>`)).join('')}</div>`
       : '<p class="bb-none">Bei dir spielt das niemand.</p>'}
   </article>`;
 }

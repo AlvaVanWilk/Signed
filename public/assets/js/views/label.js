@@ -134,7 +134,7 @@ function scoutCard(x) {
     <span class="lb-ph sm">${photo({ id: x.id, look: x.look })}</span>
     <span class="lb-scout-txt"><small class="lb-cap">Scout</small><b>${esc(x.firstName)}</b>
       <small class="muted">${x.away ? `sucht ${esc(task)} · zurück in <span data-until="${x.away.until}"></span>` : report ? 'ist zurück und hat Talente gefunden' : `findet ${x.candidates} Talente`}</small></span>
-    ${x.away ? '' : report ? `<button class="btn small primary" data-act="reportShow" data-id="${report.mailId}">Ansehen</button>` : `<button class="btn small" data-act="scoutAsk" data-id="${x.id}">Losschicken</button>`}
+    ${x.away ? '' : `<span class="lb-scout-btns">${report ? `<button class="btn small primary" data-act="reportShow" data-id="${report.mailId}">Ansehen</button>` : ''}<button class="btn small" data-act="scoutAsk" data-id="${x.id}">${report ? 'Wieder losschicken' : 'Losschicken'}</button></span>`}
   </div>`;
 }
 

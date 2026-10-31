@@ -1,4 +1,4 @@
-import { genreGlyph, genreName, genreOrder, hiddenTraits, traitNames, instrumentIcon, instrumentName, photo, sortedGenres } from '../cards.js';
+import { genreGlyph, genreName, genreOrder, hiddenTraits, traitNames, instrumentIcon, instrumentName, photo, sortedGenres, withBand, withBandHtml } from '../cards.js';
 import { api } from '../api.js';
 import { actions, app, bandById, cat, defineActions, isBusy, mutate, musicianById, rerender, serverNow } from '../core.js';
 import { confirmDialog, esc, fmt0, money, off, openModal, toast } from '../ui.js';
@@ -240,8 +240,8 @@ function interviewLetter(m) {
       <div class="lb-lt-body"><span class="lb-ph sm">${photo(who)}</span>
         ${m.request
     // Neuer Kern: Anfrage mit Hype-Schub für die neueste Platte (Werbung bringt dazu Geld)
-    ? `<p><b>${esc(m.medium)}</b> ${REQUEST_TEXT[m.request] ?? 'möchte'} mit <b>${esc(who.firstName)}</b>${m.reason ? ` (${esc(m.reason)})` : ''}.<small class="lb-lt-gain">Hype +${fmt0(m.boost)} für die neueste Platte${m.request === 'ad' ? ' · dazu so viele ₲, wie die Band Fans hat' : ''} · dauert ${mins(m.seconds)}</small></p>`
-    : `<p><b>${esc(m.medium)}</b> möchte mit <b>${esc(who.firstName)}</b> sprechen.<small class="lb-lt-gain">+${fmtFame(m.fame)} Bekanntheit · dauert ${mins(m.seconds)}</small></p>`}</div>
+    ? `<p><b>${esc(m.medium)}</b> ${REQUEST_TEXT[m.request] ?? 'möchte'} mit ${withBandHtml(who)}${m.reason ? ` (${esc(m.reason)})` : ''}.<small class="lb-lt-gain">Hype +${fmt0(m.boost)} für die neueste Platte${m.request === 'ad' ? ' · dazu so viele ₲, wie die Band Fans hat' : ''} · dauert ${mins(m.seconds)}</small></p>`
+    : `<p><b>${esc(m.medium)}</b> möchte mit ${withBandHtml(who)} sprechen.<small class="lb-lt-gain">+${fmtFame(m.fame)} Bekanntheit · dauert ${mins(m.seconds)}</small></p>`}</div>
       <div class="lb-card-foot"><span class="lb-lt-space"></span>
         <button class="lb-iconbtn drop" data-act="mailDrop" data-id="${m.mailId}" title="Absagen" aria-label="Absagen">✕</button>
         <button class="btn small primary" data-act="mailAccept" data-id="${m.mailId}" ${off(away ? `${who.firstName} ist gerade unterwegs.` : '')}>Zusagen</button>
@@ -307,7 +307,7 @@ function tutorBar(t) {
   const who = t.role === 'teacher' ? musicianById(t.musicianId) : bandById(t.bandId);
   if (!who) return '';
   const text = t.role === 'teacher'
-    ? `<b>${esc(t.firstName)}</b> unterrichtet ${esc(who.firstName)} ${esc(instrumentAt(t.instrument))}.<small class="muted">Schon +${fmtFame(t.done)} von ${fmtFame(t.gain)} Können, noch <span data-until="${t.until}"></span></small>`
+    ? `<b>${esc(t.firstName)}</b> unterrichtet ${esc(withBand(who))} ${esc(instrumentAt(t.instrument))}.<small class="muted">Schon +${fmtFame(t.done)} von ${fmtFame(t.gain)} Können, noch <span data-until="${t.until}"></span></small>`
     : `<b>${esc(t.firstName)}</b> hilft ${esc(who.name)} beim Songschreiben.<small class="muted">Songs ${fmtFactor(t.speed)} so schnell, die nächste Platte ${Math.round(t.quality * 100)} % besser. Noch <span data-until="${t.until}"></span></small>`;
   return `<div class="lb-assist"><span class="lb-assist-faces"><span class="lb-ph sm">${photo({ id: t.id, look: t.look })}</span></span><span>${text}</span></div>`;
 }

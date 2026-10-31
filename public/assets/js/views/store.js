@@ -1,4 +1,4 @@
-import { bonusList, gearIcon, gearTier, instrumentName, rarityName, whoCanPlay } from '../cards.js';
+import { bonusList, gearIcon, gearTier, instrumentName, rarityName, whoCanPlay, withBand } from '../cards.js';
 import { playedInstrument } from '../figure.js';
 import { app, cat, defineActions, mutate, onStateChange, refresh, serverNow } from '../core.js';
 import { duration, esc, money, off, openModal, toast } from '../ui.js';
@@ -125,7 +125,7 @@ function openItem(item, basic = false) {
           <small class="muted">${esc(instrumentName(item.type))}</small>
           ${bonusList(item.bonuses ?? [])}
           <p class="gt-reach">${whoCanPlay(item)}</p>
-          <p class="ms-need-line">${need.length ? `Fehlt gerade: <b>${esc(need.map((m) => m.firstName).join(', '))}</b>` : 'Im Label fehlt gerade niemandem ein Instrument dieser Art.'}</p>
+          <p class="ms-need-line">${need.length ? `Fehlt gerade: <b>${esc(need.map((m) => withBand(m)).join(', '))}</b>` : 'Im Label fehlt gerade niemandem ein Instrument dieser Art.'}</p>
           <div class="ms-buy">
             <span class="ms-price">${money(item.price)}</span>
             ${basic ? '<small class="muted">Immer vorrätig</small>' : '<small class="muted">Nur heute</small>'}

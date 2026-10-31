@@ -1,4 +1,4 @@
-import { instrumentIcon, instrumentName, photo } from '../cards.js';
+import { instrumentIcon, instrumentName, photo, withBand, withBandHtml } from '../cards.js';
 import { app, bandById, cat, defineActions, isBusy, liveMoney, managerById, musicianById, mutate, serverNow } from '../core.js';
 import { coverHtml } from '../play.js';
 import { INTERN_JOBS } from '../office.js';
@@ -140,7 +140,7 @@ function notes(s) {
   if (areas.office) {
     for (const m of mail.filter((x) => x.kind === 'interview' && x.read).sort((x, y) => x.expiresAt - y.expiresAt)) {
       const w = musicianById(m.musicianId);
-      if (w) add(m.expiresAt - serverNow() < 2 * 3600 ? 0 : 1, go('interview', `Interview-Anfrage für <b>${esc(w.firstName)}</b> (${esc(m.medium)}, ${left(m.expiresAt)})`));
+      if (w) add(m.expiresAt - serverNow() < 2 * 3600 ? 0 : 1, go('interview', `Anfrage für ${withBandHtml(w)} (${esc(m.medium)}, ${left(m.expiresAt)})`));
     }
     for (const m of mail.filter((x) => x.kind === 'report' && x.read && x.cards.some((c) => !c.signed))) {
       add(1, go('demos', `<b>${esc(m.scoutName)}</b> ist zurück und stellt dir ${m.cards.length} Talente vor (${left(m.expiresAt)})`));
@@ -149,7 +149,7 @@ function notes(s) {
     const unfit = [];
     for (const m of mail.filter((x) => x.kind === 'job' && x.read && x.role === 'teacher')) {
       const fits = s.musicians.filter((x) => x.instruments.some((i) => i.type === m.instrument && i.skill < m.maxSkill));
-      if (fits.length) add(1, go('job', `<b>${esc(m.firstName)}</b> möchte ${esc(instrumentName(m.instrument))} unterrichten (+${m.gain} Können), passt zu ${fits.slice(0, 3).map((x) => esc(x.firstName)).join(', ')}.`));
+      if (fits.length) add(1, go('job', `<b>${esc(m.firstName)}</b> möchte ${esc(instrumentName(m.instrument))} unterrichten (+${m.gain} Können), passt zu ${fits.slice(0, 3).map((x) => esc(withBand(x))).join(', ')}.`));
       else unfit.push(m);
     }
     if (unfit.length) add(3, go('job', `${unfit.length === 1 ? 'Eine Lehrkraft möchte' : `${unfit.length} Lehrkräfte möchten`} ${[...new Set(unfit.map((m) => instrumentName(m.instrument)))].map(esc).join(', ')} unterrichten, aber das spielt bei dir gerade niemand.`));
@@ -188,7 +188,7 @@ function notes(s) {
   const c = (s.courses ?? [])[0];
   if (c) {
     const fits = c.candidates.filter((x) => !x.visited).map((x) => musicianById(x.musicianId)).filter(Boolean);
-    if (fits.length) add(2, `<a href="#/brett">Heute im Kurs: ${esc(c.prefix)}-${esc(c.name)}</a>, passt zu ${fits.map((m) => esc(m.firstName)).join(', ')}.`);
+    if (fits.length) add(2, `<a href="#/brett">Heute im Kurs: ${esc(c.prefix)}-${esc(c.name)}</a>, passt zu ${fits.map((m) => esc(withBand(m))).join(', ')}.`);
   }
   return out.sort((a, b) => a.level - b.level);
 }
@@ -262,7 +262,7 @@ function now(s) {
     const face = m ? photo(m) : b ? photo(musicianById(b.memberIds[0]) ?? { id: b.id, look: {} }) : '';
     rows.push({
       until: a.endsAt,
-      html: `<span class="lb-ph sm">${face}</span><span class="ov-now-txt"><b>${esc(b ? b.name : m ? m.firstName : '')}</b><small class="muted">${esc(ACT[a.type] ?? '')}${a.title && !['bandpromo', 'rehearsal'].includes(a.type) ? ` · ${esc(a.title)}` : ''}</small></span>
+      html: `<span class="lb-ph sm">${face}</span><span class="ov-now-txt"><b>${esc(b ? b.name : m ? withBand(m) : '')}</b><small class="muted">${esc(ACT[a.type] ?? '')}${a.title && !['bandpromo', 'rehearsal'].includes(a.type) ? ` · ${esc(a.title)}` : ''}</small></span>
         <span class="ov-now-time" data-until="${a.endsAt}"></span>${['rehearsal', 'gig'].includes(a.type) ? `<button class="btn small" data-act="watch" data-id="${a.id}">Ansehen</button>` : ''}`,
     });
   }
@@ -270,7 +270,8 @@ function now(s) {
     rows.push({ until: x.away.until, html: `<span class="lb-ph sm">${photo({ id: x.id, look: x.look })}</span><span class="ov-now-txt"><b>${esc(x.firstName)}</b><small class="muted">Scout auf Talentsuche</small></span><span class="ov-now-time" data-until="${x.away.until}"></span>` });
   }
   for (const t of s.tutors ?? []) {
-    const target = t.role === 'teacher' ? musicianById(t.musicianId)?.firstName : bandById(t.bandId)?.name;
+    const pupil = t.role === 'teacher' ? musicianById(t.musicianId) : null;
+    const target = t.role === 'teacher' ? (pupil ? withBand(pupil) : '') : bandById(t.bandId)?.name;
     rows.push({ until: t.until, html: `<span class="lb-ph sm">${photo({ id: t.id, look: t.look })}</span><span class="ov-now-txt"><b>${esc(t.firstName)}</b><small class="muted">${t.role === 'teacher' ? `unterrichtet ${esc(target ?? '')}` : `hilft ${esc(target ?? '')} beim Songschreiben`}</small></span><span class="ov-now-time" data-until="${t.until}"></span>` });
   }
   rows.sort((a, b) => a.until - b.until);

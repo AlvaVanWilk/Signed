@@ -561,11 +561,15 @@ final class Activities
                 $result['stageUp'] = Balance::CORE_STAGE_NAMES[$stage];
                 $repo->log('fame', sprintf('%s ist jetzt %s.', $coreBand['name'], Balance::CORE_STAGE_NAMES[$stage]), $bandId);
             }
-            // Ausverkauft oder eine tolle Show: Manchmal fragt danach jemand an.
+            // Ausverkauft oder eine tolle Show: Manchmal fragt danach jemand an, je Band höchstens einmal in `hours` Stunden.
             $after = Balance::CORE_EVENTS['afterGig'];
             $soldOut = (float) $reward['core']['demand'] >= (float) $reward['core']['size'];
             $shine = (float) ($reward['meter'] ?? 0) >= $after['shineFrom'];
-            if (($soldOut && Rng::chance($after['soldOut'])) || ($shine && Rng::chance($after['shine']))) {
+            $recent = static fn (): bool => (int) $db->value(
+                'SELECT COUNT(*) FROM activities WHERE band_id = ? AND type IN (?, ?) AND ends_at > ? AND result LIKE ?',
+                [$bandId, 'gig', Tours::GIG, (int) $row['ends_at'] - $after['hours'] * 3600, '%"request":{%']
+            ) > 0;
+            if ((($soldOut && Rng::chance($after['soldOut'])) || ($shine && Rng::chance($after['shine']))) && !$recent()) {
                 $request = Inbox::eventRequest($repo, $bandId, $soldOut ? 'nach dem ausverkauften Konzert' : 'nach dem tollen Auftritt');
                 if ($request !== null) {
                     $result['request'] = $request;

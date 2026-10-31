@@ -451,6 +451,28 @@ test('Kern im Spiel: Anfragen nach Ereignissen – Goldene Schallplatte, Platz 1
     checkEquals(2, count($reasons), 'Platz 5 bringt keine Anfrage');
 });
 
+test('Kern im Spiel: Nach Konzerten kommt je Band höchstens eine Anfrage am Tag, auch bei vielen Auftritten', function () {
+    [$db, $p, $repo, $band] = coreLabel();
+    Signed\Rng::seed(7);
+    $db->exec('UPDATE bands SET fans = 480, records = 1 WHERE id = ?', [$band['id']]);
+    $db->exec('UPDATE musicians SET wellbeing = 90 WHERE band_id = ?', [$band['id']]);
+    coreRelease($repo, $repo->band($band['id']), 95);
+    $start = Clock::now();
+    for ($i = 0; $i < 12; $i++) {
+        $gig = $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'gig'])['activity'];
+        Clock::set($gig['endsAt'] + 60);
+        $p->get('state');
+        $db->exec('UPDATE musicians SET wellbeing = 90 WHERE band_id = ?', [$band['id']]);
+    }
+    check(Clock::now() - $start < 86400, 'alles an einem Tag');
+    $after = 0;
+    foreach ($db->all("SELECT data FROM mail WHERE label_id = ? AND kind = 'interview'", [$repo->labelId]) as $m) {
+        $reason = json_decode($m['data'], true)['reason'] ?? '';
+        $after += in_array($reason, ['nach dem ausverkauften Konzert', 'nach dem tollen Auftritt'], true) ? 1 : 0;
+    }
+    check($after <= 1, "Höchstens eine Anfrage nach Konzerten am Tag (waren $after)");
+});
+
 test('Kern im Spiel: Austritt, Zusammentun und Umbenennen nach den Fan-Regeln', function () {
     [$db, $p, $repo, $band] = coreLabel();
     $db->exec('UPDATE bands SET fans = 9000 WHERE id = ?', [$band['id']]);

@@ -540,6 +540,14 @@ final class Mood
         foreach (['restless' => ['stageIdle', 'Will endlich wieder auf die Bühne'], 'stagnant' => ['recordIdle', 'Will endlich eine neue Platte machen']] as $key => [$hours, $text]) {
             $over = ($band[$hours] ?? 0) - $t[$key]['hours'];
             $base = self::traitMax($m, $t[$key]['traits'], 0.0);
+            if (BandCore::$live) {
+                // Neuer Kern: Auftauchen kostet nichts; alle 24 Stunden so viel, wie heute in 24 Stunden dazukommt
+                $penalty = $over >= 0 ? Core\Needs::penalty($over, Core\Needs::perHour($key, $m)) : 0.0;
+                if ($penalty > 0) {
+                    $add($text, -$penalty);
+                }
+                continue;
+            }
             if ($over >= 0 && $base > 0) {
                 $add($text, -$base * (1 + $t[$key]['grow'] * $over));
             }
@@ -553,10 +561,22 @@ final class Mood
     private static function waitWhy(array $m, bool $solo, callable $add): void
     {
         $n = Balance::NEEDS;
+        $table = $solo ? Catalog::WISHES_SOLO : Catalog::WISHES;
+        $text = ($table[$m['personality'][0] ?? 'gelassen'] ?? $table['gelassen'])[0];
+        if (BandCore::$live) {
+            // Neuer Kern: Ein Wunsch darf jederzeit auftauchen, wächst aber nur alle 24 Stunden (Sandra)
+            $wish = Core\Needs::penalty((float) ($m['wish_wait'] ?? 0), Core\Needs::perHour('wish', $m));
+            if ($wish > 0) {
+                $add(sprintf('Wartet schon %d Std. darauf: „%s“', (int) round($m['wish_wait']), $text), -$wish);
+            }
+            $gear = Core\Needs::penalty((float) ($m['gear_wait'] ?? 0), Core\Needs::perHour('gear', $m));
+            if ($gear > 0) {
+                $add(sprintf('Wartet schon %d Std. auf ein passendes Instrument', (int) round($m['gear_wait'])), -$gear);
+            }
+            return;
+        }
         $wish = ($m['wish_wait'] ?? 0) - $n['wish']['grace'];
         if ($wish > 0) {
-            $table = $solo ? Catalog::WISHES_SOLO : Catalog::WISHES;
-            $text = ($table[$m['personality'][0] ?? 'gelassen'] ?? $table['gelassen'])[0];
             $add(sprintf('Wartet schon %d Std. darauf: „%s“', (int) round($m['wish_wait']), $text), -$n['wish']['perHour'] * $wish);
         }
         $gear = ($m['gear_wait'] ?? 0) - $n['gear']['grace'];

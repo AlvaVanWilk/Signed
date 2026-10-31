@@ -293,6 +293,9 @@ final class Activities
 
     public function promo(int $musicianId): array
     {
+        if (BandCore::$live) {
+            throw new ApiError('Promo-Touren gibt es nicht mehr. Dafür kommen Anfragen in den Posteingang, sobald die Band eine Platte hat.');
+        }
         $db = $this->repo->db;
         return $db->transaction(function () use ($db, $musicianId): array {
             $now = Clock::now();
@@ -359,6 +362,9 @@ final class Activities
     /** Band-Promo: Alle Mitglieder sind unterwegs und werden bekannter. */
     public function bandPromo(int $bandId): array
     {
+        if (BandCore::$live) {
+            throw new ApiError('Promo-Touren gibt es nicht mehr. Dafür kommen Anfragen in den Posteingang, sobald die Band eine Platte hat.');
+        }
         $db = $this->repo->db;
         return $db->transaction(function () use ($db, $bandId): array {
             $now = Clock::now();

@@ -69,6 +69,13 @@ final class BandCore
         foreach ($repo->bands() as $band) {
             self::settle($repo, $band, $until);
         }
+        // Ehemalige Bands (aufgegangen, aufgelöst): Ihre Platten verkaufen weiter, bis sie ganz fertig sind.
+        foreach ($repo->db->all(
+            'SELECT * FROM bands WHERE label_id = ? AND retired_at IS NOT NULL AND id IN (SELECT band_id FROM records WHERE core_active = 1)',
+            [$repo->labelId]
+        ) as $row) {
+            self::settle($repo, Repo::hydrateBand($row), $until, []);
+        }
     }
 
     /** Alle Bands mit laufenden Platten, über alle Labels (vor den Charts, damit die Verkäufe der letzten Stunden stimmen). */
@@ -188,6 +195,23 @@ final class BandCore
         ];
     }
 
+    /**
+     * Ruhm-Gegenwert von Fans für Regeln, die noch mit der alten Ruhm-Skala rechnen (Einsendungen, Bewerbungen, Künstlername, Marktwert,
+     * Tournee-Freigaben …): Die Stufen-Grenzen entsprechen sich (500 / 5.000 / 50.000 Fans ↔ 20 / 120 / 600 Ruhm), dazwischen gleichmäßig.
+     */
+    public static function fameEquivalent(float $fans): float
+    {
+        $points = [0 => 0.0, 500 => 20.0, 5000 => 120.0, 50000 => 600.0];
+        $keys = array_keys($points);
+        for ($i = 1; $i < count($keys); $i++) {
+            [$a, $b] = [$keys[$i - 1], $keys[$i]];
+            if ($fans <= $b || $i === count($keys) - 1) {
+                return round(max(0.0, $points[$a] + ($fans - $a) * ($points[$b] - $points[$a]) / ($b - $a)), 2);
+            }
+        }
+        return 0.0;
+    }
+
     /** Fans einer Band (aus der Datenbank, ohne weiterzurechnen). */
     public static function fans(Db $db, int $bandId): float
     {
@@ -257,6 +281,8 @@ final class BandCore
         if ($whole > 0) {
             $repo->earnDaily($whole, sprintf('Plattenverkäufe: %s', $band['name']));
         }
+        // Bekanntheit der Mitglieder = Fans der Band (als Ruhm-Gegenwert, damit ältere Regeln weiter passen)
+        $db->exec('UPDATE musicians SET fame = ? WHERE band_id = ?', [self::fameEquivalent($career['fans']), $band['id']]);
         foreach ([[$career['records'], 1], [$career['retired'], 0]] as [$records, $active]) {
             foreach ($records as $record) {
                 if (!isset($record['id'])) {

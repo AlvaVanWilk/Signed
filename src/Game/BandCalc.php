@@ -210,9 +210,12 @@ final class BandCalc
         return round(array_sum(array_map(static fn ($m) => $m['fame'], $members)), 1);
     }
 
-    /** Bandruhm = Ruhm des Bandnamens + Bekanntheit der aktuellen Mitglieder. */
+    /** Bandruhm = Ruhm des Bandnamens + Bekanntheit der aktuellen Mitglieder. Neuer Kern: Ruhm-Gegenwert der Fans (BandCore::fameEquivalent). */
     public static function bandFame(array $band, array $members): float
     {
+        if (BandCore::$live) {
+            return round(BandCore::fameEquivalent((float) ($band['fans'] ?? 0)), 1);
+        }
         return round($band['fame_own'] + array_sum(array_column($members, 'fame')), 1);
     }
 

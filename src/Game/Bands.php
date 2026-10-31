@@ -79,15 +79,29 @@ final class Bands
             if (Transfers::listed($db, $m['id'])) {
                 continue;
             }
-            // Wer einen Künstlernamen hat, tritt solo wieder unter ihm auf.
-            $base = $m['stage_name'] ?? self::fullName($m);
-            $name = $base;
-            for ($n = 2; Names::bandTaken($db, $name); $n++) {
-                $name = sprintf('%s (%d)', $base, $n);
-            }
-            $bandId = $db->insert('bands', ['label_id' => $repo->labelId, 'name' => $name, 'name_key' => Names::key($name), 'genre' => '', 'created_at' => Clock::now()]);
-            $db->update('musicians', ['band_id' => $bandId, 'band_slot' => 1], ['id' => $m['id']]);
+            self::createSolo($repo, $m);
         }
+    }
+
+    /** Solo-Band für einen Musiker ohne Band (neuer Kern: mit den Fans, die er mitbringt). */
+    private static function createSolo(Repo $repo, array $m, float $fans = 0.0): int
+    {
+        $db = $repo->db;
+        // Wer einen Künstlernamen hat, tritt solo wieder unter ihm auf.
+        $base = $m['stage_name'] ?? self::fullName($m);
+        $name = $base;
+        for ($n = 2; Names::bandTaken($db, $name); $n++) {
+            $name = sprintf('%s (%d)', $base, $n);
+        }
+        $bandId = $db->insert('bands', ['label_id' => $repo->labelId, 'name' => $name, 'name_key' => Names::key($name), 'genre' => '', 'fans' => round($fans, 4), 'core_at' => Clock::now(), 'created_at' => Clock::now()]);
+        $db->update('musicians', ['band_id' => $bandId, 'band_slot' => 1], ['id' => $m['id']]);
+        return $bandId;
+    }
+
+    /** Neuer Kern: Fans einer Band bis jetzt (vor Änderungen an der Besetzung). */
+    private function coreFans(array $band): float
+    {
+        return BandCore::settle($this->repo, $band, Clock::now())['fans'];
     }
 
     /**
@@ -307,10 +321,12 @@ final class Bands
             }
             return;
         }
+        // Namensschutz: im neuen Kern nach den Fans (als Ruhm-Gegenwert)
+        $final = BandCore::$live ? BandCore::fameEquivalent(BandCore::fans($db, $band['id'])) : $band['fame_own'];
         if (!$continue) {
             $db->update('bands', [
                 'retired_at' => Clock::now(), 'retired_reason' => $reason, 'retired_note' => mb_substr($note, 0, 200),
-                'fame_final' => $band['fame_own'], 'fame_own' => 0, 'manager_id' => null, 'busy_until' => 0, 'promo_record_id' => null,
+                'fame_final' => $final, 'fame_own' => 0, 'manager_id' => null, 'busy_until' => 0, 'promo_record_id' => null,
             ], ['id' => $band['id']]);
             $this->logLastMembers($members, $band['name'], $band['id']);
             return;
@@ -365,6 +381,8 @@ final class Bands
             self::assertLineup(array_merge($groupA, $groupB));
             $db = $this->repo->db;
             [$keep, $gone, $joining] = $keepName === 'b' ? [$b, $a, $groupA] : [$a, $b, $groupB];
+            // Neuer Kern: die größere Band plus die Hälfte der kleineren (viele sind schon Fans von beiden)
+            $mergedFans = BandCore::$live ? Core\Fans::merge($this->coreFans($a), $this->coreFans($b)) : null;
             $finalName = $keep['name'];
             $renamed = in_array($keepName, ['new', 'combo'], true);
             if ($renamed) {
@@ -375,13 +393,20 @@ final class Bands
             }
             // Wer den Namen aufgibt: ehemalige Band mit allem, was daran hängt.
             $this->giveUpName($gone, 'merged', $renamed ? sprintf('ging mit „%s“ in „%s“ auf', $keep['name'], $finalName) : sprintf('ging in „%s“ auf', $keep['name']), false);
-            if ($renamed) {
+            if ($renamed && BandCore::$live) {
+                // Neuer Kern: Die Band behält ihre Platten; der neue Name kostet wie jedes Umbenennen ein Zehntel der Fans
+                $mergedFans = Core\Fans::renamed($mergedFans);
+                $db->update('bands', ['name' => $finalName, 'name_key' => Names::key($finalName)], ['id' => $keep['id']]);
+            } elseif ($renamed) {
                 $this->giveUpName($keep, 'renamed', sprintf('heißt jetzt „%s“', $finalName), true);
                 // Ein verbundener Name („Solo & Band“) behält einen Teil des Ruhms beider Namen, ein ganz neuer nichts.
                 $carry = $keepName === 'combo' ? round(Balance::NAME_COMBO_KEEP * ($a['fame_own'] + $b['fame_own']), 1) : 0.0;
                 $db->update('bands', ['name' => $finalName, 'name_key' => Names::key($finalName), 'fame_own' => $carry], ['id' => $keep['id']]);
             }
             $db->exec('UPDATE musicians SET band_id = ?, band_slot = band_slot WHERE band_id = ?', [$keep['id'], $gone['id']]);
+            if ($mergedFans !== null) {
+                $db->update('bands', ['fans' => round($mergedFans, 4)], ['id' => $keep['id']]);
+            }
             // Der bessere Proberaum bleibt.
             $db->exec('UPDATE bands SET room = ?, bus = ?, plane = ? WHERE id = ?', [max($a['room'], $b['room']), max($a['bus'], $b['bus']), max($a['plane'], $b['plane']), $keep['id']]);
             // Ein Einzelmusiker mit zwei Instrumenten sagt, welches er in der neuen Band spielt.
@@ -428,6 +453,14 @@ final class Bands
             throw new ApiError(sprintf('Den Bandnamen „%s“ gibt es schon.', $name));
         }
         $this->repo->db->transaction(function () use ($band, $name): void {
+            if (BandCore::$live) {
+                // Neuer Kern: Platten bleiben bei der Band; ein Zehntel der Fans mag keinen neuen Namen
+                $fans = $this->coreFans($band);
+                $after = Core\Fans::renamed($fans);
+                $this->repo->db->update('bands', ['name' => $name, 'name_key' => Names::key($name), 'fans' => round($after, 4)], ['id' => $band['id']]);
+                $this->repo->log('band', sprintf('%s heißt jetzt %s. %s Fans mögen den neuen Namen nicht und gehen.', $band['name'], $name, number_format($fans - $after, 0, ',', '.')), $band['id']);
+                return;
+            }
             if (self::hasCareer($band)) {
                 $this->giveUpName($band, 'renamed', sprintf('heißt jetzt „%s“', $name), true);
                 $this->repo->log('band', sprintf('%s heißt jetzt %s. Der Ruhm des alten Namens (%s) ist weg, die Platten bleiben unter „%s“.',
@@ -456,7 +489,8 @@ final class Bands
             $this->repo->log('lineup', sprintf('%s tritt jetzt als „%s“ auf.', self::fullName($m), $name), $m['band_id'], $m['id']);
             if ($m['band_id'] !== null && count($this->repo->members($m['band_id'])) === 1) {
                 $band = $this->repo->band($m['band_id']);
-                if (self::hasCareer($band)) {
+                // Neuer Kern: Der Künstlername ist ein Wunsch, kein Neuanfang – Platten und Fans bleiben
+                if (self::hasCareer($band) && !BandCore::$live) {
                     $this->giveUpName($band, 'renamed', sprintf('heißt jetzt „%s“', $name), true);
                 }
                 $db->update('bands', ['name' => $name, 'name_key' => Names::key($name)], ['id' => $band['id']]);
@@ -492,16 +526,29 @@ final class Bands
             if (count($this->repo->members($bandId)) - 1 < Balance::MIN_MEMBERS) {
                 throw new ApiError(sprintf('Eine Band braucht mindestens %d Musiker. Löse die Band stattdessen auf.', Balance::MIN_MEMBERS));
             }
+            $takes = null;
+            if (BandCore::$live) {
+                // Neuer Kern: Je wichtiger er war, desto mehr Fans gehen mit ihm (in seine Solo-Band) oder hören ganz auf
+                $members = array_values($this->repo->members($bandId));
+                $index = (int) array_search($m['id'], array_column($members, 'id'), true);
+                [$takes, $keeps] = Core\Fans::leave($this->coreFans($band), array_map([Core\Fans::class, 'weight'], $members), $index);
+                $this->repo->db->update('bands', ['fans' => round($keeps, 4)], ['id' => $bandId]);
+            }
             $this->repo->db->update('musicians', ['band_id' => null, 'band_slot' => 1], ['id' => $m['id']]);
             $return = $band['slot_return'];
             unset($return[$m['id']]);
             $this->saveSlotReturn($bandId, $return);
-            $this->repo->log('lineup', sprintf(
-                '%s verlässt %s und nimmt %s Bekanntheit mit.',
-                self::fullName($m),
-                $band['name'],
-                number_format($m['fame'], 1, ',', '.')
-            ), $bandId, $m['id']);
+            if ($takes !== null) {
+                self::createSolo($this->repo, $m, $takes);
+                $this->repo->log('lineup', sprintf('%s verlässt %s; %s Fans gehen mit.', self::fullName($m), $band['name'], number_format($takes, 0, ',', '.')), $bandId, $m['id']);
+            } else {
+                $this->repo->log('lineup', sprintf(
+                    '%s verlässt %s und nimmt %s Bekanntheit mit.',
+                    self::fullName($m),
+                    $band['name'],
+                    number_format($m['fame'], 1, ',', '.')
+                ), $bandId, $m['id']);
+            }
             $this->syncIdentity($band);
         });
     }
@@ -597,8 +644,17 @@ final class Bands
         $this->repo->db->transaction(function () use ($bandId, $reason): void {
             $band = $this->idleBand($bandId);
             $db = $this->repo->db;
+            $members = array_values($this->repo->members($bandId));
+            $fans = BandCore::$live && $reason !== 'left' ? $this->coreFans($band) : 0.0;
             $this->giveUpName($band, $reason, $reason === 'left' ? 'hat das Label verlassen' : 'hat sich aufgelöst', false);
             $db->exec('UPDATE musicians SET band_id = NULL, band_slot = 1 WHERE band_id = ? AND label_id = ?', [$bandId, $this->repo->labelId]);
+            if ($fans > 0 && count($members) > 1) {
+                // Neuer Kern: Jeder nimmt die Hälfte „seiner“ Fans mit in seine Solo-Band
+                $weights = array_map([Core\Fans::class, 'weight'], $members);
+                foreach ($members as $i => $m) {
+                    self::createSolo($this->repo, $m + ['band_id' => null], Core\Fans::leave($fans, $weights, $i)[0]);
+                }
+            }
             if ($reason !== 'left') {
                 $this->repo->log('band', sprintf('Die Band „%s“ hat sich aufgelöst.', $band['name']), $bandId);
             }

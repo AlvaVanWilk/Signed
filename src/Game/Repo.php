@@ -432,6 +432,7 @@ final class Repo
             'bus' => (int) ($r['bus'] ?? 0),
             'plane' => (int) ($r['plane'] ?? 0),
             'fame_own' => (float) $r['fame_own'],
+            'fans' => (float) ($r['fans'] ?? 0),
             'songs_written' => (float) ($r['songs_written'] ?? 0),
             'write_mode' => (string) ($r['write_mode'] ?? 'normal'),
             'coached_songs' => (float) ($r['coached_songs'] ?? 0),

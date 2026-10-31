@@ -296,3 +296,46 @@ test('Kern im Spiel: Anfragen statt Interviews – erst mit Platte, Hype-Schub f
     check((int) $db->value('SELECT money FROM labels WHERE id = ?', [$repo->labelId]) >= $money + (int) floor($fans) - 1, 'Werbung: so viele ₲, wie die Band Fans hat');
     check(BandCore::view($db, $band, $repo->members($band['id']))['hype'] > $hype - 0.5, 'Schub für die neueste Platte');
 });
+
+test('Kern im Spiel: Austritt, Zusammentun und Umbenennen nach den Fan-Regeln', function () {
+    [$db, $p, $repo, $band] = coreLabel();
+    $db->exec('UPDATE bands SET fans = 9000 WHERE id = ?', [$band['id']]);
+    $members = array_values($repo->members($band['id']));
+    // Eine Viererband, damit nach dem Austritt noch genug übrig sind
+    $fourth = $repo->insertMusician(Signed\Game\Generator::musician('common', ['instrument' => 'bass', 'genre' => 'rock', 'single' => true]), 'test');
+    $db->exec('UPDATE musicians SET band_id = ? WHERE id = ?', [$band['id'], $fourth]);
+    $members = array_values($repo->members($band['id']));
+    [$takes, $keeps] = Signed\Game\Core\Fans::leave(9000, array_map([Signed\Game\Core\Fans::class, 'weight'], $members), 0);
+    $p->post('bandRemoveMember', ['bandId' => $band['id'], 'musicianId' => $members[0]['id']]);
+    coreNear($keeps, BandCore::fans($db, $band['id']), 1e-6, 'Die Band behält den Rest');
+    $solo = (int) $db->value('SELECT band_id FROM musicians WHERE id = ?', [$members[0]['id']]);
+    coreNear($takes, BandCore::fans($db, $solo), 1e-6, 'Er nimmt die Hälfte seiner Fans mit');
+    check($takes + $keeps < 9000, 'Zusammen weniger als vorher');
+    // Umbenennen: ein Zehntel geht, die Platten bleiben
+    $recordId = coreRelease($repo, $repo->band($band['id']), 80);
+    $before = BandCore::fans($db, $band['id']);
+    $p->post('bandRename', ['bandId' => $band['id'], 'name' => 'Neuer Name']);
+    coreNear($before * 0.9, BandCore::fans($db, $band['id']), 1e-6);
+    checkEquals($band['id'], (int) $db->value('SELECT band_id FROM records WHERE id = ?', [$recordId]), 'Platte bleibt bei der Band');
+    // Zusammentun: die größere plus die Hälfte der kleineren
+    $big = BandCore::fans($db, $band['id']);
+    $small = BandCore::fans($db, $solo);
+    $p->post('bandMerge', ['bandId' => $band['id'], 'otherId' => $solo, 'keepName' => 'a']);
+    coreNear(max($big, $small) + 0.5 * min($big, $small), BandCore::fans($db, $band['id']), 1e-3, 'Zusammentun');
+});
+
+test('Kern im Spiel: Bedürfnisse kosten erst nach 24 Stunden etwas und wachsen nur alle 24 Stunden', function () {
+    [$db, $p, $repo, $band] = coreLabel();
+    giveManager($db, $band['id']);
+    $m = array_values($repo->members($band['id']))[0];
+    $wait = static function (float $hours) use ($db, $p, $band, $m): float {
+        $db->exec('UPDATE musicians SET wish_wait = ?, wellbeing = 30 WHERE id = ?', [$hours, $m['id']]);
+        $items = bandById($p->get('state'), $band['id'])['mood']['why'][$m['id']]['items'] ?? [];
+        $hit = array_values(array_filter($items, static fn ($i) => str_starts_with($i[0], 'Wartet schon')));
+        return $hit ? (float) $hit[0][1] : 0.0;
+    };
+    checkEquals(0.0, $wait(23), 'Auftauchen kostet nichts');
+    coreNear(-9.6, $wait(25));
+    coreNear(-9.6, $wait(47));
+    coreNear(-19.2, $wait(49));
+});

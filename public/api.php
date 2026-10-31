@@ -41,6 +41,8 @@ try {
 
     $db = Db::fromConfig();
     Schema::migrate($db);
+    // Neuer Kern zum Ausprobieren auf dem eigenen Rechner (config.php: 'core' => true); auf dem Webspace steht das nicht drin.
+    Signed\Game\BandCore::$live = Signed\Game\BandCore::$live || (bool) Config::get('core', false);
     $result = (new Api($db, new HttpSession()))->handle($method, $action, $input);
     $respond(200, ['ok' => true] + $result);
 } catch (ApiError $e) {

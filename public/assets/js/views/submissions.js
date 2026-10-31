@@ -1,7 +1,7 @@
 import { genreGlyph, genreName, genreOrder, hiddenTraits, traitNames, instrumentIcon, instrumentName, photo, sortedGenres } from '../cards.js';
 import { api } from '../api.js';
 import { actions, app, bandById, cat, defineActions, isBusy, mutate, musicianById, rerender, serverNow } from '../core.js';
-import { confirmDialog, esc, money, off, openModal, toast } from '../ui.js';
+import { confirmDialog, esc, fmt0, money, off, openModal, toast } from '../ui.js';
 import { fitWord, levelClass, levelProgress, relColor } from './label.js';
 import { INTERN_JOBS, closeTalk, officeScene, rulesText, searchText } from '../office.js';
 
@@ -227,15 +227,21 @@ const mins = (sec) => (sec >= 3600 ? `${Math.round(sec / 360) / 10} Std.` : `${M
 const roleName = (m) => cat().staffRoles[m.role]?.tiers[m.tier] ?? '';
 const fmtFame = (v) => (v >= 10 ? Math.round(v) : Math.round(v * 10) / 10).toLocaleString('de-DE');
 
+/** Neuer Kern: was das Medium vorhat. */
+const REQUEST_TEXT = { interview: 'möchte ein Interview', photos: 'möchte eine Fotoserie', article: 'schreibt einen Artikel', report: 'dreht eine Reportage', ad: 'möchte Werbung' };
+
 function interviewLetter(m) {
   const who = musicianById(m.musicianId);
   if (!who) return '';
   const away = isBusy(who.busyUntil) || (who.bandId && isBusy(bandById(who.bandId)?.busyUntil));
   return `
     <article class="lb-letter interview">
-      <div class="lb-lt-head"><span class="lb-lt-kind">Interview-Anfrage</span></div>
+      <div class="lb-lt-head"><span class="lb-lt-kind">${m.request ? `Anfrage: ${esc(m.requestName)}` : 'Interview-Anfrage'}</span></div>
       <div class="lb-lt-body"><span class="lb-ph sm">${photo(who)}</span>
-        <p><b>${esc(m.medium)}</b> möchte mit <b>${esc(who.firstName)}</b> sprechen.<small class="lb-lt-gain">+${fmtFame(m.fame)} Bekanntheit · dauert ${mins(m.seconds)}</small></p></div>
+        ${m.request
+    // Neuer Kern: Anfrage mit Hype-Schub für die neueste Platte (Werbung bringt dazu Geld)
+    ? `<p><b>${esc(m.medium)}</b> ${REQUEST_TEXT[m.request] ?? 'möchte'} mit <b>${esc(who.firstName)}</b>${m.reason ? ` (${esc(m.reason)})` : ''}.<small class="lb-lt-gain">Hype +${fmt0(m.boost)} für die neueste Platte${m.request === 'ad' ? ' · dazu so viele ₲, wie die Band Fans hat' : ''} · dauert ${mins(m.seconds)}</small></p>`
+    : `<p><b>${esc(m.medium)}</b> möchte mit <b>${esc(who.firstName)}</b> sprechen.<small class="lb-lt-gain">+${fmtFame(m.fame)} Bekanntheit · dauert ${mins(m.seconds)}</small></p>`}</div>
       <div class="lb-card-foot"><span class="lb-lt-space"></span>
         <button class="lb-iconbtn drop" data-act="mailDrop" data-id="${m.mailId}" title="Absagen" aria-label="Absagen">✕</button>
         <button class="btn small primary" data-act="mailAccept" data-id="${m.mailId}" ${off(away ? `${who.firstName} ist gerade unterwegs.` : '')}>Zusagen</button>

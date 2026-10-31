@@ -20,6 +20,7 @@ import * as charts from './views/charts.js';
 import * as help from './views/help.js';
 import { maybeShowTransition } from './views/transition.js';
 import { trendBadge } from './views/charts.js';
+import { flame } from './core-ui.js';
 import { playApplause, playCoin } from './audio.js';
 import * as market from './views/market.js';
 import * as musician from './views/musician.js';
@@ -328,6 +329,16 @@ function resultHtml(r) {
   if (r.type === 'battle') return battleResultHtml(r);
   if (r.type === 'tourtravel') return tour.arrivalHtml(r);
   if (r.type === 'tour') return tour.homeHtml(r);
+  if (r.type === 'interview' && res.request) {
+    // Neuer Kern: Anfrage erledigt – Hype-Schub für die neueste Platte, Werbung bringt Geld
+    const m = musicianById(r.musicianId);
+    return `
+      <div class="eyebrow">${esc(cat().requests?.[res.request]?.name ?? 'Anfrage')}${bandOf(m)}</div>
+      <h2>${esc(m ? `${m.firstName} ${m.lastName}` : 'Anfrage')} ist zurück</h2>
+      <p class="muted">${esc(res.medium ?? '')}</p>
+      <div class="reward-grid">${reward('Hype-Schub', `+${fmt0(res.boost)}`)}${res.money ? reward('Werbung', `+${money(0)}`, { to: res.money, kind: 'money' }) : ''}</div>
+      <p class="muted small">Ein Schub hebt den Hype der neuesten Platte; jeder weitere für dieselbe Platte zählt nur halb so viel.</p>`;
+  }
   if (r.type === 'interview') {
     const m = musicianById(r.musicianId);
     return `
@@ -366,7 +377,9 @@ function resultHtml(r) {
     <h2>${esc(r.title)}</h2>
     ${res.meter ? `<p class="muted">${moodText(res.meter)}</p>` : ''}
     <div class="reward-grid">
-      ${res.money ? reward(r.type === 'busking' ? 'Im Hut' : res.bill ? 'Gage nach Rechnung' : 'Gage', `+${money(0)}`, { to: res.money, kind: 'money' }) : ''}
+      ${res.tickets !== undefined ? reward('Zuschauer', `${fmt0(res.tickets)}${res.size ? ` von ${fmt0(res.size)}` : ''}`) : ''}
+      ${res.money ? reward(r.type === 'busking' ? 'Im Hut' : res.tickets !== undefined ? 'Verdient' : res.bill ? 'Gage nach Rechnung' : 'Gage', `+${money(0)}`, { to: res.money, kind: 'money' }) : ''}
+      ${res.fans ? reward('Neue Fans', `+${fmt0(res.fans)}`) : ''}
       ${res.mood ? reward('Stimmung', `+${fmt0(res.mood)}`) : ''}
       ${res.fame ? reward('Ruhm', `+${fmtGain(0)}`, { to: res.fame, kind: 'fame' }) : ''}
       ${res.skill?.length ? reward('Können je Musiker', skillSpan(res.skill)) : ''}
@@ -374,6 +387,7 @@ function resultHtml(r) {
     </div>
     ${levelUpBanners(res.levelUps)}
     ${res.venueUp ? `<div class="banner">⭐ Neue Stufe! Ab jetzt spielt die Band Gigs in: <b>${esc(res.venueUp)}</b>.</div>` : ''}
+    ${res.stageUp ? `<div class="banner">⭐ Neue Ruhmstufe: <b>${esc(res.stageUp)}</b>! Ab jetzt passen mehr Leute in die Orte, und das Label verdient mehr je Zuschauer.</div>` : ''}
     ${res.festival ? festivalExtras(res.festival) : ''}
     ${res.tour ? tour.gigExtras(res) : ''}
     ${drops}`;
@@ -484,9 +498,32 @@ function showResults() {
 // ---------- Konto ----------
 
 /** Konto in Groove Coins: regelmäßige Einnahmen aus den Charts und der Kontoauszug. */
+/** Neuer Kern: was die Platten gerade einbringen (Verkäufe des Tages und Katalog), ohne Tantiemen und Ruhm. */
+function coreFinanceHtml(f, now) {
+  return `
+    <div class="eyebrow">Groove Coins</div>
+    <h2 data-live-money>${money(liveMoney())}</h2>
+    <div class="reward-grid">
+      ${reward('Platten pro Stunde', `${fmt0(f.moneyPerHour)} ₲`)}
+      ${reward('Platten in den Charts', String(f.records.filter((r) => r.placed).length))}
+    </div>
+    ${f.catalogPerHour ? `<p class="muted small">Davon Katalog: <b>${fmt0(f.catalogPerHour)} ₲</b> pro Stunde. Jede Platte verkauft sich noch eine Weile weiter, jede Woche halb so viel.</p>` : ''}
+    ${f.records.length ? `
+      <p class="muted small">Jede Platte bringt 10 ₲ je verkauftem Stück. Was ein Tag bringt, steht zu Beginn des Tages fest und kommt gleichmäßig über den Tag.</p>
+      <table class="charts finance-table">
+        <thead><tr><th>Platte</th><th>Band</th><th>Hype</th><th>Platz</th><th>heute verkauft</th><th>pro Stunde</th></tr></thead>
+        <tbody>${f.records.map((r) => `<tr><td>„${esc(r.title)}“</td><td>${esc(r.band)}</td><td>${flame(r.flame)}</td><td>${r.placed ? `${r.rank} ${trendBadge(r)}` : `<span class="muted">${r.rank ?? (r.ended ? 'nur Katalog' : '–')}</span>`}</td><td>${fmt0(r.soldToday)}</td><td>${fmt0(r.perHour)} ₲</td></tr>`).join('')}</tbody>
+      </table>` : '<p class="muted">Gerade verkauft keine Platte. Eine neue Platte bringt Geld und Fans.</p>'}
+    <h3>Kontoauszug</h3>
+    ${f.ledger.length ? `<ul class="history ledger">${f.ledger.map((l) => `
+      <li><span>${esc(l.text)}</span><span class="ledger-right"><b class="${l.amount < 0 ? 'bad' : 'ok'}">${l.amount > 0 ? '+' : '−'}${money(Math.abs(l.amount))}</b><time>${timeAgo(l.at, now)}</time></span></li>`).join('')}</ul>`
+    : '<p class="muted">Noch keine Buchungen.</p>'}`;
+}
+
 function financeHtml() {
   const f = app.state.finance;
   const now = app.state.now;
+  if (f.core) return coreFinanceHtml(f, now);
   return `
     <div class="eyebrow">Groove Coins</div>
     <h2 data-live-money>${money(liveMoney())}</h2>

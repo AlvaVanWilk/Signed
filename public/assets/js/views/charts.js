@@ -5,6 +5,7 @@ import { stage } from '../figure.js';
 import { coverHtml } from '../play.js';
 import { loadStems, playStems, stemUrl } from '../music.js';
 import { esc, fmt0, fmt1, fmtGain, openModal, toast } from '../ui.js';
+import { flame } from '../core-ui.js';
 
 let loading = false;
 
@@ -22,6 +23,7 @@ export async function loadCharts() {
 }
 
 export function render() {
+  if (app.charts?.core) return coreRender(app.charts);
   const tab = ['labels', 'fame'].includes(app.ui.chartsTab) ? app.ui.chartsTab : 'albums';
   const charts = app.charts;
   const rules = cat().rules;
@@ -238,3 +240,75 @@ defineActions({
     return loadCharts();
   },
 });
+
+// ---------- Neuer Kern ----------
+
+const CORE_TABS = { albums: 'Album-Charts', labels: 'Labels', fans: 'Fan-Lieblinge', sound: 'Sound-Monster' };
+const CORE_TEXT = {
+  albums: 'Die Platten aller Labels nach ihren Verkäufen der letzten 24 Stunden. Jede volle Stunde wird neu sortiert. Die Flamme zeigt, wie heiß eine Platte gerade ist (ihr Hype).',
+  labels: 'Die Labels nach allen Fans all ihrer Bands zusammen.',
+  fans: 'Fan-Lieblinge: die Bands und Solokünstler mit den meisten Fans.',
+  sound: 'Sound-Monster: die Bands und Solokünstler mit dem besten Sound.',
+};
+
+/** Minuten bis zur nächsten vollen Stunde (dann werden die Charts neu sortiert). */
+function nextSort(charts) {
+  const left = Math.max(0, charts.nextAt - (app.state?.now ?? charts.nextAt));
+  return left >= 60 ? `noch ${Math.ceil(left / 60)} Min.` : 'gleich';
+}
+
+function coreRender(charts) {
+  const tab = Object.keys(CORE_TABS).includes(app.ui.chartsTab) ? app.ui.chartsTab : 'albums';
+  return `
+    <div class="section-head">
+      <div>
+        <h1>Charts</h1>
+        <p class="muted">${CORE_TEXT[tab]}${tab === 'albums' ? ` Neu sortiert: ${nextSort(charts)}` : ''}</p>
+      </div>
+      <button class="btn ghost small" data-act="chartsReload">Aktualisieren</button>
+    </div>
+    <div class="tabs">${Object.entries(CORE_TABS).map(([k, name]) => `<button class="tab ${tab === k ? 'active' : ''}" data-act="chartsTab" data-tab="${k}">${name}</button>`).join('')}</div>
+    ${tab === 'albums' ? coreAlbums(charts.albums) : tab === 'labels' ? coreList(charts.labels, 'label', 'Fans', true) : coreList(charts[tab === 'fans' ? 'bands' : 'sound'] ?? [], 'band', tab === 'fans' ? 'Fans' : 'Sound')}`;
+}
+
+function coreAlbums(all) {
+  const list = all.filter((e) => e.placed);
+  const outside = all.filter((e) => !e.placed);
+  if (!list.length) return '<div class="empty">Noch keine Platte in den Charts. Eine neue Platte steigt zur nächsten vollen Stunde ein.</div>';
+  return `
+    <table class="charts">
+      <thead><tr><th>#</th><th>Vorher</th><th>Platte</th><th>Band · Label</th><th>Hype</th><th>Verkauft (24 Std.)</th></tr></thead>
+      <tbody>${list.map((e) => `
+        <tr class="${e.own ? 'own' : ''}">
+          <td class="rank">${e.rank}</td>
+          <td>${trendBadge(e)}</td>
+          <td><span class="chart-record"><span class="cover-thumb">${coverHtml(e.cover)}</span><span><b>${esc(e.title)}</b>${e.perfect ? ' <span class="chip special" title="Perfekte Platte">perfekt</span>' : ''}</span></span></td>
+          <td>${e.bandId ? `<button class="link" data-act="viewBand" data-id="${e.bandId}">${esc(e.band)}</button>` : esc(e.band)}<br><span class="muted small">${esc(e.label)}</span></td>
+          <td>${flame(e.flame)}</td>
+          <td><b>${fmt0(e.sold)}</b></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    ${outside.length ? `<h3>Platz ${cat().rules.chartSize + 1} bis ${cat().rules.chartList}</h3>
+      <ol class="chart-rest">${outside.map((e) => `
+        <li class="${e.own ? 'own' : ''}"><span class="rank">${e.rank}</span><span class="cover-thumb">${coverHtml(e.cover)}</span>
+          <span class="chart-rest-main"><b>${esc(e.title)}</b> <span class="muted small">${esc(e.band)} · ${esc(e.label)}</span></span>
+          ${trendBadge(e)}<span class="chart-rest-points">${fmt0(e.sold)}</span></li>`).join('')}</ol>` : ''}`;
+}
+
+/** Label-Bestenliste, Fan-Lieblinge, Sound-Monster: Platz, Name, Wert. */
+function coreList(list, key, unit, labels = false) {
+  if (!list.length) return '<div class="empty">Noch niemand dabei.</div>';
+  return `
+    <table class="charts">
+      <thead><tr><th>#</th><th>${labels ? 'Label' : 'Band'}</th>${labels ? '<th>Bands</th>' : '<th>Label</th>'}<th>${unit}</th></tr></thead>
+      <tbody>${list.map((e) => `
+        <tr class="${e.own ? 'own' : ''}">
+          <td class="rank">${e.rank <= 3 ? ['🥇', '🥈', '🥉'][e.rank - 1] : e.rank}</td>
+          <td>${labels ? esc(e.label) : `<button class="link" data-act="viewBand" data-id="${e.bandId}">${esc(e.band)}</button>`}</td>
+          <td class="muted">${labels ? fmt0(e.bands) : esc(e.label)}</td>
+          <td><b>${unit === 'Sound' ? fmt1(e.points) : fmt0(e.points)}</b></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+}

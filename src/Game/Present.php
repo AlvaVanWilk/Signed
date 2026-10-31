@@ -165,6 +165,8 @@ final class Present
             'levelWords' => Catalog::LEVEL_WORDS,
             'genreLineup' => Catalog::GENRE_LINEUP,
             'fameNames' => Catalog::FAME_NAMES,
+            // Neuer Kern: Arten von Anfragen (Interview, Fotoserie, Artikel, Reportage, Werbung)
+            'requests' => Catalog::REQUESTS,
             'personalities' => Catalog::PERSONALITIES,
             'staffRoles' => Catalog::STAFF_ROLES,
             'logoFonts' => Catalog::LOGO_FONTS,

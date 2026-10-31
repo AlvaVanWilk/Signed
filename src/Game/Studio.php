@@ -213,6 +213,9 @@ final class Studio
             'seconds' => Balance::CORE_ALBUM_SONGS * Balance::RECORD_SECONDS_PER_SONG,
             'blocker' => $blocker,
             'quality' => self::coreQuality($this->repo, $band, $members, $this->repo->gearByMusician(), array_column($picked, 'quality')),
+            // Damit der Dialog Q neu rechnen kann, wenn andere Songs ausgewählt werden
+            'weights' => Balance::CORE_QUALITY['weights'],
+            'perfectFrom' => Balance::CORE_QUALITY['perfect'],
             'logo' => $band['logo'],
         ];
     }

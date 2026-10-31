@@ -13,6 +13,7 @@ import { studioBlock } from './recording.js';
 import { startTour, tourPanel, tourTab, vehicleRows } from '../tour.js';
 import { vehicleSvg } from '../vehicle.js';
 import { awardList, roomAwards } from '../awards.js';
+import { coreOn, coreStars, gigHint as coreGigHint, infoText as coreInfoText, openGig as openCoreGig, valueTiles as coreValueTiles } from '../core-ui.js';
 
 /** Label-Ebene: Band-Leiste links und die ruhige Bandseite. Stimmung als Punkt und Wort (grün, gelb, rot). */
 
@@ -98,7 +99,8 @@ function tile(b, selected) {
   const solo = b.memberIds.length === 1;
   const bonusGenres = b.genreBonus > 1 ? sortedGenres(b.genres) : [];
   const members = b.memberIds.map(musicianById).filter(Boolean);
-  const stars = Math.min(3, steps(b.fame, cat().rules.fameLevels));
+  // Neuer Kern: Sterne nach der Ruhmstufe (Fans), sonst nach Ruhm
+  const stars = coreOn() ? coreStars(b) : Math.min(3, steps(b.fame, cat().rules.fameLevels));
   const tip = (text) => `data-act="tip" data-tip="${esc(text)}" title="${esc(text)}"`;
   const ins = members.map((m) => {
     const type = playedInstrument(m);
@@ -117,7 +119,7 @@ function tile(b, selected) {
     <a href="#/band/${b.id}" data-nav="b${b.id}" draggable="false" class="lb-bt ${selected ? 'sel' : ''} ${away ? 'busy' : ''} ${b.mood.level === 'red' ? 'frozen' : ''}">
       ${plaque}
       <span class="lamp ${b.mood.level}" ${tip(MOOD_TIP[b.mood.level] ?? '')}><i></i></span>
-      <span class="nm"><span class="nm-t">${esc(b.name)}</span><span class="stars" ${tip(`Ruhm: ${cat().fameNames[stars] ?? ''}`)}>${[0, 1, 2].map((i) => `<i class="${i < stars ? 'on' : ''}">★</i>`).join('')}</span></span>
+      <span class="nm"><span class="nm-t">${esc(b.name)}</span><span class="stars" ${tip(coreOn() ? `${b.core?.stageName ?? ''} · ${fmt0(b.core?.fans ?? 0)} Fans` : `Ruhm: ${cat().fameNames[stars] ?? ''}`)}>${[0, 1, 2].map((i) => `<i class="${i < stars ? 'on' : ''}">★</i>`).join('')}</span></span>
       <span class="gl"><span class="inss">${ins}</span>${b.mood.level === 'red' ? '<small class="waits">wartet auf dich</small>' : ''}</span>
       <span class="gens">${genres}</span>
       <span class="songs ${b.mood.songRate > 0 ? 'writing' : ''}" style="--cycle:${b.mood.songRate > 0 ? Math.min(6, Math.max(0.9, 1.6 / b.mood.songRate)).toFixed(2) : 0}s" ${tip(songsText)}><svg viewBox="0 0 24 24" aria-hidden="true"><path class="ghost" d="M9 18a3 3 0 11-6 0 3 3 0 016 0 L9 5 L20 3 L20 16 a3 3 0 11-6 0 3 3 0 016 0"/><path class="draw" pathLength="100" d="M9 18a3 3 0 11-6 0 3 3 0 016 0 L9 5 L20 3 L20 16 a3 3 0 11-6 0 3 3 0 016 0"/></svg><b>${b.mood.songs}</b></span>
@@ -557,6 +559,11 @@ function act(b, members, type, section, title, text, icon, warn = false, busy = 
 
 /** Kurzer Hinweis am Knopf „Aufnehmen“: Songs im Vorrat, oder was zur Freigabe des nächsten Albums noch fehlt. */
 function recordHint(b) {
+  if (coreOn()) {
+    // Neuer Kern: Ein Album hat immer 12 Songs; kein Album-Zyklus mehr
+    const songs = b.mood.songs;
+    return songs >= 12 ? `${songs} Songs im Vorrat · 12 für ein Album` : `${songs} von 12 Songs für ein Album`;
+  }
   const c = b.record.cycle;
   if (c && !c.done) {
     const left = [c.songs.have < c.songs.need ? `${c.songs.have}/${c.songs.need} live` : '', c.promos.have < c.promos.need ? `${c.promos.have}/${c.promos.need} Promo` : ''].filter(Boolean).join(' · ');
@@ -793,8 +800,10 @@ export function page(route) {
     <div class="lb-acts">
       ${act(b, members, 'rehearsal', null, 'Proben', `bis zu ${mins(b.options.rehearsal.seconds)} · Können ${gainRange(members.map((m) => m.gains?.rehearsal ?? 0))} je ${mins(cat().rules.rehearsalSeconds)}`, ICON.rehearse, false, !!blocker(b, members))}
       ${act(b, members, 'record', null, 'Aufnehmen', recordHint(b), ICON.record, b.mood.songs >= 12, !!blocker(b, members), away('Aufnehmen geht nur zu Hause im Studio.'))}
-      ${act(b, members, 'gig', null, 'Auftritt buchen', gigHint(b), ICON.gig, false, !!blocker(b, members), away('Unterwegs spielt ihr die Städte der Tournee (oben).'))}
-      ${act(b, members, 'bandpromo', null, 'Promo-Tour', promoHint(b), ICON.promo, false, !!blocker(b, members), away('Eine Promo-Tour geht erst wieder zu Hause.'))}
+      ${coreOn()
+    ? act(b, members, 'gig', null, 'Auftreten', coreGigHint(b), ICON.gig, false, !!blocker(b, members), away('Unterwegs spielt ihr die Städte der Tournee (oben).'))
+    : act(b, members, 'gig', null, 'Auftritt buchen', gigHint(b), ICON.gig, false, !!blocker(b, members), away('Unterwegs spielt ihr die Städte der Tournee (oben).'))}
+      ${coreOn() ? '' : act(b, members, 'bandpromo', null, 'Promo-Tour', promoHint(b), ICON.promo, false, !!blocker(b, members), away('Eine Promo-Tour geht erst wieder zu Hause.'))}
       ${act(b, members, 'retreat', null, 'Auszeit', retreatHint(b), ICON.retreat, false, !!blocker(b, members), away('Eine Auszeit gibt es erst wieder zu Hause.'))}
     </div>
     ${course}
@@ -809,7 +818,7 @@ export function page(route) {
     <h2 class="lb-cap lb-sec">Werte</h2>
     <div class="lb-sum">
       <div data-act="bandStatInfo" data-key="sound" data-id="${b.id}" data-flash="sound-${b.id}"><small>Sound</small><b>${fmt1(b.sound)}</b></div>
-      <div data-act="bandStatInfo" data-key="fame" data-id="${b.id}"><small>Ruhm</small><b>${esc(cat().fameNames[steps(b.fame, cat().rules.fameLevels)])}</b></div>
+      ${coreOn() ? coreValueTiles(b) : `<div data-act="bandStatInfo" data-key="fame" data-id="${b.id}"><small>Ruhm</small><b>${esc(cat().fameNames[steps(b.fame, cat().rules.fameLevels)])}</b></div>`}
       ${solo || !b.mood.togetherness ? '' : `<div data-act="bandStatInfo" data-key="together" data-id="${b.id}"><small>Zusammenhalt</small><b>${signed1(b.mood.togetherness.value)}</b></div>`}
       <div><small>Stimmung</small><b>${fmt0(b.mood.value)}</b></div>
     </div>
@@ -1007,7 +1016,14 @@ defineActions({
   },
   gigAsk({ id }) {
     const b = bandById(id);
-    if (b) openGigs(b);
+    if (b) coreOn() ? openCoreGig(b) : openGigs(b);
+  },
+  coreInfo({ key, id }) {
+    const b = bandById(id);
+    if (!b?.core) return;
+    const modal = openModal({ html: `<div class="eyebrow">Band</div><h2>${key === 'hype' ? 'Hype' : 'Fans'}</h2><p>${esc(coreInfoText(b, key))}</p>
+      <div class="dialog-actions"><button class="btn primary" data-close>OK</button></div>` });
+    modal.body.querySelector('[data-close]').addEventListener('click', () => modal.close());
   },
   async roomUpgrade({ id }) {
     const b = bandById(id);

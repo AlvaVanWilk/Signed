@@ -1,4 +1,4 @@
-import { app, bandById, mutate, musicianById } from './core.js';
+import { app, bandById, cat, mutate, musicianById } from './core.js';
 import { esc, fmt0, money, openModal } from './ui.js';
 import { crowdMeter, venueArt } from './venues.js';
 import { startTour, tourTab } from './tour.js';
@@ -48,7 +48,18 @@ export function writeModeRow(b) {
   const mode = b.core?.writeMode ?? 'normal';
   return `<div class="cf-write"><small class="lb-cap">Songs schreiben</small>
     <div class="tabs">${WRITE_MODES.map(([key, label, text]) => `<button class="tab ${key === mode ? 'active' : ''}" data-act="bandWriteMode" data-id="${b.id}" data-mode="${key}" title="${esc(text)}">${label}</button>`).join('')}</div>
-    <small class="muted">${esc(WRITE_MODES.find(([key]) => key === mode)?.[2] ?? '')}</small></div>`;
+    <small class="muted">${esc(WRITE_MODES.find(([key]) => key === mode)?.[2] ?? '')}</small></div>${songStock(b)}`;
+}
+
+/** Songs im Vorrat mit ihrer Qualität (beste zuerst). Das Label kann einen ablehnen: Das macht Platz für einen neuen. */
+function songStock(b) {
+  const stock = b.core?.stock ?? [];
+  if (!stock.length) return '';
+  const cap = cat().rules.songCap ?? 24;
+  return `<div class="cf-stock"><small class="lb-cap">Songs im Vorrat <span class="muted">${stock.length} von ${cap}</span></small>
+    <div class="rc-songs">${stock.map((x) => `<span class="rc-song on cf-song" title="Qualität ${fmt0(x.quality)}"><i style="--q:${Math.round(x.quality)}"></i><b>${fmt0(x.quality)}</b>
+      <button class="cf-reject" data-act="songReject" data-id="${b.id}" data-song="${x.id}" title="Ablehnen" aria-label="Song ablehnen">✕</button></span>`).join('')}</div>
+    <small class="muted">Mit ✕ lehnst du einen Song ab. Das macht Platz für neue: Mehr als ${cap} passen nicht in den Vorrat.</small></div>`;
 }
 
 /** Warum heute so viele oder so wenige kommen (das i neben dem Knopf). */

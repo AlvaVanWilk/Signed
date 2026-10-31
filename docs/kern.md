@@ -114,12 +114,15 @@ Verdienst         = Zuschauer × 5 / 6 / 9 / 12 ₲ nach Ruhmstufe
   P = Produktionsstufe / Ruhmstufe (höchstens 1, bei Stufe 0 immer 1), E = min(1; Wohlbefinden / 60).
   So kann jede Band in jeder Phase perfekt aufnehmen. Die Erwartung ist so gewählt, dass eine Zweierband mit einer Probe am Tag mithält.
 - **Produktion** (Studio und Produzent zusammen): 0 Garage mit Mo Beats 300 ₲, 1 Tonstudio mit Roxy Reverb 2.000 ₲,
-  2 Profi-Studio mit Diamond Dee 8.000 ₲, 3 Legendäres Studio mit Ruben Stille 30.000 ₲. Unter der Ruhmstufe ärgert sich die Band,
-  darüber freut sie sich; mit Ruben Stille sind alle entspannt.
+  2 Profi-Studio mit Diamond Dee 8.000 ₲, 3 Legendäres Studio mit Ruben Stille 30.000 ₲. Wie Bühnen und Tournee gibt es die besseren
+  Studios erst ab der passenden Ruhmstufe: Tonstudio ab 500 Fans, Profi-Studio ab 5.000, Legendäres Studio ab 50.000. Darunter ärgert sich
+  die Band; mit Ruben Stille sind alle entspannt.
 
 ### Songs
 
-- Jeder Song kommt einzeln mit eigener Qualität in den Vorrat (`songs`).
+- Jeder Song kommt einzeln mit eigener Qualität in den Vorrat (`songs`). Der Vorrat fasst höchstens 24 (`MOOD['songCap']`); ab 12 wird die
+  Band ungeduldig (Songstau). Auf der Bandseite steht der Vorrat mit der Qualität jedes Songs; das Label kann einen ablehnen (✕), das macht
+  Platz für einen neuen (`SongStock::reject`).
 - Songs je Tag = 1,2 × (1 + 1,2 × (n − 1) / (n + 1)) × Regler × Stimmung × Tätigkeit × Genre × Coach.
   n = Songschreiber (je Mitglied 1, Kreativ 1,5, Chaot 1,2, Perfektionist 0,8, Technisch 0); Regler schnell 1,5 / normal 1 / sorgfältig 0,67;
   Stimmung grün 1 / gelb 0,5 / rot 0; Tätigkeit im Studio und beim Auftritt 0, beim Proben 0,6, sonst 1; Genre-Band 1 / Hybrid 0,85 /

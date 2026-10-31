@@ -1,9 +1,6 @@
 import { api } from '../api.js';
-import { genreTag, musicianCard } from '../cards.js';
 import { app, cat, defineActions, navigate, rerender } from '../core.js';
-import { stage } from '../figure.js';
 import { coverHtml } from '../play.js';
-import { loadStems, playStems, stemUrl } from '../music.js';
 import { esc, fmt0, fmt1, fmtGain, openModal, toast } from '../ui.js';
 import { flame } from '../core-ui.js';
 
@@ -155,75 +152,6 @@ function labels(list) {
     </table>`;
 }
 
-/** So lange läuft „Anhören“: ein Durchgang der Aufnahmen. */
-const LISTEN_SECONDS = 24;
-
-/** Eine Band ansehen – auch die anderer Labels – und reinhören, wie sie klingt. */
-async function openBandView(id) {
-  let band;
-  try {
-    band = await api('bandView', { bandId: Number(id) });
-  } catch (e) {
-    toast(e.message, 'error');
-    return;
-  }
-  let player = null;
-  let timer = 0;
-  const stop = () => {
-    clearTimeout(timer);
-    player?.stop();
-    player = null;
-    modal?.body.querySelector('.fig-stage')?.classList.add('idle');
-  };
-  const modal = openModal({
-    wide: true,
-    onClose: stop,
-    html: `
-      <div class="eyebrow">${esc(band.label)}</div>
-      <h2>${esc(band.name)}</h2>
-      <p class="muted">${[...band.genres.map(genreTag), band.title ? `<span class="chip special">${esc(band.title)}</span>` : '', band.fans != null ? `<b>${fmt0(band.fans)}</b> Fans` : `Ruhm <b>${fmt1(band.fame)}</b>`].filter(Boolean).join(' ')}</p>
-      <div class="dialog-actions" style="justify-content:flex-start;margin-bottom:14px">
-        <button class="btn primary" data-listen>▶ Anhören</button>
-        ${band.own ? `<button class="btn" data-goto>Zur Band</button>` : ''}
-      </div>
-      ${stage(band.members, { bpm: cat().genres[band.genres[0] ?? band.members[0]?.genres[0]]?.bpm ?? 120, className: 'idle', electricOf: (m) => /elektrisch/.test(stemUrl(m.stem) ?? '') })}
-      <div class="tcg-grid">${band.members.map((m) => musicianCard(m, { act: null, showStatus: false })).join('')}</div>
-      ${band.records.length ? `<h3>Platten</h3>
-        <ul class="history">${band.records.map((r) => `
-          <li><span class="chart-record"><span class="cover-thumb">${coverHtml(r.cover)}</span>„${esc(r.title)}“ · ${r.songs} Lieder${r.perfect ? ' · perfekt' : ''}</span><span class="muted">${r.best ? `bester Platz ${r.best}` : ''}</span></li>`).join('')}
-        </ul>` : ''}`,
-  });
-  const button = modal.body.querySelector('[data-listen]');
-  const stageEl = modal.body.querySelector('.fig-stage');
-  modal.body.querySelector('[data-goto]')?.addEventListener('click', () => {
-    modal.close();
-    navigate(`#/band/${band.id}`);
-  });
-  button.addEventListener('click', async () => {
-    if (player) {
-      stop();
-      button.textContent = '▶ Anhören';
-      return;
-    }
-    button.disabled = true;
-    button.textContent = 'Lädt …';
-    const stems = await loadStems(band.members.map((m) => [m.stem]));
-    button.disabled = false;
-    if (!stems || modal.closed) {
-      button.textContent = stems ? '▶ Anhören' : 'Noch keine Aufnahme';
-      button.disabled = !stems;
-      return;
-    }
-    player = playStems(stems, 0);
-    stageEl.classList.remove('idle');
-    button.textContent = '■ Stopp';
-    timer = setTimeout(() => {
-      stop();
-      button.textContent = '▶ Anhören';
-    }, LISTEN_SECONDS * 1000);
-  });
-}
-
 defineActions({
   chartHeadInfo({ key }) {
     const [, title, text] = HEADS[key];
@@ -231,8 +159,9 @@ defineActions({
       <div class="dialog-actions"><button class="btn primary" data-close>OK</button></div>` });
     modal.body.querySelector('[data-close]').addEventListener('click', () => modal.close());
   },
+  /** Eine Band aus den Charts: die eigene auf ihrer Bandseite, andere in der WikiSignia. */
   viewBand({ id }) {
-    return openBandView(id);
+    navigate(app.state?.bands?.some((b) => b.id === Number(id)) ? `#/band/${id}` : `#/wiki/band/${id}`);
   },
   chartsTab({ tab }) {
     app.ui.chartsTab = tab;

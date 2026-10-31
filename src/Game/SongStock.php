@@ -65,6 +65,23 @@ final class SongStock
         return array_map(static fn ($id) => $byId[$id], $ids);
     }
 
+    /**
+     * Das Label lehnt einen Song ab: Er fliegt aus dem Vorrat und macht Platz für einen neuen (der Vorrat ist begrenzt, und ein voller
+     * Vorrat macht die Band ungeduldig). Der Zähler bands.songs_written sinkt mit.
+     */
+    public static function reject(Repo $repo, int $bandId, int $songId): void
+    {
+        $repo->band($bandId);
+        $db = $repo->db;
+        $db->transaction(static function () use ($db, $bandId, $songId): void {
+            if ($db->exec('DELETE FROM songs WHERE id = ? AND band_id = ? AND record_id IS NULL', [$songId, $bandId]) === 0) {
+                throw new \Signed\ApiError('Diesen Song gibt es im Vorrat nicht mehr.');
+            }
+            $db->exec('UPDATE bands SET songs_written = CASE WHEN songs_written >= 1 THEN songs_written - 1 ELSE 0 END WHERE id = ?', [$bandId]);
+            $db->exec('UPDATE bands SET coached_songs = songs_written WHERE id = ? AND coached_songs > songs_written', [$bandId]);
+        });
+    }
+
     /** Songs gehören jetzt zur Platte. */
     public static function assign(Db $db, int $bandId, array $ids, int $recordId): void
     {

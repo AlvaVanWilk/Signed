@@ -1022,6 +1022,10 @@ defineActions({
     const b = bandById(id);
     if (b) coreOn() ? openCoreGig(b) : openGigs(b);
   },
+  /** Das Label lehnt einen Song ab (Platz für neue). */
+  async songReject({ id, song }) {
+    if (await mutate('songReject', { bandId: Number(id), songId: Number(song) })) toast('Song abgelehnt. Jetzt ist Platz für einen neuen.', 'ok');
+  },
   async bandWriteMode({ id, mode }) {
     if (bandById(id)?.core?.writeMode !== mode) await mutate('bandWriteMode', { bandId: Number(id), mode });
   },

@@ -188,6 +188,7 @@ final class Present
                 'startMoney' => BandCore::$live ? Balance::CORE_MONEY['start'] : Balance::START_MONEY,
                 'songSeconds' => Balance::SONG_SECONDS,
                 'liveSongSeconds' => Balance::LIVE_SONG_SECONDS,
+                'songCap' => Balance::MOOD['songCap'],
                 'minMembers' => Balance::MIN_MEMBERS,
                 'maxMembers' => Balance::MAX_MEMBERS,
                 'maxPerInstrument' => Balance::MAX_PER_INSTRUMENT,

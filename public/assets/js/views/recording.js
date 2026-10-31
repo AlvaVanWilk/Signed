@@ -188,6 +188,12 @@ function coreDialogHtml(b, data) {
     <h3 class="rc-h">Produktion</h3>
     <div class="rc-cards">${lv.map((o) => {
     const q = coreQuality(data, o.level).q;
+    // Bessere Studios gibt es erst ab der passenden Ruhmstufe (grau, antippen sagt ab wann).
+    if (o.locked) {
+      return `<button class="rc-card rc-prod locked" data-r="level" data-v="${o.level}" ${off(`${o.studio} gibt es ab ${fmt0(o.from)} Fans.`)}>
+        <span class="rc-pic">${producerFigure(o.level === 3 ? 'legend' : ['mo', 'roxy', 'diamond'][o.level])}</span>
+        <b>${esc(o.studio)}</b><small>mit ${esc(o.producer)}</small><small>ab ${fmt0(o.from)} Fans</small></button>`;
+    }
     return `<button class="rc-card rc-prod ${pick.level === o.level ? 'on' : ''} ${o.fits ? 'fits' : ''}" data-r="level" data-v="${o.level}">
         <span class="rc-pic">${producerFigure(o.level === 3 ? 'legend' : ['mo', 'roxy', 'diamond'][o.level])}</span>
         <b>${esc(o.studio)}</b><small>mit ${esc(o.producer)}</small><small>${free(o) ? 'umsonst (Gutschein vom Battle)' : money(o.cost)} · Q ${fmt0(q)}${q >= data.perfectFrom ? ' · perfekt' : ''}</small>${o.fits ? '<em class="rc-fits">passt zur Ruhmstufe</em>' : ''}</button>`;
@@ -359,7 +365,7 @@ async function coreRecordAsk(bandId) {
         break;
       }
       case 'level':
-        pick.level = Number(v);
+        if (!data.quality.levels[Number(v)]?.locked) pick.level = Number(v);
         break;
       case 'cover':
         pick.cover = Number(v);

@@ -31,6 +31,7 @@ use Signed\Game\Prizes;
 use Signed\Game\Repo;
 use Signed\Game\Scout;
 use Signed\Game\Scouting;
+use Signed\Game\SongStock;
 use Signed\Game\Submissions;
 use Signed\Game\State;
 use Signed\Game\Store;
@@ -120,6 +121,7 @@ final class Api
         'inboxSeen' => ['POST', true],
         'postMove' => ['POST', true],
         'postSortAll' => ['POST', true],
+        'songReject' => ['POST', true],
         'scoutSend' => ['POST', true],
         'scoutReportSign' => ['POST', true],
         'practiceAuto' => ['POST', true],
@@ -597,6 +599,13 @@ final class Api
     private function postMove(array $in, Repo $repo): array
     {
         (new Post($repo))->move(self::str($in, 'table'), self::int($in, 'id'), self::str($in, 'box'));
+        return ['state' => State::build($repo)];
+    }
+
+    /** Das Label lehnt einen Song aus dem Vorrat einer Band ab (macht Platz für neue). */
+    private function songReject(array $in, Repo $repo): array
+    {
+        SongStock::reject($repo, self::int($in, 'bandId'), self::int($in, 'songId'));
         return ['state' => State::build($repo)];
     }
 

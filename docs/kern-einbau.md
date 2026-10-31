@@ -49,5 +49,6 @@ laufen mit Schalter aus (`tests/support.php` setzt ihn vor jedem Test zurück) u
   `Charts`, `Inbox`, `Festival`, `Battle`, `Bands`, `Tours`, `Gigs`, `BandCalc` (Ruhm, Gage, Tantiemen, Promo), die alten Tests in
   `tests/FlowTest.php` und `tests/RulesTest.php`, `Balance`-Werte des alten Spiels.
 - **Alte Seiten:** Die Unterseiten einer Band (`#/band/…/auftritte`, `/promo`, `/studio`) und die Musikerseite (`#/musician/…`) sind nicht
-  mehr verlinkt, aber per Adresse noch erreichbar und zeigen teils alte Texte; was dort nicht mehr geht, lehnt der Server ab.
+  mehr verlinkt, aber per Adresse noch erreichbar und zeigen teils alte Texte; was dort nicht mehr geht, lehnt der Server ab. Die alte
+  Bandansicht mit Karten (Aktion `bandView`) ruft niemand mehr auf: Aus den Charts geht es zur eigenen Bandseite oder in die WikiSignia.
 - **Aufräumen:** `records.money_reward`, `records.fame_reward`, `records.rank_hour` und `bands.promo_record_id` werden nicht mehr gebraucht.

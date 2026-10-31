@@ -177,6 +177,8 @@ final class BandCore
             'flame' => Core\Hype::flame($hype),
             'fresh' => round(Core\Concert::freshness($career['fresh'], $career['lastGig'], $now), 3),
             'writeMode' => $band['write_mode'] ?? 'normal',
+            // Songs im Vorrat mit ihrer Qualität (beste zuerst), zum Ansehen und Ablehnen auf der Bandseite
+            'stock' => SongStock::stock($db, (int) $band['id']),
             'gig' => [
                 'tickets' => (int) round($preview['tickets']),
                 'demand' => (int) round($preview['demand']),

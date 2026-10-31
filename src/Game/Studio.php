@@ -189,6 +189,9 @@ final class Studio
                 'perfect' => Core\Quality::isPerfect($q),
                 'fits' => $level === $stage,
                 'claim' => $level - $stage,
+                // Wie Bühnen und Tournee: bessere Studios erst ab der passenden Ruhmstufe (Tonstudio ab 500 Fans …)
+                'locked' => $level > $stage,
+                'from' => (int) Balance::CORE_STAGES[$level],
             ];
         }
         return ['stage' => $stage, 'sound' => round($sound, 3), 'songs' => round($songShare, 3), 'mood' => round($mood, 3), 'levels' => $levels];
@@ -248,6 +251,9 @@ final class Studio
             }
             $songs = SongStock::pick($db, $bandId, $songIds);
             $parts = self::coreQuality($this->repo, $band, $members, $this->repo->gearByMusician(), $songs);
+            if ($parts['levels'][$level]['locked']) {
+                throw new ApiError(sprintf('%s: erst ab %s Fans.', Balance::STUDIOS[$production['studio']]['name'], number_format(Balance::CORE_STAGES[$level], 0, ',', '.')));
+            }
             $quality = $parts['levels'][$level]['quality'];
             $studio = Balance::STUDIOS[$production['studio']];
             $p = Balance::PRODUCERS[$production['producer']];

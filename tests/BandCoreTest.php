@@ -231,6 +231,9 @@ test('Kern im Spiel: Aufnehmen mit 12 Songs und einer Produktionsstufe, danach b
     $best = array_slice(array_map(static fn ($i) => 50 + $i * 3, range(13, 0, -1)), 0, 12);
     coreNear(array_sum($best) / 12 / 100, $opts['quality']['songs'], 1e-6, 'Songs: Durchschnitt der besten 12');
     checkEquals(1.0, (float) $opts['quality']['levels'][0]['production'], 'Bei Ruhmstufe 0 ist die Garage passend');
+    checkEquals([false, true, true, true], array_column($opts['quality']['levels'], 'locked'), 'Bessere Studios erst ab der passenden Ruhmstufe');
+    checkEquals([0, 500, 5000, 50000], array_column($opts['quality']['levels'], 'from'));
+    checkApiError(fn () => $p->post('recordStart', ['bandId' => $band['id'], 'title' => 'Zu früh', 'level' => 1, 'songIds' => $opts['picked'], 'cover' => $opts['covers'][0]]), 'erst ab 500 Fans');
     $money = (int) $db->value('SELECT money FROM labels WHERE id = ?', [$repo->labelId]);
     $p->post('recordStart', ['bandId' => $band['id'], 'title' => 'Neuland', 'level' => 0, 'songIds' => $opts['picked'], 'cover' => $opts['covers'][0]]);
     checkEquals($money - 300 - Signed\Game\Balance::COVER_DESIGNERS['student']['fee'], (int) $db->value('SELECT money FROM labels WHERE id = ?', [$repo->labelId]));
@@ -246,6 +249,24 @@ test('Kern im Spiel: Aufnehmen mit 12 Songs und einer Produktionsstufe, danach b
     coreNear((float) $done['quality'] * 100, json_decode($record['core'], true)['quality'], 1e-6, 'Kern rechnet mit derselben Qualität');
     checkEquals(0, (int) $db->value('SELECT COUNT(*) FROM ledger WHERE label_id = ? AND text LIKE ?', [$repo->labelId, 'Erstverkauf%']), 'Kein Erstverkauf mehr');
     check(bandById($state, $band['id'])['core']['record'] !== null, 'Spielstand zeigt die neue Platte');
+});
+
+test('Kern im Spiel: Das Label lehnt Songs ab – Platz für neue, nur aus dem eigenen Vorrat', function () {
+    [$db, $p, $repo, $band] = coreLabel();
+    foreach ([40, 70, 55] as $q) {
+        $db->insert('songs', ['label_id' => $repo->labelId, 'band_id' => $band['id'], 'quality' => $q, 'record_id' => null, 'created_at' => Clock::now()]);
+    }
+    $db->exec('UPDATE bands SET songs_written = 3.4 WHERE id = ?', [$band['id']]);
+    $stock = bandById($p->get('state'), $band['id'])['core']['stock'];
+    checkEquals([70.0, 55.0, 40.0], array_map('floatval', array_column($stock, 'quality')), 'Vorrat mit Qualität, beste zuerst');
+    $state = $p->post('songReject', ['bandId' => $band['id'], 'songId' => $stock[2]['id']])['state'];
+    checkEquals([70.0, 55.0], array_map('floatval', array_column(bandById($state, $band['id'])['core']['stock'], 'quality')), 'Der schwächste ist weg');
+    coreNear(2.4, (float) $db->value('SELECT songs_written FROM bands WHERE id = ?', [$band['id']]), 1e-6, 'Platz für einen neuen');
+    checkEquals(2, bandById($state, $band['id'])['mood']['songs'], 'Zähler auf der Bandseite');
+    checkApiError(fn () => $p->post('songReject', ['bandId' => $band['id'], 'songId' => $stock[2]['id']]), 'nicht mehr');
+    $other = registerPlayer($db, 'Fremd');
+    checkApiError(fn () => $other->post('songReject', ['bandId' => $band['id'], 'songId' => $stock[0]['id']]), '');
+    checkEquals(2, (int) $db->value('SELECT COUNT(*) FROM songs WHERE band_id = ? AND record_id IS NULL', [$band['id']]), 'Fremde können nichts ablehnen');
 });
 
 test('Kern im Spiel: Charts nach den Verkäufen der letzten 24 Stunden', function () {

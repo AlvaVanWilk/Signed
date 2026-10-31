@@ -277,7 +277,7 @@ Alles liegt im **Eingang**; in die Fächer kommt es, wenn jemand sortiert. Von H
 
 | je Tag            | Start | Zuwachs | bei Label-Ruhm 100 | 1.000 | 10.000 |
 |-------------------|------:|--------:|------:|------:|-------:|
-| Kassetten         |     8 |     1,8 |    26 |    65 |    188 |
+| Kassetten         |    24 |     1,8 |    42 |    81 |    204 |
 | Praktikum         |   0,4 |    0,02 |   0,6 |   1,0 |    2,4 |
 | Manager           |   0,3 |   0,019 |   0,5 |   0,9 |    2,2 |
 | Scout             |   0,2 |   0,014 |   0,3 |   0,6 |    1,6 |
@@ -294,9 +294,9 @@ Erfolg, bewerben sich mehr Musiker mit ähnlichen Genres. Interview-Anfragen ric
   daliegt, das Neueste zuerst; abbrechen geht jederzeit. Nach den 7 Tagen fragt es „Darf ich bleiben?“: für 400 ₲ als Assistenz übernehmen
   oder verabschieden.
 - **Assistenz** (400 ₲): hat **ein Arbeitsgebiet** und arbeitet darin laufend von selbst, Stück für Stück und so schnell wie man selbst, auch offline:
-  **Post** (auspacken und in die Fächer legen, meldet, was bald abläuft), **Kassetten** (anhören, in Genre-Reiter legen, nach Regel wegwerfen,
-  Suchauftrag: Instrument, Genre, ab Stufe) oder **Büro** (Bewerbungen, Anfragen und Berichte lesen, auf der Übersicht davon erzählen, auf Wunsch
-  Interviews zusagen). Mit Assistenz gibt es Unterreiter und Sortieren.
+  **Post** (auspacken und in die Fächer legen, meldet, was bald abläuft), **Kassetten** (anhören und ins Fach „Demos“ legen, dort in
+  Genre-Reiter, nach Regel wegwerfen, Suchauftrag: Instrument, Genre, ab Stufe) oder **Büro** (Bewerbungen, Anfragen und Berichte lesen, auf der
+  Übersicht davon erzählen, auf Wunsch Interviews zusagen). Mit Assistenz gibt es Unterreiter und Sortieren.
 - **Poststelle:** Oben im Posteingang eine Szene: Praktikum und Assistenzen stehen am Schreibtisch, halten, woran sie gerade sitzen, tragen
   beim Anhören Kopfhörer, langweilen sich ohne Aufgabe. Antippen öffnet ihre Sprechblase mit Zurufen und Einstellungen.
 

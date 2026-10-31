@@ -208,7 +208,7 @@ test('Jam-Café: drei passende Musiker zur Auswahl, einer gründet mit dem Gastg
 
     $jam = function () use ($p, $m): array {
         $p->post('soloStart', ['musicianId' => $m['id'], 'type' => 'jam']);
-        Clock::advance(Balance::JAM['songs'] * Balance::SONG_SECONDS);
+        Clock::advance(Balance::JAM['songs'] * Balance::LIVE_SONG_SECONDS);
         $state = $p->get('state');
         checkEquals(1, count($state['musicians']), 'Niemand unterschreibt von allein');
         checkEquals(1, count($state['jamOffers']));
@@ -350,7 +350,7 @@ test('Notgroschen: Reicht das Geld nicht für eine Platte, bringt Straßenmusik 
     $band = foundBand($p);
     $db->exec('UPDATE labels SET money = 10');
     $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'busking']);
-    Clock::advance(Balance::BUSKING['songs'] * Balance::SONG_SECONDS);
+    Clock::advance(Balance::BUSKING['songs'] * Balance::LIVE_SONG_SECONDS);
     $state = $p->get('state');
     $hat = $state['results'][0]['result']['money'];
     check($hat >= Balance::BUSKING_HAT[0] && $hat <= Balance::BUSKING_HAT[1], "Hut: $hat");
@@ -360,7 +360,7 @@ test('Notgroschen: Reicht das Geld nicht für eine Platte, bringt Straßenmusik 
     $solo = $band['memberIds'][0];
     $p->post('bandRemoveMember', ['bandId' => $band['id'], 'musicianId' => $solo]);
     $p->post('soloStart', ['musicianId' => $solo, 'type' => 'busking']);
-    Clock::advance(Balance::BUSKING['songs'] * Balance::SONG_SECONDS);
+    Clock::advance(Balance::BUSKING['songs'] * Balance::LIVE_SONG_SECONDS);
     check($p->get('state')['label']['money'] > 10 + $hat, 'Solo-Straßenmusik füllt auch den Hut');
 });
 
@@ -372,13 +372,13 @@ test('Straßenmusik bringt dem Label kein Geld, aber Präsenz; sperrt die Band b
 
     $res = $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'busking']);
     $activity = $res['activity'];
-    checkEquals(Balance::BUSKING['songs'] * Balance::SONG_SECONDS, $activity['endsAt'] - $activity['startedAt']);
+    checkEquals(Balance::BUSKING['songs'] * Balance::LIVE_SONG_SECONDS, $activity['endsAt'] - $activity['startedAt']);
     check(count($activity['timeline']) >= Balance::BUSKING['songs'] * 2, 'Live-Ticker hat Ereignisse');
     checkApiError(fn () => $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'openstage']), 'beschäftigt');
     checkApiError(fn () => $p->post('bandRemoveMember', ['bandId' => $band['id'], 'musicianId' => $band['memberIds'][0]]), 'beschäftigt');
     checkEquals($money, $p->get('state')['label']['money'], 'Geld erst nach dem Auftritt');
 
-    Clock::advance(Balance::BUSKING['songs'] * Balance::SONG_SECONDS);
+    Clock::advance(Balance::BUSKING['songs'] * Balance::LIVE_SONG_SECONDS);
     $state = $p->get('state');
     checkEquals(1, count($state['results']));
     $result = $state['results'][0]['result'];
@@ -467,7 +467,7 @@ test('Platte produzieren, dann Gigs spielen, dann die nächste Platte', function
         check(str_contains((string) bandById($p->get('state'), $band['id'])['record']['blocker'], 'live'));
         $gig = $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'gig', 'songs' => 3])['activity'];
         check(str_starts_with($gig['title'], 'Gig: '));
-        Clock::advance(3 * Balance::SONG_SECONDS);
+        Clock::advance(3 * Balance::LIVE_SONG_SECONDS);
     }
     $state = $p->get('state');
     $band = bandById($state, $band['id']);
@@ -761,7 +761,7 @@ test('Namensänderung: immer kostenlos; mit Laufbahn geht der Ruhm am Namen verl
     checkEquals(0, count(array_filter(wikiOwn($p)['bands'], static fn ($b) => $b['status'] === 'former')), 'ohne Laufbahn bleibt nichts zurück');
 
     $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'busking']);
-    Clock::advance(Balance::BUSKING['songs'] * Balance::SONG_SECONDS);
+    Clock::advance(Balance::BUSKING['songs'] * Balance::LIVE_SONG_SECONDS);
     $db->exec('UPDATE bands SET fame_own = 12, records = 1 WHERE id = ?', [$band['id']]);
     $db->exec("INSERT INTO records (label_id, band_id, title, songs_total, songs_done, song_results, status, created_at, finished_at) VALUES (?, ?, 'Erste', 3, 3, '[]', 'done', ?, ?)", [$band['labelId'] ?? 1, $band['id'], Clock::now(), Clock::now()]);
     $money = $p->get('state')['label']['money'];
@@ -869,7 +869,7 @@ test('Promo lässt sich abbrechen: sofort wieder frei, ohne Belohnung', function
     // Band-Promo genauso; Auftritte lassen sich nicht abbrechen.
     $gig = $p->get('state')['running'][0];
     checkApiError(fn () => $p->post('promoCancel', ['activityId' => $gig['id']]), 'läuft nicht mehr');
-    Clock::advance(Balance::BUSKING['songs'] * Balance::SONG_SECONDS);
+    Clock::advance(Balance::BUSKING['songs'] * Balance::LIVE_SONG_SECONDS);
     $activity = $p->post('bandPromo', ['bandId' => $band['id']])['activity'];
     $fame = $db->value('SELECT SUM(fame) FROM musicians');
     $p->post('promoCancel', ['activityId' => $activity['id']]);
@@ -929,7 +929,7 @@ test('Gigs: Die Band spielt immer ihre neueste Platte – Gigs schieben diese an
     $promoted = static fn ($state) => array_column(array_filter(bandById($state, $band['id'])['discography'], static fn ($r) => $r['promoted']), 'title');
     checkEquals(['Neu'], $promoted($p->get('state')));
     $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'gig', 'songs' => 3]);
-    Clock::advance(3 * Balance::SONG_SECONDS);
+    Clock::advance(3 * Balance::LIVE_SONG_SECONDS);
     $p->get('state');
     check((float) $db->value('SELECT boost FROM records WHERE id = ?', [$ids['Neu']]) > 0, 'Gig schiebt die neueste Platte');
     checkEquals(0.0, (float) $db->value('SELECT boost FROM records WHERE id = ?', [$ids['Alt']]));
@@ -1104,7 +1104,7 @@ test('Jam-Café: Wer darüber eine Band gegründet hat, kann nicht noch einmal h
     $offer = $p->post('scoutOpen', ['voucher' => true])['offer'];
     $m = $p->post('scoutPick', ['offerId' => $offer['id'], 'index' => 0])['musician'];
     $p->post('soloStart', ['musicianId' => $m['id'], 'type' => 'jam']);
-    Clock::advance(Balance::JAM['songs'] * Balance::SONG_SECONDS);
+    Clock::advance(Balance::JAM['songs'] * Balance::LIVE_SONG_SECONDS);
     $offer = $p->get('state')['jamOffers'][0];
     $res = $p->post('jamPick', ['offerId' => $offer['id'], 'index' => 0, 'name' => 'Eintagsfliege']);
     $state = $p->post('bandDisband', ['bandId' => $res['bandId']])['state'];
@@ -1429,8 +1429,8 @@ test('Einsendungen: Willkommens-Stapel, laufender Eingang, Unterschreiben kostet
 
 test('Einsendungen: Menge und Güte wachsen mit dem Erfolg des Labels', function () {
     // Fließend: 8 + 1,8 × √Erfolg, ohne Stufen und ohne Obergrenze.
-    checkEquals(8.0, Signed\Game\Submissions::perDay(0));
-    checkEquals(8.0 + 1.8 * 20, Signed\Game\Submissions::perDay(400));
+    checkEquals(24.0, Signed\Game\Submissions::perDay(0));
+    checkEquals(24.0 + 1.8 * 20, Signed\Game\Submissions::perDay(400));
     check(Signed\Game\Submissions::perDay(20000) > Signed\Game\Submissions::perDay(5000), 'wächst immer weiter');
     check(Signed\Game\Submissions::goodShare(5000) > Signed\Game\Submissions::goodShare(0) * 4);
     $cheap = Signed\Game\Submissions::price(['skill1' => 25.0, 'skill2' => null, 'fame' => 0.0]);
@@ -1851,7 +1851,7 @@ test('Auftritt buchen: Orte mit Kosten und Gewinn-Schätzung, Gage liegt in der 
     $money = 0;
     $res = $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'gig', 'venue' => 'kneipe']);
     checkEquals(0, $res['state']['label']['money'], 'nichts vorher');
-    Clock::advance($kneipe['songs'] * Balance::SONG_SECONDS + 5);
+    Clock::advance($kneipe['songs'] * Balance::LIVE_SONG_SECONDS + 5);
     $after = $p->get('state');
     $gage = $after['label']['money'] - ($money - $kneipe['cost']);
     check($after['label']['money'] >= 0, 'nie im Minus');
@@ -2090,12 +2090,15 @@ test('Posteingang: Bewerber werden mit dem Erfolg besser (gesättigt); Assistenz
     checkEquals('listen', $state['assistant']['staff'][0]['doing'], 'sitzt an der nächsten');
     Clock::advance(3600);
     $state = $p->get('state');
-    checkEquals([], array_values(array_filter($state['submissions'], static fn ($s) => $s['state'] !== 'open')), 'alle bearbeitet');
-    check(count($state['submissions']) >= 2, 'die guten bleiben');
-    foreach ($state['submissions'] as $s) {
+    // Neu Angekommenes liegt noch im Umschlag (die Kassetten-Assistenz packt nicht aus); geprüft wird, was schon offen war.
+    $heard = array_values(array_filter($state['submissions'], static fn ($s) => $s['state'] !== 'envelope'));
+    checkEquals([], array_values(array_filter($heard, static fn ($s) => $s['state'] !== 'open')), 'alle bearbeitet');
+    check(count($heard) >= 2, 'die guten bleiben');
+    foreach ($heard as $s) {
         $level = max(array_map(static fn ($m) => max(array_map(static fn ($i) => Signed\Game\Levels::forSkill($i['skill']), $m['instruments'])), $s['members'] ?? [$s]));
         check($level >= 2, 'nur ab Stufe 2 geblieben');
         check($s['filed'], 'in den Genre-Unterreitern');
+        check($s['sorted'], 'und damit im Fach Demos, nicht im Eingang');
     }
     check($state['assistant']['today']['dropped'] >= 8, 'aussortiert: ' . $state['assistant']['today']['dropped']);
     checkEquals(null, $state['assistant']['staff'][0]['doing'], 'nichts mehr da');
@@ -2123,9 +2126,10 @@ test('Posteingang: Bewerber werden mit dem Erfolg besser (gesättigt); Assistenz
     $db->exec('DELETE FROM submissions');
     (new Signed\Game\Submissions($repo))->testClosed();
     $db->exec('UPDATE submissions SET unpacked_at = NULL, sorted_at = NULL');
+    $closed = array_map('intval', array_column($db->all('SELECT id FROM submissions'), 'id'));
     Clock::advance(3600);
     $state = $p->get('state');
-    checkEquals(7, count(array_filter($state['submissions'], static fn ($s) => $s['state'] === 'envelope')), 'alles noch zu');
+    checkEquals(7, count(array_filter($state['submissions'], static fn ($s) => $s['state'] === 'envelope' && in_array($s['submissionId'], $closed, true))), 'alles noch zu');
     // Eine zweite für die Post: packt aus und legt in die Reiter, danach hört die erste an.
     $state = $p->post('mailTest')['state'];
     $second = array_values(array_filter($state['mail'], static fn ($m) => $m['kind'] === 'job' && $m['role'] === 'assistant'))[0];
@@ -2134,8 +2138,11 @@ test('Posteingang: Bewerber werden mit dem Erfolg besser (gesättigt); Assistenz
     checkApiError(fn () => $p->post('assistTask', ['staffId' => $staffId, 'task' => 'kaffee']), 'Aufgabe');
     Clock::advance(3600);
     $state = $p->get('state');
-    checkEquals([], array_values(array_filter([...$state['submissions'], ...$state['mail']], static fn ($s) => in_array($s['state'] ?? '', ['envelope', 'unpacking'], true) || !$s['sorted'])), 'ausgepackt und einsortiert');
-    checkEquals([], array_values(array_filter($state['submissions'], static fn ($s) => $s['state'] !== 'open')), 'und angehört');
+    checkEquals([], array_values(array_filter([...$state['submissions'], ...$state['mail']], static fn ($s) => (in_array($s['state'] ?? '', ['envelope', 'unpacking'], true) || !$s['sorted']) && $s['createdAt'] < Clock::now() - 600)), 'ausgepackt und einsortiert');
+    // Was gerade erst ankam oder eben erst ausgepackt wurde, hört sie beim nächsten Abruf an.
+    Clock::advance(30);
+    $state = $p->get('state');
+    checkEquals([], array_values(array_filter($state['submissions'], static fn ($s) => $s['state'] !== 'open' && $s['createdAt'] < Clock::now() - 600)), 'und angehört');
     // Büro: liest die Briefe und erzählt davon; Interviews sagt sie nur zu, wenn man es will, und nur, wer frei ist.
     checkEquals(false, (bool) array_filter($state['mail'], static fn ($m) => $m['read'] ?? false), 'ohne Büro liest niemand');
     $third = array_values(array_filter($state['mail'], static fn ($m) => $m['kind'] === 'job' && $m['role'] === 'assistant'))[0];

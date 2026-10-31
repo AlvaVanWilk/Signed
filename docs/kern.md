@@ -86,7 +86,8 @@ Verdienst         = Zuschauer × 5 / 6 / 9 / 12 ₲ nach Ruhmstufe
 - Ohne Platte: A = 0, F0 = Fans, M aus den Fans (eine ganz neue Band hat 25 Neugierige).
 - **Frische:** Nach jedem Auftritt halb so groß, erholt sich gleichmäßig in 24 Stunden.
 - **Orte:** Kneipe 60 / 150 / 300 (ab Stufe 0), Club 500 / 1.000 / 1.500 (ab Stufe 1); nur auf Tournee Halle 3.000 / 5.000 / 8.000 (ab Stufe 2)
-  und Arena 10.000 / 15.000 / 20.000 (ab Stufe 3). Länge 3 / 4 / 7 / 9 Lieder.
+  und Arena 10.000 / 15.000 / 20.000 (ab Stufe 3). Länge 3 / 4 / 7 / 9 Lieder, je Lied 1 Minute (`Balance::LIVE_SONG_SECONDS`): Ein Auftritt
+  dauert 3 bis 9 Minuten, in Signie-Zeit gut ein bis knapp vier Signie-Hours. Die Hörproben der Musik bleiben 24 Sekunden lang (`SONG_SECONDS`).
 - Die Publikumsleiste rechnet mit der Sound-Erwartung der Ruhmstufe: 150 / 1.500 / 10.000 / 45.000.
 - **Manager:** Verhandler +8 % Verdienst, PR-Profi +8 % neue Fans je Stufe (× Passung).
 - Ausverkauft oder eine tolle Show (Publikumsleiste ab 90): je mit 25 % eine Anfrage danach, je Band höchstens einmal in 24 Stunden.
@@ -385,7 +386,7 @@ eines Mitglieds); das wird mit Hinweis abgelehnt.
   Nachbargruppe), dann K.-o. bis zum Finale; die Verlierer des Halbfinales spielen zugleich um Platz 3. Tabelle: Siege, dann Punkte-Unterschied, dann Punkte.
 - **Bands eines Labels** kommen in verschiedene Gruppen; treffen sie in der ersten K.-o.-Runde aufeinander, wird mit einem anderen Spiel getauscht,
   wenn das geht (nur bei einer einzigen Gruppe geht es nicht anders).
-- **Ein Spiel:** jede Band 2 Lieder (je 24 s), dann 12 s Jury; alle 5 Minuten eine Runde (8 Bands: 5 Runden, gut 20 Minuten; höchstens 9 Runden).
+- **Ein Spiel:** jede Band 2 Lieder (je 1 Minute), dann 12 s Jury; alle 5 Minuten eine Runde (8 Bands: 5 Runden, gut 20 Minuten; höchstens 9 Runden).
   Punkte = Sound × Laune × Tagesform, gerundet. **Laune** = 1 + (Stimmung der Band − 60) × 0,0025 (Stimmung 100: +10 %, 20: −10 %).
   **Tagesform** zufällig 0,8–1,2 je Spiel. Ruhm, Proben und Klassen zählen nicht. Doppelter Sound gewinnt immer, 10 % mehr Sound meistens.
 - Ausgelost und ausgespielt wird beim Beginn (bei der ersten Anfrage danach); gezeigt wird nach der Uhr, Runde für Runde. Die Ansage

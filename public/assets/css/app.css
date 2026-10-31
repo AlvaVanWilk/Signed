@@ -789,12 +789,19 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
   .profile { grid-template-columns: 1fr; }
   .profile-card { max-width: 240px; margin: 0 auto; width: 100%; }
 }
-@media (max-width: 640px) {
-  .topbar { padding: 10px 16px 8px; }
+/* Das Menü braucht gut 720px. Passt es nicht neben Logo und Konto (iPad hochkant und quer, kleine Laptops), bekommt es eine
+   eigene Zeile. Lieber zweizeilig als abgeschnitten: Die versteckte Scrollleiste verrät nicht, dass rechts noch Punkte kommen. */
+.topbar .nav { flex-wrap: wrap; }
+@media (max-width: 1279px) {
   .topbar { grid-template-columns: auto 1fr; gap: 8px 12px; }
-  .topbar .nav { grid-column: 1 / -1; grid-row: 2; }
+  .topbar .nav { grid-column: 1 / -1; grid-row: 2; gap: 2px; }
+  .topbar .nav a { padding: 6px 9px; }
   .topbar .subnav { grid-column: 1 / -1; grid-row: 3; }
   .topbar .label-info { justify-self: end; }
+}
+@media (max-width: 640px) {
+  .topbar { padding: 10px 16px 8px; }
+  .topbar .nav a { padding: 5px 8px; }
   .action-grid { grid-template-columns: 1fr; }
 }
 .tile .btn { align-self: flex-start; margin-top: 6px; }
@@ -1165,6 +1172,9 @@ button.tcg-slot:hover { border-color: var(--accent); color: var(--text); }
 .cover-thumb { width: 40px; flex: 0 0 40px; }
 .cover-thumb .cover-frame { padding: 2px; border-radius: 5px; }
 .cover-thumb .cover { border-radius: 3px; }
+/* Platte ohne Cover: Die CD passt in die kleinen Vorschaubilder der Charts. */
+.cover-thumb .cover-none { font-size: 1.4rem; }
+.chart-rest .cover-thumb .cover-none { font-size: 1rem; }
 .chart-record { display: inline-flex; align-items: center; gap: 8px; }
 
 /* Gig: eigene, breite Kachel über den anderen Auftritten */

@@ -34,7 +34,7 @@ final class Battle
     public static function matchSeconds(): int
     {
         $c = Balance::BATTLE;
-        return 2 * $c['songs'] * Balance::SONG_SECONDS + $c['jury'];
+        return 2 * $c['songs'] * Balance::LIVE_SONG_SECONDS + $c['jury'];
     }
 
     /** Laune als Faktor: bei mood.at genau 1, darüber besser, darunter schlechter. */
@@ -663,7 +663,7 @@ final class Battle
         $pick = static function (array $list, string $key) use ($eventId, $i) {
             return $list[abs(crc32("battle-$eventId-$i-$key")) % count($list)];
         };
-        $song = Balance::SONG_SECONDS;
+        $song = Balance::LIVE_SONG_SECONDS;
         $songs = Balance::BATTLE['songs'];
         $out = [];
         $t = $at;

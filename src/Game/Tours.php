@@ -329,7 +329,7 @@ final class Tours
                 $fame += $venue['fame'] * BandCalc::soundFactor($sound) * $sim['perf'] * Rng::float(0.9, 1.1);
             }
             $fame *= $abroad['fame'] * ($match ? $c['fame'] : 1.0) * (1 + BandCalc::managerBonus($manager, $level, 'prprofi', Balance::PR_BONUS));
-            $endsAt = $now + $songs * Balance::SONG_SECONDS;
+            $endsAt = $now + $songs * Balance::LIVE_SONG_SECONDS;
             $db->exec('UPDATE bands SET busy_until = ?, released = 1 WHERE id = ?', [$endsAt, $bandId]);
             $tour['state'] = 'show';
             self::save($db, $tour);
@@ -368,7 +368,7 @@ final class Tours
         $gig = BandCore::startGig($repo, $band, $sim['meter'], true, $now);
         $gage = (int) round($gig['earnings'] * (1 + BandCalc::managerBonus($manager, $level, 'verhandler', Balance::NEGOTIATOR_BONUS)) * ($match ? $c['money'] : 1.0));
         $newFans = $gig['newFans'] * (1 + BandCalc::managerBonus($manager, $level, 'prprofi', Balance::PR_BONUS)) * ($match ? $c['fame'] : 1.0);
-        $endsAt = $now + $songs * Balance::SONG_SECONDS;
+        $endsAt = $now + $songs * Balance::LIVE_SONG_SECONDS;
         $db->exec('UPDATE bands SET busy_until = ?, released = 1 WHERE id = ?', [$endsAt, $band['id']]);
         $tour['state'] = 'show';
         self::save($db, $tour);

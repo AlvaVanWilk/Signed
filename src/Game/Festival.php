@@ -219,7 +219,7 @@ final class Festival
         $start = (int) $event['starts_at'];
         foreach ($acts as $i => $act) {
             $acts[$i]['at'] = $start + ($act['slot'] - $shift) * $c['gap'];
-            $acts[$i]['endsAt'] = $acts[$i]['at'] + $c['stages'][$act['stage']]['songs'] * Balance::SONG_SECONDS;
+            $acts[$i]['endsAt'] = $acts[$i]['at'] + $c['stages'][$act['stage']]['songs'] * Balance::LIVE_SONG_SECONDS;
             $db->update('event_entries', ['status' => 'accepted', 'place' => $i + 1], ['event_id' => $eventId, 'band_id' => $act['bandId']]);
             $repo($act['labelId'])->log('event', sprintf(
                 '%s spielt beim Festival „%s“: %s, %s.',

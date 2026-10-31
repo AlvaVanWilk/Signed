@@ -103,7 +103,7 @@ final class Gigs
                 'name' => $venue['name'],
                 'place' => Catalog::VENUE_NAMES[$key][abs(crc32($band['id'] . '|' . $key . '|' . intdiv(\Signed\Clock::now(), 86400))) % count(Catalog::VENUE_NAMES[$key])],
                 'songs' => $songs,
-                'minutes' => (int) round($songs * Balance::SONG_SECONDS / 60),
+                'minutes' => (int) round($songs * Balance::LIVE_SONG_SECONDS / 60),
                 'cost' => $cost,
                 // Bezahlt wird nach dem Auftritt aus der Gage; vorher nur, was die Gage im schlechtesten Fall nicht deckt.
                 'deposit' => $deposit,

@@ -14,6 +14,12 @@ final class Balance
 
     /** Ein Lied dauert überall 24 Sekunden: 12 Takte 4/4 (oder 16 Takte 3/4) bei 120 BPM – im Minispiel und bei Auftritten. */
     public const SONG_SECONDS = 24;
+    /**
+     * Ein Lied auf der Bühne (Auftritt, Tournee, Festival, Battle): 1 Minute echte Zeit = 24 Signie-Minuten. Ein Auftritt in der Kneipe
+     * (3 Lieder) dauert so gut eine Signie-Hour, in der Arena (9 Lieder) dreieinhalb. SONG_SECONDS bleibt die Länge der Aufnahmen
+     * (Musik in Schleife) und der Übungsstücke.
+     */
+    public const LIVE_SONG_SECONDS = 60;
     public const BPM = 120;
 
     // ---------- Musiker ----------
@@ -167,8 +173,8 @@ final class Balance
      * Verfall nach `ttl`; Anteil der Guten (ab Können-Stufe 1) wächst mit dem Erfolg; Unterschriftsprämie = base + skill × Können² + fame × Bekanntheit.
      */
     public const SUBMISSIONS = [
-        // Kassetten je Tag = start + root × √Erfolg (fließend, ohne Obergrenze)
-        'perDay' => ['start' => 8.0, 'root' => 1.8],
+        // Kassetten je Tag = start + root × √Erfolg (fließend, ohne Obergrenze); zu Beginn im Schnitt eine je Stunde, also eine je Signie-Day
+        'perDay' => ['start' => 24.0, 'root' => 1.8],
         'bandChance' => 0.15, 'bandBond' => 4.0,
         'listen' => 5, 'ttl' => 4 * 86400, 'maxCatchUp' => 4 * 86400, 'maxPerCall' => 120,
         'good' => ['from' => 0.05, 'to' => 0.25, 'at' => 5000],

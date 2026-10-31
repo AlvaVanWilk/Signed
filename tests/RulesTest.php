@@ -286,7 +286,7 @@ test('Simulation: bessere Bands begeistern das Publikum mehr', function () {
     check($strong > $weak + 600, "stark $strong, schwach $weak");
     $sim = Performance::simulate([$player(40)], 30, 30, 2);
     check($sim['timeline'][0]['kind'] === 'song');
-    check(end($sim['timeline'])['t'] < 2 * Balance::SONG_SECONDS);
+    check(end($sim['timeline'])['t'] < 2 * Balance::LIVE_SONG_SECONDS);
     check($sim['perf'] >= 0.4 && $sim['perf'] <= 1.6);
 });
 

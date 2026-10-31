@@ -287,12 +287,14 @@ final class Inbox
             $base['kind'] = $r['kind'];
             // Vom Büro gelesen: Dann steht es auf der Übersicht.
             $base['read'] = $r['read_at'] !== null && (int) $r['read_at'] <= $now;
-            if ($r['kind'] === 'interview' && isset($d['request'])) {
-                // Neuer Kern: Anfrage mit Art, Dauer und Hype-Schub für die neueste Platte
-                $req = Balance::CORE_EVENTS['requests'][$d['request']];
+            if ($r['kind'] === 'interview' && (isset($d['request']) || BandCore::$live)) {
+                // Neuer Kern: Anfrage mit Art, Dauer und Hype-Schub für die neueste Platte. Ein altes Interview gilt als Interview-Anfrage
+                // (so rechnet es auch accept()).
+                $request = $d['request'] ?? 'interview';
+                $req = Balance::CORE_EVENTS['requests'][$request];
                 return $base + [
-                    'musicianId' => (int) $d['musicianId'], 'medium' => $d['medium'], 'level' => (int) $d['level'], 'request' => $d['request'],
-                    'requestName' => Catalog::REQUESTS[$d['request']]['name'], 'boost' => $req['boost'], 'seconds' => $req['seconds'], 'fame' => 0,
+                    'musicianId' => (int) $d['musicianId'], 'medium' => $d['medium'], 'level' => (int) $d['level'], 'request' => $request,
+                    'requestName' => Catalog::REQUESTS[$request]['name'], 'boost' => $req['boost'], 'seconds' => $req['seconds'], 'fame' => 0,
                     'reason' => $d['reason'] ?? null,
                 ];
             }
@@ -490,7 +492,12 @@ final class Inbox
         foreach ($this->repo->musicians() as $m) {
             $level = Levels::forFame((float) $m['fame']);
             $medium = Rng::pick(Catalog::INTERVIEW_MEDIA[min(3, $level)]);
-            $this->store('interview', ['musicianId' => $m['id'], 'level' => $level, 'medium' => $medium['name'], 'share' => $medium['share']], $now, Balance::POST['ttl'], true);
+            $data = ['musicianId' => $m['id'], 'level' => $level, 'medium' => $medium['name'], 'share' => $medium['share']];
+            if (BandCore::$live) {
+                // Neuer Kern: Anfragen wie im Spiel (Interview, Fotoserie, Artikel, Reportage, Werbung)
+                $data['request'] = (string) Rng::weighted(Balance::CORE_EVENTS['requestWeights']);
+            }
+            $this->store('interview', $data, $now, Balance::POST['ttl'], true);
         }
         foreach ([1, 2] as $k) {
             $this->store('job', self::applicant('assistant', 1.0, 1), $now - $k, Balance::POST['ttl'], true);

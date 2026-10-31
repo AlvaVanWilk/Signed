@@ -17,7 +17,7 @@ final class Performance
      */
     public static function simulate(array $players, float $sound, float $expect, int $songs): array
     {
-        $length = Balance::SONG_SECONDS;
+        $length = Balance::LIVE_SONG_SECONDS;
         $phases = Balance::LIVE_PHASES;
         $phaseLength = $length / $phases;
         // Klingt die Band besser, als der Ort erwartet, steigt die Stimmung von selbst – sonst sinkt sie.

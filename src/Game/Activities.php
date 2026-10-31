@@ -179,7 +179,7 @@ final class Activities
                 }
             }
 
-            $endsAt = $now + ($rehearsal !== null ? $duration : $songs * Balance::SONG_SECONDS);
+            $endsAt = $now + ($rehearsal !== null ? $duration : $songs * Balance::LIVE_SONG_SECONDS);
             Events::assertFree($db, $bandId, $endsAt);
             $claimed = $db->exec('UPDATE bands SET busy_until = ?, released = 1 WHERE id = ? AND busy_until <= ?', [$endsAt, $bandId, $now]);
             if ($claimed === 0) {
@@ -247,7 +247,7 @@ final class Activities
             $fameTotal *= BandCalc::soundFactor($sound) * $sim['perf'];
             $hat = $type === 'busking' ? self::hat($this->repo, $sim['perf']) : 0;
 
-            $endsAt = $now + $songs * Balance::SONG_SECONDS;
+            $endsAt = $now + $songs * Balance::LIVE_SONG_SECONDS;
             $claimed = $db->exec('UPDATE musicians SET busy_until = ? WHERE id = ? AND busy_until <= ?', [$endsAt, $musicianId, $now]);
             if ($claimed === 0) {
                 throw new ApiError(sprintf('%s ist gerade beschäftigt.', $m['first_name']));

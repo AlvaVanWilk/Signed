@@ -88,7 +88,7 @@ function actionTile({ icon, title, meta = '', body = '', button = '', locked = f
     </div>`;
 }
 
-const songsMeta = (songs) => `${songs} ${songs === 1 ? 'Lied' : 'Lieder'} · ${duration(songs * cat().rules.songSeconds)}`;
+const songsMeta = (songs) => `${songs} ${songs === 1 ? 'Lied' : 'Lieder'} · ${duration(songs * cat().rules.liveSongSeconds)}`;
 
 // ---------- Band ----------
 
@@ -413,7 +413,7 @@ function gigTile(b, gig, disabled) {
           ${gigDraw(gig)}${cycleChip(b, 'songs', 'Für die nächste Platte: Lieder live')}
           <span class="gig-controls"><label class="inline-select">Lieder
             <select data-change="gigSongs" data-id="${b.id}">${Array.from({ length: gig.maxSongs - gig.minSongs + 1 }, (_, i) => gig.minSongs + i).map((n) => `<option value="${n}" ${n === songs ? 'selected' : ''}>${n}</option>`).join('')}</select>
-          </label><span>${duration(songs * cat().rules.songSeconds)}</span><span>zusammen <b>${money(gig.gagePerSong * songs)}</b></span></span>`
+          </label><span>${duration(songs * cat().rules.liveSongSeconds)}</span><span>zusammen <b>${money(gig.gagePerSong * songs)}</b></span></span>`
         : '<span class="muted small">Erst mit der ersten Platte.</span>'}
       </div>
       <button class="btn primary" data-act="startActivity" data-id="${b.id}" data-type="gig" ${gig.available ? disabled : 'disabled'}>Spielen</button>

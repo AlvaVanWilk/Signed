@@ -453,6 +453,8 @@ final class Assistant
             }
             $stats['opened']++;
             $db->update('submissions', ['filed_at' => $end], ['id' => $id]);
+            // Angehört und einsortiert: Die Kassette liegt im Fach „Demos“ (außer, man hat sie von Hand woanders hingelegt).
+            $db->exec('UPDATE submissions SET sorted_at = ? WHERE id = ? AND sorted_at IS NULL AND box IS NULL', [$end, $id]);
         }
         $search = $this->search();
         if ($search !== null && !(int) $row['found'] && self::fits($card, $search)) {

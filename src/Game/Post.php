@@ -177,6 +177,10 @@ final class Post
         $end = $at + self::seconds($job);
         $column = (self::JOBS[$job] ?? self::STAFF_JOBS[$job])[0];
         $this->repo->db->update($table, [$column => $end, 'worker' => $worker] + ($job === 'sort' ? ['box' => null] : []), ['id' => $id]);
+        if ($job === 'file') {
+            // In die Genre-Unterreiter gelegt heißt: Die Kassette liegt im Fach „Demos“ (außer, man hat sie von Hand woanders hingelegt).
+            $this->repo->db->exec("UPDATE $table SET sorted_at = ? WHERE id = ? AND sorted_at IS NULL AND box IS NULL", [$end, $id]);
+        }
         return $end;
     }
 

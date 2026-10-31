@@ -253,9 +253,11 @@ test('Kern im Spiel: Battle zahlt die neuen Preise, Zuschauer bringen Fans, der 
     $resB = array_values(array_filter($b->get('state')['results'], static fn ($r) => $r['type'] === 'battle'))[0]['result'];
     $won = $resA['battle']['place'] === 1 ? [$resA, $moneyA, $repoA] : [$resB, $moneyB, $repoB];
     $lost = $resA['battle']['place'] === 1 ? [$resB, $moneyB, $repoB] : [$resA, $moneyA, $repoA];
-    checkEquals($lost[1] + 6000, (int) $db->value('SELECT money FROM labels WHERE id = ?', [$lost[2]->labelId]), 'Platz 2: 6.000 ₲');
+    // Preisgeld als eigene Buchung (daneben laufen die Plattenverkäufe weiter)
+    $prize = static fn (Repo $repo) => (int) $db->value("SELECT COALESCE(SUM(amount), 0) FROM ledger WHERE label_id = ? AND text LIKE '%Battle of the Bands%'", [$repo->labelId]);
+    checkEquals(6000, $prize($lost[2]), 'Platz 2: 6.000 ₲');
     // Der Sieger wählt: Preisgeld oder der Wochenpreis, der schon auf dem Plakat stand
-    checkEquals($won[1], (int) $db->value('SELECT money FROM labels WHERE id = ?', [$won[2]->labelId]), 'Sieger: erst die Wahl');
+    checkEquals(0, $prize($won[2]), 'Sieger: erst die Wahl');
     checkEquals(Signed\Game\Prizes::weekly((int) $next['startsAt']), $won[0]['prize']['weekly']);
     checkEquals($next['weekly'], $won[0]['prize']['weekly'], 'Wochenpreis wie auf dem Plakat');
     $winner = $won[2]->labelId === $repoA->labelId ? $a : $b;
@@ -263,7 +265,7 @@ test('Kern im Spiel: Battle zahlt die neuen Preise, Zuschauer bringen Fans, der 
     checkEquals('choice', $prizes[0]['kind']);
     checkApiError(fn () => $winner->post('prizeChoose', ['prizeId' => $prizes[0]['id'], 'pick' => 'beides']), 'gibt es nicht');
     $winner->post('prizeChoose', ['prizeId' => $prizes[0]['id'], 'pick' => 'money']);
-    checkEquals($won[1] + 12000, (int) $db->value('SELECT money FROM labels WHERE id = ?', [$won[2]->labelId]), 'Sieger: 12.000 ₲');
+    checkEquals(12000, $prize($won[2]), 'Sieger: 12.000 ₲');
     checkEquals([], $winner->get('state')['prizes'], 'Gewählt ist gewählt');
     check($resA['fans'] > 0 && $resB['fans'] > 0, 'Zuschauer bringen neue Fans');
     checkEquals(0.0, (float) $resA['fame'], 'Kein Ruhm mehr');
@@ -387,6 +389,23 @@ test('Kern im Spiel: Anfragen statt Interviews – erst mit Platte, Hype-Schub f
     $fans = BandCore::fans($db, $band['id']);
     check((int) $db->value('SELECT money FROM labels WHERE id = ?', [$repo->labelId]) >= $money + (int) floor($fans) - 1, 'Werbung: so viele ₲, wie die Band Fans hat');
     check(BandCore::view($db, $band, $repo->members($band['id']))['hype'] > $hype - 0.5, 'Schub für die neueste Platte');
+});
+
+test('Kern im Spiel: Ein altes Interview gilt als Interview-Anfrage, die Test-Briefe sind Anfragen', function () {
+    [$db, $p, $repo, $band] = coreLabel();
+    $mail = $db->insert('mail', ['label_id' => $repo->labelId, 'kind' => 'interview', 'created_at' => Clock::now(), 'expires_at' => Clock::now() + 86400, 'unpacked_at' => Clock::now(),
+        'data' => json_encode(['musicianId' => $repo->members($band['id'])[0]['id'], 'level' => 1, 'medium' => 'Stadtmagazin', 'share' => 0.1])]);
+    $old = array_values(array_filter($p->get('state')['mail'], static fn ($m) => $m['mailId'] === $mail))[0];
+    checkEquals('interview', $old['request'], 'Altes Interview zeigt sich als Anfrage');
+    checkEquals(0, $old['fame'], 'Keine Bekanntheit mehr im Brief');
+    checkEquals(Signed\Game\Balance::CORE_EVENTS['requests']['interview']['seconds'], $old['seconds'], 'Dauer wie beim Zusagen');
+    $p->post('mailTest');
+    unpackAll($db);
+    $letters = array_values(array_filter($p->get('state')['mail'], static fn ($m) => $m['kind'] === 'interview'));
+    check($letters !== [], 'Test-Briefe sind da');
+    foreach ($letters as $m) {
+        check(isset(Signed\Game\Balance::CORE_EVENTS['requests'][$m['request'] ?? '']), 'Test-Brief ist eine Anfrage');
+    }
 });
 
 test('Kern im Spiel: Tournee ab 5.000 Fans mit dem Bus; Auftritte wie zu Hause, nur mit Halle; Welttournee geparkt', function () {

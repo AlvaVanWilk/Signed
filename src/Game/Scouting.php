@@ -86,7 +86,8 @@ final class Scouting
         $c = Balance::SCOUT_STAFF['tiers'][$tier];
         $cards = [];
         for ($i = 0; $i < $c['candidates']; $i++) {
-            $opts = ['avoid' => $avoid] + ($genre !== null ? ['genre' => $genre] : []) + ($instrument !== null ? ['instrument' => $instrument] : []);
+            // Scouts finden öfter Talente mit mehreren Genres, je besser, desto öfter (`extraGenres` der Stufe)
+            $opts = ['avoid' => $avoid, 'extraGenres' => $c['extraGenres']] + ($genre !== null ? ['genre' => $genre] : []) + ($instrument !== null ? ['instrument' => $instrument] : []);
             $card = Submissions::make(0, 0.0, $opts);
             $best = round(Rng::float(...$c['skill']), 1);
             $card['skill1'] = $best;
@@ -139,7 +140,8 @@ final class Scouting
             $tier = Balance::SCOUT_STAFF['tiers'][(int) $s['tier']];
             return [
                 'id' => (int) $s['id'], 'tier' => (int) $s['tier'], 'firstName' => $d['first_name'], 'lastName' => $d['last_name'], 'look' => $d['look'],
-                'seconds' => $tier['seconds'], 'candidates' => $tier['candidates'], 'maxSkill' => $tier['skill'][1],
+                'seconds' => $tier['seconds'], 'candidates' => $tier['candidates'], 'maxSkill' => round(Levels::shown((float) $tier['skill'][1]), 1),
+                'multiGenre' => $tier['extraGenres'][0],
                 'away' => isset($d['trip']) && (int) $s['busy_until'] > $now ? ['until' => (int) $s['busy_until'], 'genre' => $d['trip']['genre'], 'instrument' => $d['trip']['instrument']] : null,
             ];
         }, $this->staff());

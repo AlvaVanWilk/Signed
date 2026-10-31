@@ -314,7 +314,10 @@ final class Inbox
             $tier = self::tiers($d['role'])[(int) $d['tier']];
             return $base + [
                 'role' => $d['role'], 'tier' => (int) $d['tier'], 'price' => (int) $tier['price'], 'perDay' => $tier['perDay'] ?? null,
-                'seconds' => $tier['seconds'] ?? null, 'candidates' => $tier['candidates'] ?? null, 'maxSkill' => $tier['maxSkill'] ?? (isset($tier['skill']) ? $tier['skill'][1] : null),
+                // Können-Grenze (Scout: bis wohin seine Talente reichen, Lehrer: bis wohin er unterrichtet) im angezeigten Maß
+                'seconds' => $tier['seconds'] ?? null, 'candidates' => $tier['candidates'] ?? null,
+                'maxSkill' => ($max = $tier['maxSkill'] ?? (isset($tier['skill']) ? $tier['skill'][1] : null)) === null ? null : round(Levels::shown((float) $max), 1),
+                'multiGenre' => $tier['extraGenres'][0] ?? null,
                 'instrument' => $d['instrument'] ?? null, 'genre' => $d['genre'] ?? null, 'gain' => $tier['gain'] ?? null,
                 'speed' => $tier['speed'] ?? null, 'quality' => $tier['quality'] ?? null,
                 'level' => $tier['level'] ?? null, 'skills' => $d['skills'] ?? null, 'genres' => $d['genres'] ?? null, 'style' => $d['style'] ?? null,

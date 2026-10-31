@@ -1640,7 +1640,8 @@ test('Künstlername: Wunsch ab genug Bekanntheit (Diven früher), einer von drei
     check((float) $db->value('SELECT wellbeing FROM musicians WHERE id = ?', [$id]) >= 50 + Balance::STAGE_NAME['mood'] - 0.01, 'freut sich');
     checkEquals($options[0], array_values(array_filter($res['state']['bands'], static fn ($b) => $b['memberIds'] === [$id]))[0]['name'], 'Solo-Band heißt so');
     check(!$wants($res['state']), 'Wunsch erfüllt');
-    // In die Band und wieder allein: Der Name bleibt
+    // In die Band und wieder allein: Der Name bleibt (er singt dort, damit die Besetzung passt, egal was er zufällig spielt)
+    $db->exec("UPDATE musicians SET instr1 = 'vocals' WHERE id = ?", [$id]);
     $res = $p->post('bandMerge', ['bandId' => $band['id'], 'otherId' => $solo['id'], 'keepName' => 'a', 'slot' => 1]);
     $res = $p->post('bandRemoveMember', ['bandId' => $band['id'], 'musicianId' => $id]);
     checkEquals($options[0], array_values(array_filter($res['state']['bands'], static fn ($b) => $b['memberIds'] === [$id]))[0]['name']);
@@ -2163,6 +2164,33 @@ test('Posteingang: Bewerber werden mit dem Erfolg besser (gesättigt); Assistenz
     checkEquals(true, Assistant::matches(['kind' => 'band', 'members' => [['skill1' => 70.0, 'genres' => ['rock']], ['skill1' => 10.0, 'genres' => ['pop']]]], ['minLevel' => 2, 'genres' => ['pop'], 'kind' => 'band']));
     checkEquals(false, Assistant::matches(['skill1' => 70.0, 'genres' => ['rock']], ['minLevel' => 2, 'genres' => ['pop'], 'kind' => 'any']));
     checkEquals(false, Assistant::matches(['skill1' => 30.0, 'genres' => ['rock']], ['minLevel' => 1, 'genres' => [], 'kind' => 'solo']));
+});
+
+test('Genres: Kassetten haben fast immer ein Genre, Scouts finden öfter mehrere, je besser der Scout, desto öfter', function () {
+    $share = static function (array $cards): array {
+        $multi = count(array_filter($cards, static fn ($c) => count($c['genres']) >= 2));
+        $three = count(array_filter($cards, static fn ($c) => count($c['genres']) >= 3));
+        return [$multi / count($cards), $three / count($cards)];
+    };
+    $demos = [];
+    for ($i = 0; $i < 2000; $i++) {
+        $demos[] = Signed\Game\Submissions::make(0);
+    }
+    [$multi, $three] = $share($demos);
+    check($multi > 0.06 && $multi < 0.14, 'Kassetten: etwa jede zehnte mit zwei Genres: ' . $multi);
+    checkEquals(0.0, $three, 'Kassetten: nie drei Genres');
+    $lastMulti = $multi;
+    $lastThree = 0.0;
+    foreach ([1 => [0.42, 0.58], 2 => [0.62, 0.78], 3 => [0.77, 0.92]] as $tier => [$lo, $hi]) {
+        $cards = [];
+        for ($i = 0; $i < 600; $i++) {
+            array_push($cards, ...Signed\Game\Scouting::find($tier, $tier === 2 ? 'rock' : null, null));
+        }
+        [$multi, $three] = $share($cards);
+        check($multi > $lo && $multi < $hi, "Scout Stufe $tier: mehrere Genres $multi");
+        check($multi > $lastMulti && $three > $lastThree, "Scout Stufe $tier findet öfter mehrere und drei Genres als darunter ($multi, $three)");
+        [$lastMulti, $lastThree] = [$multi, $three];
+    }
 });
 
 test('Scout: bewirbt sich zu Beginn, mit Suchauftrag unterwegs, Bericht im Posteingang, beliebig viele unterschreiben', function () {

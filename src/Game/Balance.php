@@ -43,7 +43,11 @@ final class Balance
     public const MULTI_SECOND_FACTOR = [0.55, 0.8];
     /** Lieblingsgenre passt nicht zum Klischee des Instruments (Flötist im Metal). */
     public const UNUSUAL_CHANCE = 0.02;
-    /** Chance auf ein zweites bzw. drittes Genre-Symbol. */
+    /**
+     * Chance auf ein zweites bzw. drittes Genre-Symbol (aus den typischen Genres des Instruments). Kassetten und Scouts haben eigene Werte
+     * (SUBMISSIONS['extraGenres'], SCOUT_STAFF['tiers'][…]['extraGenres']): Wer sich selbst bewirbt, hat fast immer ein Genre; Talente mit
+     * mehreren Genres findet man vor allem über Scouts, je besser der Scout, desto öfter.
+     */
     public const EXTRA_GENRE_CHANCE = [0.35, 0.08];
 
     // ---------- Manager ----------
@@ -176,6 +180,8 @@ final class Balance
         // Kassetten je Tag = start + root × √Erfolg (fließend, ohne Obergrenze); zu Beginn im Schnitt eine je Stunde, also eine je Signie-Day
         'perDay' => ['start' => 24.0, 'root' => 1.8],
         'bandChance' => 0.15, 'bandBond' => 4.0,
+        // Kassetten: zweites Genre 10 %, drittes nie (Sandra, 31.10.: mehrere Genres vor allem über Scouts)
+        'extraGenres' => [0.10, 0.0],
         'listen' => 5, 'ttl' => 4 * 86400, 'maxCatchUp' => 4 * 86400, 'maxPerCall' => 120,
         'good' => ['from' => 0.05, 'to' => 0.25, 'at' => 5000],
         'goodLevels' => [1 => 70, 2 => 25, 3 => 5],
@@ -271,9 +277,10 @@ final class Balance
     public const SCOUT_STAFF = [
         'tiers' => [
             // Unterwegs 2 / 1½ / 1 Stunden, also 2 / 1½ / 1 Signie-Days (vorher 6 / 5 / 4 – zu lang zum Spielen)
-            1 => ['price' => 400, 'seconds' => 2 * 3600, 'candidates' => 2, 'skill' => [15, 34], 'from' => 0.0],
-            2 => ['price' => 1200, 'seconds' => 5400, 'candidates' => 3, 'skill' => [22, 44], 'from' => 0.25],
-            3 => ['price' => 3000, 'seconds' => 3600, 'candidates' => 3, 'skill' => [32, 54], 'from' => 0.55],
+            // extraGenres: Chance auf ein zweites bzw. drittes Genre (mehrere Genres: 50 / 70 / 85 %, davon drei: 5 / 17,5 / 34 %)
+            1 => ['price' => 400, 'seconds' => 2 * 3600, 'candidates' => 2, 'skill' => [15, 34], 'from' => 0.0, 'extraGenres' => [0.50, 0.10]],
+            2 => ['price' => 1200, 'seconds' => 5400, 'candidates' => 3, 'skill' => [22, 44], 'from' => 0.25, 'extraGenres' => [0.70, 0.25]],
+            3 => ['price' => 3000, 'seconds' => 3600, 'candidates' => 3, 'skill' => [32, 54], 'from' => 0.55, 'extraGenres' => [0.85, 0.40]],
         ],
         'ttl' => 4 * 86400,
     ];

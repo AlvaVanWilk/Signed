@@ -249,12 +249,15 @@ function interviewLetter(m) {
     </article>`;
 }
 
+/** Wie oft ein Scout Talente mit mehreren Genres findet, in Worten (Anteil 0–1). */
+const multiGenreText = (p) => (p >= 0.8 ? 'fast alle mit mehreren Genres' : p >= 0.6 ? 'die meisten mit mehreren Genres' : p >= 0.4 ? 'jedes zweite mit mehreren Genres' : '');
+
 function jobLetter(m) {
   const money0 = app.state.label.money;
   const what = m.role === 'intern' ? 'hilft dir auf Zuruf: Briefe öffnen, Demos anhören oder Post sortieren'
     : m.role === 'assistant' ? 'arbeitet von allein in einem Gebiet: Post, Kassetten oder Büro'
-    : m.role === 'scout' ? `${m.candidates} Talente in ${mins(m.seconds)} (Können bis ${m.maxSkill})`
-    : m.role === 'teacher' ? `${instrumentName(m.instrument)} für einen Musiker: +${m.gain} Können (bis ${m.maxSkill})${m.genre ? `, bei ${genreName(m.genre)} mehr` : ''}`
+    : m.role === 'scout' ? `${m.candidates} Talente in ${mins(m.seconds)} (Können bis ${fmt0(m.maxSkill)}${m.multiGenre ? `, ${multiGenreText(m.multiGenre)}` : ''})`
+    : m.role === 'teacher' ? `${instrumentName(m.instrument)} für einen Musiker: +${m.gain} Können (bis ${fmt0(m.maxSkill)})${m.genre ? `, bei ${genreName(m.genre)} mehr` : ''}`
     : m.role === 'coach' ? `${days(m.seconds)} für eine Band: Songs ${fmtFactor(m.speed)} so schnell, Platte +${Math.round(m.quality * 100)} %`
     : m.role === 'manager' ? `${m.genres.map((g) => genreName(g)).join(', ')} · ${m.skills.map((k) => cat().managerSkills[k]?.name ?? k).join(', ')}` : '';
   const book = ['teacher', 'coach'].includes(m.role);
@@ -407,7 +410,7 @@ function scoutDialog(x) {
     render: () => `
       <div class="lb-cap">Scout</div>
       <h2>${esc(x.firstName)} losschicken</h2>
-      <p class="muted">${esc(x.firstName)} ist ${mins(x.seconds)} unterwegs (auch wenn du nicht spielst) und stellt dir dann ${x.candidates} Talente vor. Du kannst so viele davon unterschreiben, wie du willst.</p>
+      <p class="muted">${esc(x.firstName)} ist ${mins(x.seconds)} unterwegs (auch wenn du nicht spielst) und stellt dir dann ${x.candidates} Talente vor${x.multiGenre ? `, ${multiGenreText(x.multiGenre)}` : ''}. Du kannst so viele davon unterschreiben, wie du willst.</p>
       <h3>Genre</h3>
       <div class="lb-filter"><button class="${pick.genre === '' ? 'on' : ''}" data-pick="genre" data-v="">Egal</button>${Object.keys(cat().genres).map((g) => `<button class="${pick.genre === g ? 'on' : ''}" data-pick="genre" data-v="${g}">${esc(genreName(g))}</button>`).join('')}</div>
       <h3>Instrument</h3>

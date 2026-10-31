@@ -311,7 +311,8 @@ Erfolg, bewerben sich mehr Musiker mit ähnlichen Genres. Interview-Anfragen ric
   Mitglieder einer Band kennen sich schon.
 - **Scout** (Bewerbung, 400 / 1.200 / 3.000 ₲): losschicken mit Genre und/oder Instrument, nach 2 / 1½ / 1 Stunden liegt ein **Bericht** mit 2 / 3 / 3
   Talenten im Posteingang (unbekannt, Können bis 34 / 44 / 54). Man blättert durch und unterschreibt beliebig viele. Der Scout steht unter der
-  Künstlerleiste.
+  Künstlerleiste. Scouts finden oft Talente mit **mehreren Genres** (jedes zweite / die meisten / fast alle), Kassetten haben fast immer nur
+  eins: Wer eine Hybrid- oder Crossover-Band bauen will, braucht Scouts (Sandra, 31.10.).
 - **Entlassen** (Musikerseite): nur wer in keiner Band mit anderen spielt und gerade frei ist; er verlässt das Label für immer und bleibt in der
   WikiSignia. Seine Instrumente bleiben im Lager. Es gibt kein Geld zurück.
 

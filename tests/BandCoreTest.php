@@ -672,6 +672,22 @@ test('Kern im Spiel: Können wird im neuen Maß gezeigt, Proben bringt 50 je Stu
     coreNear($before + 50, Signed\Game\Core\Skill::fromLegacy(Signed\Game\Core\Skill::toLegacy($before + 50)), 1e-9, 'Umrechnung hin und zurück');
 });
 
+test('Kern im Spiel: Scout und Lehrer nennen ihre Können-Grenze im neuen Maß (sonst passt im Browser kein Lehrer)', function () {
+    [, $p] = coreLabel();
+    $mail = $p->post('mailTest')['state']['mail'];
+    $job = static fn (string $role, int $tier) => array_values(array_filter($mail, static fn ($m) => $m['kind'] === 'job' && $m['role'] === $role && $m['tier'] === $tier))[0];
+    $scout = $job('scout', 1);
+    coreNear(round(Signed\Game\Levels::shown(34.0), 1), (float) $scout['maxSkill'], 1e-9, 'Scout Stufe 1: bis 34 alt, also bis 97,1 neu');
+    coreNear(0.5, (float) $scout['multiGenre'], 1e-9, 'Scout Stufe 1: jedes zweite Talent mit mehreren Genres');
+    coreNear(0.85, (float) $job('scout', 3)['multiGenre'], 1e-9);
+    $teacher = $job('teacher', 1);
+    coreNear(Signed\Game\Levels::shown(55.0), (float) $teacher['maxSkill'], 1e-9, 'Lehrer Stufe 1: bis 55 alt, also bis 340 neu');
+    // Der Browser vergleicht das gezeigte Können der Musiker mit dieser Grenze: Ein Musiker mit altem Können 40 (neu 160) kann noch lernen
+    check(Signed\Game\Levels::shown(40.0) < (float) $teacher['maxSkill'], 'Musiker unter der Grenze passt');
+    $staff = $p->post('mailHire', ['mailId' => $scout['mailId']])['state']['scouts'][0];
+    coreNear((float) $scout['maxSkill'], (float) $staff['maxSkill'], 1e-9, 'Auch der eingestellte Scout zeigt das neue Maß');
+});
+
 test('Kern im Spiel: Die laufende Probe zählt im neuen Maß gleichmäßig hoch, so wie der Browser weiterrechnet', function () {
     [$db, $p, $repo, $band] = coreLabel();
     equipBand($p, $db, $band);

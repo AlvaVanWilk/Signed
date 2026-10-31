@@ -540,7 +540,12 @@ auf dem Boden) und als Liste auf der Bandseite und in WikiSignia. Neue werden ei
   Was eine Kassetten-Assistenz angehört hat, liegt danach im Fach „Demos“ (alte Stände einmal mit Schema-Schritt 59).
   Assistenz holt offline höchstens vier Tage nach.
 - Praktikum 50 ₲ für 7 Tage, übernehmen 400 ₲; Assistenz 400 ₲; Scout 400 / 1.200 / 3.000 ₲ (2 / 1½ / 1 Std., 2 / 3 / 3 Talente, Können bis
-  34 / 44 / 54); Manager 300 / 3.000 / 10.000 ₲ (Stärke 1 / 3 / 5, Passung ×0,4 bis ×1,45).
+  34 / 44 / 54, im neuen Maß bis 97 / 208 / 328); Manager 300 / 3.000 / 10.000 ₲ (Stärke 1 / 3 / 5, Passung ×0,4 bis ×1,45).
+- **Genres der Talente** (Sandra, 31.10.): Wer sich selbst mit einer Kassette bewirbt, hat fast immer ein Genre (zweites 10 %, drittes nie,
+  `SUBMISSIONS['extraGenres']`). Talente mit mehreren Genres findet man vor allem über Scouts, je besser, desto öfter: mehrere Genres
+  50 / 70 / 85 %, davon drei 5 / 17,5 / 34 % (`SCOUT_STAFF['tiers'][…]['extraGenres']`; zweites und drittes Genre aus den typischen Genres
+  des Instruments). So führt der Weg zu Hybrid- und Crossover-Bands (höheres Dach) über Scouts. Der Brief und das Losschicken-Fenster sagen es
+  in Worten („jedes zweite“, „die meisten“, „fast alle mit mehreren Genres“). Vorher galt für beide 35 % zweites, davon 8 % drittes Genre.
 
 ### Instrumente und Music Store
 

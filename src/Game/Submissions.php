@@ -44,10 +44,10 @@ final class Submissions
         return (int) round(($p['base'] + $p['skill'] * $skill ** 2 + $p['fame'] * $card['fame']) * $worth);
     }
 
-    /** Eine Bewerbung der gewünschten Können-Stufe (0–3) mit dem Rest eines gewöhnlichen Musikers. */
+    /** Eine Bewerbung der gewünschten Können-Stufe (0–3) mit dem Rest eines gewöhnlichen Musikers (Kassetten: fast immer ein Genre). */
     public static function make(int $level, float $fame = 0.0, array $opts = []): array
     {
-        $card = Generator::musician('common', $opts + ['minSkill' => 0]);
+        $card = Generator::musician('common', $opts + ['minSkill' => 0, 'extraGenres' => Balance::SUBMISSIONS['extraGenres']]);
         [$lo, $hi] = Balance::SUBMISSIONS['skill'][$level];
         $best = round(Rng::float($lo, $hi), 1);
         $card['skill1'] = $best;

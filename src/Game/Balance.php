@@ -877,11 +877,13 @@ final class Balance
      */
     public const CORE_CONCERT = ['b' => 0.02, 'c' => 0.3, 'n' => 0.003, 'n0' => 0.0005, 'w' => 20.0, 'u' => 0.3, 'freshAfter' => 0.5, 'freshHours' => 24.0];
     /**
-     * Sound-Erwartung je Ruhmstufe; Sound-Anteil einer Platte = min(1, Sound / Erwartung). So viel Sound hat eine Zweierband (Genre-Band,
-     * zwei Instrumentenarten, je eine passende Spieltechnik, Zusammenhalt 100), wenn beide auf der nächsten Können-Stufe ankommen
-     * (100 / 400 / 1.600, für Stufe 3 viermal so viel: 6.400) und deren Instrument spielen. Wer etwa eine halbe Stunde am Tag probt, hält Schritt.
+     * Sound-Erwartung je Ruhmstufe; Sound-Anteil einer Platte = min(1, Sound / Erwartung). Beschlossen (Sandra): mindestens eine Probe am Tag.
+     * So viel Sound hat eine Zweierband (Genre-Band, zwei Instrumentenarten, je eine passende Spieltechnik, Instrument ihrer Können-Stufe),
+     * die jeden Tag eine Stunde probt, wenn sie die Ruhmstufe auf dem schnellsten Weg erreicht (Stufe 1 nach 3, Stufe 2 nach 15, Stufe 3 nach 70 Wochen).
      */
-    public const CORE_SOUND_EXPECT = [0 => 130.0, 1 => 660.0, 2 => 3000.0, 3 => 12000.0];
+    public const CORE_SOUND_EXPECT = [0 => 150.0, 1 => 1500.0, 2 => 10000.0, 3 => 45000.0];
+    /** Auszeichnungen nach verkauften Platten (Hype und Katalog zusammen), beschlossen (Sandra). */
+    public const CORE_AWARDS = ['gold' => 5000, 'platinum' => 20000, 'diamond' => 50000];
     /**
      * Können: Stufen ab `levels`, `perHour` je echte Probestunde, ohne Lernkurve, nach oben offen.
      * Übergang alter Musiker: altes Können (0–100) → neues an derselben Stelle der Stufe, zwischen den Punkten gleichmäßig.

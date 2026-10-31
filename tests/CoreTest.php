@@ -323,8 +323,9 @@ test('Neuer Kern: Songwriting nach Zahl der wirklichen Songschreiber', function 
 test('Neuer Kern: Qualität einer Platte und ihrer Songs', function () {
     coreNear(100.0, Quality::album(1, 1, 1, 1));
     coreNear(93.75, Quality::album(1, 0.75, 1, 1));
-    coreNear(0.5, Quality::soundShare(65, 0));
-    coreNear(1.0, Quality::soundShare(5000, 2));
+    coreNear(0.5, Quality::soundShare(75, 0));
+    coreNear(0.5, Quality::soundShare(5000, 2));
+    coreNear(1.0, Quality::soundShare(50000, 3));
     coreNear(1.0, Quality::productionShare(0, 0), 1e-9, 'Bei Ruhmstufe 0 immer voll');
     coreNear(0.5, Quality::productionShare(1, 2));
     coreNear(1.0, Quality::productionShare(3, 2));

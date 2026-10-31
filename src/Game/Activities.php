@@ -528,6 +528,11 @@ final class Activities
         if (isset($reward['battle'])) {
             Battle::settled($repo, $bandId, $reward['battle']);
         }
+        if (isset($reward['coreEvent']) && ($eventBand = $db->one('SELECT * FROM bands WHERE id = ?', [$bandId])) !== null) {
+            // Neuer Kern: Festival-Bühne oder Battle – neue Fans aus den Zuschauern, danach der Schub für die neueste Platte
+            $e = $reward['coreEvent'];
+            $result['fans'] = round(BandCore::event($repo, Repo::hydrateBand($eventBand), (float) $e['audience'], (float) $e['live'], (float) $e['boost'], (int) $row['ends_at']), 1);
+        }
         if (isset($reward['core']) && ($coreBand = $db->one('SELECT * FROM bands WHERE id = ?', [$bandId])) !== null) {
             // Neuer Kern: neue Fans nach dem Auftritt; steigt die Band dabei eine Ruhmstufe auf, feiert das Ergebnis es
             $fansBefore = BandCore::fans($db, $bandId);

@@ -182,7 +182,9 @@ final class Festival
                 $reject($entry, sprintf('%s passt nicht mehr zu „%s“ (gesucht: %s) und wurde nicht genommen.', $band['name'], $theme['name'], Catalog::GENRES[$theme['genre']]['name']));
                 continue;
             }
-            $valid[] = ['entry' => $entry, 'band' => $band, 'members' => $members, 'gain' => self::weekGain($db, $band['id'], $now), 'label' => $r->label()['name']];
+            // Bühnen nach Bekanntheit: im neuen Kern nach Fans, sonst nach dem Ruhm der letzten Woche
+            $gain = BandCore::$live ? BandCore::fans($db, $band['id']) : self::weekGain($db, $band['id'], $now);
+            $valid[] = ['entry' => $entry, 'band' => $band, 'members' => $members, 'gain' => $gain, 'label' => $r->label()['name']];
         }
         if (!$valid) {
             $db->update('events', ['state' => 'cancelled', 'ends_at' => (int) $event['starts_at'], 'data' => json_encode($theme + ['acts' => []], JSON_UNESCAPED_UNICODE)], ['id' => $eventId]);
@@ -251,14 +253,15 @@ final class Festival
             $stage = $c['stages'][$act['stage']];
             $gear = $repo->gearByMusician();
             $sound = BandCalc::bandSound($band, $members, $gear);
-            $sim = Performance::simulate(array_map(static fn ($m) => Activities::player($m, $gear), $members), $sound, (float) $stage['expect'], $stage['songs']);
+            $expect = BandCore::$live ? Balance::CORE_SOUND_EXPECT[BandCore::stage($db, $band['id'])] : (float) $stage['expect'];
+            $sim = Performance::simulate(array_map(static fn ($m) => Activities::player($m, $gear), $members), $sound, $expect, $stage['songs']);
             // Ruhm wie bei einem Gig: Größe der Bühne × Sound × Publikum, etwas Zufall, PR-Profi
             $fame = 0.0;
             for ($s = 0; $s < $stage['songs']; $s++) {
                 $fame += $stage['fame'] * BandCalc::soundFactor($sound) * $sim['perf'] * Rng::float(0.9, 1.1);
             }
             [$manager, $level] = $repo->bandManager($band);
-            $fame *= 1 + BandCalc::managerBonus($manager, $level, 'prprofi', Balance::PR_BONUS);
+            $fame *= BandCore::$live ? 0.0 : 1 + BandCalc::managerBonus($manager, $level, 'prprofi', Balance::PR_BONUS);
             $drops = [];
             if ($sim['meter'] >= Balance::FAN_MUSICIAN['minMeter'] && Rng::chance($c['fanChance']) && !FanMusician::onCooldown($repo)) {
                 $drops[] = ['kind' => 'musician', 'venue' => $stage['fanVenue']];
@@ -271,7 +274,9 @@ final class Festival
                 'reward' => [
                     'money' => $stage['money'],
                     'fameGains' => BandCalc::splitFame($members, $fame, $gear, true),
-                    'chartBoost' => round($stage['songs'] * Balance::CHART_GIG_BOOST, 3),
+                    'chartBoost' => BandCore::$live ? 0 : round($stage['songs'] * Balance::CHART_GIG_BOOST, 3),
+                    // Neuer Kern: Zuschauer der Bühne bringen neue Fans, dazu ein Hype-Schub für die neueste Platte
+                    'coreEvent' => BandCore::$live ? Balance::CORE_EVENTS['festival'][$act['stage']] + ['live' => $sim['meter']] : null,
                     'venue' => $stage['venue'],
                     'meter' => $sim['meter'],
                     'drops' => $drops,

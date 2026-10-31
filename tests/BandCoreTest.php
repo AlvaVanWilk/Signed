@@ -182,3 +182,89 @@ test('Kern im Spiel: Aufnehmen mit 12 Songs und einer Produktionsstufe, danach b
     checkEquals(0, (int) $db->value('SELECT COUNT(*) FROM ledger WHERE label_id = ? AND text LIKE ?', [$repo->labelId, 'Erstverkauf%']), 'Kein Erstverkauf mehr');
     check(bandById($state, $band['id'])['core']['record'] !== null, 'Spielstand zeigt die neue Platte');
 });
+
+test('Kern im Spiel: Charts nach den Verkäufen der letzten 24 Stunden, jede volle Stunde neu', function () {
+    $db = freshDb();
+    $repos = [];
+    foreach (['Alpha' => [5000, 90], 'Beta' => [500, 80], 'Gamma' => [20000, 70]] as $name => [$fans, $quality]) {
+        $p = registerPlayer($db, $name);
+        $band = foundBand($p, "Band $name");
+        BandCore::$live = true;
+        $repo = new Repo($db, (int) $db->value('SELECT id FROM labels ORDER BY id DESC LIMIT 1'));
+        $db->exec('UPDATE bands SET fans = ? WHERE id = ?', [$fans, $band['id']]);
+        coreRelease($repo, $repo->band($band['id']), $quality, "Platte $name");
+        $repos[$name] = [$p, $repo];
+    }
+    Clock::advance(26 * 3600);
+    [$p] = $repos['Beta'];
+    $charts = $p->get('charts');
+    check($charts['core'], 'Neue Charts');
+    $order = array_column($charts['albums'], 'title');
+    checkEquals(['Platte Gamma', 'Platte Alpha', 'Platte Beta'], $order, 'Mehr Fans und Hype verkaufen mehr');
+    checkEquals(1, $charts['albums'][0]['rank']);
+    check($charts['albums'][0]['sold'] > $charts['albums'][1]['sold'], 'Verkäufe der letzten 24 Stunden absteigend');
+    checkEquals(1, (int) $db->value("SELECT COUNT(*) FROM awards WHERE kind = 'number1'"), 'Platz 1 bei drei Labels');
+    checkEquals(['Gamma Records', 'Alpha Records', 'Beta Records'], array_column($charts['labels'], 'label'), 'Label-Bestenliste nach Fans');
+    checkEquals('Band Gamma', $charts['bands'][0]['band'], 'Fan-Lieblinge');
+    check(isset($charts['sound']), 'Sound-Monster');
+    check($charts['nextAt'] > Clock::now() && $charts['nextAt'] - Clock::now() <= 3600, 'Countdown bis zur vollen Stunde');
+    $finance = $p->get('state')['finance'];
+    check($finance['core'] && $finance['moneyPerHour'] > 0, 'Geld je Stunde aus den Platten');
+});
+
+test('Kern im Spiel: Battle zahlt die neuen Preise, Zuschauer bringen Fans, der Platz einen Hype-Schub', function () {
+    $db = freshDb();
+    $a = registerPlayer($db, 'Battler');
+    $bandA = foundBand($a, 'Laute Lieder');
+    $b = registerPlayer($db, 'Gegner');
+    $bandB = foundBand($b, 'Leise Lieder');
+    BandCore::$live = true;
+    $repoA = new Repo($db, (int) $a->get('state')['label']['id']);
+    $repoB = new Repo($db, (int) $b->get('state')['label']['id']);
+    $next = $a->get('state')['battle']['next'];
+    $a->post('battleEnter', ['bandId' => $bandA['id']]);
+    $b->post('battleEnter', ['bandId' => $bandB['id']]);
+    Clock::set($next['startsAt'] - 3600);
+    coreRelease($repoA, $repoA->band($bandA['id']), 80, 'A');
+    coreRelease($repoB, $repoB->band($bandB['id']), 80, 'B');
+    Clock::set($next['startsAt'] + 5);
+    $cur = $a->get('state')['battle']['current'];
+    $moneyA = (int) $db->value('SELECT money FROM labels WHERE id = ?', [$repoA->labelId]);
+    $moneyB = (int) $db->value('SELECT money FROM labels WHERE id = ?', [$repoB->labelId]);
+    $hypeBefore = BandCore::view($db, $repoA->band($bandA['id']), $repoA->members($bandA['id']), (int) $cur['endsAt'] + 1)['hype'];
+    Clock::set($cur['endsAt'] + 2);
+    $resA = array_values(array_filter($a->get('state')['results'], static fn ($r) => $r['type'] === 'battle'))[0]['result'];
+    $resB = array_values(array_filter($b->get('state')['results'], static fn ($r) => $r['type'] === 'battle'))[0]['result'];
+    $won = $resA['battle']['place'] === 1 ? [$resA, $moneyA, $repoA] : [$resB, $moneyB, $repoB];
+    $lost = $resA['battle']['place'] === 1 ? [$resB, $moneyB, $repoB] : [$resA, $moneyA, $repoA];
+    checkEquals($won[1] + 12000, (int) $db->value('SELECT money FROM labels WHERE id = ?', [$won[2]->labelId]), 'Sieger: 12.000 ₲');
+    checkEquals($lost[1] + 6000, (int) $db->value('SELECT money FROM labels WHERE id = ?', [$lost[2]->labelId]), 'Platz 2: 6.000 ₲');
+    check($resA['fans'] > 0 && $resB['fans'] > 0, 'Zuschauer bringen neue Fans');
+    checkEquals(0.0, (float) $resA['fame'], 'Kein Ruhm mehr');
+    $hypeAfter = BandCore::view($db, $repoA->band($bandA['id']), $repoA->members($bandA['id']))['hype'];
+    check($hypeAfter > $hypeBefore, "Schub nach Platz: $hypeBefore → $hypeAfter");
+});
+
+test('Kern im Spiel: Festival-Bühnen nach Fans, Zuschauer bringen Fans, die Bühne einen Hype-Schub', function () {
+    $db = freshDb();
+    $a = registerPlayer($db, 'Festa');
+    $b = registerPlayer($db, 'Festb');
+    BandCore::$live = true;
+    $next = $a->get('state')['festival']['next'];
+    $small = genreBand($db, $a, $next['genre'], 'Kleine Fische');
+    $big = genreBand($db, $b, $next['genre'], 'Große Nummer');
+    $db->exec('UPDATE bands SET fans = 3000 WHERE id = ?', [$big]);
+    $db->exec('UPDATE bands SET fans = 100 WHERE id = ?', [$small]);
+    $a->post('festivalEnter', ['bandId' => $small]);
+    $b->post('festivalEnter', ['bandId' => $big]);
+    $repoB = new Repo($db, (int) $b->get('state')['label']['id']);
+    Clock::set($next['closesAt'] + 5);
+    $cur = $a->get('state')['festival']['current'];
+    checkEquals([$small, $big], array_column($cur['stages'][0]['acts'], 'bandId'), 'Die Band mit mehr Fans ist Headliner');
+    coreRelease($repoB, $repoB->band($big), 80, 'Festivalplatte');
+    $fans = BandCore::fans($db, $big);
+    Clock::set((int) $cur['endsAt'] + 2);
+    $res = array_values(array_filter($b->get('state')['results'], static fn ($r) => $r['type'] === 'festival'))[0]['result'];
+    check($res['fans'] > 0 && BandCore::fans($db, $big) > $fans, 'Neue Fans vom Festival');
+    checkEquals(0.0, (float) $res['fame']);
+});

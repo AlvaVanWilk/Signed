@@ -59,6 +59,9 @@ final class Charts
      */
     public static function albums(Db $db, ?int $labelId = null): array
     {
+        if (BandCore::$live) {
+            return self::coreAlbums($db, $labelId);
+        }
         $now = Clock::now();
         $rows = $db->all(
             "SELECT r.id, r.title, r.cover, r.songs_total, r.perfect, r.chart_points, r.finished_at, r.boost, r.boost_at, r.topped,
@@ -203,6 +206,22 @@ final class Charts
     public static function build(Db $db, int $labelId): array
     {
         $albums = self::albums($db, $labelId);
+        if (BandCore::$live) {
+            self::markTop($db, $albums);
+            foreach ($albums as &$album) {
+                unset($album['topped'], $album['labelId']);
+            }
+            unset($album);
+            // Neuer Kern: eine Label-Bestenliste (alle Fans), dazu die Künstler-Listen Fan-Lieblinge (Fans) und Sound-Monster (Sound)
+            return [
+                'core' => true,
+                'albums' => $albums,
+                'nextAt' => (intdiv(Clock::now(), self::HOUR) + 1) * self::HOUR,
+                'labels' => self::rank(self::coreLabels($db, $labelId)),
+                'bands' => self::rank(self::coreActs($db, $labelId, 'fans'), Balance::CHART_LIST),
+                'sound' => self::rank(self::coreActs($db, $labelId, 'sound'), Balance::CHART_LIST),
+            ];
+        }
 
         self::markTop($db, $albums);
         foreach ($albums as &$album) {
@@ -236,7 +255,8 @@ final class Charts
 
     public static function boost(Repo $repo, int $bandId, float $amount): void
     {
-        if ($amount <= 0) {
+        // Neuer Kern: keine Chartpunkte mehr; Schübe gehen über den Hype (BandCore::boost)
+        if ($amount <= 0 || BandCore::$live) {
             return;
         }
         $now = Clock::now();
@@ -341,6 +361,9 @@ final class Charts
     /** Regelmäßige Einnahmen: alle eigenen Platten, die gerade charten, und der Kontoauszug. */
     public static function income(Db $db, int $labelId, ?array $albums = null): array
     {
+        if (BandCore::$live) {
+            return self::coreIncome($db, $labelId, $albums ?? self::albums($db, $labelId));
+        }
         $albums ??= self::albums($db, $labelId);
         $records = [];
         $bands = [];
@@ -460,5 +483,172 @@ final class Charts
             }
         }
         return $out;
+    }
+
+    // ---------- Neuer Kern ----------
+
+    /**
+     * Neuer Kern: Platten nach ihren Verkäufen der letzten 24 Stunden (durch den Hype, ohne Katalog), jede volle Stunde neu sortiert.
+     * Vorher werden alle Bands mit laufenden Platten bis zur vollen Stunde weitergerechnet. „Vorher“ ist der Platz der Stunde davor.
+     */
+    private static function coreAlbums(Db $db, ?int $labelId): array
+    {
+        $now = Clock::now();
+        $hour = intdiv($now, self::HOUR);
+        $stored = (int) self::meta($db, 'core_chart_hour');
+        if ($stored !== $hour && self::claimMeta($db, 'core_chart_hour', (string) $stored, (string) $hour)) {
+            BandCore::settleAll($db, $hour * self::HOUR);
+            self::coreRerank($db, $hour);
+        }
+        $sales = self::coreSales($db, $hour);
+        $rows = $db->all(
+            "SELECT r.id, r.title, r.cover, r.songs_total, r.perfect, r.finished_at, r.topped, r.core, r.label_id, r.band_id,
+                    r.rank_last, r.rank_prev, r.rank_best, b.name AS band_name, l.name AS label_name
+             FROM records r
+             JOIN labels l ON l.id = r.label_id
+             LEFT JOIN bands b ON b.id = r.band_id
+             WHERE r.status = 'done' AND r.core IS NOT NULL AND r.rank_last IS NOT NULL"
+        );
+        $out = [];
+        foreach ($rows as $row) {
+            $rank = (int) $row['rank_last'];
+            $prev = $row['rank_prev'] === null ? null : (int) $row['rank_prev'];
+            $hype = (float) ((json_decode((string) $row['core'], true) ?: [])['hype'] ?? 0.0);
+            $out[] = [
+                'recordId' => (int) $row['id'],
+                'bandId' => $row['band_id'] === null ? null : (int) $row['band_id'],
+                'title' => $row['title'],
+                'cover' => (json_decode((string) ($row['cover'] ?? ''), true) ?: [])['spec'] ?? null,
+                'band' => $row['band_name'] ?? 'aufgelöste Band',
+                'label' => $row['label_name'],
+                'perfect' => (bool) $row['perfect'],
+                'hours' => intdiv($now - (int) $row['finished_at'], self::HOUR),
+                'sold' => (int) round($sales[(int) $row['id']] ?? 0.0),
+                'hype' => round($hype, 1),
+                'flame' => Core\Hype::flame($hype),
+                'rank' => $rank,
+                'placed' => $rank <= Balance::CHART_SIZE,
+                'prev' => $prev,
+                'best' => $row['rank_best'] === null ? $rank : (int) $row['rank_best'],
+                'trend' => $prev === null || $prev > Balance::CHART_SIZE ? 'new' : ($rank < $prev ? 'up' : ($rank > $prev ? 'down' : 'same')),
+                'own' => $labelId !== null && (int) $row['label_id'] === $labelId,
+                'topped' => (bool) $row['topped'],
+                'labelId' => (int) $row['label_id'],
+            ];
+        }
+        usort($out, static fn ($a, $b) => $a['rank'] <=> $b['rank']);
+        return $out;
+    }
+
+    /** Verkäufe durch den Hype je Platte in den 24 vollen Stunden vor $hour. */
+    private static function coreSales(Db $db, int $hour): array
+    {
+        $out = [];
+        foreach ($db->all('SELECT record_id, SUM(sold) AS sold FROM chart_hours WHERE hour >= ? AND hour < ? GROUP BY record_id', [$hour - 24, $hour]) as $r) {
+            $out[(int) $r['record_id']] = (float) $r['sold'];
+        }
+        return $out;
+    }
+
+    /** Neuer Kern: Plätze neu vergeben (jede Stunde), Nachrichten schreiben, alte Chart-Stunden aufräumen. */
+    private static function coreRerank(Db $db, int $hour): void
+    {
+        $sales = array_filter(self::coreSales($db, $hour), static fn ($sold) => $sold >= Balance::CORE_SALES['endBelow']);
+        arsort($sales);
+        $ranks = [];
+        foreach (array_slice(array_keys($sales), 0, Balance::CHART_LIST) as $i => $recordId) {
+            $ranks[$recordId] = $i + 1;
+        }
+        $ids = array_keys($ranks);
+        foreach ($db->all('SELECT id FROM records WHERE rank_last IS NOT NULL AND core IS NOT NULL') as $r) {
+            $ids[] = (int) $r['id'];
+        }
+        $size = Balance::CHART_SIZE;
+        foreach (array_unique($ids) as $recordId) {
+            $row = $db->one('SELECT id, title, label_id, band_id, rank_last, rank_best FROM records WHERE id = ?', [$recordId]);
+            if ($row === null) {
+                continue;
+            }
+            $old = $row['rank_last'] === null ? null : (int) $row['rank_last'];
+            $new = $ranks[$recordId] ?? null;
+            $best = $row['rank_best'] === null ? $new : ($new === null ? (int) $row['rank_best'] : min((int) $row['rank_best'], $new));
+            $db->update('records', ['rank_last' => $new, 'rank_prev' => $old, 'rank_best' => $best], ['id' => $recordId]);
+            $repo = new Repo($db, (int) $row['label_id']);
+            $bandId = $row['band_id'] === null ? null : (int) $row['band_id'];
+            if ($new === 1 && $old !== 1) {
+                $repo->log('chart1', sprintf('„%s“ steht auf Platz 1 der Charts!', $row['title']), $bandId);
+            } elseif ($new !== null && $new <= $size && ($old === null || $old > $size)) {
+                $repo->log('chart', sprintf('„%s“ steigt auf Platz %d der Charts ein.', $row['title'], $new), $bandId);
+            } elseif ($old !== null && $old <= $size && ($new === null || $new > $size)) {
+                $repo->log('chart', sprintf('„%s“ ist aus den Top %d gefallen.', $row['title'], $size), $bandId);
+            }
+        }
+        $db->exec('DELETE FROM chart_hours WHERE hour < ?', [$hour - 48]);
+    }
+
+    /**
+     * Neuer Kern: was die Platten des Labels gerade einbringen (Verkäufe des laufenden Tages durch den Hype und den Katalog, je Stunde),
+     * je Band und je Platte, dazu der Kontoauszug. Das Geld tickt im Browser zwischen zwei Abrufen weiter.
+     */
+    private static function coreIncome(Db $db, int $labelId, array $albums): array
+    {
+        $price = Balance::CORE_SALES['price'];
+        $ranks = array_column(array_filter($albums, static fn ($a) => $a['own']), null, 'recordId');
+        $bands = [];
+        $records = [];
+        $total = $catalog = 0.0;
+        foreach ($db->all(
+            'SELECT r.id, r.title, r.band_id, r.core, b.name AS band_name FROM records r LEFT JOIN bands b ON b.id = r.band_id
+             WHERE r.label_id = ? AND r.core_active = 1 ORDER BY r.finished_at DESC',
+            [$labelId]
+        ) as $row) {
+            $core = json_decode((string) $row['core'], true) ?: [];
+            $hype = (float) ($core['soldRate'] ?? 0) * $price / 24;
+            $cat = (float) ($core['catalogRate'] ?? 0) * $price / 24;
+            $total += $hype + $cat;
+            $catalog += $cat;
+            if ($row['band_id'] !== null) {
+                $bands[(int) $row['band_id']]['moneyPerHour'] = round(($bands[(int) $row['band_id']]['moneyPerHour'] ?? 0) + $hype + $cat, 2);
+            }
+            $album = $ranks[(int) $row['id']] ?? null;
+            $records[] = [
+                'title' => $row['title'], 'band' => $row['band_name'] ?? 'aufgelöste Band', 'perHour' => round($hype + $cat, 1),
+                'soldToday' => (int) round((float) ($core['soldRate'] ?? 0)), 'hype' => round((float) ($core['hype'] ?? 0), 1),
+                'flame' => Core\Hype::flame((float) ($core['hype'] ?? 0)), 'ended' => (bool) ($core['ended'] ?? false),
+                'rank' => $album['rank'] ?? null, 'trend' => $album['trend'] ?? null, 'placed' => $album['placed'] ?? false,
+            ];
+        }
+        $ledger = $db->all('SELECT amount, text, created_at FROM ledger WHERE label_id = ? ORDER BY id DESC LIMIT 40', [$labelId]);
+        return [
+            'core' => true,
+            'moneyPerHour' => round($total, 2),
+            'catalogPerHour' => round($catalog, 2),
+            'famePerHour' => 0.0,
+            'bands' => (object) $bands,
+            'records' => $records,
+            'ledger' => array_map(static fn ($l) => ['amount' => (int) $l['amount'], 'text' => $l['text'], 'at' => (int) $l['created_at']], $ledger),
+        ];
+    }
+
+    /** Neuer Kern: Label-Bestenliste – alle Fans aller Bands des Labels zusammen. */
+    private static function coreLabels(Db $db, int $labelId): array
+    {
+        return array_map(static fn ($r) => [
+            'label' => $r['name'], 'bands' => (int) $r['bands'], 'points' => round((float) $r['fans'], 1), 'own' => (int) $r['label_id'] === $labelId,
+        ], $db->all(
+            'SELECT b.label_id, l.name, COUNT(*) AS bands, SUM(b.fans) AS fans FROM bands b JOIN labels l ON l.id = b.label_id
+             WHERE b.retired_at IS NULL GROUP BY b.label_id, l.name'
+        ));
+    }
+
+    /** Neuer Kern: Künstler-Listen über alle Labels – Fan-Lieblinge (`fans`) oder Sound-Monster (`sound`). */
+    private static function coreActs(Db $db, int $labelId, string $by): array
+    {
+        $column = $by === 'sound' ? 'b.sound' : 'b.fans';
+        return array_map(static fn ($r) => [
+            'bandId' => (int) $r['id'], 'band' => $r['name'], 'label' => $r['label_name'], 'points' => round((float) $r['points'], 1), 'own' => (int) $r['label_id'] === $labelId,
+        ], $db->all(
+            "SELECT b.id, b.name, b.label_id, l.name AS label_name, $column AS points FROM bands b JOIN labels l ON l.id = b.label_id WHERE b.retired_at IS NULL"
+        ));
     }
 }

@@ -211,16 +211,24 @@ final class Battle
             $db->update('event_entries', ['place' => $r['place']], ['event_id' => $eventId, 'band_id' => $id]);
             $db->exec('UPDATE bands SET busy_until = ? WHERE id = ? AND busy_until < ?', [$endsAt, $id, $endsAt]);
             $members = $repo->members($id);
-            $fame = $c['fame']['match'] * $r['played'] + $c['fame']['win'] * $r['wins'] + ($c['fame']['place'][$r['place']] ?? 0);
+            $fame = BandCore::$live ? 0.0 : $c['fame']['match'] * $r['played'] + $c['fame']['win'] * $r['wins'] + ($c['fame']['place'][$r['place']] ?? 0);
             $cheer = $c['cheer'][$r['place']] ?? 0;
+            // Neuer Kern: Preise nach Platz (der Sieger bekommt das Preisgeld), je gespieltes Spiel Zuschauer, Schub nach Platz
+            $money = BandCore::$live ? Core\Events::battleMoney((int) ($r['place'] ?? 0)) : ($c['money'][$r['place']] ?? 0);
             (new Activities($repo))->insertBand($id, self::KIND, $start, $endsAt, [
                 'title' => $title,
                 'songs' => 0,
                 'reward' => [
-                    'money' => $c['money'][$r['place']] ?? 0,
+                    'money' => $money,
                     'fameGains' => BandCalc::splitFame($members, $fame, $repo->gearByMusician(), true),
                     'wellbeing' => $cheer > 0 ? array_fill_keys(array_column($members, 'id'), $cheer) : [],
-                    'chartBoost' => round($r['played'] * $c['songs'] * Balance::CHART_GIG_BOOST, 3),
+                    'chartBoost' => BandCore::$live ? 0 : round($r['played'] * $c['songs'] * Balance::CHART_GIG_BOOST, 3),
+                    'coreEvent' => BandCore::$live ? [
+                        'audience' => Core\Events::battleAudience() * $r['played'],
+                        'boost' => Core\Events::battleBoost((int) ($r['place'] ?? 0)),
+                        // Ohne Live-Ticker zählt die Laune der Band als Live-Qualität
+                        'live' => min(100.0, (float) $t['mood']),
+                    ] : null,
                     // Applaus wie in einer großen Halle
                     'venue' => 'halle',
                     'battle' => $r + ['event' => $eventId, 'of' => count($teams), 'day' => self::day($start)],

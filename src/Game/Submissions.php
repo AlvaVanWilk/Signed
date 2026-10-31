@@ -190,20 +190,38 @@ final class Submissions
             if ($r['opened_at'] === null) {
                 return $base + ['state' => 'closed'];
             }
-            if ((int) $r['opened_at'] > $now) {
-                return $base + ['state' => 'listening', 'opensAt' => (int) $r['opened_at'], 'byIntern' => $r['worker'] !== null];
-            }
             $card = json_decode($r['card'], true);
+            if ((int) $r['opened_at'] > $now) {
+                return $base + ['state' => 'listening', 'opensAt' => (int) $r['opened_at'], 'byIntern' => $r['worker'] !== null, 'sound' => self::sound($card, (int) $r['id'])];
+            }
             $present = [self::class, 'presentCard'];
             if (($card['kind'] ?? '') === 'band') {
                 $members = [];
                 foreach ($card['members'] as $i => $c) {
                     $members[] = $present($c, -((int) $r['id'] * 10 + $i + 1)) + ['index' => $i];
                 }
-                return $base + ['state' => 'open', 'kind' => 'band', 'bandName' => $card['name'], 'members' => $members, 'price' => array_sum(array_column($members, 'price'))];
+                return $base + ['state' => 'open', 'kind' => 'band', 'bandName' => $card['name'], 'members' => $members, 'price' => array_sum(array_column($members, 'price')),
+                    'sound' => self::sound($card, (int) $r['id'])];
             }
-            return $present($card, -(int) $r['id']) + $base + ['state' => 'open', 'kind' => 'solo'];
+            return $present($card, -(int) $r['id']) + $base + ['state' => 'open', 'kind' => 'solo', 'sound' => self::sound($card, (int) $r['id'])];
         }, $rows);
+    }
+
+    /**
+     * Was man beim Anhören hört (der Browser sucht damit die Aufnahmen aus, wie bei einer Band): je Musiker Instrument, Genres, Stufe und
+     * Stimme, dazu das Genre, in dem gespielt wird (bei einer Band das gemeinsame, sonst das Lieblingsgenre). Verrät nichts, was man nicht hört.
+     */
+    private static function sound(array $card, int $id): array
+    {
+        $cards = ($card['kind'] ?? '') === 'band' ? $card['members'] : [$card];
+        $shared = array_values(array_intersect(...array_map(static fn ($c) => $c['genres'], $cards)));
+        return [
+            'genres' => [$shared[0] ?? $cards[0]['genres'][0]],
+            'members' => array_map(static fn ($c, $i) => [
+                'id' => count($cards) > 1 ? -($id * 10 + $i + 1) : -$id, 'bandSlot' => 1, 'instruments' => [['type' => $c['instr1']]],
+                'genres' => $c['genres'], 'level' => (int) ($c['level'] ?? 0), 'look' => ['gender' => $c['look']['gender'] ?? null],
+            ], $cards, array_keys($cards)),
+        ];
     }
 
     /** Ein Bewerber (Einsendung oder Scout-Bericht) wie ein Musiker, mit Prämie; Charakterzüge noch verborgen. */

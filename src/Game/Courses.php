@@ -112,6 +112,7 @@ final class Courses
             $all = self::all($now + $d * 86400);
             $out[] = ['day' => $all[0]['day'], 'courses' => array_map(static fn ($c) => array_intersect_key($c, array_flip(['instrument', 'prefix', 'name', 'teacher', 'gain', 'seconds', 'kind'])) + [
                 'prices' => array_map(static fn ($i) => self::price($c, $i), array_keys(Balance::COURSE['levels'])),
+                'gains' => array_map(static fn ($i) => self::gain($c, $i), array_keys(Balance::COURSE['levels'])),
             ], $all)];
         }
         return $out;
@@ -121,6 +122,12 @@ final class Courses
     public static function levelFor(array $m, int $slot): int
     {
         return min(count(Balance::COURSE['levels']) - 1, Levels::forSkill(BandCalc::skill($m, $slot)));
+    }
+
+    /** Können-Zuwachs der Kursart in dieser Schwierigkeit: im neuen Kern je Schwierigkeit im neuen Maß, sonst für alle gleich. */
+    public static function gain(array $course, int $level): float
+    {
+        return BandCore::$live ? Balance::CORE_COURSE['gain'][$course['kind']][$level] : (float) $course['gain'];
     }
 
     /** Preis der heutigen Kursart in dieser Schwierigkeit. */
@@ -147,7 +154,7 @@ final class Courses
                 }
             }
             return $course + [
-                'levels' => array_map(static fn ($name, $i) => ['name' => $name, 'price' => self::price($course, $i)], Balance::COURSE['levels'], array_keys(Balance::COURSE['levels'])),
+                'levels' => array_map(static fn ($name, $i) => ['name' => $name, 'price' => self::price($course, $i), 'gain' => self::gain($course, $i)], Balance::COURSE['levels'], array_keys(Balance::COURSE['levels'])),
                 'candidates' => $candidates,
             ];
         }, $courses);
@@ -192,7 +199,8 @@ final class Courses
             $activity = (new Activities($this->repo))->insertSolo($m['id'], 'course', $now, $endsAt, [
                 'title' => sprintf('%s bei %s: %s', $title, $course['teacher'], Bands::fullName($m)),
                 'songs' => 0,
-                'reward' => ['slot' => $slot, 'skill' => $course['gain']],
+                // Im neuen Kern zählt der Zuwachs im neuen Maß (Activities::applyPractice rechnet ihn auf die gespeicherte Skala um)
+                'reward' => ['slot' => $slot, 'skill' => self::gain($course, $level), 'core' => BandCore::$live],
             ]);
             $db->insert('course_visits', [
                 'label_id' => $this->repo->labelId, 'musician_id' => $m['id'], 'day' => $course['day'],

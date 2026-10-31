@@ -305,9 +305,10 @@ Erfolg, bewerben sich mehr Musiker mit ähnlichen Genres. Interview-Anfragen ric
 
 ### Neue Musiker
 
-- **Kassetten:** Antippen hört sie an (5 Sekunden), dann sieht man, wer drauf ist: meist Mittelmaß, manchmal Gutes. Unter Vertrag nehmen kostet
+- **Kassetten:** Antippen hört sie an (10 Sekunden, man hört die Spur des Musikers bzw. die ganze Band), dann sieht man, wer drauf ist: meist Mittelmaß, manchmal Gutes. Unter Vertrag nehmen kostet
   eine **einmalige Unterschriftsprämie** fürs ganze Leben (`40 + 0,05 × Können² + 1,5 × Bekanntheit`, mal versteckter Wert). Von einer Band kann
   man alle oder **einzelne** nehmen; wer zurückbleibt, zieht enttäuscht weiter, und wer kommt, ist gekränkt (Wohlbefinden startet niedriger).
+  Gesichtete Kassetten haben ▶ zum nochmal Reinhören. Hört die Assistenz oder das Praktikum an, bleibt es still (Sandra, 31.10.).
   Mitglieder einer Band kennen sich schon.
 - **Scout** (Bewerbung, 400 / 1.200 / 3.000 ₲): losschicken mit Genre und/oder Instrument, nach 2 / 1½ / 1 Stunden liegt ein **Bericht** mit 2 / 3 / 3
   Talenten im Posteingang (unbekannt, Können bis 34 / 44 / 54). Man blättert durch und unterschreibt beliebig viele. Der Scout steht unter der

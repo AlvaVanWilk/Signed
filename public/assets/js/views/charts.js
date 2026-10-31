@@ -3,8 +3,61 @@ import { app, cat, defineActions, navigate, rerender } from '../core.js';
 import { coverHtml } from '../play.js';
 import { esc, fmt0, fmt1, fmtGain, openModal, toast } from '../ui.js';
 import { flame } from '../core-ui.js';
+import { getAudio } from '../audio.js';
+import { loadStems, playStems } from '../music.js';
 
 let loading = false;
+
+// ---------- Anhören: jede Band in den Charts und Bestenlisten, auch die anderer Labels (ein Durchgang) ----------
+
+/** Was gerade läuft: { bandId, player, timer }. */
+let listening = null;
+
+function stopListening() {
+  if (!listening) return;
+  clearTimeout(listening.timer);
+  listening.player?.stop();
+  listening = null;
+}
+
+/** Spuren der Band holen (so, wie sie gerade klingt) und einmal ganz abspielen. */
+async function listen(bandId) {
+  stopListening();
+  const mine = { bandId, player: null, timer: 0 };
+  listening = mine;
+  rerender();
+  let band = null;
+  try {
+    band = await api('bandView', { bandId });
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+  const buffers = band ? await loadStems(band.members.map((m) => [m.stem])) : null;
+  const ctx = getAudio();
+  if (listening !== mine) return;
+  if (!buffers || !ctx) {
+    listening = null;
+    if (band) toast(`Von ${band.name} gibt es noch keine Aufnahme.`, 'error');
+    rerender();
+    return;
+  }
+  mine.player = playStems(buffers, ctx.currentTime + 0.05, { volume: 0.85 });
+  mine.timer = setTimeout(() => {
+    if (listening === mine) {
+      stopListening();
+      rerender();
+    }
+  }, (cat().rules.songSeconds ?? 24) * 1000);
+}
+
+/** ▶ vor dem Bandnamen (läuft: ■). */
+const playBtn = (bandId) => (!bandId ? '' : `<button class="chart-play ${listening?.bandId === bandId ? 'on' : ''}" data-act="chartListen" data-id="${bandId}"
+  title="${listening?.bandId === bandId ? 'Anhalten' : 'Anhören'}" aria-label="${listening?.bandId === bandId ? 'Anhalten' : 'Anhören'}">${listening?.bandId === bandId ? '■' : '▶'}</button>`);
+
+// Wer die Charts verlässt, hört nichts mehr.
+window.addEventListener('hashchange', () => {
+  if (listening) stopListening();
+});
 
 export async function loadCharts() {
   if (loading) return;
@@ -167,6 +220,15 @@ defineActions({
     app.ui.chartsTab = tab;
     rerender();
   },
+  chartListen({ id }) {
+    getAudio();
+    if (listening?.bandId === Number(id)) {
+      stopListening();
+      rerender();
+      return;
+    }
+    listen(Number(id));
+  },
   chartsReload() {
     return loadCharts();
   },
@@ -208,7 +270,7 @@ function coreAlbums(all) {
           <td class="rank">${e.rank}</td>
           <td>${trendBadge(e)}</td>
           <td><span class="chart-record"><span class="cover-thumb">${coverHtml(e.cover)}</span><span><b>${esc(e.title)}</b>${e.perfect ? ' <span class="chip special" title="Perfekte Platte">perfekt</span>' : ''}</span></span></td>
-          <td>${e.bandId ? `<button class="link" data-act="viewBand" data-id="${e.bandId}">${esc(e.band)}</button>` : esc(e.band)}<br><span class="muted small">${esc(e.label)}</span></td>
+          <td><span class="chart-band">${playBtn(e.bandId)}<span>${e.bandId ? `<button class="link" data-act="viewBand" data-id="${e.bandId}">${esc(e.band)}</button>` : esc(e.band)}<br><span class="muted small">${esc(e.label)}</span></span></span></td>
           <td>${flame(e.flame)}</td>
           <td><b>${fmt0(e.sold)}</b></td>
         </tr>`).join('')}
@@ -218,7 +280,7 @@ function coreAlbums(all) {
       <ol class="chart-rest">${outside.map((e) => `
         <li class="${e.own ? 'own' : ''}"><span class="rank">${e.rank}</span><span class="cover-thumb">${coverHtml(e.cover)}</span>
           <span class="chart-rest-main"><b>${esc(e.title)}</b> <span class="muted small">${esc(e.band)} · ${esc(e.label)}</span></span>
-          ${trendBadge(e)}<span class="chart-rest-points">${fmt0(e.sold)}</span></li>`).join('')}</ol>` : ''}`;
+          ${playBtn(e.bandId)}${trendBadge(e)}<span class="chart-rest-points">${fmt0(e.sold)}</span></li>`).join('')}</ol>` : ''}`;
 }
 
 /** Label-Bestenliste, Fan-Lieblinge, Sound-Monster: Platz, Name, Wert. */
@@ -230,7 +292,7 @@ function coreList(list, key, unit, labels = false) {
       <tbody>${list.map((e) => `
         <tr class="${e.own ? 'own' : ''}">
           <td class="rank">${e.rank <= 3 ? ['🥇', '🥈', '🥉'][e.rank - 1] : e.rank}</td>
-          <td>${labels ? esc(e.label) : `<button class="link" data-act="viewBand" data-id="${e.bandId}">${esc(e.band)}</button>`}</td>
+          <td>${labels ? esc(e.label) : `<span class="chart-band">${playBtn(e.bandId)}<button class="link" data-act="viewBand" data-id="${e.bandId}">${esc(e.band)}</button></span>`}</td>
           <td class="muted">${labels ? fmt0(e.bands) : esc(e.label)}</td>
           <td><b>${unit === 'Sound' ? fmt1(e.points) : fmt0(e.points)}</b></td>
         </tr>`).join('')}

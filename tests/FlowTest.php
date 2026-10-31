@@ -1380,7 +1380,15 @@ test('Einsendungen: Willkommens-Stapel, laufender Eingang, Unterschreiben kostet
     checkApiError(fn () => $p->post('submissionOpen', ['submissionId' => $ids[1]]), 'schon eine andere');
     $listening = $p->get('state')['submissions'];
     checkEquals(1, count(array_filter($listening, static fn ($s) => $s['state'] === 'listening')), 'nur eine gleichzeitig');
-    check(!isset($listening[array_search($ids[0], array_column($listening, 'submissionId'), true)]['firstName']), 'beim Sichten noch nichts zu sehen');
+    $heard = $listening[array_search($ids[0], array_column($listening, 'submissionId'), true)];
+    check(!isset($heard['firstName']), 'beim Sichten noch nichts zu sehen');
+    // Beim Anhören läuft die Spur: Instrument, Genres, Stufe, Stimme und das Genre, in dem gespielt wird – mehr nicht
+    checkEquals(1, count($heard['sound']['members']), 'eine Spur je Musiker');
+    $tone = $heard['sound']['members'][0];
+    $keys = array_keys($tone);
+    sort($keys);
+    checkEquals(['bandSlot', 'genres', 'id', 'instruments', 'level', 'look'], $keys, 'nur was man hört');
+    check(in_array($heard['sound']['genres'][0], $tone['genres'], true), 'gespielt im eigenen Genre');
     foreach (array_slice($ids, 1) as $id) {
         Clock::advance(Balance::SUBMISSIONS['listen'] + 1);
         $p->post('submissionOpen', ['submissionId' => $id]);
@@ -1389,6 +1397,7 @@ test('Einsendungen: Willkommens-Stapel, laufender Eingang, Unterschreiben kostet
     $state = $p->get('state');
     checkEquals(['open'], array_values(array_unique(array_column($state['submissions'], 'state'))));
     check(count(array_filter($state['submissions'], static fn ($s) => $s['instruments'][0]['skill'] >= 15)) >= 3, 'drei brauchbare');
+    check(!array_filter($state['submissions'], static fn ($s) => empty($s['sound']['members'])), 'Nochmal reinhören: Jede gesichtete Kassette hat ihre Spuren');
     // Zeit vergeht: es kommen neue, alte verfallen nicht vor dem Verfallsdatum.
     Clock::advance(86400);
     $later = $p->get('state')['submissions'];

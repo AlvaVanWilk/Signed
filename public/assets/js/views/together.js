@@ -4,6 +4,8 @@ import { app, bandById, cat, defineActions, musicianById, mutate, navigate } fro
 import { esc, fmt0, fmt1, openModal, toast } from '../ui.js';
 import { coreOn } from '../core-ui.js';
 import { suggestName } from './bands.js';
+import { getAudio } from '../audio.js';
+import { bandStems, loadStems, playStems } from '../music.js';
 
 /**
  * „Mit Musiker(n) zusammentun“: Wer passt zu dieser Band? Der Server ordnet die Möglichkeiten nach Nutzen:
@@ -46,7 +48,8 @@ function row(c) {
     <div class="tg-row ${sectionOf(c)}" data-band="${c.bandId}" data-search="${esc(searchText(c))}">
       <div class="tg-who">${who(c)}</div>
       <ul class="tg-fx">${effects}</ul>
-      <div class="tg-go">${slot}${c.blocked ? '' : `<button class="btn small primary" data-join="${c.bandId}" data-kind="${c.kind}" data-musician="${c.musicianId ?? ''}">Zusammentun</button>`}</div>
+      <div class="tg-go">${slot}${c.blocked ? '' : `<button class="btn small ghost" data-hear="${c.bandId}" title="So würdet ihr zusammen klingen">▶ Reinhören</button>
+        <button class="btn small primary" data-join="${c.bandId}" data-kind="${c.kind}" data-musician="${c.musicianId ?? ''}">Zusammentun</button>`}</div>
     </div>`;
 }
 
@@ -76,9 +79,41 @@ async function open(bandId, only = null) {
     return;
   }
   const solo = band.memberIds.length === 1;
+  // Hörprobe: So würdet ihr zusammen klingen (eine zur Zeit, ein Durchgang; endet mit dem Fenster)
+  let hearing = null;
+  const stopHearing = () => {
+    if (!hearing) return;
+    clearTimeout(hearing.timer);
+    hearing.player?.stop();
+    hearing.btn.textContent = '▶ Reinhören';
+    hearing = null;
+  };
+  const hear = async (cand, slot, btn) => {
+    stopHearing();
+    const mine = { btn, player: null, timer: 0 };
+    hearing = mine;
+    btn.textContent = '■ Stopp';
+    // Alle zusammen, der Neue mit dem gewählten Instrument; mögen alle ein Genre, spielen alle darin, sonst jeder seins
+    const theirs = cand.memberIds.map(musicianById).filter(Boolean).map((m) => (cand.kind === 'musician' ? { ...m, bandSlot: slot } : m));
+    const all = [...band.memberIds.map(musicianById).filter(Boolean), ...theirs];
+    const shared = all.reduce((acc, m) => acc.filter((g) => m.genres.includes(g)), all[0]?.genres ?? []);
+    const buffers = await loadStems(bandStems(all, shared.length ? { genres: shared.slice(0, 2) } : null, bandId).map((x) => [x]));
+    const ctx = getAudio();
+    if (hearing !== mine) return;
+    if (!buffers || !ctx) {
+      stopHearing();
+      toast('Dafür gibt es noch keine Aufnahme.', 'error');
+      return;
+    }
+    mine.player = playStems(buffers, ctx.currentTime + 0.05, { volume: 0.85 });
+    mine.timer = setTimeout(() => {
+      if (hearing === mine) stopHearing();
+    }, (cat().rules.songSeconds ?? 24) * 1000);
+  };
   const modal = openModal({
     wide: true,
     className: 'tg-modal',
+    onClose: stopHearing,
     html: `
       <h2>${only !== null && candidates[0] ? `${esc(band.name)} und ${esc(candidates[0].name)} zusammentun?` : solo ? `${esc(band.name)} mit anderen zusammentun` : `${esc(band.name)}: mit Musiker(n) zusammentun`}</h2>
       ${only !== null ? '<p class="muted">So würde sich das Zusammentun auswirken. Erst mit „Zusammentun“ und der Namenswahl passiert es wirklich.</p>' : '<input class="tg-search" type="search" placeholder="Name suchen" autocomplete="off" aria-label="Name suchen">'}
@@ -98,8 +133,16 @@ async function open(bandId, only = null) {
     modal.body.querySelector('.tg-none').hidden = shown > 0;
   });
   modal.body.addEventListener('click', async (e) => {
+    const listen = e.target.closest('[data-hear]');
+    if (listen) {
+      getAudio();
+      if (hearing?.btn === listen) stopHearing();
+      else hear(candidates.find((c) => c.bandId === Number(listen.dataset.hear)), Number(listen.closest('.tg-row').querySelector('[data-slot]')?.value || 1), listen);
+      return;
+    }
     const btn = e.target.closest('[data-join]');
     if (!btn) return;
+    stopHearing();
     const cand = candidates.find((c) => c.bandId === Number(btn.dataset.join));
     const slot = Number(btn.closest('.tg-row').querySelector('[data-slot]')?.value || 1);
     const choice = await chooseName(band, cand);

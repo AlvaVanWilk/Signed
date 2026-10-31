@@ -182,7 +182,8 @@ final class Balance
         'bandChance' => 0.15, 'bandBond' => 4.0,
         // Kassetten: zweites Genre 10 %, drittes nie (Sandra, 31.10.: mehrere Genres vor allem über Scouts)
         'extraGenres' => [0.10, 0.0],
-        'listen' => 5, 'ttl' => 4 * 86400, 'maxCatchUp' => 4 * 86400, 'maxPerCall' => 120,
+        // Anhören: so lange läuft die Spur der Kassette (etwa die erste Hälfte der Aufnahme; Sandra, 31.10.: vorher 5)
+        'listen' => 10, 'ttl' => 4 * 86400, 'maxCatchUp' => 4 * 86400, 'maxPerCall' => 120,
         'good' => ['from' => 0.05, 'to' => 0.25, 'at' => 5000],
         'goodLevels' => [1 => 70, 2 => 25, 3 => 5],
         'skill' => [0 => [6, 33], 1 => [35, 58], 2 => [60, 83], 3 => [85, 98]],
@@ -907,6 +908,17 @@ final class Balance
      * Können: Stufen ab `levels`, `perHour` je echte Probestunde, ohne Lernkurve, nach oben offen.
      * Übergang alter Musiker: altes Können (0–100) → neues an derselben Stelle der Stufe, zwischen den Punkten gleichmäßig.
      */
+    /**
+     * Neuer Kern: Kurse des Tages geben Können im neuen Maß, je Kursart (Kurs, Workshop, Meisterklasse) und Schwierigkeit (Anfänger,
+     * Fortgeschrittene, Profis). Mehr als Proben in derselben Zeit (50 je Stunde), dafür kosten sie (Preise wie COURSE): bei Anfängern
+     * 1,8 / 1,6 / 1,5-mal so viel, bei Fortgeschrittenen 4,2 / 3,2 / 3, bei Profis 18 / 12 / 10; etwa 4 bis 7 ₲ je Punkt (Sandra, 31.10.).
+     */
+    public const CORE_COURSE = ['gain' => [[15.0, 35.0, 150.0], [40.0, 80.0, 300.0], [75.0, 150.0, 500.0]]];
+    /**
+     * Neuer Kern: Privatlehrer je Stufe: so viel Können im neuen Maß in der gebuchten Zeit (mit passendem Genre × TEACHER['genreFactor']),
+     * nur bis `max` (Stufe 1 bis zur Profi-Grenze 400, Stufe 2 bis zur Virtuosen-Grenze 1.600). Etwa 3 bis 4 ₲ je Punkt.
+     */
+    public const CORE_TEACHER = [1 => ['gain' => 80.0, 'max' => 400.0], 2 => ['gain' => 300.0, 'max' => 1600.0], 3 => ['gain' => 800.0, 'max' => 3200.0]];
     public const CORE_SKILL = ['levels' => [100, 400, 1600], 'perHour' => 50.0, 'legacy' => [0 => 0.0, 35 => 100.0, 60 => 400.0, 85 => 1600.0, 100 => 2320.0]];
     /** So viel ₲ verdient das Label je Zuschauer, nach Ruhmstufe der Band (Kosten gibt es keine). */
     public const CORE_EARNINGS = [0 => 5, 1 => 6, 2 => 9, 3 => 12];

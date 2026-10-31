@@ -25,6 +25,13 @@ final class Tutors
         return $role === null ? $rows : array_values(array_filter($rows, static fn ($r) => $r['role'] === $role));
     }
 
+    /** Zuwachs und Grenze einer Lehrkraft dieser Stufe, im angezeigten Maß (neuer Kern: CORE_TEACHER, sonst TEACHER). */
+    public static function tier(int $tier): array
+    {
+        $t = Balance::TEACHER['tiers'][$tier];
+        return BandCore::$live ? ['gain' => Balance::CORE_TEACHER[$tier]['gain'], 'maxSkill' => Balance::CORE_TEACHER[$tier]['max']] + $t : $t;
+    }
+
     /** Wer bei diesem Lehrer lernen kann: spielt das Instrument, ist noch nicht zu gut und hat gerade keinen anderen Lehrer. */
     public function canTeach(array $job, array $m): ?string
     {
@@ -32,7 +39,7 @@ final class Tutors
         if ($slot === 0) {
             return sprintf('%s spielt kein %s.', $m['first_name'], Catalog::INSTRUMENTS[$job['instrument']]['name']);
         }
-        if (BandCalc::skill($m, $slot) >= Balance::TEACHER['tiers'][(int) $job['tier']]['maxSkill']) {
+        if (Levels::shown(BandCalc::skill($m, $slot)) >= self::tier((int) $job['tier'])['maxSkill']) {
             return sprintf('%s kann schon mehr, als diese Lehrkraft beibringt.', $m['first_name']);
         }
         foreach ($this->bookings('teacher') as $b) {
@@ -55,11 +62,13 @@ final class Tutors
                 throw new ApiError($why);
             }
             $c = Balance::TEACHER;
-            $tier = $c['tiers'][(int) $job['tier']];
+            $tier = self::tier((int) $job['tier']);
             $genreMatch = ($job['genre'] ?? null) !== null && in_array($job['genre'], $m['genres'], true);
+            // Im neuen Kern zählen Zuwachs und Fortschritt im neuen Maß (`core`); settle rechnet auf die gespeicherte Skala um
             $data = $person + [
                 'musicianId' => $m['id'], 'slot' => $m['instr1'] === $job['instrument'] ? 1 : 2, 'instrument' => $job['instrument'], 'genre' => $job['genre'] ?? null,
                 'gain' => round($tier['gain'] * ($genreMatch ? $c['genreFactor'] : 1.0), 2), 'done' => 0.0, 'from' => $now, 'until' => $now + $tier['seconds'], 'at' => $now,
+                'core' => BandCore::$live,
             ];
             $this->repo->log('staff', sprintf('%s %s gibt %s %s Unterricht.', $job['first_name'], $job['last_name'], Bands::withBand($this->repo->db, $m, $m['first_name']), Catalog::INSTRUMENTS[$job['instrument']]['at']), $m['band_id'], $m['id']);
         } else {
@@ -98,7 +107,9 @@ final class Tutors
                 if ($gain > 0) {
                     $m = Repo::hydrateMusician($row);
                     $column = (int) $d['slot'] === 2 ? 'skill2' : 'skill1';
-                    $db->update('musicians', [$column => Levels::cap(BandCalc::skill($m, (int) $d['slot']) + $gain)], ['id' => $m['id']]);
+                    $old = BandCalc::skill($m, (int) $d['slot']);
+                    $new = !empty($d['core']) ? Core\Skill::toLegacy(Core\Skill::fromLegacy($old) + $gain) : $old + $gain;
+                    $db->update('musicians', [$column => Levels::cap($new)], ['id' => $m['id']]);
                     Levels::check($this->repo, $m['id']);
                     $d['done'] = round((float) $d['done'] + $gain, 4);
                     $d['at'] = $to;

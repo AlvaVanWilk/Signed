@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 use Signed\Clock;
+use Signed\Game\Balance;
 use Signed\Game\BandCore;
 use Signed\Game\Core\Career;
 use Signed\Game\Repo;
@@ -672,6 +673,61 @@ test('Kern im Spiel: Können wird im neuen Maß gezeigt, Proben bringt 50 je Stu
     coreNear($before + 50, Signed\Game\Core\Skill::fromLegacy(Signed\Game\Core\Skill::toLegacy($before + 50)), 1e-9, 'Umrechnung hin und zurück');
 });
 
+test('Kern im Spiel: Kurse geben Können im neuen Maß je Schwierigkeit, angezeigt wie gutgeschrieben', function () {
+    [$db, $p] = coreLabel();
+    $course = Signed\Game\Courses::today();
+    $gains = Balance::CORE_COURSE['gain'][$course['kind']];
+    $ids = array_column($p->get('state')['musicians'], 'id');
+    // Anfänger (alt 20 = neu 57,1) und Fortgeschrittener (alt 40 = neu 160) spielen das Instrument des Tages
+    $db->exec('UPDATE musicians SET instr1 = ?, instr2 = NULL, skill2 = NULL, skill1 = 20 WHERE id = ?', [$course['instrument'], $ids[0]]);
+    $db->exec('UPDATE musicians SET instr1 = ?, instr2 = NULL, skill2 = NULL, skill1 = 40 WHERE id = ?', [$course['instrument'], $ids[1]]);
+    $db->exec('UPDATE labels SET money = 100000');
+    $state = $p->get('state');
+    checkEquals($gains, array_column($state['courses'][0]['levels'], 'gain'), 'Zuwachs je Schwierigkeit');
+    $shown = static fn (int $id) => Signed\Game\Levels::shown((float) $db->value('SELECT skill1 FROM musicians WHERE id = ?', [$id]));
+    $before = [$shown($ids[0]), $shown($ids[1])];
+    $a = $p->post('courseAttend', ['musicianId' => $ids[0], 'course' => 0])['activity'];
+    $b = $p->post('courseAttend', ['musicianId' => $ids[1], 'course' => 0])['activity'];
+    Clock::advance($course['seconds'] + 5);
+    $p->get('state');
+    coreNear($before[0] + $gains[0], $shown($ids[0]), 1e-6, 'Anfänger: + Zuwachs der ersten Schwierigkeit');
+    coreNear($before[1] + $gains[1], $shown($ids[1]), 1e-6, 'Fortgeschrittener: + Zuwachs der zweiten Schwierigkeit');
+    $result = json_decode((string) $db->value('SELECT result FROM activities WHERE id = ?', [$b['id']]), true);
+    coreNear($gains[1], (float) $result['skill'], 1e-6, 'Ergebnis nennt den Zuwachs im neuen Maß');
+    coreNear(floor(($before[1] + $gains[1]) * 10) / 10, (float) $result['skillAfter'], 0.11, 'und das Können danach im neuen Maß');
+    check($a['id'] !== $b['id']);
+});
+
+test('Kern im Spiel: Privatlehrer geben Können im neuen Maß und unterrichten bis zu ihrer neuen Grenze', function () {
+    [$db, $p] = coreLabel();
+    $db->exec('UPDATE labels SET money = 100000');
+    $state = $p->get('state');
+    $guitar = array_values(array_filter($state['musicians'], static fn ($m) => $m['instruments'][0]['type'] === 'guitar'))[0];
+    $drums = array_values(array_filter($state['musicians'], static fn ($m) => $m['instruments'][0]['type'] === 'drums'))[0];
+    $db->exec("UPDATE musicians SET skill1 = 20 WHERE id = ?", [$guitar['id']]);
+    $db->exec("UPDATE musicians SET instr1 = 'guitar', skill1 = 61 WHERE id = ?", [$drums['id']]);
+    $state = $p->post('mailTest')['state'];
+    $job = array_values(array_filter($state['mail'], static fn ($m) => $m['kind'] === 'job' && $m['role'] === 'teacher' && $m['tier'] === 1))[0];
+    $data = json_decode((string) $db->value('SELECT data FROM mail WHERE id = ?', [$job['mailId']]), true);
+    $data['instrument'] = 'guitar';
+    $data['genre'] = null;
+    $db->update('mail', ['data' => json_encode($data)], ['id' => $job['mailId']]);
+    coreNear(Balance::CORE_TEACHER[1]['gain'], (float) $job['gain'], 1e-9, 'Brief: Zuwachs im neuen Maß');
+    coreNear(Balance::CORE_TEACHER[1]['max'], (float) $job['maxSkill'], 1e-9, 'Brief: Grenze im neuen Maß');
+    // Alt 61 ist neu 448: über der Grenze 400 der ersten Stufe
+    checkApiError(fn () => $p->post('mailHire', ['mailId' => $job['mailId'], 'target' => $drums['id']]), 'kann schon mehr');
+    $before = Signed\Game\Levels::shown(20.0);
+    $state = $p->post('mailHire', ['mailId' => $job['mailId'], 'target' => $guitar['id']])['state'];
+    coreNear(Balance::CORE_TEACHER[1]['gain'], (float) $state['tutors'][0]['gain'], 1e-9);
+    Clock::advance(Balance::TEACHER['tiers'][1]['seconds'] / 2);
+    $half = $p->get('state')['tutors'][0]['done'];
+    coreNear(Balance::CORE_TEACHER[1]['gain'] / 2, (float) $half, 0.05, 'Nach der halben Zeit die Hälfte');
+    Clock::advance(Balance::TEACHER['tiers'][1]['seconds']);
+    $p->get('state');
+    $after = Signed\Game\Levels::shown((float) $db->value('SELECT skill1 FROM musicians WHERE id = ?', [$guitar['id']]));
+    coreNear($before + Balance::CORE_TEACHER[1]['gain'], $after, 0.01, 'Am Ende genau der Zuwachs (auch über die Stufengrenze 100 hinweg)');
+});
+
 test('Kern im Spiel: Scout und Lehrer nennen ihre Können-Grenze im neuen Maß (sonst passt im Browser kein Lehrer)', function () {
     [, $p] = coreLabel();
     $mail = $p->post('mailTest')['state']['mail'];
@@ -681,7 +737,7 @@ test('Kern im Spiel: Scout und Lehrer nennen ihre Können-Grenze im neuen Maß (
     coreNear(0.5, (float) $scout['multiGenre'], 1e-9, 'Scout Stufe 1: jedes zweite Talent mit mehreren Genres');
     coreNear(0.85, (float) $job('scout', 3)['multiGenre'], 1e-9);
     $teacher = $job('teacher', 1);
-    coreNear(Signed\Game\Levels::shown(55.0), (float) $teacher['maxSkill'], 1e-9, 'Lehrer Stufe 1: bis 55 alt, also bis 340 neu');
+    coreNear(Balance::CORE_TEACHER[1]['max'], (float) $teacher['maxSkill'], 1e-9, 'Lehrer Stufe 1: bis 400 (neues Maß)');
     // Der Browser vergleicht das gezeigte Können der Musiker mit dieser Grenze: Ein Musiker mit altem Können 40 (neu 160) kann noch lernen
     check(Signed\Game\Levels::shown(40.0) < (float) $teacher['maxSkill'], 'Musiker unter der Grenze passt');
     $staff = $p->post('mailHire', ['mailId' => $scout['mailId']])['state']['scouts'][0];

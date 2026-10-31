@@ -660,13 +660,16 @@ final class Activities
         $slot = (int) $data['reward']['slot'];
         $column = $slot === 2 ? 'skill2' : 'skill1';
         $before = BandCalc::skill($m, $slot);
-        $after = Levels::cap($before + (float) $data['reward']['skill']);
+        $gain = (float) $data['reward']['skill'];
+        // Neuer Kern (Kurs im neuen Maß gebucht): Zuwachs im neuen Können, gespeichert wird auf der alten Skala
+        $core = !empty($data['reward']['core']);
+        $after = Levels::cap($core ? Core\Skill::toLegacy(Core\Skill::fromLegacy($before) + $gain) : $before + $gain);
         $repo->db->update('musicians', [$column => $after], ['id' => $m['id']]);
         $levelUp = Levels::check($repo, $m['id']);
         return [
             'instrument' => $slot === 2 ? $m['instr2'] : $m['instr1'],
-            'skill' => round($after - $before, 3),
-            'skillAfter' => Present::down($after),
+            'skill' => round($core ? $gain : $after - $before, 3),
+            'skillAfter' => Present::down($core ? Core\Skill::fromLegacy($after) : $after),
             'levelUps' => $levelUp === null ? [] : [$levelUp],
         ];
     }

@@ -1,4 +1,4 @@
-import { instrumentIcon, withBand } from '../cards.js';
+import { courseGainText, instrumentIcon, withBand } from '../cards.js';
 import { app, bandById, cat, isBusy, musicianById } from '../core.js';
 import { duration, esc, fmt0, money } from '../ui.js';
 import { trophy } from './battle.js';
@@ -19,18 +19,18 @@ function todayNote(c, n) {
   return `<article class="bb-note" style="${tilt(n)}">
     <span class="bb-pin"></span>
     <div class="bb-head"><span class="bb-ico">${instrumentIcon(c.instrument)}</span><div><b>${esc(c.prefix)}-${esc(c.name)}</b><small>bei ${esc(c.teacher)} · ${duration(c.seconds)}</small></div></div>
-    <p class="bb-gain">+${fmt0(c.gain)} Können</p>
-    <ul class="bb-prices">${c.levels.map((l) => `<li>${esc(l.name)} <b>${money(l.price)}</b></li>`).join('')}</ul>
+    <p class="bb-gain">${courseGainText(c)} Können</p>
+    <ul class="bb-prices">${c.levels.map((l) => `<li>${esc(l.name)} <small>+${fmt0(l.gain ?? c.gain)}</small> <b>${money(l.price)}</b></li>`).join('')}</ul>
     ${list.length ? `<div class="bb-who">${list.map((x) => (x.visited
       ? `<span class="bb-done">${esc(withBand(x.m))}: heute schon im Kurs</span>`
-      : `<button class="btn small primary" data-act="courseAttend" data-id="${x.m.id}" data-course="${c.index}" ${isBusy(x.m.busyUntil) || (x.m.bandId && isBusy(bandById(x.m.bandId)?.busyUntil)) ? 'disabled' : ''}>${esc(withBand(x.m))} hinschicken · ${money(c.levels[x.level].price)}</button>`)).join('')}</div>`
+      : `<button class="btn small primary" data-act="courseAttend" data-id="${x.m.id}" data-course="${c.index}" ${isBusy(x.m.busyUntil) || (x.m.bandId && isBusy(bandById(x.m.bandId)?.busyUntil)) ? 'disabled' : ''}>${esc(withBand(x.m))} hinschicken · +${fmt0(c.levels[x.level].gain ?? c.gain)} Können · ${money(c.levels[x.level].price)}</button>`)).join('')}</div>`
       : '<p class="bb-none">Bei dir spielt das niemand.</p>'}
   </article>`;
 }
 
 function weekDay(d, i) {
   return `<div class="bb-day"><h3>${esc(dayName(d.day, i))}</h3>${d.courses.map((c) => `
-    <div class="bb-mini"><span class="bb-ico sm">${instrumentIcon(c.instrument)}</span><span><b>${esc(c.prefix)}-${esc(c.name)}</b><small>+${fmt0(c.gain)} Können · ab ${money(c.prices[0])}</small></span></div>`).join('')}</div>`;
+    <div class="bb-mini"><span class="bb-ico sm">${instrumentIcon(c.instrument)}</span><span><b>${esc(c.prefix)}-${esc(c.name)}</b><small>${courseGainText(c)} Können · ab ${money(c.prices[0])}</small></span></div>`).join('')}</div>`;
 }
 
 /** Zettel zum Battle of the Bands: wann, wer dabei ist, und ob es gerade läuft. */

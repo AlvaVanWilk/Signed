@@ -1,4 +1,4 @@
-import { instrumentIcon, instrumentName, photo, withBand, withBandHtml } from '../cards.js';
+import { courseGainText, instrumentIcon, instrumentName, photo, withBand, withBandHtml } from '../cards.js';
 import { app, bandById, cat, defineActions, isBusy, liveMoney, managerById, musicianById, mutate, serverNow } from '../core.js';
 import { coverHtml } from '../play.js';
 import { INTERN_JOBS } from '../office.js';
@@ -293,9 +293,9 @@ function boardNote(s) {
       <h2><a href="#/brett">Schwarzes Brett</a></h2>
       <article class="bb-note ov-note" style="--r:-1deg">
         <span class="bb-pin"></span>
-        <div class="bb-head"><span class="bb-ico">${instrumentIcon(c.instrument)}</span><div><b>Heute: ${esc(c.prefix)}-${esc(c.name)}</b><small>bei ${esc(c.teacher)} · +${fmt0(c.gain)} Können</small></div></div>
+        <div class="bb-head"><span class="bb-ico">${instrumentIcon(c.instrument)}</span><div><b>Heute: ${esc(c.prefix)}-${esc(c.name)}</b><small>bei ${esc(c.teacher)} · ${courseGainText(c)} Können</small></div></div>
         ${fits.length ? `<div class="bb-who">${fits.map((x) => (x.visited ? `<span class="bb-done">${esc(x.m.firstName)} war schon da</span>`
-          : `<button class="btn small primary" data-act="courseAttend" data-id="${x.m.id}" data-course="${c.index}" ${isBusy(x.m.busyUntil) ? 'disabled' : ''}>${esc(x.m.firstName)} hinschicken · ${money(c.levels[x.level].price)}</button>`)).join('')}</div>`
+          : `<button class="btn small primary" data-act="courseAttend" data-id="${x.m.id}" data-course="${c.index}" ${isBusy(x.m.busyUntil) ? 'disabled' : ''}>${esc(x.m.firstName)} hinschicken · +${fmt0(c.levels[x.level].gain ?? c.gain)} · ${money(c.levels[x.level].price)}</button>`)).join('')}</div>`
           : '<p class="bb-none">Bei dir spielt das heute niemand.</p>'}
         <a class="bb-more" href="#/brett">Die ganze Woche ansehen</a>
       </article>

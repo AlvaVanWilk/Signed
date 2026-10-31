@@ -1649,3 +1649,7 @@ body { background: radial-gradient(1100px 520px at 50% -12%, rgba(255, 181, 71, 
 .ov-prizes li small.muted, .bt-prize small.muted { display: block; }
 .bt-weekly { padding: 8px 12px; border-radius: 10px; background: var(--panel-2); border: 1px solid var(--line); }
 .bt-weekly small { display: block; margin-top: 2px; }
+
+/* Kassette nochmal reinhören (▶, läuft: ■) */
+.lb-iconbtn.listen { font-size: 0.72rem; }
+.lb-iconbtn.listen.on { color: var(--lb-accent); border-color: var(--lb-accent); }

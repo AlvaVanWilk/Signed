@@ -84,6 +84,13 @@ export function ownIcon(m, type) {
 export const playsElectric = (m, type) => ownGear(m, type).electric;
 export const genreName = (key) => cat().genres[key]?.name ?? key;
 
+/** Können-Zuwachs eines Kurses: für alle gleich („+3“) oder je Schwierigkeit („+15 bis +150“, neuer Kern). */
+export const courseGainText = (c) => {
+  const gains = c.levels ? c.levels.map((l) => l.gain ?? c.gain) : (c.gains ?? [c.gain]);
+  const [lo, hi] = [Math.min(...gains), Math.max(...gains)].map((n) => Math.round(n).toLocaleString('de-DE'));
+  return lo === hi ? `+${lo}` : `+${lo} bis +${hi}`;
+};
+
 /** Suchauftrag eines Scouts in Worten: „Rock und Pop · Bass“, ohne Vorgabe „ohne Vorgabe“. */
 export const scoutTask = (t) => [[t.genre, t.genre2].filter(Boolean).map((g) => genreName(g)).join(' und '), t.instrument ? instrumentName(t.instrument) : ''].filter(Boolean).join(' · ') || 'ohne Vorgabe';
 /** Genres immer in derselben Reihenfolge anzeigen (wie im Katalog: Pop, Rock, Metal …). */

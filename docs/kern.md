@@ -145,6 +145,12 @@ Verdienst         = Zuschauer × 5 / 6 / 9 / 12 ₲ nach Ruhmstufe
 - Gespeichert bleibt die alte Skala; gezeigt und für den Sound gerechnet wird `Core\Skill::fromLegacy` (0 / 35 / 60 / 85 / 100 ↔ 0 / 100 / 400 / 1.600 / 2.320).
 - Laufende Probe: Was bisher dazukam (`credited`, auch im Ergebnis), zählt im neuen Maß; nur der Speicher bekommt den umgerechneten Wert.
   So rechnet der Browser zwischen zwei Spielständen mit demselben Maß weiter (vorher sprang die Zahl alle paar Sekunden zurück).
+- **Kurse und Privatlehrer** (Sandra, 31.10.) geben Können im neuen Maß (`CORE_COURSE`, `CORE_TEACHER`), angezeigt so, wie es gutgeschrieben wird.
+  Kurs / Workshop / Meisterklasse: Anfänger +15 / +40 / +75, Fortgeschrittene +35 / +80 / +150, Profis +150 / +300 / +500 (Preise wie bisher).
+  Das ist mehr als Proben in derselben Zeit (50 je Stunde): Anfänger 1,8 / 1,6 / 1,5-fach, Fortgeschrittene 4,2 / 3,2 / 3-fach, Profis
+  18 / 12 / 10-fach, etwa 4 bis 7 ₲ je Punkt. Vorher galt die alte Skala (+3 / +5 / +8): im neuen Maß für Anfänger nur +9 / +14 / +23
+  (weniger als Proben), für Profis +144 / +240 / +384, und angezeigt wurde „+3“. Privatlehrer Stufe 1 / 2 / 3: +80 / +300 / +800 in zwei
+  Tagen (passendes Genre × 1,3), unterrichten bis 400 / 1.600 / 3.200; etwa 3 bis 4 ₲ je Punkt.
 
 ### Bedürfnisse
 
@@ -379,6 +385,8 @@ Solokünstler: kein Genre-Bonus außer halb für Pop und Elektro, Zusammenhalt 1
   Auf Tournee fragen Medien aus dem Land (größte Stadt), gleicher Gewinn (`Catalog::INTERVIEW_MEDIA_ABROAD`).
 
 ### Kurse, Privatlehrer, Coach
+
+*Altes Spiel; im neuen Kern geben Kurse und Lehrer Können im neuen Maß (siehe „Neuer Kern“, Können).*
 
 - **Kurs des Tages:** jeden Tag ein Instrument (reihum, nie zweimal hintereinander) und eine Kursart, für alle gleich: Kurs (50 %, 10 Min.,
   +3 Können), Workshop (35 %, 30 Min., +5), Meisterklasse (15 %, 60 Min., +8). Drei Schwierigkeiten (Stufe 0, 1, 2+), jeder nur in seiner;

@@ -311,12 +311,14 @@ final class Inbox
             if ($r['kind'] === 'report') {
                 return $base + Scouting::presentReport($d, (int) $r['id']);
             }
-            $tier = self::tiers($d['role'])[(int) $d['tier']];
+            // Lehrkräfte: Zuwachs und Grenze im angezeigten Maß (neuer Kern: neues Können)
+            $tier = $d['role'] === 'teacher' ? Tutors::tier((int) $d['tier']) : self::tiers($d['role'])[(int) $d['tier']];
             return $base + [
                 'role' => $d['role'], 'tier' => (int) $d['tier'], 'price' => (int) $tier['price'], 'perDay' => $tier['perDay'] ?? null,
                 // Können-Grenze (Scout: bis wohin seine Talente reichen, Lehrer: bis wohin er unterrichtet) im angezeigten Maß
                 'seconds' => $tier['seconds'] ?? null, 'candidates' => $tier['candidates'] ?? null,
-                'maxSkill' => ($max = $tier['maxSkill'] ?? (isset($tier['skill']) ? $tier['skill'][1] : null)) === null ? null : round(Levels::shown((float) $max), 1),
+                'maxSkill' => $d['role'] === 'teacher' ? (float) $tier['maxSkill']
+                    : (($max = $tier['skill'][1] ?? null) === null ? null : round(Levels::shown((float) $max), 1)),
                 'multiGenre' => $tier['extraGenres'][0] ?? null,
                 'instrument' => $d['instrument'] ?? null, 'genre' => $d['genre'] ?? null, 'gain' => $tier['gain'] ?? null,
                 'speed' => $tier['speed'] ?? null, 'quality' => $tier['quality'] ?? null,

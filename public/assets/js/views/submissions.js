@@ -4,6 +4,52 @@ import { actions, app, bandById, cat, defineActions, isBusy, mutate, musicianByI
 import { confirmDialog, esc, fmt0, money, off, openModal, toast } from '../ui.js';
 import { fitWord, levelClass, levelProgress, relColor } from './label.js';
 import { INTERN_JOBS, closeTalk, officeScene, rulesText, searchText } from '../office.js';
+import { getAudio } from '../audio.js';
+import { bandStems, loadStems, playStems } from '../music.js';
+
+// ---------- Kassetten anhören: Was drauf ist, hört man (eine zur Zeit) ----------
+
+/** Was gerade von einer Kassette läuft: { id, player, timer }. */
+let playing = null;
+
+/** Die laufende Kassette anhalten (leise ausblenden). */
+function stopTape() {
+  if (!playing) return;
+  clearTimeout(playing.timer);
+  playing.player?.stop();
+  playing = null;
+}
+
+/**
+ * Spuren einer Kassette abspielen, so lange wie das Anhören dauert, am Ende ausgeblendet: allein die Spur des Musikers, bei einer Band
+ * alle zusammen, im Genre der Band (s.sound vom Server). Fehlt eine Aufnahme, nimmt music.js die nächstbeste.
+ */
+async function playTape(s) {
+  stopTape();
+  if (!s?.sound) return;
+  const id = s.submissionId;
+  const mine = { id, player: null, timer: 0 };
+  playing = mine;
+  const buffers = await loadStems(bandStems(s.sound.members, { genres: s.sound.genres }, id).map((x) => [x]));
+  const ctx = getAudio();
+  if (!buffers || !ctx || playing !== mine) {
+    if (playing === mine) playing = null;
+    rerender();
+    return;
+  }
+  const seconds = cat().rules.submissionListen ?? 10;
+  mine.player = playStems(buffers, ctx.currentTime + 0.05, { volume: 0.8 });
+  for (const g of mine.player.gains) g.gain.setTargetAtTime(0, ctx.currentTime + Math.max(0.5, seconds - 1.2), 0.35);
+  mine.timer = setTimeout(() => {
+    if (playing === mine) {
+      stopTape();
+      rerender();
+    }
+  }, seconds * 1000);
+}
+
+// Wer den Posteingang verlässt, hört nichts mehr.
+window.addEventListener('hashchange', stopTape);
 
 /**
  * Posteingang: Demos (Musiker bewerben sich von selbst beim Label), Interview-Anfragen und Bewerbungen fürs Label.
@@ -113,6 +159,7 @@ function iconFoot(s, price, enough) {
   const money0 = app.state.label.money;
   return `<div class="lb-card-foot">
     <b class="lb-price" title="${expires(s)}">${money(price)}</b>
+    ${s.sound ? `<button class="lb-iconbtn listen ${playing?.id === s.submissionId ? 'on' : ''}" data-act="subListen" data-id="${s.submissionId}" title="${playing?.id === s.submissionId ? 'Anhalten' : 'Nochmal reinhören'}" aria-label="Nochmal reinhören">${playing?.id === s.submissionId ? '■' : '▶'}</button>` : ''}
     <button class="lb-iconbtn drop" data-act="submissionDrop" data-id="${s.submissionId}" title="Wegwerfen" aria-label="Wegwerfen">✕</button>
     <button class="lb-iconbtn sign" data-act="subSign" data-id="${s.submissionId}" ${off(money0 < price ? `Dafür fehlen noch ${money(price - money0)}.` : !enough ? 'Wähle mindestens einen aus.' : '')} title="Unterschreiben – ${money(price)}" aria-label="Unterschreiben">${PEN}</button>
   </div>`;
@@ -257,7 +304,7 @@ function jobLetter(m) {
   const what = m.role === 'intern' ? 'hilft dir auf Zuruf: Briefe öffnen, Demos anhören oder Post sortieren'
     : m.role === 'assistant' ? 'arbeitet von allein in einem Gebiet: Post, Kassetten oder Büro'
     : m.role === 'scout' ? `${m.candidates} Talente in ${mins(m.seconds)} (Können bis ${fmt0(m.maxSkill)}${m.multiGenre ? `, ${multiGenreText(m.multiGenre)}` : ''})`
-    : m.role === 'teacher' ? `${instrumentName(m.instrument)} für einen Musiker: +${m.gain} Können (bis ${fmt0(m.maxSkill)})${m.genre ? `, bei ${genreName(m.genre)} mehr` : ''}`
+    : m.role === 'teacher' ? `${instrumentName(m.instrument)} für einen Musiker: +${fmt0(m.gain)} Können (bis ${fmt0(m.maxSkill)})${m.genre ? `, bei ${genreName(m.genre)} mehr` : ''}`
     : m.role === 'coach' ? `${days(m.seconds)} für eine Band: Songs ${fmtFactor(m.speed)} so schnell, Platte +${Math.round(m.quality * 100)} %`
     : m.role === 'manager' ? `${m.genres.map((g) => genreName(g)).join(', ')} · ${m.skills.map((k) => cat().managerSkills[k]?.name ?? k).join(', ')}` : '';
   const book = ['teacher', 'coach'].includes(m.role);
@@ -907,7 +954,17 @@ defineActions({
     if (res) toast(`${s.firstName} ${s.lastName} hat unterschrieben.`, 'ok');
   },
   async submissionOpen({ id }) {
-    await mutate('submissionOpen', { submissionId: Number(id) });
+    getAudio();
+    if (await mutate('submissionOpen', { submissionId: Number(id) })) {
+      const s = (app.state.submissions ?? []).find((x) => x.submissionId === Number(id));
+      if (s?.state === 'listening' && !s.byIntern) playTape(s);
+    }
+  },
+  subListen({ id }) {
+    getAudio();
+    if (playing?.id === Number(id)) stopTape();
+    else playTape((app.state.submissions ?? []).find((x) => x.submissionId === Number(id)));
+    rerender();
   },
   async submissionDrop({ id }) {
     await mutate('submissionDrop', { submissionId: Number(id) });

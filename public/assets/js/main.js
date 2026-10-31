@@ -213,7 +213,7 @@ function render() {
   // Labels aus dem alten Spiel sehen einmal „Was ist neu?“ statt der Einführung.
   if (app.state.transition) maybeShowTransition();
   else help.maybeStartTour();
-  if (route.name === 'charts' && !app.charts) charts.loadCharts();
+  if (route.name === 'charts' && (!app.charts || Date.now() - (app.chartsAt ?? 0) > 60000)) charts.loadCharts();
   if (route.name === 'wiki') wiki.ensure();
   if (route.name === 'store') store.enter();
 }
@@ -676,6 +676,8 @@ setInterval(() => {
     lastTapeRefresh = Date.now();
     refresh();
   }
+  // Charts: jede Minute neu sortiert – solange die Seite offen ist, ebenso oft nachladen.
+  if (location.hash.startsWith('#/charts') && app.charts?.core && Date.now() - (app.chartsAt ?? 0) > 60000) charts.loadCharts();
   // Post kommt zufällig: ab und zu nachsehen, damit die Zahl am Posteingang hochzählt.
   const slow = Date.now() - lastAutoRefresh > (cat().rules.postRefresh ?? 60) * 1000;
   if ((due && Date.now() - lastAutoRefresh > 3000) || (live && Date.now() - lastAutoRefresh > 5000) || slow) {

@@ -220,7 +220,7 @@ final class Charts
             return [
                 'core' => true,
                 'albums' => $albums,
-                'nextAt' => (intdiv(Clock::now(), self::HOUR) + 1) * self::HOUR,
+                'nextAt' => (intdiv(Clock::now(), 60) + 1) * 60,
                 'labels' => self::rank(self::coreLabels($db, $labelId)),
                 'bands' => self::rank(self::coreActs($db, $labelId, 'fans'), Balance::CHART_LIST),
                 'sound' => self::rank(self::coreActs($db, $labelId, 'sound'), Balance::CHART_LIST),
@@ -492,19 +492,28 @@ final class Charts
     // ---------- Neuer Kern ----------
 
     /**
-     * Neuer Kern: Platten nach ihren Verkäufen der letzten 24 Stunden (durch den Hype, ohne Katalog), jede volle Stunde neu sortiert.
-     * Vorher werden alle Bands mit laufenden Platten bis zur vollen Stunde weitergerechnet. „Vorher“ ist der Platz der Stunde davor.
+     * Neuer Kern: Platten nach ihren Verkäufen der letzten 24 Stunden (durch den Hype, ohne Katalog), jede Minute neu sortiert und sofort,
+     * wenn eine Platte erscheint. Jede volle Stunde werden vorher alle Bands mit laufenden Platten weitergerechnet (das kostet bei vielen
+     * Labels spürbar Zeit, darum nicht jede Minute); dazwischen zählt jede Platte bis dahin, wo ihre Band zuletzt gerechnet wurde – die
+     * eigenen bei jedem Aufruf. „Vorher“ ist der Platz zur letzten vollen Stunde; Nachrichten (Einstieg, Platz 1, herausgefallen) zur vollen Stunde.
      */
     private static function coreAlbums(Db $db, ?int $labelId): array
     {
         $now = Clock::now();
         $hour = intdiv($now, self::HOUR);
-        $stored = (int) self::meta($db, 'core_chart_hour');
-        if ($stored !== $hour && self::claimMeta($db, 'core_chart_hour', (string) $stored, (string) $hour)) {
+        $minute = intdiv($now, 60);
+        $storedHour = (int) self::meta($db, 'core_chart_hour');
+        $storedMinute = (int) self::meta($db, 'core_chart_minute');
+        if ($storedHour !== $hour && self::claimMeta($db, 'core_chart_hour', (string) $storedHour, (string) $hour)) {
             BandCore::settleAll($db, $hour * self::HOUR);
-            self::coreRerank($db, $hour);
+            self::coreRerank($db, true);
+            self::setMeta($db, 'core_chart_minute', (string) $minute);
+            self::setMeta($db, 'chart_dirty', '0');
+        } elseif (($storedMinute !== $minute && self::claimMeta($db, 'core_chart_minute', (string) $storedMinute, (string) $minute))
+            || (self::meta($db, 'chart_dirty') === '1' && self::claimMeta($db, 'chart_dirty', '1', '0'))) {
+            self::coreRerank($db, false);
         }
-        $sales = self::coreSales($db, $hour);
+        $sales = self::coreSales($db);
         $rows = $db->all(
             "SELECT r.id, r.title, r.cover, r.songs_total, r.perfect, r.finished_at, r.topped, r.core, r.label_id, r.band_id,
                     r.rank_last, r.rank_prev, r.rank_best, b.name AS band_name, l.name AS label_name
@@ -544,39 +553,84 @@ final class Charts
         return $out;
     }
 
-    /** Verkäufe durch den Hype je Platte in den 24 vollen Stunden vor $hour. */
-    private static function coreSales(Db $db, int $hour): array
+    /**
+     * Verkäufe durch den Hype je laufender Platte in den 24 Stunden bis dahin, wo ihre Band zuletzt gerechnet wurde (aus den Chart-Stunden;
+     * die angebrochene Stunde am Anfang zählt anteilig, die Verkäufe sind über die Stunde gleich verteilt). Dazu, was in den letzten 24 Stunden
+     * erschienen ist, auch ohne Verkäufe: Eine neue Platte steht sofort in den Charts.
+     * @return array<int, float> Platte => Stück
+     */
+    private static function coreSales(Db $db): array
     {
-        $out = [];
-        foreach ($db->all('SELECT record_id, SUM(sold) AS sold FROM chart_hours WHERE hour >= ? AND hour < ? GROUP BY record_id', [$hour - 24, $hour]) as $r) {
-            $out[(int) $r['record_id']] = (float) $r['sold'];
+        $now = Clock::now();
+        $ends = [];
+        $young = [];
+        foreach ($db->all(
+            'SELECT r.id, r.finished_at, b.core_at FROM records r LEFT JOIN bands b ON b.id = r.band_id
+             WHERE r.status = ? AND r.core IS NOT NULL AND (r.core_active = 1 OR r.finished_at > ?)',
+            ['done', $now - 86400]
+        ) as $r) {
+            $id = (int) $r['id'];
+            $ends[$id] = min($now, max((int) ($r['core_at'] ?? 0), (int) $r['finished_at']));
+            $young[$id] = (int) $r['finished_at'] > $now - 86400;
         }
-        return $out;
-    }
-
-    /** Neuer Kern: Plätze neu vergeben (jede Stunde), Nachrichten schreiben, alte Chart-Stunden aufräumen. */
-    private static function coreRerank(Db $db, int $hour): void
-    {
-        $sales = array_filter(self::coreSales($db, $hour), static fn ($sold) => $sold >= Balance::CORE_SALES['endBelow']);
-        arsort($sales);
-        $ranks = [];
-        foreach (array_slice(array_keys($sales), 0, Balance::CHART_LIST) as $i => $recordId) {
-            $ranks[$recordId] = $i + 1;
+        if (!$ends) {
+            return [];
         }
-        $ids = array_keys($ranks);
-        foreach ($db->all('SELECT id FROM records WHERE rank_last IS NOT NULL AND core IS NOT NULL') as $r) {
-            $ids[] = (int) $r['id'];
-        }
-        $size = Balance::CHART_SIZE;
-        foreach (array_unique($ids) as $recordId) {
-            $row = $db->one('SELECT id, title, label_id, band_id, rank_last, rank_best FROM records WHERE id = ?', [$recordId]);
-            if ($row === null) {
+        $out = array_fill_keys(array_keys($ends), 0.0);
+        $from = intdiv(min($ends) - 86400, self::HOUR);
+        foreach ($db->all('SELECT record_id, hour, sold FROM chart_hours WHERE hour >= ?', [$from]) as $h) {
+            $id = (int) $h['record_id'];
+            if (!isset($ends[$id])) {
                 continue;
             }
-            $old = $row['rank_last'] === null ? null : (int) $row['rank_last'];
+            $start = $ends[$id] - 86400;
+            $a = (int) $h['hour'] * self::HOUR;
+            if ($a + self::HOUR <= $start || $a >= $ends[$id]) {
+                continue;
+            }
+            $out[$id] += (float) $h['sold'] * ($a < $start ? ($a + self::HOUR - $start) / self::HOUR : 1.0);
+        }
+        // Ausgelaufen (weniger als endBelow in 24 Stunden) heißt: nicht mehr in den Charts – außer am ersten Tag.
+        return array_filter($out, static fn ($sold, $id) => $sold >= Balance::CORE_SALES['endBelow'] || $young[$id], ARRAY_FILTER_USE_BOTH);
+    }
+
+    /**
+     * Neuer Kern: Plätze neu vergeben (jede Minute und sofort nach einer neuen Platte). Zur vollen Stunde ($hourly) auch „Vorher“ setzen,
+     * Nachrichten schreiben (verglichen mit der Stunde davor) und alte Chart-Stunden aufräumen.
+     */
+    private static function coreRerank(Db $db, bool $hourly): void
+    {
+        $sales = self::coreSales($db);
+        $finished = [];
+        if ($sales) {
+            foreach ($db->all('SELECT id, finished_at FROM records WHERE id IN (' . implode(',', array_map('intval', array_keys($sales))) . ')') as $r) {
+                $finished[(int) $r['id']] = (int) $r['finished_at'];
+            }
+        }
+        // Mehr verkauft zuerst; gleich viel (etwa zwei neue ohne Verkäufe): die neuere zuerst.
+        $ids = array_keys($sales);
+        usort($ids, static fn ($a, $b) => [$sales[$b], $finished[$b] ?? 0] <=> [$sales[$a], $finished[$a] ?? 0]);
+        $ranks = [];
+        foreach (array_slice($ids, 0, Balance::CHART_LIST) as $i => $recordId) {
+            $ranks[$recordId] = $i + 1;
+        }
+        $size = Balance::CHART_SIZE;
+        $ranked = $ranks ? ' OR id IN (' . implode(',', array_map('intval', array_keys($ranks))) . ')' : '';
+        foreach ($db->all("SELECT id, title, label_id, band_id, rank_last, rank_prev, rank_best FROM records
+                           WHERE core IS NOT NULL AND (rank_last IS NOT NULL OR rank_prev IS NOT NULL$ranked)") as $row) {
+            $recordId = (int) $row['id'];
+            $last = $row['rank_last'] === null ? null : (int) $row['rank_last'];
             $new = $ranks[$recordId] ?? null;
             $best = $row['rank_best'] === null ? $new : ($new === null ? (int) $row['rank_best'] : min((int) $row['rank_best'], $new));
-            $db->update('records', ['rank_last' => $new, 'rank_prev' => $old, 'rank_best' => $best], ['id' => $recordId]);
+            if (!$hourly) {
+                if ($new !== $last || $best !== ($row['rank_best'] === null ? null : (int) $row['rank_best'])) {
+                    $db->update('records', ['rank_last' => $new, 'rank_best' => $best], ['id' => $recordId]);
+                }
+                continue;
+            }
+            // Zur vollen Stunde: verglichen wird mit dem Platz zur vollen Stunde davor.
+            $old = $row['rank_prev'] === null ? null : (int) $row['rank_prev'];
+            $db->update('records', ['rank_last' => $new, 'rank_prev' => $new, 'rank_best' => $best], ['id' => $recordId]);
             $repo = new Repo($db, (int) $row['label_id']);
             $bandId = $row['band_id'] === null ? null : (int) $row['band_id'];
             if ($new === 1 && $old !== 1) {
@@ -587,7 +641,9 @@ final class Charts
                 $repo->log('chart', sprintf('„%s“ ist aus den Top %d gefallen.', $row['title'], $size), $bandId);
             }
         }
-        $db->exec('DELETE FROM chart_hours WHERE hour < ?', [$hour - 48]);
+        if ($hourly) {
+            $db->exec('DELETE FROM chart_hours WHERE hour < ?', [intdiv(Clock::now(), self::HOUR) - 48]);
+        }
     }
 
     /**

@@ -161,7 +161,7 @@ function topics() {
     ['Erfolg', [
       ['award', 'Auszeichnungen', `Alles steht im Proberaum der Band: die <b>Goldene Schallplatte</b> (${n(aw.gold)} verkauft), <b>Platin</b> (${n(aw.platinum)}), <b>Diamant</b> (${n(aw.diamond)}), <b>Platz 1</b> der Charts, der Pass für den ersten Auftritt in einer <b>Halle</b>, einer <b>Arena</b> und einem <b>Stadion</b>, Pokale vom Battle, das Plakat als Festival-Headliner und der Globus von der Tournee.`],
       ['charts', 'Charts und WikiSignia', `${k
-        ? 'In den <b>Charts</b> stehen die Platten aller Labels, nach den Verkäufen der letzten 24 Stunden; jede volle Stunde werden sie neu sortiert. Dort gibt es auch die Bestenliste der Labels (alle Fans zusammen), die <b>Fan-Lieblinge</b> (die meisten Fans) und die <b>Sound-Monster</b> (der beste Sound).'
+        ? 'In den <b>Charts</b> stehen die Platten aller Labels, nach den Verkäufen der letzten 24 Stunden; jede Minute werden sie neu sortiert, eine neue Platte steht sofort drin. Dort gibt es auch die Bestenliste der Labels (alle Fans zusammen), die <b>Fan-Lieblinge</b> (die meisten Fans) und die <b>Sound-Monster</b> (der beste Sound).'
         : 'In den <b>Charts</b> stehen die Platten aller Labels; je höher, desto mehr verkauft sich eine Platte. Dort findest du auch die Rangliste der Labels und Bands.'} In der <b>WikiSignia</b> hat jede Band und jeder Musiker einen eigenen Artikel, auch von anderen Labels.`],
     ]],
   ];

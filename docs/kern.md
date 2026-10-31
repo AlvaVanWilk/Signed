@@ -69,7 +69,10 @@ p = 0,0015 · q = 0,06 · r = 0,5 · k = 0,6
 
 - Die neueste Platte läuft, bis sie an einem Tag durch den Hype weniger als ein Stück verkauft; danach nur noch **Katalog**:
   Fans × 0,012 × Q / 100 × 0,5^(Tag / 7) je Tag, bis unter 0,01.
-- **Charts:** Verkäufe durch den Hype in den letzten 24 Stunden, jede volle Stunde neu sortiert (`chart_hours`).
+- **Charts:** Verkäufe durch den Hype in den letzten 24 Stunden (`chart_hours`), jede Minute neu sortiert; eine neue Platte steht sofort drin
+  (am ersten Tag auch ohne Verkäufe). Jede Platte zählt bis dahin, wo ihre Band zuletzt gerechnet wurde: die eigenen bei jedem Aufruf, alle
+  anderen spätestens zur vollen Stunde (dann werden alle Bands mit laufenden Platten weitergerechnet). „Vorher“ ist der Platz zur letzten
+  vollen Stunde, die Nachrichten (Einstieg, Platz 1, herausgefallen) kommen zur vollen Stunde.
 - **Gold, Platin, Diamant:** 5.000 / 20.000 / 50.000 verkauft (Hype und Katalog zusammen).
 
 ### Konzerte („Auftreten“)

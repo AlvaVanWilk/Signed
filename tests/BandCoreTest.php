@@ -167,6 +167,55 @@ test('Kern im Spiel: Regler fürs Songschreiben – sorgfältig schreibt weniger
     check($written <= $expected + 1e-6, "Sorgfältig: $written Songs an einem Tag (höchstens $expected)");
 });
 
+test('Kern im Spiel: Charts jede Minute neu, eine neue Platte steht sofort drin; „Vorher“ und Nachrichten zur vollen Stunde', function () {
+    $db = freshDb();
+    $labels = [];
+    foreach (['Alpha' => 5000, 'Beta' => 20000] as $name => $fans) {
+        $p = registerPlayer($db, $name);
+        $band = foundBand($p, "Band $name");
+        BandCore::$live = true;
+        $repo = new Repo($db, (int) $db->value('SELECT id FROM labels ORDER BY id DESC LIMIT 1'));
+        $db->exec('UPDATE bands SET fans = ? WHERE id = ?', [$fans, $band['id']]);
+        $labels[$name] = [$p, $repo, $repo->band($band['id'])];
+    }
+    [$pa, $ra, $ba] = $labels['Alpha'];
+    coreRelease($ra, $ba, 80, 'Erste');
+    Clock::advance(3 * 3600 + 3600 - Clock::now() % 3600 + 300);
+    $album = static fn (Player $p, string $title) => array_values(array_filter($p->get('charts')['albums'], static fn ($a) => $a['title'] === $title))[0] ?? null;
+    check($album($pa, 'Erste') !== null, 'Die erste Platte steht drin');
+    // Beta veröffentlicht (wie aus dem Studio): sofort in den Charts, noch ohne Verkäufe hinter der ersten, neu
+    [$pb, $rb, $bb] = $labels['Beta'];
+    coreRelease($rb, $bb, 90, 'Zweite');
+    Signed\Game\Charts::markDirty($db);
+    $new = $album($pb, 'Zweite');
+    check($new !== null, 'Neue Platte steht sofort in den Charts');
+    checkEquals(2, $new['rank']);
+    checkEquals('new', $new['trend']);
+    // Zwanzig Minuten später (noch dieselbe Stunde): Die Verkäufe zählen schon mit, ohne auf die volle Stunde zu warten
+    Clock::advance(20 * 60);
+    $sold = $album($pb, 'Zweite')['sold'];
+    check($sold > 0, 'Verkäufe zählen jede Minute');
+    Clock::advance(10 * 60);
+    $new = $album($pb, 'Zweite');
+    check($new['sold'] > $sold, 'Zehn Minuten später mehr');
+    checkEquals('new', $new['trend'], 'Neu bis zur vollen Stunde');
+    checkEquals(0, (int) $db->value("SELECT COUNT(*) FROM history WHERE label_id = ? AND kind IN ('chart', 'chart1')", [$rb->labelId]), 'Nachrichten erst zur vollen Stunde');
+    // Volle Stunde: „Vorher“ ist jetzt dieser Platz, die Nachricht vom Einstieg kommt
+    Clock::advance(3600 - Clock::now() % 3600 + 60);
+    $new = $album($pb, 'Zweite');
+    checkEquals(2, $new['prev']);
+    checkEquals('same', $new['trend']);
+    checkEquals(1, (int) $db->value("SELECT COUNT(*) FROM history WHERE label_id = ? AND kind = 'chart'", [$rb->labelId]), 'Einstieg in der Chronik');
+    // Mehr Fans und Hype: Nach gut einer Stunde zieht sie vorbei – zu sehen in der Minute, in der es passiert, mit Pfeil nach oben
+    Clock::advance(30 * 60);
+    $new = $album($pb, 'Zweite');
+    checkEquals(1, $new['rank']);
+    checkEquals('up', $new['trend']);
+    Clock::advance(3600 - Clock::now() % 3600 + 60);
+    $album($pb, 'Zweite');
+    checkEquals(1, (int) $db->value("SELECT COUNT(*) FROM history WHERE label_id = ? AND kind = 'chart1'", [$rb->labelId]), 'Platz 1 in der Chronik zur vollen Stunde');
+});
+
 test('Kern im Spiel: Aufnehmen mit 12 Songs und einer Produktionsstufe, danach beginnt der Hype', function () {
     [$db, $p, $repo, $band] = coreLabel();
     $opts = $p->post('recordOptions', ['bandId' => $band['id']]);
@@ -199,7 +248,7 @@ test('Kern im Spiel: Aufnehmen mit 12 Songs und einer Produktionsstufe, danach b
     check(bandById($state, $band['id'])['core']['record'] !== null, 'Spielstand zeigt die neue Platte');
 });
 
-test('Kern im Spiel: Charts nach den Verkäufen der letzten 24 Stunden, jede volle Stunde neu', function () {
+test('Kern im Spiel: Charts nach den Verkäufen der letzten 24 Stunden', function () {
     $db = freshDb();
     $repos = [];
     foreach (['Alpha' => [5000, 90], 'Beta' => [500, 80], 'Gamma' => [20000, 70]] as $name => [$fans, $quality]) {
@@ -223,7 +272,7 @@ test('Kern im Spiel: Charts nach den Verkäufen der letzten 24 Stunden, jede vol
     checkEquals(['Gamma Records', 'Alpha Records', 'Beta Records'], array_column($charts['labels'], 'label'), 'Label-Bestenliste nach Fans');
     checkEquals('Band Gamma', $charts['bands'][0]['band'], 'Fan-Lieblinge');
     check(isset($charts['sound']), 'Sound-Monster');
-    check($charts['nextAt'] > Clock::now() && $charts['nextAt'] - Clock::now() <= 3600, 'Countdown bis zur vollen Stunde');
+    check($charts['nextAt'] > Clock::now() && $charts['nextAt'] - Clock::now() <= 60, 'Nächste Wertung in der nächsten Minute');
     $finance = $p->get('state')['finance'];
     check($finance['core'] && $finance['moneyPerHour'] > 0, 'Geld je Stunde aus den Platten');
 });

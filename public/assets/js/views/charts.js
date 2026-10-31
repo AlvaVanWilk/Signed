@@ -12,6 +12,8 @@ let loading = false;
 export async function loadCharts() {
   if (loading) return;
   loading = true;
+  // Merken, wann zuletzt geladen wurde (auch bei einem Fehler: dann erst in einer Minute wieder versuchen)
+  app.chartsAt = Date.now();
   try {
     app.charts = await api('charts');
   } catch (e) {
@@ -245,17 +247,11 @@ defineActions({
 
 const CORE_TABS = { albums: 'Album-Charts', labels: 'Labels', fans: 'Fan-Lieblinge', sound: 'Sound-Monster' };
 const CORE_TEXT = {
-  albums: 'Die Platten aller Labels nach ihren Verkäufen der letzten 24 Stunden. Jede volle Stunde wird neu sortiert. Die Flamme zeigt, wie heiß eine Platte gerade ist (ihr Hype).',
+  albums: 'Die Platten aller Labels nach ihren Verkäufen der letzten 24 Stunden, jede Minute neu sortiert. Eine neue Platte steht sofort drin. „Vorher“ ist der Platz zur letzten vollen Stunde. Die Flamme zeigt, wie heiß eine Platte gerade ist (ihr Hype).',
   labels: 'Die Labels nach allen Fans all ihrer Bands zusammen.',
   fans: 'Fan-Lieblinge: die Bands und Solokünstler mit den meisten Fans.',
   sound: 'Sound-Monster: die Bands und Solokünstler mit dem besten Sound.',
 };
-
-/** Minuten bis zur nächsten vollen Stunde (dann werden die Charts neu sortiert). */
-function nextSort(charts) {
-  const left = Math.max(0, charts.nextAt - (app.state?.now ?? charts.nextAt));
-  return left >= 60 ? `noch ${Math.ceil(left / 60)} Min.` : 'gleich';
-}
 
 function coreRender(charts) {
   const tab = Object.keys(CORE_TABS).includes(app.ui.chartsTab) ? app.ui.chartsTab : 'albums';
@@ -263,7 +259,7 @@ function coreRender(charts) {
     <div class="section-head">
       <div>
         <h1>Charts</h1>
-        <p class="muted">${CORE_TEXT[tab]}${tab === 'albums' ? ` Neu sortiert: ${nextSort(charts)}` : ''}</p>
+        <p class="muted">${CORE_TEXT[tab]}</p>
       </div>
       <button class="btn ghost small" data-act="chartsReload">Aktualisieren</button>
     </div>
@@ -274,7 +270,7 @@ function coreRender(charts) {
 function coreAlbums(all) {
   const list = all.filter((e) => e.placed);
   const outside = all.filter((e) => !e.placed);
-  if (!list.length) return '<div class="empty">Noch keine Platte in den Charts. Eine neue Platte steigt zur nächsten vollen Stunde ein.</div>';
+  if (!list.length) return '<div class="empty">Noch keine Platte in den Charts. Eine neue Platte steht sofort drin.</div>';
   return `
     <table class="charts">
       <thead><tr><th>#</th><th>Vorher</th><th>Platte</th><th>Band · Label</th><th>Hype</th><th>Verkauft (24 Std.)</th></tr></thead>

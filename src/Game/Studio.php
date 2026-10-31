@@ -507,6 +507,8 @@ final class Studio
         $db->exec('UPDATE bands SET records = records + 1, songs_recorded = songs_recorded + ?, perfect_records = perfect_records + ? WHERE id = ?', [$songs, $perfect ? 1 : 0, $band['id']]);
         $db->update('records', ['status' => 'done', 'songs_done' => $songs, 'perfect' => $perfect ? 1 : 0, 'finished_at' => $now], ['id' => $record['id']]);
         $career = BandCore::release($this->repo, $band, $record['id'], $quality * 100, $now);
+        // Sofort in den Charts (nicht erst zur nächsten Minute)
+        Charts::markDirty($db);
         $released = Core\Career::newest($career);
         $format = $songs >= Balance::CHART_LP_SONGS ? 'LP' : 'EP';
         $this->repo->log('record', sprintf('%s veröffentlicht „%s“%s', $band['name'], $record['title'], $perfect ? ' – eine perfekte Platte!' : '.'), $band['id']);

@@ -1621,3 +1621,6 @@ body { background: radial-gradient(1100px 520px at 50% -12%, rgba(255, 181, 71, 
 .rc-fits { display: block; font-style: normal; font-size: .7rem; color: #7fd1a6; }
 .rc-parts { grid-template-columns: repeat(5, 1fr); }
 @media (max-width: 640px) { .rc-parts { grid-template-columns: repeat(2, 1fr); } }
+.cf-write { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 12px 0 4px; }
+.cf-write .tabs { margin: 0; }
+.cf-write > small.muted { flex-basis: 100%; }

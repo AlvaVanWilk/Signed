@@ -60,6 +60,7 @@ function summary(t) {
     if (g.swapped) lines.push(g.swapped === 1 ? 'Ein Instrument war besser, als der Musiker es spielen darf: Der Music Store hat es in seine Farbe umgetauscht.' : `${g.swapped} Instrumente waren besser, als ihre Musiker sie spielen dürfen: Der Music Store hat sie umgetauscht.`);
     if (g.expired) lines.push(`Was im Lager lag, ist weg (${g.expired === 1 ? 'ein Instrument' : `${g.expired} Instrumente`}). Jeder Musiker behält sein eigenes.`);
     if (g.given) lines.push(g.given === 1 ? 'Ein Musiker ohne Instrument hat eins bekommen.' : `${g.given} Musiker ohne Instrument haben eins bekommen.`);
+    if (c.cards) lines.push(c.cards === 1 ? 'Die Fan-Karte aus dem Lager gibt es nicht mehr, denn Ruhm gibt es nicht mehr.' : `Die ${c.cards} Fan-Karten aus dem Lager gibt es nicht mehr, denn Ruhm gibt es nicht mehr.`);
     if (c.fame?.length) lines.push(`Der alte Ruhm steht als Erinnerung in der Chronik (${c.fame.map((f) => `${f.band}: ${f.fame}`).join(', ')}).`);
     lines.push('Können und Beziehungen sind geblieben.');
     if (!t.old) return lines;

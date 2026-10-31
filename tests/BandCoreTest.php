@@ -151,6 +151,22 @@ test('Kern im Spiel: Songs entstehen einzeln mit eigener Qualität, im Tempo der
     }
 });
 
+test('Kern im Spiel: Regler fürs Songschreiben – sorgfältig schreibt weniger, aber bessere Songs', function () {
+    [$db, $p, $repo, $band] = coreLabel();
+    $p->get('state');
+    checkEquals('normal', bandById($p->get('state'), $band['id'])['core']['writeMode']);
+    checkApiError(fn () => $p->post('bandWriteMode', ['bandId' => $band['id'], 'mode' => 'turbo']), 'nicht schreiben');
+    $state = $p->post('bandWriteMode', ['bandId' => $band['id'], 'mode' => 'careful'])['state'];
+    checkEquals('careful', bandById($state, $band['id'])['core']['writeMode']);
+    $db->exec('UPDATE musicians SET wellbeing = 90 WHERE band_id = ?', [$band['id']]);
+    Clock::advance(24 * 3600);
+    $p->get('state');
+    $written = (float) $db->value('SELECT songs_written FROM bands WHERE id = ?', [$band['id']]);
+    $members = $repo->members($band['id']);
+    $expected = Signed\Game\Core\Songs::perDay(Signed\Game\Core\Songs::writers($members), 'careful', 'green', 'idle', BandCore::kind($band, $members));
+    check($written <= $expected + 1e-6, "Sorgfältig: $written Songs an einem Tag (höchstens $expected)");
+});
+
 test('Kern im Spiel: Aufnehmen mit 12 Songs und einer Produktionsstufe, danach beginnt der Hype', function () {
     [$db, $p, $repo, $band] = coreLabel();
     $opts = $p->post('recordOptions', ['bandId' => $band['id']]);
@@ -267,6 +283,28 @@ test('Kern im Spiel: Festival-Bühnen nach Fans, Zuschauer bringen Fans, die Bü
     $res = array_values(array_filter($b->get('state')['results'], static fn ($r) => $r['type'] === 'festival'))[0]['result'];
     check($res['fans'] > 0 && BandCore::fans($db, $big) > $fans, 'Neue Fans vom Festival');
     checkEquals(0.0, (float) $res['fame']);
+});
+
+test('Kern im Spiel: Manager – Verhandler bringt mehr je Zuschauer, PR-Profi mehr neue Fans, Netzwerker mehr Hype aus Anfragen', function () {
+    [$db, $p, $repo, $band] = coreLabel();
+    $id = $repo->insertManager(['first_name' => 'Mo', 'last_name' => 'Ney', 'rarity' => 'epic', 'level' => 3, 'skills' => ['verhandler', 'prprofi', 'netzwerker'], 'look' => []]);
+    $db->exec('UPDATE bands SET manager_id = ?, manager_since = ? WHERE id = ?', [$id, Clock::now(), $band['id']]);
+    [, $level] = $repo->bandManager($repo->band($band['id']));
+    check($level > 0, 'Manager wirkt');
+    $earn = (int) round(125 * (1 + $level * Signed\Game\Balance::NEGOTIATOR_BONUS));
+    checkEquals($earn, bandById($p->get('state'), $band['id'])['core']['gig']['earnings'], 'Vorschau mit Verhandler');
+    $p->post('activityStart', ['bandId' => $band['id'], 'type' => 'gig']);
+    $data = json_decode((string) $db->value("SELECT data FROM activities WHERE band_id = ? AND type = 'gig' ORDER BY id DESC LIMIT 1", [$band['id']]), true);
+    checkEquals($earn, $data['reward']['money'], 'Verdienst mit Verhandler');
+    // Neue Band ohne Platte: 25 Neugierige, davon werden u × Live-Qualität Fans
+    $base = 25 * Signed\Game\Balance::CORE_CONCERT['u'] * $data['reward']['meter'] / 100;
+    coreNear($base * (1 + $level * Signed\Game\Balance::PR_BONUS), (float) $data['reward']['core']['newFans'], 0.01, 'Neue Fans mit PR-Profi');
+    Clock::advance(3600);
+    $mail = $db->insert('mail', ['label_id' => $repo->labelId, 'kind' => 'interview', 'created_at' => Clock::now(), 'expires_at' => Clock::now() + 86400, 'unpacked_at' => Clock::now(),
+        'data' => json_encode(['musicianId' => $repo->members($band['id'])[0]['id'], 'level' => 1, 'medium' => 'Stadtmagazin', 'share' => 0.1, 'request' => 'interview'])]);
+    $p->post('mailAccept', ['mailId' => $mail]);
+    $data = json_decode((string) $db->value("SELECT data FROM activities WHERE type = 'interview' ORDER BY id DESC LIMIT 1"), true);
+    coreNear(Signed\Game\Balance::CORE_EVENTS['requests']['interview']['boost'] * (1 + $level * Signed\Game\Balance::MANAGER_STAFF['network']), (float) $data['reward']['boost'], 0.01, 'Schub mit Netzwerker');
 });
 
 test('Kern im Spiel: Anfragen statt Interviews – erst mit Platte, Hype-Schub für die neueste Platte, Werbung bringt Geld', function () {

@@ -1,6 +1,6 @@
 import { app, bandById, cat, defineActions, mutate, serverNow } from '../core.js';
 import { genreGlyph } from '../cards.js';
-import { esc, fmt1, money, off, percent } from '../ui.js';
+import { esc, fmt0, fmt1, money, off, percent } from '../ui.js';
 
 /**
  * Festival (jeden Mittwoch): Plakat mit dem Line-up (Bühnen, Zeiten, Headliner) und die Bewerbung für das nächste.
@@ -60,10 +60,10 @@ function apply(f) {
     <div class="eyebrow">Bewerbung</div>
     <h2>${esc(n.name)} <small class="muted">${genreGlyph(n.genre)}${esc(genre)}</small></h2>
     <p class="muted">${esc(n.when)}. Bewerben bis ${esc(n.closeWhen)}. Gesucht sind ${esc(genre)}-Bands, auch gemischt mit ${esc(genre)}. Jedes Label darf alle passenden Bands schicken.</p>
-    <p class="muted">Es gibt ${n.slots} Plätze: ${rules.stages.map((s) => `${esc(s.name)} ${s.slots}`).join(', ')}. Bewerben sich mehr, entscheidet der Veranstalter. Wer in den letzten ${rules.days} Tagen am meisten Bekanntheit gesammelt hat, spielt auf der Hauptbühne, zum Schluss als Headliner.</p>
+    <p class="muted">Es gibt ${n.slots} Plätze: ${rules.stages.map((s) => `${esc(s.name)} ${s.slots}`).join(', ')}. Bewerben sich mehr, entscheidet der Veranstalter. ${rules.core ? 'Die Bands mit den meisten Fans spielen auf der Hauptbühne' : `Wer in den letzten ${rules.days} Tagen am meisten Bekanntheit gesammelt hat, spielt auf der Hauptbühne`}, zum Schluss als Headliner.</p>
     ${own.length ? `<div class="bt-entry-list">${own.map((o) => `
       <div class="bt-entry ${o.entered ? 'in' : ''}">
-        <span><b>${o.b.genres.map(genreGlyph).join('')}${esc(o.b.name)}</b><small>In ${rules.days} Tagen +${fmt1(o.gain)} Bekanntheit</small></span>
+        <span><b>${o.b.genres.map(genreGlyph).join('')}${esc(o.b.name)}</b><small>${rules.core ? `${fmt0(o.gain)} Fans` : `In ${rules.days} Tagen +${fmt1(o.gain)} Bekanntheit`}</small></span>
         ${o.entered
     ? `<span class="bt-in">beworben</span><button class="btn small ghost" data-act="festivalWithdraw" data-id="${o.b.id}">Zurückziehen</button>`
     : `<button class="btn small ${o.blocked ? '' : 'primary'}" data-act="festivalEnter" data-id="${o.b.id}" ${off(o.blocked)}>Bewerben</button>`}
@@ -71,7 +71,9 @@ function apply(f) {
     <h3>Beworben: ${n.entries.length} ${n.entries.length === 1 ? 'Band' : 'Bands'}</h3>
     ${n.entries.length ? `<ul class="bt-entries">${n.entries.map((e) => `<li class="${e.mine ? 'mine' : ''}"><b>${esc(e.name)}</b> <small>${esc(e.label)}</small></li>`).join('')}</ul>` : '<p class="muted small">Noch niemand.</p>'}
     <details class="bt-rules"><summary>Was es gibt</summary>
-      ${rules.stages.map((s) => `<p><b>${esc(s.name)}</b>: ${s.songs} Lieder, ${money(s.money)} Gage und viel Bekanntheit (je größer die Bühne, desto mehr; dazu zählen Sound und Publikum wie bei einem Gig).</p>`).join('')}
+      ${rules.stages.map((s) => (rules.core
+    ? `<p><b>${esc(s.name)}</b>: ${s.songs} Lieder, ${money(s.money)} und rund ${fmt0(s.audience)} Zuschauer. Wer noch kein Fan ist, kann einer werden, umso mehr, je besser die Show. Dazu gibt die Bühne der neuesten Platte einen Schub Hype.</p>`
+    : `<p><b>${esc(s.name)}</b>: ${s.songs} Lieder, ${money(s.money)} Gage und viel Bekanntheit (je größer die Bühne, desto mehr; dazu zählen Sound und Publikum wie bei einem Gig).</p>`)).join('')}
       <p>Nach dem Auftritt will ein größeres Magazin oder ein Sender ein Interview (im Posteingang). Der Headliner bekommt ein Plakat für den Proberaum. Und vielleicht wartet ein Fan, der mitspielen will.</p>
       <p>Die Band ist vom Beginn des Festivals bis zu ihrem Auftritt dort.</p>
     </details>

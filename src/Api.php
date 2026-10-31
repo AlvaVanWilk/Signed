@@ -81,6 +81,7 @@ final class Api
         'bandRemoveMember' => ['POST', true],
         'bandSetSlot' => ['POST', true],
         'bandSetManager' => ['POST', true],
+        'bandWriteMode' => ['POST', true],
         'bandDisband' => ['POST', true],
         'gearAssign' => ['POST', true],
         'gearSell' => ['POST', true],
@@ -438,6 +439,12 @@ final class Api
     private function bandSetManager(array $in, Repo $repo): array
     {
         (new Bands($repo))->setManager(self::int($in, 'bandId'), self::optInt($in, 'managerId'));
+        return ['state' => State::build($repo)];
+    }
+
+    private function bandWriteMode(array $in, Repo $repo): array
+    {
+        (new Bands($repo))->setWriteMode(self::int($in, 'bandId'), self::str($in, 'mode'));
         return ['state' => State::build($repo)];
     }
 

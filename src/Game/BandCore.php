@@ -158,7 +158,7 @@ final class BandCore
      * Was der Spielstand über den Kern einer Band zeigt (rechnet nur im Speicher weiter, speichert nichts): Fans, Ruhmstufe, Dach,
      * Hype und Flamme der neuesten Platte, Frische und was ein Auftritt jetzt brächte (für den Knopf und das i daneben).
      */
-    public static function view(Db $db, array $band, array $members, ?int $now = null): array
+    public static function view(Db $db, array $band, array $members, ?int $now = null, float $negotiator = 0.0): array
     {
         $now ??= Clock::now();
         $career = Career::settle(self::load($db, $band, self::kind($band, $members)), $now);
@@ -176,14 +176,15 @@ final class BandCore
             'hype' => round($hype, 1),
             'flame' => Core\Hype::flame($hype),
             'fresh' => round(Core\Concert::freshness($career['fresh'], $career['lastGig'], $now), 3),
+            'writeMode' => $band['write_mode'] ?? 'normal',
             'gig' => [
                 'tickets' => (int) round($preview['tickets']),
                 'demand' => (int) round($preview['demand']),
-                'earnings' => (int) round($preview['earnings']),
+                'earnings' => (int) round($preview['earnings'] * (1 + $negotiator)),
                 'venue' => $preview['venue'],
                 'venueName' => Balance::CORE_VENUES[$preview['venue']]['name'],
                 'size' => $preview['size'],
-                'perVisitor' => Core\Concert::earningsPerVisitor($stage),
+                'perVisitor' => round(Core\Concert::earningsPerVisitor($stage) * (1 + $negotiator), 2),
             ],
             'record' => $record === null ? null : [
                 'id' => $record['id'] ?? null,

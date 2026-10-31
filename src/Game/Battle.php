@@ -564,7 +564,10 @@ final class Battle
             'wakeAt' => min(array_filter([$current['nextAt'] ?? null, (int) $next['starts_at']])),
             'rules' => [
                 'round' => Balance::BATTLE['round'], 'match' => self::matchSeconds(), 'songs' => Balance::BATTLE['songs'],
-                'luck' => Balance::BATTLE['luck'], 'moodMax' => round(self::moodFactor(100.0) - 1, 3), 'prizes' => Balance::BATTLE['money'],
+                'luck' => Balance::BATTLE['luck'], 'moodMax' => round(self::moodFactor(100.0) - 1, 3),
+                // Neuer Kern: Preise für vier Plätze, Zuschauer je Spiel (daraus werden Fans)
+                'prizes' => BandCore::$live ? [1 => Balance::CORE_BATTLE_PRIZES['winner']] + Balance::CORE_BATTLE_PRIZES['money'] : Balance::BATTLE['money'],
+                'core' => BandCore::$live, 'audience' => Balance::CORE_EVENTS['battle']['audience'],
             ],
         ];
     }

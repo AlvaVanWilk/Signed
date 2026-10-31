@@ -1,13 +1,15 @@
 import { cat, onStateChange } from './core.js';
 import { genreIcon } from './cards.js';
 import { avatar } from './avatar.js';
-import { esc, openModal, timeAgo, toast } from './ui.js';
+import { esc, fmt0, openModal, timeAgo, toast } from './ui.js';
 
 /**
  * Feiern nach einem neuen Spielstand: Band wird Genre-Band oder Hybrid, Musiker steigt im Können
  * oder in der Bekanntheit auf. Mehrere kommen nacheinander. Nur CSS-Transform und Deckkraft (iPad).
  */
 const FAME_WORDS = ['', 'lokal bekannt', 'eine Szenegröße', 'ein Star'];
+/** Neuer Kern: Ruhmstufe einer Band nach Fans. */
+const STAGE_WORDS = ['', 'lokal bekannt', 'berühmt', 'ein Superstar'];
 
 const queue = [];
 let current = null;
@@ -29,12 +31,19 @@ onStateChange((before, after) => {
   for (const b of after.bands) {
     if (b.title && b.title !== oldBands.get(b.id)) queue.push(bandHtml(b));
   }
+  // Neuer Kern: Die Band steigt mit ihren Fans auf (einmal für die ganze Band statt für jeden Musiker)
+  if (after.core) {
+    const oldStage = new Map(before.bands.map((b) => [b.id, b.core?.stage ?? 0]));
+    for (const b of after.bands) {
+      if (b.core && oldStage.has(b.id) && b.core.stage > oldStage.get(b.id)) queue.push(stageHtml(b));
+    }
+  }
   const oldMusicians = new Map(before.musicians.map((m) => [m.id, m]));
   for (const m of after.musicians) {
     const old = oldMusicians.get(m.id);
     if (!old) continue;
     if (m.level > old.level) queue.push(skillHtml(m));
-    if (m.fameLevel > old.fameLevel) queue.push(fameHtml(m));
+    if (!after.core && m.fameLevel > old.fameLevel) queue.push(fameHtml(m));
   }
   if (!current) next();
 });
@@ -59,6 +68,13 @@ function fameHtml(m) {
     <div class="celebrate-face fame">${avatar(m.look)}<span class="celebrate-stars">★ ★ ★</span></div>
     <div class="celebrate-text">${esc(m.firstName)} ist jetzt ${FAME_WORDS[m.fameLevel]}!</div>
     <div class="celebrate-sub">Bekanntheit ${m.fameLevel} · ${esc(cat().fameNames[m.fameLevel])}</div>`;
+}
+
+function stageHtml(b) {
+  return `
+    <div class="celebrate-trophy">⭐</div>
+    <div class="celebrate-text">${esc(b.name)} ist jetzt ${STAGE_WORDS[b.core.stage] ?? ''}!</div>
+    <div class="celebrate-sub">${fmt0(b.core.fans)} Fans · Ab jetzt kommen mehr Leute, und das Label verdient mehr je Zuschauer.</div>`;
 }
 
 function chartHtml(text) {

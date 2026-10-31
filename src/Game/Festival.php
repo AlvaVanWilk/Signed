@@ -369,8 +369,11 @@ final class Festival
             'wakeAt' => min(array_filter([$current['nextAt'] ?? null, Events::closesAt($next)])),
             'rules' => [
                 'days' => Balance::FESTIVAL['days'],
-                'stages' => array_values(array_map(static fn ($k, $s) => ['key' => $k, 'name' => $s['name'], 'slots' => $s['slots'], 'songs' => $s['songs'], 'money' => $s['money']],
+                'stages' => array_values(array_map(static fn ($k, $s) => ['key' => $k, 'name' => $s['name'], 'slots' => $s['slots'], 'songs' => $s['songs'], 'money' => $s['money'],
+                    // Neuer Kern: Zuschauer der Bühne (daraus werden Fans)
+                    'audience' => BandCore::$live ? Balance::CORE_EVENTS['festival'][$k]['audience'] : null],
                     array_keys(Balance::FESTIVAL['stages']), Balance::FESTIVAL['stages'])),
+                'core' => BandCore::$live,
             ],
         ];
     }

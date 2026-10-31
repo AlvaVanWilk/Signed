@@ -36,6 +36,20 @@ export function valueTiles(b) {
     <div data-act="coreInfo" data-key="hype" data-id="${b.id}"><small>Hype</small><b>${flame(c.flame)} ${fmt0(c.hype)}</b></div>`;
 }
 
+const WRITE_MODES = [
+  ['fast', 'schnell', 'Mehr Songs, dafür etwas schwächere.'],
+  ['normal', 'normal', 'So viele Songs, wie die Band schafft, in ihrer gewohnten Qualität.'],
+  ['careful', 'sorgfältig', 'Weniger Songs, dafür bessere.'],
+];
+
+/** Regler auf der Bandseite: Wie die Band Songs schreibt. */
+export function writeModeRow(b) {
+  const mode = b.core?.writeMode ?? 'normal';
+  return `<div class="cf-write"><small class="lb-cap">Songs schreiben</small>
+    <div class="tabs">${WRITE_MODES.map(([key, label, text]) => `<button class="tab ${key === mode ? 'active' : ''}" data-act="bandWriteMode" data-id="${b.id}" data-mode="${key}" title="${esc(text)}">${label}</button>`).join('')}</div>
+    <small class="muted">${esc(WRITE_MODES.find(([key]) => key === mode)?.[2] ?? '')}</small></div>`;
+}
+
 /** Warum heute so viele oder so wenige kommen (das i neben dem Knopf). */
 function why(b) {
   const c = b.core;

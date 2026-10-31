@@ -1,6 +1,6 @@
 import { app, bandById, defineActions, mutate, serverNow } from '../core.js';
 import { genreGlyph } from '../cards.js';
-import { esc, fmt1, money, off } from '../ui.js';
+import { esc, fmt0, fmt1, money, off } from '../ui.js';
 
 /**
  * Battle of the Bands (jeden Samstag): Anmeldung, und wenn es läuft wie bei einer WM die Gruppen, die K.-o.-Runden
@@ -132,7 +132,9 @@ function signup(battle) {
     <details class="bt-rules"><summary>So wird entschieden</summary>
       <p>Jede Band spielt ${r.songs} Lieder, dann gibt die Jury Punkte. Die Punkte kommen vom <b>Sound</b> der Band. Gute <b>Laune</b> gibt bis zu ${pct(r.moodMax)} dazu, schlechte Laune zieht ab. Dazu kommt die <b>Tagesform</b>: Mal klappt es besser, mal schlechter (bis zu ${Math.round(r.luck * 100)} %). Ruhm zählt nicht.</p>
       <p>Erst spielen alle in Gruppen jeder gegen jeden. Die zwei Besten jeder Gruppe kommen weiter, dann geht es im K.-o. bis zum Finale. Bands aus demselben Label kommen möglichst in verschiedene Gruppen. Alle ${Math.round(r.round / 60)} Minuten beginnt eine neue Runde.</p>
-      <p>Preise: Platz 1 ${money(r.prizes[1])} und ein goldener Pokal, Platz 2 ${money(r.prizes[2])} und Silber, Platz 3 ${money(r.prizes[3])} und Bronze. Für jedes Spiel und jeden Sieg gibt es Ruhm, und alle bleiben bis zum Schluss und feiern mit.</p>
+      ${r.core
+    ? `<p>Preise: Platz 1 ${money(r.prizes[1])} und ein goldener Pokal, Platz 2 ${money(r.prizes[2])} und Silber, Platz 3 ${money(r.prizes[3])} und Bronze, Platz 4 ${money(r.prizes[4])}. Jedes Spiel hat rund ${fmt0(r.audience)} Zuschauer: Wer noch kein Fan ist, kann einer werden. Die ersten drei geben der neuesten Platte einen Schub Hype. Alle bleiben bis zum Schluss und feiern mit.</p>`
+    : `<p>Preise: Platz 1 ${money(r.prizes[1])} und ein goldener Pokal, Platz 2 ${money(r.prizes[2])} und Silber, Platz 3 ${money(r.prizes[3])} und Bronze. Für jedes Spiel und jeden Sieg gibt es Ruhm, und alle bleiben bis zum Schluss und feiern mit.</p>`}
     </details>
   </section>`;
 }

@@ -420,6 +420,7 @@ function battleResultHtml(r) {
     <div class="reward-grid">
       ${reward('Spiele gewonnen', `${info.wins ?? 0} von ${info.played ?? 0}`)}
       ${res.money ? reward('Preisgeld', `+${money(0)}`, { to: res.money, kind: 'money' }) : ''}
+      ${res.fans ? reward('Neue Fans', `+${fmt0(res.fans)}`) : ''}
       ${res.fame ? reward('Ruhm', `+${fmtGain(0)}`, { to: res.fame, kind: 'fame' }) : ''}
       ${res.mood ? reward('Stimmung', `+${fmt0(res.mood)}`) : ''}
     </div>

@@ -13,7 +13,7 @@ import { studioBlock } from './recording.js';
 import { startTour, tourPanel, tourTab, vehicleRows } from '../tour.js';
 import { vehicleSvg } from '../vehicle.js';
 import { awardList, roomAwards } from '../awards.js';
-import { coreOn, coreStars, gigHint as coreGigHint, infoText as coreInfoText, openGig as openCoreGig, valueTiles as coreValueTiles } from '../core-ui.js';
+import { coreOn, coreStars, gigHint as coreGigHint, infoText as coreInfoText, openGig as openCoreGig, valueTiles as coreValueTiles, writeModeRow } from '../core-ui.js';
 
 /** Label-Ebene: Band-Leiste links und die ruhige Bandseite. Stimmung als Punkt und Wort (grün, gelb, rot). */
 
@@ -806,6 +806,7 @@ export function page(route) {
       ${coreOn() ? '' : act(b, members, 'bandpromo', null, 'Promo-Tour', promoHint(b), ICON.promo, false, !!blocker(b, members), away('Eine Promo-Tour geht erst wieder zu Hause.'))}
       ${act(b, members, 'retreat', null, 'Auszeit', retreatHint(b), ICON.retreat, false, !!blocker(b, members), away('Eine Auszeit gibt es erst wieder zu Hause.'))}
     </div>
+    ${coreOn() ? writeModeRow(b) : ''}
     ${course}
     ${managerBlock(b)}
     <h2 class="lb-cap lb-sec">Musiker</h2>
@@ -870,7 +871,10 @@ function musicianWindow(m) {
       <div class="lb-mw-head"><span class="lb-ph ${m.wellbeing?.level ?? 'green'}">${photo(m)}</span>
         <div><h2>${esc(m.stageName ?? `${m.firstName} ${m.lastName}`)}</h2>${m.stageName ? `<small class="muted">${esc(m.firstName)} ${esc(m.lastName)} · </small>` : ''}<small class="muted">${band && band.memberIds.length > 1 ? esc(band.name) : 'Solokünstler'}</small></div></div>
       <div class="lb-sum">
-        <div><small>Bekanntheit</small><b>${esc(cat().fameNames[m.fameLevel])}</b><small class="muted">${fmt1(m.fame)}${nextFame ? ` · nächste Stufe ab ${nextFame}` : ''}</small></div>
+        ${coreOn() && band?.core
+    // Neuer Kern: Bekannt ist ein Musiker durch die Fans seiner Band
+    ? `<div><small>Bekanntheit</small><b>${esc(band.core.stageName)}</b><small class="muted">${fmt0(band.core.fans)} Fans ${band.memberIds.length > 1 ? 'der Band' : ''}</small></div>`
+    : `<div><small>Bekanntheit</small><b>${esc(cat().fameNames[m.fameLevel])}</b><small class="muted">${fmt1(m.fame)}${nextFame ? ` · nächste Stufe ab ${nextFame}` : ''}</small></div>`}
         <div><small>Marktwert</small><b>${money(m.value)}</b></div>
       </div>
       <h3 class="lb-cap">Können</h3><ul class="lb-mw-list">${ins}</ul>
@@ -1017,6 +1021,9 @@ defineActions({
   gigAsk({ id }) {
     const b = bandById(id);
     if (b) coreOn() ? openCoreGig(b) : openGigs(b);
+  },
+  async bandWriteMode({ id, mode }) {
+    if (bandById(id)?.core?.writeMode !== mode) await mutate('bandWriteMode', { bandId: Number(id), mode });
   },
   coreInfo({ key, id }) {
     const b = bandById(id);

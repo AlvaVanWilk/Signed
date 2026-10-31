@@ -429,6 +429,21 @@ export function recordResultHtml(r, { reward, levelUpBanners }) {
   const res = r.result;
   const band = bandById(r.bandId);
   const producer = res.producer && res.producer !== 'none' ? cat().rules.producers[res.producer]?.name : null;
+  if (res.core) {
+    // Neuer Kern: Qualität, Hype und was sie heute verkauft (statt Erstverkauf, Ruhm und Chartpunkten)
+    return `
+    <div class="eyebrow">${esc(band?.name ?? '')}</div>
+    <h2>„${esc(res.title)}“ ist erschienen!</h2>
+    <div class="rc-release">${coverHtml(res.cover, { band: band?.name ?? '', title: res.title })}
+      <p class="muted">${res.format}, ${res.songs} Songs${producer ? `, produziert von ${esc(producer)}` : ''}.${res.perfect ? ' <b>Eine perfekte Platte!</b>' : ''}</p></div>
+    <div class="reward-grid">
+      ${reward('Qualität', fmt0(res.quality * 100))}
+      ${reward('Hype', fmt0(res.hype))}
+      ${reward('Heute', `etwa ${fmt0(res.soldToday)} verkauft`)}
+    </div>
+    ${levelUpBanners(res.levelUps ?? [])}
+    <p class="muted small">Ab jetzt verkauft sie sich jeden Tag, mit viel Hype mehr. Jeden Tag ist der Hype nur noch halb so groß. Gerade jetzt kommen viele Leute zu Auftritten.</p>`;
+  }
   return `
     <div class="eyebrow">${esc(band?.name ?? '')}</div>
     <h2>„${esc(res.title)}“ ist erschienen!</h2>

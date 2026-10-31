@@ -145,7 +145,8 @@ final class Present
             // Tournee: Länder mit Lieblings-Genre und Lage, dazu der Heimatort
             'countries' => array_map(static fn ($c) => $c + ['city' => $c['cities'][0]], Catalog::COUNTRIES),
             // Verkaufte Stück für Gold, Platin, Diamant
-            'awards' => Balance::AWARDS,
+            // Neuer Kern: Gold, Platin und Diamant nach den neuen Grenzen
+            'awards' => BandCore::$live ? ['records' => Balance::CORE_AWARDS] + Balance::AWARDS : Balance::AWARDS,
             'home' => Catalog::HOME,
             'tour' => [
                 'regions' => Balance::TOUR['regions'], 'wait' => Balance::TOUR['wait'], 'match' => Balance::TOUR['match'], 'abroad' => Balance::TOUR['abroad'],
@@ -164,7 +165,8 @@ final class Present
             'levelNames' => Catalog::LEVEL_NAMES,
             'levelWords' => Catalog::LEVEL_WORDS,
             'genreLineup' => Catalog::GENRE_LINEUP,
-            'fameNames' => Catalog::FAME_NAMES,
+            // Neuer Kern: Ruhmstufen nach Fans (die Grenzen entsprechen sich, siehe BandCore::fameEquivalent)
+            'fameNames' => BandCore::$live ? Balance::CORE_STAGE_NAMES : Catalog::FAME_NAMES,
             // Neuer Kern: Arten von Anfragen (Interview, Fotoserie, Artikel, Reportage, Werbung)
             'requests' => Catalog::REQUESTS,
             'personalities' => Catalog::PERSONALITIES,
@@ -173,7 +175,7 @@ final class Present
             'logoColors' => Catalog::LOGO_COLORS,
             'coverWords' => Catalog::COVER_WORDS,
             'personalityInfo' => Catalog::PERSONALITY_INFO,
-            'managerSkills' => Catalog::MANAGER_SKILLS,
+            'managerSkills' => BandCore::$live ? array_replace_recursive(Catalog::MANAGER_SKILLS, Catalog::MANAGER_SKILLS_CORE) : Catalog::MANAGER_SKILLS,
             'gear' => Catalog::GEAR,
             'gearBonusInfo' => Catalog::GEAR_BONUS_INFO,
             'music' => Music::manifest(),
@@ -196,8 +198,12 @@ final class Present
                 'coverLogoSales' => Balance::COVER_LOGO_SALES,
                 'noGearFactor' => Balance::NO_GEAR_FACTOR,
                 'negotiatorBonus' => Balance::NEGOTIATOR_BONUS,
+                // Neuer Kern: höchstens so viele Fans je Art der Band (gemischt, Genre, hybrid, Crossover); Fans beim Zusammentun und Umbenennen
+                'coreRoof' => Balance::CORE_ROOF,
+                'coreFanMoves' => ['mergeSmall' => Balance::CORE_FAN_MOVES['mergeSmall'], 'rename' => Balance::CORE_FAN_MOVES['rename']],
                 'gigFreshMin' => Balance::GIG_FRESH['min'],
                 'prBonus' => Balance::PR_BONUS,
+                'managerNetwork' => Balance::MANAGER_STAFF['network'],
                 'scoutShift' => Balance::SCOUT_SHIFT,
                 'managerSongsPerLevel' => Balance::MANAGER_SONGS_PER_LEVEL,
                 'soundMeanWeight' => Balance::SOUND_MEAN_WEIGHT,

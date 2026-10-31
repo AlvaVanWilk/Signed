@@ -330,17 +330,18 @@ final class Inbox
                 throw new ApiError(sprintf('%s ist gerade unterwegs.', $m['first_name']));
             }
             $db->exec('DELETE FROM mail WHERE id = ?', [$id]);
+            // Netzwerker: Ein Manager mit guten Kontakten holt mehr aus dem Interview.
+            [$manager, $level] = Managers::of($this->repo, $m['band_id']);
+            $network = 1 + BandCalc::managerBonus($manager, $level, 'netzwerker', Balance::MANAGER_STAFF['network']);
             if ($request !== null) {
                 // Neuer Kern: kein Ruhm, sondern ein Hype-Schub für die neueste Platte der Band (Werbung bringt dazu Geld)
                 return (new Activities($this->repo))->insertSolo($m['id'], 'interview', $now, $endsAt, [
                     'title' => sprintf('%s: %s bei %s', Catalog::REQUESTS[$request]['name'], Bands::fullName($m), $d['medium']),
                     'songs' => 0,
-                    'reward' => ['request' => $request, 'boost' => Balance::CORE_EVENTS['requests'][$request]['boost'], 'medium' => $d['medium']],
+                    'reward' => ['request' => $request, 'boost' => round(Balance::CORE_EVENTS['requests'][$request]['boost'] * $network, 2), 'medium' => $d['medium']],
                 ]);
             }
-            // Netzwerker: Ein Manager mit guten Kontakten holt mehr aus dem Interview.
-            [$manager, $level] = Managers::of($this->repo, $m['band_id']);
-            $gain = self::interviewGain($d) * (1 + BandCalc::managerBonus($manager, $level, 'netzwerker', Balance::MANAGER_STAFF['network']));
+            $gain = self::interviewGain($d) * $network;
             return (new Activities($this->repo))->insertSolo($m['id'], 'interview', $now, $endsAt, [
                 'title' => sprintf('Interview: %s bei %s', Bands::fullName($m), $d['medium']),
                 'songs' => 0,

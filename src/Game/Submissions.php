@@ -125,7 +125,8 @@ final class Submissions
         $next = Post::nextArrival(max($at, $now - Balance::SUBMISSIONS['maxCatchUp']), $now, $mean);
         for ($n = 0; $next <= $now && $n < Balance::SUBMISSIONS['maxPerCall']; $n++, $next += Post::gap($mean)) {
             $level = Rng::chance($good) ? (int) Rng::weighted(Balance::SUBMISSIONS['goodLevels']) : 0;
-            $fame = $level >= 1 && Rng::chance(Balance::SUBMISSIONS['fameChance']) ? Rng::float(...Balance::SUBMISSIONS['fame']) : 0.0;
+            // Neuer Kern: Wer neu unterschreibt, fängt bei 0 Fans an; Bekanntheit bringt niemand mit.
+            $fame = !BandCore::$live && $level >= 1 && Rng::chance(Balance::SUBMISSIONS['fameChance']) ? Rng::float(...Balance::SUBMISSIONS['fame']) : 0.0;
             $card = Rng::chance(Balance::SUBMISSIONS['bandChance']) ? self::makeBand($level, $this->repo->db) : self::make($level, $fame);
             $this->store($card, $next);
         }

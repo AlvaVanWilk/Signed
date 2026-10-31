@@ -11,7 +11,7 @@ use Signed\Db;
  * Alle Bands fangen bei 0 Fans an; Können und Beziehungen bleiben (das Können wird nur im neuen Maß gezeigt, siehe Levels::shown).
  * Jedes Label hat das neue Startgeld. Jeder Musiker behält sein eigenes Instrument, höchstens in der Farbe seiner Können-Stufe;
  * alles andere im Lager verfällt ohne Ausgleich, wer keins hat, bekommt eins (grau, ab Können-Stufe 1 grün).
- * Der alte Ruhm bleibt als Erinnerung in der Chronik und in WikiSignia. Songs im Vorrat bekommen ihre Qualität.
+ * Der alte Ruhm bleibt als Erinnerung in der Chronik und in WikiSignia. Songs im Vorrat bekommen ihre Qualität. Fan-Karten (Ruhm) verfallen.
  * Was passiert ist, steht in labels.transition (Schlüssel `core`) für „Was ist neu?“.
  */
 final class CoreTransition
@@ -30,6 +30,8 @@ final class CoreTransition
             self::musicians($repo);
             self::money($repo, (int) $row['money']);
             $summary['gear'] = self::gear($repo);
+            // Fan-Karten brachten Ruhm; den gibt es nicht mehr.
+            $summary['cards'] = $db->exec("DELETE FROM items WHERE label_id = ? AND kind = 'fan'", [$repo->labelId]);
             $old = json_decode((string) ($row['transition'] ?? ''), true) ?: [];
             $db->update('labels', ['transition' => json_encode($old + ['core' => $summary], JSON_UNESCAPED_UNICODE)], ['id' => $repo->labelId]);
         }

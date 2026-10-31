@@ -43,6 +43,8 @@ final class Bands
             'genres' => $genres,
             'title' => $identity['title'],
             'fame' => round(BandCalc::bandFame($band, $members), 1),
+            // Neuer Kern: Fans statt Ruhm
+            'fans' => BandCore::$live ? (int) round($band['fans']) : null,
             'records' => array_map(static fn ($r) => [
                 'title' => $r['title'],
                 'cover' => (json_decode((string) ($r['cover'] ?? ''), true) ?: [])['spec'] ?? null,
@@ -607,6 +609,18 @@ final class Bands
         return ['open' => 9999, 'max' => 9999, 'next' => null];
     }
 
+    /** Neuer Kern: Wie die Band Songs schreibt – schnell (mehr, aber schwächere), normal oder sorgfältig (weniger, aber bessere). */
+    public function setWriteMode(int $bandId, string $mode): void
+    {
+        if (!isset(Balance::CORE_SONGWRITING['slider'][$mode])) {
+            throw new ApiError('So kann die Band nicht schreiben.');
+        }
+        $band = $this->repo->band($bandId);
+        // Was bis jetzt geschrieben wurde, zählt noch nach der alten Art.
+        Mood::settle($this->repo);
+        $this->repo->db->update('bands', ['write_mode' => $mode], ['id' => $band['id']]);
+    }
+
     public function setManager(int $bandId, ?int $managerId): void
     {
         $band = $this->repo->band($bandId);
@@ -715,6 +729,9 @@ final class Bands
     /** Fan-Karte: kleiner Ruhm-Bonus, verteilt auf alle Mitglieder der Band. */
     public function useItem(int $itemId, int $bandId): float
     {
+        if (BandCore::$live) {
+            throw new ApiError('Fan-Karten gibt es nicht mehr.');
+        }
         return $this->repo->db->transaction(function () use ($itemId, $bandId): float {
             $db = $this->repo->db;
             $item = $db->one('SELECT * FROM items WHERE id = ? AND label_id = ?', [$itemId, $this->repo->labelId]);

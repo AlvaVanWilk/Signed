@@ -3,6 +3,7 @@ import { portrait } from './figure.js';
 import { instrumentSvg } from './icons.js';
 import { app, bandById, cat, isBusy, musicianById } from './core.js';
 import { esc, fmt0, fmt1, percent } from './ui.js';
+import { coreOn } from './core-ui.js';
 
 export const instrumentName = (type) => cat().instruments[type]?.name ?? type;
 /** Emoji für Stellen, die nur Text können (Auswahllisten, Canvas). */
@@ -302,7 +303,8 @@ function stepOf(value, thresholds) {
 /** Bekanntheit auf der Karte: 10 Sternchen für den Weg zur nächsten Stufe, dahinter die Stufe. */
 export function fameBar(fame) {
   const { level, progress, next } = stepOf(fame, cat().rules.fameLevels);
-  const title = `${cat().fameNames[level]} · Bekanntheit ${fmt0(fame)}${next ? ` · nächste Stufe ab ${fmt0(next)}` : ''}`;
+  // Neuer Kern: Die Bekanntheit eines Musikers ist die Ruhmstufe seiner Band (Fans); Zahlen in der alten Skala zeigen wir nicht.
+  const title = coreOn() ? cat().fameNames[level] : `${cat().fameNames[level]} · Bekanntheit ${fmt0(fame)}${next ? ` · nächste Stufe ab ${fmt0(next)}` : ''}`;
   return `<span class="fame-stars" title="${esc(title)}">${Array.from({ length: 10 }, (_, i) => {
     const fill = Math.max(0, Math.min(1, progress * 10 - i));
     return `<i style="--f:${Math.round(fill * 100)}%">★</i>`;
@@ -412,8 +414,9 @@ export function managerEffect(skill, level) {
   const r = cat().rules;
   const pct = (x) => `${Math.round(x * 100)} %`;
   switch (skill) {
-    case 'verhandler': return `Gigs: <em>+${pct(r.negotiatorBonus * level)}</em> Gage.`;
-    case 'prprofi': return `Auftritte: <em>+${pct(r.prBonus * level)}</em> Ruhm.`;
+    case 'verhandler': return coreOn() ? `Auftritte: <em>+${pct(r.negotiatorBonus * level)}</em> Geld je Zuschauer.` : `Gigs: <em>+${pct(r.negotiatorBonus * level)}</em> Gage.`;
+    case 'prprofi': return `Auftritte: <em>+${pct(r.prBonus * level)}</em> ${coreOn() ? 'neue Fans' : 'Ruhm'}.`;
+    case 'netzwerker': return coreOn() ? `Anfragen: <em>+${pct(r.managerNetwork * level)}</em> Hype.` : `Interviews: <em>+${pct(r.managerNetwork * level)}</em> Bekanntheit.`;
     case 'scout': return `Packs: <em>−${pct(Math.min(0.6, r.scoutShift * level))}</em> gewöhnliche Karten (ganzes Label).`;
     default: return '<i>wirkt erst mit einem späteren Update</i>';
   }

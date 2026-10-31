@@ -447,6 +447,12 @@ final class Catalog
         'netzwerker' => ['name' => 'Netzwerker', 'desc' => 'Interviews seiner Musiker bringen mehr Bekanntheit.', 'active' => true],
         'vermittler' => ['name' => 'Vermittler', 'desc' => 'Wenn seiner Band etwas nicht gefällt, ärgert sie sich weniger.', 'active' => true],
     ];
+    /** Neuer Kern (Fans und Hype): was diese Fähigkeiten dort bewirken. */
+    public const MANAGER_SKILLS_CORE = [
+        'verhandler' => ['desc' => 'Das Label verdient mehr an jedem Zuschauer seiner Bands.'],
+        'prprofi' => ['desc' => 'Mehr neue Fans bei Auftritten seiner Bands.'],
+        'netzwerker' => ['desc' => 'Anfragen an seine Musiker bringen mehr Hype.'],
+    ];
 
     /**
      * Instrumentenmodelle. klang = maximaler Sound-Bonus, spielbarkeit = hoch heißt leicht spielbar

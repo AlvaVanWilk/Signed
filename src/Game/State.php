@@ -156,7 +156,7 @@ final class State
                 'tours' => Tours::options($band, $list),
                 'sound' => $sound,
                 // Neuer Kern (nur mit Schalter): Fans, Ruhmstufe, Hype, Frische, was ein Auftritt jetzt brächte
-                'core' => BandCore::$live ? BandCore::view($db, $band, $list, $now) : null,
+                'core' => BandCore::$live ? BandCore::view($db, $band, $list, $now, BandCalc::managerBonus($manager, $level, 'verhandler', Balance::NEGOTIATOR_BONUS)) : null,
                 'slotPreview' => $slotPreview,
                 'slotReturn' => array_map('strval', array_keys($band['slot_return'])),
                 'fame' => $fame,

@@ -73,7 +73,9 @@ final class Wiki
         $owner = $id === $repo->labelId ? $repo : new Repo($db, $id);
         $bands = [];
         foreach ($owner->bands() as $b) {
-            $bands[] = ['id' => $b['id'], 'name' => $b['name'], 'fame' => round(BandCalc::bandFame($b, $owner->members($b['id'])), 1), 'gigs' => $b['gigs_played']];
+            $bands[] = ['id' => $b['id'], 'name' => $b['name'], 'fame' => round(BandCalc::bandFame($b, $owner->members($b['id'])), 1), 'gigs' => $b['gigs_played'],
+                // Neuer Kern: Fans statt Ruhm
+                'fans' => BandCore::$live ? (int) round($b['fans']) : null];
         }
         usort($bands, static fn ($a, $b) => $b['fame'] <=> $a['fame']);
         $records = $db->all(
@@ -105,6 +107,7 @@ final class Wiki
         return [
             'id' => $id, 'name' => $l['name'], 'own' => $id === $repo->labelId, 'foundedAt' => (int) $l['created_at'],
             'success' => BandCalc::labelFame(array_column($bands, 'fame')),
+            'fans' => BandCore::$live ? array_sum(array_column($bands, 'fans')) : null,
             'recordCount' => count($records),
             'numberOnes' => count(array_filter($records, static fn ($r) => (bool) $r['topped'])),
             'perfectCount' => count(array_filter($records, static fn ($r) => (bool) $r['perfect'])),
@@ -200,6 +203,7 @@ final class Wiki
             'title' => $identity['title'] ?? null,
             'genres' => $identity ? array_values(array_filter([$identity['primary'], $identity['second'], $identity['third']])) : [],
             'fame' => $retired ? round((float) $row['fame_final'], 1) : BandCalc::bandFame($band, $members),
+            'fans' => BandCore::$live && !$retired ? (int) round((float) $band['fans']) : null,
             'gigsPlayed' => $band['gigs_played'],
             'recordCount' => count($records),
             'members' => array_map(static fn ($m) => self::summary($m), $members),

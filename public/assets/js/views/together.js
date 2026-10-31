@@ -1,7 +1,8 @@
 import { api } from '../api.js';
 import { face, fullName, genreTag, instrumentIcon, instrumentName } from '../cards.js';
 import { app, bandById, cat, defineActions, musicianById, mutate, navigate } from '../core.js';
-import { esc, fmt1, openModal, toast } from '../ui.js';
+import { esc, fmt0, fmt1, openModal, toast } from '../ui.js';
+import { coreOn } from '../core-ui.js';
 import { suggestName } from './bands.js';
 
 /**
@@ -122,12 +123,17 @@ function chooseName(a, cand) {
   const fame = (id) => musicianById(id)?.fame ?? 0;
   const members = [...a.memberIds, ...b.memberIds].reduce((sum, id) => sum + fame(id), 0);
   const hasValue = (x) => x.records > 0 || x.released || x.fameOwn > 0;
+  // Neuer Kern: die größere Band plus die Hälfte der kleineren; ein neuer Name kostet einen Teil der Fans (wie Bands::merge)
+  const core = coreOn() && a.core && b.core;
+  const moves = cat().rules.coreFanMoves ?? { mergeSmall: 0.5, rename: 0.1 };
+  const merged = core ? Math.max(a.core.fans, b.core.fans) + moves.mergeSmall * Math.min(a.core.fans, b.core.fans) : 0;
   const options = cand.nameOptions.map((key) => {
     const keptOwn = key === 'a' ? a.fameOwn : key === 'b' ? b.fameOwn : key === 'combo' ? cat().rules.nameComboKeep * (a.fameOwn + b.fameOwn) : 0;
     const gives = [key !== 'a' ? a : null, key !== 'b' ? b : null].filter((x) => x && hasValue(x));
+    if (core) return { key, after: key === 'a' || key === 'b' ? merged : merged * (1 - moves.rename), gives };
     return { key, after: members + keptOwn, gives };
   });
-  const before = a.fame + b.fame;
+  const before = core ? a.core.fans + b.core.fans : a.fame + b.fame;
   const best = options.reduce((m, o) => (o.after > m.after ? o : m), options[0]);
   return new Promise((resolve) => {
     const label = (o) => (o.key === 'a' ? `Weiter als „${esc(a.name)}“` : o.key === 'b' ? `Weiter als „${esc(b.name)}“` : o.key === 'combo' ? 'Beide Namen verbinden' : 'Ganz neuer Name');
@@ -140,7 +146,9 @@ function chooseName(a, cand) {
       html: `
         <div class="lb-cap">Zusammentun</div>
         <h2>${esc(a.name)} und ${esc(b.name)}</h2>
-        <p class="muted">Welcher Name macht weiter? Wer seinen Namen aufgibt, verliert den Ruhm daran. Seine Platten bleiben bei der ehemaligen Band (Tantiemen laufen weiter) und stehen in der Chronik.</p>
+        <p class="muted">${core
+    ? 'Welcher Name macht weiter? Die Band behält die Fans der größeren Band und die Hälfte der Fans der kleineren, denn viele sind schon Fans von beiden. Ein neuer Name kostet ein Zehntel der Fans. Wer seinen Namen aufgibt, behält seine Platten: Sie verkaufen sich weiter und stehen in der Chronik.'
+    : 'Welcher Name macht weiter? Wer seinen Namen aufgibt, verliert den Ruhm daran. Seine Platten bleiben bei der ehemaligen Band (Tantiemen laufen weiter) und stehen in der Chronik.'}</p>
         <div class="tg-opts">${options.map((o) => `
           <label class="tg-opt ${o === best ? 'best' : ''}">
             <input type="radio" name="nm" value="${o.key}" ${o === best ? 'checked' : ''}>
@@ -148,8 +156,10 @@ function chooseName(a, cand) {
               ${o.key === 'new' ? '<input type="text" class="tg-newname" maxlength="40" placeholder="Neuer Bandname"> <button type="button" class="btn small ghost" data-dice title="Namen vorschlagen">Würfeln</button>' : ''}
               ${o.key === 'combo' ? `<span class="tg-combos"><input type="text" class="tg-combo" maxlength="40" value="${esc(joined(' & '))}">
                 ${[[' & ', '&'], [' and the ', 'and the'], [' und die ', 'und die']].map(([glue, text]) => `<button type="button" class="btn small ghost" data-glue="${esc(glue)}">${text}</button>`).join('')}</span>` : ''}
-              <small>Ruhm danach <b>${fmt1(o.after)}</b> <span class="${o.after >= before ? 'good' : 'bad'}">(jetzt zusammen ${fmt1(before)})</span></small>
-              ${o.gives.map((g) => `<small class="muted">„${esc(g.name)}“ ist dann ehemalig${g.fameOwn > 0 ? `, ${fmt1(g.fameOwn)} Ruhm am Namen weg` : ''}${g.records > 0 ? `, ${g.records} ${g.records === 1 ? 'Platte bleibt' : 'Platten bleiben'} dort` : ''}.</small>`).join('')}
+              ${core
+    ? `<small>Fans danach <b>${fmt0(o.after)}</b> <span class="muted">(jetzt zusammen ${fmt0(before)})</span></small>`
+    : `<small>Ruhm danach <b>${fmt1(o.after)}</b> <span class="${o.after >= before ? 'good' : 'bad'}">(jetzt zusammen ${fmt1(before)})</span></small>`}
+              ${o.gives.map((g) => `<small class="muted">„${esc(g.name)}“ ist dann ehemalig${!core && g.fameOwn > 0 ? `, ${fmt1(g.fameOwn)} Ruhm am Namen weg` : ''}${g.records > 0 ? `, ${g.records} ${g.records === 1 ? 'Platte bleibt' : 'Platten bleiben'} dort` : ''}.</small>`).join('')}
             </span>
           </label>`).join('')}
         </div>

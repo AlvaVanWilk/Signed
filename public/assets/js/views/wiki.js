@@ -3,6 +3,7 @@ import { abilityInfo, genreName, instrumentName, photo } from '../cards.js';
 import { app, cat, defineActions, rerender } from '../core.js';
 import { esc, fmt0, fmt1, toast } from '../ui.js';
 import { awardList } from '../awards.js';
+import { coreOn } from '../core-ui.js';
 
 /**
  * WikiSignia: Artikel zu jeder Band und jedem Künstler („Signie“), die dem Label einmal angehörten, auch zu ehemaligen.
@@ -88,7 +89,7 @@ function labelPage(l) {
     <div class="wk-article">
       <aside class="wk-box"><h3>${esc(l.name)}</h3><table>
         ${row('Gegründet', day(l.foundedAt))}
-        ${row('Label-Ruhm', fmt1(l.success))}
+        ${l.fans != null ? row('Fans', fmt0(l.fans)) : row('Label-Ruhm', fmt1(l.success))}
         ${row('Platten', l.recordCount || '')}
         ${row('Nummer-1-Hits', l.numberOnes || '')}
         ${row('Perfekte Platten', l.perfectCount || '')}
@@ -98,7 +99,7 @@ function labelPage(l) {
       <p class="muted">Label${l.own ? ' (deins)' : ''}</p>
       <p class="wk-lead">${lead}</p>
       ${top ? `<h2>Größte Erfolge</h2><ul class="wk-list">${top}</ul>` : ''}
-      ${l.topBands.length ? `<h2>Bekannteste Bands</h2><ul class="wk-list">${l.topBands.map((b) => `<li>${link('band', b.id, b.name)} <small class="muted">Ruhm ${fmt1(b.fame)}</small></li>`).join('')}</ul>` : ''}
+      ${l.topBands.length ? `<h2>Bekannteste Bands</h2><ul class="wk-list">${l.topBands.map((b) => `<li>${link('band', b.id, b.name)} <small class="muted">${b.fans != null ? `${fmt0(b.fans)} Fans` : `Ruhm ${fmt1(b.fame)}`}</small></li>`).join('')}</ul>` : ''}
       ${l.milestones.length ? `<h2>Geschichte</h2><ul class="wk-events">${l.milestones.map((m) => `<li><time>${day(m.at)}</time> ${esc(m.text)}</li>`).join('')}</ul>` : ''}
     </div>
     ${lists(l)}`;
@@ -125,7 +126,7 @@ function bandPage(b) {
         ${row('Gegründet', day(b.foundedAt))}
         ${row('Beendet', b.endedAt ? day(b.endedAt) : '')}
         ${row('Genre', esc(list(genres)))}
-        ${row(former ? 'Ruhm am Namen zuletzt' : 'Ruhm', fmt1(b.fame))}
+        ${b.fans != null ? row('Fans', fmt0(b.fans)) : coreOn() ? '' : row(former ? 'Ruhm am Namen zuletzt' : 'Ruhm', fmt1(b.fame))}
         ${row('Platten', b.recordCount || '')}
         ${row('Auftritte', b.gigsPlayed || '')}
       </table></aside>
@@ -164,7 +165,7 @@ function signiePage(m) {
         ${row('Instrumente', esc(m.instruments.map((i) => `${instrumentName(i.type)} (${rules.levelNames[Math.min(rules.rules.skillLevels.filter((t) => i.skill >= t).length, 3)]})`).join(', ')))}
         ${row('Genres', esc(list(genres)))}
         ${row('Charakter', esc(list([...m.personality.map((p) => rules.personalities[p]), ...Array(m.hiddenTraits ?? 0).fill('?')])))}
-        ${row('Bekanntheit', `${esc(rules.fameNames[m.fameLevel])} (${fmt1(m.fame)})`)}
+        ${row('Bekanntheit', coreOn() ? esc(rules.fameNames[m.fameLevel]) : `${esc(rules.fameNames[m.fameLevel])} (${fmt1(m.fame)})`)}
         ${row('Beim Label seit', day(m.joinedAt))}
         ${row('Ausgeschieden', m.leftAt ? day(m.leftAt) : '')}
       </table></aside>

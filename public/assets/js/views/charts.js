@@ -179,7 +179,7 @@ async function openBandView(id) {
     html: `
       <div class="eyebrow">${esc(band.label)}</div>
       <h2>${esc(band.name)}</h2>
-      <p class="muted">${[...band.genres.map(genreTag), band.title ? `<span class="chip special">${esc(band.title)}</span>` : '', `Ruhm <b>${fmt1(band.fame)}</b>`].filter(Boolean).join(' ')}</p>
+      <p class="muted">${[...band.genres.map(genreTag), band.title ? `<span class="chip special">${esc(band.title)}</span>` : '', band.fans != null ? `<b>${fmt0(band.fans)}</b> Fans` : `Ruhm <b>${fmt1(band.fame)}</b>`].filter(Boolean).join(' ')}</p>
       <div class="dialog-actions" style="justify-content:flex-start;margin-bottom:14px">
         <button class="btn primary" data-listen>▶ Anhören</button>
         ${band.own ? `<button class="btn" data-goto>Zur Band</button>` : ''}

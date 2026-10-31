@@ -44,6 +44,9 @@ final class Activities
         if (!in_array($type, self::BAND_TYPES, true)) {
             throw new ApiError('Unbekannte Aktivität.');
         }
+        if (BandCore::$live && in_array($type, ['busking', 'openstage'], true)) {
+            throw new ApiError('Straßenmusik und Open Stage gibt es nicht mehr. Die Band kann einfach auftreten.');
+        }
         $db = $this->repo->db;
         return $db->transaction(function () use ($db, $bandId, $type, $songs, $venue): array {
             $now = Clock::now();
@@ -143,9 +146,11 @@ final class Activities
                 }
                 $sim = Performance::simulate(array_map(static fn ($m) => self::player($m, $gear), $members), $sound, (float) $expect, $songs);
                 if ($coreGig !== null) {
-                    // Live-Qualität = Publikumsleiste am Ende des Live-Tickers
+                    // Live-Qualität = Publikumsleiste am Ende des Live-Tickers. Manager: Verhandler bringt mehr Geld je Zuschauer,
+                    // PR-Profi mehr neue Fans.
                     $coreGig = BandCore::startGig($this->repo, $band, $sim['meter']);
-                    $gage = (int) round($coreGig['earnings']);
+                    $gage = (int) round($coreGig['earnings'] * (1 + BandCalc::managerBonus($manager, $level, 'verhandler', Balance::NEGOTIATOR_BONUS)));
+                    $coreGig['newFans'] *= 1 + BandCalc::managerBonus($manager, $level, 'prprofi', Balance::PR_BONUS);
                 }
                 if ($type === 'busking') {
                     $gage = self::hat($this->repo, $sim['perf']);
@@ -198,7 +203,7 @@ final class Activities
                     'chartBoost' => $type === 'gig' && $coreGig === null ? round($songs * Balance::CHART_GIG_BOOST, 3) : 0,
                     // Neuer Kern: Zuschauer, Ortsgröße und neue Fans (gutgeschrieben nach dem Auftritt)
                     'core' => $coreGig === null ? null : [
-                        'tickets' => round($coreGig['tickets'], 2), 'size' => $coreGig['size'], 'newFans' => $coreGig['newFans'], 'demand' => round($coreGig['demand'], 2),
+                        'tickets' => round($coreGig['tickets'], 2), 'size' => $coreGig['size'], 'newFans' => round($coreGig['newFans'], 2), 'demand' => round($coreGig['demand'], 2),
                     ],
                 ],
             ]);

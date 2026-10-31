@@ -9,6 +9,7 @@ import { awardList } from '../awards.js';
 import { playedInstrument, stage } from '../figure.js';
 import { bandStems, stemUrl } from '../music.js';
 import { bar, confirmDialog, duration, esc, fmt0, fmt1, fmt2, fmtGain, money, openModal, percent, promptDialog, timeAgo, toast } from '../ui.js';
+import { coreOn } from '../core-ui.js';
 
 /** Untermenü einer Band: [Pfad, Icon, Bezeichnung] */
 export const BAND_SECTIONS = [
@@ -791,7 +792,15 @@ defineActions({
   },
   async bandRename({ id }) {
     const b = bandById(id);
-    if (b.released || b.records > 0) {
+    if (coreOn() && b.core?.fans >= 1) {
+      // Neuer Kern: Ein Teil der Fans mag keinen neuen Namen (Bands::rename)
+      const lost = b.core.fans * (cat().rules.coreFanMoves?.rename ?? 0.1);
+      const ok = await confirmDialog(
+        `Unter „${b.name}“ kennen die Fans die Band: Ein Zehntel mag keinen neuen Namen und hört auf (etwa ${fmt0(lost)} von ${fmt0(b.core.fans)} Fans). Die Platten behalten die Band und verkaufen sich weiter.`,
+        { ok: 'Umbenennen', danger: true },
+      );
+      if (!ok) return;
+    } else if (!coreOn() && (b.released || b.records > 0)) {
       const ok = await confirmDialog(
         `Umbenennen kostet nichts, aber unter „${b.name}“ kennt man die Band schon: Der Ruhm am Namen (${fmt1(b.fameOwn)}) geht verloren, `
         + `die Band hat danach ${fmt1(b.fame - b.fameOwn)} statt ${fmt1(b.fame)} Ruhm. Die Platten bleiben bei „${b.name}“ (Tantiemen laufen weiter) und stehen in der Chronik.`,
@@ -807,7 +816,10 @@ defineActions({
     const members = b.memberIds.map(musicianById).filter(Boolean);
     // Besteht die Band nur aus Jam-Café-Musikern, sollen die nicht glauben, sie könnten gleich wieder jammen.
     const jamOnly = members.length > 0 && members.every((m) => m.jammed);
-    const ok = await confirmDialog(`${b.name} auflösen? Eine laufende Produktion geht verloren.${b.released || b.records > 0 ? ' Die Band bleibt mit ihren Platten in der Chronik; die Tantiemen laufen weiter.' : ''}${jamOnly
+    const after = coreOn()
+      ? `${b.core?.fans >= 1 ? ' Jeder macht allein weiter und nimmt einen Teil der Fans mit.' : ''}${b.records > 0 ? ' Die Band bleibt mit ihren Platten in der Chronik; die Platten verkaufen sich weiter.' : ''}`
+      : (b.released || b.records > 0 ? ' Die Band bleibt mit ihren Platten in der Chronik; die Tantiemen laufen weiter.' : '');
+    const ok = await confirmDialog(`${b.name} auflösen? Eine laufende Produktion geht verloren.${after}${jamOnly
       ? ` ${members.map((m) => m.firstName).join(' und ')} haben sich im Jam-Café gefunden – ins Jam-Café können sie danach nicht noch einmal.` : ''}`, { ok: 'Auflösen', danger: true });
     if (!ok) return;
     if (await mutate('bandDisband', { bandId: b.id })) navigate('#/');

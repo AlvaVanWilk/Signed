@@ -633,7 +633,7 @@ final class Activities
         $slot = (int) $data['reward']['slot'];
         $column = $slot === 2 ? 'skill2' : 'skill1';
         $before = BandCalc::skill($m, $slot);
-        $after = min((float) Balance::MAX_STAT, $before + (float) $data['reward']['skill']);
+        $after = Levels::cap($before + (float) $data['reward']['skill']);
         $repo->db->update('musicians', [$column => $after], ['id' => $m['id']]);
         $levelUp = Levels::check($repo, $m['id']);
         return [
@@ -754,6 +754,11 @@ final class Activities
         $gains = [];
         foreach ($members as $m) {
             $gains[$m['id']] = BandCalc::rehearsalGain($m, BandCalc::gearOf($m, $gear)) * $room['skill'] * $f;
+            if (BandCore::$live) {
+                // Neuer Kern: Der Zuwachs zählt im neuen Können; gespeichert wird auf der alten Skala
+                $old = BandCalc::skill($m);
+                $gains[$m['id']] = Core\Skill::toLegacy(Core\Skill::fromLegacy($old) + $gains[$m['id']]) - $old;
+            }
         }
         $credited = (array) $r['credited'];
         foreach ($gains as $id => $g) {
@@ -844,7 +849,7 @@ final class Activities
             }
             $m = Repo::hydrateMusician($row);
             $column = $m['band_slot'] === 2 && $m['instr2'] !== null ? 'skill2' : 'skill1';
-            $repo->db->update('musicians', [$column => min((float) Balance::MAX_STAT, BandCalc::skill($m) + (float) $gain)], ['id' => $m['id']]);
+            $repo->db->update('musicians', [$column => Levels::cap(BandCalc::skill($m) + (float) $gain)], ['id' => $m['id']]);
             $levelUp = Levels::check($repo, $m['id']);
             if ($levelUp !== null) {
                 $levelUps[] = $levelUp;

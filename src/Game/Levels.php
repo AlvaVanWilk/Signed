@@ -17,6 +17,27 @@ final class Levels
         return self::step($skill, Balance::SKILL_LEVELS);
     }
 
+    /**
+     * Neues Können, wie es angezeigt und für den Sound gerechnet wird. Gespeichert bleibt die alte Skala (gleiche Stufen-Grenzen:
+     * 35 / 60 / 85 ↔ 100 / 400 / 1.600); im neuen Kern ist sie nach oben offen.
+     */
+    public static function shown(float $skill): float
+    {
+        return BandCore::$live ? Core\Skill::fromLegacy($skill) : $skill;
+    }
+
+    /** Können nach einem Zuwachs: im bisherigen Spiel höchstens MAX_STAT, im neuen Kern nach oben offen. */
+    public static function cap(float $skill): float
+    {
+        return BandCore::$live ? max(0.0, $skill) : min((float) Balance::MAX_STAT, $skill);
+    }
+
+    /** Grenzen der Können-Stufen, wie sie angezeigt werden. */
+    public static function skillLevels(): array
+    {
+        return BandCore::$live ? Balance::CORE_SKILL['levels'] : Balance::SKILL_LEVELS;
+    }
+
     public static function forFame(float $fame): int
     {
         return self::step($fame, Balance::FAME_LEVELS);

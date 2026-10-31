@@ -317,7 +317,10 @@ final class State
                 $practice = [];
                 foreach ([1 => $m['instr1'], 2 => $m['instr2']] as $slot => $type) {
                     if ($type !== null) {
-                        $practice[] = round(BandCalc::practiceGain($m, $slot, 1.0, $gearMap[$m['id']][$type] ?? null), 3);
+                        $gain = BandCalc::practiceGain($m, $slot, 1.0, $gearMap[$m['id']][$type] ?? null);
+                        // Neuer Kern: Zuwachs so, wie er im angezeigten Können ankommt
+                        $skill = BandCalc::skill($m, $slot);
+                        $practice[] = round(Levels::shown($skill + $gain) - Levels::shown($skill), 3);
                     }
                 }
                 return Present::musician($m, $gearIds[$m['id']] ?? []) + ['wellbeing' => ['value' => round($m['wellbeing'], 1), 'level' => Mood::level($m['wellbeing'])], 'gains' => [

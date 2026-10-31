@@ -339,3 +339,54 @@ test('Kern im Spiel: Bedürfnisse kosten erst nach 24 Stunden etwas und wachsen 
     coreNear(-9.6, $wait(47));
     coreNear(-19.2, $wait(49));
 });
+
+test('Kern im Spiel: Können wird im neuen Maß gezeigt, Proben bringt 50 je Stunde, nach oben offen', function () {
+    [$db, $p, $repo, $band] = coreLabel();
+    $m = array_values($repo->members($band['id']))[0];
+    $db->exec('UPDATE musicians SET skill1 = 60 WHERE id = ?', [$m['id']]);
+    $state = $p->get('state');
+    checkEquals([100, 400, 1600], Signed\Game\Present::catalog()['rules']['skillLevels'], 'Stufen im neuen Maß');
+    $card = array_values(array_filter($state['musicians'], static fn ($x) => $x['id'] === $m['id']))[0];
+    coreNear(400.0, (float) $card['instruments'][0]['skill'], 1e-9, 'Altes 60 ist neues 400');
+    // Eine Stunde Proben: 50 dazu (ohne besondere Züge und Instrument-Boni), auch über der alten Grenze 100
+    $db->exec('UPDATE musicians SET skill1 = 100, personality = ? WHERE id = ?', [json_encode(['gelassen']), $m['id']]);
+    $before = Signed\Game\Levels::shown(100.0);
+    $gain = Signed\Game\BandCalc::rehearsalGain($repo->musician($m['id']), ['key' => 'x', 'bonuses' => []]);
+    coreNear(12.5, $gain, 1e-9, 'Je Probe-Viertelstunde 12,5');
+    check(Signed\Game\Levels::cap(130.0) === 130.0, 'Keine Obergrenze mehr');
+    coreNear($before + 50, Signed\Game\Core\Skill::fromLegacy(Signed\Game\Core\Skill::toLegacy($before + 50)), 1e-9, 'Umrechnung hin und zurück');
+});
+
+test('Kern im Spiel: Übergang – 0 Fans, neues Startgeld, eigenes Instrument in passender Farbe, Lager verfällt, alter Ruhm als Erinnerung', function () {
+    [$db, $p, $repo, $band] = coreLabel();
+    $members = array_values($repo->members($band['id']));
+    [$a, $b, $c] = $members;
+    $db->exec('UPDATE labels SET money = 123456 WHERE id = ?', [$repo->labelId]);
+    $db->exec('UPDATE bands SET fame_own = 40, songs_written = 7.6, fans = 0 WHERE id = ?', [$band['id']]);
+    $db->exec('UPDATE musicians SET fame = 30 WHERE id = ?', [$a['id']]);
+    $db->exec('DELETE FROM gear WHERE label_id = ?', [$repo->labelId]);
+    // a: Profi (altes Können 62) mit goldenem Instrument → blau; b: kein Instrument, Fortgeschritten → grün; c: Anfänger ohne → grau
+    $db->exec('UPDATE musicians SET skill1 = 62 WHERE id = ?', [$a['id']]);
+    $db->exec('UPDATE musicians SET skill1 = 40 WHERE id = ?', [$b['id']]);
+    $db->exec('UPDATE musicians SET skill1 = 20 WHERE id = ?', [$c['id']]);
+    $gold = array_key_first(array_filter(Signed\Game\Catalog::GEAR, static fn ($g) => $g['type'] === $a['instr1'] && $g['rarity'] === 'legendary'));
+    $goldId = $repo->insertGear($gold);
+    $db->exec('UPDATE gear SET musician_id = ? WHERE id = ?', [$a['id'], $goldId]);
+    $repo->insertGear(array_key_first(Signed\Game\Catalog::GEAR));
+    Signed\Game\CoreTransition::run($db);
+    checkEquals(5000, (int) $db->value('SELECT money FROM labels WHERE id = ?', [$repo->labelId]));
+    checkEquals(0.0, BandCore::fans($db, $band['id']));
+    checkEquals(2, Signed\Game\Gear::modelTier((string) $db->value('SELECT model FROM gear WHERE id = ?', [$goldId])), 'Gold wird Blau');
+    $tiers = [];
+    foreach ($db->all('SELECT model, musician_id FROM gear WHERE label_id = ?', [$repo->labelId]) as $g) {
+        $tiers[(int) $g['musician_id']] = Signed\Game\Gear::modelTier($g['model']);
+    }
+    checkEquals(3, count($tiers), 'Lager verfällt, jeder hat genau eins');
+    checkEquals([2, 1, 0], [$tiers[$a['id']], $tiers[$b['id']], $tiers[$c['id']]]);
+    checkEquals(7, (int) $db->value('SELECT COUNT(*) FROM songs WHERE band_id = ? AND record_id IS NULL', [$band['id']]), 'Songs im Vorrat mit Qualität');
+    check((int) $db->value("SELECT COUNT(*) FROM history WHERE band_id = ? AND text LIKE 'Vor dem Umbau: % Ruhm.'", [$band['id']]) === 1, 'Erinnerung an den alten Ruhm');
+    checkEquals(0.0, (float) $db->value('SELECT fame FROM musicians WHERE id = ?', [$a['id']]));
+    $summary = json_decode((string) $db->value('SELECT transition FROM labels WHERE id = ?', [$repo->labelId]), true)['core'];
+    checkEquals(123456, $summary['money']);
+    checkEquals(['kept' => 0, 'swapped' => 1, 'expired' => 1, 'given' => 2], $summary['gear']);
+});

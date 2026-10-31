@@ -43,6 +43,20 @@ final class Skill
         return 0.0;
     }
 
+    /** Umkehrung von fromLegacy: neues Können auf der alten Skala (für Regeln, die noch mit 0–100 rechnen; über 100 offen). */
+    public static function toLegacy(float $new): float
+    {
+        $points = Balance::CORE_SKILL['legacy'];
+        $old = array_keys($points);
+        $values = array_values($points);
+        for ($i = 1; $i < count($values); $i++) {
+            if ($new <= $values[$i] || $i === count($values) - 1) {
+                return max(0.0, $old[$i - 1] + ($new - $values[$i - 1]) * ($old[$i] - $old[$i - 1]) / ($values[$i] - $values[$i - 1]));
+            }
+        }
+        return 0.0;
+    }
+
     /** Übergang: Farbe des eigenen Instruments, die der Musiker behält (höchstens die seiner neuen Stufe; 0 grau … 3 gold). */
     public static function keptGear(int $tier, float $skill): int
     {

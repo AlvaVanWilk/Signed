@@ -34,7 +34,8 @@ final class BandCalc
     /** Beitrag eines Musikers: Können × Instrument (Symbiose). */
     public static function memberValue(array $m, ?array $model): float
     {
-        $skill = self::skill($m);
+        // Neuer Kern: Sound aus dem neuen Können (100 / 400 / 1.600 …)
+        $skill = Levels::shown(self::skill($m));
         $gear = $model === null ? Balance::NO_GEAR_FACTOR : 1 + self::gearBonus($model, $skill);
         return $skill * $gear;
     }
@@ -193,6 +194,10 @@ final class BandCalc
         $trait = 1.0;
         foreach ($m['personality'] ?? [] as $p) {
             $trait *= Balance::TRAITS['rehearsalGain'][$p] ?? 1.0;
+        }
+        if (BandCore::$live) {
+            // Neuer Kern: fester Zuwachs ohne Lernkurve, im neuen Können (50 je Probestunde) – umrechnen macht Activities::advanceRehearsal
+            return Balance::CORE_SKILL['perHour'] * Balance::REHEARSAL['seconds'] / 3600 * $trait * (1 + Gear::value($model, 'learn'));
         }
         return self::trainingGain($m, Balance::REHEARSAL['skill'] * $trait, null, $model);
     }

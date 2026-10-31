@@ -187,7 +187,7 @@ final class Minigames
         $type = $slot === 2 ? $m['instr2'] : $m['instr1'];
         $model = $this->repo->gearByMusician()[$m['id']][$type] ?? null;
         $gain = BandCalc::practiceGain($m, $slot, $accuracy, $model);
-        $after = min((float) Balance::MAX_STAT, $skill + $gain);
+        $after = Levels::cap($skill + $gain);
         $this->repo->db->update('musicians', [$slot === 2 ? 'skill2' : 'skill1' => $after], ['id' => $m['id']]);
         $levelUp = Levels::check($this->repo, $m['id']);
         return [

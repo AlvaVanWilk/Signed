@@ -412,7 +412,7 @@ final class Studio
         foreach ($members as $m) {
             $gain = BandCalc::trainingGain($m, Balance::RECORD_SONG_SKILL * $songs * $quality, null, BandCalc::gearOf($m, $gear));
             $column = $m['band_slot'] === 2 && $m['instr2'] !== null ? 'skill2' : 'skill1';
-            $db->update('musicians', [$column => min((float) Balance::MAX_STAT, BandCalc::skill($m) + $gain)], ['id' => $m['id']]);
+            $db->update('musicians', [$column => Levels::cap(BandCalc::skill($m) + $gain)], ['id' => $m['id']]);
             $levelUp = Levels::check($this->repo, $m['id']);
             if ($levelUp !== null) {
                 $levelUps[] = $levelUp;
@@ -484,7 +484,7 @@ final class Studio
         foreach ($members as $m) {
             $gain = BandCalc::trainingGain($m, Balance::RECORD_SONG_SKILL * $songs * $quality, null, BandCalc::gearOf($m, $gear));
             $column = $m['band_slot'] === 2 && $m['instr2'] !== null ? 'skill2' : 'skill1';
-            $db->update('musicians', [$column => min((float) Balance::MAX_STAT, BandCalc::skill($m) + $gain)], ['id' => $m['id']]);
+            $db->update('musicians', [$column => Levels::cap(BandCalc::skill($m) + $gain)], ['id' => $m['id']]);
             $levelUp = Levels::check($this->repo, $m['id']);
             if ($levelUp !== null) {
                 $levelUps[] = $levelUp;

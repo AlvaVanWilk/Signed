@@ -98,7 +98,7 @@ final class Tutors
                 if ($gain > 0) {
                     $m = Repo::hydrateMusician($row);
                     $column = (int) $d['slot'] === 2 ? 'skill2' : 'skill1';
-                    $db->update('musicians', [$column => min((float) Balance::MAX_STAT, BandCalc::skill($m, (int) $d['slot']) + $gain)], ['id' => $m['id']]);
+                    $db->update('musicians', [$column => Levels::cap(BandCalc::skill($m, (int) $d['slot']) + $gain)], ['id' => $m['id']]);
                     Levels::check($this->repo, $m['id']);
                     $d['done'] = round((float) $d['done'] + $gain, 4);
                     $d['at'] = $to;

@@ -17,9 +17,10 @@ final class Present
 
     public static function musician(array $m, array $gearIds = []): array
     {
-        $instruments = [['type' => $m['instr1'], 'skill' => self::down($m['skill1'])]];
+        // Können wie angezeigt (im neuen Kern 100 / 400 / 1.600 …, siehe Levels::shown)
+        $instruments = [['type' => $m['instr1'], 'skill' => self::down(Levels::shown((float) $m['skill1']))]];
         if ($m['instr2'] !== null) {
-            $instruments[] = ['type' => $m['instr2'], 'skill' => self::down((float) $m['skill2'])];
+            $instruments[] = ['type' => $m['instr2'], 'skill' => self::down(Levels::shown((float) $m['skill2']))];
         }
         return [
             'id' => $m['id'],
@@ -228,7 +229,7 @@ final class Present
                 'cohesionRemovePenalty' => Balance::COHESION_REMOVE_PENALTY,
                 'cohesionSwitchPenalty' => Balance::COHESION_SWITCH_PENALTY,
                 'scoutPrice' => Balance::SCOUT_PRICE,
-                'skillLevels' => Balance::SKILL_LEVELS,
+                'skillLevels' => Levels::skillLevels(),
                 'fameLevels' => Balance::FAME_LEVELS,
                 'bandPromoSeconds' => Balance::BAND_PROMO['seconds'],
                 'retreat' => Balance::RETREAT,

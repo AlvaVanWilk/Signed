@@ -555,7 +555,7 @@ test('Kern im Spiel: Anfragen nach Ereignissen – Goldene Schallplatte, Platz 1
     Signed\Game\Awards::sales($repo, $band['id'], $id, 'Erste', 4990.0, 5010.0);
     Signed\Game\Battle::settled($repo, $band['id'], ['place' => 2, 'day' => '1.1.2027']);
     Signed\Game\Battle::settled($repo, $band['id'], ['place' => 5, 'day' => '1.1.2027']);
-    unpackAll($db);
+    checkEquals(0, (int) $db->value("SELECT COUNT(*) FROM mail WHERE kind = 'interview' AND unpacked_at IS NULL"), 'Anfragen nach Ereignissen kommen ohne Umschlag');
     $reasons = array_column($requests(), 'reason');
     check(in_array('nach der Goldenen Schallplatte für „Erste“', $reasons, true), 'Gold: ' . implode(' | ', $reasons));
     check(in_array('nach Platz 2 beim Battle of the Bands', $reasons, true), 'Battle-Platz');

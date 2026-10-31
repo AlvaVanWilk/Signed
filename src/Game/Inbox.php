@@ -235,6 +235,10 @@ final class Inbox
      * Bezug darauf im Brief und von einem Medium eine Stufe größer als sonst. Nur für Bands mit Platte, denn der Schub gilt ihrer neuesten.
      * @return array{medium: string, who: string}|null
      */
+    /**
+     * Anfrage nach einem Ereignis (Auftritt, Festival, Battle, Charts, Auszeichnung): kommt sofort offen an, ohne Umschlag, und hängt
+     * im Posteingang angepinnt vorn (erkennbar am Grund `reason`).
+     */
     public static function eventRequest(Repo $repo, int $bandId, string $reason): ?array
     {
         $records = $repo->db->value('SELECT records FROM bands WHERE id = ? AND label_id = ?', [$bandId, $repo->labelId]);
@@ -248,7 +252,7 @@ final class Inbox
         (new self($repo))->store('interview', [
             'musicianId' => $m['id'], 'level' => $level, 'medium' => $medium['name'], 'share' => $medium['share'],
             'request' => (string) Rng::weighted(Balance::CORE_EVENTS['requestWeights']), 'reason' => $reason,
-        ], Clock::now(), Balance::POST['ttl']);
+        ], Clock::now(), Balance::POST['ttl'], true);
         return ['medium' => $medium['name'], 'who' => $m['stage_name'] ?? $m['first_name']];
     }
 

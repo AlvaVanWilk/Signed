@@ -951,8 +951,11 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .lb-slotbar { position: absolute; left: 6px; right: 6px; top: 4px; display: flex; justify-content: space-between; align-items: center; pointer-events: none; z-index: 3; }
 /* Die Marken sitzen immer auf der Oberkante der Karte, auch bei langen Briefen (sonst verdecken sie die Überschrift):
    Leiste im Fluss über der Karte, leicht überlappend; der Platz ist hoch genug für den längsten Brief. */
-.lb-slotitem { height: 196px; }
+.lb-slotitem { height: auto; min-height: 196px; }
 .lb-slotitem > .lb-slotbar { position: relative; order: -1; top: auto; left: auto; right: auto; width: auto; min-height: 26px; justify-self: stretch; margin: 0 6px -8px; }
+/* Anfrage nach einem Ereignis: angepinnt (Nadel wie am Schwarzen Brett), golden umrandet, steht vorn */
+.lb-letter.pinned { overflow: visible; padding-top: 16px; box-shadow: 0 0 0 2px #e8c35a, 0 8px 18px rgba(0, 0, 0, 0.45); }
+.lb-letter.pinned .bb-pin { top: -5px; left: 72%; z-index: 4; }
 /* Spalten mittig: Bleibt rechts Platz für keine weitere Spalte (iPad hochkant: zwei), sitzt der Rest nicht als Lücke rechts. */
 .lb-slots { justify-content: center; }
 .lb-left { pointer-events: auto; padding: 1px 8px; border-radius: 999px; background: rgba(20, 18, 27, .85); border: 1px solid var(--lb-line); color: var(--lb-muted); font-size: .7rem; font-weight: 700; }
@@ -962,7 +965,7 @@ a.btn.wk-back { display: inline-flex; width: auto; }
 .lb-save.on svg { fill: var(--lb-accent); stroke: var(--lb-accent); }
 
 /* Posteingang: Briefe (Interview-Anfragen, Bewerbungen) in derselben Größe wie die Karten; Assistenz und ihre Notizen */
-.lb-letter { position: relative; width: 210px; min-height: 140px; max-height: 176px; box-sizing: border-box; padding: 9px 11px; border-radius: 6px; display: grid; align-content: space-between; gap: 4px; text-align: left;
+.lb-letter { position: relative; width: 210px; min-height: 140px; box-sizing: border-box; padding: 9px 11px; border-radius: 6px; display: grid; align-content: space-between; gap: 4px; text-align: left;
   background: #e9e3d6; color: #2a2733; border: 1px solid #c9bfa9; box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35); overflow: hidden; }
 .lb-letter::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: repeating-linear-gradient(90deg, #b9483f 0 12px, #e9e3d6 12px 18px, #3d5f9e 18px 30px, #e9e3d6 30px 36px); opacity: .8; }
 .lb-letter.job::before { background: #8a7a55; }

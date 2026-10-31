@@ -388,7 +388,7 @@ function resultHtml(r) {
     ${levelUpBanners(res.levelUps)}
     ${res.venueUp ? `<div class="banner">⭐ Neue Stufe! Ab jetzt spielt die Band Gigs in: <b>${esc(res.venueUp)}</b>.</div>` : ''}
     ${res.stageUp ? `<div class="banner">⭐ Neue Ruhmstufe: <b>${esc(res.stageUp)}</b>! Ab jetzt passen mehr Leute in die Orte, und das Label verdient mehr je Zuschauer.</div>` : ''}
-    ${res.request ? `<div class="banner">Nach dem Auftritt hat ${esc(res.request.medium)} angefragt, bei ${esc(res.request.who)}. Die Anfrage liegt im Posteingang.</div>` : ''}
+    ${res.request ? `<div class="banner">Nach dem Auftritt hat ${esc(res.request.medium)} angefragt, bei ${esc(res.request.who)}. Die Anfrage hängt angepinnt vorn im Posteingang.</div>` : ''}
     ${res.festival ? festivalExtras(res.festival) : ''}
     ${res.tour ? tour.gigExtras(res) : ''}
     ${drops}`;
@@ -397,7 +397,7 @@ function resultHtml(r) {
 /** Nach dem Festival: Headliner-Plakat und die Interview-Anfrage. */
 function festivalExtras(f) {
   return `${f.headliner ? `<div class="banner">Ihr wart der Headliner von „${esc(f.name)}“! Das Plakat hängt jetzt im Proberaum.</div>` : ''}
-    ${f.interview ? `<div class="banner">Nach dem Auftritt hat ${esc(f.interview.medium)} angefragt: ein Interview mit ${esc(f.interview.who)}. Die Anfrage liegt im Posteingang.</div>` : ''}`;
+    ${f.interview ? `<div class="banner">Nach dem Auftritt hat ${esc(f.interview.medium)} angefragt: ein Interview mit ${esc(f.interview.who)}. Die Anfrage hängt angepinnt vorn im Posteingang.</div>` : ''}`;
 }
 
 /** Battle of the Bands vorbei: Platz, Pokal, Preisgeld, Ruhm. */

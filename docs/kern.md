@@ -153,7 +153,8 @@ Verdienst         = Zuschauer × 5 / 6 / 9 / 12 ₲ nach Ruhmstufe
   Reportage +6 (30 Min.), Werbung +1 (20 Min.) und so viele ₲, wie die Band Fans hat. Je Musiker und Tag 0,05 + 0,05 × √(Fans / 100);
   Arten im Verhältnis 4 / 2 / 2 / 1 / 1. Netzwerker +10 % Schub je Stufe. Dazu Anfragen nach Ereignissen, mit Bezug im Brief: Festival,
   Battle Platz 1 bis 3, Platz 1 der Charts, Gold / Platin / Diamant, ausverkauftes Konzert und tolle Show (je 25 %, je Band höchstens
-  einmal in 24 Stunden). So bleiben Kassetten das meiste im Posteingang.
+  einmal in 24 Stunden). Anfragen nach Ereignissen kommen offen an (ohne Umschlag) und hängen angepinnt vorn im Posteingang.
+  So bleiben Kassetten das meiste im Posteingang.
 
 ### Band ändern
 

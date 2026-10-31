@@ -235,7 +235,7 @@ function interviewLetter(m) {
   if (!who) return '';
   const away = isBusy(who.busyUntil) || (who.bandId && isBusy(bandById(who.bandId)?.busyUntil));
   return `
-    <article class="lb-letter interview">
+    <article class="lb-letter interview ${m.reason ? 'pinned' : ''}">${m.reason ? '<i class="bb-pin" title="Angepinnt: Anfrage nach einem Ereignis"></i>' : ''}
       <div class="lb-lt-head"><span class="lb-lt-kind">${m.request ? `Anfrage: ${esc(m.requestName)}` : 'Interview-Anfrage'}</span></div>
       <div class="lb-lt-body"><span class="lb-ph sm">${photo(who)}</span>
         ${m.request
@@ -348,6 +348,8 @@ export function render() {
     : (f === 'all' || !['demos', 'inbox'].includes(box) ? inBox : inBox.filter((x) => isDemo(x) && (f === 'unheard' ? x.state !== 'open' : x.state === 'open' && levelOf(x) === Number(f))));
   // Im Genre-Reiter heißt „eigene Reihenfolge“: nach den übrigen Genres gruppiert.
   shown = sort === 'own' && !genre ? ordered(shown) : ordered(shown).sort((x, y) => (sort === 'own' ? byOtherGenres(x, y, genre) : SUB_SORTS[sort](x, y)));
+  // Anfragen nach einem Ereignis hängen angepinnt vorn.
+  shown = [...shown.filter((x) => x.reason), ...shown.filter((x) => !x.reason)];
   const subCount = (k) => inBox.filter((x) => (k === 'all' ? true : k === 'unheard' ? isDemo(x) && x.state !== 'open' : x.submissionId && x.filed && genresOfSub(x).includes(k))).length;
   let filterBar = tapes
     ? `<div class="lb-filterbar"><div class="lb-filter lb-subtabs">${[['all', 'Alle'], ['unheard', 'Ungehört'], ...genres.map((g) => [g, genreName(g)])].map(([k, label]) => `<button class="${sub === k ? 'on' : ''}" ${genres.includes(k) ? `style="--g:var(--lb-c-${k})"` : ''} data-act="subTab" data-key="${k}">${genres.includes(k) ? `<i>${genreGlyph(k)}</i>` : ''}${esc(label)} <small>${subCount(k)}</small></button>`).join('')}</div>

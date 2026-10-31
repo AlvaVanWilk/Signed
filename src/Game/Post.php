@@ -230,6 +230,19 @@ final class Post
         return $min;
     }
 
+    /**
+     * Selbst alles einsortieren: Was ausgepackt im Eingang liegt, kommt sofort in sein Fach (Kassetten und Scout-Berichte zu den Demos,
+     * Anfragen, Bewerbungen). Umschläge bleiben liegen, bis sie offen sind; Gemerktes bleibt gemerkt. Gibt zurück, wie viel es war.
+     */
+    public function sortAll(int $now): int
+    {
+        $n = 0;
+        foreach (self::TABLES as $table) {
+            $n += $this->repo->db->exec("UPDATE $table SET sorted_at = ?, box = NULL WHERE label_id = ? AND " . self::open('sort', $table), [$now, $this->repo->labelId, $now, $now]);
+        }
+        return $n;
+    }
+
     /** Von Hand in ein Fach ziehen (auch zurück in den Eingang oder zu den Gemerkten). */
     public function move(string $key, int $id, string $box): void
     {

@@ -718,6 +718,10 @@ final class Schema
             [
                 static fn (Db $db) => \Signed\Game\CoreTransition::run($db),
             ],
+            // 59: Kassetten, die eine Assistenz schon angehört und in die Genre-Reiter gelegt hat, lagen trotzdem im Eingang: jetzt im Fach „Demos“
+            [
+                'UPDATE submissions SET sorted_at = filed_at WHERE filed_at IS NOT NULL AND sorted_at IS NULL AND box IS NULL',
+            ],
         ];
     }
 }

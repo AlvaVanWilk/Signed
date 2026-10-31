@@ -271,7 +271,8 @@ Geldnot, weil er sich keinen Bus leisten kann).
 Drei Arten Post: **Kassetten** (Musiker und Bands, die zum Label wollen), **Briefe** (Interview-Anfragen, Scout-Berichte) und **Bewerbungen**
 (Praktikum, Assistenz, Scout, Manager, Lehrkraft, Coach). Alles kommt in **Umschlägen** (erst auspacken, 2 Sekunden), **zufällig verteilt**
 (man weiß nie genau, wann), liegt **vier Tage**, lässt sich merken und ungeöffnet wegwerfen. Am Menüpunkt steht **+N**, was neu ist.
-Alles liegt im **Eingang**; in die Fächer kommt es, wenn jemand sortiert. Von Hand lässt sich alles in ein Fach ziehen und umsortieren.
+Alles liegt im **Eingang**; in die Fächer kommt es, wenn jemand sortiert. Selbst geht das mit **„Alles einsortieren“** (alles Offene sofort in
+sein Fach, Umschläge erst, wenn sie offen sind) oder einzeln: festhalten und auf einen Reiter ziehen.
 
 **Wie viel kommt:** je Art eine fließende Rate **Start + Zuwachs × √Label-Ruhm** ohne Obergrenze:
 

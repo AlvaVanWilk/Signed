@@ -119,6 +119,7 @@ final class Api
         'internCancel' => ['POST', true],
         'inboxSeen' => ['POST', true],
         'postMove' => ['POST', true],
+        'postSortAll' => ['POST', true],
         'scoutSend' => ['POST', true],
         'scoutReportSign' => ['POST', true],
         'practiceAuto' => ['POST', true],
@@ -597,6 +598,13 @@ final class Api
     {
         (new Post($repo))->move(self::str($in, 'table'), self::int($in, 'id'), self::str($in, 'box'));
         return ['state' => State::build($repo)];
+    }
+
+    /** Selbst alles aus dem Eingang in die Fächer legen. */
+    private function postSortAll(array $in, Repo $repo): array
+    {
+        $count = (new Post($repo))->sortAll(Clock::now());
+        return ['count' => $count, 'state' => State::build($repo)];
     }
 
     /** Posteingang angesehen: Die Zahl am Menüpunkt fängt wieder bei null an. */

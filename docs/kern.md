@@ -518,6 +518,8 @@ auf dem Boden) und als Liste auf der Bandseite und in WikiSignia. Neue werden ei
 - **Unterschriftsprämie** = (40 + 0,05 × Können² + 1,5 × Bekanntheit) × (1 + 12 % × versteckter Wert); wer bei einer Band zurückbleibt,
   kränkt die anderen (Wohlbefinden −20, Teamplayer ×1,6, Ehrgeizige ×0,5).
 - Arbeit je Stück (gleich für einen selbst, Praktikum und Assistenz): Umschlag 2 s, Kassette anhören 5 s, Brief lesen 5 s, einsortieren 1 s.
+  Selbst einsortieren geht sofort: „Alles einsortieren“ im Eingang (`Post::sortAll`) oder einzeln auf einen Reiter ziehen.
+  Was eine Kassetten-Assistenz angehört hat, liegt danach im Fach „Demos“ (alte Stände einmal mit Schema-Schritt 59).
   Assistenz holt offline höchstens vier Tage nach.
 - Praktikum 50 ₲ für 7 Tage, übernehmen 400 ₲; Assistenz 400 ₲; Scout 400 / 1.200 / 3.000 ₲ (2 / 1½ / 1 Std., 2 / 3 / 3 Talente, Können bis
   34 / 44 / 54); Manager 300 / 3.000 / 10.000 ₲ (Stärke 1 / 3 / 5, Passung ×0,4 bis ×1,45).

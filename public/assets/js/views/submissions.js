@@ -331,6 +331,8 @@ export function render() {
   app.ui.postSeenAt ??= s.label.inboxSeenAt ?? 0;
   const f = app.ui.subFilter ?? 'all';
   const inBox = items.filter((x) => fach(x) === box);
+  // Selbst einsortieren: alles Ausgepackte im Eingang (Umschläge erst, wenn sie offen sind).
+  const sortable = box === 'inbox' ? inBox.filter((x) => x.kind !== 'envelope' && !['envelope', 'unpacking'].includes(x.state)).length : 0;
   // Alles liegt in einer Reihe und lässt sich frei sortieren; der Filter zeigt nur ausgepackte Kassetten.
   const isDemo = (x) => x.submissionId && x.state !== 'envelope' && x.state !== 'unpacking';
   // Mit einer Kassetten-Assistenz hat das Fach „Demos“ Unterreiter: Alle, Ungehört und je Genre (was sie angehört und einsortiert hat;
@@ -351,7 +353,8 @@ export function render() {
     ? `<div class="lb-filterbar"><div class="lb-filter lb-subtabs">${[['all', 'Alle'], ['unheard', 'Ungehört'], ...genres.map((g) => [g, genreName(g)])].map(([k, label]) => `<button class="${sub === k ? 'on' : ''}" ${genres.includes(k) ? `style="--g:var(--lb-c-${k})"` : ''} data-act="subTab" data-key="${k}">${genres.includes(k) ? `<i>${genreGlyph(k)}</i>` : ''}${esc(label)} <small>${subCount(k)}</small></button>`).join('')}</div>
       <span class="lb-sortbox"><select data-change="subSort" aria-label="Sortieren">${[['own', genre ? 'Nach den anderen Genres' : 'Eigene Reihenfolge'], ['newest', 'Neueste zuerst'], ['level', 'Stufe'], ['skill', 'Können']].map(([k, label]) => `<option value="${k}" ${sort === k ? 'selected' : ''}>${label}</option>`).join('')}</select></span></div>`
     : ['demos', 'inbox'].includes(box) ? `<div class="lb-filterbar"><div class="lb-filter">${[['all', 'Alle'], ['unheard', 'Ungehört'], ['0', 'Stufe 0'], ['1', 'Stufe 1'], ['2', 'Stufe 2'], ['3', 'Stufe 3']].map(([k, label]) => `<button class="${f === k ? 'on' : ''}" data-act="subFilter" data-key="${k}">${label}</button>`).join('')}</div>
-      ${box === 'demos' ? `<span class="lb-sortbox"><button class="lb-pill" ${off('Nach Genre ordnen und sortieren kann eine Assistenz im Gebiet Kassetten. Sie hört die Kassetten an und legt sie in Genre-Reiter.')}>Genre-Reiter und Sortieren</button></span>` : ''}</div>` : '';
+      ${box === 'demos' ? `<span class="lb-sortbox"><button class="lb-pill" ${off('Nach Genre ordnen und sortieren kann eine Assistenz im Gebiet Kassetten. Sie hört die Kassetten an und legt sie in Genre-Reiter.')}>Genre-Reiter und Sortieren</button></span>` : ''}
+      ${box === 'inbox' ? `<span class="lb-sortbox"><button class="lb-pill" data-act="postSortAll" ${off(sortable ? '' : 'Im Eingang liegt nichts Offenes. Umschläge musst du erst öffnen.')}>Alles einsortieren${sortable ? ` · ${sortable}` : ''}</button></span>` : ''}</div>` : '';
   // Mit einer Büro-Assistenz hat das Fach „Bewerbungen“ Unterreiter: Alle, Ungelesen und je Beruf (was sie gelesen hat), sortierbar wie die Kassetten.
   if (box === 'job') {
     const office = !!a?.areas?.office;
@@ -385,7 +388,7 @@ export function render() {
   const slotOf = (x) => (x.submissionId ? slot(x, busy) : letterSlot(x));
   return `
     <div class="section-head"><h1>Posteingang</h1>${isTest() ? '<span class="lb-test"><button class="btn small" data-act="submissionsTest" data-closed="1">Test: neue Kassetten</button><button class="btn small" data-act="submissionsTest">Test: gesichtete Bewerber</button><button class="btn small" data-act="mailTest">Test: Briefe</button></span>' : ''}</div>
-    <p class="muted">Hier kommt alles an, in Umschlägen: Kassetten von Musikern, die zu dir wollen, Interview-Anfragen für deine Leute und Bewerbungen fürs Label. Tipp einen Umschlag an, dann packst du ihn aus. Halt etwas fest und zieh es auf einen Reiter, dann liegt es in diesem Fach. Alles liegt vier Tage, dann ist es weg.</p>
+    <p class="muted">Hier kommt alles an, in Umschlägen: Kassetten von Musikern, die zu dir wollen, Interview-Anfragen für deine Leute und Bewerbungen fürs Label. Tipp einen Umschlag an, dann packst du ihn aus. Mit „Alles einsortieren“ kommt alles Offene in sein Fach. Einzelne Sachen kannst du festhalten und auf einen Reiter ziehen. Alles liegt vier Tage, dann ist es weg.</p>
     ${(s.tutors ?? []).map(tutorBar).join('')}
     ${officeScene(a, count('inbox'))}
     <div class="lb-boxes">${tabs.map(([k, label]) => `<button class="${box === k ? 'on' : ''}" data-act="subBox" data-key="${k}" data-box="${k}">${label} <small>${count(k)}</small></button>`).join('')}</div>
@@ -840,6 +843,11 @@ defineActions({
   subFilter({ key }) {
     app.ui.subFilter = key;
     rerender();
+  },
+  /** Selbst einsortieren: Kassetten zu den Demos, Briefe zu Anfragen und Bewerbungen. */
+  async postSortAll() {
+    const res = await mutate('postSortAll', {});
+    if (res) toast(res.count ? `${res.count === 1 ? 'Ein Stück liegt' : `${res.count} Stück liegen`} jetzt in den Fächern.` : 'Es war nichts einzusortieren.', 'ok');
   },
   subTab({ key }) {
     app.ui.subTab = key;

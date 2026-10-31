@@ -2570,6 +2570,29 @@ test('Umschläge: Praktikum packt auf Zuruf aus, hört an, sortiert in die Fäch
     checkEquals([], array_values(array_filter($state['submissions'], static fn ($x) => in_array($x['state'], ['envelope', 'unpacking'], true) || !$x['sorted'])), 'Assistenz packt aus und sortiert');
 });
 
+test('Posteingang: Selbst alles einsortieren – Offenes kommt in sein Fach, Umschläge und Gemerktes bleiben', function () {
+    $db = freshDb();
+    $p = registerPlayer($db, 'Sortierer');
+    $p->get('state');
+    unpackAll($db);
+    $closed = (int) $db->value('SELECT MIN(id) FROM submissions');
+    $db->exec('UPDATE submissions SET unpacked_at = NULL WHERE id = ?', [$closed]);
+    $saved = (int) $db->value('SELECT MAX(id) FROM submissions');
+    $db->exec('UPDATE submissions SET saved = 1 WHERE id = ?', [$saved]);
+    $back = (int) $db->value('SELECT MIN(id) FROM mail');
+    $db->exec("UPDATE mail SET sorted_at = ?, box = 'inbox' WHERE id = ?", [Clock::now() - 60, $back]);
+    $open = (int) $db->value('SELECT COUNT(*) FROM submissions') - 2 + (int) $db->value('SELECT COUNT(*) FROM mail');
+    check($open > 3, 'Es liegt einiges da');
+    $res = $p->post('postSortAll');
+    checkEquals($open, $res['count'], 'Alles Offene, auch was von Hand in den Eingang zurückgelegt war');
+    $subs = array_column($res['state']['submissions'], null, 'submissionId');
+    checkEquals(false, $subs[$closed]['sorted'], 'Ein Umschlag bleibt im Eingang');
+    checkEquals(true, $subs[$saved]['saved'], 'Gemerktes bleibt gemerkt');
+    checkEquals([], array_values(array_filter($res['state']['submissions'], static fn ($x) => !$x['sorted'] && !in_array($x['submissionId'], [$closed, $saved], true))), 'Kassetten bei den Demos');
+    checkEquals([], array_values(array_filter($res['state']['mail'], static fn ($m) => !$m['sorted'] || $m['box'] !== null)), 'Briefe in ihren Fächern');
+    checkEquals(0, $p->post('postSortAll')['count'], 'Danach ist nichts mehr zu tun');
+});
+
 test('Praktikum: Auftrag endet mit dem Praktikum, verabschieden macht Platz für ein neues', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Abschied');

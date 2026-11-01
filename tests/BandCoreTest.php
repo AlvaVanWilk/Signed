@@ -426,6 +426,9 @@ test('Kern im Spiel: Festival-Bühnen nach Fans, Zuschauer bringen Fans, die Bü
     $big = genreBand($db, $b, $next['genre'], 'Große Nummer');
     $db->exec('UPDATE bands SET fans = 3000 WHERE id = ?', [$big]);
     $db->exec('UPDATE bands SET fans = 100 WHERE id = ?', [$small]);
+    // Die Bewerbung zeigt die Fans der Band (vorher den alten Wochenruhm, der im neuen Kern immer 0 war)
+    $opt = array_values(array_filter($b->get('state')['festival']['next']['options'], static fn ($o) => $o['bandId'] === $big))[0];
+    checkEquals(3000.0, (float) $opt['gain'], 'Bewerbung zeigt 3.000 Fans');
     $a->post('festivalEnter', ['bandId' => $small]);
     $b->post('festivalEnter', ['bandId' => $big]);
     $repoB = new Repo($db, (int) $b->get('state')['label']['id']);
@@ -527,17 +530,19 @@ test('Kern im Spiel: Viele Kassetten von Anfang an, mit den Fans mehr Gute (500 
     $db->exec('UPDATE bands SET fans = 50000 WHERE id = ?', [$band['id']]);
     check($s->demoSuccess() > 10 * $s->success(), 'Der Ruhm-Gegenwert der Musiker wäre viel kleiner');
     $db->exec('UPDATE bands SET fans = 0 WHERE id = ?', [$band['id']]);
-    // Posteingang: höchstens 40 ungehörte; gemerkte und angehörte bleiben
+    // Posteingang ohne Grenze (Sandra, 1.11.): Ungehörtes fliegt nicht raus, Kassetten verfallen nur nach ihrer Liegezeit
     $p->get('state');
     $first = (int) $db->value('SELECT id FROM submissions WHERE label_id = ? ORDER BY id LIMIT 1', [$repo->labelId]);
     $db->exec('UPDATE submissions SET saved = 1 WHERE id = ?', [$first]);
     Clock::advance(2 * 86400);
     $p->get('state');
     $unheard = (int) $db->value('SELECT COUNT(*) FROM submissions WHERE label_id = ? AND opened_at IS NULL AND saved = 0', [$repo->labelId]);
-    checkEquals(Balance::CORE_SUBMISSIONS['cap'], $unheard, 'Voll, aber nicht übervoll');
+    check($unheard > 100, "Keine Grenze bei 40: $unheard ungehörte");
     checkEquals(1, (int) $db->value('SELECT COUNT(*) FROM submissions WHERE id = ?', [$first]), 'Die gemerkte bleibt');
     $levels = array_map(static fn ($r) => json_decode($r['card'], true), $db->all('SELECT card FROM submissions WHERE label_id = ? AND id <> ?', [$repo->labelId, $first]));
-    check(count(array_filter($levels, static fn ($c) => ($c['kind'] ?? '') !== 'band' && $c['level'] >= 1)) <= 20, 'Wenig Gutes dabei');
+    $singles = array_filter($levels, static fn ($c) => ($c['kind'] ?? '') !== 'band');
+    $goodOnes = count(array_filter($singles, static fn ($c) => $c['level'] >= 1));
+    check($goodOnes <= 0.15 * count($singles), sprintf('Wenig Gutes dabei (%d von %d)', $goodOnes, count($singles)));
 });
 
 test('Kern im Spiel: Die Auszeit gibt es nur, wenn jemand in der Band rot ist', function () {
@@ -1145,23 +1150,23 @@ test('Kern im Spiel: Songs ziehen mit – einsteigen, zusammentun, aussteigen, a
     check(is_array($state['bands']), 'Spielstand geht');
 });
 
-test('Kern im Spiel: Ein voller Vorrat wirft den schwächsten Song weg, kein Songstau; „Wir wollen aufnehmen!“ erst mit dem Plattenwunsch', function () {
+test('Kern im Spiel: Der Songvorrat hat keine Grenze, kein Songstau; „Wir wollen aufnehmen!“ erst mit dem Plattenwunsch', function () {
     [$db, $p, $repo, $band] = coreLabel();
     giveManager($db, $band['id']);
-    $cap = Balance::CORE_SONGS['cap'];
-    for ($i = 0; $i < $cap - 1; $i++) {
+    $start = 60;
+    for ($i = 0; $i < $start; $i++) {
         $db->insert('songs', ['label_id' => $repo->labelId, 'band_id' => $band['id'], 'quality' => 20 + $i, 'record_id' => null, 'created_at' => Clock::now()]);
     }
-    $db->exec('UPDATE bands SET songs_written = ? WHERE id = ?', [$cap - 1 + 0.5, $band['id']]);
+    $db->exec('UPDATE bands SET songs_written = ? WHERE id = ?', [$start + 0.5, $band['id']]);
     $db->exec('UPDATE musicians SET wellbeing = 90 WHERE band_id = ?', [$band['id']]);
     coreRelease($repo, $band, 80);
     $p->get('state');
     Clock::advance(18 * 3600);
     $state = $p->get('state');
     $left = array_map('floatval', array_column(Signed\Game\SongStock::stock($db, $band['id']), 'quality'));
-    checkEquals($cap, count($left), 'Nie mehr als ' . $cap);
-    check(!in_array(20.0, $left, true), 'Der schwächste ist rausgeflogen');
-    checkEquals($cap, (int) floor((float) $db->value('SELECT songs_written FROM bands WHERE id = ?', [$band['id']])), 'Zähler passt zum Vorrat');
+    check(count($left) > $start, sprintf('Der Vorrat wächst über %d hinaus (%d Songs)', $start, count($left)));
+    check(in_array(20.0, $left, true), 'Auch der schwächste bleibt');
+    checkEquals(count($left), (int) floor((float) $db->value('SELECT songs_written FROM bands WHERE id = ?', [$band['id']])), 'Zähler passt zum Vorrat');
     // Kein Songstau im neuen Kern; die Band will erst aufnehmen, wenn die letzte Platte eine Woche her ist
     foreach (bandById($state, $band['id'])['mood']['why'] as $why) {
         check(!isset(array_column($why['items'] ?? [], 1, 0)['Zu viele Songs warten auf eine Aufnahme']), 'Kein Songstau');
@@ -1172,4 +1177,52 @@ test('Kern im Spiel: Ein voller Vorrat wirft den schwächsten Song weg, kein Son
     check(in_array('Wir wollen aufnehmen!', $texts($p->get('state')), true), 'Eine Woche später wollen sie aufnehmen');
     $hit = bandById($state, $band['id'])['mood']['hitRate'];
     check($hit > 0.05 && $hit < 0.5, "Trefferquote der Band auf der Bandseite: $hit");
+});
+
+test('Kern im Spiel: Kassetten und Scout-Talente bringen Songs nach ihrem echten Können mit; ausgepackte Kassetten bleiben liegen', function () {
+    [$db, $p, $repo] = coreLabel();
+    // Mitgebrachte Songs passen zur Können-Stufe der Karte (vorher wurden sie gewürfelt, bevor das Können feststand: immer wie Anfänger)
+    $avg = static function (callable $make): float {
+        $n = 0;
+        for ($i = 0; $i < 150; $i++) {
+            $n += count($make()['songs']);
+        }
+        return $n / 150;
+    };
+    $beginners = $avg(static fn () => Signed\Game\Submissions::make(0));
+    $pros = $avg(static fn () => Signed\Game\Submissions::make(2));
+    check($pros > 1.8 * $beginners, "Profis bringen mehr Songs mit als Anfänger ($pros gegen $beginners)");
+    $talents = 0;
+    for ($i = 0; $i < 40; $i++) {
+        $talents += array_sum(array_map(static fn ($c) => count($c['songs']), Signed\Game\Scouting::find(3, null, null)));
+    }
+    check($talents / 120 > $beginners * 1.5, 'Scout-Talente der Stufe 3 bringen mehr als Anfänger');
+    // Keine Grenze (Sandra, 1.11.): Auch was eine Assistenz schon ausgepackt hat, bleibt liegen, bis es verfällt
+    $p->get('state');
+    $db->exec("UPDATE submissions SET worker = 'a1', unpacked_at = created_at WHERE label_id = ?", [$repo->labelId]);
+    $ids = array_map('intval', array_column($db->all('SELECT id FROM submissions WHERE label_id = ?', [$repo->labelId]), 'id'));
+    check(count($ids) > 0, 'Es liegen Kassetten da');
+    Clock::advance(86400);
+    $p->get('state');
+    $kept = (int) $db->value('SELECT COUNT(*) FROM submissions WHERE label_id = ? AND id IN (' . implode(',', $ids) . ')', [$repo->labelId]);
+    checkEquals(count($ids), $kept, 'Nichts fliegt raus');
+    $unheard = (int) $db->value('SELECT COUNT(*) FROM submissions WHERE label_id = ? AND opened_at IS NULL AND saved = 0', [$repo->labelId]);
+    check($unheard > 40, "Mehr als 40 ungehörte ($unheard)");
+});
+
+test('Kern im Spiel: Herausgenommenes lehnt der Server ab; Entlassen prüft erst, ob der Musiker frei ist', function () {
+    [$db, $p, $repo, $band] = coreLabel();
+    $m = array_values($repo->members($band['id']))[0];
+    foreach (['soloStart' => ['musicianId' => $m['id'], 'type' => 'practice'], 'practiceAuto' => ['musicianId' => $m['id'], 'slot' => 1],
+        'buyPack' => ['pack' => 'starter'], 'scoutOpen' => ['voucher' => true], 'transferList' => ['musicianId' => $m['id']]] as $action => $in) {
+        checkApiError(fn () => $p->post($action, $in), 'nicht mehr');
+    }
+    // Ein beschäftigter Solokünstler: Entlassen geht nicht, und seine Solo-Band bleibt
+    $solo = coreNewcomer($repo, ['gelassen'], 20, []);
+    $p->get('state');
+    $soloBand = (int) $db->value('SELECT band_id FROM musicians WHERE id = ?', [$solo]);
+    $db->exec('UPDATE musicians SET busy_until = ? WHERE id = ?', [Clock::now() + 600, $solo]);
+    checkApiError(fn () => $p->post('musicianRelease', ['musicianId' => $solo]), 'unterwegs');
+    checkEquals($soloBand, (int) $db->value('SELECT band_id FROM musicians WHERE id = ?', [$solo]), 'Die Solo-Band bleibt');
+    checkEquals(1, (int) $db->value('SELECT COUNT(*) FROM bands WHERE id = ?', [$soloBand]));
 });

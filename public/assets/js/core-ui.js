@@ -58,16 +58,15 @@ function hitText(b) {
   return ` Von 10 neuen Songs werden etwa ${Math.max(1, Math.round(hit * 10))} gut.`;
 }
 
-/** Songs im Vorrat mit ihrer Qualität (beste zuerst, gute grün). Ist der Vorrat voll, fliegt für jeden neuen Song der schwächste raus. */
+/** Songs im Vorrat mit ihrer Qualität (beste zuerst, gute grün). Der Vorrat hat keine Grenze. */
 function songStock(b) {
   const stock = b.core?.stock ?? [];
   if (!stock.length) return '';
-  const cap = cat().rules.songCap ?? 40;
   const good = cat().rules.songGood ?? 70;
   const goodCount = stock.filter((x) => x.quality >= good).length;
-  return `<div class="cf-stock"><small class="lb-cap">Songs im Vorrat <span class="muted">${stock.length} von ${cap}, davon ${goodCount} gut</span></small>
+  return `<div class="cf-stock"><small class="lb-cap">Songs im Vorrat <span class="muted">${stock.length}, davon ${goodCount} gut</span></small>
     <div class="rc-songs">${stock.map((x) => `<span class="rc-song on cf-song ${x.quality >= good ? 'good' : ''}" title="Qualität ${fmt0(x.quality)}"><i style="--q:${Math.round(x.quality)}"></i><b>${fmt0(x.quality)}</b></span>`).join('')}</div>
-    <small class="muted">Gute Songs (ab ${good}) sind grün. Ist der Vorrat voll, fliegt für jeden neuen Song der schwächste raus.</small></div>`;
+    <small class="muted">Gute Songs (ab ${good}) sind grün.</small></div>`;
 }
 
 /** Warum heute so viele oder so wenige kommen (das i neben dem Knopf). */

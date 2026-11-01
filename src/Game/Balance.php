@@ -873,7 +873,7 @@ final class Balance
      * Kassetten im neuen Kern (Sandra, 1.11.: „viele Einsendungen, wenig Gutes“, die Güte steigt mit dem Erfolg des Labels):
      * je Tag = start + root × √Erfolg (Erfolg wie bei CORE_DEMO_FANS). Können-Stufe 0–3 einer Kassette nach den Anteilen `levels` bei
      * 0 / 500 / 5.000 / 50.000 Fans (Fans-Gegenwert des Erfolgs), dazwischen gleitend: bis 500 gleichmäßig, darüber je Zehnfaches eine Zeile.
-     * Im Posteingang liegen höchstens `cap` ungehörte Kassetten; kommt eine neue dazu, fliegt die älteste ungehörte raus.
+     * Eine Grenze für ungehörte Kassetten gibt es nicht (Sandra, 1.11.); eine Kassette verfällt nur nach ihrer Liegezeit (POST['ttl']).
      */
     public const CORE_SUBMISSIONS = [
         'perDay' => ['start' => 96.0, 'root' => 1.0],
@@ -883,7 +883,6 @@ final class Balance
             2 => [0 => 75.0, 1 => 18.0, 2 => 6.0, 3 => 1.0],
             3 => [0 => 65.0, 1 => 22.0, 2 => 10.0, 3 => 3.0],
         ],
-        'cap' => 40,
     ];
     /** Dach: höchstens so viele Fans je Art der Band (Solokünstler mit Pop oder Elektro zählen als Genre, mit beidem als Hybrid). */
     public const CORE_ROOF = ['mixed' => 4999, 'genre' => 50000, 'hybrid' => 75000, 'crossover' => 90000];
@@ -1004,12 +1003,12 @@ final class Balance
      * Trefferquote p = Anteil der guten Songs (ab `good`) eines Songschreibers: `hit` nach seiner Können-Stufe (0–3) + `creative` × kreative Kraft
      * (`creativeTraits`, der größte Wert seiner Züge); dazu der Regler der Band (× `slider`) und ein Coach (+ `coach`), höchstens `max`.
      * Qualität = floor + (100 − floor) × u hoch a, u zufällig 0–1, a so gewählt, dass genau der Anteil p ab `good` liegt.
-     * Der Vorrat fasst `cap` Songs; ist er voll, wirft die Band für jeden neuen Song den schwächsten weg (SongStock::trim).
+     * Der Vorrat hat keine Grenze (Sandra, 1.11.): Kein Song fliegt von selbst raus.
      * Neue Musiker bringen eigene Songs mit: `bring` nach Können-Stufe × Gewicht beim Schreiben (CORE_SONGWRITING['writers']) × Zufall `bringSpread`,
      * höchstens `bringMax`; jeder mit seiner eigenen Trefferquote.
      */
     public const CORE_SONGS = [
-        'cap' => 40, 'floor' => 10.0, 'good' => 70.0,
+        'floor' => 10.0, 'good' => 70.0,
         'hit' => [0 => 0.12, 1 => 0.15, 2 => 0.18, 3 => 0.21], 'creative' => 0.15, 'max' => 0.40,
         // kreative Kraft: Perfektionisten schreiben langsam, aber die besten Songs; Kreative schreiben schnell und etwas bessere
         'creativeTraits' => ['perfektionist' => 1.0, 'kreativ' => 0.5],

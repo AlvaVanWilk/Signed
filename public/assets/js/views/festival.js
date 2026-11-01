@@ -74,7 +74,7 @@ function apply(f) {
       ${rules.stages.map((s) => (rules.core
     ? `<p><b>${esc(s.name)}</b>: ${s.songs} Lieder, ${money(s.money)} und rund ${fmt0(s.audience)} Zuschauer. Wer noch kein Fan ist, kann einer werden, umso mehr, je besser die Show. Dazu gibt die Bühne der neuesten Platte einen Schub Hype.</p>`
     : `<p><b>${esc(s.name)}</b>: ${s.songs} Lieder, ${money(s.money)} Gage und viel Bekanntheit (je größer die Bühne, desto mehr; dazu zählen Sound und Publikum wie bei einem Gig).</p>`)).join('')}
-      <p>Nach dem Auftritt will ein größeres Magazin oder ein Sender ein Interview (im Posteingang). Der Headliner bekommt ein Plakat für den Proberaum. Und vielleicht wartet ein Fan, der mitspielen will.</p>
+      <p>Nach dem Auftritt will ein größeres Magazin oder ein Sender ein Interview (im Posteingang). Der Headliner bekommt ein Plakat für den Proberaum.${rules.core ? '' : ' Und vielleicht wartet ein Fan, der mitspielen will.'}</p>
       <p>Die Band ist vom Beginn des Festivals bis zu ihrem Auftritt dort.</p>
     </details>
   </section>`;

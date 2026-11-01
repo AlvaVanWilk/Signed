@@ -188,7 +188,8 @@ final class Present
                 'startMoney' => BandCore::$live ? Balance::CORE_MONEY['start'] : Balance::START_MONEY,
                 'songSeconds' => Balance::SONG_SECONDS,
                 'liveSongSeconds' => Balance::LIVE_SONG_SECONDS,
-                'songCap' => BandCore::$live ? Balance::CORE_SONGS['cap'] : Balance::MOOD['songCap'],
+                // Neuer Kern: Der Songvorrat hat keine Grenze
+                'songCap' => BandCore::$live ? null : Balance::MOOD['songCap'],
                 // Neuer Kern: ab dieser Qualität ist ein Song gut
                 'songGood' => Balance::CORE_SONGS['good'],
                 'minMembers' => Balance::MIN_MEMBERS,

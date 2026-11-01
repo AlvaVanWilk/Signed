@@ -12,7 +12,7 @@ use Signed\Rng;
 /**
  * Songvorrat im neuen Kern: Jeder Song hat seine eigene Qualität, festgelegt beim Schreiben (Trefferquote des Songschreibers, Regler, Coach,
  * Zufall; Balance::CORE_SONGS), und merkt sich, wer ihn geschrieben hat (`musician_id`). Beim Aufnehmen wählt das Label 10 bis 16 aus;
- * ins Album geht ihr Durchschnitt. Der Vorrat fasst CORE_SONGS['cap']; ist er voll, fliegt für jeden neuen Song der schwächste raus.
+ * ins Album geht ihr Durchschnitt. Der Vorrat hat keine Grenze; kein Song fliegt von selbst raus (Sandra, 1.11.).
  * Neue Musiker bringen eigene Songs mit. Solange sie in keiner Band sind, liegen die Songs in ihrer Tasche (`band_id` 0).
  * Der Zähler bands.songs_written ist im neuen Kern die Zahl der Songs im Vorrat plus der angefangene Song (sync).
  */
@@ -21,7 +21,7 @@ final class SongStock
     /**
      * So viele neue Songs schreiben ($coachQuality: Zuschlag des Coaches aus Tutors::coaching, 0 ohne). Jeden Song schreibt einer der
      * Songschreiber (nach seinem Gewicht, Core\Songs::weight) mit seiner Trefferquote. $times: wann jeder fertig wurde (aus Mood::run,
-     * auch offline); ohne Angabe jetzt. Danach fliegen die schwächsten raus, wenn der Vorrat zu voll ist.
+     * auch offline); ohne Angabe jetzt.
      */
     public static function write(Repo $repo, array $band, array $members, int $count, float $coachQuality = 0.0, array $times = []): void
     {
@@ -43,7 +43,6 @@ final class SongStock
                 'created_at' => (int) ($times[$i] ?? Clock::now()), 'quality' => round(Quality::song($rates[$k], Rng::float()), 2),
             ]);
         }
-        self::trim($repo->db, (int) $band['id']);
         self::sync($repo->db, (int) $band['id']);
     }
 
@@ -96,7 +95,6 @@ final class SongStock
     public static function join(Db $db, int $musicianId, int $bandId): void
     {
         if ($db->exec('UPDATE songs SET band_id = ? WHERE band_id = 0 AND musician_id = ? AND record_id IS NULL', [$bandId, $musicianId]) > 0) {
-            self::trim($db, $bandId);
             self::sync($db, $bandId);
         }
     }
@@ -106,23 +104,8 @@ final class SongStock
     {
         if ($db->exec('UPDATE songs SET band_id = ? WHERE band_id = ? AND record_id IS NULL', [$toBandId, $fromBandId]) > 0) {
             self::sync($db, $fromBandId);
-            self::trim($db, $toBandId);
             self::sync($db, $toBandId);
         }
-    }
-
-    /** Ist der Vorrat zu voll, fliegen die schwächsten Songs raus. Liefert, wie viele. */
-    public static function trim(Db $db, int $bandId): int
-    {
-        $over = (int) $db->value('SELECT COUNT(*) FROM songs WHERE band_id = ? AND record_id IS NULL', [$bandId]) - Balance::CORE_SONGS['cap'];
-        if ($over <= 0) {
-            return 0;
-        }
-        $ids = array_column($db->all('SELECT id FROM songs WHERE band_id = ? AND record_id IS NULL ORDER BY quality, id DESC LIMIT ' . $over, [$bandId]), 'id');
-        foreach ($ids as $id) {
-            $db->exec('DELETE FROM songs WHERE id = ?', [(int) $id]);
-        }
-        return count($ids);
     }
 
     /** Zähler der Band an den Vorrat anpassen: Zahl der Songs plus der angefangene Song. */

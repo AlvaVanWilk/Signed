@@ -22,7 +22,7 @@ const CORE_NEWS = [
   ['band', 'Fans statt Ruhm', 'Der Erfolg einer Band sind jetzt ihre Fans. Fans kaufen Platten, kommen zu Auftritten und erzählen es weiter. Alle Bands fangen bei 0 Fans an, so erleben alle das neue Spiel von vorn.'],
   ['charts', 'Hype', 'Jede neue Platte bringt Hype: Je besser sie ist, desto mehr. Mit viel Hype kaufen viele die Platte, und viele kommen zu Auftritten. Jeden Tag ist der Hype halb so groß. Anfragen, Festival und Battle geben einen Schub.'],
   ['gig', 'Auftreten', 'Es gibt nur noch einen Knopf: Auftreten. Das Spiel nimmt den passenden Ort, Kosten gibt es keine, das Label verdient an jedem Zuschauer. Gleich noch einmal auftreten bringt weniger Leute; nach einem Tag Pause kommen wieder alle.'],
-  ['record', 'Platten', 'Ein Album hat 12 Songs, jeder Song hat seine eigene Qualität. Die Qualität der Platte kommt aus Sound, Songs, Produktion und Stimmung. Die Charts zählen die Verkäufe der letzten 24 Stunden.'],
+  ['record', 'Platten', 'Ein Album hat 10 bis 16 Songs, jeder Song hat seine eigene Qualität. Die Qualität der Platte kommt aus Sound, Songs, Produktion und Stimmung. Die Charts zählen die Verkäufe der letzten 24 Stunden.'],
   ['course', 'Können', 'Können wird jetzt größer gezählt: Fortgeschritten ab 100, Profi ab 400, Virtuose ab 1.600. Wer vorher Profi war, ist es auch jetzt. Eine Probe am Tag hält den Sound auf der Höhe.'],
 ];
 

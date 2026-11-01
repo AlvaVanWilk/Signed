@@ -94,10 +94,6 @@ final class Generator
             'unusual' => !in_array($primary, $typical, true),
             'look' => $look,
         ];
-        if (BandCore::$live) {
-            // Neuer Kern: eigene Songs in der Tasche, Zahl und Stärke nach Können und Charakter (auch verborgenem)
-            $card['songs'] = SongStock::roll($card);
-        }
         return $card;
     }
 

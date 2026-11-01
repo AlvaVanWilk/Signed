@@ -812,7 +812,7 @@ final class Mood
             $t += $dt;
             $hours = $dt / 3600;
             $before = (int) floor($state['songs']);
-            // Neuer Kern: ohne Deckel, ein voller Vorrat wirft danach die schwächsten Songs weg (SongStock::trim)
+            // Neuer Kern: ohne Deckel, der Vorrat hat keine Grenze
             $state['songs'] = min(BandCore::$live ? INF : (float) $c['songCap'], $state['songs'] + self::writeRate(self::bandMood($state['w'])) * $writeFactor * $hours);
             // Wann jeder neue Song fertig wurde (für den Vorrat, SongStock::write)
             for ($k = $before; $k < (int) floor($state['songs']); $k++) {

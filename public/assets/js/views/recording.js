@@ -64,7 +64,7 @@ function coverSection(b, data) {
 
     <h3 class="rc-h">Cover <small class="muted">${motif ? 'Motiv passend zum Titel' : 'Entwürfe vom Grafikbüro'}</small></h3>
     <div class="rc-cards rc-designers">${Object.entries(designers).map(([k, d]) => `<button class="rc-card ${pick.designer === k ? 'on' : ''}" data-r="designer" data-v="${k}">
-      <b>${esc(d.name)}</b><small>${money(d.fee)}${d.sales ? ` · verkauft +${Math.round(d.sales * 100)} %` : ''}</small></button>`).join('')}</div>
+      <b>${esc(d.name)}</b><small>${money(d.fee)}${d.sales && !coreOn() ? ` · verkauft +${Math.round(d.sales * 100)} %` : ''}</small></button>`).join('')}</div>
     <div class="rc-covers">${covers.map((c, i) => `<button class="rc-cover ${pick.cover === i ? 'on' : ''}" data-r="cover" data-v="${i}">${coverHtml(c, { band: b.name, title: pick.title || ' ' })}</button>`).join('')}</div>
     <button class="btn small ghost" data-r="redraw" ${off(app.state.label.money < cat().rules.coverRedraw ? 'Dafür reicht das Geld nicht.' : '')}>Neue Entwürfe · ${money(cat().rules.coverRedraw)}</button>
     ${b.logo ? `<p class="muted small">Das Bandlogo steht auf jedem Cover${data.logoSales ? `; Fans erkennen es wieder: verkauft +${Math.round(cat().rules.coverLogoSales * 100)} %` : ''}.</p>` : `
@@ -72,7 +72,7 @@ function coverSection(b, data) {
     <div class="rc-logos">${Object.entries(cat().logoFonts).map(([k, name]) => `<button class="rc-logo ${pick.logo.font === k ? 'on' : ''}" data-r="logoFont" data-v="${k}" title="${esc(name)}"
       style="font-family:${LOGO_FONTS[k].replaceAll('"', "'")};color:${LOGO_COLORS[pick.logo.color]}">${esc(b.name)}</button>`).join('')}</div>
     <div class="rc-swatches">${Object.entries(cat().logoColors).map(([k, name]) => `<button class="rc-swatch ${pick.logo.color === k ? 'on' : ''}" data-r="logoColor" data-v="${k}" title="${esc(name)}" aria-label="${esc(name)}" style="background:${LOGO_COLORS[k]}"></button>`).join('')}</div>
-    <p class="muted small">Ab der nächsten Platte erkennen Fans das Logo wieder, sie verkauft sich dann ${Math.round(cat().rules.coverLogoSales * 100)} % besser.</p>`}`;
+    <p class="muted small">${coreOn() ? 'Ab jetzt steht es auf jedem Cover.' : `Ab der nächsten Platte erkennen Fans das Logo wieder, sie verkauft sich dann ${Math.round(cat().rules.coverLogoSales * 100)} % besser.`}</p>`}`;
 }
 
 function dialogHtml(b, data) {

@@ -154,6 +154,13 @@ final class Api
         'minigameAbort' => ['POST', true],
     ];
 
+    /**
+     * Im neuen Kern herausgenommen (Sandra; docs/kern.md, „Was es im neuen Kern nicht mehr gibt“): Allein-Üben und Minispiele, Packs,
+     * der alte Talent-Scout, Jam-Café und Wechselbörse. Der Code bleibt bis zum Aufräumen, der Server nimmt die Aktionen nicht mehr an.
+     */
+    private const REMOVED_IN_CORE = ['soloStart', 'practiceAuto', 'minigameStart', 'minigameFinish', 'minigameAbort', 'buyPack', 'packPick',
+        'scoutOpen', 'scoutPick', 'jamPick', 'jamDecline', 'transferList', 'transferWithdraw', 'transferBid', 'transferAccept'];
+
     public function __construct(private Db $db, private Session $session)
     {
     }
@@ -166,6 +173,9 @@ final class Api
         }
         if ($method !== $route[0]) {
             throw new ApiError('Falsche Anfragemethode.', 405);
+        }
+        if (BandCore::$live && in_array($action, self::REMOVED_IN_CORE, true)) {
+            throw new ApiError('Das gibt es im Spiel nicht mehr.', 410);
         }
         if (!$route[1]) {
             return $this->{$action}($in);
@@ -826,6 +836,13 @@ final class Api
     private function musicianRelease(array $in, Repo $repo): array
     {
         $m = $repo->musician(self::int($in, 'musicianId'));
+        // Erst alles prüfen, dann die Solo-Band auflösen (sonst wäre sie weg, obwohl er bleibt)
+        if ((int) $m['busy_until'] > \Signed\Clock::now()) {
+            throw new ApiError(sprintf('%s ist gerade unterwegs.', $m['first_name']));
+        }
+        if ($this->db->value("SELECT COUNT(*) FROM transfers WHERE musician_id = ? AND status = 'open'", [$m['id']])) {
+            throw new ApiError(sprintf('%s steht an der Börse. Erst zurückziehen.', $m['first_name']));
+        }
         if ($m['band_id'] !== null) {
             // Ein Solokünstler darf gehen (seine Solo-Band löst sich auf); wer in einer Band mit anderen spielt, muss erst herausgenommen werden.
             if ((int) $this->db->value('SELECT COUNT(*) FROM musicians WHERE band_id = ?', [$m['band_id']]) > 1) {
@@ -833,12 +850,6 @@ final class Api
             }
             (new Bands($repo))->disband($m['band_id'], 'left');
             $m['band_id'] = null;
-        }
-        if ((int) $m['busy_until'] > \Signed\Clock::now()) {
-            throw new ApiError(sprintf('%s ist gerade unterwegs.', $m['first_name']));
-        }
-        if ($this->db->value("SELECT COUNT(*) FROM transfers WHERE musician_id = ? AND status = 'open'", [$m['id']])) {
-            throw new ApiError(sprintf('%s steht an der Börse. Erst zurückziehen.', $m['first_name']));
         }
         $this->db->transaction(function () use ($m, $repo): void {
             $this->db->exec('UPDATE gear SET musician_id = NULL WHERE musician_id = ?', [$m['id']]);

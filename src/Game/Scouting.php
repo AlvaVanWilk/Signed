@@ -117,7 +117,7 @@ final class Scouting
             $card['level'] = Levels::forSkill($best);
             $card['abilities'] = Levels::randomTechnique(array_filter([$card['instr1'], $card['instr2']]), $card['genres']);
             array_push($avoid, $card['first_name'], $card['last_name']);
-            $cards[] = $card;
+            $cards[] = Submissions::withSongs($card);
         }
         return $cards;
     }

@@ -56,9 +56,8 @@ Chartpunkte, den Album-Zyklus, die Promo-Tour, Straßenmusik, Open Stage und Fan
   Dazwischen gleitend (bis 500 gleichmäßig, darüber mit jedem Zehnfachen eine Zeile weiter; `Submissions::levelShares`). Zu Beginn
   kommen so etwa 5 Fortgeschrittene und jeden zweiten Tag ein Profi; bei 5.000 Fans täglich gut 20 Fortgeschrittene, 8 Profis und ein
   Virtuose. Vorher: 5 % bis 25 % „gute“ (erst ab 25.000 Fans ein Viertel), bei 500 Fans knapp 2 Fortgeschrittene am Tag.
-- Im Posteingang liegen höchstens **40 ungehörte Kassetten**; für jede neue fliegt die älteste ungehörte raus (gemerkte, angehörte und
-  gerade bearbeitete bleiben). Ohne diese Grenze lägen bei 96 am Tag und vier Tagen Liegezeit fast 400 da. Zum Aufräumen gibt es die
-  Kassetten-Assistenz (nach Regel wegwerfen, Suchauftrag).
+- Eine Grenze für ungehörte Kassetten gibt es nicht (Sandra, 1.11.); eine Kassette verfällt nur nach 4 Tagen Liegezeit. Bei 96 am Tag
+  liegen so bis zu knapp 400 da, bei 5.000 Fans gut 500. Zum Aufräumen gibt es die Kassetten-Assistenz (nach Regel wegwerfen, Suchauftrag).
 - Bestenlisten: Labels nach allen Fans zusammen; Künstler als Fan-Lieblinge (Fans) und Sound-Monster (Sound).
 
 ### Hype
@@ -170,8 +169,8 @@ Verdienst         = Zuschauer × 5 / 6 / 9 / 12 ₲ nach Ruhmstufe
   Steigt er in eine Band ein oder gründet eine, kommen sie mit; beim Zusammentun kommt der ganze Vorrat der anderen Band mit. Wer aussteigt,
   nimmt die Songs mit, die er selbst geschrieben hat; beim Auflösen jeder seine (`SongStock::toBag`, `join`, `moveBand`). Vorher blieben die
   Songs einer Solo-Band beim Einstieg in eine Band zurück und waren verloren.
-- **Vorrat:** höchstens 40 Songs (`CORE_SONGS['cap']`). Ist er voll, fliegt für jeden neuen Song der schwächste raus (`SongStock::trim`);
-  das Ablehnen (✕) ist deshalb weg. Kein Songstau im neuen Kern: Zum Aufnehmen drängt der Plattenwunsch, und „Wir wollen aufnehmen!“
+- **Vorrat:** keine Grenze (Sandra, 1.11.). Kein Song fliegt von selbst raus, schwache bleiben liegen; das Ablehnen (✕) gibt es im
+  neuen Kern nicht. Kein Songstau im neuen Kern: Zum Aufnehmen drängt der Plattenwunsch, und „Wir wollen aufnehmen!“
   kommt erst mit ihm (genug Songs und die letzte Platte eine Woche her). Gelassene zeigen sich dafür, wenn die Stimmung sinkt.
 - **Entscheidung:** Wer gleich aufnimmt, muss schwache Songs nehmen; wer wartet, hat mehr gute zur Auswahl. Nachgerechnet (Viererband,
   p = 0,18, Album aus den besten 12): alle 3 Tage Songs im Schnitt 48 (Q 82 bei vollem Sound, Produktion, Stimmung), alle 7 Tage 73 (Q 90);

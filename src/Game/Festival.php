@@ -263,7 +263,7 @@ final class Festival
             [$manager, $level] = $repo->bandManager($band);
             $fame *= BandCore::$live ? 0.0 : 1 + BandCalc::managerBonus($manager, $level, 'prprofi', Balance::PR_BONUS);
             $drops = [];
-            if ($sim['meter'] >= Balance::FAN_MUSICIAN['minMeter'] && Rng::chance($c['fanChance']) && !FanMusician::onCooldown($repo)) {
+            if (!BandCore::$live && $sim['meter'] >= Balance::FAN_MUSICIAN['minMeter'] && Rng::chance($c['fanChance']) && !FanMusician::onCooldown($repo)) {
                 $drops[] = ['kind' => 'musician', 'venue' => $stage['fanVenue']];
             }
             $db->exec('UPDATE bands SET busy_until = ? WHERE id = ? AND busy_until < ?', [$act['endsAt'], $act['bandId'], $act['endsAt']]);
@@ -349,7 +349,8 @@ final class Festival
             $in = in_array($band['id'], $entered, true);
             $options[] = [
                 'bandId' => $band['id'], 'entered' => $in, 'blocked' => $in ? null : self::blocker($band, $members[$band['id']] ?? [], $next, $db),
-                'gain' => self::weekGain($db, $band['id'], $now),
+                // Neuer Kern: die Fans der Band (den alten Wochenruhm schreibt niemand mehr)
+                'gain' => BandCore::$live ? round(BandCore::fans($db, (int) $band['id'])) : self::weekGain($db, $band['id'], $now),
             ];
         }
         $event = self::current($db);

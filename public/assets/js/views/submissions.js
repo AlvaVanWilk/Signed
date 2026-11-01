@@ -1,4 +1,5 @@
 import { genreGlyph, genreName, genreOrder, hiddenTraits, traitNames, instrumentIcon, instrumentName, photo, scoutTask, sortedGenres, withBand, withBandHtml } from '../cards.js';
+import { coreOn } from '../core-ui.js';
 import { api } from '../api.js';
 import { actions, app, bandById, cat, defineActions, isBusy, mutate, musicianById, rerender, serverNow } from '../core.js';
 import { confirmDialog, esc, fmt0, money, off, openModal, toast } from '../ui.js';
@@ -308,7 +309,7 @@ function jobLetter(m) {
     : m.role === 'assistant' ? 'arbeitet von allein in einem Gebiet: Post, Kassetten oder Büro'
     : m.role === 'scout' ? `${m.candidates} Talente in ${mins(m.seconds)} (Können bis ${fmt0(m.maxSkill)}${m.multiGenre ? `, ${multiGenreText(m.multiGenre)}` : ''})`
     : m.role === 'teacher' ? `${instrumentName(m.instrument)} für einen Musiker: +${fmt0(m.gain)} Können (bis ${fmt0(m.maxSkill)})${m.genre ? `, bei ${genreName(m.genre)} mehr` : ''}`
-    : m.role === 'coach' ? `${days(m.seconds)} für eine Band: Songs ${fmtFactor(m.speed)} so schnell, Platte +${Math.round(m.quality * 100)} %`
+    : m.role === 'coach' ? `${days(m.seconds)} für eine Band: Songs ${fmtFactor(m.speed)} so schnell, ${coreOn() ? 'öfter gute Songs' : `Platte +${Math.round(m.quality * 100)} %`}`
     : m.role === 'manager' ? `${m.genres.map((g) => genreName(g)).join(', ')} · ${m.skills.map((k) => cat().managerSkills[k]?.name ?? k).join(', ')}` : '';
   const book = ['teacher', 'coach'].includes(m.role);
   const temporary = book || m.role === 'intern';

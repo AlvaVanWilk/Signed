@@ -81,6 +81,18 @@ final class Submissions
         $card['level'] = Levels::forSkill($best);
         $card['abilities'] = Levels::randomTechnique(array_filter([$card['instr1'], $card['instr2']]), $card['genres']);
         $card['ability_choice'] = null;
+        return self::withSongs($card);
+    }
+
+    /**
+     * Neuer Kern: die eigenen Songs, die jemand mitbringt (Zahl und Stärke nach Können und Charakter, auch verborgenem). Erst würfeln,
+     * wenn das Können der Karte feststeht, sonst brächte jeder Songs wie ein Anfänger mit.
+     */
+    public static function withSongs(array $card): array
+    {
+        if (BandCore::$live) {
+            $card['songs'] = SongStock::roll($card);
+        }
         return $card;
     }
 
@@ -150,7 +162,7 @@ final class Submissions
                 $card['instr2'] = null;
                 $card['level'] = Levels::forSkill($card['skill1']);
                 $card['abilities'] = Levels::randomTechnique([$card['instr1']], $card['genres']);
-                $this->store($card, $now - $i * 60);
+                $this->store(self::withSongs($card), $now - $i * 60);
             }
             $db->update('labels', ['submit_at' => $now + Post::gap(86400 / self::perDay(0))], ['id' => $this->repo->labelId]);
             return;
@@ -171,25 +183,6 @@ final class Submissions
             $this->store($card, $next);
         }
         $db->update('labels', ['submit_at' => max($next, $now + 1)], ['id' => $this->repo->labelId]);
-        if (BandCore::$live) {
-            $this->capMailbox($now);
-        }
-    }
-
-    /**
-     * Neuer Kern: Im Posteingang liegen höchstens CORE_SUBMISSIONS['cap'] ungehörte Kassetten; die ältesten darüber fliegen raus (wie verfallen).
-     * Gemerkte, gerade bearbeitete und schon angehörte bleiben.
-     */
-    private function capMailbox(int $now): void
-    {
-        $db = $this->repo->db;
-        $ids = array_column($db->all(
-            'SELECT id FROM submissions WHERE label_id = ? AND opened_at IS NULL AND saved = 0 AND worker IS NULL AND (unpacked_at IS NULL OR unpacked_at <= ?) ORDER BY created_at DESC, id DESC',
-            [$this->repo->labelId, $now]
-        ), 'id');
-        foreach (array_slice($ids, Balance::CORE_SUBMISSIONS['cap']) as $id) {
-            $db->exec('DELETE FROM submissions WHERE id = ?', [(int) $id]);
-        }
     }
 
     /** Zum Ausprobieren: sechs neue, ungehörte Kassetten (Stufen gemischt, wie sie im Alltag kämen). */

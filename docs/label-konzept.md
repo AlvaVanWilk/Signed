@@ -160,7 +160,7 @@ dann muss das Label abwägen: Geld gegen Stimmung.
 - **Neuer Kern** (Sandra, 1.11., Regeln in `docs/kern.md`): Neue Musiker bringen eigene Songs mit, wie viele und wie gute hängt an Können
   und Charakter (auch an verborgenen Zügen; Technische bringen keine). Die Band schreibt etwa zweieinhalbmal so schnell wie vorher, aber
   gute Songs sind selten: Von 10 Songs sind je nach Band 1 bis 4 gut, auch die Besten schreiben mehr schwache als gute. Mit dem Können steigt
-  der Anteil ein wenig. Im Vorrat liegen höchstens 40 Songs; ist er voll, fliegt für jeden neuen der schwächste raus. So lässt sich ein
+  der Anteil ein wenig. Der Vorrat hat keine Grenze. So lässt sich ein
   erstes Album schnell machen, und jedes weitere schon nach 3 Tagen, dann aber mit schwachen Songs; wer wartet, hat mehr gute zur Auswahl.
   Wer eine Band verlässt, nimmt seine eigenen Songs mit; beim Zusammentun kommen alle mit. Kein Songstau mehr.
 
@@ -299,7 +299,7 @@ Im neuen Kern zählen für die Kassetten die Fans des Labels: 500 / 5.000 / 50.0
 **Neuer Kern (Sandra, 1.11.): viele Kassetten, wenig Gutes.** Von Anfang an etwa vier je Stunde (96 + √Erfolg je Tag), fast alle von
 Anfängern; mit den Fans des Labels kommen spürbar mehr Gute (bei 0 / 500 / 5.000 / 50.000 Fans sind 6 / 15 / 25 / 35 % besser als
 Anfänger, Tabelle in `docs/kern.md`). Zu Beginn ein Teppich aus Leuten, die man ohnehin braucht; später ein Grund, mit der Assistenz
-aufzuräumen. Ungehört liegen höchstens 40 Kassetten da, für jede neue fliegt die älteste raus.
+aufzuräumen. Eine Grenze für ungehörte Kassetten gibt es nicht; sie verfallen nach 4 Tagen.
 
 Mit dem Erfolg steigt der Anteil guter Kassetten (5 % bis 25 %), und die Bewerber werden besser (Güte = Ruhm / (Ruhm + 300)). Hat eine Band
 Erfolg, bewerben sich mehr Musiker mit ähnlichen Genres. Interview-Anfragen richten sich nur nach dem einzelnen Musiker.

@@ -167,7 +167,8 @@ final class Activities
             }
 
             $drops = [];
-            if ($type === 'gig' && $sim['meter'] >= Balance::FAN_MUSICIAN['minMeter']
+            // Fan-Musiker gibt es im neuen Kern nicht mehr (herausgenommen)
+            if (!BandCore::$live && $type === 'gig' && $sim['meter'] >= Balance::FAN_MUSICIAN['minMeter']
                 && Rng::chance(Balance::FAN_MUSICIAN['chance']) && !FanMusician::onCooldown($this->repo)) {
                 $drops[] = ['kind' => 'musician', 'venue' => $venueKey];
             }

@@ -269,7 +269,7 @@ Verdienst         = Zuschauer × 5 / 6 / 9 / 12 ₲ nach Ruhmstufe
 
   Täglich nimmt der Bot jetzt alle 3 bis 4 Tage eine Platte auf, sobald der Abstand es erlaubt, und muss dafür schwache Songs nehmen.
   Das lohnt sich trotzdem: Der Hype halbiert sich jeden Tag, und jede neue Platte startet ihn neu; eine Platte mit Q 77 alle 3,5 Tage
-  bringt im Schnitt etwa doppelt so viel Hype wie eine mit Q 88 jede Woche. Wöchentlich nimmt die Band die besten 12 aus einem vollen
+  bringt im Schnitt etwa 40 % mehr Hype als eine mit Q 88 jede Woche (Hype 31 statt 22) und doppelt so viele Verkaufsstarts. Wöchentlich nimmt die Band die besten 12 aus einem vollen
   Vorrat und macht bessere Platten. Offen (Sandra): ob sich Warten mehr lohnen soll; dann müsste eine schwache oder zu schnelle Platte
   weniger Hype bringen. Das Geld wächst täglich gespielt etwa doppelt so schnell wie vorher (siehe Geld, `docs/kern-einbau.md`).
 - Noch nicht eingerechnet: neue Leute auf Tournee.

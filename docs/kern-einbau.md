@@ -48,6 +48,13 @@ laufen mit Schalter aus (`tests/support.php` setzt ihn vor jedem Test zurück) u
 
 - **Durchspielen:** gemacht (1.11., Ergebnisse in `docs/kern.md`, Tempo). Nicht geprüft: Kurse, Lehrer, Scouts, Proberaum und Tourneen
   (der Bot nutzt sie nicht), neue Leute auf Tournee, alte Labels nach dem Übergang.
+- **Geld** (Test 1.11., `php tools/durchspiel.php taeglich 20 3 --ausgeben`): Die Einnahmen wachsen mit den Fans, die Preise nicht.
+  Täglich gespielt mit Einkaufen (Proberaum, Coach, Lehrer, Kurse, passendes Studio, Instrumente): nach 6 Wochen 113.000–151.000 ₲
+  eingenommen, 25.000–34.000 ausgegeben; nach 20 Wochen (5.000 Fans nach etwa 10 Wochen) 2,4–2,7 Millionen eingenommen, 160.000–180.000
+  ausgegeben, ab 5.000 Fans rund 180.000–260.000 ₲ je Woche. Wöchentlich gespielt: nach 20 Wochen 116.000 eingenommen, 38.000 ausgegeben.
+  Entscheidung offen (Sandra).
+- **Wöchentlich und Sound:** Ab 500 Fans erwartet das Spiel zehnmal so viel Sound (1.500 statt 150). Eine Band, die nur einmal pro Woche
+  probt, nahm danach nur noch Platten mit Q 61–69 auf statt 88 (gewollt ist: eine Probe am Tag hält mit).
 - **Welttournee** (Stadion, Globus über die Welttournee): geparkt.
 - **Alte Wege im Code:** Sie laufen nur noch mit Schalter aus (Tests). Beim Veröffentlichen aufräumen: alte Zweige in `Activities`, `Studio`,
   `Charts`, `Inbox`, `Festival`, `Battle`, `Bands`, `Tours`, `Gigs`, `BandCalc` (Ruhm, Gage, Tantiemen, Promo), die alten Tests in

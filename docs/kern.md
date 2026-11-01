@@ -255,6 +255,23 @@ Verdienst         = Zuschauer × 5 / 6 / 9 / 12 ₲ nach Ruhmstufe
   niemand; nach der Laufbahn-Rechnung dauert das bei einer Platte je Woche 18 bis 25 Wochen. Wöchentlich bleibt in zwei von sechs Labels
   die Band beim Besuch oft rot: Rampensäue und Partytiere wollen nach 8 Stunden wieder auf die Bühne, und das wächst die ganze Woche.
   Das Geld häuft sich bei täglichem Spielen an; ob Coaches, Lehrer und Scouts es bei echten Spielern aufbrauchen, ist nicht geprüft.
+- **Durchgespielt mit den neuen Songs** (1.11., dieselben sechs Labels je Spielweise; Musiker bringen Songs mit, gute Songs sind selten,
+  zweieinhalbmal so viele Songs je Tag, Vorrat 40):
+
+  | | täglich (zweimal), nach 6 Wochen | wöchentlich (sonntags), nach 8 Wochen |
+  |---|---|---|
+  | Platten | 11,8 (11–12); vorher 5,7 | 6,5 (5–7); vorher 5,2 |
+  | Fans | 2.870 (1.820–3.340); vorher 1.700 | 420 (290–530); vorher 350 |
+  | 500 Fans | nach 10–15 Tagen; vorher 15–26 | zwei von sechs nach 8 Wochen; vorher eins |
+  | Songs im Album (Durchschnitt je Label) | 43–54 | 37–76 |
+  | Q der Platten (Durchschnitt je Label) | 72–80 | 78–91 |
+  | Geld | 109.000–243.000 ₲; vorher 47.000–115.000 | 10.000–21.000 ₲; vorher 6.000–21.000 |
+
+  Täglich nimmt der Bot jetzt alle 3 bis 4 Tage eine Platte auf, sobald der Abstand es erlaubt, und muss dafür schwache Songs nehmen.
+  Das lohnt sich trotzdem: Der Hype halbiert sich jeden Tag, und jede neue Platte startet ihn neu; eine Platte mit Q 77 alle 3,5 Tage
+  bringt im Schnitt etwa doppelt so viel Hype wie eine mit Q 88 jede Woche. Wöchentlich nimmt die Band die besten 12 aus einem vollen
+  Vorrat und macht bessere Platten. Offen (Sandra): ob sich Warten mehr lohnen soll; dann müsste eine schwache oder zu schnelle Platte
+  weniger Hype bringen. Das Geld wächst täglich gespielt etwa doppelt so schnell wie vorher (siehe Geld, `docs/kern-einbau.md`).
 - Noch nicht eingerechnet: neue Leute auf Tournee.
 
 ## Regeln und Formeln

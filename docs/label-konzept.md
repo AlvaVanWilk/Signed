@@ -87,7 +87,7 @@ Wohlbefinden (Start 60) läuft langsam auf ein **Ziel** zu, das sich aus Einflü
 | Können-Abstand | zu schwach: überfordert; zu stark: gelangweilt; ein kleiner Abstand ist gut |
 | Genre der Band | wer es nicht mag, leidet |
 | Instrument | keins: −6; zu schwach: −3 je Stufe; passend: +2; Diven doppelt (neuer Kern: höchstens eine Stufe unter dem Können ist passend, Gold verlangt niemand) |
-| Songstau | ab 12 liegenden Songs sinkt die Stimmung aller |
+| Songstau | ab 12 liegenden Songs sinkt die Stimmung aller (nicht im neuen Kern: dort drängt der Plattenwunsch) |
 | Anordnungen | was der Charakter mag, hebt sofort; was er nicht mag, drückt (`Catalog::LIKES`) |
 | Bühne und Studio gegen Anspruch | darüber freut, darunter ärgert |
 | Wünsche, die offen bleiben | drücken mit jeder Stunde mehr (`Balance::NEEDS`) |
@@ -108,7 +108,7 @@ nicht ihre Eigenschaft); gespeichert werden die alten Schlüssel. Zahlen: `Balan
 | Zug (Schlüssel) | Stärke | Schwäche |
 |---|---|---|
 | Ehrgeizig (ehrgeizig) | lange Proben (×1,5) | −6 Wohlbefinden-Ziel, wenn 48 h keine neue Platte |
-| Gemütlich (gelassen) | sinkt langsamer (×1,8), Songstau zählt halb, kleine Bühnen ärgern nicht | kurze Proben, mag keine Auftritte |
+| Gemütlich (gelassen) | sinkt langsamer (×1,8), Songstau zählt halb (altes Spiel), kleine Bühnen ärgern nicht | kurze Proben, mag keine Auftritte |
 | Perfektionistisch (perfektionist) | lange Proben, Platte +0,04 Qualität | schreibt langsamer (×0,6) |
 | Impulsiv (chaot) | schreibt schneller (×1,6), live +4 % Glanz | kurze Proben, live +4 % Patzer |
 | Extrovertiert (rampensau) | Ruhm-Anteil bei Auftritten +0,2 | −6, wenn 8 h kein Auftritt; zwei reiben sich; solo unglücklich |
@@ -157,6 +157,12 @@ dann muss das Label abwägen: Geld gegen Stimmung.
 - Jedes Mitglied trägt bei (`Balance::SONGWRITING`): 0,25 × Faktor seines Charakters (Kreativ ×3, Impulsiv ×1,6, Perfektionistisch ×0,6,
   Technisch 0), Tempo = Summe hoch 1,5. Vierer-Band ×1, Zweier-Band ×0,35, allein ×0,125 (ein Song in acht Stunden), allein und kreativ ×0,65.
 - Höchstens 24 Songs; ab 12 liegenden Songs sinkt die Stimmung („Wir wollen aufnehmen!“). Ein Songwriting-Coach beschleunigt.
+- **Neuer Kern** (Sandra, 1.11., Regeln in `docs/kern.md`): Neue Musiker bringen eigene Songs mit, wie viele und wie gute hängt an Können
+  und Charakter (auch an verborgenen Zügen; Technische bringen keine). Die Band schreibt etwa zweieinhalbmal so schnell wie vorher, aber
+  gute Songs sind selten: Von 10 Songs sind je nach Band 1 bis 4 gut, auch die Besten schreiben mehr schwache als gute. Mit dem Können steigt
+  der Anteil ein wenig. Im Vorrat liegen höchstens 40 Songs; ist er voll, fliegt für jeden neuen der schwächste raus. So lässt sich ein
+  erstes Album schnell machen, und jedes weitere schon nach 3 Tagen, dann aber mit schwachen Songs; wer wartet, hat mehr gute zur Auswahl.
+  Wer eine Band verlässt, nimmt seine eigenen Songs mit; beim Zusammentun kommen alle mit. Kein Songstau mehr.
 
 ## Anordnungen
 
@@ -431,7 +437,7 @@ Der Code der rausgenommenen Teile ist noch da (nicht erreichbar) und wird am End
 - **Klangprofil:** Die Band spielt manchmal zwei Versionen vor, das Label wählt; daraus entsteht ihr Klang (aus den vorhandenen Bausteinen in `Styles`).
 - Entlassen mit einem Teil der Prämie zurück; einen geschützten Bandnamen wiederbeleben.
 - **EPs** (3–9 Songs, ohne Hype, nicht in den Charts, keine Goldene Schallplatte; nur Verkäufe an die Fans): erst einmal nicht. Alben gehen
-  ab 10 Songs, und schwache Songs lassen sich ablehnen. Kommt später wieder, wenn Bands oft mit zu wenigen Songs dastehen.
+  ab 10 Songs; neue Musiker bringen Songs mit, und die Bands schreiben schneller. Kommt später wieder, wenn Bands oft mit zu wenigen Songs dastehen.
 
 **Am Ende, wenn alles fertig ist**
 - **Fairness- und Durchspiel-Prüfung:** alle Stufen mit Einsatz erreichbar, kein Aufschaukeln; ob alter Ruhm, altes Geld und alte goldene

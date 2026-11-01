@@ -112,7 +112,7 @@ Verdienst         = Zuschauer × 5 / 6 / 9 / 12 ₲ nach Ruhmstufe
   da ist (nicht erst beim nächsten Besuch).
 - **Abstand** (Sandra, 1.11.): Eine neue Platte geht frühestens 3 Tage nach der letzten (`CORE_ALBUM_TIMING['gapDays']`). Bis dahin ist
   „Aufnehmen“ grau; antippen sagt „Die letzte Platte ist noch ganz frisch. Die Fans sind noch nicht bereit für eine neue.“, darunter
-  steht die Restzeit (`core.recordAt`); der Server lehnt mit derselben Begründung ab. So gehen auch mit vollem Vorrat (24 Songs) keine
+  steht die Restzeit (`core.recordAt`); der Server lehnt mit derselben Begründung ab. So gehen auch mit vollem Vorrat (40 Songs) keine
   zwei Platten direkt hintereinander.
 - **Länge:** Hype beim Erscheinen, Preis je Platte und Studiokosten gelten für 12 Lieder und ändern sich anteilig (× Lieder / 12; Hype
   höchstens 100). So ist jedes Lied gleich viel wert, egal wie lang das Album ist. Ohne diese Regel wären 10 Lieder immer am besten: Jede
@@ -136,15 +136,37 @@ Verdienst         = Zuschauer × 5 / 6 / 9 / 12 ₲ nach Ruhmstufe
 
 ### Songs
 
-- Jeder Song kommt einzeln mit eigener Qualität in den Vorrat (`songs`). Der Vorrat fasst höchstens 24 (`MOOD['songCap']`); ab 12 wird die
-  Band ungeduldig (Songstau). Auf der Bandseite steht der Vorrat mit der Qualität jedes Songs; das Label kann einen ablehnen (✕), das macht
-  Platz für einen neuen (`SongStock::reject`).
-- Songs je Tag = 1,2 × (1 + 1,2 × (n − 1) / (n + 1)) × Regler × Stimmung × Tätigkeit × Genre × Coach.
-  n = Songschreiber (je Mitglied 1, Kreativ 1,5, Chaot 1,2, Perfektionist 0,8, Technisch 0); Regler schnell 1,5 / normal 1 / sorgfältig 0,67;
-  Stimmung grün 1 / gelb 0,5 / rot 0; Tätigkeit im Studio und beim Auftritt 0, beim Proben 0,6, sonst 1; Genre-Band 1 / Hybrid 0,85 /
-  Crossover und gemischt 0,7; Coach 1,5 / 1,75 / 2.
-- Songqualität = 55 + 25 × K + Regler (schnell −20, sorgfältig +20) + Coach (5 / 10 / 15) ± 10 Zufall, 0–100;
-  K = Anteil der Songschreiber mit Perfektionist (zählt 1) oder Kreativ (0,5).
+- **Gute Songs sind selten** (Sandra, 1.11.): Die meisten Songs sind mittelmäßig oder schwach, auch bei sehr guten Musikern. Jeder Song
+  kommt einzeln mit eigener Qualität in den Vorrat (`songs`) und merkt sich, wer ihn geschrieben hat (`musician_id`).
+- **Trefferquote** p = Anteil der guten Songs (ab 70) eines Songschreibers (`Balance::CORE_SONGS`, `Core\Quality::hitRate`):
+  nach Können-Stufe Anfänger 0,12, Fortgeschritten 0,15, Profi 0,18, Virtuose 0,21, dazu 0,15 × kreative Kraft (Perfektionist 1, Kreativ 0,5).
+  Regler: schnell × 0,6, sorgfältig × 1,5; Coach + 0,03 / 0,06 / 0,09; höchstens 0,40. So schreibt niemand mehr gute als schwache Songs.
+  Mit dem Können steigt die Quote ein wenig („mit dem Erfolg“): nicht mit den Fans, sonst würden mehr Fans bessere Platten bringen und die wieder
+  mehr Fans (Ruhm darf den eigenen Zuwachs nicht verstärken), sondern mit dem, was die Musiker gelernt haben.
+- **Qualität** = 10 + 90 × u hoch a (u zufällig 0–1, a so, dass genau der Anteil p ab 70 liegt; `Core\Quality::song`). Bei p = 0,15 sind
+  von 10 Songs etwa 1 bis 2 gut, 7 liegen unter 50, der Durchschnitt ist 36; bei p = 0,30 sind 3 gut, der Durchschnitt 52.
+  Die Bandseite zeigt „Von 10 neuen Songs werden etwa N gut“ (Trefferquote der Band, nach dem Gewicht beim Schreiben gemittelt).
+- Jeden neuen Song schreibt einer der Songschreiber der Band (nach seinem Gewicht beim Schreiben), mit seiner eigenen Trefferquote.
+- **Mitgebrachte Songs:** Neue Musiker kommen mit eigenen Songs ins Label: Anfänger 3, Fortgeschrittene 5, Profis 7, Virtuosen 9, mal das
+  Gewicht beim Schreiben (Kreativ 1,5, Chaot 1,2, Perfektionist 0,8, Technisch 0), mal Zufall 0,5–1,5, höchstens 16; jeder mit seiner
+  Trefferquote. Die Zahl steht auf der Karte (Kassette, Scout-Bericht), die Qualität sieht man erst im Vorrat. Sie werden mit der Karte
+  gewürfelt (`SongStock::roll`, Generator), ältere Karten beim Unterschreiben.
+- **Songs ziehen mit:** Bis ein Neuer in einer Band ist, liegen seine Songs in seiner Tasche (`band_id` 0), dann im Vorrat seiner Solo-Band.
+  Steigt er in eine Band ein oder gründet eine, kommen sie mit; beim Zusammentun kommt der ganze Vorrat der anderen Band mit. Wer aussteigt,
+  nimmt die Songs mit, die er selbst geschrieben hat; beim Auflösen jeder seine (`SongStock::toBag`, `join`, `moveBand`). Vorher blieben die
+  Songs einer Solo-Band beim Einstieg in eine Band zurück und waren verloren.
+- **Vorrat:** höchstens 40 Songs (`CORE_SONGS['cap']`). Ist er voll, fliegt für jeden neuen Song der schwächste raus (`SongStock::trim`);
+  das Ablehnen (✕) ist deshalb weg. Kein Songstau im neuen Kern: Zum Aufnehmen drängt der Plattenwunsch, und „Wir wollen aufnehmen!“
+  kommt erst mit ihm (genug Songs und die letzte Platte eine Woche her). Gelassene zeigen sich dafür, wenn die Stimmung sinkt.
+- **Entscheidung:** Wer gleich aufnimmt, muss schwache Songs nehmen; wer wartet, hat mehr gute zur Auswahl. Nachgerechnet (Viererband,
+  p = 0,18, Album aus den besten 12): alle 3 Tage Songs im Schnitt 48 (Q 82 bei vollem Sound, Produktion, Stimmung), alle 7 Tage 73 (Q 90);
+  sehr kreative Viererband (p = 0,28) 60 und 82 (Q 86 und 94). Solo (p = 0,18) 40 und 58.
+- Songs je Tag = 3 × (1 + 1,2 × (n − 1) / (n + 1)) × Regler × Stimmung × Tätigkeit × Genre × Coach (vorher 1,2 statt 3: ein erstes Album viel
+  schneller). Allein 3 je Tag, zu zweit 4,2, zu viert 5,2. n = Songschreiber (je Mitglied 1, Kreativ 1,5, Chaot 1,2, Perfektionist 0,8,
+  Technisch 0); Regler schnell 1,5 / normal 1 / sorgfältig 0,67; Stimmung grün 1 / gelb 0,5 / rot 0; Tätigkeit im Studio und beim Auftritt 0,
+  beim Proben 0,6, sonst 1; Genre-Band 1 / Hybrid 0,85 / Crossover und gemischt 0,7; Coach 1,5 / 1,75 / 2.
+- **Regler:** „schnell“ lohnt sich mit der Auswahl aus dem Vorrat kaum noch (mehr Songs, aber weniger gute: nachgerechnet nie besser als
+  normal), „sorgfältig“ ist für Bands etwa gleich, für Solokünstler etwas besser. Offen, ob der Regler bleibt.
 
 ### Können
 
@@ -304,7 +326,8 @@ Solokünstler: kein Genre-Bonus außer halb für Pop und Elektro, Zusammenhalt 1
 - Wohlbefinden (Start 60) läuft auf ein Ziel zu (Halbwert 12 Stunden, `Balance::MOOD`); grün ab 60, gelb ab 35, sonst rot.
   Die Band ist so gestimmt wie ihr Unzufriedenster; fürs Songschreiben zählen 70 % Unzufriedenster, 30 % Durchschnitt.
 - Ziel = 60 + Beziehungen (×3 je Punkt Durchschnitt) + Können-Abstand + Genre der Band (passt +6, passt nicht −8, gemischt −4) + Instrument
-  (keins −6, zu schwach −3 je Stufe, passend +2; Diven doppelt) − Songstau (ab 12 Songs 1,5 je Song, höchstens 18) − Miesepeter − Unruhe + Proberaum.
+  (keins −6, zu schwach −3 je Stufe, passend +2; Diven doppelt) − Songstau (ab 12 Songs 1,5 je Song, höchstens 18; nicht im neuen Kern)
+  − Miesepeter − Unruhe + Proberaum.
 - **Reaktionen:** Was der Charakter mag, hebt sofort, was er nicht mag, drückt (`Catalog::LIKES`, `Balance::MOOD['reactStep']`).
 - **Unerfüllte Bedürfnisse wachsen** (`Balance::NEEDS`): Wer nicht grün ist, wartet auf seinen Wunsch; nach 2 Std. Schonzeit −0,4 je Stunde,
   bis die Band etwas macht, das er mag. Auf ein passendes Instrument warten: nach 4 Std. −0,3 je Stunde (Diven ×2). Ohne Bühne (Extrovertierte 6,

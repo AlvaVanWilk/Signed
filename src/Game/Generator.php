@@ -77,7 +77,7 @@ final class Generator
         // Eine Spieltechnik von Anfang an (man hört sie in der Einsendung)
         $abilities = Levels::randomTechnique(array_filter([$instr1, $instr2]), $genres);
 
-        return [
+        $card = [
             'first_name' => $first,
             'last_name' => $last,
             'rarity' => $rarity,
@@ -94,6 +94,11 @@ final class Generator
             'unusual' => !in_array($primary, $typical, true),
             'look' => $look,
         ];
+        if (BandCore::$live) {
+            // Neuer Kern: eigene Songs in der Tasche, Zahl und Stärke nach Können und Charakter (auch verborgenem)
+            $card['songs'] = SongStock::roll($card);
+        }
+        return $card;
     }
 
     /** @return string Schlüssel des Instrumentenmodells */

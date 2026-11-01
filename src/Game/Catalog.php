@@ -284,6 +284,7 @@ final class Catalog
         'restless' => '%s will endlich wieder auf die Bühne.',
         'stagnant' => '%s will endlich eine neue Platte machen.',
         'calm' => '%s bleibt ruhig, obwohl so viele Songs liegen.',
+        'calmDown' => '%s bleibt ruhig, auch wenn die Stimmung sinkt.',
         'stageName' => '%s wünscht sich einen Künstlernamen.',
         'unhappy' => '%s ist unzufrieden und sagt, was fehlt.',
         'loud' => '%s ist richtig unzufrieden und sagt laut, was fehlt.',

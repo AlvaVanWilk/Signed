@@ -97,6 +97,10 @@ final class Bands
         }
         $bandId = $db->insert('bands', ['label_id' => $repo->labelId, 'name' => $name, 'name_key' => Names::key($name), 'genre' => '', 'fans' => round($fans, 4), 'core_at' => Clock::now(), 'created_at' => Clock::now()]);
         $db->update('musicians', ['band_id' => $bandId, 'band_slot' => 1], ['id' => $m['id']]);
+        if (BandCore::$live) {
+            // Seine Songs (mitgebracht oder aus der alten Band mitgenommen) kommen in den Vorrat der Solo-Band
+            SongStock::join($db, (int) $m['id'], $bandId);
+        }
         return $bandId;
     }
 
@@ -125,6 +129,10 @@ final class Bands
             throw new ApiError(sprintf('%s hat mit der eigenen Band schon etwas aufgebaut. Löse sie zuerst auf, wenn %s wechseln soll.', $m['first_name'], 'die Person'));
         }
         $db->exec('UPDATE musicians SET band_id = NULL, band_slot = 1 WHERE id = ?', [$m['id']]);
+        if (BandCore::$live) {
+            // Neuer Kern: Die Songs der Solo-Band nimmt er mit in die neue Band
+            SongStock::toBag($db, (int) $solo['id'], (int) $m['id'], true);
+        }
         $db->exec("DELETE FROM records WHERE band_id = ? AND status = 'open'", [$solo['id']]);
         $db->exec('DELETE FROM bands WHERE id = ?', [$solo['id']]);
         $m['band_id'] = null;
@@ -162,6 +170,9 @@ final class Bands
             ]);
             foreach ($members as $m) {
                 $db->update('musicians', ['band_id' => $bandId, 'band_slot' => $m['band_slot']], ['id' => $m['id']]);
+                if (BandCore::$live) {
+                    SongStock::join($db, (int) $m['id'], $bandId);
+                }
             }
             $this->repo->log('band', mb_substr(sprintf('Die Band „%s“ ist gegründet von %s.', $name, implode(', ', array_map(static fn ($m) => self::fullName($m), $members))), 0, 250), $bandId);
             $this->syncIdentity($this->repo->band($bandId));
@@ -406,6 +417,10 @@ final class Bands
                 $db->update('bands', ['name' => $finalName, 'name_key' => Names::key($finalName), 'fame_own' => $carry], ['id' => $keep['id']]);
             }
             $db->exec('UPDATE musicians SET band_id = ?, band_slot = band_slot WHERE band_id = ?', [$keep['id'], $gone['id']]);
+            if (BandCore::$live) {
+                // Neuer Kern: Die Songs, die noch auf eine Platte warten, kommen mit
+                SongStock::moveBand($db, (int) $gone['id'], (int) $keep['id']);
+            }
             if ($mergedFans !== null) {
                 $db->update('bands', ['fans' => round($mergedFans, 4)], ['id' => $keep['id']]);
             }
@@ -512,6 +527,9 @@ final class Bands
             self::assertLineup($members);
 
             $this->repo->db->update('musicians', ['band_id' => $bandId, 'band_slot' => $m['band_slot']], ['id' => $m['id']]);
+            if (BandCore::$live) {
+                SongStock::join($this->repo->db, (int) $m['id'], $bandId);
+            }
             $this->repo->log('lineup', sprintf('%s steigt bei %s ein.', self::fullName($m), $band['name']), $bandId, $m['id']);
             $this->syncIdentity($band);
         });
@@ -537,6 +555,10 @@ final class Bands
                 $this->repo->db->update('bands', ['fans' => round($keeps, 4)], ['id' => $bandId]);
             }
             $this->repo->db->update('musicians', ['band_id' => null, 'band_slot' => 1], ['id' => $m['id']]);
+            if (BandCore::$live) {
+                // Neuer Kern: Wer geht, nimmt die Songs mit, die er selbst geschrieben hat und die noch auf keiner Platte sind
+                SongStock::toBag($this->repo->db, $bandId, (int) $m['id']);
+            }
             $return = $band['slot_return'];
             unset($return[$m['id']]);
             $this->saveSlotReturn($bandId, $return);
@@ -662,6 +684,12 @@ final class Bands
             $fans = BandCore::$live && $reason !== 'left' ? $this->coreFans($band) : 0.0;
             $this->giveUpName($band, $reason, $reason === 'left' ? 'hat das Label verlassen' : 'hat sich aufgelöst', false);
             $db->exec('UPDATE musicians SET band_id = NULL, band_slot = 1 WHERE band_id = ? AND label_id = ?', [$bandId, $this->repo->labelId]);
+            if (BandCore::$live && $reason !== 'left') {
+                // Neuer Kern: Jeder nimmt die Songs mit, die er selbst geschrieben hat (bei einer Solo-Band alle)
+                foreach ($members as $m) {
+                    SongStock::toBag($db, $bandId, (int) $m['id'], count($members) === 1);
+                }
+            }
             if ($fans > 0 && count($members) > 1) {
                 // Neuer Kern: Jeder nimmt die Hälfte „seiner“ Fans mit in seine Solo-Band
                 $weights = array_map([Core\Fans::class, 'weight'], $members);

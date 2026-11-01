@@ -228,7 +228,8 @@ final class Submissions
     public static function presentCard(array $c, int $id): array
     {
         $m = $c + ['id' => $id, 'favorite' => false, 'jam_at' => 0, 'band_id' => null, 'band_slot' => 1, 'busy_until' => 0];
-        return Present::musician($m) + ['price' => self::price($c)];
+        // Neuer Kern: wie viele eigene Songs er mitbringt (ihre Qualität sieht man erst im Vorrat)
+        return Present::musician($m) + ['price' => self::price($c), 'songs' => isset($c['songs']) ? count($c['songs']) : null];
     }
 
     /** Sichten starten: Nach ein paar Sekunden Arbeit sieht man, was drauf ist. */

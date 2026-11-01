@@ -121,6 +121,8 @@ final class State
             // Neuer Kern: Eine Platte wünscht sich die Band erst, wenn sie möglich und fällig ist (Mood::recordWishHours)
             $band = Mood::withRecordWish($db, $band, $now);
             $wishes = Mood::wishes($list, $gearMap, (int) floor($band['songs_written']), !BandCore::$live || $band['recordWish'] !== null);
+            // Songwriting-Coach gerade jetzt: [Tempo, Anteil, Qualitäts-Zuschlag]
+            $coaching = Tutors::coaching($repo, $band['id'], $now - 60, $now);
             $venue = BandCalc::venue($fame);
             $open = $openRecords[$band['id']] ?? null;
             $draw = BandCalc::freshness($band['gigs_since_record']);
@@ -175,9 +177,11 @@ final class State
                     // Neuer Kern: wie Mood::settle rechnet (Core\Songs je Tag nach Songschreibern, Regler, Genre der Band, Stimmung, Coach)
                     'songRate' => round((BandCore::$live
                         ? Core\Songs::perDay(Core\Songs::writers($list), $band['write_mode'] ?? 'normal', Mood::bandMood(array_column($list, 'wellbeing'))['level'], 'idle', BandCore::kind($band, $list)) / 24
-                            * Tutors::coaching($repo, $band['id'], $now - 60, $now)[0]
+                            * $coaching[0]
                         : Mood::songRate(Mood::bandMood(array_column($list, 'wellbeing'))) * Mood::crewFactor($list))
                         * Mood::activityFactor($db->value('SELECT type FROM activities WHERE band_id = ? AND settled = 0 AND started_at <= ? AND ends_at > ? ORDER BY id DESC LIMIT 1', [$band['id'], $now, $now])), 3),
+                    // Neuer Kern: Anteil der guten Songs (Trefferquote der Songschreiber mit Regler und Coach, Core\Quality::bandHitRate)
+                    'hitRate' => BandCore::$live ? round(Core\Quality::bandHitRate($list, $band['write_mode'] ?? 'normal', SongStock::coachTier($coaching[2])), 3) : null,
                     'reactions' => Mood::reactions($list),
                     // Warum jemand gut oder schlecht drauf ist: Ziel des Wohlbefindens und die Gründe dafür (je Musiker).
                     // Nur mit Manager: Gründe und alle Wünsche. Ohne sagt nur, wer rot ist, was er will.

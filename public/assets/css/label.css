@@ -389,6 +389,7 @@ button.lb-pill:disabled { opacity: 0.45; cursor: default; }
 .lb-fr-row { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
 .lb-face .lb-genres { gap: 4px; } .lb-face .lb-gt { width: 21px; height: 21px; border-radius: 6px; } .lb-face .lb-gt .genre-icon { width: 13px; height: 13px; }
 .lb-sub-fame { color: var(--lb-accent); font-size: 0.78rem; letter-spacing: 0.08em; } .lb-fr-row small { font-size: 0.7rem; }
+.lb-sub-songs { color: var(--lb-muted); white-space: nowrap; }
 .lb-card-ins { display: grid; gap: 3px; align-content: center; }
 .lb-card-ins.grid { grid-template-columns: 1fr 1fr; gap: 3px 8px; }
 .lb-face .lb-ins { gap: 6px; margin: 0; } .lb-face .lb-ins .ico { width: 20px; height: 20px; } .lb-face .lb-ins .ico svg { width: 100%; height: 100%; }
@@ -1632,6 +1633,8 @@ body { background: radial-gradient(1100px 520px at 50% -12%, rgba(255, 181, 71, 
 .rc-song.on { opacity: 1; border-color: #e8c35a; box-shadow: 0 0 0 1px rgba(232, 195, 90, .35); }
 .rc-song i { display: block; width: 26px; height: 26px; border-radius: 50%; background: conic-gradient(#e8c35a calc(var(--q) * 1%), rgba(255, 255, 255, .12) 0); }
 .rc-song b { font-size: .78rem; }
+.rc-song.good i { background: conic-gradient(#5cc98a calc(var(--q) * 1%), rgba(255, 255, 255, .12) 0); }
+.rc-song.good b { color: #7fe0a6; }
 .rc-card.fits { border-color: #3f7d5f; }
 .rc-fits { display: block; font-style: normal; font-size: .7rem; color: #7fd1a6; }
 .rc-parts { grid-template-columns: repeat(5, 1fr); }
@@ -1643,8 +1646,6 @@ body { background: radial-gradient(1100px 520px at 50% -12%, rgba(255, 181, 71, 
 .cf-stock { margin: 10px 0 4px; }
 .cf-stock .rc-songs { margin: 6px 0; }
 .cf-song { position: relative; cursor: default; }
-.cf-reject { position: absolute; top: -7px; right: -7px; width: 22px; height: 22px; padding: 0; border-radius: 50%; border: 1px solid var(--lb-line); background: var(--lb-card2); color: var(--lb-muted); font: inherit; font-size: .7rem; line-height: 1; cursor: pointer; }
-.cf-reject:hover { color: var(--lb-bad); border-color: var(--lb-bad); }
 .ov-prize-pick { display: inline-flex; flex-wrap: wrap; gap: 6px; margin: 4px 6px 4px 0; vertical-align: middle; }
 .ov-prizes li small.muted, .bt-prize small.muted { display: block; }
 .bt-weekly { padding: 8px 12px; border-radius: 10px; background: var(--panel-2); border: 1px solid var(--line); }

@@ -976,23 +976,36 @@ final class Balance
     public const CORE_FAN_MOVES = ['strong' => 2.0, 'strongTraits' => ['rampensau', 'diva', 'partytier'], 'follow' => 0.5, 'quit' => 0.2, 'mergeSmall' => 0.5, 'rename' => 0.1];
     /**
      * Qualität einer Platte: Q = 100 × (Gewichte Sound, Songs, Produktion, Stimmung). Stimmung voll ab `moodFull` Wohlbefinden. Perfekt ab `perfect`.
-     * Songqualität: base + creative × kreative Kraft K + Regler + Coach + Zufall (± random), begrenzt auf 0–100.
+     * Die Qualität der einzelnen Songs regelt CORE_SONGS.
      */
     public const CORE_QUALITY = [
         // Songs zählen mehr als der Sound (Sandra: „an der Realität gemessen“), der Sound bleibt wichtig fürs Verbessern der Musiker
         'weights' => ['sound' => 0.30, 'songs' => 0.35, 'production' => 0.20, 'mood' => 0.15],
         'moodFull' => 60.0, 'perfect' => 95.0,
-        'song' => [
-            'base' => 55.0, 'creative' => 25.0, 'slider' => ['fast' => -20.0, 'normal' => 0.0, 'careful' => 20.0], 'coach' => [1 => 5.0, 2 => 10.0, 3 => 15.0], 'random' => 10.0,
-            // kreative Kraft K: Anteil der Songschreiber mit diesen Zügen (Perfektionisten schreiben langsam, aber die besten Songs)
-            'creativeTraits' => ['perfektionist' => 1.0, 'kreativ' => 0.5],
-        ],
+    ];
+    /**
+     * Songs im neuen Kern (Sandra, 1.11.): Die meisten Songs sind mittelmäßig oder schwach, gute sind selten, auch bei sehr guten Musikern.
+     * Trefferquote p = Anteil der guten Songs (ab `good`) eines Songschreibers: `hit` nach seiner Können-Stufe (0–3) + `creative` × kreative Kraft
+     * (`creativeTraits`, der größte Wert seiner Züge); dazu der Regler der Band (× `slider`) und ein Coach (+ `coach`), höchstens `max`.
+     * Qualität = floor + (100 − floor) × u hoch a, u zufällig 0–1, a so gewählt, dass genau der Anteil p ab `good` liegt.
+     * Der Vorrat fasst `cap` Songs; ist er voll, wirft die Band für jeden neuen Song den schwächsten weg (SongStock::trim).
+     * Neue Musiker bringen eigene Songs mit: `bring` nach Können-Stufe × Gewicht beim Schreiben (CORE_SONGWRITING['writers']) × Zufall `bringSpread`,
+     * höchstens `bringMax`; jeder mit seiner eigenen Trefferquote.
+     */
+    public const CORE_SONGS = [
+        'cap' => 40, 'floor' => 10.0, 'good' => 70.0,
+        'hit' => [0 => 0.12, 1 => 0.15, 2 => 0.18, 3 => 0.21], 'creative' => 0.15, 'max' => 0.40,
+        // kreative Kraft: Perfektionisten schreiben langsam, aber die besten Songs; Kreative schreiben schnell und etwas bessere
+        'creativeTraits' => ['perfektionist' => 1.0, 'kreativ' => 0.5],
+        'slider' => ['fast' => 0.6, 'normal' => 1.0, 'careful' => 1.5], 'coach' => [1 => 0.03, 2 => 0.06, 3 => 0.09],
+        'bring' => [0 => 3, 1 => 5, 2 => 7, 3 => 9], 'bringSpread' => [0.5, 1.5], 'bringMax' => 16,
     ];
     /**
      * Songs je Tag = base × (1 + spread × (n − 1) / (n + 1)) × Regler × Stimmung × Tätigkeit × Genre × Coach; n = Songschreiber, nach Charakter gewichtet.
      */
     public const CORE_SONGWRITING = [
-        'base' => 1.2, 'spread' => 1.2,
+        // base 3 statt 1,2 (Sandra, 1.11.): ein erstes Album viel schneller, dafür sind die meisten Songs nicht gut (CORE_SONGS)
+        'base' => 3.0, 'spread' => 1.2,
         'writers' => ['kreativ' => 1.5, 'chaot' => 1.2, 'perfektionist' => 0.8, 'technisch' => 0.0],
         'slider' => ['fast' => 1.5, 'normal' => 1.0, 'careful' => 0.67],
         'mood' => ['green' => 1.0, 'yellow' => 0.5, 'red' => 0.0],
@@ -1005,7 +1018,6 @@ final class Balance
      * Produzenten. Mit Ruben Stille sind alle entspannt (PRODUCERS['legend']['mood']). Preise in CORE_MONEY['production'].
      */
     public const CORE_PRODUCTION = [0 => ['studio' => 0, 'producer' => 'mo'], 1 => ['studio' => 1, 'producer' => 'roxy'], 2 => ['studio' => 2, 'producer' => 'diamond'], 3 => ['studio' => 3, 'producer' => 'legend']];
-    /** Ein Album hat immer so viele Songs; im Vorrat liegen höchstens MOOD['songCap']. */
     /**
      * Ein Album hat 10 bis 16 Songs (CORE_ALBUM_RANGE). Hype beim Erscheinen, Preis je Platte und Studio gelten für CORE_ALBUM_SONGS
      * und ändern sich anteilig (× Songs / 12): So ist jedes Lied gleich viel wert, egal wie lang die Platte ist.

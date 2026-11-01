@@ -187,9 +187,9 @@ function coreDialogHtml(b, data) {
   return `
     <div class="lb-cap">Aufnehmen</div><h2>${esc(b.name)} geht ins Studio</h2>
     <h3 class="rc-h">Songs <small class="muted">${n} gewählt (${data.albumMin} bis ${data.albumMax}) · ${data.songs.length} im Vorrat · dauert ${n * data.perSong >= 3600 ? duration(n * data.perSong) : `${Math.round((n * data.perSong) / 60)} Min.`}</small></h3>
-    <div class="rc-songs">${data.songs.map((x, i) => `<button class="rc-song ${pick.songIds.includes(x.id) ? 'on' : ''}" data-r="song" data-v="${x.id}" title="Song ${i + 1}: Qualität ${fmt0(x.quality)}">
+    <div class="rc-songs">${data.songs.map((x, i) => `<button class="rc-song ${pick.songIds.includes(x.id) ? 'on' : ''} ${x.quality >= (cat().rules.songGood ?? 70) ? 'good' : ''}" data-r="song" data-v="${x.id}" title="Song ${i + 1}: Qualität ${fmt0(x.quality)}">
       <i style="--q:${Math.round(x.quality)}"></i><b>${fmt0(x.quality)}</b></button>`).join('')}</div>
-    <p class="muted small">Jeder Song hat seine eigene Qualität. Ins Album geht der Durchschnitt der ausgewählten. Mehr Lieder bringen mehr Hype und mehr Geld je verkaufter Platte, kosten aber mehr im Studio und mehr Songs. Mit weniger Liedern nimmst du nur die besten.</p>
+    <p class="muted small">Jeder Song hat seine eigene Qualität, gute sind grün. Ins Album geht der Durchschnitt der ausgewählten. Mehr Lieder bringen mehr Hype und mehr Geld je verkaufter Platte, kosten aber mehr im Studio und mehr Songs. Mit weniger Liedern nimmst du nur die besten. Wer länger wartet, hat mehr gute Songs zur Auswahl.</p>
 
     <h3 class="rc-h">Produktion</h3>
     <div class="rc-cards">${lv.map((o) => {

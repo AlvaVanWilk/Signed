@@ -1034,3 +1034,122 @@ test('Kern im Spiel: Eine Platte erscheint, wenn die Studiozeit um ist, auch wen
     checkEquals($ends, (int) json_decode($record['core'], true)['releasedAt'], 'Der Hype läuft seit dem Erscheinen');
     checkEquals($ends + 3 * 86400, bandById($state, $band['id'])['core']['recordAt'], 'Die nächste Platte geht drei Tage nach dem Erscheinen');
 });
+
+/** Neuer Musiker mit festem Charakter und Können, im Kern mit seinen Songs ($songs: feste Qualitäten, sonst gewürfelt wie auf einer Kassette). */
+function coreNewcomer(Repo $repo, array $traits, float $skill, ?array $songs = null, string $instrument = 'bass'): int
+{
+    $card = Signed\Game\Generator::musician('common', ['instrument' => $instrument, 'genre' => 'rock', 'single' => true]);
+    $card['personality'] = $traits;
+    $card['skill1'] = $skill;
+    $card['songs'] = $songs ?? Signed\Game\SongStock::roll($card);
+    return $repo->insertMusician($card, 'test');
+}
+
+test('Kern im Spiel: Neue Musiker bringen eigene Songs mit – wie viele und wie gute nach Können und Charakter', function () {
+    [$db, $p, $repo] = coreLabel();
+    $roll = static fn (array $traits, float $skill) => Signed\Game\SongStock::roll(['skill1' => $skill, 'skill2' => null, 'personality' => $traits]);
+    for ($i = 0; $i < 20; $i++) {
+        checkEquals([], $roll(['technisch'], 90), 'Technische bringen keine Songs');
+    }
+    $counts = static function (array $traits, float $skill) use ($roll): array {
+        $n = [];
+        for ($i = 0; $i < 300; $i++) {
+            $n[] = count($roll($traits, $skill));
+        }
+        return [array_sum($n) / count($n), min($n), max($n)];
+    };
+    [$avg, $min, $max] = $counts(['kreativ'], 70);
+    check($avg > 9 && $avg < 12 && $min >= 5 && $max <= 16, "Kreative Profis bringen viele: im Schnitt $avg ($min bis $max)");
+    [$avg] = $counts(['gelassen'], 20);
+    check($avg > 2.4 && $avg < 3.6, "Anfänger bringen wenige: im Schnitt $avg");
+    // Perfektionisten bringen weniger, aber öfter gute (ab 70)
+    $good = static function (array $traits) use ($roll): float {
+        $all = [];
+        for ($i = 0; $i < 400; $i++) {
+            $all = array_merge($all, $roll($traits, 40));
+        }
+        return count(array_filter($all, static fn ($q) => $q >= 70)) / max(1, count($all));
+    };
+    check($good(['perfektionist']) > $good(['gelassen']) + 0.08, 'Perfektionisten treffen öfter');
+    check($good(['perfektionist']) < 0.5, 'Auch sie bringen mehr schwache als gute');
+    // Unterschreiben: Die Songs liegen erst in der Tasche, dann im Vorrat der Solo-Band; die Karte sagt, wie viele
+    $id = coreNewcomer($repo, ['kreativ'], 70, [82.0, 64.5, 31.0]);
+    checkEquals(3, (int) $db->value('SELECT COUNT(*) FROM songs WHERE musician_id = ? AND band_id = 0', [$id]), 'In der Tasche');
+    $state = $p->get('state');
+    $solo = (int) $db->value('SELECT band_id FROM musicians WHERE id = ?', [$id]);
+    checkEquals([82.0, 64.5, 31.0], array_map('floatval', array_column(bandById($state, $solo)['core']['stock'], 'quality')), 'Im Vorrat der Solo-Band');
+    coreNear(3.0, (float) $db->value('SELECT songs_written FROM bands WHERE id = ?', [$solo]), 1e-9, 'Zähler passt zum Vorrat');
+    checkEquals(0, (int) $db->value('SELECT COUNT(*) FROM songs WHERE band_id = 0'), 'Tasche leer');
+    checkEquals(3, Signed\Game\Submissions::presentCard(['songs' => [1, 2, 3], 'ability_choice' => null] + Signed\Game\Generator::musician('common'), -1)['songs'], 'Karte zeigt die Zahl');
+});
+
+test('Kern im Spiel: Songs ziehen mit – einsteigen, zusammentun, aussteigen, auflösen; die Band schreibt, wer schreibt', function () {
+    [$db, $p, $repo, $band] = coreLabel();
+    $stock = static fn (int $bandId) => array_map('floatval', array_column(Signed\Game\SongStock::stock($db, $bandId), 'quality'));
+    $a = coreNewcomer($repo, ['kreativ'], 40, [80.0, 60.0, 30.0], 'bass');
+    $b = coreNewcomer($repo, ['gelassen'], 40, [75.0, 40.0], 'keys');
+    $p->get('state');
+    $soloA = (int) $db->value('SELECT band_id FROM musicians WHERE id = ?', [$a]);
+    $soloB = (int) $db->value('SELECT band_id FROM musicians WHERE id = ?', [$b]);
+    // Einsteigen: Die Solo-Band verschwindet, ihre Songs kommen mit
+    $p->post('bandAddMember', ['bandId' => $band['id'], 'musicianId' => $a]);
+    checkEquals([80.0, 60.0, 30.0], $stock($band['id']), 'Songs der Neuen im Vorrat der Band');
+    checkEquals(0, (int) $db->value('SELECT COUNT(*) FROM songs WHERE band_id = ?', [$soloA]), 'Nichts bleibt bei der alten Solo-Band');
+    coreNear(3.0, floor((float) $db->value('SELECT songs_written FROM bands WHERE id = ?', [$band['id']])), 1e-9);
+    // Zusammentun: Der Vorrat der anderen kommt mit
+    $p->post('bandMerge', ['bandId' => $band['id'], 'otherId' => $soloB, 'keepName' => 'a']);
+    checkEquals([80.0, 75.0, 60.0, 40.0, 30.0], $stock($band['id']), 'Beide Vorräte zusammen');
+    // Aussteigen: Wer geht, nimmt seine eigenen Songs mit in die Solo-Band
+    $p->post('bandRemoveMember', ['bandId' => $band['id'], 'musicianId' => $a]);
+    checkEquals([75.0, 40.0], $stock($band['id']), 'Die Band behält die anderen');
+    checkEquals([80.0, 60.0, 30.0], $stock((int) $db->value('SELECT band_id FROM musicians WHERE id = ?', [$a])), 'Seine Songs gehen mit');
+    coreNear(2.0, floor((float) $db->value('SELECT songs_written FROM bands WHERE id = ?', [$band['id']])), 1e-9);
+    // Neue Songs: Jeden schreibt einer, der schreibt (Technische nie)
+    $members = array_values($repo->members($band['id']));
+    $db->exec('UPDATE musicians SET personality = ? WHERE id = ?', [json_encode(['technisch']), $members[0]['id']]);
+    $db->exec('UPDATE musicians SET wellbeing = 90 WHERE band_id = ?', [$band['id']]);
+    $p->get('state');
+    Clock::advance(24 * 3600);
+    $p->get('state');
+    $writers = array_map('intval', array_column($db->all('SELECT musician_id FROM songs WHERE band_id = ? AND record_id IS NULL AND musician_id IS NOT NULL', [$band['id']]), 'musician_id'));
+    check(count($writers) >= 5, 'Die Band hat geschrieben: ' . count($writers));
+    check(!in_array((int) $members[0]['id'], $writers, true), 'Technische schreiben keine Songs');
+    // Auflösen: Jeder nimmt seine Songs mit
+    $before = array_count_values($writers);
+    $p->post('bandDisband', ['bandId' => $band['id']]);
+    $state = $p->get('state');
+    foreach ($before as $musicianId => $count) {
+        $solo = (int) $db->value('SELECT band_id FROM musicians WHERE id = ?', [$musicianId]);
+        check(count($stock($solo)) >= $count, 'Songs gehen mit in die Solo-Band');
+    }
+    check(is_array($state['bands']), 'Spielstand geht');
+});
+
+test('Kern im Spiel: Ein voller Vorrat wirft den schwächsten Song weg, kein Songstau; „Wir wollen aufnehmen!“ erst mit dem Plattenwunsch', function () {
+    [$db, $p, $repo, $band] = coreLabel();
+    giveManager($db, $band['id']);
+    $cap = Balance::CORE_SONGS['cap'];
+    for ($i = 0; $i < $cap - 1; $i++) {
+        $db->insert('songs', ['label_id' => $repo->labelId, 'band_id' => $band['id'], 'quality' => 20 + $i, 'record_id' => null, 'created_at' => Clock::now()]);
+    }
+    $db->exec('UPDATE bands SET songs_written = ? WHERE id = ?', [$cap - 1 + 0.5, $band['id']]);
+    $db->exec('UPDATE musicians SET wellbeing = 90 WHERE band_id = ?', [$band['id']]);
+    coreRelease($repo, $band, 80);
+    $p->get('state');
+    Clock::advance(18 * 3600);
+    $state = $p->get('state');
+    $left = array_map('floatval', array_column(Signed\Game\SongStock::stock($db, $band['id']), 'quality'));
+    checkEquals($cap, count($left), 'Nie mehr als ' . $cap);
+    check(!in_array(20.0, $left, true), 'Der schwächste ist rausgeflogen');
+    checkEquals($cap, (int) floor((float) $db->value('SELECT songs_written FROM bands WHERE id = ?', [$band['id']])), 'Zähler passt zum Vorrat');
+    // Kein Songstau im neuen Kern; die Band will erst aufnehmen, wenn die letzte Platte eine Woche her ist
+    foreach (bandById($state, $band['id'])['mood']['why'] as $why) {
+        check(!isset(array_column($why['items'] ?? [], 1, 0)['Zu viele Songs warten auf eine Aufnahme']), 'Kein Songstau');
+    }
+    $texts = static fn (array $s) => array_column(bandById($s, $band['id'])['mood']['wishes'], 'text');
+    check(!in_array('Wir wollen aufnehmen!', $texts($state), true), 'Volle Kiste, aber die Platte ist frisch');
+    Clock::advance(7 * 86400);
+    check(in_array('Wir wollen aufnehmen!', $texts($p->get('state')), true), 'Eine Woche später wollen sie aufnehmen');
+    $hit = bandById($state, $band['id'])['mood']['hitRate'];
+    check($hit > 0.05 && $hit < 0.5, "Trefferquote der Band auf der Bandseite: $hit");
+});

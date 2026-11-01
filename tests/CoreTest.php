@@ -309,13 +309,13 @@ test('Neuer Kern: Fans bei Austritt, Zusammentun und Umbenennen', function () {
 });
 
 test('Neuer Kern: Songwriting nach Zahl der wirklichen Songschreiber', function () {
-    foreach ([1 => 1.20, 2 => 1.68, 3 => 1.92, 4 => 2.064, 5 => 2.16, 7 => 2.28] as $n => $perDay) {
+    foreach ([1 => 3.0, 2 => 4.2, 3 => 4.8, 4 => 5.16, 5 => 5.4, 7 => 5.7] as $n => $perDay) {
         coreNear($perDay, Songs::perDay($n), 1e-9, "$n Songschreiber");
     }
     $band = [['personality' => ['kreativ']], ['personality' => ['technisch']], ['personality' => ['perfektionist', 'ehrgeizig']]];
     coreNear(2.3, Songs::writers($band));
     checkEquals(0.0, Songs::perDay(Songs::writers([['personality' => ['technisch']]])), 'Technische schreiben nichts');
-    coreNear(1.68 * 0.67 * 0.5 * 0.6 * 0.85 * 2.0, Songs::perDay(2, 'careful', 'yellow', 'rehearsal', 'hybrid', 3));
+    coreNear(4.2 * 0.67 * 0.5 * 0.6 * 0.85 * 2.0, Songs::perDay(2, 'careful', 'yellow', 'rehearsal', 'hybrid', 3));
     checkEquals(0.0, Songs::perDay(2, 'normal', 'red'), 'Rote Band schreibt nicht');
     checkEquals(0.0, Songs::perDay(2, 'normal', 'green', 'gig'), 'Auf der Bühne ruht das Schreiben');
 });
@@ -332,12 +332,33 @@ test('Neuer Kern: Qualität einer Platte und ihrer Songs', function () {
     coreNear(1.0, Quality::productionShare(3, 2));
     coreNear(0.75, Quality::moodShare([60, 30]));
     check(Quality::isPerfect(95) && !Quality::isPerfect(94.9), 'Perfekt ab 95');
-    coreNear(87.5, Quality::song(0.5, 'careful', 0, 0.0), 1e-9, 'Grundwert 55');
-    coreNear(25.0, Quality::song(0.0, 'fast', 0, -1.0));
-    coreNear(100.0, Quality::song(1.0, 'careful', 3, 1.0), 1e-9, 'Höchstens 100');
-    coreNear(0.5, Quality::creativeShare([['personality' => ['perfektionist']], ['personality' => ['gelassen']]]));
-    coreNear(0.5, Quality::creativeShare([['personality' => ['kreativ']], ['personality' => ['technisch']]]), 1e-9, 'Wer nicht schreibt, zählt nicht');
-    coreNear(0.0, Quality::creativeShare([]));
+});
+
+test('Neuer Kern: Songs – gute sind selten, Trefferquote nach Können und Charakter', function () {
+    // Qualität aus Trefferquote p und Zufall u: genau ab u = 1 − p ist ein Song gut (70), darunter bis 10 hinab
+    coreNear(70.0, Quality::song(0.2, 0.8), 1e-9, 'Grenze gut bei u = 1 − p');
+    check(Quality::song(0.2, 0.79) < 70.0 && Quality::song(0.4, 0.61) >= 70.0, 'Höhere Trefferquote, mehr gute');
+    coreNear(10.0, Quality::song(0.3, 0.0), 1e-9, 'Schwächster Song');
+    coreNear(100.0, Quality::song(0.3, 1.0), 1e-9, 'Bester Song');
+    // Die meisten Songs sind nicht gut: Durchschnitt bei p = 0,2 unter 50
+    $sum = 0.0;
+    for ($i = 0; $i < 1000; $i++) {
+        $sum += Quality::song(0.2, ($i + 0.5) / 1000);
+    }
+    check($sum / 1000 < 50, 'Durchschnitt unter 50');
+    $m = static fn (float $skill, array $traits = []) => ['skill1' => $skill, 'skill2' => null, 'personality' => $traits];
+    coreNear(0.12, Quality::hitRate($m(20)), 1e-9, 'Anfänger');
+    coreNear(0.21, Quality::hitRate($m(90)), 1e-9, 'Virtuose');
+    coreNear(0.33, Quality::hitRate($m(70, ['perfektionist'])), 1e-9, 'Profi und Perfektionist');
+    coreNear(0.225, Quality::hitRate($m(40, ['kreativ', 'chaot'])), 1e-9, 'Kreativ zählt halb');
+    coreNear(0.15 * 0.6, Quality::hitRate($m(40), 'fast'), 1e-9, 'schnell: weniger gute');
+    coreNear(0.15 * 1.5 + 0.06, Quality::hitRate($m(40), 'careful', 2), 1e-9, 'sorgfältig und Coach');
+    // Auch die Besten schreiben mehr schwache als gute Songs
+    coreNear(Signed\Game\Balance::CORE_SONGS['max'], Quality::hitRate($m(95, ['perfektionist']), 'careful', 3));
+    check(Signed\Game\Balance::CORE_SONGS['max'] < 0.5, 'Höchstens weniger als die Hälfte gut');
+    // Band: nach Gewicht beim Schreiben, Technische zählen nicht
+    coreNear((1.5 * 0.195 + 0.12) / 2.5, Quality::bandHitRate([$m(20, ['kreativ']), $m(20), $m(90, ['technisch'])]));
+    coreNear(0.0, Quality::bandHitRate([$m(90, ['technisch'])]), 1e-9, 'Niemand schreibt');
 });
 
 test('Neuer Kern: Bedürfnisse wachsen nur alle 24 Stunden', function () {

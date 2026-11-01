@@ -181,7 +181,7 @@ final class Repo
 
     public function insertMusician(array $m, string $origin): int
     {
-        return $this->db->insert('musicians', [
+        $id = $this->db->insert('musicians', [
             'label_id' => $this->labelId,
             'first_name' => $m['first_name'],
             'last_name' => $m['last_name'],
@@ -208,6 +208,11 @@ final class Repo
             'origin' => $origin,
             'created_at' => Clock::now(),
         ]);
+        if (BandCore::$live) {
+            // Neuer Kern: Die eigenen Songs kommen mit (Karten von vor dieser Regel würfeln sie jetzt)
+            SongStock::bring($this, $id, $m['songs'] ?? SongStock::roll($m));
+        }
+        return $id;
     }
 
     /**

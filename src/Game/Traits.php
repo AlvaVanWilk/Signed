@@ -93,8 +93,10 @@ final class Traits
             if ($stagnant) {
                 self::reveal($repo, $m, array_keys($t['stagnant']['traits']), 'stagnant');
             }
-            if ($songsAfter >= Balance::MOOD['stau']['from']) {
-                self::reveal($repo, $m, [$t['calm']['trait']], 'calm');
+            // Gelassen: im neuen Kern, sobald die Stimmung sinkt (dann sinkt sie bei ihm langsamer); sonst beim Songstau
+            $w = $repo->db->value('SELECT wellbeing FROM musicians WHERE id = ?', [$m['id']]);
+            if (BandCore::$live ? $w !== null && (float) $w < (float) $m['wellbeing'] - 1.0 : $songsAfter >= Balance::MOOD['stau']['from']) {
+                self::reveal($repo, $m, [$t['calm']['trait']], BandCore::$live ? 'calmDown' : 'calm');
             }
             if (floor($songsAfter) > floor($songsBefore)) {
                 self::reveal($repo, $m, ['kreativ'], 'songs');
@@ -107,7 +109,6 @@ final class Traits
                 self::reveal($repo, $m, array_keys(array_filter($want, static fn ($from) => $m['fame'] >= $from)), 'stageName');
             }
             // Unzufrieden: Dem Manager sagt man es schon bei Gelb, laut wird es erst bei Rot (dann hört es auch das Label ohne Manager).
-            $w = $repo->db->value('SELECT wellbeing FROM musicians WHERE id = ?', [$m['id']]);
             $level = $w === null ? 'green' : Mood::level((float) $w);
             if ($level !== 'green' && $m['personality']) {
                 self::reveal($repo, $m, [$m['personality'][0]], $level === 'red' ? 'loud' : 'unhappy');

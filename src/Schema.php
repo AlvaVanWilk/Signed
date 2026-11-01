@@ -722,6 +722,11 @@ final class Schema
             [
                 'UPDATE submissions SET sorted_at = filed_at WHERE filed_at IS NOT NULL AND sorted_at IS NULL AND box IS NULL',
             ],
+            // 60: Neuer Kern: Wer einen Song geschrieben hat (neue Musiker bringen eigene Songs mit; ohne Band liegen sie mit band_id 0 in ihrer Tasche)
+            [
+                'ALTER TABLE songs ADD COLUMN musician_id INTEGER NULL',
+                'CREATE INDEX songs_musician ON songs (musician_id, band_id)',
+            ],
         ];
     }
 }

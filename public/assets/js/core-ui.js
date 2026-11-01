@@ -38,9 +38,9 @@ export function valueTiles(b) {
 }
 
 const WRITE_MODES = [
-  ['fast', 'schnell', 'Mehr Songs, dafür etwas schwächere.'],
+  ['fast', 'schnell', 'Mehr Songs, aber weniger gute darunter.'],
   ['normal', 'normal', 'So viele Songs, wie die Band schafft, in ihrer gewohnten Qualität.'],
-  ['careful', 'sorgfältig', 'Weniger Songs, dafür bessere.'],
+  ['careful', 'sorgfältig', 'Weniger Songs, dafür mehr gute darunter.'],
 ];
 
 /** Regler auf der Bandseite: Wie die Band Songs schreibt. */
@@ -48,18 +48,26 @@ export function writeModeRow(b) {
   const mode = b.core?.writeMode ?? 'normal';
   return `<div class="cf-write"><small class="lb-cap">Songs schreiben</small>
     <div class="tabs">${WRITE_MODES.map(([key, label, text]) => `<button class="tab ${key === mode ? 'active' : ''}" data-act="bandWriteMode" data-id="${b.id}" data-mode="${key}" title="${esc(text)}">${label}</button>`).join('')}</div>
-    <small class="muted">${esc(WRITE_MODES.find(([key]) => key === mode)?.[2] ?? '')}</small></div>${songStock(b)}`;
+    <small class="muted">${esc(WRITE_MODES.find(([key]) => key === mode)?.[2] ?? '')}${hitText(b)}</small></div>${songStock(b)}`;
 }
 
-/** Songs im Vorrat mit ihrer Qualität (beste zuerst). Das Label kann einen ablehnen: Das macht Platz für einen neuen. */
+/** Wie viele der neuen Songs gut werden (Trefferquote der Band mit Regler und Coach). */
+function hitText(b) {
+  const hit = b.mood?.hitRate;
+  if (hit == null || hit <= 0) return '';
+  return ` Von 10 neuen Songs werden etwa ${Math.max(1, Math.round(hit * 10))} gut.`;
+}
+
+/** Songs im Vorrat mit ihrer Qualität (beste zuerst, gute grün). Ist der Vorrat voll, fliegt für jeden neuen Song der schwächste raus. */
 function songStock(b) {
   const stock = b.core?.stock ?? [];
   if (!stock.length) return '';
-  const cap = cat().rules.songCap ?? 24;
-  return `<div class="cf-stock"><small class="lb-cap">Songs im Vorrat <span class="muted">${stock.length} von ${cap}</span></small>
-    <div class="rc-songs">${stock.map((x) => `<span class="rc-song on cf-song" title="Qualität ${fmt0(x.quality)}"><i style="--q:${Math.round(x.quality)}"></i><b>${fmt0(x.quality)}</b>
-      <button class="cf-reject" data-act="songReject" data-id="${b.id}" data-song="${x.id}" title="Ablehnen" aria-label="Song ablehnen">✕</button></span>`).join('')}</div>
-    <small class="muted">Mit ✕ lehnst du einen Song ab. Das macht Platz für neue: Mehr als ${cap} passen nicht in den Vorrat.</small></div>`;
+  const cap = cat().rules.songCap ?? 40;
+  const good = cat().rules.songGood ?? 70;
+  const goodCount = stock.filter((x) => x.quality >= good).length;
+  return `<div class="cf-stock"><small class="lb-cap">Songs im Vorrat <span class="muted">${stock.length} von ${cap}, davon ${goodCount} gut</span></small>
+    <div class="rc-songs">${stock.map((x) => `<span class="rc-song on cf-song ${x.quality >= good ? 'good' : ''}" title="Qualität ${fmt0(x.quality)}"><i style="--q:${Math.round(x.quality)}"></i><b>${fmt0(x.quality)}</b></span>`).join('')}</div>
+    <small class="muted">Gute Songs (ab ${good}) sind grün. Ist der Vorrat voll, fliegt für jeden neuen Song der schwächste raus.</small></div>`;
 }
 
 /** Warum heute so viele oder so wenige kommen (das i neben dem Knopf). */

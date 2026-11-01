@@ -151,6 +151,8 @@ const instrumentRow = (i, compact = false) => `<div class="lb-ins ${levelClass(i
   <b class="lv" data-act="tip" data-tip="Können ${Math.floor(i.skill)}">${levelCount(i.skill)}</b></div>`;
 
 const PEN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4L16.5 4.5a2 2 0 013 3L8 19l-4 1z M14 7l3 3 M3 21h6"/></svg>';
+/** Eigene Songs, die jemand mitbringt (neuer Kern; null bei Karten ohne diese Angabe). */
+const songsTag = (n) => (n == null ? '' : `<small class="lb-sub-songs" title="Bringt ${n === 1 ? 'einen eigenen Song' : `${n} eigene Songs`} mit">♪ ${n === 0 ? 'keine' : n} ${n === 1 ? 'Song' : 'Songs'}</small>`);
 const fameStars = (s) => (s.fameLevel ? `<span class="lb-sub-fame" title="${esc(cat().fameNames[s.fameLevel])}">${'★'.repeat(s.fameLevel)}</span>` : '<small class="muted" title="Noch keine Bekanntheit">unbekannt</small>');
 const traitChips = (m, act = 'subInfo', sid = 0, index = 0) => m.personality.map((p) => `<button class="lb-trait" data-act="${act}" data-id="${sid}" data-index="${index}" data-tip="${esc(cat().personalities[p])}: ${esc(cat().personalityInfo[p])}" title="${esc(cat().personalities[p])}: ${esc(cat().personalityInfo[p])}">${esc(cat().personalities[p])}</button>`).join('') + hiddenTraits(m);
 
@@ -173,7 +175,7 @@ function card(s) {
     <div class="lb-flipper ${flipped(s) ? 'flipped' : ''}" data-act="subFlip" data-id="${s.submissionId}">
       <article class="lb-face front">
         <div class="lb-fr-name"><b>${esc(s.firstName)} ${esc(s.lastName)}</b></div>
-        <div class="lb-fr-row">${genreTags(s.genres)}${fameStars(s)}</div>
+        <div class="lb-fr-row">${genreTags(s.genres)}${songsTag(s.songs)}${fameStars(s)}</div>
         <div class="lb-card-ins">${s.instruments.map(instrumentRow).join('')}</div>
         ${iconFoot(s, s.price, true)}
       </article>
@@ -190,11 +192,12 @@ function card(s) {
 function bandCard(s) {
   const price = s.members.reduce((a, m) => a + m.price, 0);
   const genres = [...new Set(s.members.flatMap((m) => m.genres))].slice(0, 4);
+  const songs = s.members.some((m) => m.songs != null) ? s.members.reduce((a, m) => a + (m.songs ?? 0), 0) : null;
   return `
     <div class="lb-flipper band ${flipped(s) ? 'flipped' : ''}" data-act="subFlip" data-id="${s.submissionId}">
       <article class="lb-face front">
         <div class="lb-fr-name"><small class="muted">Band</small> <b>${esc(s.bandName)}</b></div>
-        <div class="lb-fr-row">${genreTags(genres)}</div>
+        <div class="lb-fr-row">${genreTags(genres)}${songsTag(songs)}</div>
         <div class="lb-card-ins grid">${s.members.map((m) => instrumentRow(m.instruments[0], true)).join('')}</div>
         ${iconFoot(s, price, true)}
       </article>
@@ -510,6 +513,7 @@ function reportDialog(mailId) {
             <div class="lb-info-head"><span class="lb-ph" style="--split:linear-gradient(120deg, ${split(c.genres)})">${photo(c)}</span>
               <div><h2>${esc(c.firstName)} ${esc(c.lastName)}</h2>${genreTags(c.genres)}</div></div>
             <div class="lb-rp-ins">${c.instruments.map((x) => `<div>${instrumentRow(x)}<span>${esc(instrumentName(x.type))} · Können ${Math.floor(x.skill)}</span></div>`).join('')}</div>
+            ${c.songs == null ? '' : `<p class="muted">${c.songs === 0 ? 'Bringt keine eigenen Songs mit.' : `Bringt ${c.songs === 1 ? 'einen eigenen Song' : `${c.songs} eigene Songs`} mit.`}</p>`}
             <div class="lb-traits">${traitChips(c, 'tip')}</div>
             ${c.signed ? '<p class="lb-rp-done">Hat schon bei dir unterschrieben.</p>' : `<div class="dialog-actions">
               <button class="btn primary" data-sign="${c.index}" ${off(money0 < c.price ? `Dafür fehlen noch ${money(c.price - money0)}.` : '')}>Unterschreiben · ${money(c.price)}</button></div>`}

@@ -324,7 +324,8 @@ final class Mood
                 break;
             }
         }
-        if ($songs >= Balance::MOOD['stau']['from'] && $members) {
+        // Neuer Kern: erst, wenn eine Platte möglich und fällig ist (Plattenwunsch); sonst bei Songstau
+        if ((BandCore::$live ? $recordOpen && $songs >= Balance::CORE_ALBUM_RANGE[0] : $songs >= Balance::MOOD['stau']['from']) && $members) {
             $out[] = ['musicianId' => $members[0]['id'], 'text' => count($members) === 1 ? 'Ich will aufnehmen!' : 'Wir wollen aufnehmen!', 'action' => 'record', 'level' => 'yellow', 'band' => true];
         }
         return $out;
@@ -359,9 +360,12 @@ final class Mood
         return ($sum / $c['norm']) ** $c['exp'];
     }
 
-    /** Abzug durch liegende Songs (Gemütliche nehmen es gelassener). */
+    /** Abzug durch liegende Songs (Gemütliche nehmen es gelassener). Im neuen Kern nicht: Dort drängt der Plattenwunsch (recordWishHours). */
     private static function stau(array $m, float $songs): float
     {
+        if (BandCore::$live) {
+            return 0.0;
+        }
         $c = Balance::MOOD['stau'];
         $calm = in_array(Balance::TRAITS['calm']['trait'], $m['personality'], true) ? Balance::TRAITS['calm']['stau'] : 1.0;
         return min($c['max'], max(0.0, $songs - $c['from']) * $c['per']) * $calm;
@@ -808,7 +812,8 @@ final class Mood
             $t += $dt;
             $hours = $dt / 3600;
             $before = (int) floor($state['songs']);
-            $state['songs'] = min((float) $c['songCap'], $state['songs'] + self::writeRate(self::bandMood($state['w'])) * $writeFactor * $hours);
+            // Neuer Kern: ohne Deckel, ein voller Vorrat wirft danach die schwächsten Songs weg (SongStock::trim)
+            $state['songs'] = min(BandCore::$live ? INF : (float) $c['songCap'], $state['songs'] + self::writeRate(self::bandMood($state['w'])) * $writeFactor * $hours);
             // Wann jeder neue Song fertig wurde (für den Vorrat, SongStock::write)
             for ($k = $before; $k < (int) floor($state['songs']); $k++) {
                 $state['songTimes'][] = $t;

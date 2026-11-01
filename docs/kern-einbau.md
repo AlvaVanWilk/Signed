@@ -22,11 +22,14 @@ laufen mit Schalter aus (`tests/support.php` setzt ihn vor jedem Test zurück) u
 ## Erledigt
 
 - **Datenbank:** Schritt 55 (Fans, Frische, Zustand der Platten, `songs`, `chart_hours`), 56 (Regler fürs Songschreiben), 57 (`prizes`:
-  Battle-Preise), 58 (Umstellung der Spielstände).
+  Battle-Preise), 58 (Umstellung der Spielstände), 60 (`songs.musician_id`: wer einen Song geschrieben hat).
 - **Auftreten:** ein Knopf, Ort wählt das Spiel, keine Kosten, Verdienst je Zuschauer, Frische; Manager (Verhandler, PR-Profi).
 - **Aufnehmen:** 12 Songs aus dem Vorrat, vier Produktionsstufen, Qualität aus Sound, Songs, Produktion und Stimmung; kein Erstverkauf,
   kein Album-Zyklus.
 - **Songs:** einzeln mit Qualität (`SongStock`), Tempo nach `Core\Songs`, Regler schnell / normal / sorgfältig auf der Bandseite.
+  Neu (1.11., Sandra): Musiker bringen eigene Songs mit (Zahl auf der Karte), gute Songs sind selten (Trefferquote nach Können und Charakter,
+  höchstens 4 von 10), Tempo zweieinhalbmal so hoch, Vorrat 40 und der schwächste fliegt raus, Songs ziehen bei Bandwechseln mit, kein
+  Songstau, „Wir wollen aufnehmen!“ erst mit dem Plattenwunsch.
 - **Charts:** Verkäufe der letzten 24 Stunden, jede Minute neu, neue Platten sofort; Label-Bestenliste (Fans), Fan-Lieblinge, Sound-Monster; Flammen.
 - **Geld:** Plattenverkäufe und Katalog laufend (`earnDaily`), Werbung, Konzerte; Startgeld 5.000 ₲.
 - **Auszeichnungen:** Gold, Platin, Diamant nach 5.000 / 20.000 / 50.000; Platz 1; Halle und Arena (auf Tournee).

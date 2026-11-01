@@ -108,16 +108,24 @@ Verdienst         = Zuschauer × 5 / 6 / 9 / 12 ₲ nach Ruhmstufe
 ### Platte aufnehmen
 
 - Ein Album hat **10 bis 16 Songs** aus dem Vorrat (vorausgewählt: die besten 12); die Band ist 5 Minuten je Lied im Studio. Kein
-  Album-Zyklus, kein Erstverkauf: Erst wenn die Studiozeit um ist, erscheint die Platte und ihr Hype beginnt.
+  Album-Zyklus, kein Erstverkauf: Erst wenn die Studiozeit um ist, erscheint die Platte und ihr Hype beginnt, auch wenn gerade niemand
+  da ist (nicht erst beim nächsten Besuch).
+- **Abstand** (Sandra, 1.11.): Eine neue Platte geht frühestens 3 Tage nach der letzten (`CORE_ALBUM_TIMING['gapDays']`). Bis dahin ist
+  „Aufnehmen“ grau; antippen sagt „Die letzte Platte ist noch ganz frisch. Die Fans sind noch nicht bereit für eine neue.“, darunter
+  steht die Restzeit (`core.recordAt`); der Server lehnt mit derselben Begründung ab. So gehen auch mit vollem Vorrat (24 Songs) keine
+  zwei Platten direkt hintereinander.
 - **Länge:** Hype beim Erscheinen, Preis je Platte und Studiokosten gelten für 12 Lieder und ändern sich anteilig (× Lieder / 12; Hype
   höchstens 100). So ist jedes Lied gleich viel wert, egal wie lang das Album ist. Ohne diese Regel wären 10 Lieder immer am besten: Jede
   Platte startet den Hype neu, und die Fans kaufen jede Platte (nachgerechnet: Viererband, 500 Fans, 8 Wochen, Platte sobald genug Songs da:
   10 Lieder 143.000 ₲ und 3.000 Fans, 16 Lieder 65.000 ₲ und 2.010 Fans). Mit der Regel: 10 Lieder 102.000 ₲ und 2.540 Fans, 12 Lieder
   103.000 ₲ und 2.520, 16 Lieder 108.000 ₲ und 2.510 (je abzüglich Studio). Wer oft spielt, kann kürzere Alben öfter bringen (frischer Hype,
   bei 5.000 Fans etwa 15 % mehr Geld aus Auftritten); wer einmal je Woche spielt, nutzt mit 16 Liedern alle Songs (mit 10 läuft der Vorrat
-  voll: 52.000 statt 99.000 ₲). Schwache Songs wegzulassen hebt Q nur wenig (ein Song 20 Punkte schwächer kostet bei 12 Liedern 0,4 Punkte);
+  voll: 52.000 statt 99.000 ₲). Schwache Songs wegzulassen hebt Q nur wenig (ein Song 20 Punkte schwächer kostet bei 12 Liedern 0,6 Punkte);
   es lohnt sich vor allem, um über 95 zu kommen (perfekt).
-- **Qualität** Q = 100 × (0,40 × S + 0,25 × W + 0,20 × P + 0,15 × E), ab 95 perfekt:
+- **Qualität** Q = 100 × (0,30 × S + 0,35 × W + 0,20 × P + 0,15 × E), ab 95 perfekt. Die Songs zählen am meisten (Sandra: „an der Realität
+  gemessen“; vorher Sound 0,40, Songs 0,25). Neue Songs starten dafür bei 55 statt 50: Perfekt braucht bei vollem Rest jetzt Songs ab
+  durchschnittlich 86 statt 80, das ist etwa gleich schwer. Durchschnittliche Songs geben etwas weniger als vorher (Q 84 statt 87 bei
+  vollem Sound), sehr gute etwas mehr, und ein schwacher Sound kostet weniger.
   S = min(1; Sound / Erwartung der Ruhmstufe 150 / 1.500 / 10.000 / 45.000), W = Durchschnitt der Songs / 100,
   P = Produktionsstufe / Ruhmstufe (höchstens 1, bei Stufe 0 immer 1), E = min(1; Wohlbefinden / 60).
   So kann jede Band in jeder Phase perfekt aufnehmen. Die Erwartung ist so gewählt, dass eine Zweierband mit einer Probe am Tag mithält.
@@ -135,7 +143,7 @@ Verdienst         = Zuschauer × 5 / 6 / 9 / 12 ₲ nach Ruhmstufe
   n = Songschreiber (je Mitglied 1, Kreativ 1,5, Chaot 1,2, Perfektionist 0,8, Technisch 0); Regler schnell 1,5 / normal 1 / sorgfältig 0,67;
   Stimmung grün 1 / gelb 0,5 / rot 0; Tätigkeit im Studio und beim Auftritt 0, beim Proben 0,6, sonst 1; Genre-Band 1 / Hybrid 0,85 /
   Crossover und gemischt 0,7; Coach 1,5 / 1,75 / 2.
-- Songqualität = 50 + 25 × K + Regler (schnell −20, sorgfältig +20) + Coach (5 / 10 / 15) ± 10 Zufall, 0–100;
+- Songqualität = 55 + 25 × K + Regler (schnell −20, sorgfältig +20) + Coach (5 / 10 / 15) ± 10 Zufall, 0–100;
   K = Anteil der Songschreiber mit Perfektionist (zählt 1) oder Kreativ (0,5).
 
 ### Können
@@ -156,6 +164,18 @@ Verdienst         = Zuschauer × 5 / 6 / 9 / 12 ₲ nach Ruhmstufe
 
 - Sie dürfen jederzeit auftauchen; das Auftauchen kostet nichts. Sie wachsen nur alle 24 Stunden, um so viel, wie heute in 24 Stunden
   dazukommt (`Core\Needs`). So muss niemand zu einer bestimmten Stunde da sein.
+- **Plattenwunsch** (Sandra, 1.11.): Der Charakter-Wunsch „Platte“ (Kreative, Gemütliche) und die Unruhe ohne Platte (Ehrgeizige) kommen
+  erst, wenn genug Songs für ein Album da sind und die letzte Platte mindestens 7 Tage her ist (`CORE_ALBUM_TIMING['wishDays']`,
+  `Mood::recordWishHours`); vorher schweigen sie, und ihre Uhr läuft nicht. Gezählt wird ab dem späteren der beiden Zeitpunkte (Songs dafür
+  da, Platte 7 Tage alt); danach wächst es wie jedes Bedürfnis alle 24 Stunden. Jeder neue Song merkt sich, wann er fertig wurde, auch offline.
+- **Instrumentenwunsch** (Sandra, 1.11.): Ein Musiker will ein Instrument höchstens eine Stufe unter seinem Können: Können-Stufe 0 und 1
+  grau, 2 (Profi) grün, 3 (Virtuose) blau; Gold verlangt niemand (`CORE_GEAR_WISH`, `Gear::wantedTier`). Er merkt es erst 2 Tage nach dem
+  Aufstieg: Seine Uhr (`gear_wait`) beginnt bei −48 Stunden. Ab 0 sagt er „Ich will ein besseres Instrument.“, das Instrument drückt
+  (−3 je Stufe, Diven doppelt), und ab dem Tag danach wächst das Warten alle 24 Stunden. Der Manager merkt es schon vorher. Ohne
+  Instrument gilt das sofort. Vorher richtete sich der Wunsch nach der vollen Können-Stufe: Wer zweimal am Tag probt, ist nach etwa fünf
+  Wochen Virtuose und wollte dann Gold (40.000 ₲); im Durchspielen blieben Bands deshalb wochenlang gelb und schrieben halb so viele Songs.
+- **Kreative** mögen Aufnehmen und Festivals (Sandra, 1.11.; die offene Bühne gibt es im neuen Kern nicht), Proben nicht. Auftreten ist
+  ihnen egal: Sonst mögen sie fast alles außer Proben, und ihr Nachteil fiele weg.
 
 ### Ereignisse und Anfragen
 
@@ -198,7 +218,22 @@ Verdienst         = Zuschauer × 5 / 6 / 9 / 12 ₲ nach Ruhmstufe
   Proben: jeden Tag 70 Wochen, jeden zweiten Tag 74, jeden vierten 86. Nachgerechnet in `tests/CoreTest.php` (Laufbahn-Tempo).
 - Ruhm verstärkt nie den eigenen Zuwachs: Jeder Schub hängt an seiner Platte und verklingt mit ihr, der Pool begrenzt die Neugierigen,
   die Frische begrenzt viele Auftritte hintereinander.
-- Noch nicht eingerechnet: neue Leute auf Tournee; das prüft das Durchspielen.
+- **Durchgespielt** (1.11., ein Bot spielt je sechs neue Labels vom ersten Besuch an: Kassetten, Band, Instrumente, Auftritte, Platte
+  sobald möglich, Anfragen, Battle und Festival; keine Kurse, Lehrer, Scouts, Proberaum oder Tourneen, immer das billigste Studio):
+
+  | | täglich (zweimal), nach 6 Wochen | wöchentlich (sonntags), nach 8 Wochen |
+  |---|---|---|
+  | Platten | 5,7 (3–7); vorher 2 (1–3) | 5,2 (2–7); vorher 4 (0–6) |
+  | Fans | 1.700 (1.100–2.040); vorher 830 | 350 (160–505); vorher 250 |
+  | 500 Fans | nach 15–26 Tagen; vorher 17–28, einmal nie | eins von sechs nach 8 Wochen |
+  | Band nach dem Besuch rot | 6 von 252; vorher 28 | 6 von 48; vorher 7 |
+  | Geld | 47.000–115.000 ₲ | 6.000–21.000 ₲ |
+
+  Täglich kommt damit etwa eine Platte je Woche heraus, wie in der Laufbahn-Rechnung angenommen. 5.000 Fans erreicht in sechs Wochen
+  niemand; nach der Laufbahn-Rechnung dauert das bei einer Platte je Woche 18 bis 25 Wochen. Wöchentlich bleibt in zwei von sechs Labels
+  die Band beim Besuch oft rot: Rampensäue und Partytiere wollen nach 8 Stunden wieder auf die Bühne, und das wächst die ganze Woche.
+  Das Geld häuft sich bei täglichem Spielen an; ob Coaches, Lehrer und Scouts es bei echten Spielern aufbrauchen, ist nicht geprüft.
+- Noch nicht eingerechnet: neue Leute auf Tournee.
 
 ## Regeln und Formeln
 
@@ -455,7 +490,7 @@ Genre (auch als zweites oder drittes Genre), jedes Label mit so vielen, wie es w
   Hauptbühne rund 30 Ruhm (etwa acht Club-Auftritte), die Zeltbühne rund 7. Dazu Chart-Schub je Lied, Beziehungen, die Lieder zählen für den
   Album-Zyklus.
 - **Danach:** Ein Medium eine Stufe größer als sonst fragt nach einem Interview. Der **Headliner** bekommt ein Plakat für den Proberaum.
-  Ehrgeizige, Impulsive, Extrovertierte, Gesellige und Egozentrische mögen Festivals, Gemütliche nicht.
+  Ehrgeizige, Impulsive, Extrovertierte, Gesellige, Egozentrische und Kreative mögen Festivals, Gemütliche nicht.
 
 ### Tournee
 

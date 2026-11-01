@@ -177,6 +177,8 @@ final class BandCore
             'flame' => Core\Hype::flame($hype),
             'fresh' => round(Core\Concert::freshness($career['fresh'], $career['lastGig'], $now), 3),
             'writeMode' => $band['write_mode'] ?? 'normal',
+            // Ab wann die nächste Platte geht (die letzte muss CORE_ALBUM_TIMING['gapDays'] Tage alt sein); 0 = schon jetzt
+            'recordAt' => Studio::nextRecordAt($db, (int) $band['id']),
             // Songs im Vorrat mit ihrer Qualität (beste zuerst), zum Ansehen und Ablehnen auf der Bandseite
             'stock' => SongStock::stock($db, (int) $band['id']),
             'gig' => [

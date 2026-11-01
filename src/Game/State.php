@@ -118,7 +118,9 @@ final class State
             $fit = $manager === null ? null : Managers::fit($manager, $list);
             $level = round(BandCalc::managerLevel($manager) * ($fit ?? 1.0), 2);
             $managed = $manager !== null;
-            $wishes = Mood::wishes($list, $gearMap, (int) floor($band['songs_written']));
+            // Neuer Kern: Eine Platte wünscht sich die Band erst, wenn sie möglich und fällig ist (Mood::recordWishHours)
+            $band = Mood::withRecordWish($db, $band, $now);
+            $wishes = Mood::wishes($list, $gearMap, (int) floor($band['songs_written']), !BandCore::$live || $band['recordWish'] !== null);
             $venue = BandCalc::venue($fame);
             $open = $openRecords[$band['id']] ?? null;
             $draw = BandCalc::freshness($band['gigs_since_record']);

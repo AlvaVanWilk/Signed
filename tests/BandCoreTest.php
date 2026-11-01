@@ -858,3 +858,179 @@ test('Kern im Spiel: Übergang – 0 Fans, neues Startgeld, eigenes Instrument i
     checkEquals(['kept' => 0, 'swapped' => 1, 'expired' => 1, 'given' => 2], $summary['gear']);
     checkEquals(1, $summary['cards']);
 });
+
+/** Ein Instrument-Modell dieser Art in dieser Güteklasse (0 grau … 3 gold). */
+function coreGearModel(string $type, int $tier): string
+{
+    foreach (Signed\Game\Catalog::GEAR as $key => $g) {
+        if ($g['type'] === $type && Signed\Game\Gear::modelTier($key) === $tier) {
+            return $key;
+        }
+    }
+    throw new RuntimeException("Kein Modell für $type in Stufe $tier");
+}
+
+test('Kern im Spiel: Instrumentenwunsch – höchstens eine Stufe unter dem Können, Gold verlangt niemand, erst zwei Tage nach dem Aufstieg', function () {
+    [$db, $p, $repo, $band] = coreLabel();
+    giveManager($db, $band['id']);
+    $m = array_values($repo->members($band['id']))[0];
+    $type = Signed\Game\BandCalc::instrument($m);
+    $slot = $type === $m['instr1'] ? 'skill1' : 'skill2';
+    // Können-Stufe 0 und 1: grau reicht; 2 (Profi): grün; 3 (Virtuose): blau
+    foreach ([[20.0, 0], [40.0, 0], [70.0, 1], [90.0, 2], [100.0, 2]] as [$skill, $tier]) {
+        checkEquals($tier, Signed\Game\Gear::wantedTier([$slot => $skill] + $m, $type), "Wunsch bei Können $skill");
+    }
+    $gear = static fn (int $tier) => [$m['id'] => [$type => ['key' => coreGearModel($type, $tier)]]];
+    check(!Signed\Game\Mood::gearNeed([$slot => 70.0] + $m, $gear(1)), 'Profi mit Grün ist zufrieden');
+    check(Signed\Game\Mood::gearNeed([$slot => 70.0] + $m, $gear(0)), 'Profi mit Grau wartet auf Grün');
+    check(!Signed\Game\Mood::gearNeed([$slot => 95.0] + $m, $gear(2)), 'Virtuose mit Blau ist zufrieden, Gold verlangt niemand');
+    check(Signed\Game\Mood::gearNeed([$slot => 95.0] + $m, $gear(1)), 'Virtuose mit Grün wartet auf Blau');
+    // Im Spiel: Profi mit grauem Instrument. Seine Uhr beginnt bei −48 Stunden, erst ab 0 äußert er den Wunsch.
+    $db->exec('UPDATE gear SET musician_id = NULL WHERE musician_id = ?', [$m['id']]);
+    $db->exec('UPDATE gear SET musician_id = ? WHERE id = ?', [$m['id'], $repo->insertGear(coreGearModel($type, 0))]);
+    $db->exec("UPDATE musicians SET $slot = 70, gear_wait = NULL WHERE id = ?", [$m['id']]);
+    $db->exec('UPDATE musicians SET wellbeing = 80 WHERE band_id = ?', [$band['id']]);
+    $p->get('state');
+    Clock::advance(3600);
+    $state = $p->get('state');
+    coreNear(-47.0, (float) $db->value('SELECT gear_wait FROM musicians WHERE id = ?', [$m['id']]), 0.01, 'Uhr beginnt unter null');
+    $texts = static fn (array $state) => array_column(bandById($state, $band['id'])['mood']['wishes'], 'text');
+    $why = static fn (array $state) => array_column(bandById($state, $band['id'])['mood']['why'][$m['id']]['items'] ?? [], 1, 0);
+    check(!in_array('Ich will ein besseres Instrument.', $texts($state), true), 'Gleich nach dem Aufstieg noch kein Wunsch');
+    check(isset($why($state)['Mag sein Instrument']), 'Er mag sein Instrument noch');
+    // Zwei Tage nach dem Aufstieg: Er äußert den Wunsch, das Instrument drückt; die Wartezeit kostet erst nach weiteren 24 Stunden
+    $db->exec('UPDATE musicians SET gear_wait = 0.5 WHERE id = ?', [$m['id']]);
+    $state = $p->get('state');
+    check(in_array('Ich will ein besseres Instrument.', $texts($state), true), 'Nach zwei Tagen der Wunsch');
+    $items = $why($state);
+    check(isset($items['Spielt besser, als das Instrument hergibt']), 'Jetzt merkt er es');
+    check(!array_filter(array_keys($items), static fn ($t) => str_starts_with($t, 'Wartet schon')), 'Warten kostet noch nichts');
+    $db->exec('UPDATE musicians SET gear_wait = 25 WHERE id = ?', [$m['id']]);
+    $items = $why($p->get('state'));
+    $waiting = array_values(array_filter($items, static fn ($t) => str_starts_with($t, 'Wartet schon'), ARRAY_FILTER_USE_KEY));
+    coreNear(-Signed\Game\Core\Needs::penalty(25, Signed\Game\Core\Needs::perHour('gear', $m)), (float) ($waiting[0] ?? 0), 0.05, 'Nach einem Tag Warten drückt es');
+    // Grün gekauft: Er ist zufrieden, die Uhr ist weg
+    $db->exec('UPDATE gear SET musician_id = NULL WHERE musician_id = ?', [$m['id']]);
+    $db->exec('UPDATE gear SET musician_id = ? WHERE id = ?', [$m['id'], $repo->insertGear(coreGearModel($type, 1))]);
+    Clock::advance(60);
+    $state = $p->get('state');
+    checkEquals(null, $db->value('SELECT gear_wait FROM musicians WHERE id = ?', [$m['id']]), 'Kein Warten mehr');
+    check(!in_array('Ich will ein besseres Instrument.', $texts($state), true), 'Kein Wunsch mehr');
+});
+
+test('Kern im Spiel: Eine Platte wünscht sich die Band erst mit genug Songs und eine Woche nach der letzten', function () {
+    $t0 = 1_800_000_000;
+    $wish = static fn (array $done, ?int $ready, float $songs) => Signed\Game\Mood::recordWishHours(['recordsDone' => $done, 'songsReady' => $ready], $songs, $t0);
+    checkEquals(null, $wish([], null, 9.9), 'Ohne 10 Songs kein Wunsch');
+    coreNear(5.0, $wish([], $t0 - 5 * 3600, 10.2), 1e-9, 'Vor der ersten Platte: sobald genug Songs da sind');
+    checkEquals(null, $wish([$t0 - 6 * 86400], $t0 - 3 * 86400, 12), 'Die letzte Platte ist erst 6 Tage her');
+    coreNear(24.0, $wish([$t0 - 8 * 86400], $t0 - 3 * 86400, 12), 1e-9, 'Ab dem siebten Tag nach der letzten Platte');
+    coreNear(2.0, $wish([$t0 - 10 * 86400], $t0 - 2 * 3600, 10), 1e-9, 'Die Songs kamen später');
+
+    [$db, $p, $repo, $band] = coreLabel();
+    giveManager($db, $band['id']);
+    [$a, $b] = array_values($repo->members($band['id']));
+    $db->exec('UPDATE musicians SET personality = ?, known_traits = NULL, wellbeing = 45 WHERE id = ?', [json_encode(['kreativ']), $a['id']]);
+    $db->exec('UPDATE musicians SET personality = ?, known_traits = NULL, wellbeing = 70 WHERE id = ?', [json_encode(['ehrgeizig']), $b['id']]);
+    $kreativ = Signed\Game\Catalog::WISHES['kreativ'][0];
+    $songs = static function (int $count, int $at) use ($db, $repo, $band): void {
+        $db->exec('DELETE FROM songs WHERE band_id = ? AND record_id IS NULL', [$band['id']]);
+        for ($i = 0; $i < $count; $i++) {
+            // Der jüngste kam um $at: Ab dann hat der Vorrat so viele Songs
+            $db->insert('songs', ['label_id' => $repo->labelId, 'band_id' => $band['id'], 'quality' => 60, 'record_id' => null, 'created_at' => $at - $i]);
+        }
+        $db->exec('UPDATE bands SET songs_written = ? WHERE id = ?', [$count + 0.2, $band['id']]);
+    };
+    $wishes = static fn (array $state) => array_column(bandById($state, $band['id'])['mood']['wishes'], 'text');
+    $stagnant = static function (array $state) use ($band, $b): float {
+        $items = array_column(bandById($state, $band['id'])['mood']['why'][$b['id']]['items'] ?? [], 1, 0);
+        return (float) ($items['Will endlich eine neue Platte machen'] ?? 0.0);
+    };
+    // Neun Songs: Die Kreative ist unzufrieden, wünscht sich aber keine Platte; den Ehrgeizigen drängt nichts
+    $songs(9, Clock::now() - 5 * 86400);
+    $state = $p->get('state');
+    check(!in_array($kreativ, $wishes($state), true), 'Mit 9 Songs kein Plattenwunsch');
+    checkEquals(0.0, $stagnant($state), 'Mit 9 Songs keine Unruhe ohne Platte');
+    // Zehn Songs (seit drei Tagen), noch keine Platte: Jetzt wünscht sie sich eine, und es drängt seit drei Tagen
+    $songs(10, Clock::now() - 3 * 86400);
+    $state = $p->get('state');
+    check(in_array($kreativ, $wishes($state), true), 'Mit 10 Songs der Plattenwunsch');
+    coreNear(-Signed\Game\Core\Needs::penalty(72, Signed\Game\Core\Needs::perHour('stagnant', ['personality' => ['ehrgeizig']])), $stagnant($state), 0.05, 'Unruhe seit drei Tagen');
+    // Die letzte Platte ist zwei Tage alt: kein Wunsch, keine Unruhe, auch mit genug Songs
+    $db->insert('records', ['label_id' => $repo->labelId, 'band_id' => $band['id'], 'title' => 'Frisch', 'songs_total' => 12, 'songs_done' => 12,
+        'song_results' => '[]', 'status' => 'done', 'created_at' => Clock::now() - 2 * 86400, 'finished_at' => Clock::now() - 2 * 86400]);
+    $state = $p->get('state');
+    check(!in_array($kreativ, $wishes($state), true), 'Zwei Tage nach der Platte kein Plattenwunsch');
+    checkEquals(0.0, $stagnant($state), 'Zwei Tage nach der Platte keine Unruhe');
+    // Fünf Tage später (eine Woche nach der Platte) kommt der Wunsch zurück; die Unruhe drückt erst nach einem weiteren Tag
+    Clock::advance(5 * 86400);
+    $db->exec('UPDATE musicians SET wellbeing = 45 WHERE id = ?', [$a['id']]);
+    $state = $p->get('state');
+    check(in_array($kreativ, $wishes($state), true), 'Eine Woche nach der Platte der Wunsch');
+    checkEquals(0.0, $stagnant($state), 'Am ersten Tag kostet die Unruhe noch nichts');
+});
+
+test('Kern im Spiel: Die Wunsch-Uhr der Kreativen läuft erst, wenn eine Platte möglich und fällig ist', function () {
+    [$db, $p, $repo, $band] = coreLabel();
+    $a = array_values($repo->members($band['id']))[0];
+    $db->exec('UPDATE musicians SET personality = ?, wellbeing = 45, wish_wait = NULL WHERE id = ?', [json_encode(['kreativ']), $a['id']]);
+    $db->exec('UPDATE bands SET songs_written = 2.0, write_mode = ? WHERE id = ?', ['normal', $band['id']]);
+    $p->get('state');
+    Clock::advance(6 * 3600);
+    $p->get('state');
+    checkEquals(null, $db->value('SELECT wish_wait FROM musicians WHERE id = ?', [$a['id']]), 'Mit 2 Songs wartet niemand auf eine Platte');
+});
+
+test('Kern im Spiel: Eine neue Platte frühestens 3 Tage nach der letzten – der Knopf sagt, warum und wie lange noch', function () {
+    [$db, $p, $repo, $band] = coreLabel();
+    for ($i = 0; $i < 14; $i++) {
+        $db->insert('songs', ['label_id' => $repo->labelId, 'band_id' => $band['id'], 'quality' => 60, 'record_id' => null, 'created_at' => Clock::now()]);
+    }
+    $db->exec('UPDATE bands SET songs_written = 14.5 WHERE id = ?', [$band['id']]);
+    checkEquals(0, bandById($p->get('state'), $band['id'])['core']['recordAt'], 'Vor der ersten Platte geht es sofort');
+    coreRelease($repo, $band, 80);
+    $released = Clock::now();
+    checkEquals($released + 3 * 86400, bandById($p->get('state'), $band['id'])['core']['recordAt']);
+    $opts = $p->post('recordOptions', ['bandId' => $band['id']]);
+    check(str_contains((string) $opts['blocker'], 'Die letzte Platte ist noch ganz frisch'), 'Grund: ' . $opts['blocker']);
+    check(str_contains((string) $opts['blocker'], 'Wieder möglich in 3 Tagen.'), 'Wartezeit: ' . $opts['blocker']);
+    $start = fn () => $p->post('recordStart', ['bandId' => $band['id'], 'title' => 'Zu früh', 'level' => 0, 'songIds' => array_slice($opts['picked'], 0, 10), 'cover' => $opts['covers'][0]]);
+    checkApiError($start, 'noch ganz frisch');
+    Clock::advance(2 * 86400 + 3600);
+    $opts = $p->post('recordOptions', ['bandId' => $band['id']]);
+    check(str_contains((string) $opts['blocker'], 'Wieder möglich in 23 Stunden.'), 'Wartezeit: ' . $opts['blocker']);
+    Clock::advance(22 * 3600 + 30 * 60);
+    $opts = $p->post('recordOptions', ['bandId' => $band['id']]);
+    check(str_contains((string) $opts['blocker'], 'Wieder möglich in einer Stunde.'), 'Wartezeit: ' . $opts['blocker']);
+    Clock::advance(30 * 60);
+    $opts = $p->post('recordOptions', ['bandId' => $band['id']]);
+    checkEquals(null, $opts['blocker'], 'Nach drei Tagen geht es wieder');
+    $p->post('recordStart', ['bandId' => $band['id'], 'title' => 'Pünktlich', 'level' => 0, 'songIds' => array_slice($opts['picked'], 0, 10), 'cover' => $opts['covers'][0]]);
+    checkEquals('open', $db->value("SELECT status FROM records WHERE band_id = ? AND title = 'Pünktlich'", [$band['id']]));
+});
+
+test('Kern im Spiel: Kreative mögen Aufnehmen und Festivals, Proben nicht', function () {
+    check(Signed\Game\Mood::liking(['kreativ'], 'record') > 0, 'Aufnehmen');
+    check(Signed\Game\Mood::liking(['kreativ'], 'festival') > 0, 'Festival');
+    check(Signed\Game\Mood::liking(['kreativ'], 'rehearsal') < 0, 'Proben nicht');
+    checkEquals(0, Signed\Game\Mood::liking(['kreativ'], 'gig'), 'Auftreten ist ihnen egal');
+});
+
+test('Kern im Spiel: Eine Platte erscheint, wenn die Studiozeit um ist, auch wenn gerade niemand da ist', function () {
+    [$db, $p, $repo, $band] = coreLabel();
+    for ($i = 0; $i < 12; $i++) {
+        $db->insert('songs', ['label_id' => $repo->labelId, 'band_id' => $band['id'], 'quality' => 60, 'record_id' => null, 'created_at' => Clock::now()]);
+    }
+    $db->exec('UPDATE bands SET songs_written = 12.3 WHERE id = ?', [$band['id']]);
+    $opts = $p->post('recordOptions', ['bandId' => $band['id']]);
+    $p->post('recordStart', ['bandId' => $band['id'], 'title' => 'Über Nacht', 'level' => 0, 'songIds' => array_slice($opts['picked'], 0, 10), 'cover' => $opts['covers'][0]]);
+    $ends = (int) $db->value("SELECT ends_at FROM activities WHERE band_id = ? AND type = 'record'", [$band['id']]);
+    checkEquals(Clock::now() + 10 * Balance::RECORD_SECONDS_PER_SONG, $ends);
+    // Zwei Tage niemand da: Beim nächsten Besuch ist sie seit zwei Tagen draußen, der Abstand zählt ab dann
+    Clock::advance(2 * 86400);
+    $state = $p->get('state');
+    $record = $db->one("SELECT finished_at, core FROM records WHERE band_id = ? AND title = 'Über Nacht'", [$band['id']]);
+    checkEquals($ends, (int) $record['finished_at'], 'Erschienen, als die Studiozeit um war');
+    checkEquals($ends, (int) json_decode($record['core'], true)['releasedAt'], 'Der Hype läuft seit dem Erscheinen');
+    checkEquals($ends + 3 * 86400, bandById($state, $band['id'])['core']['recordAt'], 'Die nächste Platte geht drei Tage nach dem Erscheinen');
+});

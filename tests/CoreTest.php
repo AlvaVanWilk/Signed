@@ -322,7 +322,8 @@ test('Neuer Kern: Songwriting nach Zahl der wirklichen Songschreiber', function 
 
 test('Neuer Kern: Qualität einer Platte und ihrer Songs', function () {
     coreNear(100.0, Quality::album(1, 1, 1, 1));
-    coreNear(93.75, Quality::album(1, 0.75, 1, 1));
+    coreNear(91.25, Quality::album(1, 0.75, 1, 1), 1e-9, 'Songs zählen 35 %');
+    coreNear(97.0, Quality::album(0.9, 1, 1, 1), 1e-9, 'Sound zählt 30 %');
     coreNear(0.5, Quality::soundShare(75, 0));
     coreNear(0.5, Quality::soundShare(5000, 2));
     coreNear(1.0, Quality::soundShare(50000, 3));
@@ -331,8 +332,8 @@ test('Neuer Kern: Qualität einer Platte und ihrer Songs', function () {
     coreNear(1.0, Quality::productionShare(3, 2));
     coreNear(0.75, Quality::moodShare([60, 30]));
     check(Quality::isPerfect(95) && !Quality::isPerfect(94.9), 'Perfekt ab 95');
-    coreNear(95.0, Quality::song(1.0, 'careful', 0, 0.0));
-    coreNear(20.0, Quality::song(0.0, 'fast', 0, -1.0));
+    coreNear(87.5, Quality::song(0.5, 'careful', 0, 0.0), 1e-9, 'Grundwert 55');
+    coreNear(25.0, Quality::song(0.0, 'fast', 0, -1.0));
     coreNear(100.0, Quality::song(1.0, 'careful', 3, 1.0), 1e-9, 'Höchstens 100');
     coreNear(0.5, Quality::creativeShare([['personality' => ['perfektionist']], ['personality' => ['gelassen']]]));
     coreNear(0.5, Quality::creativeShare([['personality' => ['kreativ']], ['personality' => ['technisch']]]), 1e-9, 'Wer nicht schreibt, zählt nicht');

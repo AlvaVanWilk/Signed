@@ -33,7 +33,10 @@ laufen mit Schalter aus (`tests/support.php` setzt ihn vor jedem Test zurück) u
 - **Ereignisse:** Festival (Bühnen nach Fans, Zuschauer, Schub), Battle (Zuschauer, Schub, Preise, Wochenpreis mit Gutscheinen).
 - **Anfragen:** statt Interviews und Promo-Tour, nur mit Platte; dazu Anfragen nach Ereignissen mit Bezug im Brief.
 - **Band-Änderungen:** Austritt, Zusammentun, Umbenennen, Auflösen nach den Fan-Regeln; Musiker-Bekanntheit = Ruhm-Gegenwert der Fans.
-- **Bedürfnisse:** wachsen nur alle 24 Stunden, Auftauchen kostet nichts.
+- **Bedürfnisse:** wachsen nur alle 24 Stunden, Auftauchen kostet nichts. Plattenwunsch erst mit genug Songs und 7 Tage nach der letzten
+  Platte; Instrumentenwunsch höchstens eine Stufe unter dem Können, erst 2 Tage nach dem Aufstieg; Kreative mögen Festivals (1.11.).
+- **Platten:** frühestens 3 Tage nach der letzten (grauer Knopf mit Restzeit); sie erscheinen, wenn die Studiozeit um ist, auch ohne
+  Besuch; Qualität mit Songs 35 % und Sound 30 %, neue Songs ab 55 (1.11.).
 - **Können:** neues Maß (100 / 400 / 1.600, nach oben offen), Proben 50 je Stunde; gespeichert bleibt die alte Skala (`Levels::shown`).
 - **Tournee:** Europa ab 5.000 Fans, Kontinente ab 50.000, Welttournee geparkt; Auftritte wie zu Hause mit Halle und Arena.
 - **Übergang:** 0 Fans, 5.000 ₲, Instrumente in der Farbe der Können-Stufe, Lager und Fan-Karten verfallen, Tourneen enden, alter Ruhm als
@@ -43,7 +46,8 @@ laufen mit Schalter aus (`tests/support.php` setzt ihn vor jedem Test zurück) u
 
 ## Noch offen
 
-- **Durchspielen:** Die Zahlen sind gerechnet und getestet, aber noch nicht über Wochen gespielt. Neue Leute auf Tournee sind nicht eingerechnet.
+- **Durchspielen:** gemacht (1.11., Ergebnisse in `docs/kern.md`, Tempo). Nicht geprüft: Kurse, Lehrer, Scouts, Proberaum und Tourneen
+  (der Bot nutzt sie nicht), neue Leute auf Tournee, alte Labels nach dem Übergang.
 - **Welttournee** (Stadion, Globus über die Welttournee): geparkt.
 - **Alte Wege im Code:** Sie laufen nur noch mit Schalter aus (Tests). Beim Veröffentlichen aufräumen: alte Zweige in `Activities`, `Studio`,
   `Charts`, `Inbox`, `Festival`, `Battle`, `Bands`, `Tours`, `Gigs`, `BandCalc` (Ruhm, Gage, Tantiemen, Promo), die alten Tests in

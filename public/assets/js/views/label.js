@@ -277,7 +277,8 @@ function wishGo(b, members, w) {
   const [label, section] = WISH_BUTTON[w.action] ?? ['Music Store', null];
   if (w.action === 'stageName') return `<button class="lb-pill" data-act="stageNameAsk" data-id="${w.musicianId}">Namen aussuchen</button>`;
   if (w.action === 'rehearsal' || w.action === 'gig' || w.action === 'record') {
-    return `<button class="lb-pill" data-act="${{ gig: 'gigAsk', rehearsal: 'rehearseAsk', record: 'recordAsk' }[w.action]}" data-id="${b.id}" ${off(blocker(b, members)?.text)}>${label}</button>`;
+    const why = blocker(b, members)?.text ?? (w.action === 'record' ? freshRecord(b).why : '');
+    return `<button class="lb-pill" data-act="${{ gig: 'gigAsk', rehearsal: 'rehearseAsk', record: 'recordAsk' }[w.action]}" data-id="${b.id}" ${off(why)}>${label}</button>`;
   }
   return `<button class="lb-pill" data-act="wishGo" data-href="${section ? `#/band/${b.id}/${section}` : '#/store'}">${label}</button>`;
 }
@@ -539,8 +540,11 @@ function tutorNotice(b, members) {
 
 function act(b, members, type, section, title, text, icon, warn = false, busy = false, away = '') {
   const r = b.mood.reactions?.[type] ?? { like: [], dislike: [], locked: false };
-  // Auf Tournee: Was nur zu Hause geht, ist grau (antippen sagt warum).
-  if (away) return `<button class="lb-act t-${type} idle" data-id="${b.id}" ${off(away)}><span class="lb-disc"><span class="lb-disc-label">${icon}</span></span><b>${title}</b><small>erst wieder zu Hause</small></button>`;
+  // Auf Tournee: Was nur zu Hause geht, ist grau (antippen sagt warum). Andere Gründe bringen ihren eigenen kurzen Text mit ({ why, small }).
+  if (away) {
+    const [why, small] = typeof away === 'string' ? [away, 'erst wieder zu Hause'] : [away.why, away.small];
+    return `<button class="lb-act t-${type} idle" data-id="${b.id}" ${off(why)}><span class="lb-disc"><span class="lb-disc-label">${icon}</span></span><b>${title}</b><small>${small}</small></button>`;
+  }
   const names = (ids) => ids.map((id) => musicianById(id)?.firstName).filter(Boolean).join(', ');
   const plural = (ids, one, many) => (ids.length > 1 ? many : one);
   // Jede Anordnung ist eine Schallplatte mit farbigem Etikett, darauf das Zeichen.
@@ -556,6 +560,13 @@ function act(b, members, type, section, title, text, icon, warn = false, busy = 
     return `<button class="lb-act t-${type} ${busy ? 'idle' : ''} ${warn ? 'warn' : ''}" data-act="${{ gig: 'gigAsk', rehearsal: 'rehearseAsk', record: 'recordAsk', bandpromo: 'promoAsk', retreat: 'retreatAsk', tour: 'tourAsk' }[type]}" data-id="${b.id}" ${off(why)}>${disc}<b>${title}</b>${busy ? `<small>${members.length === 1 ? 'Gerade beschäftigt.' : 'Die Band ist gerade beschäftigt.'}</small>` : hint}</button>`;
   }
   return `<a class="lb-act t-${type} ${warn ? 'warn' : ''}" href="#/band/${b.id}/${section}">${disc}<b>${title}</b>${hint}</a>`;
+}
+
+/** Neuer Kern: Die letzte Platte ist noch keine drei Tage alt. Dann ist „Aufnehmen“ grau: antippen sagt warum, darunter die Restzeit. */
+function freshRecord(b) {
+  const at = coreOn() ? b.core?.recordAt ?? 0 : 0;
+  if (at <= serverNow()) return '';
+  return { why: 'Die letzte Platte ist noch ganz frisch. Die Fans sind noch nicht bereit für eine neue.', small: `wieder in <span data-until="${at}">${duration(at - serverNow())}</span>` };
 }
 
 /** Kurzer Hinweis am Knopf „Aufnehmen“: Songs im Vorrat, oder was zur Freigabe des nächsten Albums noch fehlt. */
@@ -800,7 +811,7 @@ export function page(route) {
     ${['rehearsal', 'gig', 'record', 'festival', 'tourgig'].includes(running?.type) ? wishBlock(b, members) : ''}
     <div class="lb-acts">
       ${act(b, members, 'rehearsal', null, 'Proben', `bis zu ${mins(b.options.rehearsal.seconds)} · Können ${gainRange(members.map((m) => m.gains?.rehearsal ?? 0))} je ${mins(cat().rules.rehearsalSeconds)}`, ICON.rehearse, false, !!blocker(b, members))}
-      ${act(b, members, 'record', null, 'Aufnehmen', recordHint(b), ICON.record, b.mood.songs >= (coreOn() ? 10 : 12), !!blocker(b, members), away('Aufnehmen geht nur zu Hause im Studio.'))}
+      ${act(b, members, 'record', null, 'Aufnehmen', recordHint(b), ICON.record, b.mood.songs >= (coreOn() ? 10 : 12), !!blocker(b, members), away('Aufnehmen geht nur zu Hause im Studio.') || freshRecord(b))}
       ${coreOn()
     ? act(b, members, 'gig', null, 'Auftreten', coreGigHint(b), ICON.gig, false, !!blocker(b, members), away('Unterwegs spielt ihr die Städte der Tournee (oben).'))
     : act(b, members, 'gig', null, 'Auftritt buchen', gigHint(b), ICON.gig, false, !!blocker(b, members), away('Unterwegs spielt ihr die Städte der Tournee (oben).'))}

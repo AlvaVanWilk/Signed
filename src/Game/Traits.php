@@ -88,7 +88,9 @@ final class Traits
             if (($band['stageIdle'] ?? 0) >= $t['restless']['hours']) {
                 self::reveal($repo, $m, array_keys($t['restless']['traits']), 'restless');
             }
-            if (($band['recordIdle'] ?? 0) >= $t['stagnant']['hours']) {
+            // Neuer Kern: Unruhe ohne Platte zeigt sich, sobald sie drückt (einen Tag, nachdem eine Platte möglich und fällig ist)
+            $stagnant = BandCore::$live ? ($band['recordWish'] ?? null) !== null && $band['recordWish'] >= Balance::CORE_NEEDS['stepHours'] : ($band['recordIdle'] ?? 0) >= $t['stagnant']['hours'];
+            if ($stagnant) {
                 self::reveal($repo, $m, array_keys($t['stagnant']['traits']), 'stagnant');
             }
             if ($songsAfter >= Balance::MOOD['stau']['from']) {

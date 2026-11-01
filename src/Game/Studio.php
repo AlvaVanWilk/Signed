@@ -35,6 +35,32 @@ final class Studio
         return null;
     }
 
+    /** Neuer Kern: ab wann die nächste Platte geht, CORE_ALBUM_TIMING['gapDays'] Tage nach der letzten (0: schon jetzt). */
+    public static function nextRecordAt(\Signed\Db $db, int $bandId): int
+    {
+        $last = $db->value("SELECT MAX(finished_at) FROM records WHERE band_id = ? AND status = 'done'", [$bandId]);
+        return $last === null ? 0 : (int) $last + Balance::CORE_ALBUM_TIMING['gapDays'] * 86400;
+    }
+
+    /** Neuer Kern: Ist die letzte Platte noch zu frisch für eine neue? Dann der Grund mit der Wartezeit, sonst null. */
+    public static function freshBlocker(\Signed\Db $db, int $bandId, int $now): ?string
+    {
+        $at = self::nextRecordAt($db, $bandId);
+        return $at > $now ? sprintf('Die letzte Platte ist noch ganz frisch. Die Fans sind noch nicht bereit für eine neue. Wieder möglich in %s.', self::waitText($at - $now)) : null;
+    }
+
+    /** Wartezeit zum Lesen: „2 Tagen und 5 Stunden“, „einem Tag“, „einer Stunde“ (aufgerundet auf volle Stunden). */
+    private static function waitText(int $seconds): string
+    {
+        $hours = (int) ceil($seconds / 3600);
+        [$days, $rest] = [intdiv($hours, 24), $hours % 24];
+        $parts = array_filter([
+            $days === 0 ? '' : ($days === 1 ? 'einem Tag' : $days . ' Tagen'),
+            $rest === 0 ? '' : ($rest === 1 ? 'einer Stunde' : $rest . ' Stunden'),
+        ]);
+        return implode(' und ', $parts);
+    }
+
     /** Album-Zyklus seit der letzten Platte (null vor der ersten): Lieder live und Band-Promos, jeweils geschafft/nötig. */
     public static function cycle(array $band): ?array
     {
@@ -212,7 +238,7 @@ final class Studio
         // Vorauswahl: die besten 12 (oder alle, wenn es weniger sind); wählen lassen sich 10 bis 16
         $picked = array_slice($stock, 0, Balance::CORE_ALBUM_SONGS);
         [$min, $max] = Balance::CORE_ALBUM_RANGE;
-        $blocker = self::blocker($band, count($members), $this->repo->openRecord($bandId));
+        $blocker = self::blocker($band, count($members), $this->repo->openRecord($bandId)) ?? self::freshBlocker($this->repo->db, $bandId, Clock::now());
         if ($blocker === null && count($stock) < $min) {
             $blocker = sprintf('Für ein Album braucht %s mindestens %d Songs (%d von %d).', Bands::who($members, true), $min, count($stock), $min);
         }
@@ -253,7 +279,8 @@ final class Studio
             $band = $this->repo->band($bandId);
             $spec = Cover::validate($cover, $designer, $band['logo'] ?? $newLogo);
             $members = $this->repo->members($bandId);
-            $blocker = self::blocker($band, count($members), $this->repo->openRecord($bandId)) ?? Activities::blocker($band, $members, $now) ?? Tours::away($db, $bandId);
+            $blocker = self::blocker($band, count($members), $this->repo->openRecord($bandId)) ?? self::freshBlocker($db, $bandId, $now)
+                ?? Activities::blocker($band, $members, $now) ?? Tours::away($db, $bandId);
             if ($blocker !== null) {
                 throw new ApiError($blocker);
             }
@@ -420,14 +447,14 @@ final class Studio
             return [];
         }
         $bandId = (int) $row['band_id'];
-        return (new self($repo))->complete(Repo::hydrateRecord($record), $repo->band($bandId), $repo->members($bandId), $repo->gearByMusician());
+        return (new self($repo))->complete(Repo::hydrateRecord($record), $repo->band($bandId), $repo->members($bandId), $repo->gearByMusician(), (int) $row['ends_at']);
     }
 
-    /** Platte fertig: Können, Erstverkauf, Ruhm, Charts. */
-    public function complete(array $record, array $band, array $members, array $gear): array
+    /** Platte fertig: Können, Erstverkauf, Ruhm, Charts. $endsAt: wann die Studiozeit um war (neuer Kern: dann erscheint sie). */
+    public function complete(array $record, array $band, array $members, array $gear, ?int $endsAt = null): array
     {
         if (BandCore::$live) {
-            return $this->coreComplete($record, $band, $members, $gear);
+            return $this->coreComplete($record, $band, $members, $gear, $endsAt);
         }
         $db = $this->repo->db;
         $songs = $record['songs_total'];
@@ -503,7 +530,7 @@ final class Studio
     }
 
     /** Neuer Kern: Platte fertig – Können aus dem Studio, dann erscheint sie und ihr Hype beginnt (kein Erstverkauf, kein Ruhm, keine Chartpunkte). */
-    private function coreComplete(array $record, array $band, array $members, array $gear): array
+    private function coreComplete(array $record, array $band, array $members, array $gear, ?int $endsAt = null): array
     {
         $db = $this->repo->db;
         $songs = $record['songs_total'];
@@ -521,7 +548,9 @@ final class Studio
         }
         Mood::bond($this->repo, $members, 'record');
         Mood::react($this->repo, $this->repo->members($band['id']), 'record');
-        $now = Clock::now();
+        // Die Platte erscheint, wenn die Studiozeit um ist, auch wenn gerade niemand da ist (nicht erst beim nächsten Besuch);
+        // nie vor dem Stand, bis zu dem die Band schon gerechnet ist
+        $now = min(Clock::now(), max($endsAt ?? Clock::now(), (int) $db->value('SELECT core_at FROM bands WHERE id = ?', [$band['id']])));
         $db->exec('UPDATE bands SET records = records + 1, songs_recorded = songs_recorded + ?, perfect_records = perfect_records + ? WHERE id = ?', [$songs, $perfect ? 1 : 0, $band['id']]);
         $db->update('records', ['status' => 'done', 'songs_done' => $songs, 'perfect' => $perfect ? 1 : 0, 'finished_at' => $now], ['id' => $record['id']]);
         $career = BandCore::release($this->repo, $band, $record['id'], $quality * 100, $now, (int) $record['songs_total']);

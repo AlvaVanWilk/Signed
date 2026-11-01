@@ -86,7 +86,7 @@ Wohlbefinden (Start 60) läuft langsam auf ein **Ziel** zu, das sich aus Einflü
 | Beziehungen | gute heben, schlechte ziehen runter |
 | Können-Abstand | zu schwach: überfordert; zu stark: gelangweilt; ein kleiner Abstand ist gut |
 | Genre der Band | wer es nicht mag, leidet |
-| Instrument | keins: −6; eins unter dem eigenen Können: −3 je Stufe; passend: +2; Diven doppelt |
+| Instrument | keins: −6; zu schwach: −3 je Stufe; passend: +2; Diven doppelt (neuer Kern: höchstens eine Stufe unter dem Können ist passend, Gold verlangt niemand) |
 | Songstau | ab 12 liegenden Songs sinkt die Stimmung aller |
 | Anordnungen | was der Charakter mag, hebt sofort; was er nicht mag, drückt (`Catalog::LIKES`) |
 | Bühne und Studio gegen Anspruch | darüber freut, darunter ärgert |
@@ -95,7 +95,8 @@ Wohlbefinden (Start 60) läuft langsam auf ein **Ziel** zu, das sich aus Einflü
 | Proberaum, Auszeit | heben |
 
 **Wünsche** entstehen aus dem Charakter und der Lage: Auftritt, Probe oder Platte (je nach Zug), ein eigenes oder besseres Instrument,
-„Ich will in eine Band!“, ein Künstlername. Unerfüllte Bedürfnisse wachsen wie Hunger: nach einer Schonzeit sinkt das Ziel mit jeder Stunde weiter, bis die Band etwas
+„Ich will in eine Band!“, ein Künstlername. Eine Platte wünscht sich die Band erst, wenn genug Songs da sind und die letzte Platte eine
+Woche her ist; ein besseres Instrument erst zwei Tage nach dem Aufstieg (Profi grün, Virtuose blau). Unerfüllte Bedürfnisse wachsen wie Hunger: nach einer Schonzeit sinkt das Ziel mit jeder Stunde weiter, bis die Band etwas
 macht, das er mag. Gezählt wird nur gerechnete Zeit; offline im Roten steht alles still, ein Urlaub kostet also keine Band. Jeder Wunsch hat ein
 Symbol, einen kurzen Satz und den passenden Knopf.
 
@@ -197,6 +198,8 @@ mag, zu unzufrieden wird. Alles wird **laufend** gutgeschrieben (Können mit Stu
 - **Cover:** drei Entwürfe; wer gestaltet (Kunststudentin, Agentur, Star-Designerin) bestimmt Glanz und etwas Erstverkauf. Das **Bandlogo**
   wählt man bei der ersten Platte, ab der zweiten verkauft es 3 % mehr. Ein passendes Wort im Titel („Herz“, „Feuer“ …) wird zum Motiv.
 - Danach steigt die Platte in die Charts ein und bringt Tantiemen, solange sie sich verkauft.
+- Zwischen zwei Platten liegen mindestens 3 Tage („Die letzte Platte ist noch ganz frisch. Die Fans sind noch nicht bereit für eine neue.“);
+  bis dahin ist der Knopf grau und zeigt die Restzeit.
 
 ### Interviews
 
@@ -418,10 +421,9 @@ Der Code der rausgenommenen Teile ist noch da (nicht erreichbar) und wird am End
 
 ## Offen und später
 
-**Wartet auf Sandras Entscheidung**
-- **Saison-Rangliste**, die nur zählt, was nach dem Übergang dazukommt. Sandra ist noch nicht sicher.
-
 **Geparkt (später vielleicht)**
+- **Saison-Rangliste** (Sandra, 1.11.: erst einmal nicht). Eine Saison wäre ein fester Zeitraum, etwa vier Wochen; danach wird die
+  Rangliste abgeschlossen und fängt neu an, damit neue Labels gegen alte eine Chance haben.
 - Ausgeschriebene Gigs (Veranstalter suchen eine Band für einen Abend) und Charity-Konzerte.
 - Hotelzimmer als eigene Szene auf Tournee (zwischendurch, statt immer im Bus oder Flugzeug).
 - Outfits/Styling (Bekanntheit wächst schneller), Songschreiber/Texter für eine Band, Medienpaket (bessere Interviews), Teambuilding

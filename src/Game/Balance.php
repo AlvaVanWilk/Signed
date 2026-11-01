@@ -979,10 +979,11 @@ final class Balance
      * Songqualität: base + creative × kreative Kraft K + Regler + Coach + Zufall (± random), begrenzt auf 0–100.
      */
     public const CORE_QUALITY = [
-        'weights' => ['sound' => 0.40, 'songs' => 0.25, 'production' => 0.20, 'mood' => 0.15],
+        // Songs zählen mehr als der Sound (Sandra: „an der Realität gemessen“), der Sound bleibt wichtig fürs Verbessern der Musiker
+        'weights' => ['sound' => 0.30, 'songs' => 0.35, 'production' => 0.20, 'mood' => 0.15],
         'moodFull' => 60.0, 'perfect' => 95.0,
         'song' => [
-            'base' => 50.0, 'creative' => 25.0, 'slider' => ['fast' => -20.0, 'normal' => 0.0, 'careful' => 20.0], 'coach' => [1 => 5.0, 2 => 10.0, 3 => 15.0], 'random' => 10.0,
+            'base' => 55.0, 'creative' => 25.0, 'slider' => ['fast' => -20.0, 'normal' => 0.0, 'careful' => 20.0], 'coach' => [1 => 5.0, 2 => 10.0, 3 => 15.0], 'random' => 10.0,
             // kreative Kraft K: Anteil der Songschreiber mit diesen Zügen (Perfektionisten schreiben langsam, aber die besten Songs)
             'creativeTraits' => ['perfektionist' => 1.0, 'kreativ' => 0.5],
         ],
@@ -1011,8 +1012,20 @@ final class Balance
      */
     public const CORE_ALBUM_SONGS = 12;
     public const CORE_ALBUM_RANGE = [10, 16];
+    /**
+     * Abstand zwischen Platten (Sandra, 1.11.): Eine neue Platte geht frühestens `gapDays` Tage nach der letzten („Die letzte Platte ist noch
+     * ganz frisch“). Der Wunsch nach einer Platte (Charakter-Wunsch `record` und die Unruhe ohne Platte) kommt erst, wenn genug Songs für ein
+     * Album da sind (CORE_ALBUM_RANGE[0]) und die letzte Platte mindestens `wishDays` Tage her ist; dann wächst er alle 24 Stunden.
+     */
+    public const CORE_ALBUM_TIMING = ['gapDays' => 3, 'wishDays' => 7];
     /** Geld: Startgeld, Produktion je Stufe (= Ruhmstufe), Instrumente je Farbe (grau, grün, blau, gold). */
     public const CORE_MONEY = ['start' => 5000, 'production' => [0 => 300, 1 => 2000, 2 => 8000, 3 => 30000], 'gear' => [0 => 100, 1 => 1500, 2 => 8000, 3 => 40000]];
     /** Bedürfnisse tauchen jederzeit auf, wachsen aber nur alle `stepHours` Stunden um so viel, wie heute in dieser Zeit dazukommt. */
     public const CORE_NEEDS = ['stepHours' => 24];
+    /**
+     * Instrumenten-Wunsch im neuen Kern (Sandra, 1.11.): Ein Musiker will ein Instrument, das höchstens `below` Stufe unter seinem Können liegt
+     * (Können-Stufe 0 und 1: grau reicht, 2: grün, 3: blau; Gold verlangt niemand). Er merkt es erst `graceHours` Stunden, nachdem er die Stufe
+     * erreicht hat; dann äußert er den Wunsch, und ab dem Tag danach drückt er (NEEDS['gear'], alle 24 Stunden mehr).
+     */
+    public const CORE_GEAR_WISH = ['below' => 1, 'graceHours' => 48];
 }

@@ -14,8 +14,11 @@ use Signed\Rng;
  */
 final class SongStock
 {
-    /** So viele neue Songs schreiben ($coachQuality: Zuschlag des Coaches aus Tutors::coaching, 0 ohne). */
-    public static function write(Repo $repo, array $band, array $members, int $count, float $coachQuality = 0.0): void
+    /**
+     * So viele neue Songs schreiben ($coachQuality: Zuschlag des Coaches aus Tutors::coaching, 0 ohne). $times: wann jeder fertig wurde
+     * (aus Mood::run, auch offline); ohne Angabe jetzt.
+     */
+    public static function write(Repo $repo, array $band, array $members, int $count, float $coachQuality = 0.0, array $times = []): void
     {
         if ($count <= 0) {
             return;
@@ -25,7 +28,7 @@ final class SongStock
         $mode = isset(Balance::CORE_QUALITY['song']['slider'][$band['write_mode'] ?? '']) ? $band['write_mode'] : 'normal';
         for ($i = 0; $i < $count; $i++) {
             $repo->db->insert('songs', [
-                'label_id' => $repo->labelId, 'band_id' => $band['id'], 'record_id' => null, 'created_at' => Clock::now(),
+                'label_id' => $repo->labelId, 'band_id' => $band['id'], 'record_id' => null, 'created_at' => (int) ($times[$i] ?? Clock::now()),
                 'quality' => round(Quality::song($creative, $mode, $coach, Rng::float(-1.0, 1.0)), 2),
             ]);
         }

@@ -226,7 +226,8 @@ final class Catalog
         'teamplayer' => ['rehearsal' => 1, 'record' => 1, 'interview' => -1],
         'ruhepol' => ['rehearsal' => 1, 'record' => 1, 'tour' => -1],
         'partytier' => ['gig' => 1, 'openstage' => 1, 'busking' => 1, 'rehearsal' => -1, 'festival' => 1, 'tour' => 1],
-        'kreativ' => ['record' => 1, 'openstage' => 1, 'rehearsal' => -1],
+        // Kreative wollen Neues: Songs festhalten (Aufnehmen), neue Songs ausprobieren (offene Bühne, altes Spiel) und Festivals (Sandra)
+        'kreativ' => ['record' => 1, 'openstage' => 1, 'festival' => 1, 'rehearsal' => -1],
         'technisch' => ['rehearsal' => 1, 'record' => 1],
     ];
 

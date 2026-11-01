@@ -112,6 +112,16 @@ final class Gear
         return Levels::forSkill($skill);
     }
 
+    /**
+     * Welche Güteklasse er sich für dieses Instrument wünscht: seine Können-Stufe; im neuen Kern höchstens eine Stufe darunter
+     * (Balance::CORE_GEAR_WISH: Profi grün, Virtuose blau, Gold verlangt niemand).
+     */
+    public static function wantedTier(array $m, string $type): int
+    {
+        $level = self::levelFor($m, $type);
+        return BandCore::$live ? max(0, $level - Balance::CORE_GEAR_WISH['below']) : $level;
+    }
+
     public static function playable(array $m, string $model): bool
     {
         $g = Catalog::GEAR[$model];

@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Signed\Game;
 
 use Signed\Clock;
+use Signed\Db;
 
 /**
  * Das Eigenleben der Bands (siehe docs/label-konzept.md): Beziehungen, Wohlbefinden der Musiker, Stimmung der Band, Songs.
@@ -283,9 +284,10 @@ final class Mood
      * (wer mit seinem Können über sein Instrument hinausgewachsen ist, ein besseres),
      * und bei Songstau wollen sie aufnehmen.
      * @param array<int, array<string, array>> $gear Instrumente je Musiker und Art
+     * @param bool $recordOpen neuer Kern: Darf sich jemand eine Platte wünschen (recordWishHours)? Sonst schweigt der Wunsch `record`.
      * @return list<array{musicianId: int, text: string, action: string, level: string}>
      */
-    public static function wishes(array $members, array $gear, int $songs): array
+    public static function wishes(array $members, array $gear, int $songs, bool $recordOpen = true): array
     {
         $char = [];
         $noGear = null;
@@ -294,14 +296,17 @@ final class Mood
             $played = $m['band_slot'] === 2 && $m['instr2'] !== null ? $m['instr2'] : $m['instr1'];
             if ($noGear === null && !isset($gear[$m['id']][$played])) {
                 $noGear = ['musicianId' => $m['id'], 'text' => 'Ich brauche ein Instrument.', 'action' => 'gear', 'level' => $level, 'wait' => self::waitHours($m['gear_wait'] ?? null)];
-            } elseif ($noGear === null && Gear::modelTier($gear[$m['id']][$played]['key']) < Gear::levelFor($m, $played)) {
-                // Mit dem Können über das Instrument hinausgewachsen
+            } elseif ($noGear === null && Gear::modelTier($gear[$m['id']][$played]['key']) < Gear::wantedTier($m, $played) && self::gearNoticed($m)) {
+                // Mit dem Können über das Instrument hinausgewachsen (neuer Kern: erst nach einer Weile, CORE_GEAR_WISH)
                 $noGear = ['musicianId' => $m['id'], 'text' => 'Ich will ein besseres Instrument.', 'action' => 'gear', 'level' => $level, 'wait' => self::waitHours($m['gear_wait'] ?? null)];
             }
             if ($level !== 'green') {
                 $table = count($members) === 1 ? Catalog::WISHES_SOLO : Catalog::WISHES;
                 [$text, $action] = $table[$m['personality'][0] ?? 'gelassen'] ?? $table['gelassen'];
-                $char[] = ['musicianId' => $m['id'], 'text' => $text, 'action' => $action, 'level' => $level, 'wait' => self::waitHours($m['wish_wait'] ?? null)];
+                // Eine Platte wünscht er sich erst, wenn sie möglich und fällig ist (neuer Kern, Sandra)
+                if ($action !== 'record' || $recordOpen) {
+                    $char[] = ['musicianId' => $m['id'], 'text' => $text, 'action' => $action, 'level' => $level, 'wait' => self::waitHours($m['wish_wait'] ?? null)];
+                }
             }
         }
         // Die Unzufriedensten zuerst
@@ -430,9 +435,9 @@ final class Mood
             }
         };
         $why = $why === null ? null : [];
-        // Das Instrument (vorher eingetragen, siehe withGear)
+        // Das Instrument (vorher eingetragen, siehe withGear); merkt er erst unterwegs, dass es zu schwach ist (neuer Kern), zählt das ab dann
         if (isset($m['gearMood'])) {
-            $add(...$m['gearMood']);
+            $add(...(($m['gearBehind'] ?? 0) > 0 && self::gearNoticed($m) ? self::behindMood($m, (int) $m['gearBehind']) : $m['gearMood']));
         }
         $mates = array_values(array_filter($members, static fn ($x) => $x['id'] !== $m['id']));
         self::waitWhy($m, !$mates, $add);
@@ -504,30 +509,103 @@ final class Mood
     public static function gearMood(array $m, array $gear): array
     {
         $c = Balance::MOOD['gear'];
-        $factor = self::traitMax($m, $c['traits'], 1.0);
+        $type = BandCalc::instrument($m);
+        if (!isset($gear[$m['id']][$type])) {
+            return ['Hat kein Instrument', $c['none'] * self::traitMax($m, $c['traits'], 1.0)];
+        }
+        $behind = self::gearBehind($m, $gear);
+        return $behind > 0 && self::gearNoticed($m) ? self::behindMood($m, $behind) : ['Mag sein Instrument', $c['fits'] * self::traitMax($m, $c['traits'], 1.0)];
+    }
+
+    /** Um wie viele Stufen sein Instrument hinter dem zurückbleibt, was er sich wünscht (Gear::wantedTier); 0 auch ohne Instrument. */
+    public static function gearBehind(array $m, array $gear): int
+    {
         $type = BandCalc::instrument($m);
         $item = $gear[$m['id']][$type] ?? null;
-        if ($item === null) {
-            return ['Hat kein Instrument', $c['none'] * $factor];
-        }
-        $behind = Gear::levelFor($m, $type) - Gear::modelTier($item['key']);
-        return $behind > 0
-            ? ['Spielt besser, als das Instrument hergibt', $c['behind'] * $behind * $factor]
-            : ['Mag sein Instrument', $c['fits'] * $factor];
+        return $item === null ? 0 : max(0, Gear::wantedTier($m, $type) - Gear::modelTier($item['key']));
     }
 
     /** Fehlt ein Instrument, oder ist er über seins hinausgewachsen? Dann wartet er auf ein passendes (NEEDS['gear']). */
     public static function gearNeed(array $m, array $gear): bool
     {
-        $type = BandCalc::instrument($m);
-        $item = $gear[$m['id']][$type] ?? null;
-        return $item === null || Gear::levelFor($m, $type) > Gear::modelTier($item['key']);
+        return !isset($gear[$m['id']][BandCalc::instrument($m)]) || self::gearBehind($m, $gear) > 0;
     }
 
-    /** Mitglieder mit ihrer Instrument-Laune (für target()) und ob sie auf ein passendes Instrument warten. */
+    /** Mitglieder mit ihrer Instrument-Laune (für target()), ob sie auf ein passendes Instrument warten und wie weit es zurückliegt. */
     public static function withGear(array $members, array $gear): array
     {
-        return array_map(static fn ($m) => $m + ['gearMood' => self::gearMood($m, $gear), 'gearNeed' => self::gearNeed($m, $gear)], $members);
+        return array_map(static fn ($m) => $m + ['gearMood' => self::gearMood($m, $gear), 'gearNeed' => self::gearNeed($m, $gear), 'gearBehind' => self::gearBehind($m, $gear)], $members);
+    }
+
+    /**
+     * Hat er schon gemerkt, dass sein Instrument zu schwach ist? Im neuen Kern erst nach CORE_GEAR_WISH['graceHours']: Seine Uhr (gear_wait)
+     * beginnt so viele Stunden unter null und zählt hoch (gearStart); ab null äußert er den Wunsch.
+     */
+    private static function gearNoticed(array $m): bool
+    {
+        return !BandCore::$live || (isset($m['gear_wait']) && $m['gear_wait'] >= 0);
+    }
+
+    /** Laune bei einem zu schwachen Instrument: je Stufe Abstand weniger, Diven stärker (Balance::MOOD['gear']). */
+    private static function behindMood(array $m, int $behind): array
+    {
+        $c = Balance::MOOD['gear'];
+        return ['Spielt besser, als das Instrument hergibt', $c['behind'] * $behind * self::traitMax($m, $c['traits'], 1.0)];
+    }
+
+    /** Wo die Instrument-Uhr anfängt: ohne Instrument bei null, über sein Instrument hinausgewachsen im neuen Kern bei −graceHours. */
+    private static function gearStart(array $m): float
+    {
+        return BandCore::$live && ($m['gearBehind'] ?? 0) > 0 ? -(float) Balance::CORE_GEAR_WISH['graceHours'] : 0.0;
+    }
+
+    /** Was sich der Musiker wünscht (gig, rehearsal, record), nach seinem ersten Charakterzug. */
+    private static function wishAction(array $m, bool $solo): string
+    {
+        $table = $solo ? Catalog::WISHES_SOLO : Catalog::WISHES;
+        return ($table[$m['personality'][0] ?? 'gelassen'] ?? $table['gelassen'])[1];
+    }
+
+    /**
+     * Neuer Kern: Seit wie vielen Stunden sich die Band eine neue Platte wünschen darf, oder null (noch nicht). Erst wenn genug Songs für
+     * ein Album da sind (CORE_ALBUM_RANGE[0]) und die letzte Platte mindestens CORE_ALBUM_TIMING['wishDays'] Tage her ist (Sandra).
+     * Gilt für den Charakter-Wunsch `record` und die Unruhe ohne Platte (`stagnant`).
+     * @param array{recordsDone?: list<int>, songsReady?: ?int} $band aus recordWishData; songsReady: seit wann der Vorrat ein Album voll hat
+     */
+    public static function recordWishHours(array $band, float $songs, int $t): ?float
+    {
+        $ready = $band['songsReady'] ?? null;
+        if (floor($songs) < Balance::CORE_ALBUM_RANGE[0] || $ready === null) {
+            return null;
+        }
+        $last = null;
+        foreach ($band['recordsDone'] ?? [] as $x) {
+            if ($x <= $t) {
+                $last = max($last ?? 0, $x);
+            }
+        }
+        $from = max($ready, $last === null ? 0 : $last + Balance::CORE_ALBUM_TIMING['wishDays'] * 86400);
+        return $t >= $from ? ($t - $from) / 3600 : null;
+    }
+
+    /** Neuer Kern: wann die Platten der Band erschienen sind und seit wann ihr Vorrat ein Album voll hat (für recordWishHours). */
+    public static function recordWishData(Db $db, int $bandId): array
+    {
+        $done = array_map('intval', array_column($db->all("SELECT finished_at FROM records WHERE band_id = ? AND status = 'done' ORDER BY finished_at", [$bandId]), 'finished_at'));
+        // Der Song, mit dem der Vorrat zuletzt ein Album voll bekam (Songs kommen nur dazu; Aufnehmen und Ablehnen nehmen welche weg)
+        $ready = $db->value('SELECT created_at FROM songs WHERE band_id = ? AND record_id IS NULL ORDER BY created_at, id LIMIT 1 OFFSET ' . (Balance::CORE_ALBUM_RANGE[0] - 1), [$bandId]);
+        return ['recordsDone' => $done, 'songsReady' => $ready === null ? null : (int) $ready];
+    }
+
+    /** Neuer Kern: die Band mit den Angaben zum Plattenwunsch (recordWish in Stunden oder null), Stand $t; im alten Spiel unverändert. */
+    public static function withRecordWish(Db $db, array $band, int $t): array
+    {
+        if (!BandCore::$live) {
+            return $band;
+        }
+        $band = self::recordWishData($db, (int) $band['id']) + $band;
+        $band['recordWish'] = self::recordWishHours($band, (float) $band['songs_written'], $t);
+        return $band;
     }
 
     /**
@@ -541,8 +619,10 @@ final class Mood
             $over = ($band[$hours] ?? 0) - $t[$key]['hours'];
             $base = self::traitMax($m, $t[$key]['traits'], 0.0);
             if (BandCore::$live) {
-                // Neuer Kern: Auftauchen kostet nichts; alle 24 Stunden so viel, wie heute in 24 Stunden dazukommt
-                $penalty = $over >= 0 ? Core\Needs::penalty($over, Core\Needs::perHour($key, $m)) : 0.0;
+                // Neuer Kern: Auftauchen kostet nichts; alle 24 Stunden so viel, wie heute in 24 Stunden dazukommt.
+                // Ohne Platte drückt es erst, wenn eine Platte möglich und fällig ist (recordWishHours, Sandra).
+                $open = $key === 'stagnant' ? ($band['recordWish'] ?? null) : $over;
+                $penalty = $open !== null && $open >= 0 ? Core\Needs::penalty($open, Core\Needs::perHour($key, $m)) : 0.0;
                 if ($penalty > 0) {
                     $add($text, -$penalty);
                 }
@@ -620,9 +700,14 @@ final class Mood
             [$band['stageTimes'], $band['recordTimes']] = self::idleTimes($repo, $band, $now - $span, $now);
             $band['stageIdle'] = self::hoursSince($band['stageTimes'], $now);
             $band['recordIdle'] = self::hoursSince($band['recordTimes'], $now);
+            if (BandCore::$live) {
+                // Plattenwunsch (recordWishHours): Platten der Band und seit wann der Vorrat ein Album voll hat, Stand Beginn der Rechnung
+                $band = self::recordWishData($repo->db, (int) $band['id']) + $band;
+                $band['recordWish'] = self::recordWishHours($band, (float) $band['songs_written'], $now - $span);
+            }
             $members = self::withGear($members, $gear);
             $state = ['w' => array_column($members, 'wellbeing', 'id'), 'songs' => $band['songs_written'],
-                'wish' => array_column($members, 'wish_wait', 'id'), 'gear' => array_column($members, 'gear_wait', 'id')];
+                'wish' => array_column($members, 'wish_wait', 'id'), 'gear' => array_column($members, 'gear_wait', 'id'), 'ready' => $band['songsReady'] ?? null];
             $onlineSpan = min($online, $span);
             [$coachSpeed, $coachShare, $coachQuality] = Tutors::coaching($repo, $band['id'], $now - $span, $now);
             $factor = self::writeFactor($repo, $band['id'], $now - $span, $now) * $coachSpeed * (BandCore::$live
@@ -652,7 +737,9 @@ final class Mood
             $repo->db->update('bands', $update, ['id' => $band['id']]);
             if (BandCore::$live) {
                 // Jeder fertige Song kommt mit eigener Qualität in den Vorrat
-                SongStock::write($repo, $band, $members, (int) floor($state['songs']) - (int) floor($band['songs_written']), $coachQuality);
+                SongStock::write($repo, $band, $members, (int) floor($state['songs']) - (int) floor($band['songs_written']), $coachQuality, $state['songTimes'] ?? []);
+                // Für die Charakterzüge: der Plattenwunsch zum Schluss, mit den neuen Songs
+                $band['recordWish'] = self::recordWishHours(self::recordWishData($repo->db, (int) $band['id']), $state['songs'], $now);
             }
             Traits::settleBand($repo, $band, $members, (float) $band['songs_written'], $state['songs'], $now);
         }
@@ -711,6 +798,7 @@ final class Mood
         foreach ($members as $m) {
             $byId[$m['id']] = $m;
         }
+        $solo = count($members) === 1;
         while ($seconds > 0) {
             if ($freezeAtRed && self::bandMood($state['w'])['level'] === 'red') {
                 break;
@@ -719,13 +807,28 @@ final class Mood
             $seconds -= $dt;
             $t += $dt;
             $hours = $dt / 3600;
+            $before = (int) floor($state['songs']);
             $state['songs'] = min((float) $c['songCap'], $state['songs'] + self::writeRate(self::bandMood($state['w'])) * $writeFactor * $hours);
+            // Wann jeder neue Song fertig wurde (für den Vorrat, SongStock::write)
+            for ($k = $before; $k < (int) floor($state['songs']); $k++) {
+                $state['songTimes'][] = $t;
+            }
             // Die Zeit läuft: lange ohne Bühne und Platte, und wer auf seinen Wunsch oder ein Instrument wartet, wartet länger.
             $band['stageIdle'] = self::hoursSince($band['stageTimes'] ?? [], $t);
             $band['recordIdle'] = self::hoursSince($band['recordTimes'] ?? [], $t);
+            if (BandCore::$live) {
+                // Seit wann der Vorrat ein Album voll hat (läuft über beide Rechnungen, offline und online)
+                if (floor($state['songs']) >= Balance::CORE_ALBUM_RANGE[0] && ($state['ready'] ?? null) === null) {
+                    $state['ready'] = $t;
+                }
+                $band['recordWish'] = self::recordWishHours(['songsReady' => $state['ready'] ?? null] + $band, $state['songs'], $t);
+            }
             foreach ($state['w'] as $id => $w) {
-                $state['wish'][$id] = self::level($w) === 'green' ? null : ($state['wish'][$id] ?? 0.0) + $hours;
-                $state['gear'][$id] = !empty($byId[$id]['gearNeed']) ? ($state['gear'][$id] ?? 0.0) + $hours : null;
+                // Neuer Kern: Eine Platte wünscht er sich erst, wenn sie möglich und fällig ist (recordWishHours, Sandra)
+                $quiet = BandCore::$live && ($band['recordWish'] ?? null) === null && self::wishAction($byId[$id], $solo) === 'record';
+                $state['wish'][$id] = self::level($w) === 'green' || $quiet ? null : ($state['wish'][$id] ?? 0.0) + $hours;
+                // Ist er über sein Instrument hinausgewachsen, beginnt die Uhr im neuen Kern unter null: Er merkt es erst später (CORE_GEAR_WISH)
+                $state['gear'][$id] = !empty($byId[$id]['gearNeed']) ? ($state['gear'][$id] ?? self::gearStart($byId[$id])) + $hours : null;
                 $byId[$id]['wish_wait'] = $state['wish'][$id];
                 $byId[$id]['gear_wait'] = $state['gear'][$id];
             }

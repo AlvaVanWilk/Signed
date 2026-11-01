@@ -9,7 +9,9 @@ declare(strict_types=1);
  *
  * Aufruf: php tools/durchspiel.php <taeglich|alle2tage|woechentlich> [Wochen] [Seed] [--quiet] [--why]
  *   taeglich: 8 und 19 Uhr (je bis zu 2 Auftritte), alle2tage: 19 Uhr, woechentlich: sonntags 15 Uhr (bis zu 3 Auftritte).
- *   --quiet: nur die Zeile KENNZAHLEN und die Zusammenfassung; --why: je Besuch, wer am schlechtesten drauf ist und warum.
+ *   --quiet: nur die Zeilen KENNZAHLEN und KONTO und die Zusammenfassung; --why: je Besuch, wer am schlechtesten drauf ist und warum.
+ *   --ausgeben: kauft wie ein Spieler, der sein Geld nutzt: Proberaum, Songwriting-Coach und Privatlehrer aus dem Posteingang, Kurse
+ *   des Tages (statt der Abendprobe); behält dabei immer 3.000 ₲ fürs nächste Studio.
  * Gibt je Besuch eine Zeile aus (Geld, Fans, Stufe, Hype, Platten, Können, Stimmung, Vorrat, Songs je Tag, was passiert ist) und am Ende,
  * wann welche Stufe erreicht wurde. SIGNED_ROOT=<Pfad> spielt mit einer anderen Kopie des Spiels (zum Vergleichen von Regeln).
  */
@@ -28,6 +30,7 @@ $profile = $argv[1] ?? 'taeglich';
 $weeks = (int) ($argv[2] ?? 8);
 $seed = (int) ($argv[3] ?? 1);
 $quiet = in_array('--quiet', $argv, true);
+$spend = in_array('--ausgeben', $argv, true);
 mt_srand($seed);
 BandCore::$live = true;
 $tz = new DateTimeZone('Europe/Berlin');
@@ -43,6 +46,10 @@ final class Bot
     public int $calls = 0;
     public array $errors = [];
     public string $genre = '';
+    /** Einkaufsmodus (--ausgeben): Proberaum, Coach, Lehrer, Kurse. */
+    public bool $spend = false;
+    /** So viel bleibt im Einkaufsmodus immer übrig (fürs nächste Studio). */
+    private const RESERVE = 3000;
 
     public function __construct(private Player $p)
     {
@@ -420,6 +427,10 @@ final class Bot
         $this->sign();
         $this->form();
         $this->gear();
+        if ($this->spend) {
+            $this->upgradeRoom();
+            $this->hireTutors();
+        }
         $this->enter();
         for ($i = 0; $i < $gigs; $i++) {
             $this->refresh();
@@ -432,7 +443,79 @@ final class Bot
         // Zum Schluss: eine Anfrage, solange die neueste Platte noch Hype hat, sonst proben
         $this->refresh();
         if (!$this->requests()) {
+            // Im Einkaufsmodus erst die Kurse des Tages; wer im Kurs ist, fehlt bei der Probe
+            if ($this->spend) {
+                $this->courses();
+            }
             $this->act(true);
+        }
+    }
+
+    // ---------- Einkaufsmodus ----------
+
+    /** Den Proberaum eine Stufe ausbauen, wenn genug übrig bleibt. */
+    private function upgradeRoom(): void
+    {
+        $main = $this->main();
+        $next = $main['room']['next'] ?? null;
+        if ($next !== null && $this->money() - (int) $next['cost'] >= self::RESERVE && $this->call('roomUpgrade', ['bandId' => $main['id']]) !== null) {
+            $this->events[] = 'Proberaum: ' . $next['name'];
+        }
+    }
+
+    /** Coach für die Hauptband und Privatlehrer für den Schwächsten, der das Instrument spielt, aus dem Posteingang buchen. */
+    private function hireTutors(): void
+    {
+        $main = $this->main();
+        if ($main === null) {
+            return;
+        }
+        $tutors = $this->s['tutors'] ?? [];
+        $taught = array_column(array_filter($tutors, static fn ($t) => $t['role'] === 'teacher'), 'musicianId');
+        $coached = (bool) array_filter($tutors, static fn ($t) => $t['role'] === 'coach' && ($t['bandId'] ?? null) === $main['id']);
+        foreach ($this->s['mail'] as $x) {
+            if (($x['kind'] ?? '') !== 'job' || !in_array($x['role'] ?? '', ['coach', 'teacher'], true) || $this->money() - (int) $x['price'] < self::RESERVE) {
+                continue;
+            }
+            if ($x['role'] === 'coach') {
+                if (!$coached && $this->call('mailHire', ['mailId' => $x['mailId'], 'target' => $main['id']]) !== null) {
+                    $this->events[] = 'Coach';
+                    $coached = true;
+                }
+                continue;
+            }
+            $best = null;
+            foreach ($main['memberIds'] as $id) {
+                foreach ($this->musician($id)['instruments'] ?? [] as $ins) {
+                    if (!in_array($id, $taught, true) && $ins['type'] === $x['instrument'] && $ins['skill'] < $x['maxSkill'] && ($best === null || $ins['skill'] < $best[1])) {
+                        $best = [$id, $ins['skill']];
+                    }
+                }
+            }
+            if ($best !== null && $this->call('mailHire', ['mailId' => $x['mailId'], 'target' => $best[0]]) !== null) {
+                $this->events[] = 'Lehrer';
+                $taught[] = $best[0];
+            }
+        }
+    }
+
+    /** Kurse des Tages: Jeder aus der Hauptband, der heute noch nicht war, geht hin, wenn genug übrig bleibt. */
+    private function courses(): void
+    {
+        $main = $this->main();
+        if ($main === null || $this->busy($main)) {
+            return;
+        }
+        foreach ($this->s['courses'] ?? [] as $i => $course) {
+            foreach ($course['candidates'] ?? [] as $c) {
+                $price = (int) ($course['levels'][$c['level']]['price'] ?? PHP_INT_MAX);
+                if ($c['visited'] || !in_array($c['musicianId'], $main['memberIds'], true) || $this->money() - $price < self::RESERVE) {
+                    continue;
+                }
+                if ($this->call('courseAttend', ['musicianId' => $c['musicianId'], 'course' => $i]) !== null) {
+                    $this->events[] = 'Kurs';
+                }
+            }
         }
     }
 
@@ -484,6 +567,7 @@ final class Bot
 
 $db = freshDb();
 $bot = new Bot(player($db));
+$bot->spend = $spend;
 $bot->call('register', ['username' => 'bot', 'password' => 'geheim123', 'labelName' => 'Bot Records']);
 
 // Sitzungen: täglich 8 und 19 Uhr (je bis zu 2 Auftritte), alle zwei Tage 19 Uhr (2), wöchentlich Sonntag 15 Uhr (3)
@@ -543,5 +627,26 @@ printf("\n%s, %d Wochen, Seed %d: Ende Tag %d – Geld %s ₲, Fans %s (Stufe %d
 foreach ([1 => 500, 2 => 5000, 3 => 50000] as $stage => $fans) {
     printf("  %s Fans: %s\n", number_format($fans, 0, ',', '.'), isset($bot->reached[$stage]) ? 'Tag ' . ($bot->reached[$stage] + 1) : 'nicht erreicht');
 }
+// Konto: Einnahmen und Ausgaben je Art (Buchungstext vor dem Doppelpunkt, Kurse, Lehrer und Coach zusammengefasst)
+$kind = static function (string $text): string {
+    $head = trim(explode(':', $text)[0]);
+    return match (true) {
+        str_starts_with($text, 'Gebucht:') => str_contains($text, 'Coach') ? 'Coach' : 'Lehrer',
+        str_starts_with($text, 'Eingestellt:') => 'Leute',
+        (bool) preg_match('/kurs|workshop|meisterklasse/i', $head) => 'Kurse',
+        default => $head,
+    };
+};
+$konto = ['ein' => [], 'aus' => []];
+foreach ($db->all('SELECT text, amount FROM ledger') as $r) {
+    $side = (int) $r['amount'] >= 0 ? 'ein' : 'aus';
+    $konto[$side][$kind($r['text'])] = ($konto[$side][$kind($r['text'])] ?? 0) + abs((int) $r['amount']);
+}
+foreach ($konto as &$list) {
+    arsort($list);
+}
+unset($list);
+$fmtList = static fn (array $list) => implode(', ', array_map(static fn ($k, $v) => $k . '=' . $v, array_keys($list), $list));
+printf("KONTO ein %d (%s) | aus %d (%s)\n", array_sum($konto['ein']), $fmtList($konto['ein']), array_sum($konto['aus']), $fmtList($konto['aus']));
 arsort($bot->errors);
 printf("  Aufrufe: %d, abgelehnt: %d (%s)\n", $bot->calls, array_sum($bot->errors), implode(' | ', array_map(static fn ($k, $v) => sprintf('%d× %s', $v, $k), array_slice(array_keys($bot->errors), 0, 6), array_slice($bot->errors, 0, 6))));

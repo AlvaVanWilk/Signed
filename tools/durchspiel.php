@@ -11,7 +11,8 @@ declare(strict_types=1);
  *   taeglich: 8 und 19 Uhr (je bis zu 2 Auftritte), alle2tage: 19 Uhr, woechentlich: sonntags 15 Uhr (bis zu 3 Auftritte).
  *   --quiet: nur die Zeilen KENNZAHLEN und KONTO und die Zusammenfassung; --why: je Besuch, wer am schlechtesten drauf ist und warum.
  *   --ausgeben: kauft wie ein Spieler, der sein Geld nutzt: Proberaum, Songwriting-Coach und Privatlehrer aus dem Posteingang, Kurse
- *   des Tages (statt der Abendprobe); behält dabei immer 3.000 ₲ fürs nächste Studio.
+ *   des Tages (statt der Abendprobe), Bus und Flugzeug, sobald es sie gibt, und geht auf Tournee, wenn gerade keine Platte ansteht
+ *   (Europa mit dem Bus, mit dem Flugzeug reihum die Kontinente); behält dabei immer 3.000 ₲ fürs nächste Studio.
  * Gibt je Besuch eine Zeile aus (Geld, Fans, Stufe, Hype, Platten, Können, Stimmung, Vorrat, Songs je Tag, was passiert ist) und am Ende,
  * wann welche Stufe erreicht wurde. SIGNED_ROOT=<Pfad> spielt mit einer anderen Kopie des Spiels (zum Vergleichen von Regeln).
  */
@@ -46,8 +47,10 @@ final class Bot
     public int $calls = 0;
     public array $errors = [];
     public string $genre = '';
-    /** Einkaufsmodus (--ausgeben): Proberaum, Coach, Lehrer, Kurse. */
+    /** Einkaufsmodus (--ausgeben): Proberaum, Coach, Lehrer, Kurse, Bus, Flugzeug, Tourneen. */
     public bool $spend = false;
+    /** Wie viele Flugzeug-Tourneen schon (für die Reihenfolge der Kontinente). */
+    private int $tours = 0;
     /** So viel bleibt im Einkaufsmodus immer übrig (fürs nächste Studio). */
     private const RESERVE = 3000;
 
@@ -327,6 +330,9 @@ final class Bot
             return 0;
         }
         $b = $main;
+        if (!empty($b['tour'])) {
+            return $this->tourStep($b);
+        }
         $red = [];
         foreach ($b['memberIds'] as $id) {
             $m = $this->musician($id);
@@ -369,6 +375,14 @@ final class Bot
                 }
             }
         }
+        // Tournee, wenn die Band so weit ist und gerade keine Platte ansteht
+        if ($this->spend && !$canRecord && !$last && ($region = $this->tourRegion($b)) !== null) {
+            $res = $this->call('tourStart', ['bandId' => $b['id'], 'region' => $region, 'stations' => Balance::TOUR['regions'][$region]['lengths'][0] ?? 0]);
+            if ($res !== null) {
+                $this->events[] = 'Tournee: ' . $region;
+                return max(60, (int) $res['activity']['endsAt'] - Clock::now());
+            }
+        }
         // Auftritt, wenn die Band frisch ist
         if (($b['core']['fresh'] ?? 1) >= 0.6) {
             $res = $this->call('activityStart', ['bandId' => $b['id'], 'type' => 'gig']);
@@ -408,6 +422,18 @@ final class Bot
     /** Festival und Battle: anmelden, wenn es geht. */
     public function enter(): void
     {
+        // Wer auf Tournee geht, meldet sich nicht an (eine Anmeldung sperrt Tourneen) und zieht offene Anmeldungen zurück
+        $main = $this->main();
+        if ($this->spend && $main !== null && (!empty($main['tour']) || $this->canTour($main))) {
+            foreach (['festival' => 'festivalWithdraw', 'battle' => 'battleWithdraw'] as $key => $action) {
+                foreach ($this->s[$key]['next']['options'] ?? [] as $o) {
+                    if ($o['entered'] && $o['bandId'] === $main['id']) {
+                        $this->call($action, ['bandId' => $o['bandId']]);
+                    }
+                }
+            }
+            return;
+        }
         foreach (['festival' => 'festivalEnter', 'battle' => 'battleEnter'] as $key => $action) {
             foreach ($this->s[$key]['next']['options'] ?? [] as $o) {
                 if (!$o['entered'] && $o['blocked'] === null && ($this->main()['id'] ?? 0) === $o['bandId']) {
@@ -429,10 +455,14 @@ final class Bot
         $this->gear();
         if ($this->spend) {
             $this->upgradeRoom();
+            $this->buyVehicles();
             $this->hireTutors();
         }
         $this->enter();
-        for ($i = 0; $i < $gigs; $i++) {
+        // Auf Tournee sind es mehr, aber kürzere Schritte (Fahrt, Auftritt, weiter)
+        $main = $this->main();
+        $steps = $main !== null && (!empty($main['tour']) || ($this->spend && $this->canTour($main))) ? 3 * $gigs : $gigs;
+        for ($i = 0; $i < $steps; $i++) {
             $this->refresh();
             $took = $this->act(false);
             if ($took === 0) {
@@ -460,6 +490,78 @@ final class Bot
         $next = $main['room']['next'] ?? null;
         if ($next !== null && $this->money() - (int) $next['cost'] >= self::RESERVE && $this->call('roomUpgrade', ['bandId' => $main['id']]) !== null) {
             $this->events[] = 'Proberaum: ' . $next['name'];
+        }
+    }
+
+    /** Bus und Flugzeug eine Stufe weiter, sobald die Band dafür bekannt genug ist und genug übrig bleibt. */
+    private function buyVehicles(): void
+    {
+        $main = $this->main();
+        if ($main === null) {
+            return;
+        }
+        foreach (['bus', 'plane'] as $kind) {
+            $next = Balance::VEHICLES[$kind][(int) ($main['vehicles'][$kind] ?? 0)] ?? null;
+            if ($next === null || ($main['core']['fans'] ?? 0) < Balance::CORE_STAGES[Balance::CORE_TOUR['stage'][$kind]]) {
+                continue;
+            }
+            if ($this->money() - (int) $next['cost'] >= self::RESERVE && $this->call('vehicleBuy', ['bandId' => $main['id'], 'kind' => $kind]) !== null) {
+                $this->events[] = $next['name'];
+                $main = $this->main();
+            }
+        }
+    }
+
+    /** Kann die Band auf Tournee (Fahrzeug und Fans dafür)? */
+    private function canTour(array $b): bool
+    {
+        $fans = (float) ($b['core']['fans'] ?? 0);
+        foreach (['bus', 'plane'] as $kind) {
+            if (($b['vehicles'][$kind] ?? 0) >= 1 && $fans >= Balance::CORE_STAGES[Balance::CORE_TOUR['stage'][$kind]]) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Wohin die nächste Tournee geht (null: keine). Mit dem Flugzeug reihum die Kontinente, sonst Europa mit dem Bus. */
+    private function tourRegion(array $b): ?string
+    {
+        $fans = (float) ($b['core']['fans'] ?? 0);
+        if (($b['vehicles']['plane'] ?? 0) >= 1 && $fans >= Balance::CORE_STAGES[Balance::CORE_TOUR['stage']['plane']]) {
+            $regions = array_keys(array_filter(Balance::TOUR['regions'], static fn ($r, $k) => $r['vehicle'] === 'plane' && !in_array($k, Balance::CORE_TOUR['parked'], true), ARRAY_FILTER_USE_BOTH));
+            return $regions[$this->tours++ % count($regions)];
+        }
+        return ($b['vehicles']['bus'] ?? 0) >= 1 && $fans >= Balance::CORE_STAGES[Balance::CORE_TOUR['stage']['bus']] ? 'europa' : null;
+    }
+
+    /** Auf Tournee: was ansteht (Auftritt, weiter ins nächste Land, nach Hause). Liefert die Sekunden, die das dauert (0: nichts zu tun). */
+    private function tourStep(array $b): int
+    {
+        $t = $b['tour'];
+        $until = static fn (?array $res) => $res === null || ($res['activity'] ?? null) === null ? 0 : max(60, (int) $res['activity']['endsAt'] - Clock::now());
+        switch ($t['state']) {
+            case 'travel':
+            case 'home':
+                $leg = end($t['legs']) ?: [];
+                return max(60, (int) ($leg['until'] ?? Clock::now()) - Clock::now() + 5);
+            case 'arrived':
+                $took = $until($this->call('tourShow', ['bandId' => $b['id']]));
+                if ($took > 0) {
+                    $this->events[] = 'Tournee-Auftritt';
+                }
+                return $took;
+            case 'after':
+                if ($t['station'] < $t['stations']) {
+                    $res = $this->call('tourNext', ['bandId' => $b['id']]);
+                    if ($res !== null && ($res['activity'] ?? null) !== null) {
+                        return $until($res);
+                    }
+                }
+                $this->events[] = 'Tournee zu Ende';
+                return $until($this->call('tourHome', ['bandId' => $b['id']]));
+            default:
+                return 0;
         }
     }
 
@@ -597,7 +699,9 @@ foreach ($sessions as [$at, $gigs, $d]) {
             $bot->reached[$stage] = $d;
         }
     }
-    $rows[$d] = $snap + ['events' => implode(', ', array_unique($bot->events))];
+    // Mehrere Besuche am Tag: die Zeile zeigt den Stand nach dem letzten, die Ereignisse aller Besuche
+    $before = isset($rows[$d]) && $rows[$d]['events'] !== '' ? explode(', ', $rows[$d]['events']) : [];
+    $rows[$d] = $snap + ['events' => implode(', ', array_unique([...$before, ...$bot->events]))];
     if (in_array('--why', $argv, true)) {
         echo date('d.m. H:i', Clock::now()), ' ', $snap['why'], "\n";
     }
@@ -622,6 +726,20 @@ foreach ($rows as $r) {
     if ($firstRecord === null && $r['records'] > 0) { $firstRecord = $r['day'] + 1; }
 }
 printf("KENNZAHLEN %s seed=%d fans=%d stage=%d records=%d money=%d red=%d/%d streak=%d first=%s s500=%s s5000=%s\n", $profile, $seed, $end['fans'], $end['stage'], $end['records'], $end['money'], $redSessions, count($rows), $maxStreak, $firstRecord ?? '-', isset($bot->reached[1]) ? $bot->reached[1] + 1 : '-', isset($bot->reached[2]) ? $bot->reached[2] + 1 : '-');
+// Geld beim Erreichen der Stufen und wann die Fahrzeuge kamen (erster Bus, voller Bus, erstes Flugzeug, volles Flugzeug)
+$moneyAt = static fn (?int $day) => $day === null ? '-' : (string) ($rows[$day]['money'] ?? '-');
+$firstDay = static function (string $name) use ($rows): string {
+    foreach ($rows as $r) {
+        if (str_contains($r['events'], $name)) {
+            return (string) ($r['day'] + 1);
+        }
+    }
+    return '-';
+};
+printf("GELD m500=%s m5000=%s m50000=%s s50000=%s bus1=%s bus4=%s plane1=%s plane4=%s touren=%d\n", $moneyAt($bot->reached[1] ?? null), $moneyAt($bot->reached[2] ?? null),
+    $moneyAt($bot->reached[3] ?? null), isset($bot->reached[3]) ? $bot->reached[3] + 1 : '-', $firstDay(Balance::VEHICLES['bus'][0]['name']), $firstDay(Balance::VEHICLES['bus'][3]['name']),
+    $firstDay(Balance::VEHICLES['plane'][0]['name']), $firstDay(Balance::VEHICLES['plane'][3]['name']),
+    array_sum(array_map(static fn ($r) => substr_count($r['events'], 'Tournee:'), $rows)));
 printf("\n%s, %d Wochen, Seed %d: Ende Tag %d – Geld %s ₲, Fans %s (Stufe %d), Platten %d, Können %d, Laune %s\n", $profile, $weeks, $seed, $end['day'] + 1,
     number_format($end['money'], 0, ',', '.'), number_format($end['fans'], 0, ',', '.'), $end['stage'], $end['records'], $end['skill'], $end['mood']);
 foreach ([1 => 500, 2 => 5000, 3 => 50000] as $stage => $fans) {

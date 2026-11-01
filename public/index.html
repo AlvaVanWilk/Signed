@@ -14,12 +14,26 @@
   <meta name="apple-mobile-web-app-title" content="Signed">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="stylesheet" href="assets/css/app.css">
+  <!-- Umbau: diese Zeile, den Block .umbau unten und den Kommentar um main.js entfernen, dann ist Signed wieder spielbar. -->
+  <link rel="stylesheet" href="assets/css/umbau.css">
 </head>
 <body>
-  <div id="app"><div class="boot"><span class="logo">Signed</span></div></div>
+  <div id="app"><div class="boot"><span class="logo big">Signed</span></div></div>
   <div id="modal-root"></div>
   <div id="toast-root" aria-live="polite"></div>
   <noscript>Signed braucht JavaScript.</noscript>
+  <div class="umbau" role="alert">
+    <div class="umbau-tape a" aria-hidden="true"><span>Baustelle</span><span>Betreten verboten</span><span>Baustelle</span><span>Betreten verboten</span><span>Baustelle</span><span>Betreten verboten</span><span>Baustelle</span></div>
+    <div class="umbau-tape b" aria-hidden="true"><span>Achtung Umbau</span><span>Achtung Umbau</span><span>Achtung Umbau</span><span>Achtung Umbau</span><span>Achtung Umbau</span><span>Achtung Umbau</span></div>
+    <div class="umbau-card">
+      <div class="umbau-sign" aria-hidden="true">🚧</div>
+      <span class="logo">Signed</span>
+      <h1>Hier wird gerade umgebaut</h1>
+      <p>Signed ist für kurze Zeit nicht spielbar. Dein Label, deine Bands und deine Karten bleiben erhalten – bis bald!</p>
+    </div>
+  </div>
+  <!-- Umbau: Spiel wird nicht geladen.
   <script type="module" src="assets/js/main.js"></script>
+  -->
 </body>
 </html>

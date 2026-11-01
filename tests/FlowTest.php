@@ -1558,6 +1558,35 @@ test('Solokünstler wechseln in eine Band: Die leere Solo-Band verschwindet; wer
     checkApiError(fn () => $p->post('bandAddMember', ['bandId' => $band['id'], 'musicianId' => $id2, 'slot' => 1]), 'aufgebaut');
 });
 
+test('Zusammentun: Wer zu einer schon vollständigen Band kommt, vervollständigt sie nicht', function () {
+    $db = freshDb();
+    $p = player($db);
+    $res = $p->post('register', ['username' => 'fertig', 'password' => 'geheim123', 'labelName' => 'Fertig Records']);
+    $repo = new Signed\Game\Repo($db, $res['label']['id']);
+    $entries = [];
+    foreach (['vocals', 'guitar', 'drums'] as $instrument) {
+        $card = Signed\Game\Generator::musician('common', ['instrument' => $instrument, 'genre' => 'rock', 'single' => true]);
+        $card['genres'] = ['rock'];
+        $entries[] = ['id' => $repo->insertMusician($card, 'test'), 'slot' => 1];
+    }
+    $bandId = (new Signed\Game\Bands($repo))->create('Schon Fertig', $entries);
+    $card = Signed\Game\Generator::musician('common', ['instrument' => 'bass', 'genre' => 'rock', 'single' => true]);
+    $card['genres'] = ['rock'];
+    $new = $repo->insertMusician($card, 'test');
+    $p->get('state');
+    $solo = (int) $db->value('SELECT band_id FROM musicians WHERE id = ?', [$new]);
+    $texts = static fn (array $list) => array_merge(...array_map(static fn ($c) => array_column($c['effects'], 'text'), $list));
+    // Aus Sicht des Neuen (etwa beim Ziehen in der Künstlerleiste): Die Rockband war schon vollständig
+    $fromNew = $texts($p->post('bandJoinCandidates', ['bandId' => $solo])['candidates']);
+    check(!in_array('Vervollständigt die Rockband', $fromNew, true), 'Nichts zu vervollständigen: ' . implode(' / ', $fromNew));
+    check(in_array('Spielt dann in einer Rockband', $fromNew, true), 'Er kommt in eine Rockband');
+    check(!in_array('Vervollständigt die Rockband', $texts($p->post('bandJoinCandidates', ['bandId' => $bandId])['candidates']), true), 'Aus Sicht der Band auch nicht');
+    // Fehlt der Band das Schlagzeug, vervollständigt es ein Schlagzeuger wirklich
+    $p->post('bandRemoveMember', ['bandId' => $bandId, 'musicianId' => $entries[2]['id']]);
+    $drummer = array_values(array_filter($p->post('bandJoinCandidates', ['bandId' => $bandId])['candidates'], static fn ($c) => $c['musicianId'] === $entries[2]['id']));
+    check(in_array('Vervollständigt die Rockband', $texts($drummer), true), 'Der Schlagzeuger vervollständigt sie: ' . implode(' / ', $texts($drummer)));
+});
+
 test('Zusammentun: Kandidaten nach Nutzen geordnet, Unmögliches zuletzt, Bands lassen sich verschmelzen', function () {
     $db = freshDb();
     $p = registerPlayer($db, 'Zusammen');

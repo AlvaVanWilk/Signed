@@ -296,6 +296,10 @@ sein Fach, Umschläge erst, wenn sie offen sind) oder einzeln: festhalten und au
 | Coach             |  0,05 |   0,009 |  0,14 |  0,33 |    0,95 |
 
 Im neuen Kern zählen für die Kassetten die Fans des Labels: 500 / 5.000 / 50.000 Fans wie Label-Ruhm 100 / 1.000 / 10.000 (je Band Fans / 5).
+**Neuer Kern (Sandra, 1.11.): viele Kassetten, wenig Gutes.** Von Anfang an etwa vier je Stunde (96 + √Erfolg je Tag), fast alle von
+Anfängern; mit den Fans des Labels kommen spürbar mehr Gute (bei 0 / 500 / 5.000 / 50.000 Fans sind 6 / 15 / 25 / 35 % besser als
+Anfänger, Tabelle in `docs/kern.md`). Zu Beginn ein Teppich aus Leuten, die man ohnehin braucht; später ein Grund, mit der Assistenz
+aufzuräumen. Ungehört liegen höchstens 40 Kassetten da, für jede neue fliegt die älteste raus.
 
 Mit dem Erfolg steigt der Anteil guter Kassetten (5 % bis 25 %), und die Bewerber werden besser (Güte = Ruhm / (Ruhm + 300)). Hat eine Band
 Erfolg, bewerben sich mehr Musiker mit ähnlichen Genres. Interview-Anfragen richten sich nur nach dem einzelnen Musiker.

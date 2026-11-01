@@ -205,7 +205,9 @@ final class Bands
             $genre = $idAfter['primary'] ?? $shared[0];
             $bandName = BandCalc::title($genre, null);
             if ($idNow['primary'] !== $genre && $idAfter['primary'] === $genre) {
-                $effects[] = ['good' => true, 'text' => sprintf('Vervollständigt die %s', $bandName)];
+                // War die andere Seite allein schon so eine Band, vervollständigt das Zusammentun nichts: Diese Seite kommt nur dazu
+                $theirs = BandCalc::identity($group)['checks'][$genre];
+                $effects[] = ['good' => true, 'text' => sprintf($theirs['allFans'] && $theirs['lineup'] ? 'Spielt dann in einer %s' : 'Vervollständigt die %s', $bandName)];
             } elseif ($idAfter['primary'] === null || $idNow['primary'] !== $genre) {
                 $nowReq = $idNow['checks'][$genre]['requirements'];
                 foreach ($idAfter['checks'][$genre]['requirements'] as $i => $req) {

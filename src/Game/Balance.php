@@ -869,6 +869,22 @@ final class Balance
     public const CORE_STAGES = [0 => 0, 1 => 500, 2 => 5000, 3 => 50000];
     /** Kassetten im neuen Kern: so viele Fans zählen wie ein Punkt Label-Ruhm (500 / 5.000 / 50.000 Fans ≙ 100 / 1.000 / 10.000). */
     public const CORE_DEMO_FANS = 5.0;
+    /**
+     * Kassetten im neuen Kern (Sandra, 1.11.: „viele Einsendungen, wenig Gutes“, die Güte steigt mit dem Erfolg des Labels):
+     * je Tag = start + root × √Erfolg (Erfolg wie bei CORE_DEMO_FANS). Können-Stufe 0–3 einer Kassette nach den Anteilen `levels` bei
+     * 0 / 500 / 5.000 / 50.000 Fans (Fans-Gegenwert des Erfolgs), dazwischen gleitend: bis 500 gleichmäßig, darüber je Zehnfaches eine Zeile.
+     * Im Posteingang liegen höchstens `cap` ungehörte Kassetten; kommt eine neue dazu, fliegt die älteste ungehörte raus.
+     */
+    public const CORE_SUBMISSIONS = [
+        'perDay' => ['start' => 96.0, 'root' => 1.0],
+        'levels' => [
+            0 => [0 => 94.0, 1 => 5.5, 2 => 0.5, 3 => 0.0],
+            1 => [0 => 85.0, 1 => 12.0, 2 => 2.7, 3 => 0.3],
+            2 => [0 => 75.0, 1 => 18.0, 2 => 6.0, 3 => 1.0],
+            3 => [0 => 65.0, 1 => 22.0, 2 => 10.0, 3 => 3.0],
+        ],
+        'cap' => 40,
+    ];
     /** Dach: höchstens so viele Fans je Art der Band (Solokünstler mit Pop oder Elektro zählen als Genre, mit beidem als Hybrid). */
     public const CORE_ROOF = ['mixed' => 4999, 'genre' => 50000, 'hybrid' => 75000, 'crossover' => 90000];
     /** Rechen-Pool beim Erscheinen einer Platte: max(`base`, Fans + `above`). */

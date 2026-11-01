@@ -42,8 +42,23 @@ Chartpunkte, den Album-Zyklus, die Promo-Tour, Straßenmusik, Open Stage und Fan
 - Die Bekanntheit eines Musikers ist der Ruhm-Gegenwert der Fans seiner Band (`BandCore::fameEquivalent`: 500 / 5.000 / 50.000 Fans ↔ 20 / 120 / 600,
   dazwischen gleichmäßig); damit rechnen Regeln, die noch die alte Skala brauchen (Bewerbungen, Künstlername, Marktwert).
 - **Kassetten** rechnen mit den Fans: je Band Fans / 5 als Label-Ruhm (`Balance::CORE_DEMO_FANS`, zusammengenommen wie der Label-Ruhm), also
-  500 / 5.000 / 50.000 Fans wie Label-Ruhm 100 / 1.000 / 10.000. Damit kommen bei 0 / 500 / 5.000 / 50.000 Fans etwa 24 / 42 / 81 / 204
-  Kassetten am Tag (1 / knapp 2 / gut 3 / gut 8 je Stunde), gute 5 % bis 25 % (ab 25.000 Fans).
+  500 / 5.000 / 50.000 Fans wie Label-Ruhm 100 / 1.000 / 10.000.
+- **Viele Kassetten, wenig Gutes** (Sandra, 1.11.; `Balance::CORE_SUBMISSIONS`): je Tag 96 + √Erfolg, also bei 0 / 500 / 5.000 / 50.000 Fans
+  etwa 96 / 106 / 128 / 196 (4 / gut 4 / gut 5 / 8 je Stunde; vorher 24 / 42 / 81 / 204). Die Können-Stufe jeder Kassette folgt dem Erfolg:
+
+  | Fans des Labels | Anfänger | Fortgeschritten | Profi | Virtuose |
+  |---|---:|---:|---:|---:|
+  | 0 | 94 % | 5,5 % | 0,5 % | 0 % |
+  | 500 | 85 % | 12 % | 2,7 % | 0,3 % |
+  | 5.000 | 75 % | 18 % | 6 % | 1 % |
+  | 50.000 | 65 % | 22 % | 10 % | 3 % |
+
+  Dazwischen gleitend (bis 500 gleichmäßig, darüber mit jedem Zehnfachen eine Zeile weiter; `Submissions::levelShares`). Zu Beginn
+  kommen so etwa 5 Fortgeschrittene und jeden zweiten Tag ein Profi; bei 5.000 Fans täglich gut 20 Fortgeschrittene, 8 Profis und ein
+  Virtuose. Vorher: 5 % bis 25 % „gute“ (erst ab 25.000 Fans ein Viertel), bei 500 Fans knapp 2 Fortgeschrittene am Tag.
+- Im Posteingang liegen höchstens **40 ungehörte Kassetten**; für jede neue fliegt die älteste ungehörte raus (gemerkte, angehörte und
+  gerade bearbeitete bleiben). Ohne diese Grenze lägen bei 96 am Tag und vier Tagen Liegezeit fast 400 da. Zum Aufräumen gibt es die
+  Kassetten-Assistenz (nach Regel wegwerfen, Suchauftrag).
 - Bestenlisten: Labels nach allen Fans zusammen; Künstler als Fan-Lieblinge (Fans) und Sound-Monster (Sound).
 
 ### Hype
@@ -615,7 +630,7 @@ auf dem Boden) und als Liste auf der Bandseite und in WikiSignia. Neue werden ei
 
 - Raten je Tag = Start + Zuwachs × √Label-Ruhm (Tabelle in `label-konzept.md`), zufällig verteilt (`Post::nextArrival`); alles liegt vier Tage.
   Anteil guter Kassetten 5 % bis 25 % (bis Label-Ruhm 5.000); Güte der Bewerber = Ruhm / (Ruhm + 300). Im neuen Kern zählen für die
-  Kassetten die Fans (Abschnitt „Fans und Ruhmstufe“).
+  Kassetten die Fans, es kommen viel mehr, und ihre Können-Stufen folgen einer Tabelle (Abschnitt „Fans und Ruhmstufe“).
 - **Unterschriftsprämie** = (40 + 0,05 × Können² + 1,5 × Bekanntheit) × (1 + 12 % × versteckter Wert); wer bei einer Band zurückbleibt,
   kränkt die anderen (Wohlbefinden −20, Teamplayer ×1,6, Ehrgeizige ×0,5).
 - Arbeit je Stück (gleich für einen selbst, Praktikum und Assistenz): Umschlag 2 s, Kassette anhören 5 s, Brief lesen 5 s, einsortieren 1 s.

@@ -507,17 +507,37 @@ test('Kern im Spiel: Ein altes Interview gilt als Interview-Anfrage, die Test-Br
     }
 });
 
-test('Kern im Spiel: Kassetten wachsen mit den Fans (500 / 5.000 / 50.000 Fans wie Label-Ruhm 100 / 1.000 / 10.000)', function () {
+test('Kern im Spiel: Viele Kassetten von Anfang an, mit den Fans mehr Gute (500 / 5.000 / 50.000 Fans wie Label-Ruhm 100 / 1.000 / 10.000)', function () {
     [$db, $p, $repo, $band] = coreLabel();
     $s = new Signed\Game\Submissions($repo);
     checkEquals(0.0, $s->demoSuccess(), 'Ohne Fans');
-    coreNear(24.0, Signed\Game\Submissions::perDay($s->demoSuccess()), 1e-9, 'Neues Label: eine je Stunde');
+    coreNear(96.0, Signed\Game\Submissions::perDay($s->demoSuccess()), 1e-9, 'Neues Label: vier je Stunde');
+    $shares = static fn (float $erfolg) => Signed\Game\Submissions::levelShares($erfolg);
+    checkEquals([0 => 94.0, 1 => 5.5, 2 => 0.5, 3 => 0.0], $shares(0.0), 'Zu Beginn fast nur Anfänger');
+    coreNear(0.06, Signed\Game\Submissions::goodShare(0.0), 1e-9, 'Gut jede siebzehnte über Anfänger-Niveau');
+    coreNear(0.15, Signed\Game\Submissions::goodShare(100.0), 1e-9, '500 Fans');
+    coreNear(0.25, Signed\Game\Submissions::goodShare(1000.0), 1e-9, '5.000 Fans');
+    coreNear(0.35, Signed\Game\Submissions::goodShare(10000.0), 1e-9, '50.000 Fans');
+    coreNear(0.35, Signed\Game\Submissions::goodShare(1e6), 1e-9, 'Darüber bleibt es');
+    coreNear((2.7 + 6.0) / 2, $shares(100.0 * sqrt(10))[2], 1e-9, 'Dazwischen gleitend: Profis bei gut 1.580 Fans');
+    coreNear((5.5 + 12.0) / 2, $shares(50.0)[1], 1e-9, 'Bis 500 Fans gleichmäßig: 250 Fans liegen in der Mitte');
     $db->exec('UPDATE bands SET fans = 5000 WHERE id = ?', [$band['id']]);
     coreNear(1000.0, $s->demoSuccess(), 0.1, '5.000 Fans zählen wie Label-Ruhm 1.000');
-    coreNear(24 + 1.8 * sqrt(1000), Signed\Game\Submissions::perDay($s->demoSuccess()), 0.1, 'Gut 80 Kassetten am Tag');
+    coreNear(96 + sqrt(1000), Signed\Game\Submissions::perDay($s->demoSuccess()), 0.1, 'Gut 127 Kassetten am Tag');
     $db->exec('UPDATE bands SET fans = 50000 WHERE id = ?', [$band['id']]);
-    coreNear(0.25, Signed\Game\Submissions::goodShare($s->demoSuccess()), 1e-9, 'Ganz oben ist jede vierte gut');
     check($s->demoSuccess() > 10 * $s->success(), 'Der Ruhm-Gegenwert der Musiker wäre viel kleiner');
+    $db->exec('UPDATE bands SET fans = 0 WHERE id = ?', [$band['id']]);
+    // Posteingang: höchstens 40 ungehörte; gemerkte und angehörte bleiben
+    $p->get('state');
+    $first = (int) $db->value('SELECT id FROM submissions WHERE label_id = ? ORDER BY id LIMIT 1', [$repo->labelId]);
+    $db->exec('UPDATE submissions SET saved = 1 WHERE id = ?', [$first]);
+    Clock::advance(2 * 86400);
+    $p->get('state');
+    $unheard = (int) $db->value('SELECT COUNT(*) FROM submissions WHERE label_id = ? AND opened_at IS NULL AND saved = 0', [$repo->labelId]);
+    checkEquals(Balance::CORE_SUBMISSIONS['cap'], $unheard, 'Voll, aber nicht übervoll');
+    checkEquals(1, (int) $db->value('SELECT COUNT(*) FROM submissions WHERE id = ?', [$first]), 'Die gemerkte bleibt');
+    $levels = array_map(static fn ($r) => json_decode($r['card'], true), $db->all('SELECT card FROM submissions WHERE label_id = ? AND id <> ?', [$repo->labelId, $first]));
+    check(count(array_filter($levels, static fn ($c) => ($c['kind'] ?? '') !== 'band' && $c['level'] >= 1)) <= 20, 'Wenig Gutes dabei');
 });
 
 test('Kern im Spiel: Die Auszeit gibt es nur, wenn jemand in der Band rot ist', function () {

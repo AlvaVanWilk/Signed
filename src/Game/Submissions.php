@@ -17,10 +17,10 @@ final class Submissions
     {
     }
 
-    /** Einsendungen pro Tag bei diesem Erfolg des Labels. */
+    /** Einsendungen pro Tag bei diesem Erfolg des Labels (neuer Kern: viel mehr von Anfang an, CORE_SUBMISSIONS). */
     public static function perDay(float $erfolg): float
     {
-        return self::rate(Balance::SUBMISSIONS['perDay'], $erfolg);
+        return self::rate(BandCore::$live ? Balance::CORE_SUBMISSIONS['perDay'] : Balance::SUBMISSIONS['perDay'], $erfolg);
     }
 
     /** Fließende Rate je Tag: start + root × √x (x = Erfolg oder Bekanntheit). */
@@ -29,10 +29,35 @@ final class Submissions
         return $r['start'] + $r['root'] * sqrt(max(0.0, $x));
     }
 
+    /** Anteil der Kassetten über Anfänger-Niveau (Fortgeschrittene und besser). */
     public static function goodShare(float $erfolg): float
     {
+        if (BandCore::$live) {
+            $shares = self::levelShares($erfolg);
+            return 1 - $shares[0] / array_sum($shares);
+        }
         $g = Balance::SUBMISSIONS['good'];
         return $g['from'] + ($g['to'] - $g['from']) * min(1.0, $erfolg / $g['at']);
+    }
+
+    /**
+     * Neuer Kern: Anteile der Können-Stufen 0–3 unter den Kassetten bei diesem Erfolg. Die Zeilen von CORE_SUBMISSIONS['levels'] gelten bei
+     * 0 / 500 / 5.000 / 50.000 Fans (Erfolg × CORE_DEMO_FANS); bis 500 gleitet es gleichmäßig, darüber mit jedem Zehnfachen eine Zeile weiter.
+     * @return array<int, float>
+     */
+    public static function levelShares(float $erfolg): array
+    {
+        $rows = Balance::CORE_SUBMISSIONS['levels'];
+        $stages = Balance::CORE_STAGES;
+        $fans = max(0.0, $erfolg) * Balance::CORE_DEMO_FANS;
+        $t = $fans < $stages[1] ? $fans / $stages[1] : min(3.0, 1 + log10($fans / $stages[1]));
+        $i = min(2, (int) floor($t));
+        $f = $t - $i;
+        $out = [];
+        foreach ($rows[$i] as $level => $share) {
+            $out[$level] = $share + ($rows[$i + 1][$level] - $share) * $f;
+        }
+        return $out;
     }
 
     public static function price(array $card): int
@@ -136,14 +161,35 @@ final class Submissions
         $good = self::goodShare($erfolg);
         // submit_at ist der Zeitpunkt der nächsten Kassette; die Abstände sind zufällig (man weiß nie genau, wann etwas kommt).
         $next = Post::nextArrival(max($at, $now - Balance::SUBMISSIONS['maxCatchUp']), $now, $mean);
+        $shares = BandCore::$live ? self::levelShares($erfolg) : null;
         for ($n = 0; $next <= $now && $n < Balance::SUBMISSIONS['maxPerCall']; $n++, $next += Post::gap($mean)) {
-            $level = Rng::chance($good) ? (int) Rng::weighted(Balance::SUBMISSIONS['goodLevels']) : 0;
+            // Neuer Kern: Stufe nach den Anteilen beim Erfolg des Labels; sonst „gut“ mit goodShare, dann nach goodLevels
+            $level = $shares !== null ? (int) Rng::weighted($shares) : (Rng::chance($good) ? (int) Rng::weighted(Balance::SUBMISSIONS['goodLevels']) : 0);
             // Neuer Kern: Wer neu unterschreibt, fängt bei 0 Fans an; Bekanntheit bringt niemand mit.
             $fame = !BandCore::$live && $level >= 1 && Rng::chance(Balance::SUBMISSIONS['fameChance']) ? Rng::float(...Balance::SUBMISSIONS['fame']) : 0.0;
             $card = Rng::chance(Balance::SUBMISSIONS['bandChance']) ? self::makeBand($level, $this->repo->db) : self::make($level, $fame);
             $this->store($card, $next);
         }
         $db->update('labels', ['submit_at' => max($next, $now + 1)], ['id' => $this->repo->labelId]);
+        if (BandCore::$live) {
+            $this->capMailbox($now);
+        }
+    }
+
+    /**
+     * Neuer Kern: Im Posteingang liegen höchstens CORE_SUBMISSIONS['cap'] ungehörte Kassetten; die ältesten darüber fliegen raus (wie verfallen).
+     * Gemerkte, gerade bearbeitete und schon angehörte bleiben.
+     */
+    private function capMailbox(int $now): void
+    {
+        $db = $this->repo->db;
+        $ids = array_column($db->all(
+            'SELECT id FROM submissions WHERE label_id = ? AND opened_at IS NULL AND saved = 0 AND worker IS NULL AND (unpacked_at IS NULL OR unpacked_at <= ?) ORDER BY created_at DESC, id DESC',
+            [$this->repo->labelId, $now]
+        ), 'id');
+        foreach (array_slice($ids, Balance::CORE_SUBMISSIONS['cap']) as $id) {
+            $db->exec('DELETE FROM submissions WHERE id = ?', [(int) $id]);
+        }
     }
 
     /** Zum Ausprobieren: sechs neue, ungehörte Kassetten (Stufen gemischt, wie sie im Alltag kämen). */
